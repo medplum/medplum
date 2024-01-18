@@ -1,8 +1,8 @@
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
 const medplum = new MockClient();

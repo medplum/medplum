@@ -149,7 +149,7 @@ export interface Condition {
    * Indicates the patient or group who the condition record is associated
    * with.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this Condition was created or to which the

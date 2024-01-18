@@ -1283,25 +1283,25 @@
       "name": "code-value-concept",
       "type": "composite",
       "description": "Code and coded value parameter pair",
-      "expression": ""
+      "expression": "Observation"
     },
     {
       "name": "code-value-date",
       "type": "composite",
       "description": "Code and date/time value parameter pair",
-      "expression": ""
+      "expression": "Observation"
     },
     {
       "name": "code-value-quantity",
       "type": "composite",
       "description": "Code and quantity value parameter pair",
-      "expression": ""
+      "expression": "Observation"
     },
     {
       "name": "code-value-string",
       "type": "composite",
       "description": "Code and string value parameter pair",
-      "expression": ""
+      "expression": "Observation"
     },
     {
       "name": "combo-code-value-concept",

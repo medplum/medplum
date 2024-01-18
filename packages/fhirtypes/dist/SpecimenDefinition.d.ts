@@ -182,7 +182,7 @@ export interface SpecimenDefinitionTypeTested {
   /**
    * The preference for this type of conditioned specimen.
    */
-  preference?: 'preferred' | 'alternate';
+  preference: 'preferred' | 'alternate';
 
   /**
    * The specimen's container.

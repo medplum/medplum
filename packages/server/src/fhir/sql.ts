@@ -1,3 +1,4 @@
+import { OperationOutcomeError, append, conflict } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
 import { Client, Pool, PoolClient } from 'pg';
 import Cursor from 'pg-cursor';
@@ -301,13 +302,23 @@ export class SqlBuilder {
       console.log('values', this.values);
       startTime = Date.now();
     }
-    const result = await conn.query(sql, this.values);
-    if (this.debug) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      console.log(`result: ${result.rows.length} rows (${duration} ms)`);
+    try {
+      const result = await conn.query(sql, this.values);
+      if (this.debug) {
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        console.log(`result: ${result.rows.length} rows (${duration} ms)`);
+      }
+      return result.rows;
+    } catch (err: any) {
+      if (err && typeof err === 'object' && err.code === '23505') {
+        // Catch duplicate key errors and throw a 409 Conflict
+        // See https://github.com/brianc/node-postgres/issues/1602
+        // See https://www.postgresql.org/docs/10/errcodes-appendix.html
+        throw new OperationOutcomeError(conflict(err.detail));
+      }
+      throw err;
     }
-    return result.rows;
   }
 }
 
@@ -564,15 +575,27 @@ export class ArraySubquery implements Expression {
 
 export class InsertQuery extends BaseQuery {
   private readonly values: Record<string, any>[];
-  private merge?: boolean;
+  private returnColumns?: string[];
+  private conflictColumns?: string[];
+  private ignoreConflict?: boolean;
 
   constructor(tableName: string, values: Record<string, any>[]) {
     super(tableName);
     this.values = values;
   }
 
-  mergeOnConflict(): this {
-    this.merge = true;
+  mergeOnConflict(columns?: string[]): this {
+    this.conflictColumns = columns ?? ['id'];
+    return this;
+  }
+
+  ignoreOnConflict(): this {
+    this.ignoreConflict = true;
+    return this;
+  }
+
+  returnColumn(column: Column | string): this {
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
     return this;
   }
 
@@ -584,6 +607,9 @@ export class InsertQuery extends BaseQuery {
     this.appendColumns(sql, columnNames);
     this.appendAllValues(sql, columnNames);
     this.appendMerge(sql);
+    if (this.returnColumns) {
+      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+    }
     return sql.execute(conn);
   }
 
@@ -625,35 +651,47 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendMerge(sql: SqlBuilder): void {
-    if (!this.merge) {
+    if (this.ignoreConflict) {
+      sql.append(` ON CONFLICT DO NOTHING`);
+      return;
+    } else if (!this.conflictColumns?.length) {
       return;
     }
 
-    sql.append(' ON CONFLICT ("id") DO UPDATE SET ');
+    sql.append(` ON CONFLICT (${this.conflictColumns.map((c) => '"' + c + '"').join(', ')}) DO UPDATE SET `);
 
-    const entries = Object.entries(this.values[0]);
+    const columns = Object.keys(this.values[0]);
     let first = true;
-    for (const [columnName, value] of entries) {
-      if (columnName === 'id') {
+    for (const columnName of columns) {
+      if (this.conflictColumns.includes(columnName)) {
         continue;
       }
       if (!first) {
         sql.append(', ');
       }
       sql.appendIdentifier(columnName);
-      sql.append('=');
-      sql.param(value);
+      sql.append('= EXCLUDED.');
+      sql.appendIdentifier(columnName);
       first = false;
     }
   }
 }
 
 export class DeleteQuery extends BaseQuery {
-  async execute(conn: Pool | PoolClient): Promise<any> {
+  returnColumns?: string[];
+
+  returnColumn(column: Column | string): this {
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
+    return this;
+  }
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.tableName);
     this.buildConditions(sql);
+    if (this.returnColumns) {
+      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+    }
     return sql.execute(conn);
   }
 }

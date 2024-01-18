@@ -33,20 +33,20 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
 
   return (
     <Panel data-testid="timeline-item" fill={true} {...others}>
-      <Group position="apart" spacing={8} mx="xs" my="sm">
+      <Group justify="space-between" gap={8} mx="xs" my="sm">
         <ResourceAvatar value={author} link={true} size="md" />
         <div style={{ flex: 1 }}>
           <Text size="sm">
-            <ResourceName color="dark" weight={500} value={author} link={true} />
+            <ResourceName c="dark" fw={500} value={author} link={true} />
           </Text>
           <Text size="xs">
-            <MedplumLink color="dimmed" to={props.resource}>
+            <MedplumLink c="dimmed" to={props.resource}>
               {formatDateTime(dateTime)}
             </MedplumLink>
-            <Text component="span" color="dimmed" mx={8}>
+            <Text component="span" c="dimmed" mx={8}>
               &middot;
             </Text>
-            <MedplumLink color="dimmed" to={props.resource}>
+            <MedplumLink c="dimmed" to={props.resource}>
               {props.resource.resourceType}
             </MedplumLink>
           </Text>
@@ -54,7 +54,12 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         {popupMenuItems && (
           <Menu position="bottom-end" shadow="md" width={200}>
             <Menu.Target>
-              <ActionIcon radius="xl" aria-label={`Actions for ${getReferenceString(props.resource)}`}>
+              <ActionIcon
+                color="gray"
+                variant="subtle"
+                radius="xl"
+                aria-label={`Actions for ${getReferenceString(props.resource)}`}
+              >
                 <IconDots />
               </ActionIcon>
             </Menu.Target>

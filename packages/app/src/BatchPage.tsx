@@ -129,7 +129,7 @@ export function BatchPage(): JSX.Element {
 
             <Tabs.Panel value="upload" pt="xs">
               <Dropzone onDrop={handleFiles} accept={['application/json']}>
-                <Group position="center" spacing="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
+                <Group justify="center" gap="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
                   <Dropzone.Accept>
                     <IconUpload size={50} stroke={1.5} color={theme.colors[theme.primaryColor][5]} />
                   </Dropzone.Accept>
@@ -157,11 +157,12 @@ export function BatchPage(): JSX.Element {
                 <JsonInput
                   data-testid="batch-input"
                   name="input"
+                  autosize
                   minRows={20}
                   defaultValue={DEFAULT_VALUE}
                   deserialize={JSON.parse}
                 />
-                <Group position="right" mt="xl" noWrap>
+                <Group justify="flex-end" mt="xl" wrap="nowrap">
                   <Button type="submit">Submit</Button>
                 </Group>
               </Form>
@@ -186,7 +187,7 @@ export function BatchPage(): JSX.Element {
               </Tabs.Panel>
             ))}
           </Tabs>
-          <Group position="right" mt="xl" noWrap>
+          <Group justify="flex-end" mt="xl" wrap="nowrap">
             <Button onClick={() => setOutput({})}>Start over</Button>
           </Group>
         </>

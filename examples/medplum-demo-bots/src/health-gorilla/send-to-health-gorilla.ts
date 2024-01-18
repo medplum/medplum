@@ -8,6 +8,7 @@ import {
   MedplumClient,
   setIdentifier,
   SNOMED,
+  append,
 } from '@medplum/core';
 import {
   Account,
@@ -454,13 +455,6 @@ async function checkAbn(
   }
 }
 
-function append<T>(array: T[] | undefined, value: T): T[] {
-  if (!array) {
-    return [value];
-  }
-  return [...array, value];
-}
-
 class HealthGorillaRequestGroupBuilder {
   practitioner?: Practitioner;
   practitionerOrganization?: Organization;
@@ -599,7 +593,7 @@ class HealthGorillaRequestGroupBuilder {
         const coverageRef = accountCoverage?.coverage;
         if (coverageRef) {
           const medplumCoverage = await medplum.readReference(coverageRef);
-          const resultCoverage: Coverage = {
+          const resultCoverage: Partial<Coverage> = {
             ...medplumCoverage,
             id: 'coverage' + this.coverages.length,
             beneficiary: createReference(this.patient),
@@ -608,7 +602,7 @@ class HealthGorillaRequestGroupBuilder {
           };
 
           ((resultAccount.coverage as AccountCoverage[])[i].coverage as Reference).reference = '#' + resultCoverage.id;
-          this.coverages = append(this.coverages, resultCoverage);
+          this.coverages = append(this.coverages, resultCoverage as Coverage);
 
           if (medplumCoverage.payor) {
             for (const payorRef of medplumCoverage.payor) {

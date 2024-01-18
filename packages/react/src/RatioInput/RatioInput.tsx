@@ -26,7 +26,7 @@ export function RatioInput(props: RatioInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       <QuantityInput
         name={props.name + '-numerator'}
         defaultValue={value?.numerator}

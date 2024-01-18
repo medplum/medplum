@@ -1,8 +1,9 @@
+import { AppShell as MantineAppShell } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Logo } from '../Logo/Logo';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Header } from './Header';
 
 const medplum = new MockClient();
@@ -14,7 +15,9 @@ async function setup(initialUrl = '/'): Promise<void> {
     render(
       <MemoryRouter initialEntries={[initialUrl]} initialIndex={0}>
         <MedplumProvider medplum={medplum} navigate={navigateMock}>
-          <Header logo={<Logo size={24} />} version="test.version" navbarToggle={closeMock} />
+          <MantineAppShell>
+            <Header logo={<Logo size={24} />} version="test.version" navbarToggle={closeMock} />
+          </MantineAppShell>
         </MedplumProvider>
       </MemoryRouter>
     );

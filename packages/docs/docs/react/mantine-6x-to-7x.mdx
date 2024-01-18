@@ -1,0 +1,100 @@
+---
+sidebar_position: 9
+---
+
+# Mantine 6.x to 7.x
+
+[Mantine 7.0](https://mantine.dev/changelog/7-0-0/) is a major release that introduces breaking changes. This guide will help you to migrate your application from Mantine 6.x to 7.x.
+
+The main change in Mantine 7.0 is the removal of all CSS-in-JS dependencies. Mantine now uses CSS variables to style components. This change improves performance, reduces bundle size of the library and allows using Mantine in environments where CSS-in-JS is not supported (or supported with limitations), for example, Next.js app directory.
+
+This guide is a Medplum-specific supplement to the [official Mantine migration guide](https://mantine.dev/guides/6x-to-7x/).
+
+## Dependency Upgrades
+
+The first step is to upgrade all Mantine dependencies to 7.x version. In your `package.json` file(s), replace all Mantine dependencies with `^7.0.0` version:
+
+```diff
+- "@mantine/core": "6.0.21",
++ "@mantine/core": "7.3.2",
+```
+
+## Replace Emotion with PostCSS
+
+You can now remove all Emotion dependencies from your project. Mantine now uses PostCSS to generate styles, so you can remove `@emotion/react` and `@emotion/styled` dependencies:
+
+```diff
+- "@emotion/babel-plugin": "11.11.0",
+- "@emotion/react": "^11.11.1",
+- "@emotion/server": "11.11.0",
++ "postcss": "8.4.31",
++ "postcss-preset-mantine": "1.11.0",
+```
+
+Create a `postcss.config.mjs` file in the root of your project:
+
+```javascript
+import mantinePreset from 'postcss-preset-mantine';
+import simpleVars from 'postcss-simple-vars';
+
+const config = {
+  plugins: [
+    mantinePreset(),
+    simpleVars({
+      variables: {
+        'mantine-breakpoint-xs': '36em',
+        'mantine-breakpoint-sm': '48em',
+        'mantine-breakpoint-md': '62em',
+        'mantine-breakpoint-lg': '75em',
+        'mantine-breakpoint-xl': '88em',
+      },
+    }),
+  ],
+};
+
+export default config;
+```
+
+And finally, import the Mantine and Medplum CSS files in your application entry point:
+
+```diff
++ import '@mantine/core/styles.css';
++ import '@medplum/react/styles.css';
+```
+
+## createStyles
+
+The `createStyles` function is no longer available in Mantine 7.0. Use CSS Modules instead.
+
+```tsx
+// 6.x
+import { createStyles } from '@mantine/core';
+
+const useStyles = createStyles((theme) => ({
+  root: {
+    backgroundColor: theme.colors.red[5],
+  },
+}));
+```
+
+```css
+/* 7.0 */
+.root {
+  background-color: var(--mantine-color-red-5);
+}
+```
+
+This can be a time consuming change. To assist with the migration, consider using the [mantine6to7](https://github.com/codyebberson/mantine6to7) tool to automatically convert your `createStyles` to CSS Modules.
+
+## Other Prop Changes
+
+Many components have changed props. Most of these changes are minor, but they are breaking changes.
+
+For example:
+
+```diff
+- <Stack spacing="xl">
++ <Stack gap="xl">
+```
+
+You can find a list of all changes in the [changelog](https://mantine.dev/changelog/7-0-0/).

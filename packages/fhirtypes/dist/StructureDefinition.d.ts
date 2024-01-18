@@ -107,7 +107,7 @@ export interface StructureDefinition {
    * SHALL remain the same when the structure definition is stored on
    * different servers.
    */
-  url?: string;
+  url: string;
 
   /**
    * A formal identifier that is used to identify this structure definition
@@ -132,7 +132,7 @@ export interface StructureDefinition {
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * A short, descriptive, user-friendly title for the structure
@@ -144,7 +144,7 @@ export interface StructureDefinition {
    * The status of this structure definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this structure definition is authored
@@ -232,7 +232,7 @@ export interface StructureDefinition {
   /**
    * Defines the kind of structure that this definition is describing.
    */
-  kind?: 'primitive-type' | 'complex-type' | 'resource' | 'logical';
+  kind: 'primitive-type' | 'complex-type' | 'resource' | 'logical';
 
   /**
    * Whether structure this definition describes is abstract or not  - that
@@ -240,7 +240,7 @@ export interface StructureDefinition {
    * Resources and Data types, abstract types will never be exchanged
    * between systems.
    */
-  abstract?: boolean;
+  abstract: boolean;
 
   /**
    * Identifies the types of resource or data type elements to which the
@@ -266,7 +266,7 @@ export interface StructureDefinition {
    * to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are
    * only allowed in logical models.
    */
-  type?: string;
+  type: string;
 
   /**
    * An absolute URI that is the base structure from which this type is
@@ -337,13 +337,13 @@ export interface StructureDefinitionContext {
    * Defines how to interpret the expression that defines what the context
    * of the extension is.
    */
-  type?: 'fhirpath' | 'element' | 'extension';
+  type: 'fhirpath' | 'element' | 'extension';
 
   /**
    * An expression that defines where an extension can be used in
    * resources.
    */
-  expression?: string;
+  expression: string;
 }
 
 /**
@@ -390,7 +390,7 @@ export interface StructureDefinitionDifferential {
   /**
    * Captures constraints on each element within the resource.
    */
-  element?: ElementDefinition[];
+  element: ElementDefinition[];
 }
 
 /**
@@ -437,7 +437,7 @@ export interface StructureDefinitionMapping {
    * An Internal id that is used to identify this mapping set when specific
    * mappings are made.
    */
-  identity?: string;
+  identity: string;
 
   /**
    * An absolute URI that identifies the specification that this mapping is
@@ -501,5 +501,5 @@ export interface StructureDefinitionSnapshot {
   /**
    * Captures constraints on each element within the resource.
    */
-  element?: ElementDefinition[];
+  element: ElementDefinition[];
 }

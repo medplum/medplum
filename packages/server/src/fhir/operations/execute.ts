@@ -21,6 +21,7 @@ import {
   Organization,
   Project,
   ProjectMembership,
+  ProjectSecret,
   Reference,
   Subscription,
 } from '@medplum/fhirtypes';
@@ -35,6 +36,7 @@ import { getConfig } from '../../config';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { globalLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
+import { incrementCounter } from '../../otel/otel';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createAuditEventEntities } from '../../workers/utils';
@@ -165,6 +167,10 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
       result = { success: false, logResult: 'Unsupported bot runtime' };
     }
   }
+
+  const attributes = { project: bot.meta?.project, bot: bot.id };
+  incrementCounter('medplum.bot.execute', attributes);
+  incrementCounter(result.success ? 'medplum.bot.execute.success' : 'medplum.bot.execute.failure', attributes);
 
   await createAuditEvent(
     request,
@@ -485,7 +491,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
   return accessToken;
 }
 
-async function getBotSecrets(bot: Bot): Promise<Record<string, string>> {
+async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSecret>> {
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
   return secrets;

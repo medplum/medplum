@@ -1,10 +1,10 @@
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { Notifications, notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -12,7 +12,7 @@ function setup(): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-        <MantineProvider withGlobalStyles withNormalizeCSS>
+        <MantineProvider>
           <Notifications />
           <AppRoutes />
         </MantineProvider>
@@ -24,6 +24,10 @@ function setup(): void {
 describe('SuperAdminPage', () => {
   beforeEach(() => {
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
+  });
+
+  afterEach(async () => {
+    await act(async () => notifications.clean());
   });
 
   test('Rebuild StructureDefinitions', async () => {

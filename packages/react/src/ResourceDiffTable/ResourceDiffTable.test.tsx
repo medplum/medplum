@@ -1,7 +1,7 @@
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '../test-utils/render';
 import { ResourceDiffTable, ResourceDiffTableProps } from './ResourceDiffTable';
 
 const medplum = new MockClient();
@@ -44,11 +44,11 @@ describe('ResourceDiffTable', () => {
 
     const removed = screen.getByText('false');
     expect(removed).toBeDefined();
-    expect(removed).toHaveStyle('color: rgb(240, 62, 62);');
+    expect(removed).toHaveClass('removed');
 
     const added = screen.getByText('true');
     expect(added).toBeDefined();
-    expect(added).toHaveStyle('color: rgb(55, 178, 77);');
+    expect(added).toHaveClass('added');
 
     // ID and meta should not be shown
     expect(screen.queryByText('ID')).toBeNull();

@@ -12,8 +12,8 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
-import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
+import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -52,6 +52,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
     const newResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
       item: mergedItems,
     };
 

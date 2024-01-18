@@ -1,6 +1,6 @@
 import { Anchor, Button, Collapse, Flex, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getTypedPropertyValue, TypedValue } from '@medplum/core';
+import { TypedValue, getTypedPropertyValue } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItem, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, ResourcePropertyDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
@@ -135,8 +135,8 @@ function ItemRow(props: { item: QuestionnaireResponseItem }): JSX.Element | null
   const propertyName = itemValue.type;
   return (
     <Flex justify="space-between" mb={12}>
-      <Text w={'50%'}>{item.text}</Text>
-      <Text align="right">
+      <Text w="50%">{item.text}</Text>
+      <Text ta="right">
         <ResourcePropertyDisplay value={itemValue.value} propertyType={propertyName} />
       </Text>
     </Flex>

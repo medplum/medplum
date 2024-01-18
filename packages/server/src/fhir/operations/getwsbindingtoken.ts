@@ -6,7 +6,7 @@ import { getAuthenticatedContext } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
 import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
-import { sendResponse } from '../routes';
+import { sendResponse } from '../response';
 
 const ONE_HOUR = 60 * 60 * 1000;
 

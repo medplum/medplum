@@ -9,10 +9,10 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
+import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
-import { sendResponse } from '../routes';
-import { getAuthenticatedContext } from '../../context';
+import { sendResponse } from '../response';
 
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html

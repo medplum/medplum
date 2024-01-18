@@ -10,7 +10,7 @@ interface SearchExportDialogProps {
 export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element | null {
   return (
     <Modal title="Export" closeButtonProps={{ 'aria-label': 'Close' }} opened={props.visible} onClose={props.onCancel}>
-      <Box display="flex" sx={{ justifyContent: 'space-between' }}>
+      <Box display="flex" style={{ justifyContent: 'space-between' }}>
         {props.exportCsv && <ExportButton text="CSV" exportLogic={props.exportCsv} onCancel={props.onCancel} />}
         {props.exportTransactionBundle && (
           <ExportButton
@@ -20,7 +20,7 @@ export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element 
           />
         )}
       </Box>
-      <Text sx={{ marginTop: '10px', marginLeft: '2px' }}>Limited to 1000 records</Text>
+      <Text style={{ marginTop: '10px', marginLeft: '2px' }}>Limited to 1000 records</Text>
     </Modal>
   );
 }

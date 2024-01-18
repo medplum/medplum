@@ -30,7 +30,11 @@ This page describes Medplum's optional OpenTelemetry support, and how to integra
 
 When running on localhost, OpenTelemetry is disabled by default. To enable OpenTelemetry, follow these steps:
 
-#### 1. Start the OpenTelemetry Collector
+#### 1. Start an OpenTelemetry Collector
+
+If you already have a running OpenTelemetry Collector, you can skip this step.
+
+Start the default OpenTelemetry Collector using Docker:
 
 On Mac/Linux:
 
@@ -46,13 +50,13 @@ docker run -p 4317:4317 -p 4318:4318 --rm -v %cd%\collector-config.yaml:/etc/ote
 
 #### 2. Add the OpenTelemetry config settings
 
-Update the `medplum.config.json` file or your custom config JSON file with the following values:
+OpenTelemetry cannot be configured through the normal `medplum.config.json` file, because it instruments Node.js and dependencies.
 
-```js
-  // HTTP endpoint of the OpenTelemetry trace collector
-  otlpTraceEndpoint: "http://localhost:4318/v1/traces",
-  // HTTP endpoint of the OpenTelemetry metrics collector
-  otlpMetricsEndpoint: "http://localhost:4318/v1/metrics",
+Instead, you must add the following environment variables:
+
+```bash
+export OTLP_TRACES_ENDPOINT="http://localhost:4318/v1/traces"
+export OTLP_METRICS_ENDPOINT="http://localhost:4318/v1/metrics"
 ```
 
 #### 3. Restart the Medplum server
@@ -65,11 +69,21 @@ First, make sure you go through all steps in [Install on AWS](/docs/self-hosting
 
 Use the Medplum "additional containers" feature to add the AWS CloudWatch Agent as an OpenTelemetry collector.
 
+Next, add the following to your Medplum CDK JSON config file:
+
+1. Environment variables as described above
+2. "Additional containers" for the AWS OpenTelemetry collector ("ADOT Collector")
+
 ```js
 {
   "name": "staging",
   "region": "us-east-1",
   "stackName": "MedplumStagingStack",
+  // ...
+  "environment": {
+    "OTLP_TRACES_ENDPOINT": "http://localhost:4318/v1/traces",
+    "OTLP_METRICS_ENDPOINT": "http://localhost:4318/v1/metrics"
+  },
   // ...
   "additionalContainers": [
     {

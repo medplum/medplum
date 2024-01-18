@@ -168,7 +168,10 @@ describe('FHIRCast routes', () => {
     let contextRes;
 
     const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-open', [
-      { key: 'report', resource: { id: 'def-456', resourceType: 'DiagnosticReport' } },
+      {
+        key: 'report',
+        resource: { id: 'def-456', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+      },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ]);
     const publishRes = await request(app)
@@ -200,7 +203,10 @@ describe('FHIRCast routes', () => {
     let afterContextRes;
 
     const context = [
-      { key: 'report', resource: { id: 'def-456', resourceType: 'DiagnosticReport' } },
+      {
+        key: 'report',
+        resource: { id: 'def-456', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+      },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-open'>[];
 
@@ -248,8 +254,11 @@ describe('FHIRCast routes', () => {
 
   test('Check for `context.versionId` on `DiagnosticReport-open`', async () => {
     const context = [
-      { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
-      { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
+      {
+        key: 'report',
+        resource: { id: 'abc-123', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+      },
+      { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy', status: 'available', subject: {} } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-open'>[];
 
@@ -273,8 +282,11 @@ describe('FHIRCast routes', () => {
 
   test('`DiagnosticReport-update`: `context.priorVersionId` matches prior `context.versionId`', async () => {
     const context = [
-      { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
-      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle' } },
+      {
+        key: 'report',
+        resource: { id: 'abc-123', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+      },
+      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'searchset' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
 
     const versionId = randomUUID();

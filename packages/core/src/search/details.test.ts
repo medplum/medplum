@@ -2,7 +2,7 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { getSearchParameterDetails, SearchParameterType } from './details';
+import { SearchParameterType, getSearchParameterDetails } from './details';
 
 const searchParamsBundle = readJson('fhir/r4/search-parameters.json');
 const medplumSearchParamsBundle = readJson('fhir/r4/search-parameters-medplum.json');
@@ -74,7 +74,7 @@ describe('SearchParameterDetails', () => {
       code: 'test',
       type: 'string',
       expression: 'OtherType.test',
-    };
+    } as SearchParameter;
 
     const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
@@ -87,7 +87,7 @@ describe('SearchParameterDetails', () => {
       code: 'unknown',
       type: 'string',
       expression: 'Patient.unknown',
-    };
+    } as SearchParameter;
 
     expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
   });
@@ -98,7 +98,7 @@ describe('SearchParameterDetails', () => {
       code: 'name-unknown',
       type: 'string',
       expression: 'Patient.name.select()',
-    };
+    } as SearchParameter;
 
     expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
   });
@@ -109,7 +109,7 @@ describe('SearchParameterDetails', () => {
       code: 'unhandled-function',
       type: 'string',
       expression: 'Patient.name.unknown',
-    };
+    } as SearchParameter;
 
     expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
   });

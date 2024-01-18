@@ -74,6 +74,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { AddressTable } from './lookups/address';
+import { CodingTable } from './lookups/coding';
 import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
@@ -81,8 +82,9 @@ import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
 import { validateReferences } from './references';
+import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { buildSearchExpression, getFullUrl, searchImpl } from './search';
+import { buildSearchExpression, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery } from './sql';
 
 /**
@@ -168,6 +170,7 @@ const lookupTables: LookupTable<unknown>[] = [
   new TokenTable(),
   new ValueSetElementTable(),
   new ReferenceTable(),
+  new CodingTable(),
 ];
 
 /**

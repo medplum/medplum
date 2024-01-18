@@ -11,7 +11,7 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
  * @returns The resolved resource.
  */
 export function useResource<T extends Resource>(
-  value: Reference<T> | T | undefined,
+  value: Reference<T> | Partial<T> | undefined,
   setOutcome?: (outcome: OperationOutcome) => void
 ): T | undefined {
   const medplum = useMedplum();
@@ -68,11 +68,11 @@ export function useResource<T extends Resource>(
  */
 function getInitialResource<T extends Resource>(
   medplum: MedplumClient,
-  value: Reference<T> | T | undefined
+  value: Reference<T> | Partial<T> | undefined
 ): T | undefined {
   if (value) {
     if (isResource(value)) {
-      return value;
+      return value as T;
     }
 
     if (isReference(value)) {

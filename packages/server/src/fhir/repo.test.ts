@@ -5,11 +5,14 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  ProjectMembership,
   Questionnaire,
   ResourceType,
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -17,8 +20,6 @@ import { getClient } from '../database';
 import { bundleContains, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 
 jest.mock('hibp');
 jest.mock('ioredis');
@@ -35,7 +36,7 @@ describe('FHIR Repo', () => {
 
   test('getRepoForLogin', async () => {
     await expect(() =>
-      getRepoForLogin({ resourceType: 'Login' }, { resourceType: 'ProjectMembership' })
+      getRepoForLogin({ resourceType: 'Login' } as Login, { resourceType: 'ProjectMembership' } as ProjectMembership)
     ).rejects.toThrow('Invalid author reference');
   });
 
@@ -445,7 +446,7 @@ describe('FHIR Repo', () => {
       const result1 = await registerNew(registration1);
       expect(result1.profile).toBeDefined();
 
-      const repo1 = await getRepoForLogin({ resourceType: 'Login' }, result1.membership);
+      const repo1 = await getRepoForLogin({ resourceType: 'Login' } as Login, result1.membership);
       const patient1 = await repo1.createResource<Patient>({
         resourceType: 'Patient',
       });
@@ -468,7 +469,7 @@ describe('FHIR Repo', () => {
       const result2 = await registerNew(registration2);
       expect(result2.profile).toBeDefined();
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' }, result2.membership);
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, result2.membership);
       try {
         await repo2.readResource('Patient', patient1.id as string);
         fail('Should have thrown');

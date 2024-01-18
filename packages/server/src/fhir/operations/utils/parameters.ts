@@ -16,14 +16,14 @@ import {
   ParametersParameter,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { sendResponse } from '../../routes';
 import { sendOutcome } from '../../outcomes';
+import { sendResponse } from '../../response';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
     // Convert the parameters to input
     const parameters = (input as Parameters).parameter ?? [];
-    return Object.fromEntries(parameters.map((p) => [p.name, p.valueString]));
+    return Object.fromEntries(parameters.map((p) => [p.name, p.valueString])) as T;
   } else {
     return input as T;
   }
@@ -37,50 +37,65 @@ export function parseParameters<T>(input: T | Parameters): T {
  * @returns A dictionary of parameter names to values.
  */
 export function parseInputParameters<T>(operation: OperationDefinition, req: Request): T {
-  const parsed = Object.create(null);
   if (!operation.parameter) {
-    return parsed;
+    return {} as any;
   }
 
   const input = req.body;
-  const inputParameters = input.resourceType === 'Parameters' ? (input as Parameters) : undefined;
-  if (inputParameters) {
-    validateResource(inputParameters);
-  }
-  for (const param of operation.parameter.filter((p) => p.use === 'in')) {
-    const paramName = param.name as string;
-    const min = param.min ?? 0;
-    const max = parseInt(param.max ?? '1', 10);
-    let value: any;
-    if (inputParameters) {
-      // FHIR spec-compliant case: Parameters resource e.g.
-      // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
-      const inParam = inputParameters.parameter?.filter((p) => p.name === param.name);
-      value = inParam?.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
-    } else {
-      // Fallback case: Plain JSON Object e.g.
-      // { message: 'Hello!' }
-      value = input[paramName];
+  const inputParameters = operation.parameter.filter((p) => p.use === 'in');
+  if (input.resourceType === 'Parameters') {
+    if (!input.parameter) {
+      return {} as any;
     }
+    validateResource(input as Parameters);
+    return parseParams(inputParameters, input.parameter) as any;
+  } else {
+    return Object.fromEntries(
+      inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name as string])])
+    ) as any;
+  }
+}
 
-    // Check parameter cardinality (min and max)
-    if (Array.isArray(value)) {
-      if (value.length < min || value.length > max) {
-        throw new OperationOutcomeError(
-          badRequest(
-            `Expected ${min === max ? max : min + '..' + max} value${
-              min > 1 ? 's' : ''
-            } for input parameter ${paramName}, but ${value.length} provided`
-          )
-        );
-      }
-    } else if (min > 0 && isEmpty(value)) {
+function validateInputParam(param: OperationDefinitionParameter, value: any): any {
+  // Check parameter cardinality (min and max)
+  const min = param.min ?? 0;
+  const max = parseInt(param.max ?? '1', 10);
+  if (Array.isArray(value)) {
+    if (value.length < min || value.length > max) {
       throw new OperationOutcomeError(
-        badRequest(`Expected ${min > 1 ? 'at least' + min + ' values for' : 'required'} input parameter '${paramName}'`)
+        badRequest(
+          `Expected ${min === max ? max : min + '..' + max} value(s) for input parameter ${param.name}, but ${
+            value.length
+          } provided`
+        )
       );
     }
+  } else if (min > 0 && isEmpty(value)) {
+    throw new OperationOutcomeError(
+      badRequest(`Expected at least ${min} value(s) for required input parameter '${param.name}'`)
+    );
+  }
 
-    parsed[paramName] = Array.isArray(value) && max === 1 ? value[0] : value;
+  return Array.isArray(value) && max === 1 ? value[0] : value;
+}
+
+function parseParams(
+  params: OperationDefinitionParameter[],
+  inputParameters: ParametersParameter[]
+): Record<string, any> {
+  const parsed: Record<string, any> = Object.create(null);
+  for (const param of params) {
+    // FHIR spec-compliant case: Parameters resource e.g.
+    // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
+    const inParams = inputParameters.filter((p) => p.name === param.name);
+    let value: any;
+    if (param.part?.length) {
+      value = inParams.map((input) => parseParams(param.part as [], input.part ?? []));
+    } else {
+      value = inParams?.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
+    }
+
+    parsed[param.name as string] = validateInputParam(param, value);
   }
 
   return parsed;

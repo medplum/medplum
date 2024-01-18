@@ -51,12 +51,12 @@ export interface PasswordChangeRequest {
   /**
    * The user requesting the password change.
    */
-  user?: Reference<User>;
+  user: Reference<User>;
 
   /**
    * Secret string used to verify the identity of the user.
    */
-  secret?: string;
+  secret: string;
 
   /**
    * Whether this request has been used, and is therefore no longer valid.

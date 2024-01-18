@@ -17,7 +17,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome>();
   return (
     <Stack>
-      <Center sx={{ flexDirection: 'column' }}>
+      <Center style={{ flexDirection: 'column' }}>
         <Logo size={32} />
         <Title order={3}>Choose profile</Title>
       </Center>
@@ -38,10 +38,10 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
           <Group>
             <Avatar radius="xl" />
             <div style={{ flex: 1 }}>
-              <Text size="sm" weight={500}>
+              <Text size="sm" fw={500}>
                 {membership.profile?.display}
               </Text>
-              <Text color="dimmed" size="xs">
+              <Text c="dimmed" size="xs">
                 {membership.project?.display}
               </Text>
             </div>

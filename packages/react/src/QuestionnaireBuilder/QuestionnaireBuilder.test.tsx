@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
 
@@ -603,7 +603,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.mouseOver(screen.getByText('Question 1'));
     });
 
-    expect(screen.getByTestId('question1')).toHaveStyle('border: 1.5px solid #339af0;');
+    expect(screen.getByTestId('question1')).toHaveClass('hovering');
 
     await act(async () => {
       fireEvent.mouseOver(document.body);

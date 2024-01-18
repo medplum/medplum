@@ -46,13 +46,13 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
   const isIdProperty = property?.path?.endsWith('.id');
   if (isIdProperty) {
     return (
-      <Box component="div" sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+      <Box component="div" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
         {value}
         {!isEmpty(value) && (
           <CopyButton value={value} timeout={2000}>
             {({ copied, copy }) => (
               <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow position="right">
-                <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy}>
+                <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
                   {copied ? <IconCheck size="1rem" /> : <IconCopy size="1rem" />}
                 </ActionIcon>
               </Tooltip>

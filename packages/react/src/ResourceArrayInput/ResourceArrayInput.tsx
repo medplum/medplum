@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Stack, createStyles } from '@mantine/core';
+import { ActionIcon, Button, Group, Stack } from '@mantine/core';
 import {
   InternalSchemaElement,
   getPathDisplayName,
@@ -14,19 +14,12 @@ import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { FormSection } from '../FormSection/FormSection';
 import { ElementDefinitionTypeInput, ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
+import classes from './ResourceArrayInput.module.css';
 import {
   SupportedSliceDefinition,
   assignValuesIntoSlices,
   isSupportedSliceDefinition,
 } from './ResourceArrayInput.utils';
-
-const useStyles = createStyles((theme) => ({
-  indented: {
-    marginTop: '0.5rem',
-    borderLeft: `3px solid ${theme.colors.gray[4]}`,
-    padding: '0.5rem 0 0.5rem 0.5rem',
-  },
-}));
 
 export interface ResourceArrayInputProps {
   property: InternalSchemaElement;
@@ -47,7 +40,6 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
   const [slicedValues, setSlicedValues] = useState<any[][]>([[]]);
-  const { classes } = useStyles();
 
   const propertyTypeCode = property.type[0]?.code;
   useEffect(() => {
@@ -148,7 +140,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
 
       {showNonSliceValues &&
         nonSliceValues.map((value, valueIndex) => (
-          <Group key={`${valueIndex}-${nonSliceValues.length}`} noWrap style={{ flexGrow: 1 }}>
+          <Group key={`${valueIndex}-${nonSliceValues.length}`} wrap="nowrap" style={{ flexGrow: 1 }}>
             <div style={{ flexGrow: 1 }}>
               <ResourcePropertyInput
                 arrayElement={true}
@@ -177,7 +169,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
           </Group>
         ))}
       {showNonSliceValues && slicedValues.flat().length < property.max && (
-        <Group noWrap style={{ justifyContent: 'flex-start' }}>
+        <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
           <AddButton
             propertyDisplayName={propertyDisplayName}
             onClick={(e: MouseEvent) => {
@@ -202,12 +194,12 @@ type SliceInputProps = Readonly<{
   outcome?: OperationOutcome;
   testId?: string;
 }>;
+
 function SliceInput(props: SliceInputProps): JSX.Element | null {
   const { slice, property } = props;
   const [values, setValues] = useState<any[]>(() => {
     return props.defaultValue.map((v) => v ?? {});
   });
-  const { classes } = useStyles();
 
   function setValuesWrapper(newValues: any[]): void {
     setValues(newValues);
@@ -233,7 +225,7 @@ function SliceInput(props: SliceInputProps): JSX.Element | null {
       <Stack className={indentedStack ? classes.indented : undefined}>
         {values.map((value, valueIndex) => {
           return (
-            <Group key={`${valueIndex}-${values.length}`} noWrap>
+            <Group key={`${valueIndex}-${values.length}`} wrap="nowrap">
               <div style={{ flexGrow: 1 }}>
                 <Stack>
                   {!isEmpty(slice.elements) ? (
@@ -284,7 +276,7 @@ function SliceInput(props: SliceInputProps): JSX.Element | null {
           );
         })}
         {values.length < slice.max && (
-          <Group noWrap style={{ justifyContent: 'flex-start' }}>
+          <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
             <AddButton
               propertyDisplayName={propertyDisplayName}
               onClick={(e: React.MouseEvent) => {
@@ -317,7 +309,7 @@ function AddButton({ propertyDisplayName, onClick, testId }: ButtonProps): JSX.E
       color="green.6"
       variant="subtle"
       data-testid={testId}
-      leftIcon={<IconCirclePlus size="1.25rem" />}
+      leftSection={<IconCirclePlus size="1.25rem" />}
       onClick={onClick}
     >
       {text}

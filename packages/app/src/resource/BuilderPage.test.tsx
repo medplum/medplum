@@ -1,12 +1,12 @@
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { Notifications, notifications } from '@mantine/notifications';
 import { PlanDefinition, Questionnaire } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -30,10 +30,14 @@ describe('BuilderPage', () => {
     });
   }
 
+  afterEach(async () => {
+    await act(async () => notifications.clean());
+  });
+
   test('PlanDefinition builder', async () => {
     const planDefinition = await medplum.createResource<PlanDefinition>({
       resourceType: 'PlanDefinition',
-    });
+    } as PlanDefinition);
 
     await setup(`/PlanDefinition/${planDefinition.id}/builder`);
     await waitFor(() => screen.getByRole('button', { name: 'Save' }));
@@ -48,7 +52,7 @@ describe('BuilderPage', () => {
   test('Questionnaire builder', async () => {
     const questionnaire = await medplum.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
-    });
+    } as Questionnaire);
 
     await setup(`/Questionnaire/${questionnaire.id}/builder`);
     await waitFor(() => screen.getByRole('button', { name: 'Save' }));

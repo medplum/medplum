@@ -12,7 +12,7 @@ export function AssaysPage(): JSX.Element {
   }
 
   return (
-    <Table withBorder withColumnBorders>
+    <Table withTableBorder withRowBorders withColumnBorders>
       <thead>
         <tr>
           <th>Category</th>

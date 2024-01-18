@@ -3,6 +3,7 @@ title: Address
 sidebar_position: 0
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/address.json';
@@ -10,19 +11,17 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Address
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/address">Address</a> Type: An address expressed using postal conventions (as opposed to GPS or other location definition formats). This data type may be used to convey addresses for use in delivering mail as well as for visiting locations which might not be valid for mail delivery. There are a variety of postal address formats defined around the world.
+Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/address">Address</Link> Type: An address expressed using postal conventions (as opposed to GPS or other location definition formats). This data type may be used to convey addresses for use in delivering mail as well as for visiting locations which might not be valid for mail delivery. There are a variety of postal address formats defined around the world.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

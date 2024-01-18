@@ -133,7 +133,7 @@ export interface Schedule {
    * Slots that reference this schedule resource provide the availability
    * details to these referenced resource(s).
    */
-  actor?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device | HealthcareService | Location>[];
+  actor: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device | HealthcareService | Location>[];
 
   /**
    * The period of time that the slots that reference this Schedule

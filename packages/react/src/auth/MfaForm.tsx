@@ -29,7 +29,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
       }}
     >
       <Stack>
-        <Center sx={{ flexDirection: 'column' }}>
+        <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
           <Title>Enter MFA code</Title>
         </Center>
@@ -41,7 +41,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
         <Stack>
           <TextInput name="token" label="MFA code" required />
         </Stack>
-        <Group position="right" mt="xl">
+        <Group justify="flex-end" mt="xl">
           <Button type="submit">Submit code</Button>
         </Group>
       </Stack>

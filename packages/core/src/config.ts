@@ -13,6 +13,7 @@ export type ExternalSecret<T extends ExternalSecretPrimitive = ExternalSecretPri
   type: TypeName<T>;
 };
 export type ValueOrExternalSecret<T extends ExternalSecretPrimitive> = T | ExternalSecret<T>;
+export type StringMap = { [key: string]: string };
 
 export interface MedplumSourceInfraConfig {
   name: ValueOrExternalSecret<string>;
@@ -72,6 +73,7 @@ export interface MedplumSourceInfraConfig {
     snsTopicArn?: ValueOrExternalSecret<string>;
     snsTopicName?: ValueOrExternalSecret<string>;
   };
+  environment?: StringMap;
 }
 
 export interface MedplumInfraConfig {
@@ -132,4 +134,5 @@ export interface MedplumInfraConfig {
     snsTopicArn?: string;
     snsTopicName?: string;
   };
+  environment?: StringMap;
 }

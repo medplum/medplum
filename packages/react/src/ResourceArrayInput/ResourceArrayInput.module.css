@@ -1,0 +1,5 @@
+.indented {
+  margin-top: 0.5rem;
+  border-left: 3px solid var(--mantine-color-gray-4);
+  padding: 0.5rem 0 0.5rem 0.5rem;
+}

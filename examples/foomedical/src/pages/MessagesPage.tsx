@@ -73,13 +73,13 @@ export function Messages(): JSX.Element {
     <Document width={800}>
       <Title>Messages</Title>
       <Divider my="xl" />
-      <Stack spacing="xl">
+      <Stack gap="xl">
         {messages.map((resource) => (
           <div key={resource.id}>
             <Group align="top">
               <ResourceAvatar size="lg" radius="xl" value={resource.sender?.resource as Practitioner} />
               <div>
-                <Text size="sm" weight={500}>
+                <Text size="sm" fw={500}>
                   <ResourceName value={resource.sender?.resource as Patient | Practitioner} />
                 </Text>
                 <Text size="xs" color="dimmed">
@@ -111,7 +111,7 @@ export function Messages(): JSX.Element {
               <ResourceAvatar size="lg" radius="xl" value={profile} />
               <Textarea name="contentString" style={{ flex: 1 }} placeholder="Add note" autosize />
             </Group>
-            <Group position="right" mt="md">
+            <Group justify="flex-end" mt="md">
               <Button type="submit">Send</Button>
             </Group>
           </Form>

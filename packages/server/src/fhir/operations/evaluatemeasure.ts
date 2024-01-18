@@ -9,10 +9,10 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { isFhirJsonContentType, sendResponse } from '../routes';
-import { getAuthenticatedContext } from '../../context';
+import { isFhirJsonContentType, sendResponse } from '../response';
 
 interface EvaluateMeasureParameters {
   readonly periodStart: string;
@@ -106,7 +106,7 @@ async function evaluateMeasure(
     resourceType: 'MeasureReport',
     status: 'complete',
     type: 'summary',
-    measure: measure.url,
+    measure: measure.url as string,
     date: new Date().toISOString(),
     period: {
       start: params.periodStart,

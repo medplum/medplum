@@ -170,7 +170,7 @@ export interface PlanDefinition {
    * The status of this plan definition. Enables tracking the life-cycle of
    * the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this plan definition is authored for
@@ -610,7 +610,7 @@ export interface PlanDefinitionActionCondition {
   /**
    * The kind of condition.
    */
-  kind?: 'applicability' | 'start' | 'stop';
+  kind: 'applicability' | 'start' | 'stop';
 
   /**
    * An expression that returns true or false, indicating whether the
@@ -725,7 +725,7 @@ export interface PlanDefinitionActionParticipant {
   /**
    * The type of participant in the action.
    */
-  type?: 'patient' | 'practitioner' | 'related-person' | 'device';
+  type: 'patient' | 'practitioner' | 'related-person' | 'device';
 
   /**
    * The role the participant should play in performing the described
@@ -778,12 +778,12 @@ export interface PlanDefinitionActionRelatedAction {
   /**
    * The element id of the related action.
    */
-  actionId?: string;
+  actionId: string;
 
   /**
    * The relationship of this action to the related action.
    */
-  relationship?: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
+  relationship: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
       'concurrent-with-end' | 'after-start' | 'after' | 'after-end';
 
   /**
@@ -852,7 +852,7 @@ export interface PlanDefinitionGoal {
    * objective of care, such as &quot;control blood pressure&quot; or &quot;negotiate an
    * obstacle course&quot; or &quot;dance with child at wedding&quot;.
    */
-  description?: CodeableConcept;
+  description: CodeableConcept;
 
   /**
    * Identifies the expected level of importance associated with

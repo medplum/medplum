@@ -138,7 +138,7 @@ export interface QuestionnaireResponse {
    * The position of the questionnaire response within its overall
    * lifecycle.
    */
-  status?: 'in-progress' | 'completed' | 'amended' | 'entered-in-error' | 'stopped';
+  status: 'in-progress' | 'completed' | 'amended' | 'entered-in-error' | 'stopped';
 
   /**
    * The subject of the questionnaire response.  This could be a patient,
@@ -221,7 +221,7 @@ export interface QuestionnaireResponseItem {
    * The item from the Questionnaire that corresponds to this item in the
    * QuestionnaireResponse resource.
    */
-  linkId?: string;
+  linkId: string;
 
   /**
    * A reference to an [ElementDefinition](elementdefinition.html) that

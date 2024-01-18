@@ -963,3 +963,11 @@ export function lazy<T>(fn: () => T): () => T {
     return result;
   };
 }
+
+export function append<T>(array: T[] | undefined, value: T): T[] {
+  if (!array) {
+    return [value];
+  }
+  array.push(value);
+  return array;
+}

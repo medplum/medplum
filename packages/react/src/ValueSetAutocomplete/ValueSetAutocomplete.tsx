@@ -86,11 +86,9 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       {...rest}
       creatable={creatable ?? true}
       clearable={clearable ?? true}
-      toKey={toKey}
       toOption={toOption}
       loadOptions={loadValues}
       onCreate={createValue}
-      getCreateLabel={creatable === false ? undefined : (query: any) => `+ Create ${query}`}
     />
   );
 }

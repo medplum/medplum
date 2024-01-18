@@ -14,7 +14,7 @@ interface MeasureProps {
 export function MeasureReportGroupDisplay(props: MeasureReportGroupDisplayProps): JSX.Element | null {
   const { group } = props;
   return (
-    <Paper withBorder radius="md" p="xs" display="flex" sx={{ alignItems: 'center', justifyContent: 'center' }}>
+    <Paper withBorder radius="md" p="xs" display="flex" style={{ alignItems: 'center', justifyContent: 'center' }}>
       <Group>
         {group.measureScore && <MeasureScore group={group} />}
         {!group.measureScore && <MeasureReportPopulation group={group} />}

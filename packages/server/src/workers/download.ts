@@ -181,7 +181,7 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     }
 
     const contentDisposition = response.headers.get('content-disposition') as string | undefined;
-    const contentType = response.headers.get('content-type') as string | undefined;
+    const contentType = response.headers.get('content-type') as string;
     const binary = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,

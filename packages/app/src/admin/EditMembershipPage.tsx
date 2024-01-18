@@ -73,7 +73,7 @@ export function EditMembershipPage(): JSX.Element {
                 onChange={(e) => setAdmin(e.currentTarget.checked)}
               />
             </FormSection>
-            <Group position="right" mt="xl">
+            <Group justify="flex-end" mt="xl">
               <Button type="submit">Save</Button>
               <Button type="button" color="red" variant="outline" onClick={deleteMembership}>
                 Remove user

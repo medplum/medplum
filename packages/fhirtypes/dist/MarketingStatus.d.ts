@@ -54,7 +54,7 @@ export interface MarketingStatus {
    * shall be specified It should be specified using the ISO 3166 ‑ 1
    * alpha-2 code elements.
    */
-  country?: CodeableConcept;
+  country: CodeableConcept;
 
   /**
    * Where a Medicines Regulatory Agency has granted a marketing
@@ -70,7 +70,7 @@ export interface MarketingStatus {
    * the medicinal product See ISO/TS 20443 for more information and
    * examples.
    */
-  status?: CodeableConcept;
+  status: CodeableConcept;
 
   /**
    * The date when the Medicinal Product is placed on the market by the
@@ -81,7 +81,7 @@ export interface MarketingStatus {
    * refers to the release of the Medicinal Product into the distribution
    * chain.
    */
-  dateRange?: Period;
+  dateRange: Period;
 
   /**
    * The date when the Medicinal Product is placed on the market by the

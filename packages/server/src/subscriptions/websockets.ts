@@ -5,7 +5,7 @@ import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
 import ws from 'ws';
 import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
-import { getFullUrl } from '../fhir/search';
+import { getFullUrl } from '../fhir/response';
 import { globalLogger } from '../logger';
 import { verifyJwt } from '../oauth/keys';
 import { getRedis } from '../redis';
@@ -110,7 +110,7 @@ export function createSubEventNotification<ResourceType extends Resource = Resou
           resourceType: 'SubscriptionStatus',
           status,
           type: 'event-notification',
-          subscription: createReference({ resourceType: 'Subscription', id: subscriptionId }),
+          subscription: { reference: `Subscription/${subscriptionId}` },
           notificationEvent: [{ eventNumber: '0', timestamp, focus: createReference(resource) }],
         },
       },

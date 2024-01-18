@@ -14,6 +14,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   // Create a Media, representing an attachment
   const media = await medplum.createResource({
     resourceType: 'Media',
+    status: 'completed',
     content: {
       contentType: 'application/pdf',
       url: 'Binary/' + binary.id,

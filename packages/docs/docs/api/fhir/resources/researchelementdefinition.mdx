@@ -3,6 +3,7 @@ title: ResearchElementDefinition
 sidebar_position: 116
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/researchelementdefinition.json';
@@ -10,12 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # ResearchElementDefinition
 
-The <a href="/docs/api/fhir/resources/researchelementdefinition">ResearchElementDefinition</a> resource describes a "PICO" element that knowledge (evidence, assertion, recommendation) is about.
+The <Link to="/docs/api/fhir/resources/researchelementdefinition">ResearchElementDefinition</Link> resource describes a "PICO" element that knowledge (evidence, assertion, recommendation) is about.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -25,20 +26,19 @@ The <a href="/docs/api/fhir/resources/researchelementdefinition">ResearchElement
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
-</TabItem>
+  </TabItem>
   <TabItem value="usage" label="Usage">
-    <div> <a name="bnc"></a>  <p><strong>This resource is a <em>definition</em> resource from a FHIR workflow perspective</strong> - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>, specifically <a href="https://www.hl7.org/fhir/workflow.html#definition">Definition</a>.</p>  <p>TODO</p>  </div>
-    </TabItem>
+<div> <a name="bnc"></a> <p><strong>This resource is a <em>definition</em> resource from a FHIR workflow perspective</strong> - see <a href="https://www.hl7.org/fhir/workflow.html">Workflow</a>, specifically <a href="https://www.hl7.org/fhir/workflow.html#definition">Definition</a>.</p> <p>TODO</p> </div>
+  </TabItem>
   <TabItem value="relationships" label="Relationships">
-    <div>  <p>TODO</p> </div>
-    </TabItem>
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/researchdefinition">ResearchDefinition</a></li></ul>
-    </TabItem>
+<div> <p>TODO</p> </div>
+  </TabItem>
 
+  <TabItem value="referencedBy" label="Referenced By">
+<ul><li><a href="/docs/api/fhir/resources/researchdefinition">ResearchDefinition</a></li></ul>
+  </TabItem>
 </Tabs>

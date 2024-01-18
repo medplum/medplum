@@ -1,0 +1,11 @@
+{
+  "label": "React Components",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "slug": "/tutorials/react",
+    "title": "React Components",
+    "description": "Learn about Medplum's React Component library",
+    "keywords": ["guides"]
+  }
+}

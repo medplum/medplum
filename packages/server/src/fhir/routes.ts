@@ -1,6 +1,5 @@
-import { allOk, ContentType, getStatus, isCreated, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
+import { allOk, ContentType, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
@@ -10,6 +9,7 @@ import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { agentPushHandler } from './operations/agentpush';
+import { codeSystemImportHandler } from './operations/codesystemimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
@@ -26,8 +26,7 @@ import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
-import { rewriteAttachments, RewriteMode } from './rewrite';
-import { getFullUrl } from './search';
+import { isFhirJsonContentType, sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -101,6 +100,9 @@ protectedRoutes.post('/ConceptMap/:id/([$]|%24)translate', asyncWrap(conceptMapT
 
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
+
+// CodeSystem $import operation
+protectedRoutes.post('/CodeSystem/([$]|%24)import', asyncWrap(codeSystemImportHandler));
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
@@ -215,21 +217,3 @@ protectedRoutes.use(
     }
   })
 );
-
-export function isFhirJsonContentType(req: Request): boolean {
-  return !!(req.is(ContentType.JSON) || req.is(ContentType.FHIR_JSON));
-}
-
-export async function sendResponse(res: Response, outcome: OperationOutcome, body: Resource): Promise<void> {
-  const ctx = getAuthenticatedContext();
-  if (body.meta?.versionId) {
-    res.set('ETag', `W/"${body.meta.versionId}"`);
-  }
-  if (body.meta?.lastUpdated) {
-    res.set('Last-Modified', new Date(body.meta.lastUpdated).toUTCString());
-  }
-  if (isCreated(outcome)) {
-    res.set('Location', getFullUrl(body.resourceType, body.id as string));
-  }
-  res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body));
-}

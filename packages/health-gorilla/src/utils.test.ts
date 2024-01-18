@@ -1,9 +1,8 @@
-import { ContentType, allOk } from '@medplum/core';
+import { ContentType, allOk, append } from '@medplum/core';
 import { RequestGroup } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   HealthGorillaConfig,
-  append,
   assertNotEmpty,
   checkAbn,
   connectToHealthGorilla,
@@ -103,7 +102,9 @@ describe('Health Gorilla utils', () => {
   test('checkAbn', async () => {
     const medplum = new MockClient();
     const healthGorilla = new MockClient();
-    const requestGroup = await healthGorilla.createResource<RequestGroup>({ resourceType: 'RequestGroup' });
+    const requestGroup = await healthGorilla.createResource<RequestGroup>({
+      resourceType: 'RequestGroup',
+    } as RequestGroup);
 
     healthGorilla.router.router.add('GET', 'RequestGroup/:id/$abn', async () => {
       return [allOk, { resourceType: 'Parameters', parameter: [{ name: 'url', valueString: 'https://example.com' }] }];

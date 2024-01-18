@@ -15,9 +15,8 @@ BRANCH_NAME="dep-upgrades-$DATE"
 git checkout -b "$BRANCH_NAME"
 
 # Exclude known problem packages
-# @mantine/* - holding back until the Mantine 7 migration is complete
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-EXCLUDE="@mantine/* node-fetch"
+EXCLUDE="node-fetch"
 
 npx npm-check-updates -u -x "$EXCLUDE" --packageFile package.json
 
@@ -46,4 +45,4 @@ git commit -m "Dependency upgrades"
 git push origin "$BRANCH_NAME"
 
 # Create pull request
-gh pr create --title "Dependency upgrades"
+gh pr create --title "Dependency upgrades" --body "Dependency upgrades"

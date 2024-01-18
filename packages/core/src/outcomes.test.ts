@@ -1,8 +1,10 @@
+import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import {
   accepted,
   allOk,
   assertOk,
   badRequest,
+  conflict,
   created,
   forbidden,
   getStatus,
@@ -65,6 +67,11 @@ describe('Outcomes', () => {
     });
   });
 
+  test('Conflict', () => {
+    expect(isOk(conflict('bad'))).toBe(false);
+    expect(conflict('bad').issue?.[0]?.details?.text).toBe('bad');
+  });
+
   test('Bad Request', () => {
     expect(isOk(badRequest('bad'))).toBe(false);
     expect(badRequest('bad', 'bad').issue?.[0]?.expression?.[0]).toBe('bad');
@@ -78,6 +85,7 @@ describe('Outcomes', () => {
     expect(getStatus(unauthorized)).toBe(401);
     expect(getStatus(forbidden)).toBe(403);
     expect(getStatus(notFound)).toBe(404);
+    expect(getStatus(conflict('bad'))).toBe(409);
     expect(getStatus(gone)).toBe(410);
     expect(getStatus(tooManyRequests)).toBe(429);
     expect(getStatus(badRequest('bad'))).toBe(400);
@@ -109,22 +117,25 @@ describe('Outcomes', () => {
   });
 
   test('operationOutcomeToString', () => {
-    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' })).toEqual('Unknown error');
+    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' } as OperationOutcome)).toEqual('Unknown error');
     expect(
-      operationOutcomeToString({ resourceType: 'OperationOutcome', issue: [{ details: { text: 'foo' } }] })
+      operationOutcomeToString({
+        resourceType: 'OperationOutcome',
+        issue: [{ details: { text: 'foo' } } as OperationOutcomeIssue],
+      })
     ).toEqual('foo');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
-        issue: [{ details: { text: 'foo' }, expression: ['bar'] }],
+        issue: [{ details: { text: 'foo' }, expression: ['bar'] } as OperationOutcomeIssue],
       })
     ).toEqual('foo (bar)');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
         issue: [
-          { details: { text: 'error1' }, expression: ['expr1'] },
-          { details: { text: 'error2' }, expression: ['expr2'] },
+          { details: { text: 'error1' }, expression: ['expr1'] } as OperationOutcomeIssue,
+          { details: { text: 'error2' }, expression: ['expr2'] } as OperationOutcomeIssue,
         ],
       })
     ).toEqual('error1 (expr1); error2 (expr2)');

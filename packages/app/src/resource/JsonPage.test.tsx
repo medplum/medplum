@@ -1,5 +1,5 @@
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { Notifications, notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -26,6 +26,10 @@ describe('JsonPage', () => {
       );
     });
   }
+
+  afterEach(async () => {
+    await act(async () => notifications.clean());
+  });
 
   test('JSON tab renders', async () => {
     await setup('/Practitioner/123/json');

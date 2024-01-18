@@ -1,26 +1,15 @@
-import { createStyles, Paper } from '@mantine/core';
+import { Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatSearchQuery, normalizeErrorString, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import classes from './HomePage.module.css';
 import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
 import { exportJsonFile } from './utils';
 
-const useStyles = createStyles((theme) => {
-  return {
-    paper: {
-      [`@media (max-width: ${theme.breakpoints.sm})`]: {
-        margin: 2,
-        padding: 4,
-      },
-    },
-  };
-});
-
 export function HomePage(): JSX.Element {
-  const { classes } = useStyles();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();

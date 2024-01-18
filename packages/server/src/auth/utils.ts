@@ -12,10 +12,10 @@ import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
+import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getClient, getMembershipsForLogin } from '../oauth/utils';
-import { sendOutcome } from '../fhir/outcomes';
 
 export async function createProfile(
   project: Project,
@@ -42,7 +42,7 @@ export async function createProfile(
       },
     ],
     telecom,
-  });
+  } as ProfileResource);
   ctx.logger.info('Created profile', { id: result.id });
   return result;
 }

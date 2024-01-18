@@ -1,5 +1,5 @@
 import { Identifier } from '@medplum/fhirtypes';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { IdentifierInput } from './IdentifierInput';
 
 describe('IdentifierInput', () => {

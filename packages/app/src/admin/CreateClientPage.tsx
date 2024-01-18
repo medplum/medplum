@@ -73,7 +73,7 @@ export function CreateClientPage(): JSX.Element {
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <Group position="right">
+            <Group justify="flex-end">
               <Button type="submit">Create Client</Button>
             </Group>
           </Stack>

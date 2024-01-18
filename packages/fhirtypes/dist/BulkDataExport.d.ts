@@ -45,12 +45,12 @@ export interface BulkDataExport {
   /**
    * The status of the request.
    */
-  status?: 'accepted' | 'active' | 'completed' | 'error';
+  status: 'accepted' | 'active' | 'completed' | 'error';
 
   /**
    * Indicates the server's time when the query is requested.
    */
-  requestTime?: string;
+  requestTime: string;
 
   /**
    * Indicates the server's time when the query is run. The response SHOULD
@@ -64,7 +64,7 @@ export interface BulkDataExport {
    * The full URL of the original Bulk Data kick-off request. In the case
    * of a POST request, this URL will not include the request parameters.
    */
-  request?: string;
+  request: string;
 
   /**
    * Indicates whether downloading the generated files requires the same
@@ -101,14 +101,14 @@ export interface BulkDataExportDeleted {
   /**
    * The FHIR resource type that is contained in the file.
    */
-  type?: ResourceType;
+  type: ResourceType;
 
   /**
    * The absolute path to the file. The format of the file SHOULD reflect
    * that requested in the _outputFormat parameter of the initial kick-off
    * request.
    */
-  url?: string;
+  url: string;
 }
 
 /**
@@ -120,14 +120,14 @@ export interface BulkDataExportError {
   /**
    * The FHIR resource type that is contained in the file.
    */
-  type?: ResourceType;
+  type: ResourceType;
 
   /**
    * The absolute path to the file. The format of the file SHOULD reflect
    * that requested in the _outputFormat parameter of the initial kick-off
    * request.
    */
-  url?: string;
+  url: string;
 }
 
 /**
@@ -140,12 +140,12 @@ export interface BulkDataExportOutput {
   /**
    * The FHIR resource type that is contained in the file.
    */
-  type?: ResourceType;
+  type: ResourceType;
 
   /**
    * The absolute path to the file. The format of the file SHOULD reflect
    * that requested in the _outputFormat parameter of the initial kick-off
    * request.
    */
-  url?: string;
+  url: string;
 }
