@@ -3,6 +3,7 @@ title: MedicationRequest
 sidebar_position: 78
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/medicationrequest.json';
@@ -13,9 +14,9 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 An order or request for both supply of the medication and the instructions for administration of the medication to a patient. The resource is called "MedicationRequest" rather than "MedicationPrescription" or "MedicationOrder" to generalize the use across inpatient and outpatient settings, including care plans, etc., and to harmonize with workflow patterns. Refer to the [US Core Medication Request profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-medicationrequest.html).
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -25,20 +26,20 @@ An order or request for both supply of the medication and the instructions for a
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
-</TabItem>
+  </TabItem>
   <TabItem value="usage" label="Usage">
-    <div> <a name="scope"></a>  <p>     This resource covers all type of orders for medications for a patient. This includes inpatient medication orders as well as community orders (whether filled by the prescriber or by a pharmacy). It also includes orders for over-the-counter medications (e.g. Aspirin), total parenteral nutrition and diet/ vitamin supplements. It may be used to support the order of medication-related devices. It is not intended for use in prescribing particular diets, or for ordering non-medication-related items (eyeglasses, supplies, etc.).  In addition, the <a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a> may be used to report orders/request from external systems that have been reported for informational purposes and are not authoritative and are not expected to be acted upon (e.g. dispensed or administered). </p>     <p>The <a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a> resource is a "request" resource from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html#request">Workflow Request.</a></p>   <p> The <a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a> resource allows requesting only a single medication. If a workflow requires requesting multiple items simultaneously, this is done using multiple instances of this resource. These instances can be linked in different ways, depending on the needs of the workflow. For guidance, refer to <a href="https://www.hl7.org/fhir/request.html#compound">the Request pattern</a> </p> </div>
-    </TabItem>
+<div> <a name="scope"></a> <p>     This resource covers all type of orders for medications for a patient. This includes inpatient medication orders as well as community orders (whether filled by the prescriber or by a pharmacy). It also includes orders for over-the-counter medications (e.g. Aspirin), total parenteral nutrition and diet/ vitamin supplements. It may be used to support the order of medication-related devices. It is not intended for use in prescribing particular diets, or for ordering non-medication-related items (eyeglasses, supplies, etc.).  In addition, the <Link to="/docs/api/fhir/resources/medicationrequest">MedicationRequest</Link> may be used to report orders/request from external systems that have been reported for informational purposes and are not authoritative and are not expected to be acted upon (e.g. dispensed or administered). </p>     <p>The <Link to="/docs/api/fhir/resources/medicationrequest">MedicationRequest</Link> resource is a "request" resource from a FHIR workflow perspective - see <a href="https://www.hl7.org/fhir/workflow.html#request">Workflow Request.</a></p> <p> The <Link to="/docs/api/fhir/resources/medicationrequest">MedicationRequest</Link> resource allows requesting only a single medication. If a workflow requires requesting multiple items simultaneously, this is done using multiple instances of this resource. These instances can be linked in different ways, depending on the needs of the workflow. For guidance, refer to <a href="https://www.hl7.org/fhir/request.html#compound">the Request pattern</a> </p> </div>
+  </TabItem>
   <TabItem value="relationships" label="Relationships">
-    <div> <a name="bnr"></a>      <p>The <a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a> resource is used to request or order medication for a subject. It may also be used to report a medication request or order from one organization or source to another.  When requesting supplies or devices when there is a patient focus or instructions regarding their use, <a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a> or <a href="/docs/api/fhir/resources/devicerequest">DeviceRequest</a> should be used instead.  When reporting on the usage of a medication by a patient, the <a href="https://www.hl7.org/fhir/medicationStatement.html">MedicationStatement</a>t resource should be used.</p> <p> <b>The <a href="/docs/api/fhir/resources/medication">Medication</a> domain includes a number of related resources</b> </p> <table border="1" cellpadding="1" cellspacing="2" frame="box">     <tbody><tr>         <td>MedicationRequest</td>         <td>An order for both supply of the medication and the instructions for administration of the medicine to a patient.</td>     </tr>     <tr>         <td><a href="/docs/api/fhir/resources/medicationdispense">MedicationDispense</a></td>         <td>Provision of a supply of a medication with the intention that it is subsequently consumed by a patient (usually in response to a prescription).  </td>     </tr>     <tr>         <td><a href="/docs/api/fhir/resources/medicationadministration">MedicationAdministration</a></td>         <td>When a patient actually consumes a medicine, or it is otherwise administered to them</td>     </tr>     <tr>         <td><a href="/docs/api/fhir/resources/medicationstatement">MedicationStatement</a></td>         <td>This is a record of medication being taken by a patient, or that the medication has been given to a patient where the record is the result of a report from the patient, or another clinician.           A medication statement is not a part of the prescribe-&gt;dispense-&gt;administer sequence but is a report that such a sequence (or at least a part of it) did take place resulting in a belief that the patient has received a particular medication.         </td>     </tr> </tbody></table> </div>
-    </TabItem>
-  
+<div> <a name="bnr"></a>     <p>The <Link to="/docs/api/fhir/resources/medicationrequest">MedicationRequest</Link> resource is used to request or order medication for a subject. It may also be used to report a medication request or order from one organization or source to another.  When requesting supplies or devices when there is a patient focus or instructions regarding their use, <a href="/docs/api/fhir/resources/supplyrequest">SupplyRequest</a> or <a href="/docs/api/fhir/resources/devicerequest">DeviceRequest</a> should be used instead.  When reporting on the usage of a medication by a patient, the <a href="https://www.hl7.org/fhir/medicationStatement.html">MedicationStatement</a>t resource should be used.</p> <p> <b>The <Link to="/docs/api/fhir/resources/medication">Medication</Link> domain includes a number of related resources</b> </p> <table border="1" cellpadding="1" cellspacing="2" frame="box">     <tbody><tr>         <td>MedicationRequest</td>         <td>An order for both supply of the medication and the instructions for administration of the medicine to a patient.</td>     </tr>     <tr>         <td><a href="/docs/api/fhir/resources/medicationdispense">MedicationDispense</a></td>         <td>Provision of a supply of a medication with the intention that it is subsequently consumed by a patient (usually in response to a prescription).  </td>     </tr>     <tr>         <td><a href="/docs/api/fhir/resources/medicationadministration">MedicationAdministration</a></td>         <td>When a patient actually consumes a medicine, or it is otherwise administered to them</td>     </tr>     <tr>         <td><a href="/docs/api/fhir/resources/medicationstatement">MedicationStatement</a></td>         <td>This is a record of medication being taken by a patient, or that the medication has been given to a patient where the record is the result of a report from the patient, or another clinician.           A medication statement is not a part of the prescribe-&gt;dispense-&gt;administer sequence but is a report that such a sequence (or at least a part of it) did take place resulting in a belief that the patient has received a particular medication.         </td>     </tr> </tbody></table> </div>
+  </TabItem>
+
   <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/careplan">CarePlan</a></li>
+<ul><li><a href="/docs/api/fhir/resources/careplan">CarePlan</a></li>
 <li><a href="/docs/api/fhir/resources/claim">Claim</a></li>
 <li><a href="/docs/api/fhir/resources/diagnosticreport">DiagnosticReport</a></li>
 <li><a href="/docs/api/fhir/resources/explanationofbenefit">ExplanationOfBenefit</a></li>
@@ -47,6 +48,5 @@ An order or request for both supply of the medication and the instructions for a
 <li><a href="/docs/api/fhir/resources/medicationstatement">MedicationStatement</a></li>
 <li><a href="/docs/api/fhir/resources/observation">Observation</a></li>
 <li><a href="/docs/api/fhir/resources/servicerequest">ServiceRequest</a></li></ul>
-    </TabItem>
-
+  </TabItem>
 </Tabs>

@@ -150,6 +150,7 @@ describe('FHIRPath utils', () => {
   test('Bundle entries', () => {
     const bundle: Bundle = {
       resourceType: 'Bundle',
+      type: 'searchset',
       entry: [
         {
           resource: {

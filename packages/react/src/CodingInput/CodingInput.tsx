@@ -23,7 +23,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
   return (
     <ValueSetAutocomplete
       defaultValue={value && codingToValueSetElement(value)}
-      maxSelectedValues={1}
+      maxValues={1}
       onChange={handleChange}
       {...rest}
     />

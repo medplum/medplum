@@ -53,7 +53,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
 
   return (
     <>
-      <Group position="apart">
+      <Group justify="space-between">
         <Text fz="md" fw={700}>
           Problem List
         </Text>
@@ -73,7 +73,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
             <Fragment key={problem.id}>
               <Grid.Col span={2}>{problem.onsetDateTime?.substring(0, 4)}</Grid.Col>
               <Grid.Col span={10}>
-                <Badge key={problem.id} maw="100%">
+                <Badge key={problem.id} variant="light" maw="100%">
                   <CodeableConceptDisplay value={problem.code} />
                 </Badge>
               </Grid.Col>
@@ -90,7 +90,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
             <TextInput name="onset" label="Dx Date" type="date" required />
             <NativeSelect name="status" label="Status" data={['active']} />
             <Textarea name="notes" label="Notes" />
-            <Group position="right" spacing={4} mt="md">
+            <Group justify="flex-end" gap={4} mt="md">
               <Button type="submit">Save</Button>
             </Group>
           </Stack>

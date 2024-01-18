@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, BundleEntryRequest, Resource } from '@medplum/fhirtypes';
 import { generateId } from './crypto';
 import { isReference } from './types';
 import { deepClone } from './utils';
@@ -94,7 +94,7 @@ export function reorderBundle(bundle: Bundle): Bundle {
       const putEntry: BundleEntry = {
         ...originalEntry,
         request: {
-          ...originalEntry.request,
+          ...(originalEntry.request as BundleEntryRequest),
           method: 'PUT',
         },
       };

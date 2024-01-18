@@ -1,0 +1,10 @@
+.titleSection {
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-1));
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-1));
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-md);
+}
+
+.title {
+  font-weight: 500;
+}

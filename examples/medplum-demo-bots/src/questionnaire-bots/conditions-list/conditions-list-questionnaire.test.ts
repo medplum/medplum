@@ -78,6 +78,7 @@ test('Success', async () => {
   const encounter = await medplum.createResource({
     resourceType: 'Encounter',
     status: 'in-progress',
+    class: { code: 'ambulatory' },
     subject: createReference(HomerSimpson),
     participant: [{ individual: createReference(DrAliceSmith) }], // Dr. Alice Smith is the Practitioner who performed the encounter
   });

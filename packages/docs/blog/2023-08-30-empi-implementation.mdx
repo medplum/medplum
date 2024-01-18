@@ -56,9 +56,9 @@ The first two are clearly the same person, but the third one is clearly someone 
 
 In addition to these patient records, we have clinical data associated with each one. So for Mr. Alex Smith, you can see that we have encounters that are linked to that patient. However, we've also gotten medication records in the form of medication requests, also known as prescriptions, but they're assigned to the second Alex Smith record from no, Mr.
 
-So, to trigger our pipeline, we'll first make a change to one of the patient records. She'll then kick off a search for any kind of matching records. Okay, so let's go off and go ahead and kick off this [deduplication pipeline](/docs/fhir-datastore/patient-deduplication#incremental-pipelines). So I'll make a change to Mr. Alex Smith and I'll give him a phone number. So let's just add a phone number here.
+So, to trigger our pipeline, we'll first make a change to one of the patient records. She'll then kick off a search for any kind of matching records. Okay, so let's go off and go ahead and kick off this [deduplication pipeline](/docs/fhir-datastore/patient-deduplication/ingestion#incremental-pipelines). So I'll make a change to Mr. Alex Smith and I'll give him a phone number. So let's just add a phone number here.
 
-We'll say, okay, this will kick off one of our bots. That will look through all patients to [find matches](/docs/fhir-datastore/patient-deduplication#matching-rules). Once it finds a match, it will create a task resource to review the potential duplicate.
+We'll say, okay, this will kick off one of our bots. That will look through all patients to [find matches](/docs/fhir-datastore/patient-deduplication/matching). Once it finds a match, it will create a task resource to review the potential duplicate.
 
 So let's, let's look at here. There's not much to the task. The real heart of the real resource that represents the candidate match will be the risk assessment resource, which we'll talk about in a second.
 
@@ -76,9 +76,9 @@ We're not gonna do anything with the address because they're the same. And for r
 
 The reason you might wanna do this is after you've done the deduplication, you might want to clean up the old data. However, right now we want to keep the old data round for posterity, so we'll click okay here. Now, if we go back to our patients, we'll see a couple things. We'll see that within these two records.
 
-The Alex Smith record has now become the [master record](/docs/fhir-datastore/patient-deduplication#master-record-structure). We see this because it is listed as active. True, but it's the original Mr. Alex Smith record no longer is active. We'll also see that there's this link field that says it replaces Mr. Alex Smith and the other way around Mr. Alice Smith is replaced by Alex Smith, so there's a bidirectional link there.
+The Alex Smith record has now become the [master record](/docs/fhir-datastore/patient-deduplication/merging#master-record-structure). We see this because it is listed as active. True, but it's the original Mr. Alex Smith record no longer is active. We'll also see that there's this link field that says it replaces Mr. Alex Smith and the other way around Mr. Alice Smith is replaced by Alex Smith, so there's a bidirectional link there.
 
-Additionally, we'll see that the [Encounter](/docs/api/fhir/resources/encounter) resources we had before have now been updated. To point from Mr. Alex Smith to Alex, our target resource. So all the clinical data has now been [merged to the target patient](/docs/fhir-datastore/patient-deduplication#combining-and-splitting-master-records). Let's go back to our risk assessments, which are our can matches, and let's look at Alex Smith to Mrs.
+Additionally, we'll see that the [Encounter](/docs/api/fhir/resources/encounter) resources we had before have now been updated. To point from Mr. Alex Smith to Alex, our target resource. So all the clinical data has now been [merged to the target patient](/docs/fhir-datastore/patient-deduplication/merging#combining-and-splitting-master-records). Let's go back to our risk assessments, which are our can matches, and let's look at Alex Smith to Mrs.
 
 Alex Smith. Now for this one, we know that they, a human, decide that they're not. The same patient. So we're gonna say, do not merge these records. Let's talk about this dunks. This will add each record to a list such that on the next time we do a match, we know not to make a candidate out of them. So in this case, we say Alex Smith does not, these are are called our **do not Match lists**.
 

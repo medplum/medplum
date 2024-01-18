@@ -15,8 +15,8 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
@@ -482,9 +482,12 @@ describe('ResourcePropertyInput', () => {
       property,
     });
 
-    const comboboxes = screen.getAllByRole('combobox');
-    expect(comboboxes).toHaveLength(1);
-    expect(comboboxes[0]).toBeInstanceOf(HTMLDivElement);
+    const comboboxes = screen.queryAllByRole('combobox');
+    expect(comboboxes).toHaveLength(0);
+
+    const searchBoxes = screen.getAllByRole('searchbox');
+    expect(searchBoxes).toHaveLength(1);
+    expect(searchBoxes[0]).toBeInstanceOf(HTMLInputElement);
   });
 
   test('Reference property multiple target types', async () => {
@@ -502,12 +505,16 @@ describe('ResourcePropertyInput', () => {
       ...defaultProps,
       name: 'subject',
       property,
+      defaultValue: { reference: 'Patient/123' },
     });
 
     const comboboxes = screen.getAllByRole('combobox');
-    expect(comboboxes).toHaveLength(2);
+    expect(comboboxes).toHaveLength(1);
     expect(comboboxes[0]).toBeInstanceOf(HTMLSelectElement);
-    expect(comboboxes[1]).toBeInstanceOf(HTMLDivElement);
+
+    const searchBoxes = screen.getAllByRole('searchbox');
+    expect(searchBoxes).toHaveLength(1);
+    expect(searchBoxes[0]).toBeInstanceOf(HTMLInputElement);
   });
 
   test('Type selector', async () => {

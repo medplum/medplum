@@ -70,7 +70,7 @@ export interface UserConfigurationMenu {
   /**
    * Title of the menu.
    */
-  title?: string;
+  title: string;
 
   /**
    * Shortcut links to URLs.
@@ -86,12 +86,12 @@ export interface UserConfigurationMenuLink {
   /**
    * The human friendly name of the link.
    */
-  name?: string;
+  name: string;
 
   /**
    * The URL target of the link.
    */
-  target?: string;
+  target: string;
 }
 
 /**
@@ -102,7 +102,7 @@ export interface UserConfigurationOption {
   /**
    * The unique identifier of the option.
    */
-  id?: string;
+  id: string;
 
   /**
    * Value of option - must be one of a constrained set of the data types
@@ -143,11 +143,11 @@ export interface UserConfigurationSearch {
   /**
    * The human friendly name of the link.
    */
-  name?: string;
+  name: string;
 
   /**
    * The rules that the server should use to determine which resources to
    * return.
    */
-  criteria?: string;
+  criteria: string;
 }

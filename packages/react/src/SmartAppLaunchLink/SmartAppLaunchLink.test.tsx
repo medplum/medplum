@@ -1,10 +1,9 @@
 import { createReference } from '@medplum/core';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ReactNode } from 'react';
-import { act } from 'react-dom/test-utils';
 import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SmartAppLaunchLink } from './SmartAppLaunchLink';
 
 const medplum = new MockClient();

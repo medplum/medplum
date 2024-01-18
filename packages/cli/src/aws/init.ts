@@ -6,13 +6,13 @@ import {
   ValidationMethod,
 } from '@aws-sdk/client-acm';
 import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
-import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'crypto';
-import { existsSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
-import readline from 'readline';
+import { existsSync } from 'fs';
+import { getConfigFileName, writeConfig } from '../utils';
+import { ask, checkOk, choose, chooseInt, closeTerminal, header, initTerminal, print, yesOrNo } from './terminal';
+import { getServerVersions, writeParameters } from './utils';
 
 type MedplumDomainType = 'api' | 'app' | 'storage';
 type MedplumDomainSetting = `${MedplumDomainType}DomainName`;
@@ -21,11 +21,9 @@ type MedplumDomainCertSetting = `${MedplumDomainType}SslCertArn`;
 const getDomainSetting = (domain: MedplumDomainType): MedplumDomainSetting => `${domain}DomainName`;
 const getDomainCertSetting = (domain: MedplumDomainType): MedplumDomainCertSetting => `${domain}SslCertArn`;
 
-let terminal: readline.Interface;
-
 export async function initStackCommand(): Promise<void> {
   const config = { apiPort: 8103, region: 'us-east-1' } as MedplumInfraConfig;
-  terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
+  initTerminal();
   header('MEDPLUM');
   print('This tool prepares the necessary prerequisites for deploying Medplum in your AWS account.');
   print('');
@@ -199,7 +197,8 @@ export async function initStackCommand(): Promise<void> {
   print('You can choose the image to use for the servers.');
   print('Docker images can be loaded from either Docker Hub or AWS ECR.');
   print('The default is the latest Medplum release.');
-  config.serverImage = await ask('Enter the server image:', 'medplum/medplum-server:latest');
+  const latestVersion = (await getServerVersions())[0] ?? 'latest';
+  config.serverImage = await ask('Enter the server image:', `medplum/medplum-server:${latestVersion}`);
   writeConfig(configFileName, config);
 
   header('SIGNING KEY');
@@ -269,10 +268,10 @@ export async function initStackCommand(): Promise<void> {
   if (await yesOrNo('Do you want to store these values in AWS Parameter Store?')) {
     await writeParameters(config.region, `/medplum/${config.name}/`, serverParams);
   } else {
-    const serverConfigFileName = configFileName.replace('.json', '.server.json');
+    const serverConfigFileName = getConfigFileName(config.name, true);
     writeConfig(serverConfigFileName, serverParams);
     print('Skipping AWS Parameter Store.');
-    print('Writing values to local config file: ' + serverConfigFileName);
+    print(`Writing values to local config file: ${serverConfigFileName}`);
     print('Please add these values to AWS Parameter Store manually.');
   }
 
@@ -293,103 +292,7 @@ export async function initStackCommand(): Promise<void> {
   print('');
   print('    https://www.medplum.com/docs/self-hosting/install-on-aws');
   print('');
-  terminal.close();
-}
-
-/**
- * Prints to stdout.
- * @param text - The text to print.
- */
-function print(text: string): void {
-  terminal.write(text + '\n');
-}
-
-/**
- * Prints a header with extra line spacing.
- * @param text - The text to print.
- */
-function header(text: string): void {
-  print('\n' + text + '\n');
-}
-
-/**
- * Prints a question and waits for user input.
- * @param text - The question text to print.
- * @param defaultValue - Optional default value.
- * @returns The selected value, or default value on empty selection.
- */
-function ask(text: string, defaultValue: string | number = ''): Promise<string> {
-  return new Promise((resolve) => {
-    terminal.question(text + (defaultValue ? ' (' + defaultValue + ')' : '') + ' ', (answer: string) => {
-      resolve(answer || defaultValue.toString());
-    });
-  });
-}
-
-/**
- * Prints a question and waits for user to choose one of the provided options.
- * @param text - The prompt text to print.
- * @param options - The list of options that the user can select.
- * @param defaultValue - Optional default value.
- * @returns The selected value, or default value on empty selection.
- */
-async function choose(text: string, options: (string | number)[], defaultValue = ''): Promise<string> {
-  const str = text + ' [' + options.map((o) => (o === defaultValue ? '(' + o + ')' : o)).join('|') + ']';
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const answer = (await ask(str)) || defaultValue;
-    if (options.includes(answer)) {
-      return answer;
-    }
-    print('Please choose one of the following options: ' + options.join(', '));
-  }
-}
-
-/**
- * Prints a question and waits for the user to choose a valid integer option.
- * @param text - The prompt text to print.
- * @param options - The list of options that the user can select.
- * @param defaultValue - Default value.
- * @returns The selected value, or default value on empty selection.
- */
-async function chooseInt(text: string, options: number[], defaultValue: number): Promise<number> {
-  return parseInt(
-    await choose(
-      text,
-      options.map((o) => o.toString()),
-      defaultValue.toString()
-    ),
-    10
-  );
-}
-
-/**
- * Prints a question and waits for the user to choose yes or no.
- * @param text - The question to print.
- * @returns true on accept or false on reject.
- */
-async function yesOrNo(text: string): Promise<boolean> {
-  return (await choose(text, ['y', 'n'])).toLowerCase() === 'y';
-}
-
-/**
- * Prints a question and waits for the user to confirm yes. Throws error on no, and exits the program.
- * @param text - The prompt text to print.
- */
-async function checkOk(text: string): Promise<void> {
-  if (!(await yesOrNo(text))) {
-    print('Exiting...');
-    throw new Error('User cancelled');
-  }
-}
-
-/**
- * Writes a config file to disk.
- * @param configFileName - The config file name.
- * @param config - The config file contents.
- */
-function writeConfig(configFileName: string, config: Record<string, any>): void {
-  writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
+  closeTerminal();
 }
 
 /**
@@ -563,65 +466,5 @@ async function generateSigningKey(keyName: string): Promise<
   } catch (err) {
     console.log('Error: Unable to create signing key: ', normalizeErrorString(err));
     return undefined;
-  }
-}
-
-/**
- * Reads a parameter from AWS Parameter Store.
- * @param client - The AWS SSM client.
- * @param name - The parameter name.
- * @returns The parameter value, or undefined if not found.
- */
-async function readParameter(client: SSMClient, name: string): Promise<string | undefined> {
-  const command = new GetParameterCommand({
-    Name: name,
-    WithDecryption: true,
-  });
-  try {
-    const result = await client.send(command);
-    return result.Parameter?.Value;
-  } catch (err: any) {
-    if (err.name === 'ParameterNotFound') {
-      return undefined;
-    }
-    throw err;
-  }
-}
-
-/**
- * Writes a parameter to AWS Parameter Store.
- * @param client - The AWS SSM client.
- * @param name - The parameter name.
- * @param value - The parameter value.
- */
-async function writeParameter(client: SSMClient, name: string, value: string): Promise<void> {
-  const command = new PutParameterCommand({
-    Name: name,
-    Value: value,
-    Type: 'SecureString',
-    Overwrite: true,
-  });
-  await client.send(command);
-}
-
-/**
- * Writes a collection of parameters to AWS Parameter Store.
- * @param region - The AWS region.
- * @param prefix - The AWS Parameter Store prefix.
- * @param params - The parameters to write.
- */
-async function writeParameters(region: string, prefix: string, params: Record<string, string | number>): Promise<void> {
-  const client = new SSMClient({ region });
-  for (const [key, value] of Object.entries(params)) {
-    const name = prefix + key;
-    const valueStr = value.toString();
-    const existingValue = await readParameter(client, name);
-
-    if (existingValue !== undefined && existingValue !== valueStr) {
-      print(`Parameter "${name}" exists with different value.`);
-      await checkOk(`Do you want to overwrite "${name}"?`);
-    }
-
-    await writeParameter(client, name, valueStr);
   }
 }

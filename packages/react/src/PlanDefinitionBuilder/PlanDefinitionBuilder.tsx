@@ -1,7 +1,8 @@
-import { Anchor, Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
-import { getReferenceString, InternalSchemaElement } from '@medplum/core';
+import { Anchor, Button, NativeSelect, Stack, TextInput } from '@mantine/core';
+import { InternalSchemaElement, getReferenceString } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
+import cx from 'clsx';
 import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
@@ -12,40 +13,10 @@ import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourceProp
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
-
-const useStyles = createStyles((theme) => ({
-  section: {
-    position: 'relative',
-    margin: '4px 4px 8px 0',
-    padding: '6px 12px 16px 6px',
-    border: `1.5px solid ${theme.colors.gray[1]}`,
-    borderRadius: theme.radius.sm,
-    transition: 'all 0.1s',
-  },
-
-  hovering: {
-    border: `1.5px solid ${theme.colors.blue[5]}`,
-  },
-
-  editing: {
-    border: `1.5px solid ${theme.colors.gray[1]}`,
-    borderLeft: `4px solid ${theme.colors.blue[5]}`,
-  },
-
-  bottomActions: {
-    position: 'absolute',
-    right: 4,
-    bottom: 0,
-    fontSize: theme.fontSizes.xs,
-
-    '& a': {
-      marginLeft: 8,
-    },
-  },
-}));
+import classes from './PlanDefinitionBuilder.module.css';
 
 export interface PlanDefinitionBuilderProps {
-  value: PlanDefinition | Reference<PlanDefinition>;
+  value: Partial<PlanDefinition> | Reference<PlanDefinition>;
   onSubmit: (result: PlanDefinition) => void;
 }
 
@@ -76,7 +47,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   }, [medplum]);
 
   useEffect(() => {
-    setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition' }));
+    setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition', status: 'active' }));
     document.addEventListener('mouseover', handleDocumentMouseOver);
     document.addEventListener('click', handleDocumentClick);
     return () => {
@@ -128,7 +99,6 @@ interface ActionArrayBuilderProps {
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
-  const { classes } = useStyles();
   const actionsRef = useRef<PlanDefinitionAction[]>();
   actionsRef.current = props.actions;
 
@@ -188,7 +158,6 @@ interface ActionBuilderProps {
 }
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
-  const { classes, cx } = useStyles();
   const { action } = props;
   const actionType = getInitialActionType(action);
   const editing = props.selectedKey === props.action.id;
@@ -300,7 +269,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
   }
 
   return (
-    <Stack spacing="xl">
+    <Stack gap="xl">
       <TextInput
         name={`actionTitle-${action.id}`}
         label="Title"

@@ -10,6 +10,12 @@ import {
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
+import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
+import { normalizeErrorString } from '@medplum/core';
+import { readdirSync } from 'fs';
+import fetch from 'node-fetch';
+import { checkOk, print } from './terminal';
 
 export interface MedplumStackDetails {
   stack: Stack;
@@ -69,7 +75,11 @@ export async function getStackDetails(stackName: string): Promise<MedplumStackDe
   const result = {} as Partial<MedplumStackDetails>;
   await buildStackDetails(cloudFormationClient, stackName, result);
   if ((await cloudFormationClient.config.region()) !== 'us-east-1') {
-    await buildStackDetails(new CloudFormationClient({ region: 'us-east-1' }), stackName + '-us-east-1', result);
+    try {
+      await buildStackDetails(new CloudFormationClient({ region: 'us-east-1' }), stackName + '-us-east-1', result);
+    } catch {
+      // Fail gracefully
+    }
   }
   return result as MedplumStackDetails;
 }
@@ -196,4 +206,137 @@ export async function createInvalidation(distributionId: string): Promise<void> 
     })
   );
   console.log(`Created invalidation with ID: ${response.Invalidation?.Id}`);
+}
+
+export async function getServerVersions(from?: string): Promise<string[]> {
+  const response = await fetch('https://api.github.com/repos/medplum/medplum/releases?per_page=100', {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+
+  const json = (await response.json()) as { tag_name: string }[];
+  const versions = json.map((release) =>
+    release.tag_name.startsWith('v') ? release.tag_name.slice(1) : release.tag_name
+  );
+  return from ? versions.slice(0, versions.indexOf(from)) : versions;
+}
+
+/**
+ * Writes a collection of parameters to AWS Parameter Store.
+ * @param region - The AWS region.
+ * @param prefix - The AWS Parameter Store prefix.
+ * @param params - The parameters to write.
+ */
+export async function writeParameters(
+  region: string,
+  prefix: string,
+  params: Record<string, string | number>
+): Promise<void> {
+  const client = new SSMClient({ region });
+  for (const [key, value] of Object.entries(params)) {
+    const name = prefix + key;
+    const valueStr = value.toString();
+    const existingValue = await readParameter(client, name);
+
+    if (existingValue !== undefined && existingValue !== valueStr) {
+      print(`Parameter "${name}" exists with different value.`);
+      await checkOk(`Do you want to overwrite "${name}"?`);
+    }
+
+    await writeParameter(client, name, valueStr);
+  }
+}
+
+/**
+ * Reads a parameter from AWS Parameter Store.
+ * @param client - The AWS SSM client.
+ * @param name - The parameter name.
+ * @returns The parameter value, or undefined if not found.
+ */
+async function readParameter(client: SSMClient, name: string): Promise<string | undefined> {
+  const command = new GetParameterCommand({
+    Name: name,
+    WithDecryption: true,
+  });
+  try {
+    const result = await client.send(command);
+    return result.Parameter?.Value;
+  } catch (err: any) {
+    if (err.name === 'ParameterNotFound') {
+      return undefined;
+    }
+    throw err;
+  }
+}
+
+/**
+ * Writes a parameter to AWS Parameter Store.
+ * @param client - The AWS SSM client.
+ * @param name - The parameter name.
+ * @param value - The parameter value.
+ */
+async function writeParameter(client: SSMClient, name: string, value: string): Promise<void> {
+  const command = new PutParameterCommand({
+    Name: name,
+    Value: value,
+    Type: 'SecureString',
+    Overwrite: true,
+  });
+  await client.send(command);
+}
+
+/**
+ * Prints a "config not found" message to stdout.
+ * Includes helpful debugging information such as available configs.
+ * @param tagName - Medplum stack tag name.
+ */
+export async function printConfigNotFound(tagName: string): Promise<void> {
+  console.log(`Config not found: ${tagName}`);
+  console.log();
+
+  let files: any[] = readdirSync('.', { withFileTypes: true });
+  files = files
+    .filter((f) => f.isFile() && f.name.startsWith('medplum.') && f.name.endsWith('.json'))
+    .map((f) => f.name);
+
+  if (files.length === 0) {
+    console.log('No configs found');
+  } else {
+    console.log('Available configs:');
+    for (const file of files) {
+      console.log(
+        `  ${file
+          .replaceAll('medplum.', '')
+          .replaceAll('.config', '')
+          .replaceAll('.server', '')
+          .replaceAll('.json', '')
+          .padEnd(40, ' ')} (${file})`
+      );
+    }
+  }
+}
+
+/**
+ * Prints a "stack not found" message to stdout.
+ * Includes helpful debugging information such as AWS account ID and region.
+ * @param tagName - Medplum stack tag name.
+ */
+export async function printStackNotFound(tagName: string): Promise<void> {
+  console.log(`Stack not found: ${tagName}`);
+  console.log();
+
+  try {
+    const client = new STSClient();
+    const command = new GetCallerIdentityCommand({});
+    const response = await client.send(command);
+    const region = await client.config.region();
+    console.log('AWS Region:        ', region);
+    console.log('AWS Account ID:    ', response.Account);
+    console.log('AWS Account ARN:   ', response.Arn);
+    console.log('AWS User ID:       ', response.UserId);
+  } catch (err) {
+    console.log('Warning: Unable to get AWS account ID', normalizeErrorString(err));
+  }
 }

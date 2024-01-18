@@ -1,7 +1,7 @@
 {
   "name": "ClientApplication",
   "location": "medplum",
-  "description": "",
+  "description": "Medplum client application for automated access.",
   "properties": [
     {
       "name": "ClientApplication",

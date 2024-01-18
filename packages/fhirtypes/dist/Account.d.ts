@@ -113,7 +113,7 @@ export interface Account {
   /**
    * Indicates whether the account is presently used/usable or not.
    */
-  status?: 'active' | 'inactive' | 'entered-in-error' | 'on-hold' | 'unknown';
+  status: 'active' | 'inactive' | 'entered-in-error' | 'on-hold' | 'unknown';
 
   /**
    * Categorizes the account for reporting and searching purposes.
@@ -218,7 +218,7 @@ export interface AccountCoverage {
    * the sequence of the coverages in the account could be important when
    * processing billing.
    */
-  coverage?: Reference<Coverage>;
+  coverage: Reference<Coverage>;
 
   /**
    * The priority of the coverage in the context of this account.
@@ -270,7 +270,7 @@ export interface AccountGuarantor {
   /**
    * The entity who is responsible.
    */
-  party?: Reference<Patient | RelatedPerson | Organization>;
+  party: Reference<Patient | RelatedPerson | Organization>;
 
   /**
    * A guarantor may be placed on credit hold or otherwise have their role

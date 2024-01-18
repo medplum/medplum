@@ -1,4 +1,4 @@
-import { Anchor, AppShell, Button, Group, Header, Loader, Text } from '@mantine/core';
+import { Anchor, AppShell, Button, Group, Loader, Text } from '@mantine/core';
 import { ErrorBoundary, Logo, useMedplum } from '@medplum/react';
 import { Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
@@ -17,34 +17,31 @@ export function App(): JSX.Element | null {
   const profile = medplum.getProfile();
 
   return (
-    <AppShell
-      header={
-        profile && (
-          <Header height={60} p="md">
-            <Group position="apart">
-              <Group>
-                <Anchor to="/" component={Link}>
-                  <Group spacing={'xs'}>
-                    <Logo size={17} />
-                    <Text>Task Demo</Text>
-                  </Group>
-                </Anchor>
-              </Group>
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={() => {
-                  medplum.signOut().catch(console.error);
-                  window.location.reload();
-                }}
-              >
-                Sign out
-              </Button>
+    <AppShell header={{ height: 60 }}>
+      {profile && (
+        <AppShell.Header p="md">
+          <Group justify="space-between">
+            <Group>
+              <Anchor to="/" component={Link}>
+                <Group gap="xs">
+                  <Logo size={17} />
+                  <Text>Task Demo</Text>
+                </Group>
+              </Anchor>
             </Group>
-          </Header>
-        )
-      }
-    >
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => {
+                medplum.signOut().catch(console.error);
+                window.location.reload();
+              }}
+            >
+              Sign out
+            </Button>
+          </Group>
+        </AppShell.Header>
+      )}
       <ErrorBoundary>
         <Suspense fallback={<Loader />}>
           <Routes>

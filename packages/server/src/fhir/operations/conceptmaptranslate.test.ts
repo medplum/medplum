@@ -1,10 +1,10 @@
-import express from 'express';
-import { loadTestConfig } from '../../config';
-import { initApp, shutdownApp } from '../../app';
-import { initTestAuth } from '../../test.setup';
-import request from 'supertest';
 import { ContentType } from '@medplum/core';
 import { ConceptMap, OperationOutcome, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config';
+import { initTestAuth } from '../../test.setup';
 
 const app = express();
 
@@ -304,7 +304,7 @@ describe('ConceptMap $translate', () => {
       });
     expect(res.status).toBe(400);
 
-    expect(res.body).toMatchObject<OperationOutcome>({
+    expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
         {
@@ -325,7 +325,7 @@ describe('ConceptMap $translate', () => {
       });
     expect(res.status).toBe(400);
 
-    expect(res.body).toMatchObject<OperationOutcome>({
+    expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
         {
@@ -372,7 +372,7 @@ describe('ConceptMap $translate', () => {
       });
     expect(res.status).toBe(400);
 
-    expect(res.body).toMatchObject<OperationOutcome>({
+    expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
         {
@@ -398,7 +398,7 @@ describe('ConceptMap $translate', () => {
       });
     expect(res.status).toBe(404);
 
-    expect(res.body).toMatchObject<OperationOutcome>({
+    expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
         {
@@ -610,7 +610,7 @@ describe('ConceptMap $translate', () => {
         parameter: [{ name: 'coding', valueCoding: { system, code } }],
       });
     expect(res2.status).toBe(400);
-    expect(res2.body).toMatchObject<OperationOutcome>({
+    expect(res2.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
         {

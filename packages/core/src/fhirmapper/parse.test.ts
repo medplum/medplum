@@ -28,6 +28,7 @@ describe('FHIR Mapping Language parser', () => {
       resourceType: 'StructureMap',
       url: 'http://hl7.org/fhir/StructureMap/tutorial',
       name: 'tutorial',
+      status: 'active',
       structure: [
         {
           url: 'http://hl7.org/fhir/StructureDefinition/tutorial-left',

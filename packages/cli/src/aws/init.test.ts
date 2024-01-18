@@ -8,10 +8,13 @@ import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { readFileSync, unlinkSync, writeFileSync } from 'fs';
+import fetch from 'node-fetch';
 import readline from 'readline';
 import { main } from '../index';
+import { mockReadline } from './test.utils';
 
 jest.mock('readline');
+jest.mock('node-fetch');
 
 describe('init command', () => {
   beforeAll(() => {
@@ -21,6 +24,11 @@ describe('init command', () => {
   });
 
   beforeEach(() => {
+    (fetch as unknown as jest.Mock).mockClear();
+    (fetch as unknown as jest.Mock).mockResolvedValueOnce({
+      json: jest.fn().mockResolvedValueOnce([{ tag_name: 'v2.4.17' }]),
+    });
+
     const cloudFrontClient = mockClient(CloudFrontClient);
 
     cloudFrontClient.on(CreatePublicKeyCommand).resolves({ PublicKey: { Id: 'K1234' } as PublicKey });
@@ -108,7 +116,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -171,7 +179,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -244,7 +252,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'TODO',
       appSslCertArn: 'TODO',
@@ -304,7 +312,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -362,7 +370,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'TODO',
       appSslCertArn: 'TODO',
@@ -423,7 +431,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789013',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -484,7 +492,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -562,7 +570,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -579,7 +587,6 @@ describe('init command', () => {
     cloudFrontClient.on(CreatePublicKeyCommand).rejects('CreatePublicKeyCommand failed');
 
     const filename = `test-${randomUUID()}.json`;
-
     readline.createInterface = jest.fn(() =>
       mockReadline(
         'y', // Yes, proceed without AWS credentials
@@ -627,7 +634,7 @@ describe('init command', () => {
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       apiSslCertArn: 'TODO',
       appSslCertArn: 'TODO',
       storageSslCertArn: 'TODO',
@@ -635,17 +642,3 @@ describe('init command', () => {
     unlinkSync(filename);
   });
 });
-
-function mockReadline(...answers: string[]): readline.Interface {
-  const result = { write: jest.fn(), question: jest.fn(), close: jest.fn() };
-  const debug = false;
-  for (const answer of answers) {
-    result.question.mockImplementationOnce((q: string, cb: (answer: string) => void) => {
-      if (debug) {
-        console.log(q, answer);
-      }
-      cb(answer);
-    });
-  }
-  return result as unknown as readline.Interface;
-}

@@ -1,12 +1,13 @@
-import { Tooltip, UnstyledButton } from '@mantine/core';
+import { Table, Tooltip, UnstyledButton } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { MedplumClient, PatchOperation, createReference, formatDateTime, getDisplayString } from '@medplum/core';
 import { Practitioner, Task } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleX, IconEdit, IconUser, IconUserSearch } from '@tabler/icons-react';
+import cx from 'clsx';
 import { MouseEvent, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStyles } from './TaskRow.styles';
+import classes from './TaskRow.module.css';
 import { formatDueDate, getShortName, getTaskColor } from './utils';
 
 export interface TaskRowProps {
@@ -23,7 +24,6 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
   const medplum = useMedplum();
   const profile = medplum.getProfile() as Practitioner;
   const navigate = useNavigate();
-  const { classes, cx } = useStyles();
 
   const assignToMe = useCallback(
     async (e: MouseEvent): Promise<void> => {
@@ -116,16 +116,16 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
   ];
 
   return (
-    <tr className={cx(classes.task, classes[getTaskColor(task)])} onClick={() => navigate(`/Task/${task.id}`)}>
-      <td>
+    <Table.Tr className={cx(classes.task, classes[getTaskColor(task)])} onClick={() => navigate(`/Task/${task.id}`)}>
+      <Table.Td>
         <CodeableConceptDisplay value={task.code} />
-      </td>
-      {withOwner && <td>{getShortName(task.owner?.display)}</td>}
-      {withDueDate && <td>{formatDueDate(task)}</td>}
-      <td>{task.status}</td>
-      {withLastUpdated && <td>{formatDateTime(task.meta?.lastUpdated)}</td>}
+      </Table.Td>
+      {withOwner && <Table.Td>{getShortName(task.owner?.display)}</Table.Td>}
+      {withDueDate && <Table.Td>{formatDueDate(task)}</Table.Td>}
+      <Table.Td>{task.status}</Table.Td>
+      {withLastUpdated && <Table.Td>{formatDateTime(task.meta?.lastUpdated)}</Table.Td>}
       {withActions && (
-        <td className={classes.actions}>
+        <Table.Td className={classes.actions}>
           {buttons.map((button) => (
             <Tooltip label={button.label}>
               <UnstyledButton px={1} onClick={button.onClick}>
@@ -133,9 +133,9 @@ export function TaskRow(props: TaskRowProps): JSX.Element {
               </UnstyledButton>
             </Tooltip>
           ))}
-        </td>
+        </Table.Td>
       )}
-    </tr>
+    </Table.Tr>
   );
 }
 

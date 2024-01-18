@@ -25,12 +25,13 @@ export function JsonCreatePage(): JSX.Element {
         <JsonInput
           name="new-resource"
           data-testid="create-resource-json"
+          autosize
           minRows={24}
           defaultValue={stringify(defaultValue, true)}
           formatOnBlur
           deserialize={JSON.parse}
         />
-        <Group position="right" mt="xl" noWrap>
+        <Group justify="flex-end" mt="xl" wrap="nowrap">
           <Button type="submit">OK</Button>
         </Group>
       </Form>

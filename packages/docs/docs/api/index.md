@@ -49,7 +49,7 @@ Clinician users of Medplum can also use approved SMART-on-FHIR applications to a
 
 ## FHIR Resources
 
-For documentation on all the FHIR Resources that Medplum supports, check out our [**FHIR API docs**](./api/fhir). If you're asking yourself, "_What's FHIR?_", check out our [FHIR Basics page](/docs/fhir-basics.md). The full list of [FHIR resources](/docs/api/fhir/resources) page describes the resources and [data types](/docs/api/fhir/datatypes) in detail. This API reference is an Open Source implementation of the [ONC Certification (g)(10) Criteria](/docs/compliance/onc#standardized-api-for-patient-and-population-services-cures-update-g10)
+For documentation on all the FHIR Resources that Medplum supports, check out our [**FHIR API docs**](./api/fhir). If you're asking yourself, "_What's FHIR?_", check out our [FHIR Basics page](/docs/fhir-basics.md). The full list of [FHIR resources](/docs/api/fhir/resources) page describes the resources and [data types](/docs/api/fhir/datatypes) in detail. This API reference is an Open Source implementation of the [ONC Certification (g)(10) Criteria](/docs/compliance/onc)
 
 We also make available our [Open API Spec](https://api.medplum.com/openapi.json).
 
@@ -65,4 +65,4 @@ Our [**TypeScript SDK**](./sdk/core.medplumclient) provides a powerful, type-saf
 
 ## Prebuilt UI
 
-If you're building a [**React**](https://reactjs.org/) app with Medplum, our [**React Components**](./api/react-components) can give you building blocks to get you started.
+If you're building a [**React**](https://reactjs.org/) app with Medplum, our [**React Components**](./api/react) can give you building blocks to get you started.

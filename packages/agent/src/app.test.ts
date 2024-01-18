@@ -1,5 +1,5 @@
-import { allOk, sleep } from '@medplum/core';
-import { Agent, Resource } from '@medplum/fhirtypes';
+import { ContentType, allOk, createReference, sleep } from '@medplum/core';
+import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
 import { App } from './app';
@@ -22,7 +22,8 @@ describe('App', () => {
     const mockServer = new Server('wss://example.com/ws/agent');
     const state = {
       mySocket: undefined as Client | undefined,
-      gotHeartbeat: false,
+      gotHeartbeatRequest: false,
+      gotHeartbeatResponse: false,
     };
 
     mockServer.on('connection', (socket) => {
@@ -32,17 +33,24 @@ describe('App', () => {
         if (command.type === 'agent:connect:request') {
           socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
         }
+        if (command.type === 'agent:heartbeat:request') {
+          state.gotHeartbeatRequest = true;
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
         if (command.type === 'agent:heartbeat:response') {
-          state.gotHeartbeat = true;
+          state.gotHeartbeatResponse = true;
         }
       });
     });
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
     });
 
     const app = new App(medplum, agent.id as string);
+    app.healthcheckPeriod = 1000;
     await app.start();
 
     // Wait for the WebSocket to connect
@@ -55,7 +63,7 @@ describe('App', () => {
     wsClient.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:request' })));
 
     // Wait for heartbeat response
-    while (!state.gotHeartbeat) {
+    while (!state.gotHeartbeatRequest || !state.gotHeartbeatResponse) {
       await sleep(100);
     }
 
@@ -64,6 +72,9 @@ describe('App', () => {
 
     // Send an unknown message type
     wsClient.send(Buffer.from(JSON.stringify({ type: 'unknown' })));
+
+    // Simulate a token refresh
+    medplum.dispatchEvent({ type: 'change' });
 
     app.stop();
     app.stop();
@@ -84,9 +95,6 @@ describe('App', () => {
         if (command.type === 'agent:connect:request') {
           socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
         }
-        if (command.type === 'agent:heartbeat:response') {
-          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
-        }
       });
     }
 
@@ -95,9 +103,12 @@ describe('App', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
     });
 
     const app = new App(medplum, agent.id as string);
+    app.healthcheckPeriod = 100;
     await app.start();
 
     // Wait for the WebSocket to connect
@@ -109,6 +120,9 @@ describe('App', () => {
     state.mySocket.close();
     state.mySocket = undefined;
     mockServer1.stop();
+
+    // Sleep for a bit to allow healthchecks while disconnected
+    await sleep(1000);
 
     // Start a new server
     const mockServer2 = new Server('wss://example.com/ws/agent');
@@ -122,5 +136,117 @@ describe('App', () => {
     app.stop();
     app.stop();
     mockServer2.stop();
+  });
+
+  test('Empty endpoint URL', async () => {
+    console.log = jest.fn();
+    console.warn = jest.fn();
+
+    medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
+      return [allOk, {} as Resource];
+    });
+
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    const endpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: '', // invalid empty address
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+    });
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      status: 'active',
+      name: 'Test Agent',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id as string);
+    await app.start();
+    app.stop();
+    mockServer.stop();
+
+    expect(console.warn).toHaveBeenCalledWith('Ignoring empty endpoint address: test');
+  });
+
+  test('Unknown endpoint protocol', async () => {
+    console.log = jest.fn();
+    console.error = jest.fn();
+
+    medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
+      return [allOk, {} as Resource];
+    });
+
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    const endpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'foo:', // unsupported protocol
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+    });
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      status: 'active',
+      name: 'Test Agent',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id as string);
+    await app.start();
+    app.stop();
+    mockServer.stop();
+
+    expect(console.error).toHaveBeenCalledWith('Unsupported endpoint type: foo:');
   });
 });

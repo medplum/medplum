@@ -47,12 +47,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     return true;
   }
 
-  let coverageEligibilityReq: CoverageEligibilityRequest = await medplum.createResource({
+  let coverageEligibilityReq: CoverageEligibilityRequest = await medplum.createResource<CoverageEligibilityRequest>({
     resourceType: 'CoverageEligibilityRequest',
+    status: 'active',
+    purpose: ['validation', 'benefits'],
+    created: new Date().toISOString(),
     provider: createReference(provider),
     patient: createReference(patient),
     insurer: createReference(organization),
-    insurance: [createReference(coverage)],
+    insurance: [{ coverage: createReference(coverage) }],
   });
 
   const providerNpi = provider.identifier?.find((identifier) => identifier.system === 'http://hl7.org/fhir/sid/us-npi')
@@ -269,9 +272,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     return item;
   };
 
-  coverageEligibilityReq = await medplum.updateResource({
-    resourceType: 'CoverageEligibilityRequest',
-    id: coverageEligibilityReq.id,
+  coverageEligibilityReq = await medplum.updateResource<CoverageEligibilityRequest>({
+    ...coverageEligibilityReq,
     identifier: [
       {
         system: 'https://api.opkit.co/v1/eligibility_inquiries/',
@@ -288,9 +290,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     ],
   });
 
-  const coverageEligibilityResponse: CoverageEligibilityResponse = await medplum.createResource({
+  const coverageEligibilityResponse = await medplum.createResource<CoverageEligibilityResponse>({
     resourceType: 'CoverageEligibilityResponse',
     status: isPlanActive ? 'active' : 'cancelled',
+    created: new Date().toISOString(),
     outcome: 'complete',
     purpose: ['validation', 'benefits'],
     request: createReference(coverageEligibilityReq),

@@ -63,7 +63,7 @@ export class AgentHl7ChannelConnection {
       this.channel.app.log.info(event.message.toString().replaceAll('\r', '\n'));
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
-        accessToken: await this.channel.app.getAccessToken(),
+        accessToken: 'placeholder',
         channel: this.channel.definition.name as string,
         remote: this.remote,
         contentType: ContentType.HL7_V2,

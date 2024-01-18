@@ -652,6 +652,50 @@
           ]
         }
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/client-application-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "client-application-status",
+        "url": "https://medplum.com/fhir/CodeSystem/client-application-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/client-application-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "Active"
+          },
+          {
+            "code": "off",
+            "display": "Off",
+            "definition": "Off"
+          },
+          {
+            "code": "error",
+            "display": "Error",
+            "definition": "Error"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/client-application-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "client-application-status",
+        "url": "https://medplum.com/fhir/ValueSet/client-application-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/client-application-status"
+            }
+          ]
+        }
+      }
     }
   ]
 }

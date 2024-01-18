@@ -143,7 +143,7 @@ export interface CodeSystem {
    * The date (and optionally time) when the code system resource was
    * created or revised.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this code system is authored for
@@ -240,7 +240,7 @@ export interface CodeSystem {
    * The extent of the content of the code system (the concepts and codes
    * it defines) are represented in this resource instance.
    */
-  content?: 'not-present' | 'example' | 'fragment' | 'complete' | 'supplement';
+  content: 'not-present' | 'example' | 'fragment' | 'complete' | 'supplement';
 
   /**
    * The canonical URL of the code system that this code system supplement
@@ -321,7 +321,7 @@ export interface CodeSystemConcept {
    * A code - a text symbol - that uniquely identifies the concept within
    * the code system.
    */
-  code?: string;
+  code: string;
 
   /**
    * A human readable string that is the recommended default way to present
@@ -410,7 +410,7 @@ export interface CodeSystemConceptDesignation {
   /**
    * The text value for this designation.
    */
-  value?: string;
+  value: string;
 }
 
 /**
@@ -456,7 +456,7 @@ export interface CodeSystemConceptProperty {
   /**
    * A code that is a reference to CodeSystem.property.code.
    */
-  code?: string;
+  code: string;
 
   /**
    * The value of this property.
@@ -539,7 +539,7 @@ export interface CodeSystemFilter {
    * The code that identifies this filter when it is used as a filter in
    * [ValueSet](valueset.html#).compose.include.filter.
    */
-  code?: string;
+  code: string;
 
   /**
    * A description of how or why the filter is used.
@@ -549,12 +549,12 @@ export interface CodeSystemFilter {
   /**
    * A list of operators that can be used with the filter.
    */
-  operator?: ('=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists')[];
+  operator: ('=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists')[];
 
   /**
    * A description of what the value for the filter should be.
    */
-  value?: string;
+  value: string;
 }
 
 /**
@@ -603,7 +603,7 @@ export interface CodeSystemProperty {
    * internally (in CodeSystem.concept.property.code) and also externally,
    * such as in property filters.
    */
-  code?: string;
+  code: string;
 
   /**
    * Reference to the formal meaning of the property. One possible source
@@ -623,5 +623,5 @@ export interface CodeSystemProperty {
    * code defined by the code system (e.g. a reference to another defined
    * concept).
    */
-  type?: 'code' | 'Coding' | 'string' | 'integer' | 'boolean' | 'dateTime' | 'decimal';
+  type: 'code' | 'Coding' | 'string' | 'integer' | 'boolean' | 'dateTime' | 'decimal';
 }

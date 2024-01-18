@@ -7,6 +7,8 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   res.json({
     ok: true,
     version: MEDPLUM_VERSION,
+    platform: process.platform,
+    runtime: process.version,
     postgres: await testPostgres(),
     redis: await testRedis(),
   });

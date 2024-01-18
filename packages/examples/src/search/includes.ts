@@ -54,6 +54,7 @@ let response: Resource[] =
     {
       resourceType: 'Provenance',
       id: '1',
+      recorded: '2022-12-21T01:55:34.799Z',
       target: [{ reference: 'Observation/1' }],
       agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],
     },
@@ -74,6 +75,7 @@ let response: Resource[] =
     {
       resourceType: 'Provenance',
       id: '2',
+      recorded: '2022-12-21T01:55:34.799Z',
       target: [{ reference: 'Observation/2' }],
       agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],
     },
@@ -105,6 +107,7 @@ let response: Resource[] =
     {
       resourceType: 'Provenance',
       id: '3',
+      recorded: '2022-12-21T01:55:34.799Z',
       target: [{ reference: 'Observation/3' }],
       agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],
     },

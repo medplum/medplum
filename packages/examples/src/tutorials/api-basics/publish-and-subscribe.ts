@@ -59,6 +59,8 @@ async function createServiceRequest(patientMrn: string): Promise<void> {
 
   const serviceRequest = await medplum.createResource({
     resourceType: 'ServiceRequest',
+    status: 'active',
+    intent: 'order',
     subject: createReference(patient),
     code: {
       coding: [
@@ -134,6 +136,7 @@ async function createReport(patientId: string, serviceRequestId: string): Promis
   // Create the first Observation resource.
   const observation: Observation = await medplum.createResource({
     resourceType: 'Observation',
+    status: 'final',
     basedOn: [createReference(serviceRequest)],
     subject: createReference(patient),
     code: {
@@ -156,6 +159,7 @@ async function createReport(patientId: string, serviceRequestId: string): Promis
   // Create a DiagnosticReport resource.
   const report: DiagnosticReport = await medplum.createResource({
     resourceType: 'DiagnosticReport',
+    status: 'final',
     basedOn: [
       {
         reference: serviceRequestId,

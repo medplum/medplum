@@ -1,5 +1,5 @@
 import { Address } from '@medplum/fhirtypes';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AddressInput } from './AddressInput';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 

@@ -102,7 +102,7 @@ export interface SubscriptionStatus {
   /**
    * The type of event being conveyed with this notificaiton.
    */
-  type?: string;
+  type: string;
 
   /**
    * The total number of actual events which have been generated since the
@@ -121,7 +121,7 @@ export interface SubscriptionStatus {
   /**
    * The reference to the Subscription which generated this notification.
    */
-  subscription?: Reference<Subscription>;
+  subscription: Reference<Subscription>;
 
   /**
    * The reference to the SubscriptionTopic for the Subscription which
@@ -181,7 +181,7 @@ export interface SubscriptionStatusNotificationEvent {
    * The sequential number of this event in this subscription context. Note
    * that this value is a 64-bit integer value, encoded as a string.
    */
-  eventNumber?: string;
+  eventNumber: string;
 
   /**
    * The actual time this event occured on the server.

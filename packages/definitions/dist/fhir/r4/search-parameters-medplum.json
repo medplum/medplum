@@ -564,7 +564,7 @@
         "id": "priority-order",
         "url": "https://medplum.com/fhir/SearchParameter/priority-order",
         "version": "4.0.1",
-        "name": "status",
+        "name": "priority-order",
         "status": "draft",
         "publisher": "Medplum",
         "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",

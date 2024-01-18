@@ -3,10 +3,10 @@ import { Binary, Bundle, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig, MedplumServerConfig } from '../config';
-import { systemRepo } from './repo';
-import { rewriteAttachments, RewriteMode } from './rewrite';
+import { MedplumServerConfig, loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
+import { systemRepo } from './repo';
+import { RewriteMode, rewriteAttachments } from './rewrite';
 
 describe('URL rewrite', () => {
   let config: MedplumServerConfig;
@@ -227,6 +227,7 @@ describe('URL rewrite', () => {
 
     const bundle: Bundle = deepClone({
       resourceType: 'Bundle',
+      type: 'searchset',
       entry: [{ resource: practitioner }, { resource: practitioner }],
     });
 

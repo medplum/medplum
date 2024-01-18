@@ -188,6 +188,7 @@ describe('Bundle tests', () => {
     test('Ignore unrecognized references', () => {
       const inputBundle: Bundle = {
         resourceType: 'Bundle',
+        type: 'searchset',
         entry: [
           {
             fullUrl: 'https://example.com/Specimen/xyz',
@@ -202,6 +203,7 @@ describe('Bundle tests', () => {
       const result = convertToTransactionBundle(inputBundle);
       expect(result).toMatchObject({
         resourceType: 'Bundle',
+        type: 'transaction',
         entry: [
           {
             resource: {
@@ -236,15 +238,21 @@ describe('Bundle tests', () => {
     test('Contained observations', () => {
       const input: DiagnosticReport = {
         resourceType: 'DiagnosticReport',
+        status: 'final',
+        code: { text: 'test' },
         contained: [
           {
             resourceType: 'Observation',
             id: '123',
+            status: 'final',
+            code: { text: 'test' },
             hasMember: [{ reference: '#456' }],
           },
           {
             resourceType: 'Observation',
             id: '456',
+            status: 'final',
+            code: { text: 'test' },
           },
         ],
         result: [{ reference: '#123' }],

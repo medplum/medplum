@@ -47,13 +47,13 @@ export interface User {
    * The first name or given name of the user. This is the value as entered
    * when the user is created. It is used to populate the profile resource.
    */
-  firstName?: string;
+  firstName: string;
 
   /**
    * The last name or family name of the user. This is the value as entered
    * when the user is created. It is used to populate the profile resource.
    */
-  lastName?: string;
+  lastName: string;
 
   /**
    * DEPRECATED Replaced by ProjectMembership.externalId.

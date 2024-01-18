@@ -1,3 +1,4 @@
+import { append } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
 import { Client, Pool, PoolClient } from 'pg';
 import Cursor from 'pg-cursor';
@@ -566,6 +567,7 @@ export class InsertQuery extends BaseQuery {
   private readonly values: Record<string, any>[];
   private returnColumns?: string[];
   private conflictColumns?: string[];
+  private ignoreConflict?: boolean;
 
   constructor(tableName: string, values: Record<string, any>[]) {
     super(tableName);
@@ -577,15 +579,13 @@ export class InsertQuery extends BaseQuery {
     return this;
   }
 
+  ignoreOnConflict(): this {
+    this.ignoreConflict = true;
+    return this;
+  }
+
   returnColumn(column: Column | string): this {
-    if (column instanceof Column) {
-      column = column.columnName;
-    }
-    if (this.returnColumns) {
-      this.returnColumns.push(column);
-    } else {
-      this.returnColumns = [column];
-    }
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
     return this;
   }
 
@@ -641,7 +641,10 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendMerge(sql: SqlBuilder): void {
-    if (!this.conflictColumns?.length) {
+    if (this.ignoreConflict) {
+      sql.append(` ON CONFLICT DO NOTHING`);
+      return;
+    } else if (!this.conflictColumns?.length) {
       return;
     }
 

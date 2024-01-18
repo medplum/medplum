@@ -16,14 +16,14 @@ import {
   ParametersParameter,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { sendResponse } from '../../routes';
 import { sendOutcome } from '../../outcomes';
+import { sendResponse } from '../../routes';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
     // Convert the parameters to input
     const parameters = (input as Parameters).parameter ?? [];
-    return Object.fromEntries(parameters.map((p) => [p.name, p.valueString]));
+    return Object.fromEntries(parameters.map((p) => [p.name, p.valueString])) as T;
   } else {
     return input as T;
   }

@@ -1,12 +1,12 @@
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, badRequest } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 
 describe('BotEditor', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -20,7 +20,7 @@ describe('BotEditor', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <MantineProvider withGlobalStyles withNormalizeCSS>
+            <MantineProvider>
               <Notifications />
               <AppRoutes />
             </MantineProvider>
@@ -42,6 +42,10 @@ describe('BotEditor', () => {
         },
       } as unknown as MessagePort;
     };
+  });
+
+  afterEach(async () => {
+    await act(async () => notifications.clean());
   });
 
   test('Bot editor', async () => {

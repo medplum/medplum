@@ -182,10 +182,3 @@ export async function checkAbn(
     console.log('Uploaded ABN PDF as media: ' + media.id);
   }
 }
-
-export function append<T>(array: T[] | undefined, value: T): T[] {
-  if (!array) {
-    return [value];
-  }
-  return [...array, value];
-}

@@ -1,9 +1,9 @@
 import { createReference } from '@medplum/core';
-import { Patient, Specimen } from '@medplum/fhirtypes';
+import { Observation, Patient, Specimen } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { ResourceForm, ResourceFormProps } from './ResourceForm';
 
 const medplum = new MockClient();
@@ -85,7 +85,7 @@ describe('ResourceForm', () => {
     await setup({
       defaultValue: {
         resourceType: 'Observation',
-      },
+      } as Observation,
       onSubmit,
     });
 
@@ -121,7 +121,7 @@ describe('ResourceForm', () => {
           value: 1,
           unit: 'kg',
         },
-      },
+      } as Observation,
       onSubmit,
     });
 

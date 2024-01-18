@@ -26,7 +26,7 @@ export function TimingInput(props: TimingInputProps): JSX.Element {
 
   return (
     <>
-      <Group spacing="xs" grow noWrap>
+      <Group gap="xs" grow wrap="nowrap">
         <span>{formatTiming(valueRef.current) || 'No repeat'}</span>
         <Button onClick={() => setOpen(true)}>Edit</Button>
       </Group>
@@ -94,8 +94,8 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
       onClose={() => props.onCancel()}
     >
       <Stack>
-        <FormSection title="Starts on" htmlFor={'timing-dialog-start'}>
-          <DateTimeInput name={'timing-dialog-start'} onChange={(newValue) => setStart(newValue)} />
+        <FormSection title="Starts on" htmlFor="timing-dialog-start">
+          <DateTimeInput name="timing-dialog-start" onChange={(newValue) => setStart(newValue)} />
         </FormSection>
         <Switch
           label="Repeat"
@@ -104,8 +104,8 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
         />
         {value.repeat && (
           <>
-            <FormSection title="Repeat every" htmlFor={'timing-dialog-period'}>
-              <Group spacing="xs" grow noWrap>
+            <FormSection title="Repeat every" htmlFor="timing-dialog-period">
+              <Group gap="xs" grow wrap="nowrap">
                 <TextInput
                   type="number"
                   step={1}
@@ -134,7 +134,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
             {value.repeat.periodUnit === 'wk' && (
               <FormSection title="Repeat on">
                 <Chip.Group multiple onChange={setDaysOfWeek as (v: string[] | undefined) => void}>
-                  <Group position="apart" mt="md" spacing="xs">
+                  <Group justify="space-between" mt="md" gap="xs">
                     {daysOfWeek.map((day) => (
                       <Chip key={day} value={day} size="xs" radius="xl">
                         {day.charAt(0).toUpperCase()}
@@ -146,7 +146,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
             )}
           </>
         )}
-        <Group position="right">
+        <Group justify="flex-end">
           <Button onClick={() => props.onOk(value)}>OK</Button>
         </Group>
       </Stack>

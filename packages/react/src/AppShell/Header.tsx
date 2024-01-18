@@ -1,57 +1,14 @@
-import { Avatar, createStyles, Group, Header as MantineHeader, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
-import { formatHumanName, getReferenceString, ProfileResource } from '@medplum/core';
+import { Avatar, Group, AppShell as MantineAppShell, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
+import { ProfileResource, formatHumanName, getReferenceString } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { useMedplumContext } from '@medplum/react-hooks';
 import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
+import cx from 'clsx';
 import { ReactNode, useState } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import classes from './Header.module.css';
 import { HeaderSearchInput } from './HeaderSearchInput';
-
-const useStyles = createStyles((theme) => ({
-  logoButton: {
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-    borderRadius: theme.radius.sm,
-    transition: 'background-color 100ms ease',
-
-    '&:hover': {
-      backgroundColor: theme.fn.lighten(
-        theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background as string,
-        0.8
-      ),
-    },
-  },
-
-  user: {
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-    borderRadius: theme.radius.sm,
-    transition: 'background-color 100ms ease',
-
-    '&:hover': {
-      backgroundColor: theme.fn.lighten(
-        theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background as string,
-        0.8
-      ),
-    },
-  },
-
-  userName: {
-    fontWeight: 500,
-    lineHeight: 1,
-    marginRight: 3,
-
-    [theme.fn.smallerThan('xs')]: {
-      display: 'none',
-    },
-  },
-
-  userActive: {
-    backgroundColor: theme.fn.lighten(
-      theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background as string,
-      0.8
-    ),
-  },
-}));
 
 export interface HeaderProps {
   pathname?: string;
@@ -66,13 +23,12 @@ export function Header(props: HeaderProps): JSX.Element {
   const context = useMedplumContext();
   const { medplum, profile, navigate } = context;
   const logins = medplum.getLogins();
-  const { classes, cx } = useStyles();
   const [userMenuOpened, setUserMenuOpened] = useState(false);
 
   return (
-    <MantineHeader height={60} p={8} style={{ zIndex: 101 }}>
-      <Group position="apart">
-        <Group spacing="xs">
+    <MantineAppShell.Header p={8} style={{ zIndex: 101 }}>
+      <Group justify="space-between">
+        <Group gap="xs">
           <UnstyledButton className={classes.logoButton} onClick={props.navbarToggle}>
             {props.logo}
           </UnstyledButton>
@@ -94,7 +50,7 @@ export function Header(props: HeaderProps): JSX.Element {
               className={cx(classes.user, { [classes.userActive]: userMenuOpened })}
               onClick={() => setUserMenuOpened((o) => !o)}
             >
-              <Group spacing={7}>
+              <Group gap={7}>
                 <ResourceAvatar value={profile} radius="xl" size={24} />
                 <Text size="sm" className={classes.userName}>
                   {formatHumanName(profile?.name?.[0] as HumanName)}
@@ -107,7 +63,7 @@ export function Header(props: HeaderProps): JSX.Element {
             <Stack align="center" p="xl">
               <ResourceAvatar size="xl" radius={100} value={context.profile} />
               <HumanNameDisplay value={context.profile?.name?.[0] as HumanName} />
-              <Text color="dimmed" size="xs">
+              <Text c="dimmed" size="xs">
                 {medplum.getActiveLogin()?.project.display}
               </Text>
             </Stack>
@@ -127,10 +83,10 @@ export function Header(props: HeaderProps): JSX.Element {
                     <Group>
                       <Avatar radius="xl" />
                       <div style={{ flex: 1 }}>
-                        <Text size="sm" weight={500}>
+                        <Text size="sm" fw={500}>
                           {login.profile.display}
                         </Text>
-                        <Text color="dimmed" size="xs">
+                        <Text c="dimmed" size="xs">
                           {login.project.display}
                         </Text>
                       </div>
@@ -139,17 +95,20 @@ export function Header(props: HeaderProps): JSX.Element {
                 )
             )}
             <Menu.Divider />
-            <Menu.Item icon={<IconSwitchHorizontal size={14} stroke={1.5} />} onClick={() => navigate('/signin')}>
+            <Menu.Item
+              leftSection={<IconSwitchHorizontal size={14} stroke={1.5} />}
+              onClick={() => navigate('/signin')}
+            >
               Add another account
             </Menu.Item>
             <Menu.Item
-              icon={<IconSettings size={14} stroke={1.5} />}
+              leftSection={<IconSettings size={14} stroke={1.5} />}
               onClick={() => navigate(`/${getReferenceString(profile as ProfileResource)}`)}
             >
               Account settings
             </Menu.Item>
             <Menu.Item
-              icon={<IconLogout size={14} stroke={1.5} />}
+              leftSection={<IconLogout size={14} stroke={1.5} />}
               onClick={async () => {
                 await medplum.signOut();
                 navigate('/signin');
@@ -157,12 +116,12 @@ export function Header(props: HeaderProps): JSX.Element {
             >
               Sign out
             </Menu.Item>
-            <Text size="xs" color="dimmed" align="center">
+            <Text size="xs" c="dimmed" ta="center">
               {props.version}
             </Text>
           </Menu.Dropdown>
         </Menu>
       </Group>
-    </MantineHeader>
+    </MantineAppShell.Header>
   );
 }

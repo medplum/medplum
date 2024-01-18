@@ -128,7 +128,7 @@ export interface AdverseEvent {
    * Note that this is independent of whether anyone was affected or harmed
    * or how severely.
    */
-  actuality?: 'actual' | 'potential';
+  actuality: 'actual' | 'potential';
 
   /**
    * The overall type of event, intended for search and filtering purposes.
@@ -144,7 +144,7 @@ export interface AdverseEvent {
   /**
    * This subject or group impacted by the event.
    */
-  subject?: Reference<Patient | Group | Practitioner | RelatedPerson>;
+  subject: Reference<Patient | Group | Practitioner | RelatedPerson>;
 
   /**
    * The Encounter during which AdverseEvent was created or to which the
@@ -283,7 +283,7 @@ export interface AdverseEventSuspectEntity {
    * be a substance, medication, medication administration, medication
    * statement or a device.
    */
-  instance?: Reference<Immunization | Procedure | Substance | Medication | MedicationAdministration | MedicationStatement | Device>;
+  instance: Reference<Immunization | Procedure | Substance | Medication | MedicationAdministration | MedicationStatement | Device>;
 
   /**
    * Information on the possible cause of the event.

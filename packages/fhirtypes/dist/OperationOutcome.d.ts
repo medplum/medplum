@@ -95,7 +95,7 @@ export interface OperationOutcome {
    * An error, warning, or information message that results from a system
    * action.
    */
-  issue?: OperationOutcomeIssue[];
+  issue: OperationOutcomeIssue[];
 }
 
 /**
@@ -143,7 +143,7 @@ export interface OperationOutcomeIssue {
    * Indicates whether the issue indicates a variation from successful
    * processing.
    */
-  severity?: 'fatal' | 'error' | 'warning' | 'information';
+  severity: 'fatal' | 'error' | 'warning' | 'information';
 
   /**
    * Describes the type of the issue. The system that creates an
@@ -151,7 +151,7 @@ export interface OperationOutcomeIssue {
    * IssueType value set, and may additional provide its own code for the
    * error in the details element.
    */
-  code?: 'invalid' | 'structure' | 'required' | 'value' | 'invariant' | 'security' | 'login' | 'unknown' | 'expired' |
+  code: 'invalid' | 'structure' | 'required' | 'value' | 'invariant' | 'security' | 'login' | 'unknown' | 'expired' |
       'forbidden' | 'suppressed' | 'processing' | 'not-supported' | 'duplicate' | 'multiple-matches' | 'not-found' |
       'deleted' | 'too-long' | 'code-invalid' | 'extension' | 'too-costly' | 'business-rule' | 'conflict' | 'transient' |
       'lock-error' | 'no-store' | 'exception' | 'timeout' | 'incomplete' | 'throttled' | 'informational';

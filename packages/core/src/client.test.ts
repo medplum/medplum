@@ -22,6 +22,11 @@ import { ProfileResource, createReference } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
+  url: 'http://example.com/patient',
+  status: 'active',
+  kind: 'resource',
+  abstract: false,
+  type: 'Patient',
   name: 'Patient',
   snapshot: {
     element: [
@@ -43,6 +48,10 @@ const patientStructureDefinition: StructureDefinition = {
 const patientSearchParameter: SearchParameter = {
   resourceType: 'SearchParameter',
   id: 'Patient-name',
+  url: 'http://example.com/Patient-name',
+  status: 'active',
+  description: 'Search by name',
+  type: 'string',
   base: ['Patient'],
   code: 'name',
   name: 'name',
@@ -1554,7 +1563,10 @@ describe('Client', () => {
   test('Create comment on Encounter', async () => {
     const fetch = mockFetch(200, (_url, options) => JSON.parse(options.body));
     const client = new MedplumClient({ fetch });
-    const result = await client.createComment({ resourceType: 'Encounter', id: '999' }, 'Hello world');
+    const result = await client.createComment(
+      { resourceType: 'Encounter', id: '999', status: 'arrived', class: { code: 'test' } },
+      'Hello world'
+    );
     expect(result).toBeDefined();
     expect(result.basedOn).toBeDefined();
     expect(result.encounter).toBeDefined();
@@ -1569,7 +1581,16 @@ describe('Client', () => {
   test('Create comment on ServiceRequest', async () => {
     const fetch = mockFetch(200, (_url, options) => JSON.parse(options.body));
     const client = new MedplumClient({ fetch });
-    const result = await client.createComment({ resourceType: 'ServiceRequest', id: '999' }, 'Hello world');
+    const result = await client.createComment(
+      {
+        resourceType: 'ServiceRequest',
+        id: '999',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/123' },
+      },
+      'Hello world'
+    );
     expect(result).toBeDefined();
     expect(result.basedOn).toBeDefined();
     expect(fetch).toBeCalledWith(

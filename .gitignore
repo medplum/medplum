@@ -70,3 +70,5 @@ medplum-server.tar.gz
 # All certificate files
 *.p12
 
+# Agent artifacts
+packages/agent/*agent-*-linux*

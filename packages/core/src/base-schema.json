@@ -841,14 +841,20 @@
       "maxDosePerAdministration": {
         "type": [
           {
-            "code": "Quantity"
+            "code": "Quantity",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+            ]
           }
         ]
       },
       "maxDosePerLifetime": {
         "type": [
           {
-            "code": "Quantity"
+            "code": "Quantity",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+            ]
           }
         ]
       }
@@ -1747,7 +1753,7 @@
         "min": 1,
         "type": [
           {
-            "code": "string"
+            "code": "uri"
           }
         ]
       },
@@ -2674,14 +2680,20 @@
       "low": {
         "type": [
           {
-            "code": "Quantity"
+            "code": "Quantity",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+            ]
           }
         ]
       },
       "high": {
         "type": [
           {
-            "code": "Quantity"
+            "code": "Quantity",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+            ]
           }
         ]
       }
@@ -2860,7 +2872,10 @@
         "min": 1,
         "type": [
           {
-            "code": "Quantity"
+            "code": "Quantity",
+            "profile": [
+              "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+            ]
           }
         ]
       },

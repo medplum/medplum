@@ -19,14 +19,14 @@ So today, we're going to delve into `system` strings to understand what they're 
 
 System strings are commonly found on two distinct element types:
 
-- [`Identifiers`](/docs/fhir-basics#identifiers-naming-resources)
-- [`CodeableConcepts`](/docs/fhir-basics#codeable-concepts-standarding-data)
+- [`Identifiers`](/docs/fhir-basics#naming-data-identifiers)
+- [`CodeableConcepts`](/docs/fhir-basics#standardizing-data-codeable-concepts)
 
 ## Identifiers
 
 A common occurrence in healthcare is that the same entity (patient, practitioner, device, etc.) is present in many different systems, each assigning their own unique ID. With FHIR, we can neatly keep track of all these unique IDs using the `identifier` field.
 
-To avert any name collisions, each [`Identifier`](/docs/fhir-basics#identifiers-naming-resources) has an associated `system` string, which acts as a namespace for the identifier. This namespace is typically an **absolute URL** to ensure its global uniqueness.
+To avert any name collisions, each [`Identifier`](/docs/fhir-basics#naming-data-identifiers) has an associated `system` string, which acts as a namespace for the identifier. This namespace is typically an **absolute URL** to ensure its global uniqueness.
 
 Let's look at an example. Say we have two patients, Alice and Bob, who have both visited Hospital 1 and Hospital 2. They have the following medical record numbers:
 
@@ -148,7 +148,7 @@ In an ideal world, there would be one universal code system for any application.
 
 Let's take medications as an example. There are at least four common coding systems used to identify medications (for a deeper dive, check out [our guide on medication codes](https://www.medplum.com/docs/medications/medication-codes)).
 
-This is where [`CodeableConcepts`](/docs/fhir-basics#codeable-concepts-standarding-data) come in handy. They anticipate that the same _concept_ (e.g. drug) might have different _representations_ (aka codes) in different systems.
+This is where [`CodeableConcepts`](/docs/fhir-basics#standardizing-data-codeable-concepts) come in handy. They anticipate that the same _concept_ (e.g. drug) might have different _representations_ (aka codes) in different systems.
 
 The example below shows how Tylenol would be represented in [RxNorm](/docs/medications/medication-codes#rxnorm) and [NDC](/docs/medications/medication-codes#ndc). Here, the `system` string lets us know which code system we're using.
 
@@ -170,11 +170,11 @@ The example below shows how Tylenol would be represented in [RxNorm](/docs/medic
 }
 ```
 
-However, not all [`CodeableConcepts`](/docs/fhir-basics#codeable-concepts-standarding-data) map to a standard system. For example, assume that you are using the `Communcation.category` field to organize messages based on product lines. Since product lines are specific to _your_ company, there won't be a standard code system available. In these cases, you will develop **in-house**, or **local** , codes.
+However, not all [`CodeableConcepts`](/docs/fhir-basics#standardizing-data-codeable-concepts) map to a standard system. For example, assume that you are using the `Communcation.category` field to organize messages based on product lines. Since product lines are specific to _your_ company, there won't be a standard code system available. In these cases, you will develop **in-house**, or **local** , codes.
 
 ## Best Practices for System Strings
 
-So now that we understand [`Identifier`](/docs/fhir-basics#identifiers-naming-resources) and [`CodeableConcepts`](/docs/fhir-basics#codeable-concepts-standarding-data) better, we can talk about how to write good `system` strings.
+So now that we understand [`Identifier`](/docs/fhir-basics#naming-data-identifiers) and [`CodeableConcepts`](/docs/fhir-basics#standardizing-data-codeable-concepts) better, we can talk about how to write good `system` strings.
 
 ### Identifiers
 

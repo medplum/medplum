@@ -39,7 +39,7 @@ export const DateInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="date-input"
-      defaultValue={'2021-01-01'}
+      defaultValue="2021-01-01"
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'date' }] }}
       defaultPropertyType={PropertyType.date}
       onChange={console.log}
@@ -52,7 +52,7 @@ export const DateTimeInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="date-input"
-      defaultValue={'2021-01-01T16:00:01Z'}
+      defaultValue="2021-01-01T16:00:01Z"
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'dateTime' }] }}
       defaultPropertyType={PropertyType.dateTime}
       onChange={console.log}

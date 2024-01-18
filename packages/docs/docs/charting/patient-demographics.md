@@ -68,7 +68,7 @@ EHRs require capturing cause of death for patients. It is recommended to record 
 
 ## Common Identifiers
 
-Common identifiers, such as Driver's License numbers or Social Security numbers should be captured on the `Patient` resource using [name spaced identifiers](/docs/fhir-basics#identifiers-naming-resources). These are useful when querying data from a Health Information Exchange (HIE) or HIE Onramp.
+Common identifiers, such as Driver's License numbers or Social Security numbers should be captured on the `Patient` resource using [name spaced identifiers](/docs/fhir-basics#naming-data-identifiers). These are useful when querying data from a Health Information Exchange (HIE) or HIE Onramp.
 
 The [integration](/docs/integration) section has details on querying the exchanges.
 

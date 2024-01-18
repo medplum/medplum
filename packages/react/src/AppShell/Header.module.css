@@ -1,0 +1,33 @@
+.logoButton {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  transition: background-color 100ms ease;
+
+  &:hover {
+    background-color: var(--mantine-primary-color-light-hover);
+  }
+}
+
+.user {
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  transition: background-color 100ms ease;
+
+  &:hover {
+    background-color: var(--mantine-primary-color-light-hover);
+  }
+}
+
+.userName {
+  font-weight: 500;
+  line-height: 1px;
+  margin-right: 3px;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    display: none;
+  }
+}
+
+.userActive {
+  background-color: var(--mantine-primary-color-light-hover);
+}

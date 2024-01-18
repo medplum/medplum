@@ -1,7 +1,8 @@
+import { AppShell as MantineAppShell } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { IconStar } from '@tabler/icons-react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Navbar } from './Navbar';
 
 const medplum = new MockClient();
@@ -36,30 +37,32 @@ async function setup(initial = '/'): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={medplum} navigate={navigateMock}>
-        <Navbar
-          pathname={initialUrl.pathname}
-          searchParams={initialUrl.searchParams}
-          closeNavbar={closeMock}
-          menus={[
-            {
-              title: 'Menu 1',
-              links: [
-                { label: 'Link 1', href: '/link1' },
-                { label: 'Link 2', href: '/link2' },
-                { label: 'Link 3', href: '/link3' },
-              ],
-            },
-            {
-              title: 'Menu 2',
-              links: [
-                { label: 'Link 4', href: '/link?key=4&_offset=0' },
-                { label: 'Link 5', href: '/link?key=5' },
-                { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
-              ],
-            },
-          ]}
-          displayAddBookmark={true}
-        />
+        <MantineAppShell>
+          <Navbar
+            pathname={initialUrl.pathname}
+            searchParams={initialUrl.searchParams}
+            closeNavbar={closeMock}
+            menus={[
+              {
+                title: 'Menu 1',
+                links: [
+                  { label: 'Link 1', href: '/link1' },
+                  { label: 'Link 2', href: '/link2' },
+                  { label: 'Link 3', href: '/link3' },
+                ],
+              },
+              {
+                title: 'Menu 2',
+                links: [
+                  { label: 'Link 4', href: '/link?key=4&_offset=0' },
+                  { label: 'Link 5', href: '/link?key=5' },
+                  { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
+                ],
+              },
+            ]}
+            displayAddBookmark={true}
+          />
+        </MantineAppShell>
       </MedplumProvider>
     );
   });

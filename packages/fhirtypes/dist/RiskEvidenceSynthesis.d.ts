@@ -147,7 +147,7 @@ export interface RiskEvidenceSynthesis {
    * The status of this risk evidence synthesis. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the risk evidence synthesis was
@@ -277,7 +277,7 @@ export interface RiskEvidenceSynthesis {
    * A reference to a EvidenceVariable resource that defines the population
    * for the research.
    */
-  population?: Reference<EvidenceVariable>;
+  population: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resource that defines the exposure
@@ -289,7 +289,7 @@ export interface RiskEvidenceSynthesis {
    * A reference to a EvidenceVariable resomece that defines the outcome
    * for the research.
    */
-  outcome?: Reference<EvidenceVariable>;
+  outcome: Reference<EvidenceVariable>;
 
   /**
    * A description of the size of the sample involved in the synthesis.

@@ -101,7 +101,10 @@ export function ResourcePage(): JSX.Element | null {
    * Handles a tab change event.
    * @param newTabName - The new tab name.
    */
-  function onTabChange(newTabName: string): void {
+  function onTabChange(newTabName: string | null): void {
+    if (!newTabName) {
+      newTabName = tabs[0].toLowerCase();
+    }
     setCurrentTab(newTabName);
     navigate(`/${resourceType}/${id}/${newTabName}`);
   }
@@ -139,12 +142,12 @@ export function ResourcePage(): JSX.Element | null {
           {specimen && <SpecimenHeader specimen={specimen} />}
           {resourceType !== 'Patient' && <ResourceHeader resource={reference} />}
           <ScrollArea>
-            <Tabs value={currentTab.toLowerCase()} onTabChange={onTabChange}>
+            <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
               <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
                 {tabs.map((t) => (
                   <Tabs.Tab key={t} value={t.toLowerCase()}>
                     {BETA_TABS.includes(t) ? (
-                      <Group spacing={2} noWrap>
+                      <Group gap="xs" wrap="nowrap">
                         {t}
                         <Badge color={theme.primaryColor} size="sm">
                           Beta

@@ -3,6 +3,7 @@ title: EnrollmentRequest
 sidebar_position: 45
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/resourceDefinitions/enrollmentrequest.json';
@@ -13,9 +14,9 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 This resource provides the insurance enrollment details to the insurer regarding a specified coverage.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -25,18 +26,17 @@ This resource provides the insurance enrollment details to the insurer regarding
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
-</TabItem>
+  </TabItem>
   <TabItem value="usage" label="Usage">
-    <div> <a name="scope"></a>  <p><b>This resource has not yet undergone proper review by FM. At this time it is a 'stub', is known to be incomplete, and is to be considered as a draft.</b></p> <p> The <a href="/docs/api/fhir/resources/enrollmentrequest">EnrollmentRequest</a> resource allows for the addition and removal of plan subscribers and their  dependents to health insurance coverage. </p> <p> Todo    </p> </div>
-    </TabItem>
-  
-  
-  <TabItem value="referencedBy" label="Referenced By">
-    <ul><li><a href="/docs/api/fhir/resources/enrollmentresponse">EnrollmentResponse</a></li></ul>
-    </TabItem>
+<div> <a name="scope"></a> <p><b>This resource has not yet undergone proper review by FM. At this time it is a 'stub', is known to be incomplete, and is to be considered as a draft.</b></p> <p> The <Link to="/docs/api/fhir/resources/enrollmentrequest">EnrollmentRequest</Link> resource allows for the addition and removal of plan subscribers and their  dependents to health insurance coverage. </p> <p> Todo    </p> </div>
+  </TabItem>
 
+
+  <TabItem value="referencedBy" label="Referenced By">
+<ul><li><a href="/docs/api/fhir/resources/enrollmentresponse">EnrollmentResponse</a></li></ul>
+  </TabItem>
 </Tabs>

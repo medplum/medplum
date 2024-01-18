@@ -68,7 +68,7 @@ export async function main(): Promise<void> {
   const targetDefinition = buildTargetDefinition();
   const b = new FileBuilder();
   writeMigrations(b, startDefinition, targetDefinition);
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/schema/v54.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/schema/v56.ts'), b.toString(), 'utf8');
 }
 
 async function buildStartDefinition(): Promise<SchemaDefinition> {
@@ -180,16 +180,20 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { name: 'lastUpdated', type: 'TIMESTAMPTZ NOT NULL' },
       { name: 'deleted', type: 'BOOLEAN NOT NULL DEFAULT FALSE' },
       { name: 'compartments', type: 'UUID[] NOT NULL' },
+      { name: 'projectId', type: 'UUID' },
       { name: '_source', type: 'TEXT' },
       { name: '_tag', type: 'TEXT[]' },
       { name: '_profile', type: 'TEXT[]' },
+      { name: '_security', type: 'TEXT[]' },
     ],
     indexes: [
       { columns: ['lastUpdated'], indexType: 'btree' },
       { columns: ['compartments'], indexType: 'gin' },
+      { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_tag'], indexType: 'gin' },
       { columns: ['_profile'], indexType: 'gin' },
+      { columns: ['_security'], indexType: 'btree' },
     ],
   };
 
@@ -468,13 +472,13 @@ function normalizeColumnType(column: ColumnDefinition): string {
 
 function writeAddColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
   b.appendNoWrap(
-    `await client.query('ALTER TABLE "${tableDefinition.name}" ADD COLUMN IF NOT EXISTS "${columnDefinition.name}" ${columnDefinition.type}');`
+    `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD COLUMN IF NOT EXISTS "${columnDefinition.name}" ${columnDefinition.type}');`
   );
 }
 
 function writeUpdateColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
   b.appendNoWrap(
-    `await client.query('ALTER TABLE "${tableDefinition.name}" ALTER COLUMN "${columnDefinition.name}" TYPE ${columnDefinition.type}');`
+    `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${columnDefinition.name}" TYPE ${columnDefinition.type}');`
   );
 }
 

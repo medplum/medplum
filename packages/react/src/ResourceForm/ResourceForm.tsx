@@ -7,7 +7,7 @@ import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInp
 import { FormSection } from '../FormSection/FormSection';
 
 export interface ResourceFormProps {
-  defaultValue: Resource | Reference;
+  defaultValue: Partial<Resource> | Reference;
   outcome?: OperationOutcome;
   onSubmit: (resource: Resource) => void;
   onDelete?: (resource: Resource) => void;
@@ -79,7 +79,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         onChange={setValue}
         profileUrl={props.profileUrl}
       />
-      <Group position="right" mt="xl">
+      <Group justify="flex-end" mt="xl">
         <Button type="submit">OK</Button>
         {props.onDelete && (
           <Button

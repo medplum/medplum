@@ -44,5 +44,5 @@ The stakes are high for deduplication. A false merge can cause treatment errors,
 - [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.ts) sample Bot
 - [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.test.ts) Bot tests
 - [Bot Execution via Subscription](/docs/bots/bot-basics#executing-automatically-using-a-subscription)
-- [FHIR Multiple Identifiers](/docs/fhir-basics#identifiers-naming-resources) documentation
+- [FHIR Multiple Identifiers](/docs/fhir-basics#naming-data-identifiers) documentation
 - [Patient](https://app.medplum.com/Patient) resource in Medplum App

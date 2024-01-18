@@ -52,6 +52,22 @@
       "inherited": false
     },
     {
+      "name": "tokenAuthMethod",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "IdentityProvider.tokenAuthMethod",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Client Authentication method used by Clients to authenticate to the Authorization Server when using the Token Endpoint. If no method is registered, the default method is client_secret_basic.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "userInfoUrl",
       "depth": 1,
       "types": [
@@ -96,6 +112,22 @@
       "max": "1",
       "short": "",
       "definition": "External Identity Provider client secret.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "usePkce",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "IdentityProvider.usePkce",
+      "min": 0,
+      "max": "1",
+      "short": "Optional flag to use PKCE in the token request.",
+      "definition": "Optional flag to use PKCE in the token request.",
       "comment": "",
       "inherited": false
     },

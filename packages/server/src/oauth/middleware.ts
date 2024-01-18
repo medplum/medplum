@@ -1,4 +1,4 @@
-import { OperationOutcomeError, unauthorized } from '@medplum/core';
+import { OperationOutcomeError, createReference, unauthorized } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
@@ -83,7 +83,9 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
   const login: Login = {
     resourceType: 'Login',
+    user: createReference(client),
     authMethod: 'client',
+    authTime: new Date().toISOString(),
     superAdmin: project.superAdmin,
   };
 

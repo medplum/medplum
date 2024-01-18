@@ -154,7 +154,7 @@ describe('update-bucket-policies command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
-    expect(console.log).toBeCalledWith('Config not found');
+    expect(console.log).toBeCalledWith('Config not found: not-found');
   });
 
   test('Stack not found', async () => {
@@ -165,7 +165,7 @@ describe('update-bucket-policies command', () => {
     (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
 
     await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found');
+    expect(console.log).toBeCalledWith('Stack not found: not-found');
   });
 
   describe('updateBucketPolicy', () => {

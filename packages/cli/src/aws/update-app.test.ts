@@ -344,7 +344,7 @@ describe('update-app command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
-    expect(console.log).toBeCalledWith('Config not found');
+    expect(console.log).toBeCalledWith('Config not found: not-found');
   });
 
   test('Update app stack not found', async () => {
@@ -354,7 +354,7 @@ describe('update-app command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found');
+    expect(console.log).toBeCalledWith('Stack not found: not-found');
   });
 
   test('Update app stack incomplete', async () => {

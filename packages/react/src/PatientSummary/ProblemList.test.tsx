@@ -1,8 +1,8 @@
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ProblemList } from './ProblemList';
 
 const medplum = new MockClient();
@@ -38,7 +38,14 @@ describe('PatientSummary - ProblemList', () => {
     await setup(
       <ProblemList
         patient={HomerSimpson}
-        problems={[{ resourceType: 'Condition', id: 'peanut', code: { text: 'Peanut' } }]}
+        problems={[
+          {
+            resourceType: 'Condition',
+            id: 'peanut',
+            subject: { reference: 'Patient/123' },
+            code: { text: 'Peanut' },
+          },
+        ]}
       />
     );
     expect(screen.getByText('Problem List')).toBeInTheDocument();

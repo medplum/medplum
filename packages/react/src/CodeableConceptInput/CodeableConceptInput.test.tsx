@@ -1,8 +1,8 @@
 import { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ReactNode } from 'react';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { CodeableConceptInput } from './CodeableConceptInput';
 
 const medplum = new MockClient();
@@ -85,7 +85,7 @@ describe('CodeableConceptInput', () => {
     await waitFor(() => screen.getByText('+ Create XYZ'));
 
     await act(async () => {
-      fireEvent.mouseDown(screen.getByText('+ Create XYZ'));
+      fireEvent.click(screen.getByText('+ Create XYZ'));
     });
 
     await waitFor(() => screen.getByText('XYZ'));

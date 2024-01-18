@@ -1,4 +1,4 @@
-import { ActionIcon, Center, createStyles, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, Center, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import { getReferenceString, MedplumClient, normalizeErrorString, ProfileResource } from '@medplum/core';
 import {
@@ -37,12 +37,7 @@ import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
 import { Timeline, TimelineItem } from '../Timeline/Timeline';
 import { sortByDateAndPriority } from '../utils/date';
-
-const useStyles = createStyles((theme) => ({
-  pinnedComment: {
-    backgroundColor: theme.colors.blue[0],
-  },
-}));
+import classes from './ResourceTimeline.module.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
@@ -286,7 +281,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
               }
             }}
           >
-            <Group spacing="xs" noWrap style={{ width: '100%' }}>
+            <Group gap="xs" wrap="nowrap" style={{ width: '100%' }}>
               <ResourceAvatar value={sender} />
               <TextInput
                 name="text"
@@ -380,7 +375,7 @@ function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<
       <Menu.Label>Resource</Menu.Label>
       {props.onPin && (
         <Menu.Item
-          icon={<IconPin size={14} />}
+          leftSection={<IconPin size={14} />}
           onClick={() => (props.onPin as (resource: T) => void)(props.resource)}
           aria-label={`Pin ${getReferenceString(props.resource)}`}
         >
@@ -389,7 +384,7 @@ function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<
       )}
       {props.onUnpin && (
         <Menu.Item
-          icon={<IconPinnedOff size={14} />}
+          leftSection={<IconPinnedOff size={14} />}
           onClick={() => (props.onUnpin as (resource: T) => void)(props.resource)}
           aria-label={`Unpin ${getReferenceString(props.resource)}`}
         >
@@ -398,7 +393,7 @@ function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<
       )}
       {props.onDetails && (
         <Menu.Item
-          icon={<IconListDetails size={14} />}
+          leftSection={<IconListDetails size={14} />}
           onClick={() => (props.onDetails as (resource: T) => void)(props.resource)}
           aria-label={`Details ${getReferenceString(props.resource)}`}
         >
@@ -407,7 +402,7 @@ function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<
       )}
       {props.onEdit && (
         <Menu.Item
-          icon={<IconEdit size={14} />}
+          leftSection={<IconEdit size={14} />}
           onClick={() => (props.onEdit as (resource: T) => void)(props.resource)}
           aria-label={`Edit ${getReferenceString(props.resource)}`}
         >
@@ -420,7 +415,7 @@ function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<
           <Menu.Label>Danger zone</Menu.Label>
           <Menu.Item
             color="red"
-            icon={<IconTrash size={14} />}
+            leftSection={<IconTrash size={14} />}
             onClick={() => (props.onDelete as (resource: T) => void)(props.resource)}
             aria-label={`Delete ${getReferenceString(props.resource)}`}
           >
@@ -464,7 +459,6 @@ function getPrevious(history: Bundle, version: Resource): Resource | undefined {
 }
 
 function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>): JSX.Element {
-  const { classes } = useStyles();
   const routine = !props.resource.priority || props.resource.priority === 'routine';
   const className = routine ? undefined : classes.pinnedComment;
   return (

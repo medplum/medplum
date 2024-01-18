@@ -103,7 +103,7 @@ export interface CompartmentDefinition {
    * SHALL remain the same when the compartment definition is stored on
    * different servers.
    */
-  url?: string;
+  url: string;
 
   /**
    * The identifier that is used to identify this version of the
@@ -121,13 +121,13 @@ export interface CompartmentDefinition {
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * The status of this compartment definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this compartment definition is
@@ -182,12 +182,12 @@ export interface CompartmentDefinition {
   /**
    * Which compartment this definition describes.
    */
-  code?: 'Patient' | 'Encounter' | 'RelatedPerson' | 'Practitioner' | 'Device';
+  code: 'Patient' | 'Encounter' | 'RelatedPerson' | 'Practitioner' | 'Device';
 
   /**
    * Whether the search syntax is supported,.
    */
-  search?: boolean;
+  search: boolean;
 
   /**
    * Information about how a resource is related to the compartment.
@@ -238,7 +238,7 @@ export interface CompartmentDefinitionResource {
   /**
    * The name of a resource supported by the server.
    */
-  code?: ResourceType;
+  code: ResourceType;
 
   /**
    * The name of a search parameter that represents the link to the

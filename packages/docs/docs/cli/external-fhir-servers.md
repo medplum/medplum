@@ -17,7 +17,7 @@ When building an application, you many need to query or write data to an externa
 
 To enable these scenarios, you will need a `clientId` or `clientSecret` to access the system you want to connect to. Please note that different systems have different levels of functionality, and so the commands in the CLI are not guaranteed to work.
 
-The examples below use the [CLI optional flags](/docs/cli#optional-flags).
+The examples below use the [CLI optional flags](/docs/cli#optional-flags-for-medplum-commands).
 
 ## Setting up your credentials
 

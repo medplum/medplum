@@ -18,7 +18,7 @@ export function LabResults(): JSX.Element {
     <Box p="xl">
       <Title mb="lg">Lab Results</Title>
       <InfoSection title="Lab Results">
-        <Stack spacing={0}>
+        <Stack gap={0}>
           {reports.map((report) => (
             <InfoButton key={report.id} onClick={() => navigate(`./${report.id}`)}>
               <div>

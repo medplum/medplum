@@ -103,7 +103,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
           </tbody>
         </table>
       </div>
-      <Group position="right" mt="xl">
+      <Group justify="flex-end" mt="xl">
         <Button onClick={() => props.onOk(searchRef.current)}>OK</Button>
       </Group>
     </Modal>
@@ -128,10 +128,10 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
         <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
       </td>
       <td>
-        <Button compact variant="outline" onClick={props.onEdit}>
+        <Button size="compact-md" variant="outline" onClick={props.onEdit}>
           Edit
         </Button>
-        <Button compact variant="outline" onClick={props.onDelete}>
+        <Button size="size-md" variant="outline" onClick={props.onDelete}>
           Delete
         </Button>
       </td>
@@ -204,7 +204,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {value.code && value.operator && (
           <Button
-            compact
+            size="compact-md"
             variant="outline"
             onClick={() => {
               props.onOk(valueRef.current);
@@ -215,7 +215,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
           </Button>
         )}
         {props.onCancel && (
-          <Button compact variant="outline" onClick={props.onCancel}>
+          <Button size="compact-md" variant="outline" onClick={props.onCancel}>
             Cancel
           </Button>
         )}

@@ -17,9 +17,9 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { render, screen } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { render, screen } from '../test-utils/render';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const medplum = new MockClient();
@@ -88,7 +88,7 @@ describe('ResourcePropertyDisplay', () => {
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
-        value={'hello'}
+        value="hello"
       />
     );
     expect(screen.getByText('hello')).toBeInTheDocument();

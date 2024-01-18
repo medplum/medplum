@@ -18,7 +18,7 @@ export function MembershipAndBilling(): JSX.Element {
         {coverages.length === 0 ? (
           <Box p="xl">No coverage</Box>
         ) : (
-          <Stack spacing={0}>
+          <Stack gap={0}>
             {coverages.map((c) => (
               <InfoButton key={c.id}>{c.id}</InfoButton>
             ))}
@@ -29,7 +29,7 @@ export function MembershipAndBilling(): JSX.Element {
         {payments.length === 0 ? (
           <Box p="xl">No payments</Box>
         ) : (
-          <Stack spacing={0}>
+          <Stack gap={0}>
             {payments.map((p) => (
               <InfoButton key={p.id}>{p.id}</InfoButton>
             ))}

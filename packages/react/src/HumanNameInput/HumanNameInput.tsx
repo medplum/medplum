@@ -52,7 +52,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       <NativeSelect
         defaultValue={value?.use}
         name={props.name + '-use'}

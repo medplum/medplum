@@ -209,7 +209,7 @@ export interface PractitionerQualification {
   /**
    * Coded representation of the qualification.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * Period during which the qualification is valid.
