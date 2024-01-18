@@ -15,11 +15,8 @@ BRANCH_NAME="dep-upgrades-$DATE"
 git checkout -b "$BRANCH_NAME"
 
 # Exclude known problem packages
-# @mantine/* - holding back until the Mantine 7 migration is complete
-# eslint-config-next - blocked uptil after Mantine 7 upgrade
-# next - blocked uptil after Mantine 7 upgrade
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-EXCLUDE="@mantine/* eslint-config-next next node-fetch"
+EXCLUDE="node-fetch"
 
 npx npm-check-updates -u -x "$EXCLUDE" --packageFile package.json
 

@@ -19,7 +19,7 @@ import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
 import { systemRepo } from '../fhir/repo';
-import { sendResponse } from '../fhir/routes';
+import { sendResponse } from '../fhir/response';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';

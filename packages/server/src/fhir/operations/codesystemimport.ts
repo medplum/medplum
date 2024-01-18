@@ -37,13 +37,13 @@ const operation: OperationDefinition = {
   ],
 };
 
-type ImportedProperty = {
+export type ImportedProperty = {
   code: string;
   property: string;
   value: string;
 };
 
-type CodeSystemImportParameters = {
+export type CodeSystemImportParameters = {
   system: string;
   concept?: Coding[];
   property?: ImportedProperty[];
@@ -75,10 +75,24 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   }
   const codeSystem = codeSystems[0];
 
+  try {
+    await importCodeSystem(codeSystem, params.concept, params.property);
+  } catch (err) {
+    sendOutcome(res, normalizeOperationOutcome(err));
+    return;
+  }
+  await sendOutputParameters(operation, res, allOk, codeSystem);
+}
+
+export async function importCodeSystem(
+  codeSystem: CodeSystem,
+  concepts?: Coding[],
+  properties?: ImportedProperty[]
+): Promise<void> {
   const db = getClient();
   await db.query('BEGIN');
-  if (params.concept) {
-    for (const concept of params.concept) {
+  if (concepts?.length) {
+    for (const concept of concepts) {
       const row = {
         system: codeSystem.id,
         code: concept.code,
@@ -89,17 +103,11 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
     }
   }
 
-  if (params.property?.length) {
-    try {
-      await processProperties(params.property, codeSystem, db);
-    } catch (err: any) {
-      sendOutcome(res, normalizeOperationOutcome(err));
-      return;
-    }
+  if (properties?.length) {
+    await processProperties(properties, codeSystem, db);
   }
 
   await db.query(`COMMIT`);
-  await sendOutputParameters(operation, res, allOk, codeSystem);
 }
 
 async function processProperties(
@@ -153,9 +161,13 @@ async function processProperties(
 }
 
 async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): Promise<[number, boolean]> {
-  const prop = codeSystem.property?.find((p) => p.code === code);
+  let prop = codeSystem.property?.find((p) => p.code === code);
   if (!prop) {
-    throw new OperationOutcomeError(badRequest(`Unknown property: ${code}`));
+    if (code === codeSystem.hierarchyMeaning || (code === 'parent' && !codeSystem.hierarchyMeaning)) {
+      prop = { code, uri: 'http://hl7.org/fhir/concept-properties#parent', type: 'code' };
+    } else {
+      throw new OperationOutcomeError(badRequest(`Unknown property: ${code}`));
+    }
   }
   const isRelationship = prop.type === 'code';
 
