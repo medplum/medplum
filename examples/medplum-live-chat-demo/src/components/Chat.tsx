@@ -259,7 +259,7 @@ export function Chat(): JSX.Element | null {
       <>
         <div className={classes.chatContainer}>
           <Paper className={classes.chatPaper} shadow="xl" p={0} radius="md" withBorder>
-            <div className={classes.chatTitle}>Chat with Dr. John Miller</div>
+            <div className={classes.chatTitle}>Chat with {DR_ALICE_SMITH.display}</div>
             <div className={classes.chatBody}>
               <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
                 {communications.map((c, i) => {
