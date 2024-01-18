@@ -38,7 +38,7 @@ To complete an eligibility check, you will need the following information:
 
 - Patient demographic info, modeled as a reference to a [`Patient`](/docs/api/fhir/resources/patient) resource.
 - Patient insurance coverage, modeled as a reference to a [`Coverage`](/docs/api/fhir/resources/coverage) resource (see our [insurance guide](/docs/billing/patient-insurance) for more info).
-- Provider info, modeled as a reference to the relevant [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), or [`Organization`](/docs/api/fhir/resources/organization) (see the [provider network guide](/docs/fhir-datastore/provider-directory/provider-networks) for more info).
+- Provider info, modeled as a reference to the relevant [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), or [`Organization`](/docs/api/fhir/resources/organization) (see the [provider network guide](/docs/administration/provider-networks) for more info).
 - The procedure/service to be provided and the diagnosis. This information should be on the relevant [`Encounter`](/docs/api/fhir/resources/encounter) (see our [blog post on Well Defined Service Menus](https://www.medplum.com/blog#well-defined-service-menu) for more info).
 
 ## Creating a Request
@@ -105,7 +105,7 @@ When you send your request, the insurer will review it and respond. This respons
 | `disposition`             | A human-readable description of the status of the request.                                                                              | The policy is currently in-force.                               |
 | `error`                   | Documents any errors that encountered during the eligibility check. Describes why a check may not have been able to be completed.       | Missing Identifier                                              |
 | `insurance.item`          | Details about the benefits, authorization requirements, and current benefits of the insurance.                                          | [See below](#the-item-element-on-a-coverageeligibilityresponse) |
-| `insurance.inforce`       | A boolean indicating if the coverage is in force for the requested period.                                                               | true                                                            |
+| `insurance.inforce`       | A boolean indicating if the coverage is in force for the requested period.                                                              | true                                                            |
 | `insurance.benefitPeriod` | The term period of the benefits documented in the response.                                                                             | 2023-01-01 – 2023-12-31                                         |
 | `insurance.coverage`      | A reference to the patient's [`Coverage`](/docs/api/fhir/resources/coverage) resource.                                                  | Coverage/example-coverage                                       |
 | `request`                 | A reference to the original [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) this is in response to. | CoverageEligibilityRequest/check-for-vision-coverage            |
