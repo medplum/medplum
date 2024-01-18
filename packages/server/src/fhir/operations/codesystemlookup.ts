@@ -1,8 +1,8 @@
-import { Coding } from '@medplum/fhirtypes';
+import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { Request, Response } from 'express';
-import { TypedValue, allOk, badRequest, notFound } from '@medplum/core';
+import { Operator, TypedValue, allOk, badRequest, notFound } from '@medplum/core';
 import { Column, Condition, SelectQuery } from '../sql';
 import { sendOutcome } from '../outcomes';
 import { getClient } from '../../database';
@@ -28,6 +28,15 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     coding = { system: params.system, code: params.code };
   } else {
     sendOutcome(res, badRequest('No coding specified'));
+    return;
+  }
+
+  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
+    resourceType: 'CodeSystem',
+    filters: [{ code: 'url', operator: Operator.EQUALS, value: coding.system as string }],
+  });
+  if (!codeSystem) {
+    sendOutcome(res, badRequest('CodeSystem not found'));
     return;
   }
 
@@ -58,7 +67,6 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     .column(new Column(csPropTable, 'description'))
     .column(new Column(propertyTable, 'value'))
     .where(new Column(codeSystemTable, 'url'), '=', coding.system)
-    .where(new Column(codeSystemTable, 'projectId'), '=', ctx.project.id)
     .where(new Column('Coding', 'code'), '=', coding.code);
 
   const db = getClient();

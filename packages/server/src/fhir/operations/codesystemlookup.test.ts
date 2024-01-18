@@ -166,10 +166,10 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
       } as Parameters);
-    expect(res.status).toEqual(404);
+    expect(res.status).toEqual(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'CodeSystem not found' } }],
     });
   });
 });
