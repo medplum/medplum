@@ -16,8 +16,8 @@
   "scripts": {
     "build": "npm run clean && tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
-    "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/instrumentation.ts src/index.ts",
-    "start": "node --require ./dist/instrumentation.js dist/index.js",
+    "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
+    "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest --runInBand"
   },
   "dependencies": {

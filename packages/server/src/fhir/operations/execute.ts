@@ -36,7 +36,7 @@ import { getConfig } from '../../config';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { globalLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
-import { incrementCounter } from '../../otel';
+import { incrementCounter } from '../../otel/otel';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createAuditEventEntities } from '../../workers/utils';
