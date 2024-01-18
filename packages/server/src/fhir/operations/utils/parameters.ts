@@ -152,9 +152,18 @@ export async function sendOutputParameters(
       continue;
     }
 
-    response.parameter?.push(
-      ...(Array.isArray(value) ? value.map((v) => makeParameter(param, v)) : [makeParameter(param, value)])
-    );
+    if (Array.isArray(value)) {
+      for (const val of value.map((v) => makeParameter(param, v))) {
+        if (val) {
+          response.parameter.push(val);
+        }
+      }
+    } else {
+      const val = makeParameter(param, value);
+      if (val) {
+        response.parameter.push(val);
+      }
+    }
   }
 
   try {
@@ -165,13 +174,16 @@ export async function sendOutputParameters(
   }
 }
 
-function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter {
+function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter | undefined {
   if (param.part) {
     const parts: ParametersParameter[] = [];
     for (const part of param.part) {
       const nestedValue = value[part.name ?? ''];
       if (nestedValue !== undefined) {
-        parts.push(makeParameter(part, nestedValue));
+        const nestedParam = makeParameter(part, nestedValue);
+        if (nestedParam) {
+          parts.push(nestedParam);
+        }
       }
     }
     return { name: param.name, part: parts };
@@ -192,5 +204,5 @@ function makeParameter(param: OperationDefinitionParameter, value: any): Paramet
       }
     }
   }
-  return {};
+  return undefined;
 }
