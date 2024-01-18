@@ -61,7 +61,7 @@
   "devDependencies": {
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
-    "@types/node-fetch": "2.6.10",
+    "@types/node-fetch": "2.6.11",
     "@types/tar": "6.1.10"
   },
   "engines": {

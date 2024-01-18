@@ -19,7 +19,7 @@
     ]
   },
   "dependencies": {
-    "@expo/webpack-config": "19.0.0",
+    "@expo/webpack-config": "19.0.1",
     "@medplum/core": "3.0.0",
     "@medplum/expo-polyfills": "3.0.0",
     "@medplum/react-hooks": "3.0.0",

@@ -4,6 +4,7 @@ import {
   allOk,
   assertOk,
   badRequest,
+  conflict,
   created,
   forbidden,
   getStatus,
@@ -66,6 +67,11 @@ describe('Outcomes', () => {
     });
   });
 
+  test('Conflict', () => {
+    expect(isOk(conflict('bad'))).toBe(false);
+    expect(conflict('bad').issue?.[0]?.details?.text).toBe('bad');
+  });
+
   test('Bad Request', () => {
     expect(isOk(badRequest('bad'))).toBe(false);
     expect(badRequest('bad', 'bad').issue?.[0]?.expression?.[0]).toBe('bad');
@@ -79,6 +85,7 @@ describe('Outcomes', () => {
     expect(getStatus(unauthorized)).toBe(401);
     expect(getStatus(forbidden)).toBe(403);
     expect(getStatus(notFound)).toBe(404);
+    expect(getStatus(conflict('bad'))).toBe(409);
     expect(getStatus(gone)).toBe(410);
     expect(getStatus(tooManyRequests)).toBe(429);
     expect(getStatus(badRequest('bad'))).toBe(400);

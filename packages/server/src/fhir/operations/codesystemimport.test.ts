@@ -245,6 +245,23 @@ describe('CodeSystem $import', () => {
     expect(res2.status).toEqual(400);
     expect(res2.body.issue[0].code).toEqual('invalid');
   });
+
+  test('Returns error on non-SuperAdmin user', async () => {
+    const regularAccessToken = await initTestAuth({ superAdmin: false });
+    const res2 = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + regularAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: snomed.url },
+          { name: 'concept', valueCoding: { code: '184598004', display: 'Needle biopsy of brain (procedure)' } },
+        ],
+      });
+    expect(res2.status).toEqual(403);
+    expect(res2.body.issue[0].code).toEqual('forbidden');
+  });
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {

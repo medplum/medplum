@@ -179,11 +179,10 @@ export function getDepth(path: readonly (string | number)[]): number {
  * @returns True if the field is requested in the GraphQL query.
  */
 export function isFieldRequested(info: GraphQLResolveInfo, fieldName: string): boolean {
-  return info.fieldNodes.some(
-    (fieldNode) =>
-      fieldNode.selectionSet?.selections.some((selection) => {
-        return selection.kind === Kind.FIELD && selection.name.value === fieldName;
-      })
+  return info.fieldNodes.some((fieldNode) =>
+    fieldNode.selectionSet?.selections.some((selection) => {
+      return selection.kind === Kind.FIELD && selection.name.value === fieldName;
+    })
   );
 }
 

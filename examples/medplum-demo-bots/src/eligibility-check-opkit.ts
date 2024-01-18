@@ -58,8 +58,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     insurance: [{ coverage: createReference(coverage) }],
   });
 
-  const providerNpi = provider.identifier?.find((identifier) => identifier.system === 'http://hl7.org/fhir/sid/us-npi')
-    ?.value;
+  const providerNpi = provider.identifier?.find(
+    (identifier) => identifier.system === 'http://hl7.org/fhir/sid/us-npi'
+  )?.value;
   const serviceTypes = ['health_benefit_plan_coverage'];
   const payerId = organization.identifier?.find(
     (identifier) => identifier.system === 'https://docs.opkit.co/reference/getpayers'

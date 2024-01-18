@@ -23,7 +23,7 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { getAuthenticatedContext, getRequestContext } from '../context';
+import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -140,8 +140,7 @@ superAdminRouter.post(
     body('before').isISO8601().withMessage('Invalid before date'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    requireSuperAdmin();
+    const ctx = requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -200,10 +199,9 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/migrate',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
+    const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    const ctx = getRequestContext();
     await sendAsyncResponse(req, res, async () => {
       const client = getClient();
       const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
@@ -219,10 +217,12 @@ superAdminRouter.post(
   })
 );
 
-function requireSuperAdmin(): void {
-  if (!getAuthenticatedContext().login.superAdmin) {
+export function requireSuperAdmin(): AuthenticatedRequestContext {
+  const ctx = getAuthenticatedContext();
+  if (!ctx.login.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
+  return ctx;
 }
 
 function requireAsync(req: Request): void {
