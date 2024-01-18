@@ -5,7 +5,7 @@ import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { sendResponse } from '../routes';
+import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 
 /**

@@ -19,10 +19,10 @@ import {
   TaskInput,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { isFhirJsonContentType, sendResponse } from '../routes';
-import { getAuthenticatedContext } from '../../context';
+import { isFhirJsonContentType, sendResponse } from '../response';
 
 type SubjectType =
   | CareTeam
