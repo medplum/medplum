@@ -656,8 +656,14 @@ export class Repository extends BaseRepository implements FhirRepository {
         this.writeLookupTables(client, resource),
       ]);
       await client.query('COMMIT');
-    } catch (err) {
+    } catch (err: any) {
       await client.query('ROLLBACK');
+      if (err && typeof err === 'object' && err.code === '23505') {
+        // Catch duplicate key errors and throw a 409 Conflict
+        // See https://github.com/brianc/node-postgres/issues/1602
+        // See https://www.postgresql.org/docs/10/errcodes-appendix.html
+        throw new OperationOutcomeError(badRequest('Duplicate key'));
+      }
       throw err;
     } finally {
       client.release();
