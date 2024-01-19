@@ -10,7 +10,7 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
-import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery } from '@medplum/core';
+import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery, isDataTypeLoaded } from '@medplum/core';
 import {
   Bundle,
   OperationOutcome,
@@ -111,7 +111,7 @@ interface SearchControlState {
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
-  const [schemaLoaded, setSchemaLoaded] = useState(false);
+  const [loadingSchema, setLoadingSchema] = useState<string>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
 
@@ -249,14 +249,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   useEffect(() => {
-    setSchemaLoaded(false);
+    setLoadingSchema(props.search.resourceType);
     medplum
       .requestSchema(props.search.resourceType as ResourceType)
-      .then(() => setSchemaLoaded(true))
-      .catch(console.log);
+      .catch(console.error)
+      .finally(() => setLoadingSchema(undefined));
   }, [medplum, props.search.resourceType]);
 
-  if (!schemaLoaded) {
+  if (!isDataTypeLoaded(props.search.resourceType) || loadingSchema === props.search.resourceType) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
         <Loader />
