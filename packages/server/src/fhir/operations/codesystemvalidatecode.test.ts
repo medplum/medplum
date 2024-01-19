@@ -133,4 +133,21 @@ describe('CodeSystem validate-code', () => {
       issue: [{ severity: 'error', code: 'invalid', details: { text: 'No coding specified' } }],
     });
   });
+
+  test('Checks project', async () => {
+    const otherAccessToken = await initTestAuth();
+    const res = await request(app)
+      .post('/fhir/R4/CodeSystem/$validate-code')
+      .set('Authorization', 'Bearer ' + otherAccessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
+      } as Parameters);
+    expect(res.status).toEqual(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'CodeSystem not found' } }],
+    });
+  });
 });

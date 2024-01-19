@@ -1,11 +1,12 @@
-import { Coding } from '@medplum/fhirtypes';
+import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, Operator } from '@medplum/core';
 import { getClient } from '../../database';
 import { Column, Condition, SelectQuery } from '../sql';
 import { sendOutcome } from '../outcomes';
 import { getOperationDefinition } from './definitions';
+import { getAuthenticatedContext } from '../../context';
 
 const operation = getOperationDefinition('CodeSystem', 'validate-code');
 
@@ -25,6 +26,7 @@ type CodeSystemValidateCodeParameters = {
  * @param res - The HTTP response.
  */
 export async function codeSystemValidateCodeHandler(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const params = parseInputParameters<CodeSystemValidateCodeParameters>(operation, req);
 
   let coding: Coding;
@@ -37,6 +39,15 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
     return;
   }
 
+  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
+    resourceType: 'CodeSystem',
+    filters: [{ code: 'url', operator: Operator.EQUALS, value: coding.system as string }],
+  });
+  if (!codeSystem) {
+    sendOutcome(res, badRequest('CodeSystem not found'));
+    return;
+  }
+
   const query = new SelectQuery('Coding');
   const codeSystemTable = query.getNextJoinAlias();
   query.innerJoin(
@@ -44,7 +55,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
     codeSystemTable,
     new Condition(new Column('Coding', 'system'), '=', new Column(codeSystemTable, 'id'))
   );
-  query.column('display').where(new Column(codeSystemTable, 'url'), '=', coding.system).where('code', '=', coding.code);
+  query.column('display').where(new Column(codeSystemTable, 'id'), '=', codeSystem.id).where('code', '=', coding.code);
 
   const db = getClient();
   const result = await query.execute(db);
