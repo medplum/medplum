@@ -116,6 +116,6 @@ describe('AppShell', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 });
