@@ -181,7 +181,42 @@ describe('modify default values', () => {
       expect(categoryOutput).toEqual(expectedCategoryOutput);
     });
 
-    test('Observation.component slices', () => {
+    test.each<['systolic' | 'diastolic', object, object]>([
+      [
+        'systolic',
+        {},
+        {
+          code: { coding: [{ system: 'http://loinc.org', code: '8480-6' }] },
+          valueQuantity: { system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
+        },
+      ],
+      [
+        'diastolic',
+        {},
+        {
+          code: { coding: [{ system: 'http://loinc.org', code: '8462-4' }] },
+          valueQuantity: { system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
+        },
+      ],
+      [
+        'diastolic',
+        {
+          code: {
+            coding: [{ system: 'http://loinc.org', code: '8462-4', display: 'Diastolic blood pressure' }],
+            text: 'Diastolic blood pressure',
+          },
+          valueQuantity: { value: 49, unit: 'mmHg', system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
+        },
+        {
+          // Same as input
+          code: {
+            coding: [{ system: 'http://loinc.org', code: '8462-4', display: 'Diastolic blood pressure' }],
+            text: 'Diastolic blood pressure',
+          },
+          valueQuantity: { value: 49, unit: 'mmHg', system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
+        },
+      ],
+    ])('Observation.component slices', (sliceName, input, expected) => {
       const observationContext = buildObservationContext();
 
       const slicing = schema.elements.component.slicing;
@@ -190,42 +225,27 @@ describe('modify default values', () => {
       }
       expect(slicing.slices.length).toEqual(2);
 
-      const systolicSlice = slicing.slices.find((s) => s.name === 'systolic');
-      const diastolicSlice = slicing.slices.find((s) => s.name === 'diastolic');
-      if (!isPopulated(systolicSlice) || !isPopulated(diastolicSlice)) {
-        fail('Expected to find systolic and diastolic slices');
+      const slice = slicing.slices.find((s) => s.name === sliceName);
+      if (!isPopulated(slice)) {
+        fail(`Expected to find slice "${sliceName}`);
       }
 
-      if (!isPopulated(systolicSlice.type) || !isPopulated(diastolicSlice.type)) {
-        fail(`Expected slices to have at least one type`);
+      if (!isPopulated(slice.type)) {
+        fail(`Expected slice ${sliceName} to have at least one type`);
       }
 
-      const sliceType = systolicSlice.type[0].code;
+      const sliceType = slice.type[0].code;
       expect(sliceType).toEqual('ObservationComponent');
-      expect(diastolicSlice.type[0].code).toEqual(sliceType);
 
-      const [systolicContext, diastolicContext] = [systolicSlice, diastolicSlice].map((slice) =>
-        buildElementsContext({
-          parentContext: observationContext,
-          elements: slice.elements,
-          parentPath: 'Observation.component',
-          parentType: sliceType,
-        })
-      );
+      const context = buildElementsContext({
+        parentContext: observationContext,
+        elements: slice.elements,
+        parentPath: 'Observation.component',
+        parentType: sliceType,
+      });
 
-      const systolicExpected = {
-        code: { coding: [{ system: 'http://loinc.org', code: '8480-6' }] },
-        valueQuantity: { system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
-      };
-      const systolicOutput = systolicContext.modifyDefaultValue({});
-      expect(systolicOutput).toEqual(systolicExpected);
-
-      const diastolicExpected = {
-        code: { coding: [{ system: 'http://loinc.org', code: '8462-4' }] },
-        valueQuantity: { system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
-      };
-      const diastolicOutput = diastolicContext.modifyDefaultValue({});
-      expect(diastolicOutput).toEqual(diastolicExpected);
+      const output = context.modifyDefaultValue(input);
+      expect(output).toEqual(expected);
     });
   });
 });
