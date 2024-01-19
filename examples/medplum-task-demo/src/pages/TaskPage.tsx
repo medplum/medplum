@@ -31,7 +31,6 @@ export function TaskPage(): JSX.Element {
   useEffect(() => {
     // Fetch the task that is specified in the URL
     const fetchTask = async (): Promise<void> => {
-      console.log('fetching task');
       try {
         const taskData = await medplum.readResource('Task', id);
         setTask(taskData);

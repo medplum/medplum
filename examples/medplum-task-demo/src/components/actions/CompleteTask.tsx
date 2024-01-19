@@ -13,9 +13,7 @@ interface CompleteTaskProps {
 export function CompleteTask({ task, onChange }: CompleteTaskProps): JSX.Element {
   const medplum = useMedplum();
   const handleCompleteTask = async (): Promise<void> => {
-    if (!task?.id) {
-      return;
-    }
+    const taskId = task.id as string;
 
     const ops: PatchOperation[] = [
       { op: 'test', path: '/meta/versionId', value: task.meta?.versionId },
@@ -23,7 +21,7 @@ export function CompleteTask({ task, onChange }: CompleteTaskProps): JSX.Element
     ];
 
     try {
-      const result = await medplum.patchResource('Task', task.id, ops);
+      const result = await medplum.patchResource('Task', taskId, ops);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',

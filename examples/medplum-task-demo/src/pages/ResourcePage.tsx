@@ -18,7 +18,6 @@ export function ResourcePage(): JSX.Element | null {
 
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
-  console.log('Current tab', tab);
 
   // Update the tab and navigate to that tab's URL
   const handleTabChange = (newTab: string | null): void => {

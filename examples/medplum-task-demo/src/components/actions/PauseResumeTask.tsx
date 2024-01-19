@@ -13,9 +13,7 @@ interface PauseResumeTaskProps {
 export function PauseResumeTask({ task, onChange }: PauseResumeTaskProps): JSX.Element {
   const medplum = useMedplum();
   const handleChangeTaskStatus = async (): Promise<void> => {
-    if (!task?.id) {
-      return;
-    }
+    const taskId = task.id as string;
 
     // We use a patch operation here to avoid race conditions. This ensures that if multiple users try to update the status simultaneously, only one will be successful.
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
@@ -26,7 +24,7 @@ export function PauseResumeTask({ task, onChange }: PauseResumeTaskProps): JSX.E
 
     // Patch the task with the updated status
     try {
-      const result = await medplum.patchResource('Task', task.id, ops);
+      const result = await medplum.patchResource('Task', taskId, ops);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',

@@ -43,18 +43,10 @@ export function App(): JSX.Element | null {
 
     const myTasksLink = { icon: <IconCategory />, label: 'My Tasks', href: `/Task${myTasksQuery}` };
 
-    async function getUserPractitionerRoles(): Promise<PractitionerRole[]> {
-      if (profileReference) {
-        const practitionerRoles = await medplum.searchResources('PractitionerRole', {
-          practitioner: profileReference,
-        });
-
-        return practitionerRoles ?? [];
-      }
-      return [];
-    }
-
-    getUserPractitionerRoles()
+    medplum
+      .searchResources('PractitionerRole', {
+        practitioner: profileReference,
+      })
       .then((roles) => {
         const roleLinks = [];
 

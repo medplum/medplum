@@ -58,7 +58,6 @@ export function SearchPage(): JSX.Element {
 
     const updatedSearch = updateSearch(newTab ?? 'active', search);
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
-    console.log(updatedSearchQuery);
     navigate(`/Task${updatedSearchQuery}`);
   };
 

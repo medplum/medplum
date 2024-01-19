@@ -9,17 +9,18 @@ export interface NotesPageProps {
 export function NotesPage(props: NotesPageProps): JSX.Element {
   const notes = props.task.note;
 
-  // Sort notes so the most recent are at the top of the page
-  const sortedNotes = sortNotesByTime(notes);
-
-  // Display if the task does not have any notes
-  if (!sortedNotes) {
+  if (!notes) {
     return (
       <div>
         <p>No Notes</p>
       </div>
     );
   }
+
+  // Sort notes so the most recent are at the top of the page
+  const sortedNotes = sortNotesByTime(notes);
+
+  // Display if the task does not have any notes
 
   return (
     <Document>
@@ -41,17 +42,13 @@ export function NotesPage(props: NotesPageProps): JSX.Element {
   );
 }
 
-function sortNotesByTime(notes: Annotation[] | undefined): Annotation[] | undefined {
+function sortNotesByTime(notes: Annotation[]): Annotation[] {
   const compareTimes = (a: Annotation, b: Annotation): number => {
     const timeA = new Date(a.time || 0).getTime();
     const timeB = new Date(b.time || 0).getTime();
 
     return timeB - timeA;
   };
-
-  if (!notes) {
-    return undefined;
-  }
 
   const sortedNotes = notes.sort(compareTimes);
   return sortedNotes;

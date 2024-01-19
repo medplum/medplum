@@ -1,10 +1,10 @@
 import { Button, Modal } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { getQuestionnaireAnswers, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { CodeableConcept, Coding, Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 
 interface UpdateBusinessStatusProps {
   task: Task;
@@ -13,11 +13,7 @@ interface UpdateBusinessStatusProps {
 
 export function UpdateBusinessStatus(props: UpdateBusinessStatusProps): JSX.Element {
   const medplum = useMedplum();
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-
-  const handleOpenClose = (): void => {
-    setIsModalOpen(!isModalOpen);
-  };
+  const [opened, { toggle, close }] = useDisclosure(false);
 
   const handleUpdateStatus = async (
     status: Coding,
@@ -25,13 +21,10 @@ export function UpdateBusinessStatus(props: UpdateBusinessStatusProps): JSX.Elem
     medplum: MedplumClient,
     onChange: (task: Task) => void
   ): Promise<void> => {
-    if (!task?.id) {
-      return;
-    }
+    const taskId = task.id as string;
 
     // Create a businessStatus to add to the task. For more details, see https://www.medplum.com/docs/careplans/tasks#task-status
     const businessStatus: CodeableConcept = { coding: [status] };
-    console.log(businessStatus);
 
     // We use a patch operation here to avoid race conditions. This ensures that if multiple users try to update the status simultaneously, only one will be successful.
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
@@ -41,7 +34,7 @@ export function UpdateBusinessStatus(props: UpdateBusinessStatusProps): JSX.Elem
 
     // Patch the task with the new businessStatus
     try {
-      const result = await medplum.patchResource('Task', task.id, ops);
+      const result = await medplum.patchResource('Task', taskId, ops);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -65,15 +58,15 @@ export function UpdateBusinessStatus(props: UpdateBusinessStatusProps): JSX.Elem
       handleUpdateStatus(status, props.task, medplum, props.onChange).catch((error) => console.error(error));
     }
 
-    setIsModalOpen(false);
+    close();
   };
 
   return (
     <div>
-      <Button fullWidth onClick={handleOpenClose}>
+      <Button fullWidth onClick={toggle}>
         Update Business Status
       </Button>
-      <Modal opened={isModalOpen} onClose={handleOpenClose}>
+      <Modal opened={opened} onClose={close}>
         <QuestionnaireForm questionnaire={updateStatusQuestionnaire} onSubmit={onQuestionnaireSubmit} />
       </Modal>
     </div>

@@ -1,4 +1,5 @@
 import { Button, Modal } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
   createReference,
@@ -10,7 +11,6 @@ import {
 import { Annotation, Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 
 interface AddCommentProps {
   task: Task;
@@ -20,11 +20,7 @@ interface AddCommentProps {
 export function AddNote(props: AddCommentProps): JSX.Element {
   const medplum = useMedplum();
   const author = useMedplumProfile();
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-
-  const handleOpenClose = (): void => {
-    setIsModalOpen(!isModalOpen);
-  };
+  const [opened, { toggle, close }] = useDisclosure(false);
 
   const handleAddComment = async (
     comment: Annotation,
@@ -32,9 +28,7 @@ export function AddNote(props: AddCommentProps): JSX.Element {
     medplum: MedplumClient,
     onChange: (task: Task) => void
   ): Promise<void> => {
-    if (!task?.id) {
-      return;
-    }
+    const taskId = task.id as string;
 
     // We use a patch operation here to avoid race conditions. This ensures that if multiple users try to add a note simultaneously, only one will be successful.
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
@@ -49,7 +43,7 @@ export function AddNote(props: AddCommentProps): JSX.Element {
 
     // Update the resource on the server using a patch request. See https://www.medplum.com/docs/sdk/core.medplumclient.patchresource
     try {
-      const result = await medplum.patchResource('Task', task.id, ops);
+      const result = await medplum.patchResource('Task', taskId, ops);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -82,15 +76,15 @@ export function AddNote(props: AddCommentProps): JSX.Element {
     }
 
     // Close the modal
-    setIsModalOpen(false);
+    close();
   };
 
   return (
     <div>
-      <Button fullWidth onClick={handleOpenClose}>
+      <Button fullWidth onClick={toggle}>
         Add a Note
       </Button>
-      <Modal opened={isModalOpen} onClose={handleOpenClose}>
+      <Modal opened={opened} onClose={close}>
         <QuestionnaireForm questionnaire={commentQuestionnaire} onSubmit={onQuestionnaireSubmit} />
       </Modal>
     </div>

@@ -1,10 +1,10 @@
 import { Button, Modal } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { getQuestionnaireAnswers, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Task, TaskRestriction } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 
 interface AddDueDateProps {
   task: Task;
@@ -13,11 +13,7 @@ interface AddDueDateProps {
 
 export function AddDueDate(props: AddDueDateProps): JSX.Element {
   const medplum = useMedplum();
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-
-  const handleOpenClose = (): void => {
-    setIsModalOpen(!isModalOpen);
-  };
+  const [opened, { toggle, close }] = useDisclosure(false);
 
   const handleAddDueDate = async (
     date: string,
@@ -25,6 +21,8 @@ export function AddDueDate(props: AddDueDateProps): JSX.Element {
     medplum: MedplumClient,
     onChange: (task: Task) => void
   ): Promise<void> => {
+    const taskId = task.id as string;
+
     // We use a patch operation here to avoid race conditions. This ensures that if multiple users try to update the due-date simultaneously, only one will be successful.
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
 
@@ -41,13 +39,9 @@ export function AddDueDate(props: AddDueDateProps): JSX.Element {
 
     ops.push({ op, path: '/restriction', value: restriction });
 
-    if (!task.id) {
-      return;
-    }
-
     // Patch the resource with the new due-date
     try {
-      const result = await medplum.patchResource('Task', task.id, ops);
+      const result = await medplum.patchResource('Task', taskId, ops);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -71,21 +65,21 @@ export function AddDueDate(props: AddDueDateProps): JSX.Element {
       handleAddDueDate(dueDate, props.task, medplum, props.onChange).catch((error) => console.error(error));
     }
 
-    setIsModalOpen(false);
+    close();
   };
 
   return (
     <div>
       {props.task.restriction?.period?.end ? (
-        <Button fullWidth onClick={handleOpenClose}>
+        <Button fullWidth onClick={toggle}>
           Change Due-Date
         </Button>
       ) : (
-        <Button fullWidth onClick={handleOpenClose}>
+        <Button fullWidth onClick={toggle}>
           Add Due-Date
         </Button>
       )}
-      <Modal opened={isModalOpen} onClose={handleOpenClose}>
+      <Modal opened={opened} onClose={close}>
         <QuestionnaireForm questionnaire={dueDateQuestionnaire} onSubmit={onQuestionnaireSubmit} />
       </Modal>
     </div>

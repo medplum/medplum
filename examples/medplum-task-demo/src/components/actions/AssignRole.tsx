@@ -1,10 +1,10 @@
 import { Button, Modal } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { MedplumClient, PatchOperation, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { CodeableConcept, Coding, Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 
 interface AssignTaskProps {
   task: Task;
@@ -13,11 +13,7 @@ interface AssignTaskProps {
 
 export function AssignRole(props: AssignTaskProps): JSX.Element {
   const medplum = useMedplum();
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-
-  const handleOpenClose = (): void => {
-    setIsModalOpen(!isModalOpen);
-  };
+  const [opened, { toggle, close }] = useDisclosure(false);
 
   const handleAssignToRole = async (
     role: Coding,
@@ -25,9 +21,7 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
     medplum: MedplumClient,
     onChange: (task: Task) => void
   ): Promise<void> => {
-    if (!task?.id) {
-      return;
-    }
+    const taskId = task.id as string;
 
     const updatedRole: CodeableConcept = { coding: [role] };
 
@@ -39,10 +33,9 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
     updatedRoles.push(updatedRole);
 
     ops.push({ op, path: '/performerType', value: updatedRoles });
-    console.log(ops);
 
     try {
-      const result = await medplum.patchResource('Task', task.id, ops);
+      const result = await medplum.patchResource('Task', taskId, ops);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -66,15 +59,15 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
       handleAssignToRole(role, props.task, medplum, props.onChange).catch((error) => console.error(error));
     }
 
-    setIsModalOpen(false);
+    close();
   };
 
   return (
     <div>
-      <Button fullWidth onClick={handleOpenClose}>
+      <Button fullWidth onClick={toggle}>
         Assign to a Role
       </Button>
-      <Modal opened={isModalOpen} onClose={handleOpenClose}>
+      <Modal opened={opened} onClose={close}>
         <QuestionnaireForm questionnaire={assignRoleQuestionnaire} onSubmit={onQuestionnaireSubmit} />
       </Modal>
     </div>
