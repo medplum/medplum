@@ -141,14 +141,22 @@ describe('modify default values', () => {
     }
 
     test('Minimal input', () => {
-      const resource = {
-        resourceType: 'Observation',
-      };
+      const resource = {};
       const observationContext = buildObservationContext();
 
       const output = observationContext.modifyDefaultValue(resource);
       const expectedOutput = {
-        resourceType: 'Observation',
+        code: { coding: [{ system: 'http://loinc.org', code: '85354-9' }] },
+      };
+      expect(output).toEqual(expectedOutput);
+    });
+
+    test('Minimal input', () => {
+      const resource = { code: { coding: [] } };
+      const observationContext = buildObservationContext();
+
+      const output = observationContext.modifyDefaultValue(resource);
+      const expectedOutput = {
         code: { coding: [{ system: 'http://loinc.org', code: '85354-9' }] },
       };
       expect(output).toEqual(expectedOutput);
@@ -181,7 +189,7 @@ describe('modify default values', () => {
       expect(categoryOutput).toEqual(expectedCategoryOutput);
     });
 
-    test.each<['systolic' | 'diastolic', object, object]>([
+    test.each<['systolic' | 'diastolic', object, object, boolean]>([
       [
         'systolic',
         {},
@@ -189,6 +197,7 @@ describe('modify default values', () => {
           code: { coding: [{ system: 'http://loinc.org', code: '8480-6' }] },
           valueQuantity: { system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
         },
+        false,
       ],
       [
         'diastolic',
@@ -197,6 +206,7 @@ describe('modify default values', () => {
           code: { coding: [{ system: 'http://loinc.org', code: '8462-4' }] },
           valueQuantity: { system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
         },
+        false,
       ],
       [
         'diastolic',
@@ -215,8 +225,38 @@ describe('modify default values', () => {
           },
           valueQuantity: { value: 49, unit: 'mmHg', system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
         },
+        false,
       ],
-    ])('Observation.component slices', (sliceName, input, expected) => {
+      [
+        'diastolic',
+        {
+          code: {
+            coding: [{ system: 'http://loinc.org', code: 'XXXX-X', display: 'Some other code' }],
+          },
+          valueQuantity: { value: 49, unit: 'mmHg' },
+        },
+        {
+          // code.coding same as input since array pattern values aren't applied if array entries are already present
+          code: {
+            coding: [{ system: 'http://loinc.org', code: 'XXXX-X', display: 'Some other code' }],
+          },
+          valueQuantity: { value: 49, unit: 'mmHg', system: 'http://unitsofmeasure.org', code: 'mm[Hg]' },
+        },
+        false,
+      ],
+      [
+        'diastolic',
+        {
+          valueQuantity: { system: 'http://bad-system.bad', code: 'mm[Hg]' },
+        },
+        {
+          code: { coding: [{ system: 'http://loinc.org', code: '8462-4' }] },
+          // valueQuantity.system same as input since existing object values are not overwritten;
+          valueQuantity: { system: 'http://bad-system.bad', code: 'mm[Hg]' },
+        },
+        true,
+      ],
+    ])('Observation.component slices', (sliceName, input, expected, debug) => {
       const observationContext = buildObservationContext();
 
       const slicing = schema.elements.component.slicing;
@@ -244,7 +284,7 @@ describe('modify default values', () => {
         parentType: sliceType,
       });
 
-      const output = context.modifyDefaultValue(input);
+      const output = context.modifyDefaultValue(input, debug);
       expect(output).toEqual(expected);
     });
   });

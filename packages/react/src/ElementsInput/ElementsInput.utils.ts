@@ -1,4 +1,4 @@
-import { InternalSchemaElement, InternalTypeSchema, TypedValue, capitalize, deepClone } from '@medplum/core';
+import { InternalSchemaElement, InternalTypeSchema, TypedValue, capitalize, deepClone, isObject } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -35,7 +35,7 @@ export type ElementsContextType = {
   elementsByPath: Record<string, InternalSchemaElement>;
   fixedProperties: { [key: string]: InternalSchemaElement & { fixed: TypedValue } };
   patternProperties: { [key: string]: InternalSchemaElement & { pattern: TypedValue } };
-  modifyDefaultValue: <T extends object>(defaultValue: T) => T;
+  modifyDefaultValue: <T extends object>(defaultValue: T, debugMode?: boolean) => T;
 };
 
 export const ElementsContext = React.createContext<ElementsContextType>({
@@ -117,8 +117,12 @@ export function buildElementsContext({
     return nestedPaths[nestedElementPath];
   }
 
-  function modifyDefaultValue<T extends object>(defaultValue: T): T {
-    const result = modifyDefaultValueImpl({ type: parentType, value: defaultValue }, mergedElements);
+  function modifyDefaultValue<T extends object>(defaultValue: T, debugMode?: boolean): T {
+    const result = modifyDefaultValueImpl(
+      { type: parentType, value: defaultValue },
+      mergedElements,
+      Boolean(debugMode)
+    );
     return result.value;
   }
 
@@ -172,25 +176,33 @@ function mergeElementsForContext(
   return result;
 }
 
-function modifyDefaultValueImpl(defaultValue: TypedValue, elements: ElementsContextType['elements']): TypedValue {
+function modifyDefaultValueImpl(
+  defaultValue: TypedValue,
+  elements: ElementsContextType['elements'],
+  debugMode: boolean
+): TypedValue {
   if (Array.isArray(defaultValue.value)) {
     return {
       type: defaultValue.type,
-      value: defaultValue.value.map((dv) => modifyDefaultValueImpl({ type: defaultValue.type, value: dv }, elements)),
+      value: defaultValue.value.map((dv) =>
+        modifyDefaultValueImpl({ type: defaultValue.type, value: dv }, elements, debugMode)
+      ),
     };
   }
 
+  const debug: typeof console.debug = debugMode ? console.debug : () => undefined;
+
   const result: TypedValue = deepClone(defaultValue);
-  console.debug(`modifyDV  INPUT\ntype: ${result.type}\nvalue: ${JSON.stringify(result.value)}`);
+  debug(`modifyDV  INPUT\ntype: ${result.type}\nvalue: ${JSON.stringify(result.value)}`);
 
   for (const [key, element] of Object.entries(elements)) {
     if (element.fixed) {
-      console.log(`---=== modifyDV key: ${key} fixed: ${JSON.stringify(element.fixed.value)}`);
-      console.log('modifyDV top', JSON.stringify(result.value, undefined, 2));
+      debug(`---=== modifyDV key: ${key} fixed: ${JSON.stringify(element.fixed.value)}`);
+      debug('modifyDV top', JSON.stringify(result.value, undefined, 2));
       // setPropertyValue(result.value, key, key, element, element.fixed.value);
     } else if (element.pattern) {
-      console.log(`---=== modifyDV key: ${key} pattern: ${JSON.stringify(element.pattern.value)}`);
-      console.log('modifyDV top', JSON.stringify(result.value, undefined, 2));
+      debug(`---=== modifyDV key: ${key} pattern: ${JSON.stringify(element.pattern.value)}`);
+      debug('modifyDV top', JSON.stringify(result.value, undefined, 2));
     } else {
       continue;
     }
@@ -206,33 +218,72 @@ function modifyDefaultValueImpl(defaultValue: TypedValue, elements: ElementsCont
       }
 
       if (i === keyParts.length - 1) {
-        if (Array.isArray(last)) {
-          for (const item of last) {
-            if (element.fixed) {
-              item[keyPart] = element.fixed.value;
-            } else if (element.pattern) {
-              item[keyPart] = element.pattern.value;
-            }
-          }
-        } else {
-          // eslint-disable-next-line no-lonely-if
+        const lastArray = Array.isArray(last) ? last : [last];
+        for (const item of lastArray) {
           if (element.fixed) {
-            last[keyPart] = element.fixed.value;
+            item[keyPart] = applyFixed(item[keyPart], element.fixed.value);
           } else if (element.pattern) {
-            last[keyPart] = element.pattern.value;
+            item[keyPart] = applyPattern(item[keyPart], element.pattern.value);
           }
         }
       } else {
         if (!(keyPart in last)) {
           const elementKey = keyParts.slice(0, i + 1).join('.');
+          debug(`creating empty value for ${elementKey}`);
           last[keyPart] = elements[elementKey].isArray ? [Object.create(null)] : Object.create(null);
         }
+        debug('setting last to', JSON.stringify(last[keyPart], undefined, 2));
         last = last[keyPart];
       }
     }
-    console.log('modifyDV bottom', JSON.stringify(result.value, undefined, 2));
+    debug('modifyDV bottom', JSON.stringify(result.value, undefined, 2));
   }
 
-  console.log('modifyDV OUTPUT', JSON.stringify(result.value));
+  debug('modifyDV OUTPUT', JSON.stringify(result.value));
   return result;
+}
+
+function applyFixed(value: any, fixed: any): any {
+  if (value === undefined) {
+    return fixed;
+  }
+  return value;
+}
+
+function applyPattern(value: any, pattern: any): any {
+  try {
+    const result = value === undefined ? undefined : deepClone(value);
+
+    // { coding: [{ system: 'http://loinc.org', code: '8462-4' }] };
+
+    if (Array.isArray(pattern)) {
+      if (Array.isArray(result) || result === undefined || result === null) {
+        const resultArr = (result ?? []) as any[];
+        if (resultArr.length > 0) {
+          throw new Error(
+            'Cannot yet apply a pattern to a non-empty array since that would require cardinality checks'
+          );
+        }
+        resultArr.push(...pattern);
+        return resultArr;
+      } else {
+        throw new Error('Type of value incompatible with array pattern');
+      }
+    } else if (isObject(pattern)) {
+      if (isObject(result) || result === undefined || result === null) {
+        const resultObj = (result ?? Object.create(null)) as { [key: string]: any };
+        for (const key of Object.keys(pattern)) {
+          console.log('HERE', key, resultObj[key], pattern[key]);
+          resultObj[key] = applyPattern(resultObj[key], pattern[key]);
+        }
+        return resultObj;
+      } else {
+        throw new Error('Type of value incompatible with object pattern');
+      }
+    }
+
+    throw new Error('Unexpected type of pattern');
+  } catch (ex) {
+    return value;
+  }
 }
