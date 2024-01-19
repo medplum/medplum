@@ -2,11 +2,13 @@
   "name": "medplum-task-demo",
   "version": "3.0.0",
   "private": true,
-  "description": "Medplum Task Demo",
   "type": "module",
   "scripts": {
-    "build": "tsc && vite build",
+    "clean": "rimraf dist",
+    "build:bots": "npm run clean && npm run lint && tsc",
+    "lint": "eslint src/",
     "dev": "vite",
+    "build": "npm run clean && tsc && vite build",
     "preview": "vite preview"
   },
   "prettier": {
@@ -24,6 +26,7 @@
     "@mantine/hooks": "7.4.2",
     "@mantine/notifications": "7.4.2",
     "@medplum/core": "3.0.0",
+    "@medplum/definitions": "3.0.0",
     "@medplum/eslint-config": "3.0.0",
     "@medplum/fhirtypes": "3.0.0",
     "@medplum/react": "3.0.0",
