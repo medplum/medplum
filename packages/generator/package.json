@@ -32,7 +32,7 @@
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.11.3",
-    "tinybench": "2.5.1",
+    "tinybench": "2.6.0",
     "unzipper": "0.10.14"
   },
   "engines": {

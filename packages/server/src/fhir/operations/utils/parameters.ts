@@ -17,7 +17,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../../outcomes';
-import { sendResponse } from '../../routes';
+import { sendResponse } from '../../response';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -152,9 +152,18 @@ export async function sendOutputParameters(
       continue;
     }
 
-    response.parameter?.push(
-      ...(Array.isArray(value) ? value.map((v) => makeParameter(param, v)) : [makeParameter(param, value)])
-    );
+    if (Array.isArray(value)) {
+      for (const val of value.map((v) => makeParameter(param, v))) {
+        if (val) {
+          response.parameter.push(val);
+        }
+      }
+    } else {
+      const val = makeParameter(param, value);
+      if (val) {
+        response.parameter.push(val);
+      }
+    }
   }
 
   try {
@@ -165,16 +174,35 @@ export async function sendOutputParameters(
   }
 }
 
-function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter {
+function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter | undefined {
   if (param.part) {
     const parts: ParametersParameter[] = [];
     for (const part of param.part) {
       const nestedValue = value[part.name ?? ''];
       if (nestedValue !== undefined) {
-        parts.push(makeParameter(part, nestedValue));
+        const nestedParam = makeParameter(part, nestedValue);
+        if (nestedParam) {
+          parts.push(nestedParam);
+        }
       }
     }
     return { name: param.name, part: parts };
   }
-  return { name: param.name, ['value' + capitalize(param.type as string)]: value };
+  const type =
+    param.type && param.type !== 'Element'
+      ? [param.type]
+      : param.extension
+          ?.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type')
+          ?.map((e) => e.valueUri as string);
+  if (type?.length === 1) {
+    return { name: param.name, ['value' + capitalize(type[0] as string)]: value };
+  } else if (typeof value.type === 'string' && value.value && type?.length) {
+    // Handle TypedValue
+    for (const t of type) {
+      if (value.type === t) {
+        return { name: param.name, ['value' + capitalize(t)]: value.value };
+      }
+    }
+  }
+  return undefined;
 }

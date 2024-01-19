@@ -5,7 +5,7 @@ import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
 import ws from 'ws';
 import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
-import { getFullUrl } from '../fhir/search';
+import { getFullUrl } from '../fhir/response';
 import { globalLogger } from '../logger';
 import { verifyJwt } from '../oauth/keys';
 import { getRedis } from '../redis';

@@ -12,7 +12,7 @@ import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { isFhirJsonContentType, sendResponse } from '../routes';
+import { isFhirJsonContentType, sendResponse } from '../response';
 
 interface EvaluateMeasureParameters {
   readonly periodStart: string;

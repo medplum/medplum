@@ -2,11 +2,11 @@ import { OperationOutcomeError, Operator, allOk, badRequest, normalizeOperationO
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { Pool } from 'pg';
-import { getAuthenticatedContext } from '../../context';
 import { getClient } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { InsertQuery, SelectQuery } from '../sql';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { requireSuperAdmin } from '../../admin/super';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -37,13 +37,13 @@ const operation: OperationDefinition = {
   ],
 };
 
-type ImportedProperty = {
+export type ImportedProperty = {
   code: string;
   property: string;
   value: string;
 };
 
-type CodeSystemImportParameters = {
+export type CodeSystemImportParameters = {
   system: string;
   concept?: Coding[];
   property?: ImportedProperty[];
@@ -59,7 +59,7 @@ type CodeSystemImportParameters = {
  * @param res - The HTTP response.
  */
 export async function codeSystemImportHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getAuthenticatedContext();
+  const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
   const codeSystems = await ctx.repo.searchResources<CodeSystem>({
@@ -75,10 +75,24 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   }
   const codeSystem = codeSystems[0];
 
+  try {
+    await importCodeSystem(codeSystem, params.concept, params.property);
+  } catch (err) {
+    sendOutcome(res, normalizeOperationOutcome(err));
+    return;
+  }
+  await sendOutputParameters(operation, res, allOk, codeSystem);
+}
+
+export async function importCodeSystem(
+  codeSystem: CodeSystem,
+  concepts?: Coding[],
+  properties?: ImportedProperty[]
+): Promise<void> {
   const db = getClient();
   await db.query('BEGIN');
-  if (params.concept) {
-    for (const concept of params.concept) {
+  if (concepts?.length) {
+    for (const concept of concepts) {
       const row = {
         system: codeSystem.id,
         code: concept.code,
@@ -89,17 +103,11 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
     }
   }
 
-  if (params.property?.length) {
-    try {
-      await processProperties(params.property, codeSystem, db);
-    } catch (err: any) {
-      sendOutcome(res, normalizeOperationOutcome(err));
-      return;
-    }
+  if (properties?.length) {
+    await processProperties(properties, codeSystem, db);
   }
 
   await db.query(`COMMIT`);
-  await sendOutputParameters(operation, res, allOk, codeSystem);
 }
 
 async function processProperties(
@@ -152,10 +160,16 @@ async function processProperties(
   }
 }
 
+export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
+
 async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): Promise<[number, boolean]> {
-  const prop = codeSystem.property?.find((p) => p.code === code);
+  let prop = codeSystem.property?.find((p) => p.code === code);
   if (!prop) {
-    throw new OperationOutcomeError(badRequest(`Unknown property: ${code}`));
+    if (code === codeSystem.hierarchyMeaning || (code === 'parent' && !codeSystem.hierarchyMeaning)) {
+      prop = { code, uri: parentProperty, type: 'code' };
+    } else {
+      throw new OperationOutcomeError(badRequest(`Unknown property: ${code}`));
+    }
   }
   const isRelationship = prop.type === 'code';
 
