@@ -105,6 +105,7 @@ describe('Agent WebSockets', () => {
           accessToken,
           channel: 'test',
           remote: '0.0.0.0:57000',
+          contentType: ContentType.HL7_V2,
           body:
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
