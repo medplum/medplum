@@ -1,5 +1,5 @@
 import { Stack } from '@mantine/core';
-import { InternalTypeSchema, TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
+import { TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
@@ -21,16 +21,14 @@ export interface ElementsInputProps {
   outcome: OperationOutcome | undefined;
   onChange: ((value: any) => void) | undefined;
   testId?: string;
-  typeSchema: InternalTypeSchema | undefined;
 }
 
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
   const { onChange } = props;
   const [value, setValue] = useCallbackState<any>(() => props.defaultValue ?? {}, `ElementsInput[${props.path}]`);
   const elementsContext = useContext(ElementsContext);
-  const elements = elementsContext.elements;
   const elementsToRender = useMemo(() => {
-    const result = Object.entries(elements).filter(([key, element]) => {
+    const result = Object.entries(elementsContext.elements).filter(([key, element]) => {
       if (!isPopulated(element.type)) {
         return false;
       }
@@ -64,7 +62,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
     });
 
     return result;
-  }, [elements]);
+  }, [elementsContext.elements]);
 
   const onChangeCallbacks = useMemo(() => {
     const result = elementsToRender.map(([key, element]) => {

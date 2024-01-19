@@ -59,7 +59,6 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
         defaultValue={value}
         onChange={setValueWrapper}
         outcome={props.outcome}
-        typeSchema={typeSchema}
       />
     </ElementsContext.Provider>
   );
