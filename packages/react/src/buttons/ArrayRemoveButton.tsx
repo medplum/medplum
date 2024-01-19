@@ -13,6 +13,7 @@ export function ArrayRemoveButton({ propertyDisplayName, onClick, testId }: Arra
       title={propertyDisplayName ? `Remove ${propertyDisplayName}` : 'Remove'}
       color="red.5"
       data-testid={testId}
+      variant="subtle"
       onClick={onClick}
     >
       <IconCircleMinus size="1.25rem" />
