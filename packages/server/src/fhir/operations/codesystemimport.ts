@@ -1,12 +1,12 @@
 import { OperationOutcomeError, Operator, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { Pool } from 'pg';
-import { getClient } from '../../database';
+import { PoolClient } from 'pg';
 import { sendOutcome } from '../outcomes';
 import { InsertQuery, SelectQuery } from '../sql';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { requireSuperAdmin } from '../../admin/super';
+import { Repository } from '../repo';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -76,7 +76,7 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   const codeSystem = codeSystems[0];
 
   try {
-    await importCodeSystem(codeSystem, params.concept, params.property);
+    await importCodeSystem(ctx.repo, codeSystem, params.concept, params.property);
   } catch (err) {
     sendOutcome(res, normalizeOperationOutcome(err));
     return;
@@ -85,35 +85,34 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
 }
 
 export async function importCodeSystem(
+  repo: Repository,
   codeSystem: CodeSystem,
   concepts?: Coding[],
   properties?: ImportedProperty[]
 ): Promise<void> {
-  const db = getClient();
-  await db.query('BEGIN');
-  if (concepts?.length) {
-    for (const concept of concepts) {
-      const row = {
-        system: codeSystem.id,
-        code: concept.code,
-        display: concept.display,
-      };
-      const query = new InsertQuery('Coding', [row]).mergeOnConflict(['system', 'code']);
-      await query.execute(db);
+  await repo.withTransaction(async (db) => {
+    if (concepts?.length) {
+      for (const concept of concepts) {
+        const row = {
+          system: codeSystem.id,
+          code: concept.code,
+          display: concept.display,
+        };
+        const query = new InsertQuery('Coding', [row]).mergeOnConflict(['system', 'code']);
+        await query.execute(db);
+      }
     }
-  }
 
-  if (properties?.length) {
-    await processProperties(properties, codeSystem, db);
-  }
-
-  await db.query(`COMMIT`);
+    if (properties?.length) {
+      await processProperties(properties, codeSystem, db);
+    }
+  });
 }
 
 async function processProperties(
   importedProperties: ImportedProperty[],
   codeSystem: CodeSystem,
-  db: Pool
+  db: PoolClient
 ): Promise<void> {
   const cache: Record<string, { id: number; isRelationship: boolean }> = Object.create(null);
   for (const imported of importedProperties) {
@@ -162,7 +161,7 @@ async function processProperties(
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 
-async function resolveProperty(codeSystem: CodeSystem, code: string, db: Pool): Promise<[number, boolean]> {
+async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolClient): Promise<[number, boolean]> {
   let prop = codeSystem.property?.find((p) => p.code === code);
   if (!prop) {
     if (code === codeSystem.hierarchyMeaning || (code === 'parent' && !codeSystem.hierarchyMeaning)) {

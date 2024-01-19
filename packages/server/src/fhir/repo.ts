@@ -9,6 +9,7 @@ import {
   badRequest,
   canReadResourceType,
   canWriteResourceType,
+  created,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
@@ -25,6 +26,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   parseCriteriaAsSearchRequest,
+  preconditionFailed,
   protectedResourceTypes,
   resolveId,
   satisfiedAccessPolicy,
@@ -180,13 +182,49 @@ const lookupTables: LookupTable<unknown>[] = [
  */
 export class Repository extends BaseRepository implements FhirRepository {
   private readonly context: RepositoryContext;
+  private db?: PoolClient;
 
-  constructor(context: RepositoryContext) {
+  constructor(context: RepositoryContext, db?: PoolClient) {
     super();
     this.context = context;
+    this.db = db;
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
+  }
+
+  private async getClient(): Promise<PoolClient> {
+    if (this.db) {
+      return this.db;
+    }
+    return getClient().connect();
+  }
+
+  async withTransaction<T>(fn: (db: PoolClient) => Promise<T>): Promise<T> {
+    let needsRelease = false;
+    if (!this.db) {
+      // Note: We don't try/catch this because if connecting throws an exception.
+      // We don't need to dispose of the client (it will be undefined).
+      // https://node-postgres.com/features/transactions
+      this.db = await this.getClient();
+      needsRelease = true;
+    }
+
+    await this.db.query(needsRelease ? 'BEGIN' : 'SAVEPOINT');
+    let result: T;
+    try {
+      result = await fn(this.db);
+      await this.db.query('COMMIT');
+    } catch (err) {
+      await this.db.query('ROLLBACK');
+      throw err;
+    } finally {
+      if (needsRelease) {
+        this.db.release();
+        this.db = undefined;
+      }
+    }
+    return result;
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -246,7 +284,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    const client = getClient();
+    const client = await this.getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType);
@@ -356,7 +394,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
 
-      const client = getClient();
+      const client = await this.getClient();
       const rows = await new SelectQuery(resourceType + '_History')
         .column('versionId')
         .column('id')
@@ -426,7 +464,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
 
-      const client = getClient();
+      const client = await this.getClient();
       const rows = await new SelectQuery(resourceType + '_History')
         .column('content')
         .where('id', '=', id)
@@ -455,6 +493,29 @@ export class Repository extends BaseRepository implements FhirRepository {
       this.logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err, resource);
       throw err;
     }
+  }
+
+  async conditionalUpdate<T extends Resource>(
+    resource: T,
+    search: SearchRequest
+  ): Promise<{ resource: T; outcome: OperationOutcome }> {
+    return this.withTransaction(async (db) => {
+      this.db = db;
+      const existing = await this.searchResources(search);
+      if (existing.length === 0) {
+        if (resource.id) {
+          throw new OperationOutcomeError(badRequest('Cannot specify ID in conditional update'));
+        }
+        resource = await this.createResource(resource);
+        return { resource, outcome: created };
+      } else if (existing.length > 1) {
+        throw new OperationOutcomeError(preconditionFailed('Multiple matching resources'));
+      }
+
+      resource.id = existing[0].id;
+      resource = await this.updateResource(resource);
+      return { resource, outcome: allOk };
+    });
   }
 
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
@@ -647,21 +708,13 @@ export class Repository extends BaseRepository implements FhirRepository {
     // Note: We don't try/catch this because if connecting throws an exception.
     // We don't need to dispose of the client (it will be undefined).
     // https://node-postgres.com/features/transactions
-    const client = await getClient().connect();
-    try {
-      await client.query('BEGIN');
+    await this.withTransaction(async (client) => {
       await Promise.all([
         this.writeResource(client, resource),
         this.writeResourceVersion(client, resource),
         this.writeLookupTables(client, resource),
       ]);
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   /**
@@ -713,7 +766,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
     const seconds = 60;
     const maxVersions = 10;
-    const client = getClient();
+    const client = await this.getClient();
     const rows = await new SelectQuery(resourceType + '_History')
       .raw(`COUNT (DISTINCT "versionId")::int AS "count"`)
       .where('id', '=', id)
@@ -750,7 +803,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       throw new OperationOutcomeError(forbidden);
     }
 
-    const client = getClient();
+    const client = await getClient();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
@@ -778,7 +831,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       throw new OperationOutcomeError(forbidden);
     }
 
-    const client = getClient();
+    const client = await getClient();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
@@ -818,20 +871,9 @@ export class Repository extends BaseRepository implements FhirRepository {
   private async reindexResourceImpl<T extends Resource>(resource: T): Promise<void> {
     (resource.meta as Meta).compartment = this.getCompartments(resource);
 
-    // Note: We don't try/catch this because if connecting throws an exception.
-    // We don't need to dispose of the client (it will be undefined).
-    // https://node-postgres.com/features/transactions
-    const client = await getClient().connect();
-    try {
-      await client.query('BEGIN');
-      await Promise.all([this.writeResource(client, resource), this.writeLookupTables(client, resource)]);
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    await this.withTransaction(async (db) => {
+      await Promise.all([this.writeResource(db, resource), this.writeLookupTables(db, resource)]);
+    });
   }
 
   /**
@@ -861,7 +903,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
       await deleteCacheEntry(resourceType, id);
 
-      const client = getClient();
+      const client = await this.getClient();
       const lastUpdated = new Date();
       const content = '';
       const columns: Record<string, any> = {
@@ -932,8 +974,10 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', '=', id).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(getClient());
+
+    const client = await this.getClient();
+    await new DeleteQuery(resourceType).where('id', '=', id).execute(client);
+    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(client);
     await deleteCacheEntry(resourceType, id);
   }
 
@@ -947,8 +991,10 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(getClient());
+
+    const client = await this.getClient();
+    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(client);
+    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(client);
     await deleteCacheEntries(resourceType, ids);
   }
 
@@ -962,8 +1008,10 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(getClient());
+
+    const client = await this.getClient();
+    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(client);
+    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {

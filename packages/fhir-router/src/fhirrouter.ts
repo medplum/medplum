@@ -96,6 +96,17 @@ async function updateResource(req: FhirRequest, repo: FhirRepository): Promise<F
   return [allOk, result];
 }
 
+// Conditional update
+async function conditionalUpdate(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  const { resourceType } = req.params;
+  const params = req.query;
+  const resource = req.body;
+
+  const search = parseSearchRequest(resourceType as ResourceType, params);
+  const result = await repo.conditionalUpdate(resource, search);
+  return [result.outcome, result.resource];
+}
+
 // Delete resource
 async function deleteResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
@@ -125,6 +136,7 @@ export class FhirRouter {
     this.router.add('GET', ':resourceType/:id', readResourceById);
     this.router.add('GET', ':resourceType/:id/_history', readHistory);
     this.router.add('GET', ':resourceType/:id/_history/:vid', readVersion);
+    this.router.add('PUT', ':resourceType', conditionalUpdate);
     this.router.add('PUT', ':resourceType/:id', updateResource);
     this.router.add('DELETE', ':resourceType/:id', deleteResource);
     this.router.add('PATCH', ':resourceType/:id', patchResource);

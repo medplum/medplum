@@ -4,6 +4,7 @@ import { LookupTable } from './lookuptable';
 import { DeleteQuery } from '../sql';
 import { append } from '@medplum/core';
 import { ImportedProperty, importCodeSystem, parentProperty } from '../operations/codesystemimport';
+import { getAuthenticatedContext } from '../../context';
 
 /**
  * The CodingTable class is used to index and search Coding values associated with a CodeSystem.
@@ -31,7 +32,12 @@ export class CodingTable extends LookupTable<Coding> {
       await this.deleteValuesForResource(client, resource);
 
       const elements = this.getCodeSystemElements(resource);
-      await importCodeSystem(resource as CodeSystem, elements.concepts, elements.properties);
+      await importCodeSystem(
+        getAuthenticatedContext().repo,
+        resource as CodeSystem,
+        elements.concepts,
+        elements.properties
+      );
     }
   }
 

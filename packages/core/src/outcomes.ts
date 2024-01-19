@@ -9,6 +9,7 @@ const NOT_FOUND_ID = 'not-found';
 const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
 const FORBIDDEN_ID = 'forbidden';
+const PRECONDITION_FAILED_ID = 'precondition-failed';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 const ACCEPTED_ID = 'accepted';
 
@@ -109,6 +110,22 @@ export const gone: OperationOutcome = {
     },
   ],
 };
+
+export function preconditionFailed(reason?: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: PRECONDITION_FAILED_ID,
+    issue: [
+      {
+        severity: 'error',
+        code: 'processing',
+        details: {
+          text: reason ?? 'Precondition failed',
+        },
+      },
+    ],
+  };
+}
 
 export const tooManyRequests: OperationOutcome = {
   resourceType: 'OperationOutcome',
