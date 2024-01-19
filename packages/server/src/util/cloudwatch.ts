@@ -8,11 +8,13 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs';
 import { hostname } from 'os';
 
+/** @deprecated */
 interface LogEvent extends InputLogEvent {
   readonly message: string;
   readonly timestamp: number;
 }
 
+/** @deprecated */
 export class CloudWatchLogger {
   private client: CloudWatchLogsClient;
   private queue: LogEvent[];

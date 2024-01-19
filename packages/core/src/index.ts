@@ -24,6 +24,7 @@ export * from './filter/types';
 export * from './format';
 export * from './hl7';
 export * from './jwt';
+export * from './logger';
 export * from './outcomes';
 export * from './readablepromise';
 export * from './schema';

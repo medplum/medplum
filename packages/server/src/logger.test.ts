@@ -4,16 +4,10 @@ import {
   CreateLogStreamCommand,
   PutLogEventsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
+import { LogLevel } from '@medplum/core';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import fs from 'fs';
-
-import { AuditEvent } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { PassThrough } from 'stream';
-import { loadConfig } from './config';
-import { LogLevel, Logger, globalLogger, parseLogLevel } from './logger';
-import { waitFor } from './test.setup';
+import { globalLogger } from './logger';
 
 describe('Global Logger', () => {
   let mockCloudWatchLogsClient: AwsClientStub<CloudWatchLogsClient>;
@@ -86,139 +80,6 @@ describe('Global Logger', () => {
     globalLogger.error('test');
     expect(console.log).toHaveBeenCalledWith(
       expect.stringMatching(/^\{"level":"ERROR","timestamp":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z","msg":"test"\}$/)
-    );
-  });
-
-  test('AuditEvents disabled', async () => {
-    console.info = jest.fn();
-    console.log = jest.fn();
-
-    jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ logAuditEvents: false }));
-
-    await loadConfig('file:test.json');
-
-    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
-
-    expect(console.info).not.toHaveBeenCalled();
-    expect(console.log).not.toHaveBeenCalled();
-  });
-
-  test('AuditEvent to console.log', async () => {
-    console.log = jest.fn();
-
-    jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ logAuditEvents: true }));
-    await loadConfig('file:test.json');
-
-    // Log an AuditEvent
-    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
-
-    // It should have been logged
-    expect(console.log).toHaveBeenCalledWith('{"resourceType":"AuditEvent"}');
-  });
-
-  test('AuditEvent to CloudWatch Logs', async () => {
-    console.info = jest.fn();
-    console.log = jest.fn();
-
-    // Mock readFileSync for custom config file
-    jest.spyOn(fs, 'readFileSync').mockReturnValue(
-      JSON.stringify({
-        logAuditEvents: true,
-        auditEventLogGroup: 'test-log-group',
-        auditEventLogStream: 'test-log-stream',
-      })
-    );
-
-    await loadConfig('file:test.json');
-
-    // Log an AuditEvent
-    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
-    globalLogger.logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
-
-    await waitFor(async () => expect(mockCloudWatchLogsClient).toHaveReceivedCommand(PutLogEventsCommand));
-
-    // CloudWatch logs should have been created
-    expect(mockCloudWatchLogsClient.send.callCount).toBe(3);
-    expect(mockCloudWatchLogsClient).toHaveReceivedCommandTimes(CreateLogGroupCommand, 1);
-    expect(mockCloudWatchLogsClient).toHaveReceivedCommandTimes(CreateLogStreamCommand, 1);
-    expect(mockCloudWatchLogsClient).toHaveReceivedCommandTimes(PutLogEventsCommand, 1);
-
-    expect(console.info).toHaveBeenCalled();
-    expect(console.log).not.toHaveBeenCalled();
-  });
-
-  test('parseLogLevel', () => {
-    expect(parseLogLevel('DEbug')).toBe(LogLevel.DEBUG);
-    expect(parseLogLevel('INFO')).toBe(LogLevel.INFO);
-    expect(parseLogLevel('none')).toBe(LogLevel.NONE);
-    expect(parseLogLevel('WARN')).toBe(LogLevel.WARN);
-    expect(parseLogLevel('error')).toBe(LogLevel.ERROR);
-    expect(() => {
-      parseLogLevel('foo');
-    }).toThrow('Invalid log level: foo');
-  });
-});
-
-describe('Instance Logger', () => {
-  let testLogger: Logger;
-  let testStream: PassThrough;
-  let testOutput: jest.Mock<void, [Record<string, any>]>;
-
-  beforeEach(() => {
-    testOutput = jest.fn();
-    testStream = new PassThrough();
-    testStream.on('data', (data) => {
-      if (Buffer.isBuffer(data)) {
-        testOutput(JSON.parse(data.toString('utf8')));
-      }
-    });
-    testLogger = new Logger(testStream, undefined, LogLevel.DEBUG);
-  });
-
-  test('Writes simple message to output as JSON', () => {
-    testLogger.info('Boing!');
-    expect(testOutput).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'INFO',
-        msg: 'Boing!',
-      })
-    );
-  });
-
-  test('Formats error message', () => {
-    testLogger.error('Fatal error', new Error('Catastrophe!'));
-    expect(testOutput).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'ERROR',
-        msg: 'Fatal error',
-        error: 'Error: Catastrophe!',
-        stack: expect.arrayContaining(['Error: Catastrophe!']),
-      })
-    );
-  });
-
-  test('Does not write when logger is disabled', () => {
-    const unlogger = new Logger(testStream, undefined, LogLevel.NONE);
-    unlogger.error('Annihilation imminent');
-    expect(testOutput).not.toBeCalled();
-  });
-
-  test('Does not log when level is above configured maximum', () => {
-    const logger = new Logger(testStream, undefined, LogLevel.INFO);
-    logger.debug('Evil bit unset');
-    expect(testOutput).not.toBeCalled();
-  });
-
-  test('Logger metadata attached to logs', () => {
-    const logger = new Logger(testStream, { foo: 'bar' }, LogLevel.INFO);
-    logger.info('Patient merged', { id: randomUUID() });
-    expect(testOutput).toBeCalledWith(
-      expect.objectContaining({
-        level: 'INFO',
-        msg: 'Patient merged',
-        id: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
-        foo: 'bar',
-      })
     );
   });
 });
