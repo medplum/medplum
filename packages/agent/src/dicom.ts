@@ -96,7 +96,7 @@ class DcmjsDimseScp extends dimse.Scp {
     request: dimse.requests.CStoreRequest,
     callback: (response: dimse.responses.CStoreResponse) => void
   ): void {
-    this.cStoreImpl(request).then(callback).catch(callback);
+    this.cStoreImpl(request).then(callback).catch(console.error);
   }
 
   private async cStoreImpl(request: dimse.requests.CStoreRequest): Promise<dimse.responses.CStoreResponse> {
