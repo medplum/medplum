@@ -1,4 +1,4 @@
-import { Combobox, ComboboxItem, Group, Loader, MultiSelectProps, Pill, PillsInput, useCombobox } from '@mantine/core';
+import { Combobox, ComboboxItem, ComboboxProps, Group, Loader, Pill, PillsInput, useCombobox } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
@@ -9,7 +9,11 @@ export interface AsyncAutocompleteOption<T> extends ComboboxItem {
 }
 
 export interface AsyncAutocompleteProps<T>
-  extends Omit<MultiSelectProps, 'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'> {
+  extends Omit<ComboboxProps, 'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'> {
+  readonly name?: string;
+  readonly label?: ReactNode;
+  readonly description?: ReactNode;
+  readonly error?: ReactNode;
   readonly defaultValue?: T | T[];
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
@@ -17,6 +21,12 @@ export interface AsyncAutocompleteProps<T>
   readonly onChange: (item: T[]) => void;
   readonly onCreate?: (input: string) => T;
   readonly creatable?: boolean;
+  readonly clearable?: boolean;
+  readonly required?: boolean;
+  readonly className?: string;
+  readonly placeholder?: string;
+  readonly leftSection?: ReactNode;
+  readonly maxValues?: number;
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
@@ -24,16 +34,33 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     onDropdownClose: () => combobox.resetSelectedOption(),
     onDropdownOpen: () => combobox.updateSelectedOptionIndex('active'),
   });
-  const { defaultValue, toOption, loadOptions, onChange, onCreate, creatable } = props;
+  const {
+    name,
+    label,
+    description,
+    error,
+    defaultValue,
+    toOption,
+    loadOptions,
+    itemComponent,
+    onChange,
+    onCreate,
+    creatable,
+    clearable,
+    required,
+    placeholder,
+    leftSection,
+    maxValues,
+    ...rest
+  } = props;
   const defaultItems = toDefaultItems(defaultValue);
   const [search, setSearch] = useState('');
-  // const [lastValue, setLastValue] = useState<string>();
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
   const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
-  const ItemComponent = props.itemComponent ?? DefaultItemComponent;
+  const ItemComponent = itemComponent ?? DefaultItemComponent;
 
   const searchRef = useRef<string>();
   searchRef.current = search;
@@ -113,30 +140,37 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     [combobox, options, handleTimer]
   );
 
-  const handleChange = useCallback(
-    (values: string[]): void => {
+  const addSelected = useCallback(
+    (newValue: string): void => {
       const result: T[] = [];
-      const newSelected: AsyncAutocompleteOption<T>[] = [];
-      for (const value of values) {
-        let option = options?.find((option) => option.value === value);
-        let item = option?.resource;
-        if (!item && creatable !== false && onCreate) {
-          item = onCreate(value);
-          option = toOption(item);
-        }
+      const newSelected: AsyncAutocompleteOption<T>[] = [...selected];
 
-        if (item) {
-          result.push(item);
-        }
+      let option = options?.find((option) => option.value === newValue);
+      let item = option?.resource;
+      if (!item && creatable !== false && onCreate) {
+        item = onCreate(newValue);
+        option = toOption(item);
+      }
 
-        if (option) {
-          newSelected.push(option);
+      if (item) {
+        result.push(item);
+      }
+
+      if (option) {
+        newSelected.push(option);
+      }
+
+      if (maxValues !== undefined) {
+        while (newSelected.length > maxValues) {
+          // Remove from the front
+          newSelected.shift();
         }
       }
+
       onChange(result);
       setSelected(newSelected);
     },
-    [creatable, options, onChange, onCreate, toOption]
+    [creatable, options, selected, maxValues, onChange, onCreate, toOption]
   );
 
   const handleValueSelect = (val: string): void => {
@@ -144,9 +178,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     setOptions([]);
     lastValueRef.current = undefined;
     if (val === '$create') {
-      handleChange([search]);
+      addSelected(search);
     } else {
-      handleChange([val]);
+      addSelected(val);
     }
   };
 
@@ -161,7 +195,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           killEvent(e);
           if (options && options.length > 0) {
             setOptions(options.slice(0, 1));
-            handleChange([options[0].value]);
+            addSelected(options[0].value);
           }
         } else {
           // The user pressed enter, but we don't have results yet.
@@ -173,7 +207,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         handleValueRemove(selected[selected.length - 1]);
       }
     },
-    [search, selected, options, timer, abortController, handleChange, handleValueRemove]
+    [search, selected, options, timer, abortController, addSelected, handleValueRemove]
   );
 
   useEffect(() => {
@@ -184,13 +218,29 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     };
   }, []);
 
+  // Based on Mantine MultiSelect:
+  // https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/MultiSelect/MultiSelect.tsx
+  const clearButton = clearable && selected.length > 0 && (
+    <Combobox.ClearButton
+      size={16}
+      onClear={() => {
+        setSearch('');
+        setSelected([]);
+      }}
+    />
+  );
+
   return (
-    <Combobox store={combobox} onOptionSubmit={handleValueSelect} withinPortal={true} shadow="xl">
+    <Combobox store={combobox} onOptionSubmit={handleValueSelect} withinPortal={true} shadow="xl" {...rest}>
       <Combobox.DropdownTarget>
         <PillsInput
+          label={label}
+          description={description}
+          error={error}
           className={props.className}
-          leftSection={props.leftSection}
-          rightSection={abortController ? <Loader size={16} /> : null}
+          leftSection={leftSection}
+          rightSection={abortController ? <Loader size={16} /> : clearButton}
+          required={required}
         >
           <Pill.Group>
             {selected.map((item) => (
@@ -202,8 +252,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
             <Combobox.EventsTarget>
               <PillsInput.Field
                 role="searchbox"
+                name={name}
                 value={search}
-                placeholder={props.placeholder}
+                placeholder={placeholder}
                 onFocus={handleSearchChange}
                 onBlur={() => combobox.closeDropdown()}
                 onKeyDown={handleKeyDown}
