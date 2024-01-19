@@ -6,7 +6,6 @@ import {
   getReferenceString,
   normalizeErrorString,
 } from '@medplum/core';
-import { PractitionerRole } from '@medplum/fhirtypes';
 import { AppShell, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCategory, IconDatabaseImport, IconFileImport, IconGridDots, IconUser } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
