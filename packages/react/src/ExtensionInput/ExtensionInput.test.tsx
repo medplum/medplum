@@ -28,16 +28,23 @@ describe('ExtensionInput', () => {
   test('Renders', async () => {
     await setup({
       ...defaultProps,
-      defaultValue: { url: 'https://example.com' },
+      defaultValue: { url: 'https://example.com', valueBoolean: true },
     });
-    expect(screen.getByTestId('extension-json-input')).toBeDefined();
+    expect(screen.getByTestId('url')).toBeInTheDocument();
+    expect(screen.getByTestId('url')).toHaveValue('https://example.com');
+    expect(screen.getByTestId('value[x]-selector')).toBeInTheDocument();
+    expect(screen.getByTestId('value[x]')).toBeInTheDocument();
+    expect(screen.getByTestId('value[x]')).toBeChecked();
   });
 
   test('Renders undefined value', async () => {
     await setup({
       ...defaultProps,
     });
-    expect(screen.getByTestId('extension-json-input')).toBeDefined();
+    expect(screen.getByTestId('url')).toBeInTheDocument();
+    expect(screen.getByTestId('url')).toHaveValue('');
+    expect(screen.getByTestId('value[x]')).toBeInTheDocument();
+    expect(screen.getByTestId('value[x]')).toHaveValue('');
   });
 
   test('Set value', async () => {
@@ -49,8 +56,8 @@ describe('ExtensionInput', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('extension-json-input'), {
-        target: { value: '{"url":"https://foo.com"}' },
+      fireEvent.change(screen.getByTestId('url'), {
+        target: { value: 'https://foo.com' },
       });
     });
 

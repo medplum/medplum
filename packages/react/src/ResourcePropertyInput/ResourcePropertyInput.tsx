@@ -111,6 +111,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
       <NativeSelect
         style={{ width: '200px' }}
         defaultValue={selectedType.code}
+        data-testid={props.name && props.name + '-selector'}
         onChange={(e) => {
           setSelectedType(
             propertyTypes.find(
