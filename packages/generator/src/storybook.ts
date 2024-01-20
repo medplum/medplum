@@ -84,6 +84,7 @@ const USCoreStructureDefinitionFiles = [
   'StructureDefinition-us-core-genderIdentity.json',
   'StructureDefinition-us-core-implantable-device.json',
   'StructureDefinition-us-core-blood-pressure.json',
+  'StructureDefinition-us-core-medicationrequest.json',
 ];
 
 const BUILD_USCORE = false;
