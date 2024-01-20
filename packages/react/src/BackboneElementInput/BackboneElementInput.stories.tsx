@@ -9,6 +9,6 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <BackboneElementInput typeName="PatientContact" />
+    <BackboneElementInput typeName="PatientContact" path="Patient.contact" />
   </Document>
 );
