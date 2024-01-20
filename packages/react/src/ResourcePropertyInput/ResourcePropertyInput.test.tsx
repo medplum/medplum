@@ -30,7 +30,8 @@ const baseProperty: Omit<InternalSchemaElement, 'type'> = {
   path: '',
 };
 
-const defaultProps: Pick<ResourcePropertyInputProps, 'defaultValue' | 'outcome' | 'onChange'> = {
+const defaultProps: Pick<ResourcePropertyInputProps, 'path' | 'defaultValue' | 'outcome' | 'onChange'> = {
+  path: 'Resource.path',
   defaultValue: undefined,
   outcome: undefined,
   onChange: undefined,
@@ -283,14 +284,15 @@ describe('ResourcePropertyInput', () => {
       onChange,
     });
 
-    const el = screen.getByDisplayValue('{"url":"https://example.com","valueString":"foo"}');
+    expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument();
+    const el = screen.getByDisplayValue('foo');
     expect(el).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(el, { target: { value: '{"url":"https://example.com","valueString":"bar"}' } });
+      fireEvent.change(el, { target: { value: 'new value' } });
     });
 
-    expect(onChange).toHaveBeenCalledWith([{ url: 'https://example.com', valueString: 'bar' }]);
+    expect(onChange).toHaveBeenCalledWith([{ url: 'https://example.com', valueString: 'new value' }]);
   });
 
   test('HumanName property', async () => {
@@ -622,6 +624,7 @@ describe('ResourcePropertyInput', () => {
     await setup({
       ...defaultProps,
       name: 'secret',
+      path: property.path,
       property,
       onChange,
     });

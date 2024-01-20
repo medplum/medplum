@@ -16,6 +16,7 @@ const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter(
 
 export interface ElementsInputProps {
   type: string;
+  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
   path: string;
   defaultValue: any;
   outcome: OperationOutcome | undefined;

@@ -7,7 +7,7 @@ import { ElementsContext, buildElementsContext } from '../ElementsInput/Elements
 export interface BackboneElementInputProps {
   /** Type name the backbone element represents */
   typeName: string;
-  /** FHIR path of the backbone element in the resource being shown*/
+  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
   path: string;
   /** (optional) The contents of the resource represented by the backbone element */
   defaultValue?: any;

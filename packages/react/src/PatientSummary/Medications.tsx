@@ -80,9 +80,11 @@ export function Medications(props: MedicationsProps): JSX.Element {
           <Stack h={275}>
             <CodeableConceptInput
               name="request"
+              path="MedicationRequest.medication[x]"
               data-autofocus={true}
               binding="https://app.medplum.com/ValueSet/16d6f7b7-7eeb-4d0e-a83b-83be082aa10b"
               onChange={(request) => setCode(request)}
+              outcome={undefined}
             />
             <Radio.Group mt={32} name="status" label="Request Status" required>
               <Radio key="active" value="active" label="active" my="xs" />

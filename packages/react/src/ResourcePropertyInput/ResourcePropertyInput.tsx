@@ -31,6 +31,7 @@ import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
 export interface ResourcePropertyInputProps {
   property: InternalSchemaElement;
   name: string;
+  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
   path: string;
   defaultPropertyType?: string | undefined;
   defaultValue: any;
@@ -144,12 +145,10 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 }
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
-export type ElementDefinitionTypeInputProps = {
-  name: ResourcePropertyInputProps['name'];
-  path: string;
-  defaultValue: ResourcePropertyInputProps['defaultValue'];
-  onChange: ResourcePropertyInputProps['onChange'];
-  outcome: ResourcePropertyInputProps['outcome'];
+export type ElementDefinitionTypeInputProps = Pick<
+  ResourcePropertyInputProps,
+  'name' | 'path' | 'defaultValue' | 'onChange' | 'outcome'
+> & {
   elementDefinitionType: ElementDefinitionType;
   min: number;
   max: number;

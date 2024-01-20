@@ -13,6 +13,7 @@ export const AddressInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="address-input"
+      path="Patient.address"
       defaultValue={HomerSimpson.address?.[0]}
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'Address' }] }}
       defaultPropertyType={PropertyType.Address}
@@ -26,6 +27,7 @@ export const BooleanInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="boolean-input"
+      path="Device.boolean"
       defaultValue={false}
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'boolean' }] }}
       defaultPropertyType={PropertyType.boolean}
@@ -39,6 +41,7 @@ export const DateInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="date-input"
+      path="Observation.date"
       defaultValue="2021-01-01"
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'date' }] }}
       defaultPropertyType={PropertyType.date}
@@ -52,6 +55,7 @@ export const DateTimeInput = (): JSX.Element => (
   <Document>
     <ResourcePropertyInput
       name="date-input"
+      path="Procedure.dateTime"
       defaultValue="2021-01-01T16:00:01Z"
       property={{ path: '', description: '', min: 0, max: 1, type: [{ code: 'dateTime' }] }}
       defaultPropertyType={PropertyType.dateTime}

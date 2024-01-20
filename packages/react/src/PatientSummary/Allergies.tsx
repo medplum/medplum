@@ -74,9 +74,11 @@ export function Allergies(props: AllergiesProps): JSX.Element {
           <Stack>
             <CodeableConceptInput
               name="allergy"
+              path="AllergyIntolerance.code"
               data-autofocus={true}
               binding="http://hl7.org/fhir/us/core/ValueSet/us-core-allergy-substance"
               onChange={(allergy) => setCode(allergy)}
+              outcome={undefined}
             />
             <TextInput name="reaction" label="Reaction" />
             <NativeSelect name="status" label="Status" data={['active']} />

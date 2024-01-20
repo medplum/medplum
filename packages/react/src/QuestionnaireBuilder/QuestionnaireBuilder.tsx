@@ -484,6 +484,7 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
               <ResourcePropertyInput
                 key={option.id}
                 name="value[x]"
+                path="Questionnaire.answerOption.value[x]"
                 property={props.property}
                 defaultPropertyType={propertyType}
                 defaultValue={propertyValue}
