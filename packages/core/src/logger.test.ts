@@ -16,7 +16,7 @@ describe('Logger', () => {
   });
 
   test('Warn', () => {
-    testLogger.info('Warning');
+    testLogger.warn('Warning');
     expect(testOutput).toHaveBeenCalledWith(expect.objectContaining({ level: 'WARN', msg: 'Warning' }));
   });
 
