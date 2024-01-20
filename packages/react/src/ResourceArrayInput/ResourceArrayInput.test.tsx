@@ -82,8 +82,9 @@ const slicedProperty: InternalSchemaElement = {
   },
 };
 
-const defaultProps: Pick<ResourceArrayInputProps, 'name' | 'property' | 'outcome'> = {
+const defaultProps: Pick<ResourceArrayInputProps, 'name' | 'path' | 'property' | 'outcome'> = {
   name: 'myProp',
+  path: 'Fake.myProp',
   property,
   outcome: undefined,
 };
