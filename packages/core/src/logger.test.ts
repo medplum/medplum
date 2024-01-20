@@ -10,17 +10,17 @@ describe('Logger', () => {
     testLogger = new Logger((msg) => testOutput(JSON.parse(msg)), undefined, LogLevel.DEBUG);
   });
 
-  test('Writes simple message to output as JSON', () => {
+  test('Info', () => {
     testLogger.info('Boing!');
-    expect(testOutput).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'INFO',
-        msg: 'Boing!',
-      })
-    );
+    expect(testOutput).toHaveBeenCalledWith(expect.objectContaining({ level: 'INFO', msg: 'Boing!' }));
   });
 
-  test('Formats error message', () => {
+  test('Warn', () => {
+    testLogger.info('Warning');
+    expect(testOutput).toHaveBeenCalledWith(expect.objectContaining({ level: 'WARN', msg: 'Warning' }));
+  });
+
+  test('Error', () => {
     testLogger.error('Fatal error', new Error('Catastrophe!'));
     expect(testOutput).toHaveBeenCalledWith(
       expect.objectContaining({
