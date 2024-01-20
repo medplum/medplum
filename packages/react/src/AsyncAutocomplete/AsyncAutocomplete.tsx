@@ -227,7 +227,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   // https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/MultiSelect/MultiSelect.tsx
   const clearButton = clearable && selected.length > 0 && (
     <Combobox.ClearButton
-      title="Clear"
+      title="Clear all"
       size={16}
       onClear={() => {
         setSearch('');

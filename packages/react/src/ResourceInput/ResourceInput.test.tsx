@@ -139,11 +139,38 @@ describe('ResourceInput', () => {
     await waitFor(() => screen.getByText('Homer Simpson'));
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
 
-    const clearButton = screen.getByTitle('Clear') as HTMLImageElement;
+    const nameSpan = screen.getByText('Homer Simpson');
+    const clearButton = nameSpan.parentElement?.childNodes[1] as HTMLImageElement;
     expect(clearButton).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(clearButton);
+    });
+
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  test('Clear all button calls onChange', async () => {
+    const onChange = jest.fn();
+
+    await act(async () => {
+      setup({
+        resourceType: 'Patient',
+        name: 'foo',
+        defaultValue: { reference: 'Patient/123' },
+        placeholder: 'Test',
+        onChange,
+      });
+    });
+
+    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    const clearAllButton = screen.getByTitle('Clear all') as HTMLImageElement;
+    expect(clearAllButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(clearAllButton);
     });
 
     expect(onChange).toHaveBeenCalledWith(undefined);
