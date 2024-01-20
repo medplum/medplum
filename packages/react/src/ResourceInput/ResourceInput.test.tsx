@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
 
 const medplum = new MockClient();
@@ -121,5 +121,31 @@ describe('ResourceInput', () => {
 
     await waitFor(() => screen.getByPlaceholderText('Test'));
     expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
+  });
+
+  test('Clear button calls onChange', async () => {
+    const onChange = jest.fn();
+
+    await act(async () => {
+      setup({
+        resourceType: 'Patient',
+        name: 'foo',
+        defaultValue: { reference: 'Patient/123' },
+        placeholder: 'Test',
+        onChange,
+      });
+    });
+
+    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    const clearButton = screen.getByTitle('Clear') as HTMLImageElement;
+    expect(clearButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(clearButton);
+    });
+
+    expect(onChange).toHaveBeenCalledWith(undefined);
   });
 });

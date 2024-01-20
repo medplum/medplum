@@ -184,9 +184,14 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     }
   };
 
-  const handleValueRemove = useCallback((item: AsyncAutocompleteOption<T>): void => {
-    setSelected((current) => current.filter((v) => v.value !== item.value));
-  }, []);
+  const handleValueRemove = useCallback(
+    (item: AsyncAutocompleteOption<T>): void => {
+      const newSelected = selected.filter((v) => v.value !== item.value);
+      onChange(newSelected.map((v) => v.resource));
+      setSelected(newSelected);
+    },
+    [selected, onChange]
+  );
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent): void => {
@@ -222,10 +227,12 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   // https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/MultiSelect/MultiSelect.tsx
   const clearButton = clearable && selected.length > 0 && (
     <Combobox.ClearButton
+      title="Clear"
       size={16}
       onClear={() => {
         setSearch('');
         setSelected([]);
+        onChange([]);
       }}
     />
   );
