@@ -115,6 +115,9 @@ class ResourceValidator implements ResourceVisitor {
 
     crawlResource(this.rootResource, this, this.schema);
 
+    // Check root constraints
+    this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
+
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
     if (issues.length > 0) {
@@ -195,6 +198,7 @@ class ResourceValidator implements ResourceVisitor {
           sliceCounts[sliceName] += 1;
         }
       }
+
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
     }
   }
@@ -269,7 +273,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private constraintsCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+  private constraintsCheck(value: TypedValue, field: InternalTypeSchema | InternalSchemaElement, path: string): void {
     const constraints = field.constraints;
     if (!constraints) {
       return;

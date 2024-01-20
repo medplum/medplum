@@ -8,6 +8,8 @@ import {
   CodeSystem,
   Condition,
   DiagnosticReport,
+  ElementDefinition,
+  Encounter,
   Extension,
   HumanName,
   ImplementationGuide,
@@ -19,6 +21,7 @@ import {
   QuestionnaireItem,
   Resource,
   StructureDefinition,
+  StructureDefinitionSnapshot,
   SubstanceProtein,
   ValueSet,
 } from '@medplum/fhirtypes';
@@ -27,18 +30,22 @@ import { resolve } from 'path';
 import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
-import { createReference } from '../utils';
+import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle } from './types';
 import { validateResource } from './validation';
 
 describe('FHIR resource validation', () => {
+  let structureDefinitionBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
+
+    structureDefinitionBundle = readJson('fhir/r4/profiles-resources.json') as Bundle;
+
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(structureDefinitionBundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
 
     observationProfile = JSON.parse(
@@ -741,14 +748,6 @@ describe('FHIR resource validation', () => {
     };
     expect(() => validateResource(observation, bodyWeightProfile as StructureDefinition)).not.toThrow();
   });
-});
-
-describe('Legacy tests for parity checking', () => {
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-  });
 
   test('validateResource', () => {
     expect(() => validateResource(null as unknown as Resource)).toThrow();
@@ -1292,6 +1291,63 @@ describe('Legacy tests for parity checking', () => {
     };
 
     expect(() => validateResource(resource)).not.toThrow();
+  });
+
+  test('where identifier exists', () => {
+    const original = structureDefinitionBundle.entry?.find((e) => e.resource?.id === 'Encounter')
+      ?.resource as StructureDefinition;
+
+    expect(original).toBeDefined();
+
+    const profile = deepClone(original);
+
+    const rootElement = (profile.snapshot as StructureDefinitionSnapshot).element?.find(
+      (e) => e.id === 'Encounter'
+    ) as ElementDefinition;
+    rootElement.constraint = [
+      {
+        key: 'where-identifier-exists',
+        expression: "identifier.where(system='http://example.com' and value='123').exists()",
+        severity: 'error',
+        human: 'Identifier must exist',
+      },
+    ];
+
+    const identifierElement = (profile.snapshot as StructureDefinitionSnapshot).element?.find(
+      (e) => e.id === 'Encounter.identifier'
+    ) as ElementDefinition;
+    identifierElement.min = 1;
+    identifierElement.constraint = [
+      {
+        key: 'where-identifier-exists',
+        expression: "where(system='http://example.com' and value='123').exists()",
+        severity: 'error',
+        human: 'Identifier must exist',
+      },
+    ];
+
+    const e1: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+    };
+    expect(() => validateResource(e1, profile)).toThrow();
+
+    const e2: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '123' }],
+    };
+    expect(() => validateResource(e2, profile)).not.toThrow();
+
+    const e3: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '456' }],
+    };
+    expect(() => validateResource(e3, profile)).toThrow();
   });
 });
 
