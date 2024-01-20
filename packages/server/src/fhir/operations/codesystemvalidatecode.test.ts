@@ -69,7 +69,6 @@ describe('CodeSystem validate-code', () => {
           { name: 'code', valueCode: '1' },
         ],
       } as Parameters);
-    console.log(res.body.issue);
     expect(res.status).toEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
