@@ -3,12 +3,13 @@ import {
   AgentTransmitRequest,
   ContentType,
   Hl7Message,
+  LogLevel,
+  Logger,
   MedplumClient,
   normalizeErrorString,
 } from '@medplum/core';
 import { Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { EventLogger } from 'node-windows';
 import WebSocket from 'ws';
 import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
@@ -16,7 +17,7 @@ import { AgentHl7Channel } from './hl7';
 
 export class App {
   static instance: App;
-  readonly log: EventLogger;
+  readonly log: Logger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
@@ -30,15 +31,11 @@ export class App {
 
   constructor(
     readonly medplum: MedplumClient,
-    readonly agentId: string
+    readonly agentId: string,
+    readonly logLevel: LogLevel
   ) {
     App.instance = this;
-
-    this.log = {
-      info: console.log,
-      warn: console.warn,
-      error: console.error,
-    } as EventLogger;
+    this.log = new Logger((msg) => console.log(msg), undefined, logLevel);
   }
 
   async start(): Promise<void> {
@@ -117,7 +114,7 @@ export class App {
       try {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
-        this.log.info(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
+        this.log.debug(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
         const command = JSON.parse(str) as AgentMessage;
         switch (command.type) {
           // @ts-expect-error - Deprecated message type
