@@ -48,9 +48,9 @@
     "postcss-preset-mantine": "1.12.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.21.2",
+    "react-router-dom": "6.21.3",
     "rfc6902": "5.1.1",
-    "vite": "5.0.11"
+    "vite": "5.0.12"
   },
   "engines": {
     "node": ">=18.0.0"
