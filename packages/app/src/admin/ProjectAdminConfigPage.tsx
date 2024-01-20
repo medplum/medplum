@@ -22,9 +22,7 @@ export function ProjectAdminConfigPage(): JSX.Element {
       <Title order={1}>Project Admin</Title>
       <Divider my="lg" />
       <Title order={2}>Force Set Password</Title>
-      <Text>
-        Sets the password for the specified user <Text w={500}>in this project</Text>.
-      </Text>
+      <Text>Sets the password for the specified user in this project.</Text>
       <Text>
         This action can only be performed by project administrators. Passwords can only be set for users scoped in this
         project.
