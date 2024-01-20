@@ -26,7 +26,9 @@ export interface ElementsInputProps {
 
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
   const { onChange } = props;
-  const [value, setValue] = useCallbackState<any>(() => props.defaultValue ?? {}, `ElementsInput[${props.path}]`);
+  const [value, setValue] = useCallbackState<any>({
+    initialState: () => props.defaultValue ?? {},
+  });
   const elementsContext = useContext(ElementsContext);
   const elementsToRender = useMemo(() => {
     const result = Object.entries(elementsContext.elements).filter(([key, element]) => {

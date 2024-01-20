@@ -34,7 +34,9 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
   const [slices, setSlices] = useState<SupportedSliceDefinition[]>([]);
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
-  const [slicedValues, setSlicedValues] = useCallbackState<SlicedValuesType>([[]], `ResourceArrayInput[${props.path}]`);
+  const [slicedValues, setSlicedValues] = useCallbackState<SlicedValuesType>({
+    initialState: () => [[]],
+  });
   const ctx = useContext(ElementsContext);
 
   // props.onChange should NOT be used directly; prefer onChangeWrapper
@@ -68,6 +70,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
       .then((slices) => {
         const slicedValues = assignValuesIntoSlices(defaultValue, slices, property.slicing, ctx.profileUrl);
         setSlices(slices);
+        // No callback since this is an internal state representation update not driven by a user action
         setSlicedValues(slicedValues);
         setLoading(false);
       })
