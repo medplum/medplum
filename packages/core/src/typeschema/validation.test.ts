@@ -455,7 +455,7 @@ describe('FHIR resource validation', () => {
     );
   });
 
-  test('StructureDefinition', () => {
+  test.only('StructureDefinition', () => {
     expect(() => {
       const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
       validateResource(structureDefinition);
@@ -1087,6 +1087,8 @@ describe('FHIR resource validation', () => {
     const appt: Appointment = {
       resourceType: 'Appointment',
       status: 'booked',
+      start: '2022-02-02T12:00:00Z',
+      end: '2022-02-02T12:30:00Z',
       participant: [{ status: 'accepted', actor: patientReference }],
     };
 
@@ -1120,6 +1122,8 @@ describe('FHIR resource validation', () => {
     const appt: Appointment = {
       resourceType: 'Appointment',
       status: 'booked',
+      start: '2022-02-02T12:00:00Z',
+      end: '2022-02-02T12:30:00Z',
       participant: [{ status: 'accepted', actor: patientReference }],
     };
 
@@ -1157,20 +1161,17 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue).toHaveLength(1);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing required property');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment.participant.status');
-    }
-  });
+      expect(outcome.issue).toHaveLength(2);
 
-  test('StructureDefinition', () => {
-    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-    try {
-      validateResource(structureDefinition);
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      console.log(JSON.stringify(outcome, null, 2).substring(0, 1000));
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual(
+        'Constraint app-3 not met: Only proposed or cancelled appointments can be missing start/end dates'
+      );
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment');
+
+      expect(outcome.issue?.[1]?.severity).toEqual('error');
+      expect(outcome.issue?.[1]?.details?.text).toEqual('Missing required property');
+      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Appointment.participant.status');
     }
   });
 

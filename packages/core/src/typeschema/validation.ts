@@ -97,7 +97,7 @@ class ResourceValidator implements ResourceVisitor {
   constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
     this.issues = [];
     this.rootResource = rootResource;
-    this.currentResource = [];
+    this.currentResource = [rootResource];
     if (!profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -111,12 +111,12 @@ class ResourceValidator implements ResourceVisitor {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
 
+    // Check root constraints
+    this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
+
     checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
 
     crawlResource(this.rootResource, this, this.schema);
-
-    // Check root constraints
-    this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
 
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
