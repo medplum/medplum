@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhir-router",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Medplum FHIR Router",
   "keywords": [
     "medplum",

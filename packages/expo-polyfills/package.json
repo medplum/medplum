@@ -1,6 +1,6 @@
 {
   "name": "@medplum/expo-polyfills",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "A module for polyfilling the minimum necessary web APIs for using the Medplum client on React Native",
   "keywords": [
     "react-native",
