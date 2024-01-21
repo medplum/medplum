@@ -85,6 +85,7 @@ const validationRegexes: Record<string, RegExp> = {
 const skippedConstraintKeys: Record<string, boolean> = {
   'ele-1': true,
   'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'org-1': true, // The organization SHALL at least have a name or an identifier, and possibly more than one (back compat)
   'sdf-19': true, // FHIR Specification models only use FHIR defined types
 };
 
