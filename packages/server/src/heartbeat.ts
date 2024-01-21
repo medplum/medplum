@@ -1,4 +1,5 @@
 import { TypedEventTarget } from '@medplum/core';
+import { MedplumServerConfig } from './config';
 
 export type HeartbeatEventMap = {
   heartbeat: { type: 'heartbeat' };
@@ -12,10 +13,14 @@ let heartbeatTimer: NodeJS.Timeout | undefined;
 
 /**
  * Initializes heartbeat timers for WebSocket connections.
+ * @param config - Medplum server config.
  */
-export function initHeartbeat(): void {
+export function initHeartbeat(config: MedplumServerConfig): void {
   if (!heartbeatTimer) {
-    heartbeatTimer = setInterval(() => heartbeat.dispatchEvent({ type: 'heartbeat' }), DEFAULT_HEARTBEAT_MS);
+    heartbeatTimer = setInterval(
+      () => heartbeat.dispatchEvent({ type: 'heartbeat' }),
+      config.heartbeatMilliseconds ?? DEFAULT_HEARTBEAT_MS
+    );
   }
 }
 
