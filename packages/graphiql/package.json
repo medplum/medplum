@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Medplum GraphiQL",
   "homepage": "https://www.medplum.com/",
   "bugs": {
