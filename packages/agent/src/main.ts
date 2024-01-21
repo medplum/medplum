@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, parseLogLevel } from '@medplum/core';
 import { existsSync, readFileSync } from 'fs';
 import { App } from './app';
 
@@ -7,6 +7,7 @@ interface Args {
   clientId: string;
   clientSecret: string;
   agentId: string;
+  logLevel?: string;
 }
 
 export async function main(argv: string[]): Promise<App> {
@@ -40,7 +41,7 @@ export async function main(argv: string[]): Promise<App> {
   const medplum = new MedplumClient({ baseUrl, clientId });
   await medplum.startClientLogin(clientId, clientSecret);
 
-  const app = new App(medplum, agentId);
+  const app = new App(medplum, agentId, parseLogLevel(args.logLevel ?? 'INFO'));
   await app.start();
 
   process.on('SIGINT', () => {

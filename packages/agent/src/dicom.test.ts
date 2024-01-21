@@ -1,4 +1,4 @@
-import { allOk, createReference } from '@medplum/core';
+import { LogLevel, allOk, createReference } from '@medplum/core';
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dimse from 'dcmjs-dimse';
@@ -58,7 +58,7 @@ describe('DICOM', () => {
       ],
     } as Agent);
 
-    const app = new App(medplum, agent.id as string);
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
 
     const client = new dimse.Client();
