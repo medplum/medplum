@@ -423,7 +423,7 @@ class StructureDefinitionParser {
 
   private parseSliceStart(element: ElementDefinition): void {
     if (!this.slicingContext) {
-      throw new Error('Invalid slice start before discriminator: ' + element.sliceName);
+      throw new Error(`Invalid slice start before discriminator: ${element.sliceName} (${element.id})`);
     }
     if (this.slicingContext.current) {
       this.slicingContext.field.slices.push(this.slicingContext.current);

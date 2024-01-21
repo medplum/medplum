@@ -82,7 +82,11 @@ const validationRegexes: Record<string, RegExp> = {
 /**
  * List of constraint keys that aren't to be checked in an expression.
  */
-const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
+const skippedConstraintKeys: Record<string, boolean> = {
+  'ele-1': true,
+  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'sdf-19': true, // FHIR Specification models only use FHIR defined types
+};
 
 export function validateResource(resource: Resource, profile?: StructureDefinition): void {
   new ResourceValidator(resource.resourceType, resource, profile).validate();
@@ -176,7 +180,7 @@ class ResourceValidator implements ResourceVisitor {
       if (values.length < element.min || values.length > element.max) {
         this.issues.push(
           createStructureIssue(
-            path,
+            element.path,
             `Invalid number of values: expected ${element.min}..${
               Number.isFinite(element.max) ? element.max : '*'
             }, but found ${values.length}`

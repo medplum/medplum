@@ -35,18 +35,22 @@ import { indexStructureDefinitionBundle } from './types';
 import { validateResource } from './validation';
 
 describe('FHIR resource validation', () => {
-  let structureDefinitionBundle: Bundle;
+  let typesBundle: Bundle;
+  let resourcesBundle: Bundle;
+  let medplumBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
 
-    structureDefinitionBundle = readJson('fhir/r4/profiles-resources.json') as Bundle;
+    typesBundle = readJson('fhir/r4/profiles-types.json') as Bundle;
+    resourcesBundle = readJson('fhir/r4/profiles-resources.json') as Bundle;
+    medplumBundle = readJson('fhir/r4/profiles-medplum.json') as Bundle;
 
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(structureDefinitionBundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    indexStructureDefinitionBundle(typesBundle);
+    indexStructureDefinitionBundle(resourcesBundle);
+    indexStructureDefinitionBundle(medplumBundle);
 
     observationProfile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
@@ -455,15 +459,10 @@ describe('FHIR resource validation', () => {
     );
   });
 
-  test.only('StructureDefinition', () => {
-    expect(() => {
-      const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-      validateResource(structureDefinition);
-    }).not.toThrow();
-    expect(() => {
-      const structureDefinition = readJson('fhir/r4/profiles-medplum.json') as Bundle;
-      validateResource(structureDefinition);
-    }).not.toThrow();
+  test('StructureDefinition', () => {
+    expect(() => validateResource(typesBundle)).not.toThrow();
+    expect(() => validateResource(resourcesBundle)).not.toThrow();
+    expect(() => validateResource(medplumBundle)).not.toThrow();
   });
 
   test('Profile with restriction on base type field', () => {
@@ -1295,7 +1294,7 @@ describe('FHIR resource validation', () => {
   });
 
   test('where identifier exists', () => {
-    const original = structureDefinitionBundle.entry?.find((e) => e.resource?.id === 'Encounter')
+    const original = resourcesBundle.entry?.find((e) => e.resource?.id === 'Encounter')
       ?.resource as StructureDefinition;
 
     expect(original).toBeDefined();
