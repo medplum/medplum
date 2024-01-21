@@ -13,7 +13,9 @@ export class RequestContext {
   constructor(requestId: string, traceId: string, logger?: Logger) {
     this.requestId = requestId;
     this.traceId = traceId;
-    this.logger = logger ?? new Logger(write, { requestId, traceId });
+    this.logger =
+      logger ??
+      new Logger(write, { requestId, traceId }, process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO);
   }
 
   static empty(): RequestContext {

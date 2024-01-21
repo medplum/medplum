@@ -8,6 +8,8 @@ import {
   CodeSystem,
   Condition,
   DiagnosticReport,
+  ElementDefinition,
+  Encounter,
   Extension,
   HumanName,
   ImplementationGuide,
@@ -19,6 +21,7 @@ import {
   QuestionnaireItem,
   Resource,
   StructureDefinition,
+  StructureDefinitionSnapshot,
   SubstanceProtein,
   ValueSet,
 } from '@medplum/fhirtypes';
@@ -27,19 +30,27 @@ import { resolve } from 'path';
 import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
-import { createReference } from '../utils';
+import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle } from './types';
 import { validateResource } from './validation';
 
 describe('FHIR resource validation', () => {
+  let typesBundle: Bundle;
+  let resourcesBundle: Bundle;
+  let medplumBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+
+    typesBundle = readJson('fhir/r4/profiles-types.json') as Bundle;
+    resourcesBundle = readJson('fhir/r4/profiles-resources.json') as Bundle;
+    medplumBundle = readJson('fhir/r4/profiles-medplum.json') as Bundle;
+
+    indexStructureDefinitionBundle(typesBundle);
+    indexStructureDefinitionBundle(resourcesBundle);
+    indexStructureDefinitionBundle(medplumBundle);
 
     observationProfile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
@@ -449,14 +460,9 @@ describe('FHIR resource validation', () => {
   });
 
   test('StructureDefinition', () => {
-    expect(() => {
-      const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-      validateResource(structureDefinition);
-    }).not.toThrow();
-    expect(() => {
-      const structureDefinition = readJson('fhir/r4/profiles-medplum.json') as Bundle;
-      validateResource(structureDefinition);
-    }).not.toThrow();
+    expect(() => validateResource(typesBundle)).not.toThrow();
+    expect(() => validateResource(resourcesBundle)).not.toThrow();
+    expect(() => validateResource(medplumBundle)).not.toThrow();
   });
 
   test('Profile with restriction on base type field', () => {
@@ -740,14 +746,6 @@ describe('FHIR resource validation', () => {
       },
     };
     expect(() => validateResource(observation, bodyWeightProfile as StructureDefinition)).not.toThrow();
-  });
-});
-
-describe('Legacy tests for parity checking', () => {
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
   });
 
   test('validateResource', () => {
@@ -1088,6 +1086,8 @@ describe('Legacy tests for parity checking', () => {
     const appt: Appointment = {
       resourceType: 'Appointment',
       status: 'booked',
+      start: '2022-02-02T12:00:00Z',
+      end: '2022-02-02T12:30:00Z',
       participant: [{ status: 'accepted', actor: patientReference }],
     };
 
@@ -1121,6 +1121,8 @@ describe('Legacy tests for parity checking', () => {
     const appt: Appointment = {
       resourceType: 'Appointment',
       status: 'booked',
+      start: '2022-02-02T12:00:00Z',
+      end: '2022-02-02T12:30:00Z',
       participant: [{ status: 'accepted', actor: patientReference }],
     };
 
@@ -1158,20 +1160,17 @@ describe('Legacy tests for parity checking', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue).toHaveLength(1);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing required property');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment.participant.status');
-    }
-  });
+      expect(outcome.issue).toHaveLength(2);
 
-  test('StructureDefinition', () => {
-    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-    try {
-      validateResource(structureDefinition);
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      console.log(JSON.stringify(outcome, null, 2).substring(0, 1000));
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual(
+        'Constraint app-3 not met: Only proposed or cancelled appointments can be missing start/end dates'
+      );
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment');
+
+      expect(outcome.issue?.[1]?.severity).toEqual('error');
+      expect(outcome.issue?.[1]?.details?.text).toEqual('Missing required property');
+      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Appointment.participant.status');
     }
   });
 
@@ -1292,6 +1291,63 @@ describe('Legacy tests for parity checking', () => {
     };
 
     expect(() => validateResource(resource)).not.toThrow();
+  });
+
+  test('where identifier exists', () => {
+    const original = resourcesBundle.entry?.find((e) => e.resource?.id === 'Encounter')
+      ?.resource as StructureDefinition;
+
+    expect(original).toBeDefined();
+
+    const profile = deepClone(original);
+
+    const rootElement = (profile.snapshot as StructureDefinitionSnapshot).element?.find(
+      (e) => e.id === 'Encounter'
+    ) as ElementDefinition;
+    rootElement.constraint = [
+      {
+        key: 'where-identifier-exists',
+        expression: "identifier.where(system='http://example.com' and value='123').exists()",
+        severity: 'error',
+        human: 'Identifier must exist',
+      },
+    ];
+
+    const identifierElement = (profile.snapshot as StructureDefinitionSnapshot).element?.find(
+      (e) => e.id === 'Encounter.identifier'
+    ) as ElementDefinition;
+    identifierElement.min = 1;
+    identifierElement.constraint = [
+      {
+        key: 'where-identifier-exists',
+        expression: "where(system='http://example.com' and value='123').exists()",
+        severity: 'error',
+        human: 'Identifier must exist',
+      },
+    ];
+
+    const e1: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+    };
+    expect(() => validateResource(e1, profile)).toThrow();
+
+    const e2: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '123' }],
+    };
+    expect(() => validateResource(e2, profile)).not.toThrow();
+
+    const e3: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '456' }],
+    };
+    expect(() => validateResource(e3, profile)).toThrow();
   });
 });
 

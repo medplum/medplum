@@ -44,6 +44,12 @@ describe('FHIRPath functions', () => {
     expect(functions.empty(context, [TYPED_1, TYPED_2])).toEqual([TYPED_FALSE]);
   });
 
+  test('hasValue', () => {
+    expect(functions.hasValue(context, [])).toEqual([TYPED_FALSE]);
+    expect(functions.hasValue(context, [TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(functions.hasValue(context, [TYPED_1, TYPED_2])).toEqual([TYPED_TRUE]);
+  });
+
   test('exists', () => {
     expect(functions.exists(context, [])).toEqual([TYPED_FALSE]);
     expect(functions.exists(context, [TYPED_1])).toEqual([TYPED_TRUE]);

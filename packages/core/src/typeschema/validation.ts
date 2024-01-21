@@ -82,7 +82,12 @@ const validationRegexes: Record<string, RegExp> = {
 /**
  * List of constraint keys that aren't to be checked in an expression.
  */
-const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
+const skippedConstraintKeys: Record<string, boolean> = {
+  'ele-1': true,
+  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'org-1': true, // The organization SHALL at least have a name or an identifier, and possibly more than one (back compat)
+  'sdf-19': true, // FHIR Specification models only use FHIR defined types
+};
 
 export function validateResource(resource: Resource, profile?: StructureDefinition): void {
   new ResourceValidator(resource.resourceType, resource, profile).validate();
@@ -97,7 +102,7 @@ class ResourceValidator implements ResourceVisitor {
   constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
     this.issues = [];
     this.rootResource = rootResource;
-    this.currentResource = [];
+    this.currentResource = [rootResource];
     if (!profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -110,6 +115,9 @@ class ResourceValidator implements ResourceVisitor {
     if (!resourceType) {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
+
+    // Check root constraints
+    this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
 
     checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
 
@@ -173,7 +181,7 @@ class ResourceValidator implements ResourceVisitor {
       if (values.length < element.min || values.length > element.max) {
         this.issues.push(
           createStructureIssue(
-            path,
+            element.path,
             `Invalid number of values: expected ${element.min}..${
               Number.isFinite(element.max) ? element.max : '*'
             }, but found ${values.length}`
@@ -195,6 +203,7 @@ class ResourceValidator implements ResourceVisitor {
           sliceCounts[sliceName] += 1;
         }
       }
+
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
     }
   }
@@ -269,7 +278,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private constraintsCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+  private constraintsCheck(value: TypedValue, field: InternalTypeSchema | InternalSchemaElement, path: string): void {
     const constraints = field.constraints;
     if (!constraints) {
       return;

@@ -38,6 +38,17 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /**
+   * Returns true if the input collection is not empty ({ }) and false otherwise.
+   *
+   * @param _context - The evaluation context.
+   * @param input - The input collection.
+   * @returns True if the input collection is not empty ({ }) and false otherwise.
+   */
+  hasValue: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
+    return booleanToTypedValue(input.length !== 0);
+  },
+
+  /**
    * Returns true if the collection has unknown elements, and false otherwise.
    * This is the opposite of empty(), and as such is a shorthand for empty().not().
    * If the input collection is empty ({ }), the result is false.
@@ -1493,13 +1504,12 @@ export const functions: Record<string, FhirPathFunction> = {
    * function unchanged.
    *
    * See: https://hl7.org/fhirpath/#tracename-string-projection-expression-collection
-   * @param context - The evaluation context.
+   * @param _context - The evaluation context.
    * @param input - The input collection.
-   * @param nameAtom - The log name.
+   * @param _nameAtom - The log name.
    * @returns The input collection.
    */
-  trace: (context: AtomContext, input: TypedValue[], nameAtom: Atom): TypedValue[] => {
-    console.log('trace', input, nameAtom);
+  trace: (_context: AtomContext, input: TypedValue[], _nameAtom: Atom): TypedValue[] => {
     return input;
   },
 

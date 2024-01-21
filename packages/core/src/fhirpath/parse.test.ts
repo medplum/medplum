@@ -1,5 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Encounter, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath, evalFhirPathTyped, parseFhirPath } from './parse';
@@ -600,5 +600,65 @@ describe('FHIRPath parser', () => {
     expect(evalFhirPath(expr, { filter })).toEqual([false]);
     expect(evalFhirPath(expr, { concept, system })).toEqual([true]);
     expect(evalFhirPath(expr, { concept, filter, system })).toEqual([true]);
+  });
+
+  test('where and', () => {
+    const expr = "identifier.where(system='http://example.com' and value='123').exists()";
+
+    const e1: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '123' }],
+    };
+    expect(evalFhirPath(expr, e1)).toEqual([true]);
+
+    const e2: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '456' }],
+    };
+    expect(evalFhirPath(expr, e2)).toEqual([false]);
+  });
+
+  test('Bundle bdl-3', () => {
+    // entry.request mandatory for batch/transaction/history, otherwise prohibited
+    const expr =
+      "entry.all(request.exists() = (%resource.type = 'batch' or %resource.type = 'transaction' or %resource.type = 'history'))";
+
+    const b1: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+          },
+        },
+      ],
+    };
+    const tb1 = toTypedValue(b1);
+    expect(evalFhirPathTyped(expr, [tb1], { '%resource': tb1 })).toEqual([toTypedValue(true)]);
+
+    const b2: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+          },
+        },
+      ],
+    };
+    const tb2 = toTypedValue(b2);
+    expect(evalFhirPathTyped(expr, [tb2], { '%resource': tb2 })).toEqual([toTypedValue(true)]);
   });
 });
