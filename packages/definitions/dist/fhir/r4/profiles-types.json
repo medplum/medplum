@@ -21993,7 +21993,7 @@
           "base" : {
             "path" : "Meta.compartment",
             "min" : 0,
-            "max" : "1"
+            "max" : "*"
           },
           "type" : [{
             "code" : "Reference"
