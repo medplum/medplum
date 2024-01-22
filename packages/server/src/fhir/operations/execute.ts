@@ -35,7 +35,7 @@ import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
-import { incrementCounter } from '../../otel/otel';
+import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createAuditEventEntities } from '../../workers/utils';
@@ -153,6 +153,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 
   let result: BotExecutionResult;
 
+  const execStart = process.hrtime.bigint();
   if (!(await isBotEnabled(bot))) {
     result = { success: false, logResult: 'Bots not enabled' };
   } else {
@@ -166,10 +167,10 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
       result = { success: false, logResult: 'Unsupported bot runtime' };
     }
   }
+  const executionTime = Number(process.hrtime.bigint() - execStart) / 1e9; // Report duration in seconds
 
-  const attributes = { project: bot.meta?.project, bot: bot.id };
-  incrementCounter('medplum.bot.execute', attributes);
-  incrementCounter(result.success ? 'medplum.bot.execute.success' : 'medplum.bot.execute.failure', attributes);
+  const attributes = { project: bot.meta?.project, bot: bot.id, outcome: result.success ? 'success' : 'failure' };
+  recordHistogramValue('medplum.bot.execute.time', executionTime, attributes);
 
   await createAuditEvent(
     request,
