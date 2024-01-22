@@ -252,7 +252,13 @@ const umlsSources: Record<string, UmlsSource> = {
 
 async function addSources(client: MedplumClient): Promise<void> {
   for (const source of Object.values(umlsSources)) {
-    await client.createResourceIfNoneExist(source.resource, 'url=' + source.system);
+    let existing = await client.searchOne('CodeSystem', 'url=' + source.system);
+    if (existing) {
+      existing = { ...source.resource, id: existing.id };
+      await client.updateResource(existing);
+    } else {
+      await client.createResource(source.resource);
+    }
   }
 }
 
