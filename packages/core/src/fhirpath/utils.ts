@@ -66,19 +66,20 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
  * This function returns the value and the type.
  * @param input - The base context (FHIR resource or backbone element).
  * @param path - The property path.
- * @param profileUrl - (optional) Profile URl
+ * @param options - (optional) Additional options
+ * @param options.profileUrl - (optional) URL of a resource profile for type resolution
  * @returns The value of the property and the property type.
  */
 export function getTypedPropertyValue(
   input: TypedValue,
   path: string,
-  profileUrl?: string
+  options?: { profileUrl?: string }
 ): TypedValue[] | TypedValue | undefined {
   if (!input.value) {
     return undefined;
   }
 
-  const elementDefinition = getElementDefinition(input.type, path, profileUrl);
+  const elementDefinition = getElementDefinition(input.type, path, options?.profileUrl);
   if (elementDefinition) {
     return getTypedPropertyValueWithSchema(input, path, elementDefinition);
   }

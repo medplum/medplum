@@ -19,13 +19,11 @@ function isDiscriminatorComponentMatch(
   slice: SupportedSliceDefinition,
   profileUrl: string | undefined
 ): boolean {
-  const nestedProp = getNestedProperty(typedValue, discriminator.path, profileUrl);
+  const nestedProp = getNestedProperty(typedValue, discriminator.path, { profileUrl });
 
   if (nestedProp) {
     const elementList = slice.typeSchema?.elements ?? slice.elements;
-    const result =
-      arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
-    return result;
+    return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
   } else {
     console.assert(false, 'getNestedProperty[%s] in isDiscriminatorComponentMatch missed', discriminator.path);
   }

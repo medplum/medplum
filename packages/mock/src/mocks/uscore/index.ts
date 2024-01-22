@@ -3,7 +3,7 @@ import StructureDefinitionList from './uscore-v5.0.1-structuredefinitions.json';
 import { HTTP_HL7_ORG, deepClone } from '@medplum/core';
 import { HomerSimpson } from '../simpsons';
 
-export const USCoreStructureDefinitionList: StructureDefinition[] = StructureDefinitionList as StructureDefinition[];
+export const USCoreStructureDefinitionList = StructureDefinitionList as StructureDefinition[];
 
 export const HomerSimpsonUSCorePatient: Patient = {
   ...deepClone(HomerSimpson),
