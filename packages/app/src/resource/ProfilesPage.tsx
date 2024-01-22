@@ -80,7 +80,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resource, onReso
         })
         .catch((err) => {
           setOutcome(normalizeOperationOutcome(err));
-          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
         });
     },
     [medplum, profile.url, onResourceUpdated, active]
