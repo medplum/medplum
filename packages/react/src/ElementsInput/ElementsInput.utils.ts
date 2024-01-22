@@ -123,7 +123,7 @@ export function buildElementsContext({
       mergedElements,
       Boolean(debugMode)
     );
-    return result.value;
+    return result;
   }
 
   return {
@@ -176,39 +176,39 @@ function mergeElementsForContext(
   return result;
 }
 
+type ConsoleDebug = typeof console.debug;
+
 function modifyDefaultValueImpl(
   defaultValue: TypedValue,
   elements: ElementsContextType['elements'],
   debugMode: boolean
-): TypedValue {
-  if (Array.isArray(defaultValue.value)) {
-    return {
-      type: defaultValue.type,
-      value: defaultValue.value.map((dv) =>
-        modifyDefaultValueImpl({ type: defaultValue.type, value: dv }, elements, debugMode)
-      ),
-    };
+): any {
+  const inputType = defaultValue.type;
+  const inputValue: any = defaultValue.value;
+
+  if (Array.isArray(inputValue)) {
+    return inputValue.map((iv) => modifyDefaultValueImpl({ type: defaultValue.type, value: iv }, elements, debugMode));
   }
 
-  const debug: typeof console.debug = debugMode ? console.debug : () => undefined;
+  const debug: ConsoleDebug = debugMode ? console.debug : () => undefined;
 
-  const result: TypedValue = deepClone(defaultValue);
-  debug(`modifyDV  INPUT\ntype: ${result.type}\nvalue: ${JSON.stringify(result.value)}`);
+  const outputValue: any = deepClone(inputValue);
+  debug(`modifyDV  INPUT\ntype: ${inputType}\nvalue: ${JSON.stringify(outputValue)}`);
 
   for (const [key, element] of Object.entries(elements)) {
     if (element.fixed) {
       debug(`---=== modifyDV key: ${key} fixed: ${JSON.stringify(element.fixed.value)}`);
-      debug('modifyDV top', JSON.stringify(result.value, undefined, 2));
-      // setPropertyValue(result.value, key, key, element, element.fixed.value);
+      debug('modifyDV top', JSON.stringify(outputValue, undefined, 2));
+      // setPropertyValue(outputValue, key, key, element, element.fixed.value);
     } else if (element.pattern) {
       debug(`---=== modifyDV key: ${key} pattern: ${JSON.stringify(element.pattern.value)}`);
-      debug('modifyDV top', JSON.stringify(result.value, undefined, 2));
+      debug('modifyDV top', JSON.stringify(outputValue, undefined, 2));
     } else {
       continue;
     }
 
     const keyParts = key.split('.');
-    let last: any = result.value;
+    let last: any = outputValue;
     for (let i = 0; i < keyParts.length; i++) {
       let keyPart = keyParts[i];
       if (keyPart.includes('[x]')) {
@@ -221,9 +221,9 @@ function modifyDefaultValueImpl(
         const lastArray = Array.isArray(last) ? last : [last];
         for (const item of lastArray) {
           if (element.fixed) {
-            item[keyPart] = applyFixed(item[keyPart], element.fixed.value);
+            item[keyPart] = applyFixed(item[keyPart], element.fixed.value, debug);
           } else if (element.pattern) {
-            item[keyPart] = applyPattern(item[keyPart], element.pattern.value);
+            item[keyPart] = applyPattern(item[keyPart], element.pattern.value, debug);
           }
         }
       } else {
@@ -236,21 +236,22 @@ function modifyDefaultValueImpl(
         last = last[keyPart];
       }
     }
-    debug('modifyDV bottom', JSON.stringify(result.value, undefined, 2));
+    debug('modifyDV bottom', JSON.stringify(outputValue, undefined, 2));
   }
 
-  debug('modifyDV OUTPUT', JSON.stringify(result.value));
-  return result;
+  debug('modifyDV OUTPUT', JSON.stringify(outputValue));
+  return outputValue;
 }
 
-function applyFixed(value: any, fixed: any): any {
+function applyFixed(value: any, fixed: any, debug: ConsoleDebug): any {
   if (value === undefined) {
+    debug('applyFixed', fixed);
     return fixed;
   }
   return value;
 }
 
-function applyPattern(value: any, pattern: any): any {
+function applyPattern(value: any, pattern: any, debug: ConsoleDebug): any {
   try {
     const result = value === undefined ? undefined : deepClone(value);
 
@@ -273,8 +274,12 @@ function applyPattern(value: any, pattern: any): any {
       if (isObject(result) || result === undefined || result === null) {
         const resultObj = (result ?? Object.create(null)) as { [key: string]: any };
         for (const key of Object.keys(pattern)) {
-          console.log('HERE', key, resultObj[key], pattern[key]);
-          resultObj[key] = applyPattern(resultObj[key], pattern[key]);
+          const output = applyPattern(resultObj[key], pattern[key], debug);
+          debug(
+            `object set ${key}`,
+            JSON.stringify({ existing: resultObj[key] ?? null, pattern: pattern[key], output }, undefined, 2)
+          );
+          resultObj[key] = applyPattern(resultObj[key], pattern[key], debug);
         }
         return resultObj;
       } else {
