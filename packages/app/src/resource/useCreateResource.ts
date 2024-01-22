@@ -1,4 +1,5 @@
-import { normalizeOperationOutcome } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +33,12 @@ export function useCreateResource<T extends Resource>(
         if (setOutcome) {
           setOutcome(normalizeOperationOutcome(err));
         }
+        showNotification({
+          color: 'red',
+          message: normalizeErrorString(err),
+          autoClose: false,
+          styles: { description: { whiteSpace: 'pre-line' } },
+        });
       });
   };
 

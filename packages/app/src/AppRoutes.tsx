@@ -95,6 +95,7 @@ export function AppRoutes(): JSX.Element {
           <Route index element={<FormCreatePage />} />
           <Route path="form" element={<FormCreatePage />} />
           <Route path="json" element={<JsonCreatePage />} />
+          <Route path="profiles" element={<FormCreatePage />} />
         </Route>
         <Route path="/:resourceType/:id" element={<ResourcePage />}>
           <Route index element={<TimelinePage />} />
