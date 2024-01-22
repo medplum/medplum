@@ -33,8 +33,6 @@ export type ElementsContextType = {
   getElementByPath: (path: string) => InternalSchemaElement | undefined;
   elements: Record<string, InternalSchemaElement>;
   elementsByPath: Record<string, InternalSchemaElement>;
-  fixedProperties: { [key: string]: InternalSchemaElement & { fixed: TypedValue } };
-  patternProperties: { [key: string]: InternalSchemaElement & { pattern: TypedValue } };
   modifyDefaultValue: <T extends object>(defaultValue: T, debugMode?: boolean) => T;
 };
 
@@ -45,8 +43,6 @@ export const ElementsContext = React.createContext<ElementsContextType>({
   getElementByPath: () => undefined,
   elements: Object.create(null),
   elementsByPath: Object.create(null),
-  fixedProperties: Object.create(null),
-  patternProperties: Object.create(null),
   modifyDefaultValue: (defaultValue) => defaultValue,
 });
 ElementsContext.displayName = 'ElementsContext';
@@ -59,14 +55,6 @@ export type BuildElementsContextArgs = {
   profileUrl?: string;
   debugMode?: boolean;
 };
-
-function hasFixed(element: InternalSchemaElement): element is InternalSchemaElement & { fixed: TypedValue } {
-  return Boolean(element.fixed);
-}
-
-function hasPattern(element: InternalSchemaElement): element is InternalSchemaElement & { pattern: TypedValue } {
-  return Boolean(element.pattern);
-}
 
 export function buildElementsContext({
   parentContext,
@@ -88,18 +76,10 @@ export function buildElementsContext({
 
   const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
   const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
-  const fixedProperties: ElementsContextType['fixedProperties'] = Object.create(null);
-  const patternProperties: ElementsContextType['patternProperties'] = Object.create(null);
 
   const seenKeys = new Set<string>();
   for (const [key, property] of Object.entries(mergedElements)) {
     elementsByPath[parentPath + '.' + key] = property;
-
-    if (hasFixed(property)) {
-      fixedProperties[key] = property;
-    } else if (hasPattern(property)) {
-      patternProperties[key] = property;
-    }
 
     const [beginning, _last] = splitOnceRight(key, '.');
     // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
@@ -133,8 +113,6 @@ export function buildElementsContext({
     getElementByPath,
     elements: mergedElements,
     elementsByPath,
-    fixedProperties,
-    patternProperties,
     modifyDefaultValue,
   };
 }
