@@ -19,30 +19,10 @@ function isDiscriminatorComponentMatch(
   slice: SupportedSliceDefinition,
   profileUrl: string | undefined
 ): boolean {
-  const elementList = slice.typeSchema?.elements ?? slice.elements;
-
-  // const pathParts = discriminator.path.split('.');
-  // let lastEd: InternalSchemaElement | undefined;
-  // let lastNestedProp: TypedValue | TypedValue[] | undefined;
-  // for (let i = 0; i < pathParts.length; i++) {
-  //   const pathPart = pathParts[i];
-  //   const pathSoFar = pathParts.slice(0, i+1).join('.')
-  //   lastEd = getElementDefinitionFromElements(elementList, pathSoFar);
-  //   if (lastEd) {
-  //     lastNestedProp = getTypedPropertyValueWithSchema(typedValue, discriminator.path, lastEd);
-  //   }
-  // }
-  // nestedProp = lastNestedProp;
-
-  // let nestedProp: TypedValue | TypedValue[] | undefined;
-  // const ed = getElementDefinitionFromElements(elementList, discriminator.path);
-  // if (ed) {
-  // nestedProp = getTypedPropertyValueWithSchema(typedValue, discriminator.path, ed);
-  // }
-
   const nestedProp = getNestedProperty(typedValue, discriminator.path, profileUrl);
 
   if (nestedProp) {
+    const elementList = slice.typeSchema?.elements ?? slice.elements;
     const result =
       arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
     return result;
@@ -96,17 +76,13 @@ export function assignValuesIntoSlices(
 
   for (const value of values) {
     const sliceName = getValueSliceName(value, slices, slicing.discriminator, profileUrl);
-    if (!isPopulated(sliceName)) {
-      console.debug('slice value assigned to default slice', value, slicing);
-    }
-    let sliceIndex = sliceName ? slices.findIndex((slice) => slice.name === sliceName) : -1;
-    if (sliceIndex === -1) {
-      sliceIndex = slices.length; // values not matched to a slice go in the last entry for non-slice
-    }
+
+    // values not matched to a slice go in the last entry for non-slice
+    const sliceIndex = sliceName ? slices.findIndex((slice) => slice.name === sliceName) : slices.length;
     slicedValues[sliceIndex].push(value);
   }
 
-  // for slices without existing values, add a placeholder empty value
+  // add placeholder empty values
   for (let sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
     const slice = slices[sliceIndex];
     const sliceValues = slicedValues[sliceIndex];

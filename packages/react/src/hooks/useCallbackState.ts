@@ -30,7 +30,7 @@ function useCallbackState<T>({
   /** (optional) - name to be used in debug messages */
   debugName?: string;
 }): [T, (newValue: SetStateType<T>, callback?: CallBackType<T>) => void] {
-  const [state, _setState] = useState<T>(initialState);
+  const [state, setState] = useState<T>(initialState);
   const debug = useMemo(() => {
     if (!debugMode) {
       return () => undefined;
@@ -42,13 +42,13 @@ function useCallbackState<T>({
     return debug;
   }, [debugMode, debugName]);
 
-  const setState = useCallback(
+  const setStateWithCallback = useCallback(
     (newValue: SetStateType<T>, callback?: CallBackType<T>): void => {
       if (callback === undefined) {
         debug('set without callback', typeof newValue === 'function' ? newValue.toString() : JSON.stringify(newValue));
-        _setState(newValue);
+        setState(newValue);
       } else {
-        _setState((oldValue) => {
+        setState((oldValue) => {
           debug('set', typeof newValue === 'function' ? newValue.toString() : JSON.stringify(newValue));
           //@ts-expect-error typescript doesn't like this type-narrowing, see https://github.com/microsoft/TypeScript/issues/37663
           const appliedState = typeof newValue === 'function' ? newValue(oldValue) : newValue;
@@ -63,7 +63,7 @@ function useCallbackState<T>({
     [debug]
   );
   useDebugValue(state);
-  return [state, setState];
+  return [state, setStateWithCallback];
 }
 
 export default useCallbackState;

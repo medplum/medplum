@@ -166,7 +166,8 @@ export function isDataTypeLoaded(type: string): boolean {
 export function tryGetDataType(type: string, profileUrl?: string): InternalTypeSchema | undefined {
   let result: InternalTypeSchema | undefined = getDataTypesMap(profileUrl)[type];
   if (!result && profileUrl) {
-    result = getDataTypesMap(undefined)[type];
+    // Fallback to base schema if no result found in profileUrl namespace
+    result = getDataTypesMap()[type];
   }
   return result;
 }
