@@ -227,27 +227,24 @@ function applyFixed(value: any, fixed: any, debug: ConsoleDebug): any {
   return value;
 }
 
-function applyPattern(value: any, pattern: any, debug: ConsoleDebug): any {
+function applyPattern(existingValue: any, pattern: any, debug: ConsoleDebug): any {
   try {
-    const result = value === undefined ? undefined : deepClone(value);
-
-    // { coding: [{ system: 'http://loinc.org', code: '8462-4' }] };
+    const result = existingValue === undefined ? undefined : deepClone(existingValue);
 
     if (Array.isArray(pattern)) {
-      if (Array.isArray(result) || result === undefined || result === null) {
-        const resultArr = (result ?? []) as any[];
-        if (resultArr.length > 0) {
+      if (Array.isArray(existingValue) || existingValue === undefined || existingValue === null) {
+        if ((existingValue?.length ?? 0) > 0) {
           throw new Error(
-            'Cannot yet apply a pattern to a non-empty array since that would require cardinality checks'
+            'Cannot yet apply a pattern to a non-empty array since that would require considering cardinality and slicing'
           );
+        } else {
+          return [pattern];
         }
-        resultArr.push(...pattern);
-        return resultArr;
       } else {
         throw new Error('Type of value incompatible with array pattern');
       }
     } else if (isObject(pattern)) {
-      if (isObject(result) || result === undefined || result === null) {
+      if (isObject(existingValue) || existingValue === undefined || existingValue === null) {
         const resultObj = (result ?? Object.create(null)) as { [key: string]: any };
         for (const key of Object.keys(pattern)) {
           const output = applyPattern(resultObj[key], pattern[key], debug);
@@ -265,6 +262,6 @@ function applyPattern(value: any, pattern: any, debug: ConsoleDebug): any {
 
     throw new Error('Unexpected type of pattern');
   } catch (ex) {
-    return value;
+    return existingValue;
   }
 }
