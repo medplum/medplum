@@ -174,12 +174,10 @@ function modifyDefaultValueImpl(
   debug(`modifyDV  INPUT\ntype: ${inputType}\nvalue: ${JSON.stringify(outputValue)}`);
 
   for (const [key, element] of Object.entries(elements)) {
-    if (element.fixed) {
-      debug(`---=== modifyDV key: ${key} fixed: ${JSON.stringify(element.fixed.value)}`);
-      debug('modifyDV top', JSON.stringify(outputValue, undefined, 2));
-      // setPropertyValue(outputValue, key, key, element, element.fixed.value);
-    } else if (element.pattern) {
-      debug(`---=== modifyDV key: ${key} pattern: ${JSON.stringify(element.pattern.value)}`);
+    if (element.fixed || element.pattern) {
+      debug(
+        `modifyDV key: ${key} ${element.fixed ? 'fixed' : 'pattern'}: ${JSON.stringify((element.fixed ?? element.pattern)?.value)}`
+      );
       debug('modifyDV top', JSON.stringify(outputValue, undefined, 2));
     } else {
       continue;
