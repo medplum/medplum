@@ -70,9 +70,6 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
         const callback = (newPropValue: any, propName?: string): void => {
           setValue((prevValue: any) => {
             const newValue = setPropertyValue({ ...prevValue }, key, propName ?? key, element, newPropValue);
-            for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
-              setPropertyValue(newValue, key, key, prop, prop.fixed.value);
-            }
             return newValue;
           });
         };
@@ -80,7 +77,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
       })
     );
     return result;
-  }, [elementsToRender, setValue, elementsContext.fixedProperties]);
+  }, [elementsToRender, setValue]);
 
   const lastValue = useRef(props.defaultValue);
   useEffect(() => {

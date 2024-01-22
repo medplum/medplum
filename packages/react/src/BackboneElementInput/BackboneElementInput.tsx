@@ -1,6 +1,6 @@
 import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { ElementsContext, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
 
@@ -20,6 +20,7 @@ export interface BackboneElementInputProps {
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
+  const { onChange } = props;
   const [defaultValue] = useState(() => props.defaultValue ?? {});
   const parentElementsContext = useContext(ElementsContext);
   const profileUrl = props.profileUrl ?? parentElementsContext.profileUrl;
@@ -36,6 +37,32 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     });
   }, [parentElementsContext, typeSchema?.elements, props.path, type, profileUrl]);
 
+  const [value, setValue] = useState<any>(() => {
+    if (!elementsContext) {
+      return defaultValue;
+    }
+
+    const modified = elementsContext.modifyDefaultValue(defaultValue);
+    // const original = stringify(defaultValue, true).match(/[^\r\n]+/g) as string[];
+    // const revised = stringify(modified, true).match(/[^\r\n]+/g) as string[];
+    // const deltas = diff(original, revised);
+    // console.log(JSON.stringify(deltas, undefined, 2));
+    if (onChange) {
+      onChange(modified);
+    }
+    return modified;
+  });
+
+  const setValueWrapper = useCallback(
+    (newValue: any): void => {
+      setValue(newValue);
+      if (onChange) {
+        onChange(newValue);
+      }
+    },
+    [onChange]
+  );
+
   if (!typeSchema) {
     return <div>{type}&nbsp;not implemented</div>;
   }
@@ -45,8 +72,8 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
       <ElementsInput
         path={props.path}
         type={type}
-        defaultValue={defaultValue}
-        onChange={props.onChange}
+        defaultValue={value}
+        onChange={setValueWrapper}
         outcome={props.outcome}
       />
     </ElementsContext.Provider>

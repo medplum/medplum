@@ -32,14 +32,13 @@ function maybeWrapWithContext(contextValue: ElementsContextType | undefined, con
 export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const { slice, property, onChange } = props;
   const [defaultValue] = useState(() => props.defaultValue.map((v) => v ?? {}));
-  const [values, setValues] = useState<any[]>(defaultValue);
 
   const sliceType = slice.typeSchema?.type ?? slice.type[0].code;
   const sliceElements = slice.typeSchema?.elements ?? slice.elements;
 
   const parentElementsContextValue = useContext(ElementsContext);
 
-  const contextValue = useMemo(() => {
+  const elementsContext = useMemo(() => {
     if (isPopulated(sliceElements)) {
       return buildElementsContext({
         parentContext: parentElementsContextValue,
@@ -51,6 +50,22 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
     console.assert(false, 'Expected sliceElements to always be populated', slice.name);
     return undefined;
   }, [parentElementsContextValue, props.path, slice.name, sliceElements, sliceType]);
+
+  const [values, setValues] = useState<any[]>(() => {
+    if (!elementsContext) {
+      return defaultValue;
+    }
+
+    const modified = elementsContext.modifyDefaultValue(defaultValue, false);
+    // const original = stringify(defaultValue, true).match(/[^\r\n]+/g) as string[];
+    // const revised = stringify(modified, true).match(/[^\r\n]+/g) as string[];
+    // const deltas = diff(original, revised);
+    // console.log(JSON.stringify(deltas, undefined, 2));
+    if (onChange) {
+      onChange(modified);
+    }
+    return modified;
+  });
 
   const lastValue = useRef(defaultValue);
   useEffect(() => {
@@ -83,7 +98,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const indentedStack = isEmpty(slice.elements);
   const propertyDisplayName = getPropertyDisplayName(slice.name);
   return maybeWrapWithContext(
-    contextValue,
+    elementsContext,
     <FormSection
       title={propertyDisplayName}
       description={slice.definition}
