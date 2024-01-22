@@ -171,7 +171,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   const executionTime = Number(process.hrtime.bigint() - execStart) / 1e9; // Report duration in seconds
 
   const attributes = { project: bot.meta?.project, bot: bot.id, outcome: result.success ? 'success' : 'failure' };
-  recordHistogramValue('medplum.bot.execution.time', executionTime, attributes);
+  recordHistogramValue('medplum.bot.execute.time', executionTime, attributes);
 
   await createAuditEvent(
     request,
