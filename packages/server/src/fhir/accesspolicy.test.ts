@@ -1753,7 +1753,7 @@ describe('AccessPolicy', () => {
   test('Mutex resource type policies with hidden fields', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
-      const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+      const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization', name: 'Test2' });
       const orgRef = createReference(org);
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',

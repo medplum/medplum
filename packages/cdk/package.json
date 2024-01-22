@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cdk",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Medplum CDK Infra as Code",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -23,12 +23,12 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@aws-sdk/types": "3.489.0",
+    "@aws-sdk/types": "3.496.0",
     "@medplum/core": "*",
-    "aws-cdk-lib": "2.121.1",
-    "cdk": "2.121.1",
-    "cdk-nag": "2.28.12",
-    "cdk-serverless-clamscan": "2.6.76",
+    "aws-cdk-lib": "2.122.0",
+    "cdk": "2.122.0",
+    "cdk-nag": "2.28.14",
+    "cdk-serverless-clamscan": "2.6.77",
     "constructs": "10.3.0"
   },
   "engines": {

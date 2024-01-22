@@ -34,10 +34,9 @@ import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
-import { globalLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
-import { AuditEventOutcome } from '../../util/auditevent';
+import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createAuditEventEntities } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
@@ -571,7 +570,7 @@ async function createAuditEvent(
     await systemRepo.createResource<AuditEvent>(auditEvent);
   }
   if (destination.includes('log')) {
-    globalLogger.logAuditEvent(auditEvent);
+    logAuditEvent(auditEvent);
   }
 }
 

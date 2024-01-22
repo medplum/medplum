@@ -1,10 +1,9 @@
-import { ProfileResource, isUUID } from '@medplum/core';
+import { LogLevel, Logger, ProfileResource, isUUID } from '@medplum/core';
 import { Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { Repository, systemRepo } from './fhir/repo';
-import { LogLevel, Logger } from './logger';
 
 export class RequestContext {
   readonly requestId: string;
@@ -14,7 +13,9 @@ export class RequestContext {
   constructor(requestId: string, traceId: string, logger?: Logger) {
     this.requestId = requestId;
     this.traceId = traceId;
-    this.logger = logger ?? new Logger(process.stdout, { requestId, traceId });
+    this.logger =
+      logger ??
+      new Logger(write, { requestId, traceId }, process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO);
   }
 
   static empty(): RequestContext {
@@ -50,7 +51,7 @@ export class AuthenticatedRequestContext extends RequestContext {
   }
 
   static system(): AuthenticatedRequestContext {
-    const systemLogger = new Logger(process.stdout, undefined, LogLevel.ERROR);
+    const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
     return new AuthenticatedRequestContext(
       new RequestContext('', ''),
       {} as unknown as Login,
@@ -108,4 +109,8 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
     traceId = randomUUID();
   }
   return { requestId, traceId };
+}
+
+function write(msg: string): void {
+  process.stdout.write(msg + '\n');
 }

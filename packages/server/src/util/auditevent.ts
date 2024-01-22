@@ -8,8 +8,8 @@ import {
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
-import { getConfig } from '../config';
-import { globalLogger } from '../logger';
+import { MedplumServerConfig, getConfig } from '../config';
+import { CloudWatchLogger } from './cloudwatch';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -155,7 +155,17 @@ export function logAuthEvent(
   outcome: AuditEventOutcome,
   outcomeDesc?: string
 ): AuditEvent {
-  return logAuditEvent(UserAuthenticationEvent, subtype, projectId, who, remoteAddress, outcome, outcomeDesc);
+  const auditEvent = createAuditEvent(
+    UserAuthenticationEvent,
+    subtype,
+    projectId,
+    who,
+    remoteAddress,
+    outcome,
+    outcomeDesc
+  );
+  logAuditEvent(auditEvent);
+  return auditEvent;
 }
 
 export function logRestfulEvent(
@@ -168,7 +178,7 @@ export function logRestfulEvent(
   resource?: Resource,
   searchQuery?: string
 ): AuditEvent {
-  return logAuditEvent(
+  const auditEvent = createAuditEvent(
     RestfulOperationType,
     subtype,
     projectId,
@@ -179,9 +189,11 @@ export function logRestfulEvent(
     resource,
     searchQuery
   );
+  logAuditEvent(auditEvent);
+  return auditEvent;
 }
 
-export function logAuditEvent(
+function createAuditEvent(
   type: AuditEventType,
   subtype: AuditEventSubtype,
   projectId: string,
@@ -229,6 +241,35 @@ export function logAuditEvent(
     entity,
   };
 
-  globalLogger.logAuditEvent(auditEvent);
   return auditEvent;
+}
+
+export function logAuditEvent(auditEvent: AuditEvent): void {
+  const config = getConfig();
+  if (config.logAuditEvents) {
+    if (config.auditEventLogGroup) {
+      getCloudWatchLogger(config).write(JSON.stringify(auditEvent));
+    } else {
+      console.log(JSON.stringify(auditEvent));
+    }
+  }
+}
+
+/** @deprecated */
+let cloudWatchLogger: CloudWatchLogger | undefined = undefined;
+
+/**
+ * @param config - The server config.
+ * @returns The CloudWatch logger.
+ * @deprecated
+ */
+function getCloudWatchLogger(config: MedplumServerConfig): CloudWatchLogger {
+  if (!cloudWatchLogger) {
+    cloudWatchLogger = cloudWatchLogger = new CloudWatchLogger(
+      config.awsRegion,
+      config.auditEventLogGroup as string,
+      config.auditEventLogStream
+    );
+  }
+  return cloudWatchLogger;
 }

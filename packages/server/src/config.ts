@@ -41,14 +41,18 @@ export interface MedplumServerConfig {
   logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
-  auditEventLogGroup?: string;
-  auditEventLogStream?: string;
   registerEnabled?: boolean;
   bcryptHashSalt: number;
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
   vmContextBotsEnabled?: boolean;
   shutdownTimeoutMilliseconds?: number;
+
+  /** @deprecated */
+  auditEventLogGroup?: string;
+
+  /** @deprecated */
+  auditEventLogStream?: string;
 }
 
 /**
