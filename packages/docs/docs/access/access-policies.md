@@ -11,23 +11,7 @@ This document describes the core concepts of Medplum Access Controls. Security a
 
 ## Core Model
 
-Medplum is built on FHIR, an international standard for healthcare interoperability. FHIR includes standard definitions for almost every imaginable healthcare concept.
-
-One of the central concepts of FHIR is the "Resource". Everything is a resource: patients, practitioners, observations, medications, and many more. Every resource has a "Resource Type". There are more than 100 standard resource types.
-
-All resources exist within a "Project". A project is a top-level container. In general, each healthcare organization will have one project for all of their resources. If you are self-hosting Medplum, then you probably only need one project. Importantly, projects are mutually exclusive. For example, a "Patient" resource can only be in one "Project". If you need to represent the same patient in multiple projects, you need to create a copy.
-
-All resources can be tagged with one or more "Compartments". A compartment is simply a group of resources. Importantly, compartments are not mutually exclusive. A resource can (and often will) exist in multiple compartments.
-
-For example, consider an "Observation" resource representing a blood pressure measurement. That Observation resource will fall into the following Compartments:
-
-- "Patient" - for the "subject" of the observation
-- "Practitioner" - for the "performer" of the observation
-- "Encounter" - for the "encounter" of the observation
-
-Resources are automatically assigned to compartments based on rules. The FHIR standard includes definitions for standard compartments such as "Patient", "Practitioner", and "Encounter". Developers can create custom compartments using the "CompartmentDefinition" resource.
-
-Now that we have defined "Resource", "Resource Type", "Project", and "Compartment", we can discuss how they relate to security and access controls.
+All resources exist within a "Project". A project is a top-level container. In general, each healthcare organization will have one project for all of their resources.
 
 Every user account can have one or more "Project Memberships". A project membership represents access to resources within a project. The user can either be granted access to all resources within the project, or limited access to a set of compartments.
 
@@ -49,7 +33,7 @@ Access policies also allow you to grant access by "Compartment".
 
 ### Resource Type
 
-The following access policy grants read/write access to the "Patient" resource type:
+The following access policy grants read/write access to _only_ the "Patient" resource type:
 
 ```json
 {
@@ -63,9 +47,36 @@ The following access policy grants read/write access to the "Patient" resource t
 }
 ```
 
+### Criteria-based Access Control
+
+You can narrow the set of resources the user has access to by using the `criteria` field. The following policy uses a [FHIR Search Query](/docs/search/basic-search) to grant access only to [`Patient`](/docs/api/fhir/resources/patient) resources who live in California.
+
+See the [Search documentation](/docs/search/basic-search) for more information on the types of filtering available.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Criteria Based Access Policy",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?address-state=CA"
+    }
+  ]
+}
+```
+
+:::warning Limitations
+While Medplum `AccessPolicies` use the [FHIR search syntax](/docs/search), it does not implement the full search specification. Specifically, the `criteria` syntax has the following limitations:
+
+- Only `:not` and `:missing` [modifiers](/docs/search/basic-search#search-modifiers) are allowed.
+- [Chained searches](/docs/search/chained-search#forward-chained-search) are **not** allowed.
+
+:::
+
 ### Read-only Resource Type
 
-The following access policy grants read-only access to the "Patient" resource type:
+The following access policy grants read-only access to the [`Patient`](/docs/api/fhir/resources/patient)resource type:
 
 ```json
 {
@@ -82,7 +93,24 @@ The following access policy grants read-only access to the "Patient" resource ty
 
 Attempting to modify a read-only resource will result in an HTTP result of [`403: Forbidden`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403).
 
-### Hidden fields
+### Read-only Elements
+
+The following access policy grants read-only access to the `Patient.name` and `Patient.address` elements:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Patient Example",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "readonlyFields": ["name", "address"]
+    }
+  ]
+}
+```
+
+### Hidden Elements
 
 The following access policy grants read-only access to the "Patient" resource type, but hides "name" and "address":
 
@@ -93,39 +121,11 @@ The following access policy grants read-only access to the "Patient" resource ty
   "resource": [
     {
       "resourceType": "Patient",
-      "readonly": true,
       "hiddenFields": ["name", "address"]
     }
   ]
 }
 ```
-
-### Criteria-based Access Control
-
-The following policy uses a FHIR Search Query to grant access only to Coverage whose `payor` is `Organization/123`:
-
-```json
-{
-  "resourceType": "AccessPolicy",
-  "name": "Criteria Based Access Policy",
-  "resource": [
-    {
-      "resourceType": "Coverage",
-      "criteria": "Coverage?payor=Organization/123"
-    }
-  ]
-}
-```
-
-Note that in this implementation access policy, only the `Coverage` resources that have `payor=Organization/123` will be visible.
-
-:::warning Limitations
-While Medplum `AccessPolicies` use the [FHIR search syntax](/docs/search), it does not implement the full search specification. Specifically, the `criteria` syntax has the following limitations:
-
-- Only `:not` and `:missing` [modifiers](/docs/search/basic-search#search-modifiers) are allowed.
-- [Chained searches](/docs/search/chained-search#forward-chained-search) are **not** allowed.
-
-:::
 
 ### Write Constraints
 
@@ -163,13 +163,36 @@ For example, an access policy with write constraints could be used to manage sta
 
 [fhirpath]: https://hl7.org/fhirpath/#expressions
 
-### Parameterized Policies (Beta)
+### Compartments
 
-:::caution
+All resources can be tagged with one or more "Compartments". A compartment is simply a group of resources. Importantly, compartments are not mutually exclusive. A resource can (and often will) exist in multiple compartments.
 
-This feature is still in Beta. If you have questions about your specific AccessPolicy needs, please [reach out to the Medplum team.](https://discord.gg/medplum)
+For example, consider an "Observation" resource representing a blood pressure measurement. That Observation resource will fall into the following Compartments:
 
-:::
+- "Patient" - for the "subject" of the observation
+- "Practitioner" - for the "performer" of the observation
+- "Encounter" - for the "encounter" of the observation
+
+Resources are automatically assigned to compartments based on rules. Currently, the Medplum server automatically assigns resources to the "Patient" compartment. You can find the full definition of the patient compartment [here](https://hl7.org/fhir/R4/compartmentdefinition-patient.html).
+
+You can use compartments to succinctly create an [AccessPolicy](/docs/api/fhir/medplum/accesspolicy) for resources related to a single patient.
+
+The AccessPolicy below grants access to all `Observation` resources that belong to `Patient/xyz`. The example takes advantage of the [`_compartment` search parameter](/docs/search/advanced-search-parameters#_compartment)
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Write Constraints Access Policy",
+  "resource": [
+    {
+      "resourceType": "Observation",
+      "criteria": "Observation?_compartment=Patient/xyz"
+    }
+  ]
+}
+```
+
+### Parameterized Policies
 
 For more advanced access control configurations, You can use `%` variables to parameterize the access policy.
 
@@ -225,9 +248,11 @@ In this example, the user with the parameterized policy shown above will only ha
 
 See [this Github Discussion](https://github.com/medplum/medplum/discussions/1453) for more examples of access scenarios that can be created using these policies.
 
+## Example Access Policies
+
 ### Healthcare Partnerships
 
-A common need is to grant access to a subset of resources for a healthcare partnership. For example, a lab provider may want to grant access to all patient records that originated from a specific lab customer.
+A common need is to grant access to a subset of resources for a healthcare partnership. For example, a lab provider may want to grant access to all patient records that _originated from a specific client organization_.
 
 This can be achieved using Access Policy compartments.
 
@@ -237,37 +262,31 @@ Assume that we have an Organization resource representing the customer:
 {
   "resourceType": "Organization",
   "name": "Example Customer Organization",
-  "id": "a23a2966-d58a-4098-b41b-e8f18bcda339"
+  "id": "abc-123"
 }
 ```
 
 This access policy grants read-only access to all Patients that are within that customer's "account" compartment:
 
-```json
+```js
 {
   "resourceType": "AccessPolicy",
   "name": "Patient Example",
+  // Any resource created or updated will be tagged with `meta.account` set to `Organization/abc-123`
   "compartment": {
-    "reference": "Organization/a23a2966-d58a-4098-b41b-e8f18bcda339",
+    "reference": "Organization/abc-123",
     "display": "Example Customer Organization"
   },
   "resource": [
+  // Any read or search operation will filter on `meta.account` equals `Organization/abc-123`
     {
       "resourceType": "Patient",
-      "readonly": true,
-      "compartment": {
-        "reference": "Organization/a23a2966-d58a-4098-b41b-e8f18bcda339",
-        "display": "Example Customer Organization"
-      }
+      "criteria": "Patient?_compartment=Organization/abc-123"
+      "readonly": true
     }
   ]
 }
 ```
-
-When a [user](/docs/auth/user-management-guide#background-user-model) or [client application](/docs/auth/methods/client-credentials#obtaining-credentials) has such an Access Policy like the one above that specifies an `Organization` in the compartment, the following happens:
-
-- Any resource created or updated will be tagged with `meta.account` set to `Organization/a23a2966-d58a-4098-b41b-e8f18bcda339`
-- Any read or search operation will filter on `meta.account` equals `Organization/a23a2966-d58a-4098-b41b-e8f18bcda339`
 
 The `meta.account` property is not FHIR standard. It is an extra `Reference` property in the `Meta` section.
 
@@ -281,7 +300,7 @@ For example:
     "versionId": "02900c57-4da8-498f-85d5-5077077e3e2c",
     "lastUpdated": "2022-01-13T16:21:11.870Z",
     "account": {
-      "reference": "Organization/a23a2966-d58a-4098-b41b-e8f18bcda339",
+      "reference": "Organization/abc-123",
       "display": "Example Customer Organization"
     }
   },
@@ -302,7 +321,7 @@ If you are building a patient-facing application (such as [FooMedical](https://g
 
 :::caution Open Patient Registration
 
-Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/auth/open-patient-registration)for instructions on enabling this functionality.
+Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/auth/open-patient-registration) for instructions on enabling this functionality.
 
 :::
 
@@ -310,63 +329,46 @@ Patient Access is disabled by default. See our article on [enabling open patient
 {
   "resourceType": "AccessPolicy",
   "name": "Patient Access Policy Template",
+  "id": "patient-access-policy-template",
   "compartment": {
     "reference": "%patient"
   },
   "resource": [
     {
       "resourceType": "Patient",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "Patient?_compartment=%patient"
     },
     {
       "resourceType": "Observation",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "Observation?_compartment=%patient"
     },
     {
       "resourceType": "DiagnosticReport",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "DiagnosticReport?_compartment=%patient"
     },
     {
       "resourceType": "MedicationRequest",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "MedicationRequest?_compartment=%patient"
     },
     {
       "resourceType": "Coverage",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "Coverage?_compartment=%patient"
     },
     {
       "resourceType": "PaymentNotice",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "PaymentNotice?_compartment=%patient"
     },
     {
       "resourceType": "CarePlan",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "CarePlan?_compartment=%patient"
     },
     {
       "resourceType": "Immunization",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "Immunization?_compartment=%patient"
     },
     {
       "resourceType": "Communication",
-      "compartment": {
-        "reference": "%patient"
-      }
+      "criteria": "Communication?_compartment=%patient"
     },
     {
       "resourceType": "Organization",
@@ -392,6 +394,38 @@ Patient Access is disabled by default. See our article on [enabling open patient
 ```
 
 You can configure your project to support open registration for patients, therefore it is crucial that you setup a Default Access Policy similar to the one above.
+
+### Caregiver Access
+
+The [patient access policy](#patient-access) above can be combined with [policy parameterization](#parameterized-policies) to create an policy that allows caregivers to access data on behalf of patients (e.g parents on behalf of children.
+
+```js
+{
+  "resourceType": "ProjectMembership",
+  "access": [
+    // Provide access to Patients and Diagnostic Reports in Organization/abc
+    {
+      "policy": { "reference": "AccessPolicy/patient-access-policy-template" },
+      "parameter": [
+        {
+          "name": "patient",
+          "valueReference": { "reference": "Patient/xyz" }
+        }
+      ]
+    },
+    // Provide access to Patients and Diagnostic Reports in Organization/def
+    {
+      "policy": { "reference": "AccessPolicy/patient-access-policy-template" },
+      "parameter": [
+        {
+          "name": "patient",
+          "valueReference": { "reference": "Patient/uvw" }
+        }
+      ]
+    }
+  ]
+}
+```
 
 ## Related Resources
 
