@@ -477,7 +477,7 @@ function buildValueCondition(tableName: string, operator: FhirOperator, value: s
   if (operator === FhirOperator.TEXT) {
     return new Conjunction([
       new Condition(new Column(tableName, 'system'), '=', 'text'),
-      new Condition(column, 'LIKE', value.trim() + '%'),
+      new Condition(column, 'TSVECTOR_SIMPLE', value.trim() + ':*'),
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
     return new Condition(column, 'LIKE', value.trim() + '%');
