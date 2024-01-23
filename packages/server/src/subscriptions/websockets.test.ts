@@ -34,7 +34,7 @@ describe('WebSockets Subscriptions', () => {
   beforeAll(async () => {
     app = express();
     config = await loadTestConfig();
-    config.heartbeatDisabled = true;
+    config.heartbeatEnabled = false;
     server = await initApp(app, config);
 
     const response = await withTestContext(() =>

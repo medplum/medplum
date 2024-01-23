@@ -16,6 +16,9 @@ let heartbeatTimer: NodeJS.Timeout | undefined;
  * @param config - Medplum server config.
  */
 export function initHeartbeat(config: MedplumServerConfig): void {
+  if (!(config.heartbeatEnabled ?? true)) {
+    return;
+  }
   if (!heartbeatTimer) {
     heartbeatTimer = setInterval(
       () => heartbeat.dispatchEvent({ type: 'heartbeat' }),
