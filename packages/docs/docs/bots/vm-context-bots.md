@@ -11,12 +11,12 @@ To enable VM Context [`Bots`](/docs/api/fhir/medplum/bot) on your server, set `v
 
 All [`Bots`](/docs/api/fhir/medplum/bot) have a field for `runtimeVersion`, which can be set to either `awslambda` or `vmcontext`. To use your [`Bot`](/docs/api/fhir/medplum/bot) locally, set this field to `vmcontext`.
 
-Using VM Context allows you to use resources more efficiently, however it can also have security and isolation concerns if used in an untrusted environment. For this reason, it is important to only use VM Context [`Bots`](/docs/api/fhir/medplum/bot) in trusted environments (e.g. localhost).
+Using VM Context allows you to use resources more efficiently, however it can also have security and isolation concerns if used in an untrusted environment. For this reason, it is important to only use VM Context [`Bots`](/docs/api/fhir/medplum/bot) in trusted environments.
 
 :::danger
 
-WE STRONGLY CAUTION THAT VM CONTEXT BOTS SHOULD ONLY BE USED IN TRUSTED ENVIRONMENTS (e.g. localhost), AND NOT IN PRODUCTION.
+WE STRONGLY CAUTION THAT VM CONTEXT BOTS SHOULD ONLY BE USED IN TRUSTED ENVIRONMENTS.
 
-The code for these bots runs in the server, so they can potentially have access to sensitive information when run in production environments.
+The code for these bots runs in the server, so they can potentially have access to sensitive information when run in production environments without appropriate safety measures.
 
 :::
