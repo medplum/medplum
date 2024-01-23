@@ -3,6 +3,7 @@ import {
   AgentMessage,
   AgentTransmitRequest,
   ContentType,
+  Hl7Message,
   getReferenceString,
   normalizeErrorString,
 } from '@medplum/core';
@@ -158,12 +159,19 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
     const bot = await repo.readReference(channel.targetReference as Reference<Bot>);
 
+    let input: any = command.body;
+    if (command.contentType === ContentType.JSON || command.contentType === ContentType.FHIR_JSON) {
+      input = JSON.parse(input);
+    } else if (command.contentType === ContentType.HL7_V2) {
+      input = Hl7Message.parse(input);
+    }
+
     const result = await executeBot({
       agent,
       bot,
       runAs: membership,
-      contentType: ContentType.HL7_V2,
-      input: command.body,
+      contentType: command.contentType,
+      input,
       remoteAddress,
       forwardedFor: command.remote,
     });
@@ -172,7 +180,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       type: 'agent:transmit:response',
       channel: command.channel,
       remote: command.remote,
-      contentType: ContentType.HL7_V2,
+      contentType: command.contentType,
       body: result.returnValue,
     });
   }

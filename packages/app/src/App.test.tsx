@@ -5,11 +5,13 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from './App';
 
+const navigateMock = jest.fn();
+
 async function setup(url = '/'): Promise<void> {
   await act(async () => {
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <MedplumProvider medplum={new MockClient()} navigate={jest.fn()}>
+        <MedplumProvider medplum={new MockClient()} navigate={navigateMock}>
           <MantineProvider>
             <App />
           </MantineProvider>
@@ -120,6 +122,6 @@ describe('App', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 });

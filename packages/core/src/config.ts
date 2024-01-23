@@ -42,7 +42,7 @@ export interface MedplumSourceInfraConfig {
   maxAzs: ValueOrExternalSecret<number>;
   rdsInstances: ValueOrExternalSecret<number>;
   rdsInstanceType: ValueOrExternalSecret<string>;
-  rdsInstanceVersion: ValueOrExternalSecret<string>;
+  rdsInstanceVersion?: ValueOrExternalSecret<string>;
   rdsSecretsArn?: ValueOrExternalSecret<string>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   desiredServerCount: ValueOrExternalSecret<number>;

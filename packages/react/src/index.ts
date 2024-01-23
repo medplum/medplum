@@ -50,6 +50,7 @@ export * from './MeasureReportDisplay/MeasureReportDisplay';
 export * from './MedplumLink/MedplumLink';
 export * from './MoneyDisplay/MoneyDisplay';
 export * from './MoneyInput/MoneyInput';
+export * from './NoteDisplay/NoteDisplay';
 export * from './OperationOutcomeAlert/OperationOutcomeAlert';
 export * from './Panel/Panel';
 export * from './PatientSummary/PatientSummary';

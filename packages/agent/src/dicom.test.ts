@@ -1,8 +1,9 @@
-import { allOk, createReference } from '@medplum/core';
+import { LogLevel, allOk, createReference } from '@medplum/core';
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dimse from 'dcmjs-dimse';
 import { Server } from 'mock-socket';
+import path from 'path';
 import { App } from './app';
 
 jest.mock('node-windows');
@@ -57,7 +58,7 @@ describe('DICOM', () => {
       ],
     } as Agent);
 
-    const app = new App(medplum, agent.id as string);
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
 
     const client = new dimse.Client();
@@ -87,12 +88,7 @@ describe('DICOM', () => {
     //
 
     const storeResponse = (await new Promise((resolve, reject) => {
-      const request = new dimse.requests.CStoreRequest(
-        new dimse.Dataset({
-          SOPClassUID: dimse.constants.StorageClass.CtImageStorage,
-          SOPInstanceUID: dimse.Dataset.generateDerivedUid(),
-        })
-      );
+      const request = new dimse.requests.CStoreRequest(path.resolve(__dirname, '../testdata/sample-sr.dcm'));
       request.on('response', resolve);
       client.on('networkError', reject);
       client.addRequest(request);

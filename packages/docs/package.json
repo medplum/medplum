@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -58,7 +58,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-intersection-observer": "9.5.3",
-    "react-router-dom": "6.21.2",
+    "react-router-dom": "6.21.3",
     "typescript": "5.3.3",
     "url-loader": "4.1.1"
   },

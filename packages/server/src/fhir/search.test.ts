@@ -1574,6 +1574,7 @@ describe('FHIR Search', () => {
         serviceType: [{ coding: [{ code }] }],
         participant: [{ status: 'accepted', actor: patientReference }],
         start: nowMinus1Second.toISOString(),
+        end: now.toISOString(),
       });
       expect(appt1).toBeDefined();
 
@@ -1583,6 +1584,7 @@ describe('FHIR Search', () => {
         serviceType: [{ coding: [{ code }] }],
         participant: [{ status: 'accepted', actor: patientReference }],
         start: nowMinus2Seconds.toISOString(),
+        end: now.toISOString(),
       });
       expect(appt2).toBeDefined();
 
@@ -1803,6 +1805,7 @@ describe('FHIR Search', () => {
       const allergyIntolerance = await systemRepo.createResource<AllergyIntolerance>({
         resourceType: 'AllergyIntolerance',
         patient: createReference(patient),
+        clinicalStatus: { text: 'active' },
       });
 
       // Search by patient
@@ -2168,8 +2171,14 @@ describe('FHIR Search', () => {
     4. Resources which are included multiple times are deduplicated in the search results
     */
       const rootPatientIdentifier = randomUUID();
-      const organization1 = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
-      const organization2 = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+      const organization1 = await systemRepo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'org1',
+      });
+      const organization2 = await systemRepo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'org2',
+      });
       const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
       const practitioner2 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
       const linked3 = await systemRepo.createResource<Patient>({
@@ -3156,7 +3165,7 @@ describe('FHIR Search', () => {
 
   test('Sort by ID', () =>
     withTestContext(async () => {
-      const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+      const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization', name: 'org1' });
       const managingOrganization = createReference(org);
       await systemRepo.createResource<Patient>({ resourceType: 'Patient', managingOrganization });
       await systemRepo.createResource<Patient>({ resourceType: 'Patient', managingOrganization });

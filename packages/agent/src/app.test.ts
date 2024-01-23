@@ -1,4 +1,4 @@
-import { ContentType, allOk, createReference, sleep } from '@medplum/core';
+import { ContentType, LogLevel, allOk, createReference, sleep } from '@medplum/core';
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
@@ -49,7 +49,7 @@ describe('App', () => {
       status: 'active',
     });
 
-    const app = new App(medplum, agent.id as string);
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
     app.healthcheckPeriod = 1000;
     await app.start();
 
@@ -80,7 +80,7 @@ describe('App', () => {
     app.stop();
     mockServer.stop();
 
-    expect(console.error).toHaveBeenCalledWith('Unknown message type: unknown');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unknown message type: unknown'));
   });
 
   test('Reconnect after connection closed', async () => {
@@ -107,7 +107,7 @@ describe('App', () => {
       status: 'active',
     });
 
-    const app = new App(medplum, agent.id as string);
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
     app.healthcheckPeriod = 100;
     await app.start();
 
@@ -186,12 +186,12 @@ describe('App', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string);
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
     app.stop();
     mockServer.stop();
 
-    expect(console.warn).toHaveBeenCalledWith('Ignoring empty endpoint address: test');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Ignoring empty endpoint address: test'));
   });
 
   test('Unknown endpoint protocol', async () => {
@@ -242,11 +242,11 @@ describe('App', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string);
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
     app.stop();
     mockServer.stop();
 
-    expect(console.error).toHaveBeenCalledWith('Unsupported endpoint type: foo:');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
   });
 });

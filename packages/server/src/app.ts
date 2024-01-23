@@ -196,7 +196,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
-    initHeartbeat();
+    initHeartbeat(config);
   });
 }
 

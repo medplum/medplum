@@ -21939,6 +21939,11 @@
           "comment" : "The project that contains this resource.",
           "min" : 0,
           "max" : "1",
+          "base" : {
+            "path" : "Meta.project",
+            "min" : 0,
+            "max" : "1"
+          },
           "type" : [{
             "code" : "uri"
           }]
@@ -21951,6 +21956,11 @@
           "comment" : "The individual, device or organization who initiated the last change.",
           "min" : 0,
           "max" : "1",
+          "base" : {
+            "path" : "Meta.author",
+            "min" : 0,
+            "max" : "1"
+          },
           "type" : [{
             "code" : "Reference"
           }]
@@ -21963,6 +21973,11 @@
           "comment" : "Optional account reference that can be used for sub-project compartments.",
           "min" : 0,
           "max" : "1",
+          "base" : {
+            "path" : "Meta.account",
+            "min" : 0,
+            "max" : "1"
+          },
           "type" : [{
             "code" : "Reference"
           }]
@@ -21975,6 +21990,11 @@
           "comment" : "The list of compartments containing this resource. This is readonly and is set by the server.",
           "min" : 0,
           "max" : "*",
+          "base" : {
+            "path" : "Meta.compartment",
+            "min" : 0,
+            "max" : "*"
+          },
           "type" : [{
             "code" : "Reference"
           }]

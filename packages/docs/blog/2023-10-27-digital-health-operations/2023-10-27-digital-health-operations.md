@@ -73,7 +73,7 @@ Operations teams need to make sure that enough physicians with the correct licen
 
 The key to managing this complexity is having the right data model. How can you manage physician coverage if you don't even know which licenses they have? Traditional EHRs fall short here, as they presume a single-site deployment.
 
-Leveraging the FHIR standard, platforms like Medplum offer the building blocks for tracking physician credentials, specialties, and care teams. For more insights, take a look at our guides on provider [organizations](/docs/fhir-datastore/provider-directory/provider-organizations), [credentials](/docs/fhir-datastore/provider-directory/provider-credentials), and [payor networks](/docs/fhir-datastore/provider-directory/provider-networks).
+Leveraging the FHIR standard, platforms like Medplum offer the building blocks for tracking physician credentials, specialties, and care teams. For more insights, take a look at our guides on provider [organizations](/docs/administration/provider-directory/provider-organizations), [credentials](/docs/administration/provider-directory/provider-credentials), and [payor networks](/docs/administration/provider-directory/provider-networks).
 
 ## Asynchronous Care
 
