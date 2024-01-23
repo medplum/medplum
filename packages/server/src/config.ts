@@ -47,6 +47,8 @@ export interface MedplumServerConfig {
   keepAliveTimeout?: number;
   vmContextBotsEnabled?: boolean;
   shutdownTimeoutMilliseconds?: number;
+  heartbeatMilliseconds?: number;
+  heartbeatEnabled?: boolean;
 
   /** @deprecated */
   auditEventLogGroup?: string;
