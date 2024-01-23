@@ -1,6 +1,6 @@
 import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { ElementsContext, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
 
@@ -43,15 +43,16 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     }
 
     const modified = elementsContext.modifyDefaultValue(defaultValue);
-    // const original = stringify(defaultValue, true).match(/[^\r\n]+/g) as string[];
-    // const revised = stringify(modified, true).match(/[^\r\n]+/g) as string[];
-    // const deltas = diff(original, revised);
-    // console.log(JSON.stringify(deltas, undefined, 2));
-    if (onChange) {
-      onChange(modified);
-    }
     return modified;
   });
+
+  const lastValue = useRef(defaultValue);
+  useEffect(() => {
+    if (onChange && lastValue.current !== value) {
+      onChange(value);
+    }
+    lastValue.current = value;
+  }, [onChange, value]);
 
   const setValueWrapper = useCallback(
     (newValue: any): void => {

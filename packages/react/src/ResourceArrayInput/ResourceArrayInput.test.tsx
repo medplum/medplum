@@ -271,6 +271,11 @@ describe('ResourceArrayInput', () => {
       expect(screen.queryByTestId(testId)).toBeNull();
     });
 
+    // onChange will have been called some non-zero number of times at this point based on
+    // fixed/pattern values, if any, having been applied, etc. We don't particularly care how many
+    // for the sake of this test
+    onChange.mockReset();
+
     await act(async () => {
       const valueElement = within(screen.getByTestId('slice-chocolateVariety-elements-0')).getByTestId('value[x]');
       fireEvent.change(valueElement, {

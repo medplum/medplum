@@ -61,9 +61,6 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
     // const revised = stringify(modified, true).match(/[^\r\n]+/g) as string[];
     // const deltas = diff(original, revised);
     // console.log(JSON.stringify(deltas, undefined, 2));
-    if (onChange) {
-      onChange(modified);
-    }
     return modified;
   });
 
