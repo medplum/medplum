@@ -284,9 +284,8 @@ describe('ResourceArrayInput', () => {
       { url: 'greenVariety', valueString: 'Pistachio' },
     ];
 
-    expect(onChange.mock.calls.length).toBe(1);
-    expect(onChange.mock.calls[0][0].length).toBe(expectedValue.length);
-    expect(onChange).toHaveBeenCalledWith(expect.arrayContaining(expectedValue));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(expectedValue);
   });
 
   test('Hiding non-sliced values', async () => {
