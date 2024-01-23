@@ -64,6 +64,7 @@ export class AuthenticatedRequestContext extends RequestContext {
 }
 
 export const requestContextStore = new AsyncLocalStorage<RequestContext>();
+
 export function getRequestContext(): RequestContext {
   const ctx = requestContextStore.getStore();
   if (!ctx) {
@@ -83,6 +84,13 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { requestId, traceId } = requestIds(req);
   requestContextStore.run(new RequestContext(requestId, traceId), () => next());
+}
+
+export function closeRequestContext(): void {
+  const ctx = requestContextStore.getStore();
+  if (ctx && ctx instanceof AuthenticatedRequestContext) {
+    ctx.repo.close();
+  }
 }
 
 function requestIds(req: Request): { requestId: string; traceId: string } {

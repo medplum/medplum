@@ -178,8 +178,10 @@ const lookupTables: LookupTable<unknown>[] = [
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends BaseRepository implements FhirRepository {
+export class Repository extends BaseRepository implements FhirRepository<PoolClient> {
   private readonly context: RepositoryContext;
+  private conn?: PoolClient;
+  private transactionDepth = -1;
 
   constructor(context: RepositoryContext) {
     super();
@@ -246,12 +248,11 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    const client = getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType);
 
-    const rows = await builder.execute(client);
+    const rows = await builder.execute(this.getClient());
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
@@ -354,7 +355,6 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
 
-      const client = getClient();
       const rows = await new SelectQuery(resourceType + '_History')
         .column('versionId')
         .column('id')
@@ -363,7 +363,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
         .limit(100)
-        .execute(client);
+        .execute(this.getClient());
 
       const entries: BundleEntry<T>[] = [];
 
@@ -424,12 +424,11 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
 
-      const client = getClient();
       const rows = await new SelectQuery(resourceType + '_History')
         .column('content')
         .where('id', '=', id)
         .where('versionId', '=', vid)
-        .execute(client);
+        .execute(this.getClient());
 
       if (rows.length === 0) {
         throw new OperationOutcomeError(notFound);
@@ -642,24 +641,13 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param resource - The resource to write to the database.
    */
   private async writeToDatabase<T extends Resource>(resource: T): Promise<void> {
-    // Note: We don't try/catch this because if connecting throws an exception.
-    // We don't need to dispose of the client (it will be undefined).
-    // https://node-postgres.com/features/transactions
-    const client = await getClient().connect();
-    try {
-      await client.query('BEGIN');
+    await this.withTransaction(async (client) => {
       await Promise.all([
         this.writeResource(client, resource),
         this.writeResourceVersion(client, resource),
         this.writeLookupTables(client, resource),
       ]);
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   /**
@@ -711,12 +699,11 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
     const seconds = 60;
     const maxVersions = 10;
-    const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
       .raw(`COUNT (DISTINCT "versionId")::int AS "count"`)
       .where('id', '=', id)
       .where('lastUpdated', '>', new Date(Date.now() - 1000 * seconds))
-      .execute(client);
+      .execute(this.getClient());
     return rows[0].count >= maxVersions;
   }
 
@@ -802,8 +789,10 @@ export class Repository extends BaseRepository implements FhirRepository {
       throw new OperationOutcomeError(forbidden);
     }
 
-    const resource = await this.readResourceImpl<T>(resourceType, id);
-    return this.reindexResourceImpl(resource);
+    await this.withTransaction(async () => {
+      const resource = await this.readResourceImpl<T>(resourceType, id);
+      return this.reindexResourceImpl(resource);
+    });
   }
 
   /**
@@ -816,20 +805,9 @@ export class Repository extends BaseRepository implements FhirRepository {
   private async reindexResourceImpl<T extends Resource>(resource: T): Promise<void> {
     (resource.meta as Meta).compartment = this.getCompartments(resource);
 
-    // Note: We don't try/catch this because if connecting throws an exception.
-    // We don't need to dispose of the client (it will be undefined).
-    // https://node-postgres.com/features/transactions
-    const client = await getClient().connect();
-    try {
-      await client.query('BEGIN');
-      await Promise.all([this.writeResource(client, resource), this.writeLookupTables(client, resource)]);
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    await this.withTransaction(async (conn) => {
+      await Promise.all([this.writeResource(conn, resource), this.writeLookupTables(conn, resource)]);
+    });
   }
 
   /**
@@ -859,39 +837,40 @@ export class Repository extends BaseRepository implements FhirRepository {
 
       await deleteCacheEntry(resourceType, id);
 
-      const client = getClient();
-      const lastUpdated = new Date();
-      const content = '';
-      const columns: Record<string, any> = {
-        id,
-        lastUpdated,
-        deleted: true,
-        projectId: resource.meta?.project,
-        compartments: this.getCompartments(resource).map((ref) => resolveId(ref)),
-        content,
-      };
-
-      const searchParams = getSearchParameters(resourceType);
-      if (searchParams) {
-        for (const searchParam of Object.values(searchParams)) {
-          this.buildColumn({ resourceType } as Resource, columns, searchParam);
-        }
-      }
-
-      await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
-
-      await new InsertQuery(resourceType + '_History', [
-        {
+      await this.withTransaction(async (conn) => {
+        const lastUpdated = new Date();
+        const content = '';
+        const columns: Record<string, any> = {
           id,
-          versionId: randomUUID(),
           lastUpdated,
+          deleted: true,
+          projectId: resource.meta?.project,
+          compartments: this.getCompartments(resource).map((ref) => resolveId(ref)),
           content,
-        },
-      ]).execute(client);
+        };
 
-      await this.deleteFromLookupTables(client, resource);
-      this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
-      await addSubscriptionJobs(resource, { interaction: 'delete' });
+        const searchParams = getSearchParameters(resourceType);
+        if (searchParams) {
+          for (const searchParam of Object.values(searchParams)) {
+            this.buildColumn({ resourceType } as Resource, columns, searchParam);
+          }
+        }
+
+        await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
+
+        await new InsertQuery(resourceType + '_History', [
+          {
+            id,
+            versionId: randomUUID(),
+            lastUpdated,
+            content,
+          },
+        ]).execute(conn);
+
+        await this.deleteFromLookupTables(conn, resource);
+        this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+        await addSubscriptionJobs(resource, { interaction: 'delete' });
+      });
     } catch (err) {
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
@@ -930,8 +909,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', '=', id).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(getClient());
+    await new DeleteQuery(resourceType).where('id', '=', id).execute(this.getClient());
+    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(this.getClient());
     await deleteCacheEntry(resourceType, id);
   }
 
@@ -945,8 +924,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(getClient());
+    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getClient());
+    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getClient());
     await deleteCacheEntries(resourceType, ids);
   }
 
@@ -960,8 +939,8 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(getClient());
-    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(getClient());
+    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(this.getClient());
+    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(this.getClient());
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
@@ -1757,6 +1736,91 @@ export class Repository extends BaseRepository implements FhirRepository {
       auditEvent.id = randomUUID();
       this.updateResourceImpl(auditEvent, true).catch(console.error);
     }
+  }
+
+  /**
+   * Returns a database client.
+   * Use this method when you don't care if you're in a transaction or not.
+   * For example, use this method for "read by ID".
+   * The return value can either be a pool client or a pool.
+   * If in a transaction, then returns the transaction client (PoolClient).
+   * Otherwise, returns the pool (Pool).
+   * @returns The database client.
+   */
+  getClient(): Pool | PoolClient {
+    // If in a transaction, then use the transaction client.
+    // Otherwise, use the pool client.
+    return this.conn ?? getClient();
+  }
+
+  private async getConnection(): Promise<PoolClient> {
+    if (!this.conn) {
+      this.conn = await getClient().connect();
+    }
+    return this.conn;
+  }
+
+  private releaseConnection(): void {
+    if (this.conn) {
+      this.conn.release();
+      this.conn = undefined;
+    }
+  }
+
+  async withTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
+    try {
+      const client = await this.beginTransaction();
+      const result = await callback(client);
+      await this.commitTransaction();
+      return result;
+    } catch (err) {
+      await this.rollbackTransaction();
+      throw err;
+    } finally {
+      this.endTransaction();
+    }
+  }
+
+  private async beginTransaction(): Promise<PoolClient> {
+    this.transactionDepth++;
+    const conn = await this.getConnection();
+    if (this.transactionDepth === 0) {
+      await conn.query('BEGIN');
+    }
+    return conn;
+  }
+
+  private async commitTransaction(): Promise<void> {
+    if (this.transactionDepth < 0) {
+      throw new Error('No transaction to commit');
+    }
+    const conn = await this.getConnection();
+    if (this.transactionDepth === 0) {
+      await conn.query('COMMIT');
+    }
+  }
+
+  private async rollbackTransaction(): Promise<void> {
+    if (this.transactionDepth < 0) {
+      throw new Error('No transaction to rollback');
+    }
+    const conn = await this.getConnection();
+    await conn.query('ROLLBACK');
+    this.transactionDepth = 0;
+  }
+
+  private endTransaction(): void {
+    if (this.transactionDepth < 0) {
+      throw new Error('No transaction to end');
+    }
+    if (this.transactionDepth === 0) {
+      this.releaseConnection();
+    }
+    this.transactionDepth--;
+  }
+
+  close(): void {
+    this.releaseConnection();
   }
 }
 

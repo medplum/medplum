@@ -22,7 +22,7 @@ import { Operation, applyPatch } from 'rfc6902';
  *  1. MemoryRepository - A repository that stores resources in memory.
  *  2. Server Repository - A repository that stores resources in a relational database.
  */
-export interface FhirRepository {
+export interface FhirRepository<TClient = unknown> {
   /**
    * Creates a FHIR resource.
    *
@@ -145,6 +145,13 @@ export interface FhirRepository {
    * @returns Promise to the array of search results.
    */
   searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]>;
+
+  /**
+   * Runs a callback function within a transaction.
+   *
+   * @param callback - The callback function to be run within a transaction.
+   */
+  withTransaction<TResult>(callback: (client: TClient) => Promise<TResult>): Promise<TResult>;
 }
 
 export abstract class BaseRepository {
@@ -353,6 +360,10 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
       throw new OperationOutcomeError(notFound);
     }
     this.resources.get(resourceType)?.delete(id);
+  }
+
+  withTransaction<TResult>(callback: (client: unknown) => Promise<TResult>): Promise<TResult> {
+    return callback(undefined);
   }
 }
 
