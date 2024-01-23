@@ -85,12 +85,24 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
     });
   }, [setSliceValue, slices]);
 
+  const nonSliceIndex = slices.length;
+  const nonSliceValues = slicedValues[nonSliceIndex];
+
+  const nonSliceValuesOnChange = useMemo(() => {
+    const result: ((val: any) => void)[] = [];
+    for (let valueIndex = 0; valueIndex < nonSliceValues.length; valueIndex++) {
+      result.push((newValue: any) => {
+        const newNonSliceValues = [...nonSliceValues];
+        newNonSliceValues[valueIndex] = newValue;
+        setSliceValue(newNonSliceValues, nonSliceIndex);
+      });
+    }
+    return result;
+  }, [nonSliceIndex, nonSliceValues, setSliceValue]);
+
   if (loading) {
     return <div>Loading...</div>;
   }
-
-  const nonSliceIndex = slices.length;
-  const nonSliceValues = slicedValues[nonSliceIndex];
 
   // Hide non-sliced values when handling sliced extensions
   const showNonSliceValues = !(props.hideNonSliceValues ?? (propertyTypeCode === 'Extension' && slices.length > 0));
@@ -122,11 +134,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
                 name={props.name + '.' + valueIndex}
                 path={props.path}
                 defaultValue={value}
-                onChange={(newValue: any) => {
-                  const newNonSliceValues = [...nonSliceValues];
-                  newNonSliceValues[valueIndex] = newValue;
-                  setSliceValue(newNonSliceValues, nonSliceIndex);
-                }}
+                onChange={nonSliceValuesOnChange[valueIndex]}
                 defaultPropertyType={undefined}
                 outcome={props.outcome}
               />

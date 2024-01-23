@@ -1,8 +1,10 @@
-import { PropertyType } from '@medplum/core';
+import { InternalSchemaElement, PropertyType } from '@medplum/core';
 import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
+import { Extension } from '@medplum/fhirtypes';
+import { useCallback } from 'react';
 
 export default {
   title: 'Medplum/ResourcePropertyInput',
@@ -64,3 +66,37 @@ export const DateTimeInput = (): JSX.Element => (
     />
   </Document>
 );
+
+const defaultValue: Extension[] = [
+  {
+    url: 'https://example.com',
+    valueString: 'foo',
+  },
+];
+const property: InternalSchemaElement = {
+  path: 'extension',
+  description: '',
+  min: 0,
+  max: 10,
+  type: [{ code: 'Extension' }],
+  isArray: false,
+};
+export const ExtensionInput = (): JSX.Element => {
+  const onChange = useCallback((newValue: any): void => {
+    console.log('onChange', newValue);
+  }, []);
+
+  return (
+    <Document>
+      <ResourcePropertyInput
+        name="extension"
+        path="Patient.extension"
+        defaultValue={defaultValue}
+        property={property}
+        defaultPropertyType={PropertyType.dateTime}
+        onChange={onChange}
+        outcome={undefined}
+      />
+    </Document>
+  );
+};

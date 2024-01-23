@@ -56,7 +56,6 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   useEffect(() => {
     if (onChange) {
       if (lastValue.current.length !== values.length || !lastValue.current.every((v, idx) => v === values[idx])) {
-        console.log(`SliceInput[${props.path}] onChange`, lastValue.current, values);
         onChange(values);
       }
     }

@@ -1,7 +1,7 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import { capitalize, HTTP_HL7_ORG, InternalSchemaElement, PropertyType } from '@medplum/core';
 import { ElementDefinitionBinding, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
 import { AttachmentArrayInput } from '../AttachmentArrayInput/AttachmentArrayInput';
@@ -49,6 +49,16 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
 
   const propertyTypes = property.type as ElementDefinitionType[];
 
+  const elementDefinitionTypeInputOnChange = useCallback(
+    (newValue: any) => {
+      if (onChange) {
+        const newPropName = props.name.replace('[x]', capitalize(propertyTypes[0].code as string));
+        onChange(newValue, newPropName);
+      }
+    },
+    [onChange, propertyTypes, props.name]
+  );
+
   if ((property.isArray || property.max > 1) && !props.arrayElement) {
     if (defaultPropertyType === PropertyType.Attachment) {
       return <AttachmentArrayInput name={name} defaultValue={defaultValue} onChange={onChange} />;
@@ -76,12 +86,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
       <ElementDefinitionTypeInput
         name={name}
         defaultValue={defaultValue}
-        onChange={(newValue: any) => {
-          if (props.onChange) {
-            const newPropName = props.name.replace('[x]', capitalize(propertyTypes[0].code as string));
-            props.onChange(newValue, newPropName);
-          }
-        }}
+        onChange={elementDefinitionTypeInputOnChange}
         outcome={props.outcome}
         elementDefinitionType={propertyTypes[0]}
         min={property.min}

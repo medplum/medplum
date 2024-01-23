@@ -82,16 +82,12 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
     return result;
   }, [elementsToRender, setValue, elementsContext.fixedProperties]);
 
-  const defaultValue = useRef(props.defaultValue);
+  const lastValue = useRef(props.defaultValue);
   useEffect(() => {
-    if (Object.is(value, defaultValue.current)) {
-      return;
-    }
-
-    if (onChange) {
-      console.log(`ElementsInput[${props.path}] onChange`, value);
+    if (onChange && value !== lastValue.current) {
       onChange(value);
     }
+    lastValue.current = value;
   }, [value, onChange, props.path]);
 
   const typedValue: TypedValue = { type: props.type, value };
