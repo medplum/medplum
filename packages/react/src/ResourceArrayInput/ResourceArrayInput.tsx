@@ -2,14 +2,13 @@ import { Group, Stack } from '@mantine/core';
 import { InternalSchemaElement, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { MouseEvent, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { SliceInput } from '../SliceInput/SliceInput';
 import { SupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
-import useCallbackState from '../hooks/useCallbackState';
 import { killEvent } from '../utils/dom';
 import classes from './ResourceArrayInput.module.css';
 import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
@@ -34,31 +33,30 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
   const [slices, setSlices] = useState<SupportedSliceDefinition[]>([]);
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
-  const [slicedValues, setSlicedValues] = useCallbackState<SlicedValuesType>({
-    initialState: () => [[]],
-  });
+  const [slicedValues, setSlicedValues] = useState<SlicedValuesType>(() => [defaultValue]);
   const ctx = useContext(ElementsContext);
 
   // props.onChange should NOT be used directly; prefer onChangeWrapper
-  const onChangeWrapper = useCallback(
-    (values: SlicedValuesType) => {
-      if (onChange) {
-        const cleaned = values.flat().filter((val) => isPopulated(val));
+  const lastValue = useRef(defaultValue);
+  useEffect(() => {
+    const cleaned = slicedValues.flat().filter((val) => isPopulated(val));
+    if (onChange) {
+      if (lastValue.current.length !== cleaned.length || !lastValue.current.every((v, idx) => v === cleaned[idx])) {
         onChange(cleaned);
       }
-    },
-    [onChange]
-  );
+    }
+    lastValue.current = cleaned;
+  }, [slicedValues, props.path, onChange]);
 
   const setSliceValue = useCallback(
-    (newSliceValues: any[], sliceIndex: number): void => {
-      setSlicedValues((prevSlicedValues) => {
-        const newSlicedValues = [...prevSlicedValues];
-        newSlicedValues[sliceIndex] = newSliceValues;
+    (newValues: any[], sliceIndex: number): void => {
+      setSlicedValues((oldSlicedValues) => {
+        const newSlicedValues = [...oldSlicedValues];
+        newSlicedValues[sliceIndex] = newValues;
         return newSlicedValues;
-      }, onChangeWrapper);
+      });
     },
-    [onChangeWrapper, setSlicedValues]
+    [setSlicedValues]
   );
 
   const propertyTypeCode = property.type[0]?.code;
@@ -68,9 +66,8 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
       property,
     })
       .then((slices) => {
-        const slicedValues = assignValuesIntoSlices(defaultValue, slices, property.slicing, ctx.profileUrl);
         setSlices(slices);
-        // No callback since this is an internal state representation update not driven by a user action
+        const slicedValues = assignValuesIntoSlices(defaultValue, slices, property.slicing, ctx.profileUrl);
         setSlicedValues(slicedValues);
         setLoading(false);
       })

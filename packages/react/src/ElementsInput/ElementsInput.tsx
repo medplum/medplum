@@ -1,7 +1,7 @@
 import { Stack } from '@mantine/core';
 import { TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useContext, useMemo } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
@@ -9,7 +9,6 @@ import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourceP
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { ElementsContext } from './ElementsInput.utils';
-import useCallbackState from '../hooks/useCallbackState';
 
 const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
 const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
@@ -26,9 +25,7 @@ export interface ElementsInputProps {
 
 export function ElementsInput(props: ElementsInputProps): JSX.Element {
   const { onChange } = props;
-  const [value, setValue] = useCallbackState<any>({
-    initialState: () => props.defaultValue ?? {},
-  });
+  const [value, setValue] = useState<any>(() => props.defaultValue ?? {});
   const elementsContext = useContext(ElementsContext);
   const elementsToRender = useMemo(() => {
     const result = Object.entries(elementsContext.elements).filter(([key, element]) => {
@@ -68,24 +65,40 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
   }, [elementsContext.elements]);
 
   const onChangeCallbacks = useMemo(() => {
-    const result = elementsToRender.map(([key, element]) => {
-      return (newPropValue: any, propName?: string) => {
-        setValue((prevValue: any) => {
-          const newValue = setPropertyValue({ ...prevValue }, key, propName ?? key, element, newPropValue);
-          for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
-            setPropertyValue(newValue, key, key, prop, prop.fixed.value);
-          }
-          return newValue;
-        }, onChange);
-      };
-    });
+    const result = Object.fromEntries(
+      elementsToRender.map(([key, element]) => {
+        const callback = (newPropValue: any, propName?: string): void => {
+          setValue((prevValue: any) => {
+            const newValue = setPropertyValue({ ...prevValue }, key, propName ?? key, element, newPropValue);
+            for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
+              setPropertyValue(newValue, key, key, prop, prop.fixed.value);
+            }
+            return newValue;
+          });
+        };
+        return [key, callback];
+      })
+    );
     return result;
-  }, [elementsToRender, setValue, onChange, elementsContext.fixedProperties]);
+  }, [elementsToRender, setValue, elementsContext.fixedProperties]);
+
+  const defaultValue = useRef(props.defaultValue);
+  useEffect(() => {
+    if (Object.is(value, defaultValue.current)) {
+      return;
+    }
+
+    if (onChange) {
+      console.log(`ElementsInput[${props.path}] onChange`, value);
+      onChange(value);
+    }
+  }, [value, onChange, props.path]);
+
   const typedValue: TypedValue = { type: props.type, value };
 
   return (
     <Stack style={{ flexGrow: 1 }} data-testid={props.testId}>
-      {elementsToRender.map(([key, element], elementIndex) => {
+      {elementsToRender.map(([key, element]) => {
         const [propertyValue, propertyType] = getValueAndTypeFromElement(typedValue, key, element);
         const required = element.min !== undefined && element.min > 0;
         const resourcePropertyInput = (
@@ -96,7 +109,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
             path={props.path + '.' + key}
             defaultValue={propertyValue}
             defaultPropertyType={propertyType}
-            onChange={onChangeCallbacks[elementIndex]}
+            onChange={onChangeCallbacks[key]}
             arrayElement={undefined}
             outcome={props.outcome}
           />

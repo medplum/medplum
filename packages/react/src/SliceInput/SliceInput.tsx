@@ -1,7 +1,7 @@
 import { Group, Stack } from '@mantine/core';
 import { InternalSchemaElement, getPropertyDisplayName, isEmpty, isPopulated } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ElementsContext, ElementsContextType, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import { ElementDefinitionTypeInput } from '../ResourcePropertyInput/ResourcePropertyInput';
@@ -30,10 +30,9 @@ function maybeWrapWithContext(contextValue: ElementsContextType | undefined, con
 }
 
 export function SliceInput(props: SliceInputProps): JSX.Element | null {
-  const { slice, property } = props;
-  const [values, setValues] = useState<any[]>(() => {
-    return props.defaultValue.map((v) => v ?? {});
-  });
+  const { slice, property, onChange } = props;
+  const [defaultValue] = useState(() => props.defaultValue.map((v) => v ?? {}));
+  const [values, setValues] = useState<any[]>(defaultValue);
 
   const sliceType = slice.typeSchema?.type ?? slice.type[0].code;
   const sliceElements = slice.typeSchema?.elements ?? slice.elements;
@@ -53,12 +52,30 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
     return undefined;
   }, [parentElementsContextValue, props.path, slice.name, sliceElements, sliceType]);
 
-  function setValuesWrapper(newValues: any[]): void {
-    setValues(newValues);
-    if (props.onChange) {
-      props.onChange(newValues);
+  const lastValue = useRef(defaultValue);
+  useEffect(() => {
+    if (onChange) {
+      if (lastValue.current.length !== values.length || !lastValue.current.every((v, idx) => v === values[idx])) {
+        console.log(`SliceInput[${props.path}] onChange`, lastValue.current, values);
+        onChange(values);
+      }
     }
-  }
+    lastValue.current = values;
+  }, [values, onChange, props.path]);
+
+  const valuesOnChange = useMemo(() => {
+    const result: ((val: any) => void)[] = [];
+    for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
+      result.push((newValue: any) => {
+        setValues((oldValues) => {
+          const newValues = [...oldValues];
+          newValues[valueIndex] = newValue;
+          return newValues;
+        });
+      });
+    }
+    return result;
+  }, [values.length]);
 
   const required = slice.min > 0;
 
@@ -84,11 +101,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                   elementDefinitionType={slice.type[0]}
                   name={slice.name}
                   defaultValue={value}
-                  onChange={(newValue) => {
-                    const newValues = [...values];
-                    newValues[valueIndex] = newValue;
-                    setValuesWrapper(newValues);
-                  }}
+                  onChange={valuesOnChange[valueIndex]}
                   outcome={props.outcome}
                   min={slice.min}
                   max={slice.max}
@@ -104,7 +117,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                     killEvent(e);
                     const newValues = [...values];
                     newValues.splice(valueIndex, 1);
-                    setValuesWrapper(newValues);
+                    setValues(newValues);
                   }}
                 />
               )}
@@ -118,7 +131,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
               onClick={(e: React.MouseEvent) => {
                 killEvent(e);
                 const newValues = [...values, undefined];
-                setValuesWrapper(newValues);
+                setValues(newValues);
               }}
               testId={props.testId && `${props.testId}-add`}
             />

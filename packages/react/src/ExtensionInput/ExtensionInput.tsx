@@ -40,12 +40,6 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
     }
   }, [medplum, profileUrl]);
 
-  function onChange(newValue: any): void {
-    if (props.onChange) {
-      props.onChange(newValue);
-    }
-  }
-
   if (profileUrl && (loadingProfile || !isProfileLoaded(profileUrl))) {
     return <div>Loading...</div>;
   }
@@ -68,7 +62,7 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
       path={props.path}
       typeName={typeSchema?.name ?? 'Extension'}
       defaultValue={props.defaultValue}
-      onChange={onChange}
+      onChange={props.onChange}
     />
   );
 }
