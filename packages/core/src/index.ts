@@ -9,6 +9,7 @@ export * from './config';
 export * from './constants';
 export * from './contenttype';
 export * from './crypto';
+export * from './default-values';
 export * from './eventtarget';
 export * from './fhircast';
 export * from './fhirlexer/parse';
