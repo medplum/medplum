@@ -181,7 +181,7 @@ const lookupTables: LookupTable<unknown>[] = [
 export class Repository extends BaseRepository implements FhirRepository<PoolClient> {
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
-  private transactionDepth = -1;
+  private transactionDepth = 0;
 
   constructor(context: RepositoryContext) {
     super();
@@ -1783,39 +1783,46 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private async beginTransaction(): Promise<PoolClient> {
     this.transactionDepth++;
     const conn = await this.getConnection();
-    if (this.transactionDepth === 0) {
+    if (this.transactionDepth === 1) {
       await conn.query('BEGIN');
+    } else {
+      await conn.query('SAVEPOINT sp' + this.transactionDepth);
     }
     return conn;
   }
 
   private async commitTransaction(): Promise<void> {
-    if (this.transactionDepth < 0) {
+    if (this.transactionDepth <= 0) {
       throw new Error('No transaction to commit');
     }
     const conn = await this.getConnection();
-    if (this.transactionDepth === 0) {
+    if (this.transactionDepth === 1) {
       await conn.query('COMMIT');
+    } else {
+      await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
     }
   }
 
   private async rollbackTransaction(): Promise<void> {
-    if (this.transactionDepth < 0) {
+    if (this.transactionDepth <= 0) {
       throw new Error('No transaction to rollback');
     }
     const conn = await this.getConnection();
-    await conn.query('ROLLBACK');
-    this.transactionDepth = 0;
+    if (this.transactionDepth === 1) {
+      await conn.query('ROLLBACK');
+    } else {
+      await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+    }
   }
 
   private endTransaction(): void {
-    if (this.transactionDepth < 0) {
+    if (this.transactionDepth <= 0) {
       throw new Error('No transaction to end');
     }
+    this.transactionDepth--;
     if (this.transactionDepth === 0) {
       this.releaseConnection();
     }
-    this.transactionDepth--;
   }
 
   close(): void {
