@@ -733,6 +733,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
+    // Do not use this.getClient() for the cursor!
+    // That would cause a deadlock.
+    // Instead, use getClient() directly over a separate connection.
     const client = getClient();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
@@ -761,6 +764,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
+    // Do not use this.getClient() for the cursor!
+    // That would cause a deadlock.
+    // Instead, use getClient() directly over a separate connection.
     const client = getClient();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
