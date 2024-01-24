@@ -642,11 +642,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    */
   private async writeToDatabase<T extends Resource>(resource: T): Promise<void> {
     await this.withTransaction(async (client) => {
-      await Promise.all([
-        this.writeResource(client, resource),
-        this.writeResourceVersion(client, resource),
-        this.writeLookupTables(client, resource),
-      ]);
+      await this.writeResource(client, resource);
+      await this.writeResourceVersion(client, resource);
+      await this.writeLookupTables(client, resource);
     });
   }
 
@@ -806,7 +804,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     (resource.meta as Meta).compartment = this.getCompartments(resource);
 
     await this.withTransaction(async (conn) => {
-      await Promise.all([this.writeResource(conn, resource), this.writeLookupTables(conn, resource)]);
+      await this.writeResource(conn, resource);
+      await this.writeLookupTables(conn, resource);
     });
   }
 
