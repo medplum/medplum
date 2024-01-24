@@ -18,34 +18,46 @@ export interface IClientStorage {
  */
 export class ClientStorage implements IClientStorage {
   private readonly storage: Storage;
+  private readonly prefix: string;
 
-  constructor(storage?: Storage) {
+  constructor(storage?: Storage, prefix?: string) {
     this.storage = storage ?? (typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage());
+    this.prefix = prefix ?? '@medplum:';
+  }
+
+  private makeKey(key: string): string {
+    return this.prefix + key;
   }
 
   clear(): void {
-    this.storage.clear();
+    const keys = this.storage instanceof MemoryStorage ? this.storage.keys() : Object.keys(this.storage);
+
+    keys
+      .filter((key) => key.startsWith(this.prefix))
+      .forEach((key) => {
+        this.storage.removeItem(key);
+      });
   }
 
   getString(key: string): string | undefined {
-    return this.storage.getItem(key) ?? undefined;
+    return this.storage.getItem(this.makeKey(key)) ?? undefined;
   }
 
   setString(key: string, value: string | undefined): void {
     if (value) {
-      this.storage.setItem(key, value);
+      this.storage.setItem(this.makeKey(key), value);
     } else {
-      this.storage.removeItem(key);
+      this.storage.removeItem(this.makeKey(key));
     }
   }
 
   getObject<T>(key: string): T | undefined {
-    const str = this.getString(key);
+    const str = this.getString(this.makeKey(key));
     return str ? (JSON.parse(str) as T) : undefined;
   }
 
   setObject<T>(key: string, value: T): void {
-    this.setString(key, value ? stringify(value) : undefined);
+    this.setString(this.makeKey(key), value ? stringify(value) : undefined);
   }
 }
 
@@ -111,6 +123,10 @@ export class MemoryStorage implements Storage {
    */
   key(index: number): string | null {
     return Array.from(this.data.keys())[index];
+  }
+
+  keys(): string[] {
+    return Array.from(this.data.keys());
   }
 }
 
