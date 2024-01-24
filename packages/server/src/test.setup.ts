@@ -14,10 +14,10 @@ import { randomUUID } from 'crypto';
 import { Express } from 'express';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
+import { AuthenticatedRequestContext, requestContextStore } from './context';
 import { systemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
-import { AuthenticatedRequestContext, requestContextStore } from './context';
 
 export async function createTestProject(
   projectOptions?: Partial<Project>,
@@ -26,6 +26,8 @@ export async function createTestProject(
   project: Project;
   client: ClientApplication;
   membership: ProjectMembership;
+  login: Login;
+  accessToken: string;
 }> {
   requestContextStore.enterWith(AuthenticatedRequestContext.system());
   const project = await systemRepo.createResource<Project>({
@@ -63,10 +65,34 @@ export async function createTestProject(
     ...membershipOptions,
   });
 
+  const scope = 'openid';
+
+  const login = await systemRepo.createResource<Login>({
+    resourceType: 'Login',
+    authMethod: 'client',
+    user: createReference(client),
+    client: createReference(client),
+    membership: createReference(membership),
+    authTime: new Date().toISOString(),
+    superAdmin: projectOptions?.superAdmin,
+    scope,
+  });
+
+  const accessToken = await generateAccessToken({
+    login_id: login.id as string,
+    sub: client.id as string,
+    username: client.id as string,
+    client_id: client.id as string,
+    profile: client.resourceType + '/' + client.id,
+    scope,
+  });
+
   return {
     project,
     client,
     membership,
+    login,
+    accessToken,
   };
 }
 
@@ -81,28 +107,7 @@ export async function initTestAuth(
   projectOptions?: Partial<Project>,
   membershipOptions?: Partial<ProjectMembership>
 ): Promise<string> {
-  const { client, membership } = await createTestProject(projectOptions, membershipOptions);
-  const scope = 'openid';
-
-  const login = await systemRepo.createResource<Login>({
-    resourceType: 'Login',
-    authMethod: 'client',
-    user: createReference(client),
-    client: createReference(client),
-    membership: createReference(membership),
-    authTime: new Date().toISOString(),
-    superAdmin: projectOptions?.superAdmin,
-    scope,
-  });
-
-  return generateAccessToken({
-    login_id: login.id as string,
-    sub: client.id as string,
-    username: client.id as string,
-    client_id: client.id as string,
-    profile: client.resourceType + '/' + client.id,
-    scope,
-  });
+  return (await createTestProject(projectOptions, membershipOptions)).accessToken;
 }
 
 export async function addTestUser(

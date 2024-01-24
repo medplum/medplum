@@ -1,15 +1,19 @@
+import { AsyncJob } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { initTestAuth } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
-import { systemRepo } from './repo';
-import { AsyncJob } from '@medplum/fhirtypes';
+import { Repository } from './repo';
 
 const app = express();
 
 describe('Job status', () => {
+  let accessToken: string;
+  let asyncJobManager: AsyncJobExecutor;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -19,53 +23,58 @@ describe('Job status', () => {
     await shutdownApp();
   });
 
-  test('in progress', async () => {
-    const asyncJobManager = new AsyncJobExecutor(systemRepo);
-    const accessToken = await initTestAuth();
-
-    const job = await asyncJobManager.init('http://example.com');
-
-    const res = await request(app)
-      .get(`/fhir/R4/job/${job.id}/status`)
-      .set('Authorization', 'Bearer ' + accessToken);
-
-    expect(res.status).toBe(202);
+  beforeEach(async () => {
+    const testProject = await createTestProject();
+    accessToken = testProject.accessToken;
+    asyncJobManager = new AsyncJobExecutor(
+      new Repository({
+        project: testProject.project.id as string,
+        author: { reference: 'User/' + randomUUID() },
+      })
+    );
   });
 
-  test('completed', async () => {
-    const asyncJobManager = new AsyncJobExecutor(systemRepo);
-    const accessToken = await initTestAuth();
+  test('in progress', () =>
+    withTestContext(async () => {
+      const job = await asyncJobManager.init('http://example.com');
 
-    const job = await asyncJobManager.init('http://example.com');
-    const callback = jest.fn();
+      const res = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
 
-    await asyncJobManager.run(async () => {
-      callback();
-    });
+      expect(res.status).toBe(202);
+    }));
 
-    expect(callback).toBeCalled();
+  test('completed', () =>
+    withTestContext(async () => {
+      const job = await asyncJobManager.init('http://example.com');
+      const callback = jest.fn();
 
-    const resCompleted = await request(app)
-      .get(`/fhir/R4/job/${job.id}/status`)
-      .set('Authorization', 'Bearer ' + accessToken);
+      await asyncJobManager.run(async () => {
+        callback();
+      });
 
-    expect(resCompleted.status).toBe(200);
-    expect(resCompleted.body).toMatchObject<Partial<AsyncJob>>({
-      resourceType: 'AsyncJob',
-      status: 'completed',
-    });
-  });
+      expect(callback).toBeCalled();
 
-  test('cancel', async () => {
-    const asyncJobManager = new AsyncJobExecutor(systemRepo);
-    const accessToken = await initTestAuth();
+      const resCompleted = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
 
-    const job = await asyncJobManager.init('http://example.com');
+      expect(resCompleted.status).toBe(200);
+      expect(resCompleted.body).toMatchObject<Partial<AsyncJob>>({
+        resourceType: 'AsyncJob',
+        status: 'completed',
+      });
+    }));
 
-    const res = await request(app)
-      .delete(`/fhir/R4/job/${job.id}/status`)
-      .set('Authorization', 'Bearer ' + accessToken);
+  test('cancel', () =>
+    withTestContext(async () => {
+      const job = await asyncJobManager.init('http://example.com');
 
-    expect(res.status).toBe(202);
-  });
+      const res = await request(app)
+        .delete(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res.status).toBe(202);
+    }));
 });
