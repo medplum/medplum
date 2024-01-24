@@ -22,10 +22,11 @@ export interface BindWithTokenMsg extends BaseSubscriptionClientMsg {
 
 export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
   const redis = getRedis();
-  let redisSubscriber: Redis;
   const subscriptionIds = [] as string[];
-
+  let redisSubscriber: Redis;
   let onDisconnect: (() => void) | undefined;
+  let heartbeatHandler: (() => void) | undefined;
+
   const onBind = async (tokenPayload: JWTPayload): Promise<void> => {
     if (!redisSubscriber) {
       // Create a redis client for this connection.
@@ -53,12 +54,14 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
       subscriptionIds.push(subscriptionId);
     }
     await redisSubscriber.subscribe(subscriptionId);
-  };
 
-  const heartbeatHandler = async (): Promise<void> => {
-    socket.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
+    if (!heartbeatHandler) {
+      heartbeatHandler = (): void => {
+        socket.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
+      };
+      heartbeat.addEventListener('heartbeat', heartbeatHandler);
+    }
   };
-  heartbeat.addEventListener('heartbeat', heartbeatHandler);
 
   socket.on('message', async (data: ws.RawData) => {
     const rawDataStr = (data as Buffer).toString();
@@ -91,7 +94,9 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     if (onDisconnect) {
       onDisconnect();
     }
-    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
+    if (heartbeatHandler) {
+      heartbeat.removeEventListener('heartbeat', heartbeatHandler);
+    }
   });
 }
 
