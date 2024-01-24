@@ -18,6 +18,10 @@ export class RequestContext {
       new Logger(write, { requestId, traceId }, process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO);
   }
 
+  close(): void {
+    // No-op, descendants may override
+  }
+
   static empty(): RequestContext {
     return new RequestContext('', '');
   }
@@ -48,6 +52,10 @@ export class AuthenticatedRequestContext extends RequestContext {
     this.login = login;
     this.profile = membership.profile as Reference<ProfileResource>;
     this.accessToken = accessToken;
+  }
+
+  close(): void {
+    this.repo.close();
   }
 
   static system(): AuthenticatedRequestContext {
@@ -88,8 +96,8 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
 
 export function closeRequestContext(): void {
   const ctx = requestContextStore.getStore();
-  if (ctx && ctx instanceof AuthenticatedRequestContext) {
-    ctx.repo.close();
+  if (ctx) {
+    ctx.close();
   }
 }
 
