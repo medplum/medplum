@@ -70,8 +70,9 @@ async function migrate(client: PoolClient): Promise<void> {
   for (let i = version + 1; i <= migrationKeys.length; i++) {
     const migration = (migrations as Record<string, migrations.Migration>)['v' + i];
     if (migration) {
-      globalLogger.info('Running database migration', { version: `v${i}` });
+      const start = Date.now();
       await migration.run(client);
+      globalLogger.info('Database schema migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
     }
   }

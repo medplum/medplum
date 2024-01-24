@@ -209,8 +209,9 @@ superAdminRouter.post(
       const migrationKeys = Object.keys(dataMigrations);
       for (let i = version + 1; i <= migrationKeys.length; i++) {
         const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        ctx.logger.info('Running data migration', { version: `v${i}` });
+        const start = Date.now();
         await migration.run(systemRepo);
+        ctx.logger.info('Data migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
         await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
     });
