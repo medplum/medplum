@@ -1,16 +1,16 @@
 import { GraphiQLPlugin } from '@graphiql/react';
 import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, Title, createTheme } from '@mantine/core';
+import '@mantine/core/styles.css';
 import { MedplumClient, ProfileResource, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
+import '@medplum/react/styles.css';
 import GraphiQL from 'graphiql';
-import { createRoot } from 'react-dom/client';
-import { getConfig } from './config';
-
-import 'regenerator-runtime/runtime.js';
-
 import 'graphiql/graphiql.css';
 import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import 'regenerator-runtime/runtime.js';
+import { getConfig } from './config';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
 #
