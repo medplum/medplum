@@ -266,12 +266,10 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   private canReadCacheEntry(cacheEntry: CacheEntry): boolean {
-    if (
-      !this.isSuperAdmin() &&
-      this.context.project !== undefined &&
-      cacheEntry.projectId !== undefined &&
-      cacheEntry.projectId !== this.context.project
-    ) {
+    if (this.isSuperAdmin()) {
+      return true;
+    }
+    if (cacheEntry.projectId !== this.context.project) {
       return false;
     }
     if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
