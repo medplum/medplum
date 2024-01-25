@@ -481,6 +481,34 @@ describe('FHIRPath parser', () => {
     ]);
   });
 
+  test('%previous.empty() returns true for an empty %previous value', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+    };
+    const result = evalFhirPathTyped('%previous.empty()', [toTypedValue(patient)], { '%previous': toTypedValue({}) });
+
+    expect(result).toEqual([
+      {
+        type: PropertyType.boolean,
+        value: true,
+      },
+    ]);
+  });
+
+  test('%previous.exists().not() returns true for an empty %previous value', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+    };
+    const result = evalFhirPathTyped('%previous.exists().not()', [toTypedValue(patient)], { '%previous': toTypedValue({}) });
+
+    expect(result).toEqual([
+      {
+        type: PropertyType.boolean,
+        value: true,
+      },
+    ]);
+  });
+
   test('Context type comparison false', () => {
     const patient: Patient = {
       resourceType: 'Patient',
