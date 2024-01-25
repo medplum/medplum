@@ -48,7 +48,6 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         filters: [{ code: '_id', operator: Operator.EQUALS, value: patient?.id as string }],
       });
-      expect(searchCheck1).toBeDefined();
       expect(searchCheck1.entry).toHaveLength(1);
     }));
 
@@ -74,7 +73,6 @@ describe('FHIR Repo', () => {
             resourceType: 'Patient',
             filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id as string }],
           });
-          expect(searchCheck1).toBeDefined();
           expect(searchCheck1.entry).toHaveLength(1);
 
           // Now try to create a malformed patient
@@ -110,12 +108,11 @@ describe('FHIR Repo', () => {
       // }
 
       // Search for patient by ID
-      // This should succeed within the transaction
+      // This should return zero results because the transaction was rolled back
       const searchCheck2 = await repo.search<Patient>({
         resourceType: 'Patient',
         filters: [{ code: '_id', operator: Operator.EQUALS, value: (patient as Patient).id as string }],
       });
-      expect(searchCheck2).toBeDefined();
       expect(searchCheck2.entry).toHaveLength(0);
     }));
 
@@ -147,7 +144,6 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
       });
-      expect(searchCheck1).toBeDefined();
       expect(searchCheck1.entry).toHaveLength(1);
 
       // Read the patient by ID
@@ -161,7 +157,6 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
       });
-      expect(searchCheck2).toBeDefined();
       expect(searchCheck2.entry).toHaveLength(1);
     }));
 

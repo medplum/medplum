@@ -364,6 +364,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
   withTransaction<TResult>(callback: (client: unknown) => Promise<TResult>): Promise<TResult> {
     // MockRepository currently does not support transactions
+    console.debug('WARN: MockRepository does not support transactions');
     return callback(undefined);
   }
 }
