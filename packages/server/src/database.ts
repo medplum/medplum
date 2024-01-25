@@ -12,6 +12,10 @@ export function getClient(): Pool {
   return pool;
 }
 
+export const locks = {
+  migration: 1,
+};
+
 export async function initDatabase(config: MedplumDatabaseConfig, runMigrations = true): Promise<void> {
   pool = new Pool({
     host: config.host,
@@ -29,13 +33,13 @@ export async function initDatabase(config: MedplumDatabaseConfig, runMigrations 
   let client: PoolClient | undefined;
   try {
     client = await pool.connect();
-    await client.query('SELECT pg_advisory_lock(1)');
+    await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
     if (runMigrations) {
       await migrate(client);
     }
   } finally {
     if (client) {
-      await client.query('SELECT pg_advisory_unlock_all()');
+      await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
       client.release();
     }
   }
