@@ -114,20 +114,27 @@ export async function isFhirCriteriaMet(subscription: Subscription, currentResou
   if (!criteria?.valueString) {
     return true;
   }
-  const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
+  const previous = await getPreviousResource(currentResource);
   const evalInput = {
     '%current': toTypedValue(currentResource),
-    '%previous': toTypedValue({}),
+    '%previous': toTypedValue(previous ?? {}),
   };
-  const previousResource = history.entry?.[1]?.resource as Resource;
-  if (previousResource) {
-    evalInput['%previous'] = toTypedValue(previousResource);
-  }
   const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
-  if (evalValue?.[0]?.value === true) {
-    return true;
+  return evalValue?.[0]?.value === true;
+}
+
+async function getPreviousResource(currentResource: Resource): Promise<Resource | undefined> {
+  const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
+  if ((history.entry?.length ?? 1) === 1) {
+    return undefined;
   }
-  return false;
+
+  return history.entry?.find((_, idx) => {
+    if (idx === 0) {
+      return false;
+    }
+    return history.entry?.[idx - 1]?.resource?.meta?.versionId === currentResource.meta?.versionId;
+  })?.resource;
 }
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
