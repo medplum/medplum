@@ -1,3 +1,4 @@
+/* eslint-disable no-debugger */
 import {
   InternalSchemaElement,
   InternalTypeSchema,
@@ -27,7 +28,7 @@ export interface SchemaVisitor {
   onExitResource?: () => void;
 
   // visitElement: (path: string, element: InternalSchemaElement) => void;
-  onEnterElement?: (path: string, element: InternalSchemaElement) => void;
+  onEnterElement?: (path: string, element: InternalSchemaElement, elementsContext: ElementsContextType) => void;
   onExitElement?: () => void;
 
   onEnterSlicing?: (path: string, slicing: VisitorSlicingRules) => void;
@@ -41,6 +42,7 @@ export class SchemaCrawler {
   private readonly rootSchema: InternalTypeSchema;
   private readonly visitor: SchemaVisitor;
   private readonly rootPath: string;
+  private readonly elementsContextStack: ElementsContextType[];
 
   private schema: InternalTypeSchema;
   private debugMode: boolean = false;
@@ -48,6 +50,15 @@ export class SchemaCrawler {
 
   constructor(schema: InternalTypeSchema, visitor: SchemaVisitor) {
     this.rootSchema = schema;
+    this.elementsContextStack = [
+      buildElementsContext({
+        parentContext: undefined,
+        parentPath: this.rootSchema.type as string,
+        elements: this.rootSchema.elements,
+        parentType: this.rootSchema.type,
+        profileUrl: this.rootSchema.name === this.rootSchema.type ? undefined : this.rootSchema.url,
+      }),
+    ];
     this.schema = schema;
     this.visitor = visitor;
     this.rootPath = schema.type as string;
@@ -57,6 +68,10 @@ export class SchemaCrawler {
     if (this.debugMode) {
       console.debug(`[${this.schema.name}]`, ...data);
     }
+  }
+
+  private get elementsContext(): ElementsContextType {
+    return this.elementsContextStack[this.elementsContextStack.length - 1];
   }
 
   crawlElement(element: InternalSchemaElement, key: string): void {
@@ -111,11 +126,13 @@ export class SchemaCrawler {
     const profileUrl = element.type.find((t) => isPopulated(t.profile))?.profile?.[0];
     const profile = isPopulated(profileUrl) ? tryGetProfile(profileUrl) : undefined;
     if (profile) {
+      console.assert('UNEXPECTE profile found...');
+      debugger;
       this.schema = profile;
     }
 
     if (this.visitor.onEnterElement) {
-      this.visitor.onEnterElement(path, element);
+      this.visitor.onEnterElement(path, element, this.elementsContext);
     }
 
     // this.visitor.visitElement(path, element);
@@ -178,17 +195,149 @@ export class SchemaCrawler {
       this.visitor.onEnterSlice(path, slice);
     }
 
-    const schema = slice.typeSchema;
+    const sliceType = slice.typeSchema?.type ?? slice.type[0].code;
+    const sliceElements = slice.typeSchema?.elements ?? slice.elements;
+    let elementsContext: ElementsContextType | undefined;
+    if (isPopulated(sliceElements)) {
+      elementsContext = buildElementsContext({
+        parentContext: this.elementsContext,
+        elements: sliceElements,
+        parentPath: path,
+        parentType: sliceType,
+      });
+      this.elementsContextStack.push(elementsContext);
+    }
+    this.crawlElementsImpl(sliceElements, path);
 
-    if (schema) {
-      this.schema = schema;
-      this.crawlElementsImpl(schema.elements, path);
-    } else {
-      this.crawlElementsImpl(slice.elements, path);
+    if (elementsContext) {
+      this.elementsContextStack.pop();
     }
 
     if (this.visitor.onExitSlice) {
       this.visitor.onExitSlice();
     }
   }
+}
+
+export type ElementsContextType = {
+  elements: Record<string, InternalSchemaElement>;
+  elementsByPath: Record<string, InternalSchemaElement>;
+  profileUrl: string | undefined;
+  debugMode: boolean;
+};
+
+function buildElementsContext({
+  parentContext,
+  elements,
+  parentPath,
+  parentType,
+  profileUrl,
+  debugMode,
+}: {
+  elements: InternalTypeSchema['elements'] | undefined;
+  parentPath: string;
+  parentContext: ElementsContextType | undefined;
+  parentType: string | undefined;
+  profileUrl?: string;
+  debugMode?: boolean;
+}): ElementsContextType {
+  if (debugMode) {
+    console.debug('Building ElementsContext', { parentPath, profileUrl, elements });
+  }
+  const mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
+    parentPath,
+    elements,
+    parentContext,
+    Boolean(debugMode)
+  );
+
+  const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
+  const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
+
+  const seenKeys = new Set<string>();
+  for (const [key, property] of Object.entries(mergedElements)) {
+    elementsByPath[parentPath + '.' + key] = property;
+
+    const [beginning, _last] = splitOnceRight(key, '.');
+    // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
+    if (seenKeys.has(beginning)) {
+      nestedPaths[parentType + '.' + key] = property;
+    }
+    seenKeys.add(key);
+  }
+
+  /*
+  function getElementByPath(path: string): InternalSchemaElement | undefined {
+    return elementsByPath[path];
+  }
+
+  function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement | undefined {
+    return nestedPaths[nestedElementPath];
+  }
+  */
+
+  return {
+    debugMode: debugMode ?? false,
+    profileUrl: profileUrl ?? parentContext?.profileUrl,
+    //getModifiedNestedElement,
+    //getElementByPath,
+    elements: mergedElements,
+    elementsByPath,
+  };
+}
+
+function mergeElementsForContext(
+  parentPath: string,
+  elements: Record<string, InternalSchemaElement> | undefined,
+  parentContext: ElementsContextType | undefined,
+  debugMode: boolean
+): Record<string, InternalSchemaElement> {
+  const result: ElementsContextType['elements'] = Object.create(null);
+
+  if (parentContext) {
+    const parentPathPrefix = parentPath + '.';
+    for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
+      if (path.startsWith(parentPathPrefix)) {
+        const key = path.slice(parentPathPrefix.length);
+        result[key] = element;
+      }
+    }
+  }
+
+  let usedNewElements = false;
+  if (elements) {
+    for (const [key, element] of Object.entries(elements)) {
+      if (!(key in result)) {
+        result[key] = element;
+        usedNewElements = true;
+      }
+    }
+  }
+
+  // TODO if no new elements are used, the elementscontext is very likely not necessary;
+  // there could be an optimization where buildElementsContext returns undefined in this case
+  // to avoid needless contexts
+  if (debugMode && parentContext && !usedNewElements) {
+    console.debug('ElementsContext elements same as parent context');
+  }
+  return result;
+}
+
+/**
+ * Splits a string on the last occurrence of the delimiter
+ * @param str - The string to split
+ * @param delim - The delimiter string
+ * @returns An array of two strings; the first consisting of the beginning of the
+ * string up to the last occurrence of the delimiter. the second is the remainder of the
+ * string after the last occurrence of the delimiter. If the delimiter is not present
+ * in the string, the first element is empty and the second is the input string.
+ */
+function splitOnceRight(str: string, delim: string): [string, string] {
+  const delimIndex = str.lastIndexOf(delim);
+  if (delimIndex === -1) {
+    return ['', str];
+  }
+  const beginning = str.substring(0, delimIndex);
+  const last = str.substring(delimIndex + delim.length);
+  return [beginning, last];
 }

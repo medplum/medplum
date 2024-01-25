@@ -62,6 +62,8 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
 export interface GetTypedPropertyValueOptions {
   /** (optional) URL of a resource profile for type resolution */
   profileUrl?: string;
+  /** (optional) Whether isEmpty values should be returned. */
+  includeEmptyValues?: boolean;
 }
 
 /**
@@ -86,23 +88,29 @@ export function getTypedPropertyValue(
 
   const elementDefinition = getElementDefinition(input.type, path, options?.profileUrl);
   if (elementDefinition) {
-    return getTypedPropertyValueWithSchema(input, path, elementDefinition);
+    return getTypedPropertyValueWithSchema(input, path, elementDefinition, options);
   }
 
   return getTypedPropertyValueWithoutSchema(input, path);
 }
 
+export interface GetTypedPropertyValueWithSchemaOptions {
+  /** (optional) Whether isEmpty values should be returned. */
+  includeEmptyValues?: boolean;
+}
 /**
  * Returns the value of the property and the property type using a type schema.
  * @param typedValue - The base context (FHIR resource or backbone element).
  * @param path - The property path.
  * @param element - The property element definition.
+ * @param options - (optional) Additional options
  * @returns The value of the property and the property type.
  */
 export function getTypedPropertyValueWithSchema(
   typedValue: TypedValue,
   path: string,
-  element: InternalSchemaElement
+  element: InternalSchemaElement,
+  options?: GetTypedPropertyValueWithSchemaOptions
 ): TypedValue[] | TypedValue | undefined {
   // Consider the following cases of the inputs:
 
@@ -167,7 +175,7 @@ export function getTypedPropertyValueWithSchema(
     }
   }
 
-  if (isEmpty(resultValue)) {
+  if (!options?.includeEmptyValues && isEmpty(resultValue)) {
     return undefined;
   }
 

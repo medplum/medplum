@@ -1,3 +1,4 @@
+/* eslint-disable no-debugger */
 import { Resource } from '@medplum/fhirtypes';
 import {
   InternalSchemaElement,
@@ -6,11 +7,17 @@ import {
   SliceDiscriminator,
   SlicingRules,
 } from './typeschema/types';
-import { arrayify, capitalize, deepClone, isObject } from './utils';
+import { arrayify, capitalize, deepClone, isObject, isPopulated } from './utils';
 import { getNestedProperty } from './typeschema/crawler';
 import { TypedValue } from './types';
 import { matchDiscriminant } from './typeschema/validation';
-import { SchemaCrawler, SchemaVisitor, VisitorSliceDefinition, VisitorSlicingRules } from './schema-crawler';
+import {
+  ElementsContextType,
+  SchemaCrawler,
+  SchemaVisitor,
+  VisitorSliceDefinition,
+  VisitorSlicingRules,
+} from './schema-crawler';
 
 export function applyDefaultValues(
   resource: Resource,
@@ -66,7 +73,7 @@ export function applyDefaultValues(
   return resource;*/
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, prefer-const
 let foo = 0;
 
 type SliceValue = any;
@@ -141,10 +148,11 @@ class DefaultValueVisitor implements SchemaVisitor {
     if (path.startsWith(valuePath)) {
       pathDiff = path.slice(valuePath.length + 1);
     } else {
+      debugger;
       return [];
     }
 
-    return getNestedProperty(value, pathDiff, { profileUrl });
+    return getNestedProperty(value, pathDiff, { profileUrl, includeEmptyValues: false });
   }
 
   /*
@@ -194,13 +202,16 @@ class DefaultValueVisitor implements SchemaVisitor {
     console.assert(this.schemaStack.length === 0, 'Expected schema stack to be empty when exiting resource');
   }
 
-  onEnterElement(path: string, element: InternalSchemaElement): void {
+  onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
     const parentPath = this.value.path;
     const parentValues = this.value.values;
     const key = path.slice(parentPath.length + 1);
     this.debug('onEnterElement', path);
 
-    if (path === 'Observation.code') {
+    if (path === 'Observation.category') {
+      debugger;
+    }
+    if (path === 'Observation.category.coding.code') {
       debugger;
     }
     const currentValues: TypedValue[] = [];
@@ -208,23 +219,36 @@ class DefaultValueVisitor implements SchemaVisitor {
       let elementValues;
       if (Array.isArray(parentValue.value)) {
         const parentType = parentValue.type;
-        elementValues = parentValue.value
+        applyMinimum(parentValue, key, element, elementsContext.elements, true);
+        const newParentValue = applyFixedOrPatternValue(parentValue, key, element, elementsContext.elements, true);
+        const newParentTypedValue = { type: parentType, value: newParentValue };
+        elementValues = (newParentTypedValue.value as any[])
           .map((innerParentValue) => {
-            const existingValue = this.getValueAtPath(
+            return this.getValueAtPath(
               path,
               { type: parentType, value: innerParentValue },
               parentPath,
               this.schema?.url
             );
-            return existingValue;
           })
           .flat();
       } else {
         const parentType = parentValue.type;
-        const newParentValue = applyFixedOrPatternValue(parentValue, key, element, this.schema.elements, true);
+        applyMinimum(parentValue, key, element, elementsContext.elements, true);
+        const newParentValue = applyFixedOrPatternValue(parentValue, key, element, elementsContext.elements, true);
         const newParentTypedValue = { type: parentType, value: newParentValue };
         // const existingValue = this.getValueAtPath(path, parentValue, parentPath, this.schema?.url);
+        if (path === 'Observation.category') {
+          debugger;
+        }
         elementValues = this.getValueAtPath(path, newParentTypedValue, parentPath, this.schema?.url);
+        /*
+        if (element.isArray && element.min > 0 && elementValues.length === 0) {
+          const emptyArray: any[] = [];
+          (emptyArray as any).__w = `onEnterElement[${key}] min > 0`;
+          parentValue.push(emptyArray);
+          sliceValues.push(emptyArray);
+        }*/
       }
 
       for (const elementValue of elementValues) {
@@ -235,8 +259,11 @@ class DefaultValueVisitor implements SchemaVisitor {
         if (elementValue === undefined) {
           typedValue = { type: 'undefined', value: undefined };
         } else if (Array.isArray(elementValue)) {
+          if (elementValue.length === 0) {
+            debugger;
+          }
           typedValue = {
-            type: elementValue[0].type,
+            type: element.type[0].code, //elementValue[0].type,
             value: elementValue.map((e) => e.value),
           };
         } else {
@@ -277,8 +304,34 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   onExitElement(): void {
-    const valueContext = this.valueStack.pop();
-    this.debug('onExitElement', JSON.stringify(valueContext?.values));
+    const elementValueContext = this.valueStack.pop();
+    if (!elementValueContext) {
+      throw new Error('Expected value context to exist when exiting element');
+    }
+
+    if (elementValueContext?.values.some((v) => isPopulated(v.value))) {
+      this.debug('onExitElement', elementValueContext.path);
+      for (let i = 0; i < this.value.values.length; i++) {
+        const elementTV = elementValueContext.values[i];
+        if (isPopulated(elementTV.value)) {
+          const parentTV = this.value.values[i];
+          const parentType = parentTV.type;
+          const parentValue = parentTV.value;
+          this.debug(
+            `zipping\nparentType: ${parentType}\nparentValue:\n${JSON.stringify(parentValue)}\nelementType: ${elementTV.type}\nelementValue:\n${JSON.stringify(elementTV.value)}`
+          );
+        }
+        /*
+        if (parentValue === undefined) {
+          this.value.values[i] = elementValue;
+        } else {
+          if (!Array.isArray(this.value.values[i].value)) {
+            throw new Error('Sliced element should have an array value');
+          }
+          this.value.values[i].value.push(...elementValue.value);
+        }*/
+      }
+    }
   }
 
   onEnterSlicing(path: string, slicing: VisitorSlicingRules): void {
@@ -316,6 +369,7 @@ class DefaultValueVisitor implements SchemaVisitor {
       if (parentTypedValue.value === undefined) {
         if (slice.min > 0) {
           parentType = slice.typeSchema?.name ?? slice.type[0].code;
+          debugger;
           parentValue = [];
         }
       }
@@ -338,7 +392,11 @@ class DefaultValueVisitor implements SchemaVisitor {
         }
       }
       if (slice.min > 0 && sliceValues.length === 0) {
-        sliceValues.push({});
+        // TODO - is it possible that emptySlice should be something besides an object, e.g. a string for a simple type
+        const emptySliceValue = Object.create(null);
+        emptySliceValue.__w = `onEnterSlice[${slice.name}] min > 0`;
+        parentValue.push(emptySliceValue);
+        sliceValues.push(emptySliceValue);
       }
       currentValues.push({ type: parentType, value: sliceValues });
     }
@@ -350,20 +408,47 @@ class DefaultValueVisitor implements SchemaVisitor {
     // this.valueStack.push({ path: path, value: sliceValuesByValue });
 
     if (slice.typeSchema) {
+      debugger;
       this.schemaStack.push(slice.typeSchema);
     }
   }
 
   onExitSlice(): void {
-    this.valueStack.pop();
+    const sliceValueContext = this.valueStack.pop();
+    if (!sliceValueContext) {
+      throw new Error('Expected value context to exist in onExitSlice');
+    }
+
     const sliceCtx = this.sliceContextStack.pop();
     if (!sliceCtx) {
       throw new Error('Expected slice context to exist on exit');
     }
+
     if (sliceCtx.slice.typeSchema) {
       this.schemaStack.pop();
     }
-    this.debug('onExitSlice', sliceCtx.slice.name);
+
+    this.debug('onExitSlice', sliceCtx.slice.name, JSON.stringify(sliceValueContext.values));
+    debugger;
+    this.debug('parentValue', JSON.stringify(this.value.values));
+    for (let i = 0; i < this.value.values.length; i++) {
+      const elementTypedValue = this.value.values[i];
+      const elementType = elementTypedValue.type;
+      const elementValue = elementTypedValue.value;
+      const sliceValues = sliceValueContext.values[i];
+      this.debug(
+        `zipping\nelementType:\n${elementType}\nelementValue:\n${JSON.stringify(this.value.values[i].value)}\nsliceValues:\n${JSON.stringify(sliceValues)}`
+      );
+      if (elementValue === undefined) {
+        this.value.values[i] = sliceValues;
+      } else {
+        if (!Array.isArray(this.value.values[i].value)) {
+          throw new Error('Sliced element should have an array value');
+        }
+        this.value.values[i].value.push(...sliceValues.value);
+      }
+      this.debug(`result:\n${JSON.stringify(this.value.values[i].value)}`);
+    }
   }
 
   getDefaultValue(): Resource {
@@ -418,7 +503,7 @@ function getValueSliceName(
 // return value;
 // }
 
-function applyFixedOrPatternValue(
+function applyMinimum(
   input: TypedValue,
   key: string,
   element: InternalSchemaElement,
@@ -438,6 +523,71 @@ function applyFixedOrPatternValue(
       applyFixedOrPatternValue({ type: inputType, value: iv }, key, element, elements, debugMode)
     );
   }
+
+  inputValue satisfies object;
+
+  const debug: ConsoleDebug = debugMode ? console.debug : () => undefined;
+
+  if (element.min > 0) {
+    const elementType = element.type[0].code;
+    if (elementType.startsWith(elementType[0].toUpperCase())) {
+      const keyParts = key.split('.');
+      let last: any = outputValue;
+      for (let i = 0; i < keyParts.length; i++) {
+        let keyPart = keyParts[i];
+        if (keyPart.includes('[x]')) {
+          const keyPartElem = elements[keyParts.slice(0, i + 1).join('.')];
+          const code = keyPartElem.type[0].code;
+          keyPart = keyPart.replace('[x]', capitalize(code));
+        }
+
+        if (i === keyParts.length - 1) {
+          const lastArray = Array.isArray(last) ? last : [last];
+          for (const item of lastArray) {
+            if (element.isArray) {
+              // item[keyPart] = [Object.create(null)];
+              item[keyPart] = [];
+            } else {
+              item[keyPart] = Object.create(null);
+            }
+          }
+        } else {
+          if (!(keyPart in last)) {
+            const elementKey = keyParts.slice(0, i + 1).join('.');
+            debug(`creating empty value for ${elementKey}`);
+            last[keyPart] = elements[elementKey].isArray ? [Object.create(null)] : Object.create(null);
+          }
+          debug('setting last to', JSON.stringify(last[keyPart], undefined, 2));
+          last = last[keyPart];
+        }
+      }
+    }
+  }
+  return outputValue;
+}
+
+function applyFixedOrPatternValue(
+  input: TypedValue,
+  key: string,
+  element: InternalSchemaElement,
+  elements: Record<string, InternalSchemaElement>,
+  debugMode: boolean
+): any {
+  const inputType = input.type;
+  const inputValue = input.value;
+
+  if (inputValue === undefined || inputValue === null) {
+    throw new Error('inputValue cannot be undefined or null');
+  }
+
+  if (Array.isArray(inputValue)) {
+    return inputValue.map((iv) =>
+      applyFixedOrPatternValue({ type: inputType, value: iv }, key, element, elements, debugMode)
+    );
+  }
+
+  // const outputValue = inputValue === undefined ? undefined : deepClone(inputValue);
+  const outputValue = inputValue; // === undefined ? undefined : deepClone(inputValue);
 
   inputValue satisfies object;
 
@@ -463,6 +613,7 @@ function applyFixedOrPatternValue(
         const lastArray = Array.isArray(last) ? last : [last];
         for (const item of lastArray) {
           if (element.fixed) {
+            debugger;
             item[keyPart] = applyFixed(item[keyPart], element.fixed.value, debug);
           } else if (element.pattern) {
             item[keyPart] = applyPattern(item[keyPart], element.pattern.value, debug);
@@ -474,16 +625,17 @@ function applyFixedOrPatternValue(
           debug(`creating empty value for ${elementKey}`);
           last[keyPart] = elements[elementKey].isArray ? [Object.create(null)] : Object.create(null);
         }
-        debug('setting last to', JSON.stringify(last[keyPart], undefined, 2));
+        debug('setting last to', JSON.stringify(last[keyPart]));
         last = last[keyPart];
       }
     }
-    debug(`done`, JSON.stringify(inputValue, undefined, 2));
+    debug(`done`, JSON.stringify(outputValue, undefined, 2));
   }
 
   return outputValue;
 }
 
+/*
 function modifyDefaultValueImpl(
   defaultValue: TypedValue,
   elements: ElementsContextType['elements'],
@@ -546,6 +698,7 @@ function modifyDefaultValueImpl(
   debug('modifyDV OUTPUT', JSON.stringify(outputValue));
   return outputValue;
 }
+*/
 
 function applyFixed(value: any, fixed: any, debug: ConsoleDebug): any {
   if (value === undefined) {
