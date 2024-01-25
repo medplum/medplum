@@ -1,6 +1,7 @@
 import { badRequest, createReference, forbidden, isOk, notFound, OperationOutcomeError, Operator } from '@medplum/core';
 import {
   BundleEntry,
+  ElementDefinition,
   Login,
   Observation,
   OperationOutcome,
@@ -871,35 +872,94 @@ describe('FHIR Repo', () => {
     }
   });
 
-  test.skip('Profile validation', async () => {
-    const profile = JSON.parse(
-      readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-    ) as StructureDefinition;
-    profile.url = (profile.url ?? '') + Math.random();
-    const patient: Patient = {
-      resourceType: 'Patient',
-      meta: {
-        profile: [profile.url],
-      },
-      identifier: [
-        {
-          system: 'http://example.com/patient-id',
-          value: 'foo',
+  test('Profile validation', async () =>
+    withTestContext(async () => {
+      const profile = JSON.parse(
+        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+      ) as StructureDefinition;
+      profile.url = (profile.url ?? '') + Math.random();
+      const patient: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          profile: [profile.url],
         },
-      ],
-      name: [
-        {
-          given: ['Alex'],
-          family: 'Baker',
-        },
-      ],
-      // Missing gender property is required by profile
-    };
+        identifier: [
+          {
+            system: 'http://example.com/patient-id',
+            value: 'foo',
+          },
+        ],
+        name: [
+          {
+            given: ['Alex'],
+            family: 'Baker',
+          },
+        ],
+        // Missing gender property is required by profile
+      };
 
-    await expect(systemRepo.createResource(patient)).resolves.toBeTruthy();
-    await systemRepo.createResource(profile);
-    await expect(systemRepo.createResource(patient)).rejects.toEqual(
-      new Error('Missing required property (Patient.gender)')
-    );
-  });
+      await expect(systemRepo.createResource(patient)).resolves.toBeTruthy();
+      await systemRepo.createResource(profile);
+      await expect(systemRepo.createResource(patient)).rejects.toEqual(
+        new Error('Missing required property (Patient.gender)')
+      );
+    }));
+
+  test('Profile update', async () =>
+    withTestContext(async () => {
+      const clientApp = 'ClientApplication/' + randomUUID();
+      const projectId = randomUUID();
+      const repo = new Repository({
+        extendedMode: true,
+        strictMode: true,
+        project: projectId,
+        author: {
+          reference: clientApp,
+        },
+      });
+
+      const originalProfile = JSON.parse(
+        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+      ) as StructureDefinition;
+
+      const profile = await repo.createResource<StructureDefinition>({
+        ...originalProfile,
+        url: randomUUID(),
+      });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        meta: { profile: [profile.url] },
+        identifier: [{ system: 'http://example.com/patient-id', value: 'foo' }],
+        name: [{ given: ['Alex'], family: 'Baker' }],
+        gender: 'male',
+      };
+
+      // Create the patient
+      // This should succeed
+      await expect(repo.createResource(patient)).resolves.toBeTruthy();
+
+      // Now update the profile to make "address" a required field
+      await repo.updateResource<StructureDefinition>({
+        ...profile,
+        snapshot: {
+          ...profile.snapshot,
+          element: profile.snapshot?.element?.map((e) => {
+            if (e.path === 'Patient.address') {
+              return {
+                ...e,
+                min: 1,
+              };
+            }
+            return e;
+          }) as ElementDefinition[],
+        },
+      });
+
+      // Now try to create another patient without an address
+      // This should fail
+      await expect(repo.createResource(patient)).rejects.toEqual(
+        new Error('Missing required property (Patient.address)')
+      );
+    }));
 });
