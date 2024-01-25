@@ -29,6 +29,7 @@ const TYPED_Y = toTypedValue('y');
 const TYPED_Z = toTypedValue('z');
 const TYPED_APPLE = toTypedValue('apple');
 const TYPED_XYZ = toTypedValue('xyz');
+const TYPED_EMPTY = toTypedValue({});
 
 const LITERAL_TRUE = new LiteralAtom(TYPED_TRUE);
 const LITERAL_FALSE = new LiteralAtom(TYPED_FALSE);
@@ -40,6 +41,7 @@ describe('FHIRPath functions', () => {
 
   test('empty', () => {
     expect(functions.empty(context, [])).toEqual([TYPED_TRUE]);
+    expect(functions.empty(context, [TYPED_EMPTY])).toEqual([TYPED_TRUE]);
     expect(functions.empty(context, [TYPED_1])).toEqual([TYPED_FALSE]);
     expect(functions.empty(context, [TYPED_1, TYPED_2])).toEqual([TYPED_FALSE]);
   });
@@ -52,6 +54,7 @@ describe('FHIRPath functions', () => {
 
   test('exists', () => {
     expect(functions.exists(context, [])).toEqual([TYPED_FALSE]);
+    expect(functions.exists(context, [TYPED_EMPTY])).toEqual([TYPED_FALSE]);
     expect(functions.exists(context, [TYPED_1])).toEqual([TYPED_TRUE]);
     expect(functions.exists(context, [TYPED_1, TYPED_2])).toEqual([TYPED_TRUE]);
     expect(functions.exists(context, [], isEven)).toEqual([TYPED_FALSE]);
