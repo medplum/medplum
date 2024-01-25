@@ -11,7 +11,13 @@ import { adminRouter } from './admin/routes';
 import { asyncWrap } from './async';
 import { authRouter } from './auth/routes';
 import { getConfig, MedplumServerConfig } from './config';
-import { attachRequestContext, AuthenticatedRequestContext, getRequestContext, requestContextStore } from './context';
+import {
+  attachRequestContext,
+  AuthenticatedRequestContext,
+  closeRequestContext,
+  getRequestContext,
+  requestContextStore,
+} from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
@@ -94,6 +100,7 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
  * @param next - The next handler.
  */
 function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
+  closeRequestContext();
   if (res.headersSent) {
     next(err);
     return;
