@@ -119,7 +119,7 @@ export async function isFhirCriteriaMet(subscription: Subscription, currentResou
     '%current': toTypedValue(currentResource),
     '%previous': toTypedValue({}),
   };
-  const previousResource = history.entry?.[1]?.resource as Resource;
+  const previousResource = history.entry?.[1]?.resource;
   if (previousResource) {
     evalInput['%previous'] = toTypedValue(previousResource);
   }
