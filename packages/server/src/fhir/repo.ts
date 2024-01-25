@@ -597,12 +597,14 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
-    const redis = getRedis();
-    const cacheKey = `Project/${this.context.project}/StructureDefinition/${url}`;
-    // Try retrieving from cache
-    const cachedProfile = await redis.get(cacheKey);
-    if (cachedProfile) {
-      return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
+    const projectId = this.context.project;
+
+    if (projectId) {
+      // Try retrieving from cache
+      const cachedProfile = await getProfileCacheEntry(projectId, url);
+      if (cachedProfile) {
+        return cachedProfile.resource;
+      }
     }
 
     // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
@@ -623,14 +625,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       ],
     });
 
-    if (profile) {
+    if (projectId && profile) {
       // Store loaded profile in cache
-      await redis.set(
-        cacheKey,
-        JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
-        'EX',
-        24 * 60 * 60 // 24 hours in seconds
-      );
+      await setProfileCacheEntry(projectId, profile);
     }
     return profile;
   }
@@ -1849,6 +1846,8 @@ export function getLookupTable(resourceType: string, searchParam: SearchParamete
   return undefined;
 }
 
+const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
+
 /**
  * Tries to read a cache entry from Redis by resource type and ID.
  * @param resourceType - The resource type.
@@ -1881,12 +1880,16 @@ async function getCacheEntries(references: Reference[]): Promise<(CacheEntry | u
  * @param resource - The resource to cache.
  */
 async function setCacheEntry(resource: Resource): Promise<void> {
+  const projectId = resource.meta?.project;
   await getRedis().set(
     getCacheKey(resource.resourceType, resource.id as string),
-    JSON.stringify({ resource, projectId: resource.meta?.project }),
+    JSON.stringify({ resource, projectId }),
     'EX',
-    24 * 60 * 60 // 24 hours in seconds
+    REDIS_CACHE_EX_SECONDS
   );
+  if (projectId && resource.resourceType === 'StructureDefinition') {
+    await setProfileCacheEntry(projectId, resource);
+  }
 }
 
 /**
@@ -1919,6 +1922,47 @@ async function deleteCacheEntries(resourceType: string, ids: string[]): Promise<
  */
 function getCacheKey(resourceType: string, id: string): string {
   return `${resourceType}/${id}`;
+}
+
+/**
+ * Tries to read a FHIR profile cache entry from Redis by project and profile URL.
+ * @param projectId - The project ID.
+ * @param url - The profile URL.
+ * @returns The cache entry if found; otherwise, undefined.
+ */
+async function getProfileCacheEntry(
+  projectId: string,
+  url: string
+): Promise<CacheEntry<StructureDefinition> | undefined> {
+  const cachedValue = await getRedis().get(getProfileCacheKey(projectId, url));
+  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<StructureDefinition>) : undefined;
+}
+
+/**
+ * Writes a FHIR profile cache entry to Redis.
+ * @param projectId - The project ID.
+ * @param structureDefinition - The profile structure definition.
+ */
+async function setProfileCacheEntry(projectId: string, structureDefinition: StructureDefinition): Promise<void> {
+  if (!structureDefinition.url) {
+    return;
+  }
+  await getRedis().set(
+    getProfileCacheKey(projectId, structureDefinition.url),
+    JSON.stringify({ resource: structureDefinition, projectId }),
+    'EX',
+    REDIS_CACHE_EX_SECONDS
+  );
+}
+
+/**
+ * Returns the redis cache key for the given project and FHIR profile URL.
+ * @param projectId - The project ID.
+ * @param url - The profile URL.
+ * @returns The Redis cache key.
+ */
+function getProfileCacheKey(projectId: string, url: string): string {
+  return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
 export const systemRepo = new Repository({
