@@ -1,12 +1,43 @@
 import { USCoreStructureDefinitionList } from '@medplum/mock';
 import { loadDataType, tryGetProfile } from './typeschema/types';
 import { isPopulated } from './utils';
-import { Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { applyDefaultValues } from './default-values';
+import { HTTP_HL7_ORG } from './constants';
 
 // const medplum = new MockClient();
 
 describe('applyDefaultValues', () => {
+  describe('US Blood Pressure', () => {
+    const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-blood-pressure`;
+    const profileUrls = [profileUrl];
+
+    beforeAll(() => {
+      const sds = profileUrls
+        .map((profileUrl) => {
+          return USCoreStructureDefinitionList.find((sd) => sd.url === profileUrl);
+        })
+        .filter((sd): sd is StructureDefinition => isPopulated(sd));
+
+      expect(sds.length).toEqual(profileUrls.length);
+
+      for (const sd of sds) {
+        loadDataType(sd, sd?.url);
+      }
+    });
+
+    test.only('empty Blood Pressure', async () => {
+      // casting since purposefully don't want to specify any values
+      const resource = { resourceType: 'Observation' } as Observation;
+      const schema = tryGetProfile(profileUrl);
+      if (!isPopulated(schema)) {
+        fail('Expected patient profile schema to be loaded');
+      }
+
+      applyDefaultValues(resource, schema, { debug: true });
+    });
+  });
+
   describe('US Core Patient', () => {
     const patientProfileUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
     const profileUrls = [
@@ -24,7 +55,7 @@ describe('applyDefaultValues', () => {
         })
         .filter((sd): sd is StructureDefinition => isPopulated(sd));
 
-      expect(sds.length).toEqual(5);
+      expect(sds.length).toEqual(profileUrls.length);
 
       for (const sd of sds) {
         loadDataType(sd, sd?.url);
@@ -41,7 +72,7 @@ describe('applyDefaultValues', () => {
       applyDefaultValues(resource, patientSchema, { debug: true });
     });
 
-    test.only('contrived', async () => {
+    test('contrived', async () => {
       const resource: Patient = {
         resourceType: 'Patient',
         extension: [
