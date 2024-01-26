@@ -1,4 +1,15 @@
-import { Avatar, Group, AppShell as MantineAppShell, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
+import {
+  Avatar,
+  Group,
+  AppShell as MantineAppShell,
+  MantineColorScheme,
+  Menu,
+  SegmentedControl,
+  Stack,
+  Text,
+  UnstyledButton,
+  useMantineColorScheme,
+} from '@mantine/core';
 import { ProfileResource, formatHumanName, getReferenceString } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { useMedplumContext } from '@medplum/react-hooks';
@@ -24,6 +35,7 @@ export function Header(props: HeaderProps): JSX.Element {
   const { medplum, profile, navigate } = context;
   const logins = medplum.getLogins();
   const [userMenuOpened, setUserMenuOpened] = useState(false);
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   return (
     <MantineAppShell.Header p={8} style={{ zIndex: 101 }}>
@@ -94,6 +106,19 @@ export function Header(props: HeaderProps): JSX.Element {
                   </Menu.Item>
                 )
             )}
+            <Menu.Divider />
+            <Group justify="center">
+              <SegmentedControl
+                size="xs"
+                value={colorScheme}
+                onChange={(newValue) => setColorScheme(newValue as MantineColorScheme)}
+                data={[
+                  { label: 'Light', value: 'light' },
+                  { label: 'Dark', value: 'dark' },
+                  { label: 'Auto', value: 'auto' },
+                ]}
+              />
+            </Group>
             <Menu.Divider />
             <Menu.Item
               leftSection={<IconSwitchHorizontal size={14} stroke={1.5} />}
