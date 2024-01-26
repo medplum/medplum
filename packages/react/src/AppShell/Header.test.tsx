@@ -185,4 +185,22 @@ describe('Header', () => {
 
     expect(navigateMock).toBeCalledWith('/signin');
   });
+
+  test('Dark mode', async () => {
+    await setup();
+
+    // Click the user menu to open the menu
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
+    });
+
+    // Click "Dark"
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Dark'));
+    });
+
+    // Get the root <html> element
+    const html = document.querySelector('html');
+    expect(html).toHaveAttribute('data-mantine-color-scheme', 'dark');
+  });
 });

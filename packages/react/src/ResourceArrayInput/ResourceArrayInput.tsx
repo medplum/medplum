@@ -315,7 +315,7 @@ function AddButton({ propertyDisplayName, onClick, testId }: ButtonProps): JSX.E
       {text}
     </Button>
   ) : (
-    <ActionIcon title={text} color="green.6" data-testid={testId} onClick={onClick}>
+    <ActionIcon title={text} color="green.6" variant="subtle" data-testid={testId} onClick={onClick}>
       <IconCirclePlus size="1.25rem" />
     </ActionIcon>
   );
@@ -326,6 +326,7 @@ function RemoveButton({ propertyDisplayName, onClick, testId }: ButtonProps): JS
     <ActionIcon
       title={propertyDisplayName ? `Remove ${propertyDisplayName}` : 'Remove'}
       color="red.5"
+      variant="subtle"
       data-testid={testId}
       onClick={onClick}
     >
