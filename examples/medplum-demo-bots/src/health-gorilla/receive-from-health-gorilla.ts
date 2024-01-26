@@ -28,22 +28,7 @@ import {
 } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
 import fetch from 'node-fetch';
-
-interface HealthGorillaConfig {
-  baseUrl: string;
-  audienceUrl: string;
-  clientId: string;
-  clientSecret: string;
-  clientUri: string;
-  userLogin: string;
-  tenantId: string;
-  subtenantId: string;
-  subtenantAccountNumber: string;
-  scopes: string;
-  callbackBotId: string;
-  callbackClientId: string;
-  callbackClientSecret: string;
-}
+import { getHealthGorillaConfig, HealthGorillaConfig } from './utils';
 
 type HealthGorillaResource =
   | Account
@@ -131,37 +116,6 @@ export async function handler(
   }
 
   return allOk;
-}
-
-/**
- * Returns the Health Gorilla config settings from the Medplum project secrets.
- * If any required config values are missing, this method will throw and the bot will terminate.
- * @returns The Health Gorilla config settings.
- */
-function getHealthGorillaConfig(): HealthGorillaConfig {
-  return {
-    baseUrl: requireEnvVar('HEALTH_GORILLA_BASE_URL'),
-    audienceUrl: requireEnvVar('HEALTH_GORILLA_AUDIENCE_URL'),
-    clientId: requireEnvVar('HEALTH_GORILLA_CLIENT_ID'),
-    clientSecret: requireEnvVar('HEALTH_GORILLA_CLIENT_SECRET'),
-    clientUri: requireEnvVar('HEALTH_GORILLA_CLIENT_URI'),
-    userLogin: requireEnvVar('HEALTH_GORILLA_USER_LOGIN'),
-    tenantId: requireEnvVar('HEALTH_GORILLA_TENANT_ID'),
-    subtenantId: requireEnvVar('HEALTH_GORILLA_SUBTENANT_ID'),
-    subtenantAccountNumber: requireEnvVar('HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER'),
-    scopes: requireEnvVar('HEALTH_GORILLA_SCOPES'),
-    callbackBotId: requireEnvVar('HEALTH_GORILLA_CALLBACK_BOT_ID'),
-    callbackClientId: requireEnvVar('HEALTH_GORILLA_CALLBACK_CLIENT_ID'),
-    callbackClientSecret: requireEnvVar('HEALTH_GORILLA_CALLBACK_CLIENT_SECRET'),
-  };
-}
-
-function requireEnvVar(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing env var: ${name}`);
-  }
-  return value;
 }
 
 /**
@@ -354,7 +308,7 @@ async function attachPdf<T extends HealthGorillaResource>(
 ): Promise<void> {
   const resource = event.input;
   const id = getIdentifier(resource, HEALTH_GORILLA_SYSTEM);
-  const config = getHealthGorillaConfig();
+  const config = getHealthGorillaConfig(event.secrets);
   const healthGorilla = await connectToHealthGorilla(config);
 
   // Use the HealthGorilla "$pdf" operation to get the PDF URL
