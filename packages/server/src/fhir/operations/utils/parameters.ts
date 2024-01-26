@@ -18,6 +18,7 @@ import {
 import { Request, Response } from 'express';
 import { sendOutcome } from '../../outcomes';
 import { sendResponse } from '../../response';
+import { getRequestContext } from '../../../context';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -170,6 +171,7 @@ export async function sendOutputParameters(
     validateResource(response);
     res.status(getStatus(outcome)).json(response);
   } catch (err: any) {
+    getRequestContext().logger.error('Malformed operation output Parameters', { error: err.toString() });
     sendOutcome(res, serverError(err));
   }
 }

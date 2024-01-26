@@ -229,14 +229,16 @@ export async function shutdownApp(): Promise<void> {
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const ctx = getRequestContext();
-  const start = new Date();
+  const start = Date.now();
 
   res.on('finish', () => {
-    const duration = new Date().getTime() - start.getTime();
+    const duration = Date.now() - start;
 
     let userProfile: string | undefined;
+    let projectId: string | undefined;
     if (ctx instanceof AuthenticatedRequestContext) {
       userProfile = ctx.profile.reference;
+      projectId = ctx.project.id;
     }
 
     ctx.logger.info('Request served', {
@@ -245,6 +247,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       method: req.method,
       path: req.path,
       profile: userProfile,
+      projectId,
       receivedAt: start,
       status: res.statusCode,
       ua: req.get('User-Agent'),

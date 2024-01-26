@@ -24,6 +24,7 @@ import { PoolClient } from 'pg';
 import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays, deriveIdentifierSearchParameter } from './util';
+import { getRequestContext } from '../../context';
 
 interface Token {
   readonly code: string;
@@ -457,7 +458,7 @@ function buildWhereCondition(tableName: string, operator: FhirOperator, query: s
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, parts[1])])
       : systemCondition;
   } else {
-    // If using the :in operator, build the condition for joining to the Valueset table specified by `query`
+    // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
     if (operator === FhirOperator.IN) {
       return buildInValueSetCondition(tableName, query);
     }
@@ -473,13 +474,17 @@ function buildWhereCondition(tableName: string, operator: FhirOperator, query: s
 }
 
 function buildValueCondition(tableName: string, operator: FhirOperator, value: string): Expression {
+  const ctx = getRequestContext();
+
   const column = new Column(tableName, 'value');
   if (operator === FhirOperator.TEXT) {
+    ctx.logger.warn('Potentially expensive token lookup query', { operator });
     return new Conjunction([
       new Condition(new Column(tableName, 'system'), '=', 'text'),
       new Condition(column, 'LIKE', value.trim() + '%'),
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
+    ctx.logger.warn('Potentially expensive token lookup query', { operator });
     return new Condition(column, 'LIKE', value.trim() + '%');
   } else {
     return new Condition(column, '=', value.trim());
