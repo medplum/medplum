@@ -38,6 +38,7 @@ export interface MedplumServerConfig {
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
+  logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
   registerEnabled?: boolean;
@@ -302,6 +303,7 @@ function isIntegerConfig(key: string): boolean {
 function isBooleanConfig(key: string): boolean {
   return (
     key === 'botCustomFunctionsEnabled' ||
+    key === 'logRequests' ||
     key === 'logAuditEvents' ||
     key === 'registerEnabled' ||
     key === 'require' ||
