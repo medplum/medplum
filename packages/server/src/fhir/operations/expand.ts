@@ -1,11 +1,12 @@
-import { badRequest, Operator as SearchOperator } from '@medplum/core';
-import { ValueSet, ValueSetComposeInclude } from '@medplum/fhirtypes';
+import { badRequest, OperationOutcomeError, Operator, Operator as SearchOperator } from '@medplum/core';
+import { ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getClient } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
 import { Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
+import { getAuthenticatedContext } from '../../context';
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -141,5 +142,44 @@ function processInclude(systemExpressions: Expression[], include: ValueSetCompos
     systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
   } else {
     systemExpressions.push(systemExpression);
+  }
+}
+
+async function expandValueSet(valueSet: ValueSet): Promise<ValueSet> {
+  const expansion = valueSet.expansion;
+  if (expansion?.contains?.length && !expansion.parameter) {
+    if (expansion.total && expansion.total > expansion.contains.length) {
+      // Partial expansion, needs to be recomputed
+    }
+
+    // Full expansion is already available, use that
+    return valueSet;
+  }
+
+  // Compute expansion
+  const expandedSet = [] as ValueSetExpansionContains[];
+  await computeExpansion(valueSet, expandedSet);
+}
+
+async function computeExpansion(valueSet: ValueSet, expansion: ValueSetExpansionContains[]): Promise<void> {
+  if (!valueSet.compose?.include.length) {
+    throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
+  }
+
+  const repo = getAuthenticatedContext().repo;
+  for (const include of valueSet.compose.include) {
+    if (include.valueSet?.length) {
+      for (const valueSetUrl of include.valueSet) {
+        const includedValueSet = await repo.searchOne<ValueSet>({
+          resourceType: 'ValueSet',
+          filters: [{ code: 'url', operator: Operator.EQUALS, value: valueSetUrl }],
+        });
+        if (!includedValueSet) {
+          throw new OperationOutcomeError(badRequest('Included ValueSet not found: ' + valueSetUrl));
+        }
+
+        const nestedExpansion = await expandValueSet(includedValueSet);
+      }
+    }
   }
 }
