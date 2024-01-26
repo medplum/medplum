@@ -63,7 +63,7 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
               {week.map((day, dayIndex) => (
                 <td key={'day-' + dayIndex}>
                   {day && (
-                    <Button disabled={!day.available} onClick={() => onClick(day.date)}>
+                    <Button variant="light" disabled={!day.available} onClick={() => onClick(day.date)}>
                       {day.date.getDate()}
                     </Button>
                   )}
