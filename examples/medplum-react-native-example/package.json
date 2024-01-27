@@ -23,7 +23,7 @@
     "@medplum/core": "3.0.1",
     "@medplum/expo-polyfills": "3.0.1",
     "@medplum/react-hooks": "3.0.1",
-    "expo": "50.0.2",
+    "expo": "50.0.4",
     "expo-status-bar": "1.11.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -31,7 +31,7 @@
     "react-native-web": "0.19.10"
   },
   "devDependencies": {
-    "@babel/core": "7.23.7",
+    "@babel/core": "7.23.9",
     "typescript": "5.3.3"
   }
 }
