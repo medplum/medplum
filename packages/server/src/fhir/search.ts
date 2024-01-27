@@ -134,10 +134,6 @@ async function getSearchEntries<T extends Resource>(
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(builder, searchRequest);
 
-  if (builder.joins.length > 0) {
-    builder.groupBy({ tableName: resourceType, columnName: 'id' });
-  }
-
   const count = searchRequest.count as number;
   builder.limit(count + 1); // Request one extra to test if there are more results
   builder.offset(searchRequest.offset || 0);
@@ -436,10 +432,6 @@ async function getEstimateCount(
   repo.addSecurityFilters(builder, searchRequest.resourceType);
   addSearchFilters(builder, searchRequest);
   builder.explain = true;
-
-  if (builder.joins.length > 0) {
-    builder.groupBy({ tableName: resourceType, columnName: 'id' });
-  }
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.

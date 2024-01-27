@@ -199,10 +199,20 @@ export class Disjunction extends Connective {
   }
 }
 
+export class Exists implements Expression {
+  constructor(readonly selectQuery: SelectQuery) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('EXISTS(');
+    this.selectQuery.buildSql(sql);
+    sql.append(')');
+  }
+}
+
 export class Join {
   constructor(
     readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
-    readonly joinItem: string,
+    readonly joinItem: SelectQuery | string,
     readonly joinAlias: string,
     readonly onExpression: Expression
   ) {}
@@ -217,10 +227,6 @@ export class OrderBy {
     readonly column: Column,
     readonly descending?: boolean
   ) {}
-}
-
-export interface Expression {
-  buildSql(sql: SqlBuilder): void;
 }
 
 export class SqlBuilder {
@@ -391,12 +397,12 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joinCount}`;
   }
 
-  innerJoin(joinItem: string, joinAlias: string, onExpression: Expression): this {
+  innerJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
 
-  leftJoin(joinItem: string, joinAlias: string, onExpression: Expression): this {
+  leftJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('LEFT JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
@@ -509,7 +515,13 @@ export class SelectQuery extends BaseQuery {
 
     for (const join of this.joins) {
       sql.append(` ${join.joinType} `);
-      sql.appendIdentifier(join.joinItem);
+      if (join.joinItem instanceof SelectQuery) {
+        sql.append('(');
+        join.joinItem.buildSql(sql);
+        sql.append(')');
+      } else {
+        sql.appendIdentifier(join.joinItem);
+      }
       sql.append(' AS ');
       sql.appendIdentifier(join.joinAlias);
       sql.append(' ON ');
@@ -537,13 +549,7 @@ export class SelectQuery extends BaseQuery {
 
     for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
-      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
-        sql.append('MIN(');
-      }
       sql.appendColumn(orderBy.column);
-      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
-        sql.append(')');
-      }
       if (orderBy.descending) {
         sql.append(' DESC');
       }
