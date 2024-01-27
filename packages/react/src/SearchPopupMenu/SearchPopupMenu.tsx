@@ -102,9 +102,10 @@ function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
     case 'reference':
       return <ReferenceFilterSubMenu {...props} />;
     case 'string':
+      return <TextFilterSubMenu {...props} />;
     case 'token':
     case 'uri':
-      return <TextFilterSubMenu {...props} />;
+      return <TokenFilterSubMenu {...props} />;
     default:
       return <>Unknown search param type: {props.searchParam.type}</>;
   }
@@ -288,6 +289,21 @@ function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       </Menu.Item>
       <Menu.Item leftSection={<IconBucketOff size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
         Does not contain...
+      </Menu.Item>
+      <CommonMenuItems {...props} />
+    </Menu.Dropdown>
+  );
+}
+
+function TokenFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
+  const { searchParam } = props;
+  return (
+    <Menu.Dropdown>
+      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
+        Equals...
+      </Menu.Item>
+      <Menu.Item leftSection={<IconEqualNot size={14} />} onClick={() => props.onPrompt(searchParam, Operator.NOT)}>
+        Does not equal...
       </Menu.Item>
       <CommonMenuItems {...props} />
     </Menu.Dropdown>
