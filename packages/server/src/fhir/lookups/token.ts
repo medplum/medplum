@@ -21,7 +21,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Exists, Expression, Negation, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays, deriveIdentifierSearchParameter } from './util';
 
@@ -102,28 +102,32 @@ export class TokenTable extends LookupTable<Token> {
 
   /**
    * Builds a "where" condition for the select query builder.
-   * @param selectQuery - The select query builder.
+   * @param _selectQuery - The select query builder.
    * @param resourceType - The resource type.
    * @param table - The resource table.
    * @param filter - The search filter details.
    * @returns The select query where expression.
    */
-  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
-    const tableName = getTableName(resourceType);
-    const joinName = selectQuery.getNextJoinAlias();
-    const joinOnExpression = new Conjunction([
-      new Condition(new Column(table, 'id'), '=', new Column(joinName, 'resourceId')),
-      new Condition(new Column(joinName, 'code'), '=', filter.code),
+  buildWhere(_selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
+    const lookupTableName = this.getTableName(resourceType);
+
+    const conjunction = new Conjunction([
+      new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+      new Condition(new Column(lookupTableName, 'code'), '=', filter.code),
     ]);
-    const whereExpression = buildWhereExpression(joinName, filter);
+
+    const whereExpression = buildWhereExpression(lookupTableName, filter);
     if (whereExpression) {
-      joinOnExpression.expressions.push(whereExpression);
+      conjunction.expressions.push(whereExpression);
     }
 
-    selectQuery.leftJoin(tableName, joinName, joinOnExpression);
+    const exists = new Exists(new SelectQuery(lookupTableName).column('resourceId').whereExpr(conjunction));
 
-    const sqlOperator = shouldTokenRowExist(filter) ? '!=' : '=';
-    return new Condition(new Column(joinName, 'resourceId'), sqlOperator, null);
+    if (shouldTokenRowExist(filter)) {
+      return exists;
+    } else {
+      return new Negation(exists);
+    }
   }
 
   /**
@@ -133,14 +137,18 @@ export class TokenTable extends LookupTable<Token> {
    * @param sortRule - The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
-    const tableName = getTableName(resourceType);
+    const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
-    const joinOnExpression = new Conjunction([
-      new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId')),
-      new Condition(new Column(joinName, 'code'), '=', sortRule.code),
-    ]);
-    joinOnExpression.expressions.push(new Condition(new Column(joinName, 'code'), '=', sortRule.code));
-    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
+    const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
+    selectQuery.innerJoin(
+      new SelectQuery(lookupTableName)
+        .distinctOn('resourceId')
+        .column('resourceId')
+        .column('value')
+        .whereExpr(new Condition(new Column(lookupTableName, 'code'), '=', sortRule.code)),
+      joinName,
+      joinOnExpression
+    );
     selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
   }
 }
