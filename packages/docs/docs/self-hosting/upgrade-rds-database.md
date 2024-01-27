@@ -42,7 +42,7 @@ The next step is to upgrade the reader instances.
 
 :::warning
 
-In previous versions of CDK (and therefore previous versions of Medplum) the reader and writer instances were automatically upgraded in sequence.
+In previous versions of CDK (and therefore previous versions of Medplum), the reader and writer instances were automatically upgraded in sequence.
 
 That is no longer the case. Reader and writer instances must be upgraded separately and in the correct order.
 
