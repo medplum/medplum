@@ -24,7 +24,7 @@ If you are new to AWS CDK, we strongly recommend reading [Getting started with t
 
 ## Prerequisites
 
-This document assumes that you have already created an RDS database instance. If not, see the [Install on AWS](/docs/install-on-aws) documentation.
+This document assumes that you have already created an RDS database instance. If not, see the [Install on AWS](/docs/self-hosting/install-on-aws) documentation.
 
 ## Step 1: Confirm multiple database instances
 
