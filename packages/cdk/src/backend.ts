@@ -92,21 +92,28 @@ export class BackEnd extends Construct {
     this.rdsSecretsArn = config.rdsSecretsArn;
     if (!this.rdsSecretsArn) {
       // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
-      const instanceProps: rds.ProvisionedClusterInstanceProps = {
-        instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
+      const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
         enablePerformanceInsights: true,
         isFromLegacyInstanceProps: true,
+      };
+
+      const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
+      const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
+        ...defaultInstanceProps,
+        instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
+      };
+
+      const writerInstanceType = config.rdsInstanceType;
+      const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
+        ...defaultInstanceProps,
+        instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
       };
 
       let readers = undefined;
       if (config.rdsInstances > 1) {
         readers = [];
-        for (let i = 0; i < config.rdsInstances - 1; i++) {
-          readers.push(
-            ClusterInstance.provisioned('Instance' + (i + 2), {
-              ...instanceProps,
-            })
-          );
+        for (let i = 1; i < config.rdsInstances; i++) {
+          readers.push(ClusterInstance.provisioned('Instance' + (i + 1), readerInstanceProps));
         }
       }
 
@@ -127,9 +134,7 @@ export class BackEnd extends Construct {
         vpcSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
-        writer: ClusterInstance.provisioned('Instance1', {
-          ...instanceProps,
-        }),
+        writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
         readers,
         backup: {
           retention: Duration.days(7),
