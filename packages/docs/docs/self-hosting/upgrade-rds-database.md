@@ -8,7 +8,7 @@ As your project grows, you may need to upgrade your RDS database instance size. 
 
 :::caution
 
-This is a complex multi step process, and requires high proficiency with AWS, Node.js, and command line tools.
+This is a complex, multi-step process, and requires high proficiency with AWS, Node.js, and command line tools.
 
 Medplum strives to make this as easy as possible, but despite our best efforts, it is still challenging.
 
