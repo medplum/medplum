@@ -1,4 +1,11 @@
-import { ClientStorage, IClientStorage, MemoryStorage, OperationOutcomeError } from '@medplum/core';
+import {
+  ClientStorage,
+  IClientStorage,
+  IStorage,
+  WebLocalStorage,
+  MemoryStorage,
+  OperationOutcomeError,
+} from '@medplum/core';
 import { decode, encode } from 'base-64';
 import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
@@ -169,7 +176,7 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
   polyfilled = true;
 }
 
-class SyncSecureStorage implements Storage {
+class SyncSecureStorage implements IStorage {
   private readonly storage: Map<string, string>;
   private readonly initPromise: Promise<void>;
   private initialized = false;
@@ -310,6 +317,11 @@ class SyncSecureStorage implements Storage {
     this.assertInitialized();
     return null;
   }
+
+  keys(): string[] {
+    this.assertInitialized();
+    return Array.from(this.storage.keys());
+  }
 }
 
 export interface IExpoClientStorage extends IClientStorage {
@@ -330,7 +342,7 @@ export class ExpoClientStorage extends ClientStorage implements IExpoClientStora
   constructor() {
     // Metro should automatically prune these branches out at compile time
     if (Platform.OS === 'web') {
-      super(globalThis.localStorage);
+      super(new WebLocalStorage(globalThis.localStorage));
     } else {
       const storage = new SyncSecureStorage();
       super(storage);
