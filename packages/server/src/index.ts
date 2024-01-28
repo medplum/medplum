@@ -9,12 +9,22 @@ export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err: any) => {
     globalLogger.error('Unhandled promise rejection', err);
   });
+
   process.on('uncaughtException', (err) => {
     globalLogger.error('Uncaught exception thrown', err);
+
+    if (err.message && typeof err.message === 'string' && err.message.includes('Connection terminated unexpectedly')) {
+      // The pg-pool library throws this error when the database connection is lost.
+      // This can happen when the database server is restarted.
+      // We do *not* want to exit the process in this case.
+      return;
+    }
+
     process.exit(1);
   });
 
   globalLogger.info('Starting Medplum Server...', { configName });
+
   const config = await loadConfig(configName);
   if (config.logLevel) {
     globalLogger.level = parseLogLevel(config.logLevel);

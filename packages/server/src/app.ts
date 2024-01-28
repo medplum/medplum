@@ -198,7 +198,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
     loadStructureDefinitions();
     initRedis(config.redis);
-    await initDatabase(config.database);
+    await initDatabase(config);
     await seedDatabase();
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);

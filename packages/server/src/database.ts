@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from 'pg';
-import { MedplumDatabaseConfig } from './config';
+import { MedplumServerConfig } from './config';
 import { globalLogger } from './logger';
 import * as migrations from './migrations/schema';
 
@@ -16,15 +16,43 @@ export const locks = {
   migration: 1,
 };
 
-export async function initDatabase(config: MedplumDatabaseConfig, runMigrations = true): Promise<void> {
-  pool = new Pool({
+export async function initDatabase(serverConfig: MedplumServerConfig, runMigrations = true): Promise<void> {
+  const config = serverConfig.database;
+
+  const poolConfig = {
     host: config.host,
     port: config.port,
     database: config.dbname,
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-  });
+
+    // Allow minimum number of clients to be zero
+    // This prevents the pool from crashing if the last connection is released
+    // See: https://github.com/brianc/node-postgres/issues/2112#issuecomment-800416194
+    min: 0,
+
+    // maximum number of clients the pool should contain
+    // by default this is set to 10.
+    max: 10,
+
+    // number of milliseconds to wait before timing out when connecting a new client
+    // by default this is 0 which means no timeout
+    connectionTimeoutMillis: 2000,
+
+    // number of milliseconds a client must sit idle in the pool and not be checked out
+    // before it is disconnected from the backend and discarded
+    // default is 10000 (10 seconds) - set to 0 to disable auto-disconnection of idle clients
+    idleTimeoutMillis: 10000,
+  };
+
+  if (serverConfig.databaseProxyEndpoint) {
+    poolConfig.host = serverConfig.databaseProxyEndpoint;
+    poolConfig.ssl = poolConfig.ssl ?? {};
+    poolConfig.ssl.require = true;
+  }
+
+  pool = new Pool(poolConfig);
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);

@@ -31,6 +31,7 @@ export class BackEnd extends Construct {
   botLambdaRole: iam.IRole;
   rdsSecretsArn?: string;
   rdsCluster?: rds.DatabaseCluster;
+  rdsProxy?: rds.DatabaseProxy;
   redisSubnetGroup: elasticache.CfnSubnetGroup;
   redisSecurityGroup: ec2.SecurityGroup;
   redisPassword: secretsmanager.ISecret;
@@ -52,6 +53,7 @@ export class BackEnd extends Construct {
   dnsRecord?: route53.ARecord;
   regionParameter: ssm.StringParameter;
   databaseSecretsParameter: ssm.StringParameter;
+  databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
 
@@ -144,6 +146,14 @@ export class BackEnd extends Construct {
       });
 
       this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
+
+      if (config.rdsProxyEnabled) {
+        this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
+          proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
+          secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
+          vpc: this.vpc,
+        });
+      }
     }
 
     // Redis
@@ -374,6 +384,9 @@ export class BackEnd extends Construct {
     if (this.rdsCluster) {
       this.fargateService.node.addDependency(this.rdsCluster);
     }
+    if (this.rdsProxy) {
+      this.fargateService.node.addDependency(this.rdsProxy);
+    }
     this.fargateService.node.addDependency(this.redisCluster);
 
     // Load Balancer Target Group
@@ -443,6 +456,13 @@ export class BackEnd extends Construct {
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
     }
 
+    // Grant RDS Proxy access to the fargate group
+    if (this.rdsProxy) {
+      // Cannot call allowDefaultPortFrom(): this resource has no default port
+      // See: https://repost.aws/knowledge-center/rds-proxy-connection-issues
+      this.rdsProxy.connections.allowFrom(this.fargateSecurityGroup, ec2.Port.tcp(5432));
+    }
+
     // Grant Redis access to the fargate group
     this.redisSecurityGroup.addIngressRule(this.fargateSecurityGroup, ec2.Port.tcp(6379));
 
@@ -474,6 +494,15 @@ export class BackEnd extends Construct {
       description: 'Database secrets ARN',
       stringValue: this.rdsSecretsArn,
     });
+
+    if (this.rdsProxy) {
+      this.databaseProxyEndpointParameter = new ssm.StringParameter(this, 'DatabaseProxyEndpointParameter', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/databaseProxyEndpoint`,
+        description: 'Database proxy endpoint',
+        stringValue: this.rdsProxy?.endpoint as string,
+      });
+    }
 
     this.redisSecretsParameter = new ssm.StringParameter(this, 'RedisSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
