@@ -138,6 +138,11 @@ describe('SqlBuilder', () => {
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") NOT LIKE $1');
   });
 
+  test('Select missing columns', () => {
+    const sql = new SqlBuilder();
+    expect(() => new SelectQuery('MyTable').buildSql(sql)).toThrow('No columns selected');
+  });
+
   test('Debug mode', async () => {
     console.log = jest.fn();
 

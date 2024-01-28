@@ -1,8 +1,8 @@
+import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
 import { Reference, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
-import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
 import { SelectQuery } from '../sql';
+import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
 /**
@@ -15,7 +15,7 @@ export class ReferenceTable extends LookupTable<Reference> {
   }
 
   getColumnName(): string {
-    return '';
+    throw new Error('ReferenceTable.getColumnName not implemented');
   }
 
   /**
@@ -106,14 +106,9 @@ function isIndexed(searchParam: SearchParameter): boolean {
  */
 async function getExistingValues(client: PoolClient, tableName: string, resourceId: string): Promise<ReferenceRow[]> {
   return new SelectQuery(tableName)
-    .column('content')
+    .column('code')
+    .column('resourceId')
+    .column('targetId')
     .where('resourceId', '=', resourceId)
-    .execute(client)
-    .then((result) =>
-      result.map((row) => ({
-        code: row.code,
-        resourceId: row.resourceId,
-        targetId: row.targetId,
-      }))
-    );
+    .execute(client);
 }
