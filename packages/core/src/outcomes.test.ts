@@ -93,7 +93,7 @@ describe('Outcomes', () => {
 
   test('Assert OK', () => {
     expect(() => assertOk(allOk, { resourceType: 'Patient' })).not.toThrow();
-    expect(() => assertOk(notFound, undefined)).toThrowError('Not found');
+    expect(() => assertOk(notFound, undefined)).toThrow('Not found');
   });
 
   test('Normalize error', () => {

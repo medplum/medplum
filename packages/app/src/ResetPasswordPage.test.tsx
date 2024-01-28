@@ -77,7 +77,7 @@ describe('ResetPasswordPage', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
     });
-    expect(grecaptchaResolved).not.toBeCalled();
+    expect(grecaptchaResolved).not.toHaveBeenCalled();
     expect(screen.getByText('password reset email will be sent', { exact: false })).toBeInTheDocument();
   });
 });

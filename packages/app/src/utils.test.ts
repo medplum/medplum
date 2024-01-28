@@ -33,7 +33,7 @@ describe('JSON File Download', () => {
 
     exportJsonFile(jsonFile.entry);
 
-    expect(URL.revokeObjectURL).toBeCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalled();
   });
 });
 

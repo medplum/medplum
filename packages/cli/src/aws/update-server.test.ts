@@ -110,7 +110,7 @@ describe('update-server command', () => {
 
   test('Update server command', async () => {
     await main(['node', 'index.js', 'aws', 'update-server', 'dev']);
-    expect(console.log).toBeCalledWith('Performing update to v2.5.0');
+    expect(console.log).toHaveBeenCalledWith('Performing update to v2.5.0');
     expect(spawnSync).toHaveBeenCalledTimes(2);
     expect(spawnSync).toHaveBeenCalledWith(`npx cdk deploy -c config=medplum.dev.config.json --all`, {
       stdio: 'inherit',
@@ -121,7 +121,7 @@ describe('update-server command', () => {
 
   test('Update config not found', async () => {
     await main(['node', 'index.js', 'aws', 'update-server', 'not-found']);
-    expect(console.log).toBeCalledWith('Configuration file medplum.not-found.config.json not found');
+    expect(console.log).toHaveBeenCalledWith('Configuration file medplum.not-found.config.json not found');
     expect(spawnSync).not.toHaveBeenCalled();
     expect(medplum.startAsyncRequest).not.toHaveBeenCalled();
   });
@@ -129,7 +129,7 @@ describe('update-server command', () => {
   test('Update server from latest', async () => {
     writeFileSync(configFile, JSON.stringify({ serverImage: `medplum-server:latest`, region: 'us-west-2' }));
     await main(['node', 'index.js', 'aws', 'update-server', 'dev']);
-    expect(console.log).toBeCalledWith('Performing update to v2.5.0');
+    expect(console.log).toHaveBeenCalledWith('Performing update to v2.5.0');
     expect(spawnSync).toHaveBeenCalledTimes(2);
     expect(spawnSync).toHaveBeenCalledWith(`npx cdk deploy -c config=medplum.dev.config.json --all`, {
       stdio: 'inherit',

@@ -162,8 +162,8 @@ describe('Navbar', () => {
       fireEvent.click(screen.getByText('Link 1'));
     });
 
-    expect(navigateMock).toBeCalledWith('/link1');
-    expect(closeMock).not.toBeCalled();
+    expect(navigateMock).toHaveBeenCalledWith('/link1');
+    expect(closeMock).not.toHaveBeenCalled();
   });
 
   test('Click link on mobile', async () => {
@@ -175,8 +175,8 @@ describe('Navbar', () => {
       fireEvent.click(screen.getByText('Link 1'));
     });
 
-    expect(navigateMock).toBeCalledWith('/link1');
-    expect(closeMock).toBeCalled();
+    expect(navigateMock).toHaveBeenCalledWith('/link1');
+    expect(closeMock).toHaveBeenCalled();
   });
 
   test('Resource Type Search', async () => {
@@ -204,7 +204,7 @@ describe('Navbar', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(navigateMock).toBeCalledWith('/test-code');
+    expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 
   test('Add Bookmark render and submit', async () => {
