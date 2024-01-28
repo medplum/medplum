@@ -106,6 +106,7 @@ function isIndexed(searchParam: SearchParameter): boolean {
  */
 async function getExistingValues(client: PoolClient, tableName: string, resourceId: string): Promise<ReferenceRow[]> {
   return new SelectQuery(tableName)
+    .column('content')
     .where('resourceId', '=', resourceId)
     .execute(client)
     .then((result) =>
