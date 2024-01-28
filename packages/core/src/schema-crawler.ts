@@ -29,7 +29,7 @@ export interface SchemaVisitor {
 
   // visitElement: (path: string, element: InternalSchemaElement) => void;
   onEnterElement?: (path: string, element: InternalSchemaElement, elementsContext: ElementsContextType) => void;
-  onExitElement?: () => void;
+  onExitElement?: (path: string, element: InternalSchemaElement, elementsContext: ElementsContextType) => void;
 
   onEnterSlicing?: (path: string, slicing: VisitorSlicingRules) => void;
   onExitSlicing?: () => void;
@@ -115,7 +115,17 @@ export class SchemaCrawler {
   }
 
   private crawlElementsImpl(elements: InternalTypeSchema['elements'], path: string): void {
-    for (const [key, element] of Object.entries(elements)) {
+    const sortPreference = ['code', 'category', 'component'];
+    let sortedElements = Object.entries(elements);
+    if (this.elementsContextStack.length === 1) {
+      sortedElements = sortedElements.filter((i) => sortPreference.includes(i[0]));
+    }
+    sortedElements.sort((a, b) => {
+      const aPref = sortPreference.indexOf(a[0]);
+      const bPref = sortPreference.indexOf(b[0]);
+      return aPref - bPref;
+    });
+    for (const [key, element] of sortedElements) {
       const elementPath = path + '.' + key;
       this.crawlElementImpl(element, elementPath);
     }
@@ -142,7 +152,7 @@ export class SchemaCrawler {
     }
 
     if (this.visitor.onExitElement) {
-      this.visitor.onExitElement();
+      this.visitor.onExitElement(path, element, this.elementsContext);
     }
   }
 
