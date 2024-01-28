@@ -26,24 +26,6 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-
-    // // Allow minimum number of clients to be zero
-    // // This prevents the pool from crashing if the last connection is released
-    // // See: https://github.com/brianc/node-postgres/issues/2112#issuecomment-800416194
-    // min: 0,
-
-    // // maximum number of clients the pool should contain
-    // // by default this is set to 10.
-    // max: 10,
-
-    // // number of milliseconds to wait before timing out when connecting a new client
-    // // by default this is 0 which means no timeout
-    // connectionTimeoutMillis: 2000,
-
-    // // number of milliseconds a client must sit idle in the pool and not be checked out
-    // // before it is disconnected from the backend and discarded
-    // // default is 10000 (10 seconds) - set to 0 to disable auto-disconnection of idle clients
-    // idleTimeoutMillis: 10000,
   };
 
   if (serverConfig.databaseProxyEndpoint) {
