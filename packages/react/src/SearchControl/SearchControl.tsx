@@ -14,6 +14,7 @@ import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery, isDataT
 import {
   Bundle,
   OperationOutcome,
+  Quantity,
   Resource,
   ResourceType,
   SearchParameter,
@@ -102,6 +103,10 @@ interface SearchControlState {
   filterDialogSearchParam?: SearchParameter;
 }
 
+interface NonNullQuantity extends Quantity {
+  value: number;
+}
+
 /**
  * The SearchControl component represents the embeddable search table control.
  * It includes the table, rows, headers, sorting, etc.
@@ -114,6 +119,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const [loadingSchema, setLoadingSchema] = useState<string>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
+  const [totalEntries, setTotalEntries] = useState<NonNullQuantity>({ value: 0 });
 
   const [state, setState] = useState<SearchControlState>({
     selected: {},
@@ -126,14 +132,54 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
+  const totalType = search.total ?? 'estimate';
+
   const loadResults = useCallback(
     (options?: RequestInit) => {
       setOutcome(undefined);
 
       medplum
-        .search(search.resourceType as ResourceType, formatSearchQuery({ ...search, fields: undefined }), options)
+        .search(
+          search.resourceType as ResourceType,
+          formatSearchQuery({ ...search, total: totalType, fields: undefined }),
+          options
+        )
         .then((response) => {
           setState({ ...stateRef.current, searchResponse: response });
+          if (response.total) {
+            // User specified accurate counts
+            if (totalType === 'accurate') {
+              setTotalEntries({ value: response.total });
+            }
+            // If we receive a large (>= 20K) estimated count, truncate
+            else if (response.total > 20000) {
+              setTotalEntries({ value: 10000, comparator: '>' });
+            }
+            // If we receive a small (<= 20K) estimated count, perform an accurate count
+            else {
+              medplum
+                .search(
+                  search.resourceType as ResourceType,
+                  formatSearchQuery({ ...search, total: totalType, fields: undefined }) + '&_summary=count',
+                  options
+                )
+                .then((countResponse) => {
+                  // If we get an accurate count above the truncation limit, truncate
+                  if ((countResponse.total as number) > 10000) {
+                    setTotalEntries({ value: 10000, comparator: '>' });
+                  }
+                  // Otherwise, display the accurate count
+                  else {
+                    setTotalEntries({ value: response.total as number });
+                  }
+                })
+                .catch((reason) => {
+                  setState({ ...stateRef.current, searchResponse: undefined });
+                  setOutcome(reason);
+                });
+            }
+          }
+
           if (onLoad) {
             onLoad(new SearchLoadEvent(response));
           }
@@ -143,7 +189,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setOutcome(reason);
         });
     },
-    [medplum, search, onLoad]
+    [medplum, search, totalType, onLoad]
   );
 
   const refreshResults = useCallback(() => {
@@ -343,9 +389,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           <Group gap={2}>
             {lastResult && (
               <Text size="xs" c="dimmed">
-                {getStart(search, lastResult)}-{getEnd(search, lastResult)}
+                {getStart(search, totalEntries, lastResult)}-{getEnd(search, totalEntries, lastResult)}
                 {lastResult.total !== undefined &&
-                  ` of ${search.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
+                  ` of ${totalEntries.comparator ?? ''}${totalEntries.value?.toLocaleString()}`}
               </Text>
             )}
             <ActionIcon variant={buttonVariant} color={buttonColor} title="Refresh" onClick={refreshResults}>
@@ -462,7 +508,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         <Center m="md" p="md">
           <Pagination
             value={getPage(search)}
-            total={getTotalPages(search, lastResult)}
+            total={getTotalPages(search, totalEntries, lastResult)}
             onChange={(newPage) => emitSearchChange(setPage(search, newPage))}
             getControlProps={(control) => {
               switch (control) {
@@ -584,27 +630,38 @@ function getPage(search: SearchRequest): number {
   return Math.floor((search.offset ?? 0) / (search.count ?? DEFAULT_SEARCH_COUNT)) + 1;
 }
 
-function getTotalPages(search: SearchRequest, lastResult: Bundle): number {
+function getTotalPages(search: SearchRequest, totalEntries: Quantity, lastResult: Bundle): number {
   const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
-  return Math.ceil(getTotal(search, lastResult) / pageSize);
+  return Math.ceil(getTotal(search, totalEntries, lastResult) / pageSize);
 }
 
-function getStart(search: SearchRequest, lastResult: Bundle): number {
-  return Math.min(getTotal(search, lastResult), (search.offset ?? 0) + 1);
+function getStart(search: SearchRequest, totalEntries: Quantity, lastResult: Bundle): number {
+  return Math.min(getTotal(search, totalEntries, lastResult), (search.offset ?? 0) + 1);
 }
 
-function getEnd(search: SearchRequest, lastResult: Bundle): number {
-  return Math.min(getTotal(search, lastResult), ((search.offset ?? 0) + 1) * (search.count ?? DEFAULT_SEARCH_COUNT));
+function getEnd(search: SearchRequest, totalEntries: Quantity, lastResult: Bundle): number {
+  console.log(
+    getTotal(search, totalEntries, lastResult),
+    (search.offset ?? 0) + 1,
+    search.count ?? DEFAULT_SEARCH_COUNT,
+    ((search.offset ?? 0) + 1) * (search.count ?? DEFAULT_SEARCH_COUNT)
+  );
+  return Math.min(
+    getTotal(search, totalEntries, lastResult),
+    getStart(search, totalEntries, lastResult) + (search.count ?? DEFAULT_SEARCH_COUNT) - 1
+  );
 }
 
-function getTotal(search: SearchRequest, lastResult: Bundle): number {
-  let total = lastResult.total;
-  if (total === undefined) {
+function getTotal(search: SearchRequest, totalEntries: Quantity, lastResult: Bundle): number {
+  let total = totalEntries.value;
+  if (total === undefined || totalEntries.comparator === '>') {
     // If the total is not specified, then we have to estimate it
-    total =
+    total = Math.max(
+      totalEntries.value as number,
       (search.offset ?? 0) +
-      (lastResult.entry?.length ?? 0) +
-      (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0);
+        (lastResult.entry?.length ?? 0) +
+        (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0)
+    );
   }
   return total;
 }

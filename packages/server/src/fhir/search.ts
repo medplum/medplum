@@ -446,6 +446,10 @@ async function getEstimateCount(
     }
   }
 
+  if (result < 1000) {
+    return getAccurateCount(repo, searchRequest);
+  }
+
   // Apply some logic to avoid obviously incorrect estimates
   const startIndex = (searchRequest.offset ?? 0) * (searchRequest.count ?? DEFAULT_SEARCH_COUNT);
   const minCount = rowCount === undefined ? startIndex : startIndex + rowCount;
