@@ -1,7 +1,7 @@
 import { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config';
-import { getClient } from './database';
+import { getDatabaseClient } from './database';
 import { SelectQuery } from './fhir/sql';
 import { seedDatabase } from './seed';
 import { withTestContext } from './test.setup';
@@ -26,7 +26,7 @@ describe('Seed', () => {
     const rows = await new SelectQuery('Project')
       .column('content')
       .where('name', '=', 'Super Admin')
-      .execute(getClient());
+      .execute(getDatabaseClient());
     expect(rows.length).toBe(1);
 
     const project = JSON.parse(rows[0].content) as Project;

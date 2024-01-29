@@ -1,11 +1,11 @@
-import express from 'express';
-import { loadTestConfig } from '../../config';
-import { initApp, shutdownApp } from '../../app';
-import { initTestAuth } from '../../test.setup';
-import request from 'supertest';
-import { CodeSystem, Parameters } from '@medplum/fhirtypes';
 import { ContentType } from '@medplum/core';
-import { getClient } from '../../database';
+import { CodeSystem, Parameters } from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config';
+import { getDatabaseClient } from '../../database';
+import { initTestAuth } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';
 
 const app = express();
@@ -265,7 +265,7 @@ describe('CodeSystem $import', () => {
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
-  const db = getClient();
+  const db = getDatabaseClient();
   const coding = await new SelectQuery('Coding')
     .column('id')
     .where('system', '=', system)
@@ -281,7 +281,7 @@ async function assertPropertyExists(
   property: string,
   value: string
 ): Promise<any> {
-  const db = getClient();
+  const db = getDatabaseClient();
   const query = await new SelectQuery('Coding_Property');
   const codingTable = query.getNextJoinAlias();
   query.innerJoin(

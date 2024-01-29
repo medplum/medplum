@@ -1,6 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { getClient } from '../database';
+import { getDatabaseClient } from '../database';
 import { systemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { r4ProjectId } from '../seed';
@@ -9,7 +9,7 @@ import { r4ProjectId } from '../seed';
  * Creates all StructureDefinition resources.
  */
 export async function rebuildR4StructureDefinitions(): Promise<void> {
-  const client = getClient();
+  const client = getDatabaseClient();
   await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);

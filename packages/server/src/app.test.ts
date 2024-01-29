@@ -2,7 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
-import { getClient } from './database';
+import { getDatabaseClient } from './database';
 import { globalLogger } from './logger';
 
 describe('App', () => {
@@ -87,7 +87,7 @@ describe('App', () => {
     console.log = jest.fn();
     const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
-    getClient().emit('error', error);
+    getDatabaseClient().emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
 
     await shutdownApp();

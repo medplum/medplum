@@ -15,7 +15,7 @@ import { getRequestContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { getClient, getMembershipsForLogin } from '../oauth/utils';
+import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
   project: Project,
@@ -162,7 +162,7 @@ export async function getProjectIdByClientId(
 ): Promise<string | undefined> {
   // For OAuth2 flow, check the clientId
   if (clientId) {
-    const client = await getClient(clientId);
+    const client = await getClientApplication(clientId);
     const clientProjectId = client.meta?.project as string;
     if (projectId !== undefined && projectId !== clientProjectId) {
       throw new OperationOutcomeError(badRequest('Invalid projectId'));

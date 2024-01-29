@@ -1,6 +1,6 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { Request, Response } from 'express';
-import { getClient } from './database';
+import { getDatabaseClient } from './database';
 import { getRedis } from './redis';
 
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
@@ -15,7 +15,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
 }
 
 async function testPostgres(): Promise<boolean> {
-  return (await getClient().query(`SELECT 1 AS "status"`)).rows[0].status === 1;
+  return (await getDatabaseClient().query(`SELECT 1 AS "status"`)).rows[0].status === 1;
 }
 
 async function testRedis(): Promise<boolean> {
