@@ -7,9 +7,9 @@ import { useMedplum } from '@medplum/react-hooks';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 
 export interface ChooseProfileFormProps {
-  login: string;
-  memberships: ProjectMembership[];
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly login: string;
+  readonly memberships: ProjectMembership[];
+  readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {

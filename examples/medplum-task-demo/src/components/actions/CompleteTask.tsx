@@ -6,8 +6,8 @@ import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface CompleteTaskProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function CompleteTask({ task, onChange }: CompleteTaskProps): JSX.Element {

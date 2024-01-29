@@ -13,12 +13,12 @@ const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
 const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
 
 export interface ElementsInputProps {
-  type: string | undefined;
-  elements: { [key: string]: InternalSchemaElement };
-  defaultValue: any;
-  outcome: OperationOutcome | undefined;
-  onChange: ((value: any) => void) | undefined;
-  testId?: string;
+  readonly type: string | undefined;
+  readonly elements: { [key: string]: InternalSchemaElement };
+  readonly defaultValue: any;
+  readonly outcome: OperationOutcome | undefined;
+  readonly onChange: ((value: any) => void) | undefined;
+  readonly testId?: string;
 }
 
 export function ElementsInput(props: ElementsInputProps): JSX.Element {

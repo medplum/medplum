@@ -11,14 +11,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery, isDataTypeLoaded } from '@medplum/core';
-import {
-  Bundle,
-  OperationOutcome,
-  Resource,
-  ResourceType,
-  SearchParameter,
-  UserConfiguration,
-} from '@medplum/fhirtypes';
+import { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -73,33 +66,31 @@ export class SearchClickEvent extends Event {
 }
 
 export interface SearchControlProps {
-  search: SearchRequest;
-  userConfig?: UserConfiguration;
-  checkboxesEnabled?: boolean;
-  hideToolbar?: boolean;
-  hideFilters?: boolean;
-  onLoad?: (e: SearchLoadEvent) => void;
-  onChange?: (e: SearchChangeEvent) => void;
-  onClick?: (e: SearchClickEvent) => void;
-  onAuxClick?: (e: SearchClickEvent) => void;
-  onNew?: () => void;
-  onExport?: () => void;
-  onExportCsv?: () => void;
-  onExportTransactionBundle?: () => void;
-  onDelete?: (ids: string[]) => void;
-  onPatch?: (ids: string[]) => void;
-  onBulk?: (ids: string[]) => void;
+  readonly search: SearchRequest;
+  readonly checkboxesEnabled?: boolean;
+  readonly hideToolbar?: boolean;
+  readonly hideFilters?: boolean;
+  readonly onLoad?: (e: SearchLoadEvent) => void;
+  readonly onChange?: (e: SearchChangeEvent) => void;
+  readonly onClick?: (e: SearchClickEvent) => void;
+  readonly onAuxClick?: (e: SearchClickEvent) => void;
+  readonly onNew?: () => void;
+  readonly onExport?: () => void;
+  readonly onExportCsv?: () => void;
+  readonly onExportTransactionBundle?: () => void;
+  readonly onDelete?: (ids: string[]) => void;
+  readonly onBulk?: (ids: string[]) => void;
 }
 
 interface SearchControlState {
-  searchResponse?: Bundle;
-  selected: { [id: string]: boolean };
-  fieldEditorVisible: boolean;
-  filterEditorVisible: boolean;
-  filterDialogVisible: boolean;
-  exportDialogVisible: boolean;
-  filterDialogFilter?: Filter;
-  filterDialogSearchParam?: SearchParameter;
+  readonly searchResponse?: Bundle;
+  readonly selected: { [id: string]: boolean };
+  readonly fieldEditorVisible: boolean;
+  readonly filterEditorVisible: boolean;
+  readonly filterDialogVisible: boolean;
+  readonly exportDialogVisible: boolean;
+  readonly filterDialogFilter?: Filter;
+  readonly filterDialogSearchParam?: SearchParameter;
 }
 
 /**

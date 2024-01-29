@@ -8,8 +8,8 @@ import { useMedplum } from '@medplum/react-hooks';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export interface NewProjectFormProps {
-  login: string;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly login: string;
+  readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function NewProjectForm(props: NewProjectFormProps): JSX.Element {

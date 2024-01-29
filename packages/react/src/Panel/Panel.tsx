@@ -3,14 +3,14 @@ import cx from 'clsx';
 import classes from './Panel.module.css';
 
 export interface PanelStylesParams {
-  width?: number;
-  fill?: boolean;
+  readonly width?: number;
+  readonly fill?: boolean;
 }
 
 export interface PanelProps extends PaperProps {
-  width?: number;
-  fill?: boolean;
-  children?: React.ReactNode;
+  readonly width?: number;
+  readonly fill?: boolean;
+  readonly children?: React.ReactNode;
 }
 
 export function Panel(props: PanelProps): JSX.Element {

@@ -13,8 +13,8 @@ import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface AddCommentProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function AddNote(props: AddCommentProps): JSX.Element {

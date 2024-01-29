@@ -12,9 +12,9 @@ type DayOfWeek = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 type PeriodUnit = 'a' | 's' | 'min' | 'h' | 'd' | 'wk' | 'mo';
 
 export interface TimingInputProps {
-  name: string;
-  defaultValue?: Timing;
-  onChange?: (newValue: Timing) => void;
+  readonly name: string;
+  readonly defaultValue?: Timing;
+  readonly onChange?: (newValue: Timing) => void;
 }
 
 export function TimingInput(props: TimingInputProps): JSX.Element {
@@ -47,10 +47,10 @@ export function TimingInput(props: TimingInputProps): JSX.Element {
 }
 
 interface TimingEditorDialogProps {
-  visible: boolean;
-  defaultValue?: Timing;
-  onOk: (newValue: Timing) => void;
-  onCancel: () => void;
+  readonly visible: boolean;
+  readonly defaultValue?: Timing;
+  readonly onOk: (newValue: Timing) => void;
+  readonly onCancel: () => void;
 }
 
 const defaultValue: Timing = {

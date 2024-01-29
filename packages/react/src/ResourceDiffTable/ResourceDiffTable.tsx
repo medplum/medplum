@@ -8,8 +8,8 @@ import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourceProp
 import classes from './ResourceDiffTable.module.css';
 
 export interface ResourceDiffTableProps {
-  original: Resource;
-  revised: Resource;
+  readonly original: Resource;
+  readonly revised: Resource;
 }
 
 export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | null {

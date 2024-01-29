@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 
 export interface RangeInputProps {
-  name: string;
-  defaultValue?: Range;
-  onChange?: (value: Range) => void;
+  readonly name: string;
+  readonly defaultValue?: Range;
+  readonly onChange?: (value: Range) => void;
 }
 
 /**

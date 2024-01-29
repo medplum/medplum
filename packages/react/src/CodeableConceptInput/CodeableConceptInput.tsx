@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeableConceptInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {
-  defaultValue?: CodeableConcept;
-  onChange?: (value: CodeableConcept | undefined) => void;
+  readonly defaultValue?: CodeableConcept;
+  readonly onChange?: (value: CodeableConcept | undefined) => void;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {

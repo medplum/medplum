@@ -5,14 +5,14 @@ import { getErrorsForInput } from '../utils/outcomes';
 import { BackboneElementContext } from '../BackboneElementInput/BackboneElementInput.utils';
 
 export interface FormSectionProps {
-  title?: string;
-  htmlFor?: string;
-  description?: string;
-  withAsterisk?: boolean;
-  outcome?: OperationOutcome;
-  children?: ReactNode;
-  testId?: string;
-  fhirPath?: string;
+  readonly title?: string;
+  readonly htmlFor?: string;
+  readonly description?: string;
+  readonly withAsterisk?: boolean;
+  readonly outcome?: OperationOutcome;
+  readonly children?: ReactNode;
+  readonly testId?: string;
+  readonly fhirPath?: string;
 }
 
 export function FormSection(props: FormSectionProps): JSX.Element {

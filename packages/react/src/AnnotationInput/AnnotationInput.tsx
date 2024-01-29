@@ -5,9 +5,9 @@ import { useMedplumProfile } from '@medplum/react-hooks';
 import { useState } from 'react';
 
 export interface AnnotationInputProps {
-  name: string;
-  defaultValue?: Annotation;
-  onChange?: (value: Annotation) => void;
+  readonly name: string;
+  readonly defaultValue?: Annotation;
+  readonly onChange?: (value: Annotation) => void;
 }
 
 export function AnnotationInput(props: AnnotationInputProps): JSX.Element {

@@ -8,9 +8,9 @@ import { ResourceName } from '../ResourceName/ResourceName';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 
 export interface RequestGroupDisplayProps {
-  value?: RequestGroup | Reference<RequestGroup>;
-  onStart: (task: Task, input: Reference) => void;
-  onEdit: (task: Task, input: Reference, output: Reference) => void;
+  readonly value?: RequestGroup | Reference<RequestGroup>;
+  readonly onStart: (task: Task, input: Reference) => void;
+  readonly onEdit: (task: Task, input: Reference, output: Reference) => void;
 }
 
 export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Element | null {

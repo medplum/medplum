@@ -1,11 +1,10 @@
 import { RefObject } from 'react';
 
 export interface BotRunnerProps {
-  className?: string;
-  iframeRef?: RefObject<HTMLIFrameElement>;
-  testId?: string;
-  minHeight?: string;
-  onChange?: (value: string) => void;
+  readonly className?: string;
+  readonly iframeRef?: RefObject<HTMLIFrameElement>;
+  readonly testId?: string;
+  readonly minHeight?: string;
 }
 
 export function BotRunner(props: BotRunnerProps): JSX.Element {

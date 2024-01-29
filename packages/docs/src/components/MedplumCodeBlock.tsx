@@ -5,8 +5,8 @@ const BLOCK_START_PATTERN = /^\s*\/\/\s*start-block\s+([A-Za-z_-]*)/;
 const BLOCK_END_PATTERN = /^\s*\/\/\s*end-block\s+([A-Za-z_-]*)/;
 
 interface MedplumCodeBlockProps extends Props {
-  selectLines?: number[][];
-  selectBlocks?: string;
+  readonly selectLines?: number[][];
+  readonly selectBlocks?: string;
 }
 
 export default function MedplumCodeBlock({

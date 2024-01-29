@@ -10,10 +10,10 @@ import {
 
 export interface ValueSetAutocompleteProps
   extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {
-  binding: string | undefined;
-  creatable?: boolean;
-  clearable?: boolean;
-  expandParams?: Partial<ValueSetExpandParams>;
+  readonly binding: string | undefined;
+  readonly creatable?: boolean;
+  readonly clearable?: boolean;
+  readonly expandParams?: Partial<ValueSetExpandParams>;
 }
 
 function toKey(element: ValueSetExpansionContains): string {

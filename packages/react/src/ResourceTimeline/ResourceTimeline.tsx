@@ -40,14 +40,14 @@ import { sortByDateAndPriority } from '../utils/date';
 import classes from './ResourceTimeline.module.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
-  value: T | Reference<T>;
-  loadTimelineResources: (
+  readonly value: T | Reference<T>;
+  readonly loadTimelineResources: (
     medplum: MedplumClient,
     resourceType: ResourceType,
     id: string
   ) => Promise<PromiseSettledResult<Bundle>[]>;
-  createCommunication?: (resource: T, sender: ProfileResource, text: string) => Communication;
-  createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
+  readonly createCommunication?: (resource: T, sender: ProfileResource, text: string) => Communication;
+  readonly createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
 }
 
 export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>): JSX.Element {
@@ -361,12 +361,12 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 }
 
 interface BaseTimelineItemProps<T extends Resource> {
-  resource: T;
-  onPin?: (resource: T) => void;
-  onUnpin?: (resource: T) => void;
-  onDetails?: (resource: T) => void;
-  onEdit?: (resource: T) => void;
-  onDelete?: (resource: T) => void;
+  readonly resource: T;
+  readonly onPin?: (resource: T) => void;
+  readonly onUnpin?: (resource: T) => void;
+  readonly onDetails?: (resource: T) => void;
+  readonly onEdit?: (resource: T) => void;
+  readonly onDelete?: (resource: T) => void;
 }
 
 function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<T>): JSX.Element {
@@ -428,7 +428,7 @@ function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<
 }
 
 interface HistoryTimelineItemProps extends BaseTimelineItemProps<Resource> {
-  history: Bundle;
+  readonly history: Bundle;
 }
 
 function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {

@@ -7,8 +7,8 @@ import { Logo } from '../Logo/Logo';
 import { useMedplum } from '@medplum/react-hooks';
 
 export interface MfaFormProps {
-  login: string;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly login: string;
+  readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function MfaForm(props: MfaFormProps): JSX.Element {

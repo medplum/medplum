@@ -22,17 +22,16 @@ import {
 } from './ResourceArrayInput.utils';
 
 export interface ResourceArrayInputProps {
-  property: InternalSchemaElement;
-  name: string;
-  defaultValue?: any[];
-  indent?: boolean;
-  arrayElement?: boolean;
-  outcome: OperationOutcome | undefined;
-  onChange?: (value: any[]) => void;
-  hideNonSliceValues?: boolean;
+  readonly property: InternalSchemaElement;
+  readonly name: string;
+  readonly defaultValue?: any[];
+  readonly indent?: boolean;
+  readonly outcome: OperationOutcome | undefined;
+  readonly onChange?: (value: any[]) => void;
+  readonly hideNonSliceValues?: boolean;
 }
 
-export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JSX.Element {
+export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element {
   const { property } = props;
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
@@ -186,14 +185,14 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
   );
 }
 
-type SliceInputProps = Readonly<{
-  slice: SupportedSliceDefinition;
-  property: InternalSchemaElement;
-  defaultValue: any[];
-  onChange: (newValue: any[]) => void;
-  outcome?: OperationOutcome;
-  testId?: string;
-}>;
+interface SliceInputProps {
+  readonly slice: SupportedSliceDefinition;
+  readonly property: InternalSchemaElement;
+  readonly defaultValue: any[];
+  readonly onChange: (newValue: any[]) => void;
+  readonly outcome?: OperationOutcome;
+  readonly testId?: string;
+}
 
 function SliceInput(props: SliceInputProps): JSX.Element | null {
   const { slice, property } = props;
@@ -293,11 +292,11 @@ function SliceInput(props: SliceInputProps): JSX.Element | null {
   );
 }
 
-type ButtonProps = Readonly<{
-  propertyDisplayName?: string;
-  onClick: React.MouseEventHandler;
-  testId?: string;
-}>;
+interface ButtonProps {
+  readonly propertyDisplayName?: string;
+  readonly onClick: React.MouseEventHandler;
+  readonly testId?: string;
+}
 
 function AddButton({ propertyDisplayName, onClick, testId }: ButtonProps): JSX.Element {
   const text = propertyDisplayName ? `Add ${propertyDisplayName}` : 'Add';

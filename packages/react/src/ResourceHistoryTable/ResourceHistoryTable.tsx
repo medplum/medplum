@@ -7,9 +7,9 @@ import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 
 export interface ResourceHistoryTableProps {
-  history?: Bundle;
-  resourceType?: string;
-  id?: string;
+  readonly history?: Bundle;
+  readonly resourceType?: string;
+  readonly id?: string;
 }
 
 export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Element {
@@ -46,7 +46,7 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
 }
 
 interface HistoryRowProps {
-  entry: BundleEntry;
+  readonly entry: BundleEntry;
 }
 
 function HistoryRow(props: HistoryRowProps): JSX.Element {
