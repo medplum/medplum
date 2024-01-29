@@ -1,11 +1,13 @@
+import { deepClone } from '@medplum/core';
 import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
 import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult } from 'pg';
 import { Readable, Writable } from 'stream';
-import { MedplumDatabaseSslConfig, loadConfig } from './config';
+import { MedplumDatabaseConfig, MedplumDatabaseSslConfig, loadConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 
 jest.mock('pg');
+
 const poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
   class MockPoolClient extends Duplex implements PoolClient {
     release(): void {}
@@ -61,9 +63,11 @@ const poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig)
 });
 
 describe('Database config', () => {
-  afterEach(() => {});
+  beforeEach(() => {
+    poolSpy.mockClear();
+  });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await closeDatabase();
   });
 
@@ -73,25 +77,51 @@ describe('Database config', () => {
     expect(config.baseUrl).toBeDefined();
     expect(config.database).toBeDefined();
 
-    const databaseConfig = config.database;
-    const configCopy = JSON.parse(JSON.stringify(databaseConfig));
-
+    const configCopy = deepClone(config);
+    const databaseConfig = configCopy.database as MedplumDatabaseConfig;
     const sslConfig = {
       rejectUnauthorized: true,
       require: true,
       ca: '__THIS_SHOULD_BE_A_PEM_FILE__',
     } satisfies MedplumDatabaseSslConfig;
-    configCopy.ssl = sslConfig;
+    databaseConfig.ssl = sslConfig;
 
     await initDatabase(configCopy, false);
     expect(poolSpy).toHaveBeenCalledTimes(1);
-    expect(poolSpy).toHaveBeenCalledWith({
-      host: databaseConfig.host,
-      port: databaseConfig.port,
-      password: databaseConfig.password,
-      database: databaseConfig.dbname,
-      user: databaseConfig.username,
-      ssl: sslConfig,
-    });
+    expect(poolSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: databaseConfig.host,
+        port: databaseConfig.port,
+        password: databaseConfig.password,
+        database: databaseConfig.dbname,
+        user: databaseConfig.username,
+        ssl: sslConfig,
+      })
+    );
+  });
+
+  test('RDS proxy', async () => {
+    const config = await loadConfig('file:test.config.json');
+    expect(config).toBeDefined();
+    expect(config.baseUrl).toBeDefined();
+    expect(config.database).toBeDefined();
+
+    const configCopy = deepClone(config);
+    configCopy.databaseProxyEndpoint = 'test';
+
+    const databaseConfig = configCopy.database as MedplumDatabaseConfig;
+
+    await initDatabase(configCopy, false);
+    expect(poolSpy).toHaveBeenCalledTimes(1);
+    expect(poolSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: configCopy.databaseProxyEndpoint,
+        port: databaseConfig.port,
+        password: databaseConfig.password,
+        database: databaseConfig.dbname,
+        user: databaseConfig.username,
+        ssl: { require: true },
+      })
+    );
   });
 });

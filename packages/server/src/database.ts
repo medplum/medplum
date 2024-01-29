@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from 'pg';
-import { MedplumDatabaseConfig } from './config';
+import { MedplumServerConfig } from './config';
 import { globalLogger } from './logger';
 import * as migrations from './migrations/schema';
 
@@ -16,15 +16,25 @@ export const locks = {
   migration: 1,
 };
 
-export async function initDatabase(config: MedplumDatabaseConfig, runMigrations = true): Promise<void> {
-  pool = new Pool({
+export async function initDatabase(serverConfig: MedplumServerConfig, runMigrations = true): Promise<void> {
+  const config = serverConfig.database;
+
+  const poolConfig = {
     host: config.host,
     port: config.port,
     database: config.dbname,
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-  });
+  };
+
+  if (serverConfig.databaseProxyEndpoint) {
+    poolConfig.host = serverConfig.databaseProxyEndpoint;
+    poolConfig.ssl = poolConfig.ssl ?? {};
+    poolConfig.ssl.require = true;
+  }
+
+  pool = new Pool(poolConfig);
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);

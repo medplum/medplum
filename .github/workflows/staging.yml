@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --maxsockets 1
       - name: Build
-        run: npm run build:fast
+        run: npm run build:fast -- --force
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
