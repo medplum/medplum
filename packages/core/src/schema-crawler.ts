@@ -100,7 +100,7 @@ export class SchemaCrawler {
     }
   }
 
-  crawlSchema(debug?: boolean): void {
+  crawlResource(debug?: boolean): void {
     this.debugMode = Boolean(debug);
 
     if (this.visitor.onEnterResource) {
@@ -124,14 +124,8 @@ export class SchemaCrawler {
   }
 
   private crawlElementImpl(element: InternalSchemaElement, path: string): void {
-    // TODO - is a schema ever going to be found here?
-    const profileUrl = element.type.find((t) => isPopulated(t.profile))?.profile?.[0];
-    const profile = isPopulated(profileUrl) ? tryGetProfile(profileUrl) : undefined;
-    if (profile) {
-      console.assert('UNEXPECTE profile found...');
-      debugger;
-      this.schema = profile;
-    }
+    // A profile can be assigned on any element, but that is not supported.
+    // If/when it is, it should be pushed onto the schema stack here.
 
     if (this.visitor.onEnterElement) {
       this.visitor.onEnterElement(path, element, this.elementsContext);
