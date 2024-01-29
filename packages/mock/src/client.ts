@@ -70,6 +70,7 @@ export interface MockClientOptions extends MedplumClientOptions {
    * MedplumContext.profile returning undefined as if no one were logged in.
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
+  readonly mockRequestHandler?: MockRequestHandler;
 }
 
 export class MockClient extends MedplumClient {
@@ -83,7 +84,7 @@ export class MockClient extends MedplumClient {
   constructor(clientOptions?: MockClientOptions) {
     const router = new FhirRouter();
     const repo = new MemoryRepository();
-    const client = new MockFetchClient(router, repo, clientOptions?.debug);
+    const client = new MockFetchClient(router, repo, clientOptions?.debug, clientOptions?.mockRequestHandler);
 
     super({
       baseUrl: clientOptions?.baseUrl ?? 'https://example.com/',
@@ -181,6 +182,7 @@ export class MockClient extends MedplumClient {
   }
 }
 
+export type MockRequestHandler = (method: HttpMethod, path: string, options: any) => Promise<any>;
 export class MockFetchClient {
   initialized = false;
   initPromise?: Promise<void>;
@@ -188,8 +190,13 @@ export class MockFetchClient {
   constructor(
     readonly router: FhirRouter,
     readonly repo: MemoryRepository,
-    readonly debug = false
-  ) {}
+    readonly debug = false,
+    readonly mockHandlerOverride?: MockRequestHandler
+  ) {
+    if (mockHandlerOverride) {
+      this.mockHandler = mockHandlerOverride;
+    }
+  }
 
   async mockFetch(url: string, options: any): Promise<Partial<Response>> {
     if (!this.initialized) {
