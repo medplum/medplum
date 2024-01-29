@@ -14,17 +14,17 @@ export interface FhirPathTableField {
 }
 
 export interface FhirPathTableProps {
-  resourceType: string;
-  query: string;
-  fields: FhirPathTableField[];
-  checkboxesEnabled?: boolean;
-  onClick?: (e: SearchClickEvent) => void;
-  onAuxClick?: (e: SearchClickEvent) => void;
-  onBulk?: (ids: string[]) => void;
+  readonly resourceType: string;
+  readonly query: string;
+  readonly fields: FhirPathTableField[];
+  readonly checkboxesEnabled?: boolean;
+  readonly onClick?: (e: SearchClickEvent) => void;
+  readonly onAuxClick?: (e: SearchClickEvent) => void;
+  readonly onBulk?: (ids: string[]) => void;
 }
 
 export interface SmartSearchResponse {
-  data: {
+  readonly data: {
     ResourceList: Resource[];
   };
 }

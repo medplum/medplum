@@ -7,8 +7,8 @@ import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface UpdateBusinessStatusProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function UpdateBusinessStatus(props: UpdateBusinessStatusProps): JSX.Element {

@@ -5,12 +5,11 @@ import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { Job } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
-import { getRedis } from '../redis';
-
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { getClient } from '../database';
+import { getDatabasePool } from '../database';
 import { Repository, systemRepo } from '../fhir/repo';
+import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
@@ -81,7 +80,7 @@ describe('Subscription Worker', () => {
   });
 
   beforeEach(async () => {
-    await getClient().query('DELETE FROM "Subscription"');
+    await getDatabasePool().query('DELETE FROM "Subscription"');
     (fetch as unknown as jest.Mock).mockClear();
   });
 

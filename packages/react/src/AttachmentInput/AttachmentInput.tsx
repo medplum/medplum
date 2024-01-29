@@ -6,10 +6,10 @@ import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentInputProps {
-  name: string;
-  defaultValue?: Attachment;
-  arrayElement?: boolean;
-  onChange?: (value: Attachment | undefined) => void;
+  readonly name: string;
+  readonly defaultValue?: Attachment;
+  readonly arrayElement?: boolean;
+  readonly onChange?: (value: Attachment | undefined) => void;
 }
 
 export function AttachmentInput(props: AttachmentInputProps): JSX.Element {

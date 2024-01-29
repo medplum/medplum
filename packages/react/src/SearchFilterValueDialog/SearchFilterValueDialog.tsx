@@ -6,14 +6,14 @@ import { Form } from '../Form/Form';
 import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
 
 export interface SearchFilterValueDialogProps {
-  title: string;
-  visible: boolean;
-  resourceType: string;
-  searchParam?: SearchParameter;
-  filter?: Filter;
-  defaultValue?: string;
-  onOk: (filter: Filter) => void;
-  onCancel: () => void;
+  readonly title: string;
+  readonly visible: boolean;
+  readonly resourceType: string;
+  readonly searchParam?: SearchParameter;
+  readonly filter?: Filter;
+  readonly defaultValue?: string;
+  readonly onOk: (filter: Filter) => void;
+  readonly onCancel: () => void;
 }
 
 export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JSX.Element | null {

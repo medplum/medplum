@@ -27,7 +27,7 @@ describe('HL7 Connection', () => {
 
     // Simulate an error
     handlers.error(new Error('test'));
-    expect(listener).toBeCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
 
     // Reset the listener
     listener.mockReset();
@@ -35,7 +35,7 @@ describe('HL7 Connection', () => {
     // Simulate an invalid data event
     // this.socket.write(VT + reply.toString() + FS + CR);
     handlers.data(VT + FS + CR);
-    expect(listener).toBeCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
 
     // Close multiple times to test idempotency
     connection.close();

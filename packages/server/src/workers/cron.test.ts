@@ -125,8 +125,8 @@ describe('Cron Worker', () => {
       });
 
       expect(bot).toBeDefined();
-      expect(queue.getRepeatableJobs).toBeCalled();
-      expect(queue.add).toBeCalledTimes(2);
+      expect(queue.getRepeatableJobs).toHaveBeenCalled();
+      expect(queue.add).toHaveBeenCalledTimes(2);
     }));
 
   test('Find a previous job to remove after updating bot', () =>
@@ -139,8 +139,8 @@ describe('Cron Worker', () => {
       });
 
       expect(bot).toBeDefined();
-      expect(queue.getRepeatableJobs).toBeCalled();
-      expect(queue.add).toBeCalled();
+      expect(queue.getRepeatableJobs).toHaveBeenCalled();
+      expect(queue.add).toHaveBeenCalled();
 
       queue.getRepeatableJobs.mockImplementation(() => [
         {
@@ -159,7 +159,7 @@ describe('Cron Worker', () => {
         },
       });
 
-      expect(queue.removeRepeatableByKey).toBeCalled();
+      expect(queue.removeRepeatableByKey).toHaveBeenCalled();
     }));
 
   test('Job should not be in queue if cron is not enabled', () =>
@@ -196,7 +196,7 @@ describe('Cron Worker', () => {
         },
       });
       expect(bot).toBeDefined();
-      expect(queue.add).not.toBeCalled();
+      expect(queue.add).not.toHaveBeenCalled();
     }));
 
   test('Bot should execute successfully', () =>

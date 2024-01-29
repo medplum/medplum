@@ -4,8 +4,8 @@ import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { IconAlertCircle } from '@tabler/icons-react';
 
 export interface OperationOutcomeAlertProps {
-  outcome?: OperationOutcome;
-  issues?: OperationOutcomeIssue[];
+  readonly outcome?: OperationOutcome;
+  readonly issues?: OperationOutcomeIssue[];
 }
 
 export function OperationOutcomeAlert(props: OperationOutcomeAlertProps): JSX.Element | null {

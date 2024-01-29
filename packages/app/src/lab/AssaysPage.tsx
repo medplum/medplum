@@ -48,7 +48,7 @@ export function AssaysPage(): JSX.Element {
 }
 
 interface IntervalsDisplayProps {
-  ranges: ObservationDefinitionQualifiedInterval[] | undefined;
+  readonly ranges: ObservationDefinitionQualifiedInterval[] | undefined;
 }
 
 function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {

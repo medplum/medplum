@@ -5,9 +5,9 @@ import { Logo } from '../Logo/Logo';
 import { useMedplum } from '@medplum/react-hooks';
 
 export interface ChooseScopeFormProps {
-  login: string;
-  scope: string | undefined;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly login: string;
+  readonly scope: string | undefined;
+  readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {

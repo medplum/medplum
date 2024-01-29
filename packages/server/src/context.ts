@@ -18,6 +18,10 @@ export class RequestContext {
       new Logger(write, { requestId, traceId }, process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO);
   }
 
+  close(): void {
+    // No-op, descendants may override
+  }
+
   static empty(): RequestContext {
     return new RequestContext('', '');
   }
@@ -50,6 +54,10 @@ export class AuthenticatedRequestContext extends RequestContext {
     this.accessToken = accessToken;
   }
 
+  close(): void {
+    this.repo.close();
+  }
+
   static system(): AuthenticatedRequestContext {
     const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
     return new AuthenticatedRequestContext(
@@ -64,6 +72,7 @@ export class AuthenticatedRequestContext extends RequestContext {
 }
 
 export const requestContextStore = new AsyncLocalStorage<RequestContext>();
+
 export function getRequestContext(): RequestContext {
   const ctx = requestContextStore.getStore();
   if (!ctx) {
@@ -83,6 +92,13 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { requestId, traceId } = requestIds(req);
   requestContextStore.run(new RequestContext(requestId, traceId), () => next());
+}
+
+export function closeRequestContext(): void {
+  const ctx = requestContextStore.getStore();
+  if (ctx) {
+    ctx.close();
+  }
 }
 
 function requestIds(req: Request): { requestId: string; traceId: string } {

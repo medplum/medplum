@@ -264,8 +264,8 @@ describe('Email', () => {
       text: 'Hello Alice',
     });
 
-    expect(createTransportSpy).toBeCalledTimes(1);
-    expect(sendMail).toBeCalledTimes(1);
+    expect(createTransportSpy).toHaveBeenCalledTimes(1);
+    expect(sendMail).toHaveBeenCalledTimes(1);
     expect(mockSESv2Client.send.callCount).toBe(0);
 
     config.smtp = undefined;

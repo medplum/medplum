@@ -8,7 +8,7 @@ import { getPatient } from '../utils';
 import classes from './QuickServiceRequests.module.css';
 
 export interface QuickServiceRequestsProps {
-  value: Resource | Reference;
+  readonly value: Resource | Reference;
 }
 
 export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Element | null {

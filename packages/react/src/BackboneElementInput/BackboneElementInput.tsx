@@ -6,15 +6,15 @@ import { BackboneElementContext, buildBackboneElementContext } from './BackboneE
 
 export interface BackboneElementInputProps {
   /** Type name the backbone element represents */
-  typeName: string;
+  readonly typeName: string;
   /** (optional) The contents of the resource represented by the backbone element */
-  defaultValue?: any;
+  readonly defaultValue?: any;
   /** (optional) OperationOutcome from the last attempted system action*/
-  outcome?: OperationOutcome;
+  readonly outcome?: OperationOutcome;
   /** (optional) callback function that is called when the value of the backbone element changes */
-  onChange?: (value: any) => void;
+  readonly onChange?: (value: any) => void;
   /** (optional) Profile URL of the structure definition represented by the backbone element */
-  profileUrl?: string;
+  readonly profileUrl?: string;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {

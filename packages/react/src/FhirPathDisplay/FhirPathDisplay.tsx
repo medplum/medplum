@@ -3,9 +3,9 @@ import { Resource } from '@medplum/fhirtypes';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
 export interface FhirPathDisplayProps {
-  resource: Resource;
-  path: string;
-  propertyType: string;
+  readonly resource: Resource;
+  readonly path: string;
+  readonly propertyType: string;
 }
 
 export function FhirPathDisplay(props: FhirPathDisplayProps): JSX.Element | null {

@@ -11,7 +11,7 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 
 export interface TimelineProps {
-  children?: ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function Timeline(props: TimelineProps): JSX.Element {
@@ -19,11 +19,11 @@ export function Timeline(props: TimelineProps): JSX.Element {
 }
 
 export interface TimelineItemProps extends PanelProps {
-  resource: Resource;
-  profile?: Reference;
-  dateTime?: string;
-  padding?: boolean;
-  popupMenuItems?: ReactNode;
+  readonly resource: Resource;
+  readonly profile?: Reference;
+  readonly dateTime?: string;
+  readonly padding?: boolean;
+  readonly popupMenuItems?: ReactNode;
 }
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {

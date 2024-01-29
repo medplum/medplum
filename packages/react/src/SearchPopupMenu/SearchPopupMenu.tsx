@@ -32,10 +32,10 @@ import {
 } from '../SearchControl/SearchUtils';
 
 export interface SearchPopupMenuProps {
-  search: SearchRequest;
-  searchParams?: SearchParameter[];
-  onPrompt: (searchParam: SearchParameter, filter: Filter) => void;
-  onChange: (definition: SearchRequest) => void;
+  readonly search: SearchRequest;
+  readonly searchParams?: SearchParameter[];
+  readonly onPrompt: (searchParam: SearchParameter, filter: Filter) => void;
+  readonly onChange: (definition: SearchRequest) => void;
 }
 
 export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null {
@@ -84,12 +84,12 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
 }
 
 interface SearchPopupSubMenuProps {
-  search: SearchRequest;
-  searchParam: SearchParameter;
-  onSort: (searchParam: SearchParameter, descending: boolean) => void;
-  onPrompt: (searchParam: SearchParameter, operator: Operator) => void;
-  onChange: (search: SearchRequest) => void;
-  onClear: (searchParam: SearchParameter) => void;
+  readonly search: SearchRequest;
+  readonly searchParam: SearchParameter;
+  readonly onSort: (searchParam: SearchParameter, descending: boolean) => void;
+  readonly onPrompt: (searchParam: SearchParameter, operator: Operator) => void;
+  readonly onChange: (search: SearchRequest) => void;
+  readonly onClear: (searchParam: SearchParameter) => void;
 }
 
 function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
@@ -102,9 +102,10 @@ function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
     case 'reference':
       return <ReferenceFilterSubMenu {...props} />;
     case 'string':
+      return <TextFilterSubMenu {...props} />;
     case 'token':
     case 'uri':
-      return <TextFilterSubMenu {...props} />;
+      return <TokenFilterSubMenu {...props} />;
     default:
       return <>Unknown search param type: {props.searchParam.type}</>;
   }
@@ -288,6 +289,21 @@ function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       </Menu.Item>
       <Menu.Item leftSection={<IconBucketOff size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
         Does not contain...
+      </Menu.Item>
+      <CommonMenuItems {...props} />
+    </Menu.Dropdown>
+  );
+}
+
+function TokenFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
+  const { searchParam } = props;
+  return (
+    <Menu.Dropdown>
+      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
+        Equals...
+      </Menu.Item>
+      <Menu.Item leftSection={<IconEqualNot size={14} />} onClick={() => props.onPrompt(searchParam, Operator.NOT)}>
+        Does not equal...
       </Menu.Item>
       <CommonMenuItems {...props} />
     </Menu.Dropdown>

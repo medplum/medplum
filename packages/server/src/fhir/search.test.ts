@@ -2487,26 +2487,27 @@ describe('FHIR Search', () => {
       ).rejects.toBeDefined();
     }));
 
-  test('_include on empty search results', async () => {
-    return expect(
-      systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'identifier',
-            operator: Operator.EQUALS,
-            value: randomUUID(),
-          },
-        ],
-        include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
-      })
-    ).resolves.toMatchObject<Bundle>({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-      total: undefined,
-    });
-  });
+  test('_include on empty search results', () =>
+    withTestContext(async () => {
+      return expect(
+        systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: randomUUID(),
+            },
+          ],
+          include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
+        })
+      ).resolves.toMatchObject<Bundle>({
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [],
+        total: undefined,
+      });
+    }));
 
   test('DiagnosticReport category with system', () =>
     withTestContext(async () => {

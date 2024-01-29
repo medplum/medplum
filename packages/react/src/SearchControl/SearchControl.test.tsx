@@ -49,7 +49,7 @@ describe('SearchControl', () => {
 
     await waitFor(() => screen.getByText('Homer Simpson'));
 
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
@@ -97,7 +97,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByText('No results');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
   });
 
   test('Renders choice of type', async () => {
@@ -115,7 +115,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('30 x')).toBeInTheDocument();
   });
 
@@ -142,7 +142,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
   });
 
   test('Renders empty results with checkboxes', async () => {
@@ -167,7 +167,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByText('No results');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
   });
 
   test('Renders search parameter columns', async () => {
@@ -185,7 +185,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
 
     expect(screen.getByText('chunkylover53@aol.com [home email]')).toBeInTheDocument();
     expect(screen.getByText('555-7334 [home phone]')).toBeInTheDocument();
@@ -206,7 +206,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
 
     expect(screen.getByText('Springfield')).toBeInTheDocument();
     expect(screen.getByText('IL')).toBeInTheDocument();
@@ -234,7 +234,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
   });
 
   test('Next page button', async () => {
@@ -261,7 +261,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByLabelText('Next page'));
     });
 
-    expect(props.onChange).toBeCalled();
+    expect(props.onChange).toHaveBeenCalled();
   });
 
   test('Next page button without onChange listener', async () => {
@@ -313,7 +313,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByLabelText('Previous page'));
     });
 
-    expect(props.onChange).toBeCalled();
+    expect(props.onChange).toHaveBeenCalled();
   });
 
   test('New button', async () => {
@@ -332,7 +332,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('New...'));
     });
 
-    expect(onNew).toBeCalled();
+    expect(onNew).toHaveBeenCalled();
   });
 
   test('Export button', async () => {
@@ -374,7 +374,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Delete...'));
     });
 
-    expect(onDelete).toBeCalled();
+    expect(onDelete).toHaveBeenCalled();
   });
 
   test('Bulk button', async () => {
@@ -393,7 +393,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Bulk...'));
     });
 
-    expect(onBulk).toBeCalled();
+    expect(onBulk).toHaveBeenCalled();
   });
 
   test('Click on row', async () => {
@@ -423,8 +423,8 @@ describe('SearchControl', () => {
       fireEvent.click(rows[0]);
     });
 
-    expect(props.onClick).toBeCalled();
-    expect(props.onAuxClick).not.toBeCalled();
+    expect(props.onClick).toHaveBeenCalled();
+    expect(props.onAuxClick).not.toHaveBeenCalled();
   });
 
   test('Aux click on row', async () => {
@@ -455,8 +455,8 @@ describe('SearchControl', () => {
       fireEvent.click(rows[0], { button: 1 });
     });
 
-    expect(props.onClick).not.toBeCalled();
-    expect(props.onAuxClick).toBeCalled();
+    expect(props.onClick).not.toHaveBeenCalled();
+    expect(props.onAuxClick).toHaveBeenCalled();
 
     // Test response to CMD key (MacOS)
     await act(async () => {
@@ -464,8 +464,8 @@ describe('SearchControl', () => {
       fireEvent.click(rows[0], { metaKey: true });
     });
 
-    expect(props.onClick).not.toBeCalled();
-    expect(props.onAuxClick).toBeCalledTimes(2);
+    expect(props.onClick).not.toHaveBeenCalled();
+    expect(props.onAuxClick).toHaveBeenCalledTimes(2);
 
     // Test response to Ctrl key (Windows)
     await act(async () => {
@@ -473,8 +473,8 @@ describe('SearchControl', () => {
       fireEvent.click(rows[0], { ctrlKey: true });
     });
 
-    expect(props.onClick).not.toBeCalled();
-    expect(props.onAuxClick).toBeCalledTimes(3);
+    expect(props.onClick).not.toHaveBeenCalled();
+    expect(props.onAuxClick).toHaveBeenCalledTimes(3);
   });
 
   test('Field editor onOk', async () => {
@@ -658,7 +658,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('all-checkbox'));
@@ -697,7 +697,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
 
     await act(async () => {
       fireEvent.click(screen.getAllByTestId('row-checkbox')[0]);
@@ -741,7 +741,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
 
     // Click on the column header to activate the popup menu
     await act(async () => {
@@ -785,7 +785,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.queryByText('Patient')).not.toBeInTheDocument();
   });
@@ -813,7 +813,7 @@ describe('SearchControl', () => {
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.queryByText('no filters')).not.toBeInTheDocument();
   });
@@ -861,7 +861,7 @@ describe('SearchControl', () => {
 
     await setup(props);
     await waitFor(() => screen.getByText('Homer Simpson'));
-    expect(onLoad).toBeCalled();
+    expect(onLoad).toHaveBeenCalled();
     onLoad.mockReset();
 
     const refreshButton = screen.getByTitle('Refresh');
@@ -872,6 +872,6 @@ describe('SearchControl', () => {
     });
 
     await waitFor(() => screen.getByText('Homer Simpson'));
-    expect(onLoad).toBeCalled();
+    expect(onLoad).toHaveBeenCalled();
   });
 });

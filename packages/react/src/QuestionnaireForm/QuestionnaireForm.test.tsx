@@ -158,7 +158,7 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const response = onSubmit.mock.calls[0][0];
     expect(response.resourceType).toBe('QuestionnaireResponse');
@@ -263,7 +263,7 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const response = onSubmit.mock.calls[0][0];
     const answers = getQuestionnaireAnswers(response);
@@ -290,7 +290,7 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const response = onSubmit.mock.calls[0][0];
     expect(response.resourceType).toBe('QuestionnaireResponse');
@@ -644,7 +644,7 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Drop down choice input', async () => {
@@ -1137,7 +1137,7 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     const response = onSubmit.mock.calls[0][0];
 
     const answer = getQuestionnaireAnswers(response);
@@ -1449,7 +1449,7 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const response = onSubmit.mock.calls[0][0];
     expect(response.item[0].item[0].item[0].answer[0].valueString).toEqual('answer1');

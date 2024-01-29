@@ -4,8 +4,8 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 
 export interface ResourceBadgeProps {
-  value?: Reference | Resource;
-  link?: boolean;
+  readonly value?: Reference | Resource;
+  readonly link?: boolean;
 }
 
 export function ResourceBadge(props: ResourceBadgeProps): JSX.Element {

@@ -5,13 +5,13 @@ import YouTubeSvg from './youtube.svg';
 import styles from './ProfileCard.module.css';
 
 export interface ProfileCardProps {
-  name: string;
-  title: string;
-  imgUrl: string;
-  linkedInUrl?: string;
-  githubUrl?: string;
-  webUrl?: string;
-  youtubeUrl?: string;
+  readonly name: string;
+  readonly title: string;
+  readonly imgUrl: string;
+  readonly linkedInUrl?: string;
+  readonly githubUrl?: string;
+  readonly webUrl?: string;
+  readonly youtubeUrl?: string;
 }
 
 export function ProfileCard(props: ProfileCardProps): JSX.Element {

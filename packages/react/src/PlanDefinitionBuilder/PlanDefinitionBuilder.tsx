@@ -16,8 +16,8 @@ import { killEvent } from '../utils/dom';
 import classes from './PlanDefinitionBuilder.module.css';
 
 export interface PlanDefinitionBuilderProps {
-  value: Partial<PlanDefinition> | Reference<PlanDefinition>;
-  onSubmit: (result: PlanDefinition) => void;
+  readonly value: Partial<PlanDefinition> | Reference<PlanDefinition>;
+  readonly onSubmit: (result: PlanDefinition) => void;
 }
 
 export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.Element | null {
@@ -90,12 +90,12 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
 }
 
 interface ActionArrayBuilderProps {
-  actions: PlanDefinitionAction[];
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (actions: PlanDefinitionAction[]) => void;
+  readonly actions: PlanDefinitionAction[];
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (actions: PlanDefinitionAction[]) => void;
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
@@ -148,13 +148,13 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
 }
 
 interface ActionBuilderProps {
-  action: PlanDefinitionAction;
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (action: PlanDefinitionAction) => void;
-  onRemove: () => void;
+  readonly action: PlanDefinitionAction;
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (action: PlanDefinitionAction) => void;
+  readonly onRemove: () => void;
 }
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
@@ -220,8 +220,8 @@ const timingProperty: InternalSchemaElement = {
 };
 
 interface ActionDisplayProps {
-  action: PlanDefinitionAction;
-  actionType: string | undefined;
+  readonly action: PlanDefinitionAction;
+  readonly actionType: string | undefined;
 }
 
 function ActionDisplay(props: ActionDisplayProps): JSX.Element {
@@ -247,14 +247,14 @@ function ActionDisplay(props: ActionDisplayProps): JSX.Element {
 }
 
 interface ActionEditorProps {
-  action: PlanDefinitionAction;
-  actionType: string | undefined;
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (action: PlanDefinitionAction) => void;
-  onRemove: () => void;
+  readonly action: PlanDefinitionAction;
+  readonly actionType: string | undefined;
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (action: PlanDefinitionAction) => void;
+  readonly onRemove: () => void;
 }
 
 function ActionEditor(props: ActionEditorProps): JSX.Element {
@@ -354,11 +354,11 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 }
 
 interface ActionResourceTypeBuilderProps {
-  action: PlanDefinitionAction;
-  title: string;
-  description: string;
-  resourceType: ResourceType;
-  onChange: (action: PlanDefinitionAction) => void;
+  readonly action: PlanDefinitionAction;
+  readonly title: string;
+  readonly description: string;
+  readonly resourceType: ResourceType;
+  readonly onChange: (action: PlanDefinitionAction) => void;
 }
 
 function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.Element {
@@ -384,9 +384,9 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
 }
 
 interface ActionTimingInputProps {
-  name: string;
-  action: PlanDefinitionAction;
-  onChange: (action: PlanDefinitionAction) => void;
+  readonly name: string;
+  readonly action: PlanDefinitionAction;
+  readonly onChange: (action: PlanDefinitionAction) => void;
 }
 
 function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {

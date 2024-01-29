@@ -25,6 +25,7 @@ export interface MedplumServerConfig {
   signingKeyPassphrase: string;
   supportEmail: string;
   database: MedplumDatabaseConfig;
+  databaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
   smtp?: MedplumSmtpConfig;
   bullmq?: MedplumBullmqConfig;

@@ -87,7 +87,7 @@ export function TaskPage(): JSX.Element {
 }
 
 interface PatientProfileProps {
-  patient?: Patient;
+  readonly patient?: Patient;
 }
 
 function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
@@ -106,10 +106,10 @@ function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
 }
 
 interface TaskDetailsProps {
-  task: Task;
-  tabs: string[];
-  currentTab: string;
-  handleTabChange: (newTab: string | null) => void;
+  readonly task: Task;
+  readonly tabs: string[];
+  readonly currentTab: string;
+  readonly handleTabChange: (newTab: string | null) => void;
 }
 
 function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsProps): JSX.Element {
@@ -139,8 +139,8 @@ function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsPro
 }
 
 interface ActionsProps {
-  task: Task;
-  onTaskChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onTaskChange: (updatedTask: Task) => void;
 }
 
 function Actions({ task, onTaskChange }: ActionsProps): JSX.Element {

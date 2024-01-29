@@ -57,7 +57,7 @@ describe('CLI Project', () => {
       })
     );
     await main(['node', 'index.js', 'project', 'list']);
-    expect(console.log).toBeCalledWith(expect.stringMatching(`(Project/456)`));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`(Project/456)`));
   });
 
   test('Project Current', async () => {
@@ -79,7 +79,7 @@ describe('CLI Project', () => {
       })
     );
     await main(['node', 'index.js', 'project', 'current']);
-    expect(console.log).toBeCalledWith(expect.stringMatching(`(Project/456)`));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`(Project/456)`));
   });
 
   test('Project Switch', async () => {
@@ -115,7 +115,7 @@ describe('CLI Project', () => {
       })
     );
     await main(['node', 'index.js', 'project', 'switch', '789']);
-    expect(console.log).toBeCalledWith(expect.stringMatching(`Switched to project 789`));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`Switched to project 789`));
   });
 
   test('Project Switch invalid id', async () => {
@@ -151,14 +151,14 @@ describe('CLI Project', () => {
       })
     );
     await main(['node', 'index.js', 'project', 'switch', 'bad-projectId']);
-    expect(console.log).toBeCalledWith(expect.stringMatching(`Error: project bad-projectId not found.`));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`Error: project bad-projectId not found.`));
   });
 
   test('Project invite with no login', async () => {
     try {
       await main(['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
     } catch (err) {
-      expect(console.error).toBeCalledWith('Unauthenticated: run `npx medplum login` to login');
+      expect(console.error).toHaveBeenCalledWith('Unauthenticated: run `npx medplum login` to login');
     }
   });
 
@@ -175,7 +175,7 @@ describe('CLI Project', () => {
     try {
       await main(['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
     } catch (err) {
-      expect(console.error).toBeCalledWith('No current project to invite user to');
+      expect(console.error).toHaveBeenCalledWith('No current project to invite user to');
     }
   });
 
@@ -210,8 +210,10 @@ describe('CLI Project', () => {
       'simpon',
       'homer@simpson.com',
     ]);
-    expect(console.log).not.toBeCalledWith(expect.stringMatching(`Email sent`));
-    expect(console.log).toBeCalledWith(expect.stringMatching(`See your users at https://app.medplum.com/admin/users`));
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringMatching(`Email sent`));
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringMatching(`See your users at https://app.medplum.com/admin/users`)
+    );
   });
 
   test('Project invite with all default role and all flags', async () => {
@@ -246,7 +248,9 @@ describe('CLI Project', () => {
       'simpon',
       'homer@simpson.com',
     ]);
-    expect(console.log).toBeCalledWith(expect.stringMatching(`Email sent`));
-    expect(console.log).toBeCalledWith(expect.stringMatching(`See your users at https://app.medplum.com/admin/users`));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`Email sent`));
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringMatching(`See your users at https://app.medplum.com/admin/users`)
+    );
   });
 });
