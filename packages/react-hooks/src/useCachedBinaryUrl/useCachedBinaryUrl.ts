@@ -33,8 +33,8 @@ export const useCachedBinaryUrl = (binaryUrl: string | undefined): string | unde
     // https://stackoverflow.com/questions/23929145/how-to-test-if-a-given-time-stamp-is-in-seconds-or-milliseconds
     const binaryUrlExpires = binaryUrlSearchParams.get('Expires');
     if (!binaryUrlExpires || binaryUrlExpires.length > 13) {
-        // Expires is expected to be in seconds, not milliseconds
-        return binaryUrl;
+      // Expires is expected to be in seconds, not milliseconds
+      return binaryUrl;
     }
 
     const cachedUrl = urls.get(binaryResourceUrl);
