@@ -107,9 +107,18 @@ interface NonNullQuantity extends Quantity {
   value: number;
 }
 
-const ACCURATE_COUNT_THRESHOLD = 1000;
-const COUNT_TRUNCATION_THRESHOLD = 20000;
-const ESTIMATED_COUNT_SAFETY_FACTOR = 2;
+/**
+ * Count estimation parameters:
+ *  The following parameters control how this component trades off between estimated and accurate search result counts
+ *  for pagination and display
+ */
+
+// If the estimated count is below `accurateCountThreshold`, assume it is accurate
+const accurateCountThreshold = 1000;
+// If the estimated count is above `countTruncationThreshold`, compute a safe lower bound
+// of the count using `estimatedCountSafetyMargin`
+const countTruncationThreshold = 20000;
+const estimatedCountSafetyMargin = 2;
 
 /**
  * The SearchControl component represents the embeddable search table control.
@@ -156,7 +165,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               setTotalEntries({ value: response.total });
             }
             // If the estimated count is very small (< 1000), assume the server fell back to an accurate count
-            else if (response.total < ACCURATE_COUNT_THRESHOLD) {
+            else if (response.total < accurateCountThreshold) {
               setTotalEntries({ value: response.total });
             } else {
               // If we receive a large (>= 20K) estimated count,
@@ -174,10 +183,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   )
                   .then((countResponse) => {
                     const accurateCount = countResponse.total as number;
-                    const estimationSafetyThreshold = Math.floor(
-                      COUNT_TRUNCATION_THRESHOLD / ESTIMATED_COUNT_SAFETY_FACTOR
-                    );
-                    if (accurateCount < estimationSafetyThreshold && accurateCount < COUNT_TRUNCATION_THRESHOLD) {
+                    const estimationSafetyThreshold = Math.floor(countTruncationThreshold / estimatedCountSafetyMargin);
+                    if (accurateCount < estimationSafetyThreshold && accurateCount < countTruncationThreshold) {
                       // If the estimated count is small enough, use it as it
                       setTotalEntries({ value: accurateCount });
                     } else {
@@ -684,14 +691,17 @@ function updateTotalFromLastResult(
 }
 
 /**
- * Computes a estimated
+ * Computes a safe lower bound of the number of search results. It uses the following algorithm:
+ *   1. If the estimated count is below the countTruncationThreshold, return the estimated count as-is
+ *   2. Divide the estimated count by the safety margin
+ *   3. Round down to the nearest thousand, million, billions place
  * @param estimatedCount - the estimated count of search results
- * @returns A lower bound
+ * @returns A lower bound for the search results count.
  */
 function getEstimatedLowerBound(estimatedCount: number): number {
-  if (estimatedCount >= COUNT_TRUNCATION_THRESHOLD) {
-    const threshold = Math.floor(estimatedCount / ESTIMATED_COUNT_SAFETY_FACTOR);
-    const numDigits = Math.ceil(Math.log10(threshold));
+  if (estimatedCount >= countTruncationThreshold) {
+    const threshold = Math.floor(estimatedCount / estimatedCountSafetyMargin);
+    const numDigits = Math.floor(Math.log10(threshold));
     // Truncate to the nearest 1000s, 1000000s, etc.
     const truncationFactor = Math.pow(10, Math.ceil(numDigits / 3 - 1) * 3);
     return Math.floor(threshold / truncationFactor) * truncationFactor;
