@@ -11,14 +11,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery, isDataTypeLoaded } from '@medplum/core';
-import {
-  Bundle,
-  OperationOutcome,
-  Resource,
-  ResourceType,
-  SearchParameter,
-  UserConfiguration,
-} from '@medplum/fhirtypes';
+import { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -74,7 +67,6 @@ export class SearchClickEvent extends Event {
 
 export interface SearchControlProps {
   readonly search: SearchRequest;
-  readonly userConfig?: UserConfiguration;
   readonly checkboxesEnabled?: boolean;
   readonly hideToolbar?: boolean;
   readonly hideFilters?: boolean;
@@ -87,7 +79,6 @@ export interface SearchControlProps {
   readonly onExportCsv?: () => void;
   readonly onExportTransactionBundle?: () => void;
   readonly onDelete?: (ids: string[]) => void;
-  readonly onPatch?: (ids: string[]) => void;
   readonly onBulk?: (ids: string[]) => void;
 }
 

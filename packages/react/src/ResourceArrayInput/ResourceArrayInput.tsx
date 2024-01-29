@@ -26,7 +26,6 @@ export interface ResourceArrayInputProps {
   readonly name: string;
   readonly defaultValue?: any[];
   readonly indent?: boolean;
-  readonly arrayElement?: boolean;
   readonly outcome: OperationOutcome | undefined;
   readonly onChange?: (value: any[]) => void;
   readonly hideNonSliceValues?: boolean;

@@ -81,6 +81,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
   return (
     <TextInput
       type="number"
+      name={props.name}
       label={props.label}
       placeholder={props.placeholder ?? 'Value'}
       defaultValue={value?.value?.toString() ?? 'USD'}

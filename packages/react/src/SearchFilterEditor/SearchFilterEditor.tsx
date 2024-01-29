@@ -1,5 +1,5 @@
 import { Button, Group, Modal, NativeSelect } from '@mantine/core';
-import { Filter, getSearchParameters, Operator, SearchRequest, stringify } from '@medplum/core';
+import { Filter, Operator, SearchRequest, getSearchParameters, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -91,7 +91,6 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
                   <FilterRowDisplay
                     key={`filter-${filter.code}-${filter.operator}-${filter.value}-display`}
                     resourceType={resourceType}
-                    searchParams={searchParams}
                     filter={filter}
                     onEdit={() => setEditingIndex(index)}
                     onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
@@ -111,7 +110,6 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
 }
 
 interface FilterRowDisplayProps {
-  readonly searchParams: Record<string, SearchParameter>;
   readonly resourceType: string;
   readonly filter: Filter;
   readonly onEdit: () => void;

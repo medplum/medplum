@@ -6,7 +6,6 @@ export interface ResourceTypeInputProps {
   readonly name: string;
   readonly placeholder?: string;
   readonly defaultValue?: ResourceType;
-  readonly targetTypes?: string[];
   readonly autoFocus?: boolean;
   readonly testId?: string;
   readonly onChange?: (value: ResourceType | undefined) => void;

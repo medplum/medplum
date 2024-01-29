@@ -5,7 +5,6 @@ export interface BotRunnerProps {
   readonly iframeRef?: RefObject<HTMLIFrameElement>;
   readonly testId?: string;
   readonly minHeight?: string;
-  readonly onChange?: (value: string) => void;
 }
 
 export function BotRunner(props: BotRunnerProps): JSX.Element {
