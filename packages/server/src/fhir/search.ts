@@ -61,6 +61,11 @@ import {
  */
 const maxSearchResults = 1000;
 
+/**
+ * Use accurate search result counts whenever estimated counts fall below this number
+ */
+const estimatedCountFallbackThreshold = 1000;
+
 export interface ChainedSearchLink {
   resourceType: string;
   details: SearchParameterDetails;
@@ -436,24 +441,24 @@ async function getEstimateCount(
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
   const rows = await builder.execute(repo.getClient());
-  let result = 0;
+  let estimate = 0;
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
     if (match) {
-      result = parseInt(match[1], 10);
+      estimate = parseInt(match[1], 10);
       break;
     }
   }
 
-  if (result < 1000) {
+  if (estimate < estimatedCountFallbackThreshold) {
     return getAccurateCount(repo, searchRequest);
   }
 
   // Apply some logic to avoid obviously incorrect estimates
-  const startIndex = (searchRequest.offset ?? 0) * (searchRequest.count ?? DEFAULT_SEARCH_COUNT);
+  const startIndex = searchRequest.offset ?? 0;
   const minCount = rowCount === undefined ? startIndex : startIndex + rowCount;
-  return Math.max(minCount, result);
+  return Math.max(minCount, estimate);
 }
 
 /**
