@@ -54,7 +54,7 @@ import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
-import { getDatabaseClient } from '../database';
+import { getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -732,8 +732,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     // Do not use this.getDatabaseClient() for the cursor!
     // That would cause a deadlock.
-    // Instead, use getDatabaseClient() directly over a separate connection.
-    const client = getDatabaseClient();
+    // Instead, use getDatabasePool() directly over a separate connection.
+    const client = getDatabasePool();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
@@ -763,8 +763,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     // Do not use this.getDatabaseClient() for the cursor!
     // That would cause a deadlock.
-    // Instead, use getDatabaseClient() directly over a separate connection.
-    const client = getDatabaseClient();
+    // Instead, use getDatabasePool() directly over a separate connection.
+    const client = getDatabasePool();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
@@ -1754,12 +1754,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   getDatabaseClient(): Pool | PoolClient {
     // If in a transaction, then use the transaction client.
     // Otherwise, use the pool client.
-    return this.conn ?? getDatabaseClient();
+    return this.conn ?? getDatabasePool();
   }
 
   private async getConnection(): Promise<PoolClient> {
     if (!this.conn) {
-      this.conn = await getDatabaseClient().connect();
+      this.conn = await getDatabasePool().connect();
     }
     return this.conn;
   }

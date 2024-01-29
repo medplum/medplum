@@ -7,7 +7,7 @@ import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { getDatabaseClient } from '../database';
+import { getDatabasePool } from '../database';
 import { Repository, systemRepo } from '../fhir/repo';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -80,7 +80,7 @@ describe('Subscription Worker', () => {
   });
 
   beforeEach(async () => {
-    await getDatabaseClient().query('DELETE FROM "Subscription"');
+    await getDatabasePool().query('DELETE FROM "Subscription"');
     (fetch as unknown as jest.Mock).mockClear();
   });
 

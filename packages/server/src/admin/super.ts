@@ -13,7 +13,7 @@ import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { getDatabaseClient } from '../database';
+import { getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
@@ -184,7 +184,7 @@ superAdminRouter.post(
     await sendAsyncResponse(req, res, async () => {
       const resourceTypes = getResourceTypes();
       for (const resourceType of resourceTypes) {
-        await getDatabaseClient().query(
+        await getDatabasePool().query(
           `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
         );
       }
@@ -203,7 +203,7 @@ superAdminRouter.post(
     requireAsync(req);
 
     await sendAsyncResponse(req, res, async () => {
-      const client = getDatabaseClient();
+      const client = getDatabasePool();
       const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
       const version = result.rows[0]?.dataVersion as number;
       const migrationKeys = Object.keys(dataMigrations);

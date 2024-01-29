@@ -5,7 +5,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { getDatabaseClient } from '../../database';
+import { getDatabasePool } from '../../database';
 import { getRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { systemRepo } from '../repo';
@@ -184,6 +184,6 @@ async function existsInCache(resourceType: string, id: string | undefined): Prom
 }
 
 async function existsInDatabase(tableName: string, id: string | undefined): Promise<boolean> {
-  const rows = await new SelectQuery(tableName).column('id').where('id', '=', id).execute(getDatabaseClient());
+  const rows = await new SelectQuery(tableName).column('id').where('id', '=', id).execute(getDatabasePool());
   return rows.length > 0;
 }

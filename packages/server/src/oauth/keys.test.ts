@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { generateKeyPair, SignJWT } from 'jose';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { getDatabaseClient } from '../database';
+import { getDatabasePool } from '../database';
 import { withTestContext } from '../test.setup';
 import {
   generateAccessToken,
@@ -30,7 +30,7 @@ describe('Keys', () => {
       const config = await loadTestConfig();
 
       // First, delete all existing keys
-      await getDatabaseClient().query('DELETE FROM "JsonWebKey"');
+      await getDatabasePool().query('DELETE FROM "JsonWebKey"');
 
       // Init once
       await initKeys(config);

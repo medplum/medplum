@@ -2,7 +2,7 @@ import { Operator, allOk, badRequest } from '@medplum/core';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
-import { getDatabaseClient } from '../../database';
+import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
@@ -57,7 +57,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
   );
   query.column('display').where(new Column(codeSystemTable, 'id'), '=', codeSystem.id).where('code', '=', coding.code);
 
-  const db = getDatabaseClient();
+  const db = getDatabasePool();
   const result = await query.execute(db);
   const output: Record<string, any> = Object.create(null);
   if (result.length) {

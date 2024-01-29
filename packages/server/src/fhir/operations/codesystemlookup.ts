@@ -2,7 +2,7 @@ import { Operator, TypedValue, allOk, badRequest, notFound } from '@medplum/core
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
-import { getDatabaseClient } from '../../database';
+import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
@@ -69,7 +69,7 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     .where(new Column(codeSystemTable, 'id'), '=', codeSystem.id)
     .where(new Column('Coding', 'code'), '=', coding.code);
 
-  const db = getDatabaseClient();
+  const db = getDatabasePool();
   const result = await lookup.execute(db);
 
   if (result.length < 1) {

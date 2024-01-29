@@ -5,7 +5,7 @@ import * as migrations from './migrations/schema';
 
 let pool: Pool | undefined;
 
-export function getDatabaseClient(): Pool {
+export function getDatabasePool(): Pool {
   if (!pool) {
     throw new Error('Database not setup');
   }
