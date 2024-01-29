@@ -7,20 +7,20 @@ export interface ResourceTableProps {
   /**
    * The input value either as a resource or a reference.
    */
-  value: Resource | Reference;
+  readonly value: Resource | Reference;
 
   /**
    * Optional flag to ignore missing values.
    * By default, missing values are displayed as empty strings.
    */
-  ignoreMissingValues?: boolean;
+  readonly ignoreMissingValues?: boolean;
 
   /**
    * Optional flag to force use the input value.
    * This is useful when you want to display a specific version of the resource,
    * and not use the latest version.
    */
-  forceUseInput?: boolean;
+  readonly forceUseInput?: boolean;
 }
 
 export function ResourceTable(props: ResourceTableProps): JSX.Element | null {

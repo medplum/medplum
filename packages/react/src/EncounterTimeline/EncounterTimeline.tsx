@@ -3,7 +3,7 @@ import { Attachment, Encounter, Reference, ResourceType } from '@medplum/fhirtyp
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface EncounterTimelineProps {
-  encounter: Encounter | Reference<Encounter>;
+  readonly encounter: Encounter | Reference<Encounter>;
 }
 
 export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {

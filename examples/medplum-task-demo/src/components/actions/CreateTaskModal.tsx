@@ -5,8 +5,8 @@ import { ResourceForm, useMedplum } from '@medplum/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface CreateTaskModalProps {
-  opened: boolean;
-  onClose: () => void;
+  readonly opened: boolean;
+  readonly onClose: () => void;
 }
 
 export function CreateTaskModal(props: CreateTaskModalProps): JSX.Element {

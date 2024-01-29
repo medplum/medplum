@@ -1,8 +1,8 @@
 import { GestureResponderEvent, Pressable, StyleSheet, Text } from 'react-native';
 
 interface CustomButtonProps {
-  onPress: ((event: GestureResponderEvent) => void) | undefined;
-  title: string;
+  readonly onPress: ((event: GestureResponderEvent) => void) | undefined;
+  readonly title: string;
 }
 
 export default function CustomButton(props: CustomButtonProps): JSX.Element {

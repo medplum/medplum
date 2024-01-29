@@ -2,12 +2,12 @@ import { RefObject } from 'react';
 import { sendCommand } from '../utils';
 
 export interface CodeEditorProps {
-  language: 'typescript' | 'json';
-  module?: 'commonjs' | 'esnext';
-  defaultValue?: string;
-  iframeRef: RefObject<HTMLIFrameElement>;
-  testId?: string;
-  minHeight?: string;
+  readonly language: 'typescript' | 'json';
+  readonly module?: 'commonjs' | 'esnext';
+  readonly defaultValue?: string;
+  readonly iframeRef: RefObject<HTMLIFrameElement>;
+  readonly testId?: string;
+  readonly minHeight?: string;
 }
 
 export function CodeEditor(props: CodeEditorProps): JSX.Element {

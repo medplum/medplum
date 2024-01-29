@@ -5,14 +5,14 @@ import classes from './CalendarInput.module.css';
 import { getMonthString, getStartMonth } from './CalendarInput.utils';
 
 export interface CalendarInputProps {
-  slots: Slot[];
-  onChangeMonth: (date: Date) => void;
-  onClick: (date: Date) => void;
+  readonly slots: Slot[];
+  readonly onChangeMonth: (date: Date) => void;
+  readonly onClick: (date: Date) => void;
 }
 
 interface CalendarCell {
-  date: Date;
-  available: boolean;
+  readonly date: Date;
+  readonly available: boolean;
 }
 
 type OptionalCalendarCell = CalendarCell | undefined;

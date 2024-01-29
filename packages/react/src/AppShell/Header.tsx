@@ -22,12 +22,12 @@ import classes from './Header.module.css';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
 export interface HeaderProps {
-  pathname?: string;
-  searchParams?: URLSearchParams;
-  headerSearchDisabled?: boolean;
-  logo: ReactNode;
-  version?: string;
-  navbarToggle: () => void;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
+  readonly headerSearchDisabled?: boolean;
+  readonly logo: ReactNode;
+  readonly version?: string;
+  readonly navbarToggle: () => void;
 }
 
 export function Header(props: HeaderProps): JSX.Element {

@@ -14,10 +14,10 @@ import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilt
 import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
 
 export interface SearchFilterEditorProps {
-  visible: boolean;
-  search: SearchRequest;
-  onOk: (search: SearchRequest) => void;
-  onCancel: () => void;
+  readonly visible: boolean;
+  readonly search: SearchRequest;
+  readonly onOk: (search: SearchRequest) => void;
+  readonly onCancel: () => void;
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
@@ -140,12 +140,12 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
 }
 
 interface FilterRowInputProps {
-  resourceType: string;
-  searchParams: Record<string, SearchParameter>;
-  defaultValue?: Filter;
-  okText: string;
-  onOk: (value: Filter) => void;
-  onCancel?: () => void;
+  readonly resourceType: string;
+  readonly searchParams: Record<string, SearchParameter>;
+  readonly defaultValue?: Filter;
+  readonly okText: string;
+  readonly onOk: (value: Filter) => void;
+  readonly onCancel?: () => void;
 }
 
 function FilterRowInput(props: FilterRowInputProps): JSX.Element {

@@ -3,7 +3,7 @@ import { Annotation, Task } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
 
 export interface NotesPageProps {
-  task: Task;
+  readonly task: Task;
 }
 
 export function NotesPage(props: NotesPageProps): JSX.Element {

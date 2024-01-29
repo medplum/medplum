@@ -16,7 +16,7 @@ const lineChartOptions = {
 };
 
 interface LineChartProps {
-  chartData: ChartData<'line', number[]>;
+  readonly chartData: ChartData<'line', number[]>;
 }
 
 const AsyncLine = lazy(async () => {

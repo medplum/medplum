@@ -5,7 +5,7 @@ import { InfoBar } from './InfoBar';
 import { getDefaultColor } from './PatientHeader.utils';
 
 export interface PatientHeaderProps {
-  patient: Patient | Reference<Patient>;
+  readonly patient: Patient | Reference<Patient>;
 }
 
 export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {

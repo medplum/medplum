@@ -2,10 +2,10 @@ import { ReactNode } from 'react';
 import styles from './CardButton.module.css';
 
 export interface CardButtonProps {
-  href: string;
-  alt: string;
-  target?: string;
-  children?: ReactNode;
+  readonly href: string;
+  readonly alt: string;
+  readonly target?: string;
+  readonly children?: ReactNode;
 }
 
 export function CardButton(props: CardButtonProps): JSX.Element {

@@ -39,10 +39,10 @@ export function QuestionnaireTask(props: TaskCellProps): JSX.Element {
 }
 
 function QuestionnaireModal(props: {
-  task: Task;
-  questionnaire: Questionnaire;
-  setSubmitted: (submit: boolean) => void;
-  handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
+  readonly task: Task;
+  readonly questionnaire: Questionnaire;
+  readonly setSubmitted: (submit: boolean) => void;
+  readonly handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
 }): JSX.Element {
   const [open, setOpen] = useState(false);
 
@@ -64,10 +64,10 @@ function QuestionnaireModal(props: {
 }
 
 function QuestionnaireQuickAction(props: {
-  task: Task;
-  questionnaire: Questionnaire;
-  setSubmitted: (submit: boolean) => void;
-  handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
+  readonly task: Task;
+  readonly questionnaire: Questionnaire;
+  readonly setSubmitted: (submit: boolean) => void;
+  readonly handleSubmit: (questionnaireResponse: QuestionnaireResponse) => Promise<void>;
 }): JSX.Element {
   return <QuestionnaireForm questionnaire={props.questionnaire} onSubmit={props.handleSubmit} />;
 }

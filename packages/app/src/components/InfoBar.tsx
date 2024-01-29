@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 import classes from './InfoBar.module.css';
 
 export interface InfoBarProps {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 export function InfoBar(props: InfoBarProps): JSX.Element {
@@ -15,7 +15,7 @@ export function InfoBar(props: InfoBarProps): JSX.Element {
 }
 
 export interface InfoBarEntryProps {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 InfoBar.Entry = function InfoBarEntry(props: InfoBarEntryProps): JSX.Element {
@@ -23,7 +23,7 @@ InfoBar.Entry = function InfoBarEntry(props: InfoBarEntryProps): JSX.Element {
 };
 
 export interface InfoBarKeyProps {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 InfoBar.Key = function InfoBarEntry(props: InfoBarKeyProps): JSX.Element {
@@ -31,7 +31,7 @@ InfoBar.Key = function InfoBarEntry(props: InfoBarKeyProps): JSX.Element {
 };
 
 export interface InfoBarValueProps {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 InfoBar.Value = function InfoBarEntry(props: InfoBarValueProps): JSX.Element {

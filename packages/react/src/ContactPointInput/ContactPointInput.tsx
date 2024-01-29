@@ -6,7 +6,7 @@ import { BackboneElementContext } from '../BackboneElementInput/BackboneElementI
 import { getErrorsForInput } from '../utils/outcomes';
 
 export type ContactPointInputProps = ComplexTypeInputProps<ContactPoint> & {
-  onChange: ((value: ContactPoint | undefined) => void) | undefined;
+  readonly onChange: ((value: ContactPoint | undefined) => void) | undefined;
 };
 
 export function ContactPointInput(props: ContactPointInputProps): JSX.Element {

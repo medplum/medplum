@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 import { InfoBar } from './InfoBar';
 
 export interface ResourceHeaderProps {
-  resource: Resource | Reference;
+  readonly resource: Resource | Reference;
 }
 
 export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {

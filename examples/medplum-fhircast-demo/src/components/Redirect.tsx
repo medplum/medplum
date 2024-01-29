@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 type RedirectProps = {
-  path: string;
+  readonly path: string;
 };
 
 export default function Redirect(props: RedirectProps): null {

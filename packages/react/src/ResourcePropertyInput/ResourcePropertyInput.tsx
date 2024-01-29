@@ -29,13 +29,13 @@ import { getErrorsForInput } from '../utils/outcomes';
 import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
 
 export interface ResourcePropertyInputProps {
-  property: InternalSchemaElement;
-  name: string;
-  defaultPropertyType?: string | undefined;
-  defaultValue: any;
-  arrayElement?: boolean | undefined;
-  onChange: ((value: any, propName?: string) => void) | undefined;
-  outcome: OperationOutcome | undefined;
+  readonly property: InternalSchemaElement;
+  readonly name: string;
+  readonly defaultPropertyType?: string | undefined;
+  readonly defaultValue: any;
+  readonly arrayElement?: boolean | undefined;
+  readonly onChange: ((value: any, propName?: string) => void) | undefined;
+  readonly outcome: OperationOutcome | undefined;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
@@ -91,7 +91,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
 }
 
 export interface ElementDefinitionSelectorProps extends ResourcePropertyInputProps {
-  elementDefinitionTypes: ElementDefinitionType[];
+  readonly elementDefinitionTypes: ElementDefinitionType[];
 }
 
 export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorProps): JSX.Element {
@@ -142,15 +142,15 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
 export type ElementDefinitionTypeInputProps = {
-  name: ResourcePropertyInputProps['name'];
-  path: string;
-  defaultValue: ResourcePropertyInputProps['defaultValue'];
-  onChange: ResourcePropertyInputProps['onChange'];
-  outcome: ResourcePropertyInputProps['outcome'];
-  elementDefinitionType: ElementDefinitionType;
-  min: number;
-  max: number;
-  binding: ElementDefinitionBinding | undefined;
+  readonly name: ResourcePropertyInputProps['name'];
+  readonly path: string;
+  readonly defaultValue: ResourcePropertyInputProps['defaultValue'];
+  readonly onChange: ResourcePropertyInputProps['onChange'];
+  readonly outcome: ResourcePropertyInputProps['outcome'];
+  readonly elementDefinitionType: ElementDefinitionType;
+  readonly min: number;
+  readonly max: number;
+  readonly binding: ElementDefinitionBinding | undefined;
 };
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {

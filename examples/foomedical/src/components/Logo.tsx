@@ -1,7 +1,7 @@
 import { useMantineTheme } from '@mantine/core';
 
 export interface LogoProps {
-  width: number;
+  readonly width: number;
 }
 
 export function Logo(props: LogoProps): JSX.Element {

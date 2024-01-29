@@ -33,9 +33,9 @@ function RenewalModal({
   opened,
   setOpened,
 }: {
-  prev: MedicationRequest;
-  opened: boolean;
-  setOpened: (o: boolean) => void;
+  readonly prev: MedicationRequest;
+  readonly opened: boolean;
+  readonly setOpened: (o: boolean) => void;
 }): JSX.Element {
   const medplum = useMedplum();
   const patient = medplum.getProfile();

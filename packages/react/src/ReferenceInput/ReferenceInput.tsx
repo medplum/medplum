@@ -15,31 +15,31 @@ import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
 export interface ReferenceInputProps {
-  name: string;
-  placeholder?: string;
-  defaultValue?: Reference;
-  targetTypes?: string[];
-  searchCriteria?: Record<string, string>;
-  autoFocus?: boolean;
-  required?: boolean;
-  onChange?: (value: Reference | undefined) => void;
+  readonly name: string;
+  readonly placeholder?: string;
+  readonly defaultValue?: Reference;
+  readonly targetTypes?: string[];
+  readonly searchCriteria?: Record<string, string>;
+  readonly autoFocus?: boolean;
+  readonly required?: boolean;
+  readonly onChange?: (value: Reference | undefined) => void;
 }
 
 interface BaseTargetType {
-  value: string;
+  readonly value: string;
 }
 
 type ProfileTargetType = BaseTargetType & {
-  type: 'profile';
-  name?: string;
-  title?: string;
-  resourceType?: string;
-  error?: any;
+  readonly type: 'profile';
+  readonly name?: string;
+  readonly title?: string;
+  readonly resourceType?: string;
+  readonly error?: any;
 };
 
 type ResourceTypeTargetType = BaseTargetType & {
-  type: 'resourceType';
-  resourceType: string;
+  readonly type: 'resourceType';
+  readonly resourceType: string;
 };
 type TargetType = ResourceTypeTargetType | ProfileTargetType;
 

@@ -5,8 +5,8 @@ import { useResource } from '@medplum/react-hooks';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface ResourceAvatarProps extends AvatarProps {
-  value?: Reference | Resource;
-  link?: boolean;
+  readonly value?: Reference | Resource;
+  readonly link?: boolean;
 }
 
 export function ResourceAvatar(props: ResourceAvatarProps): JSX.Element {
