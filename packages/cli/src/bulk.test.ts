@@ -151,13 +151,13 @@ describe('CLI Bulk Commands', () => {
         };
       });
       await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
-      expect(medplumDownloadSpy).toBeCalled();
-      expect(console.log).toBeCalledWith(
+      expect(medplumDownloadSpy).toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith(
         expect.stringMatching(
           'ProjectMembership_storage_20fabdd3_e036_49fc_9260_8a30eaffefb1_498475fe_5eb0_46e5_b9f4_b46943c9719b.ndjson is created'
         )
       );
-      expect(console.log).toBeCalledWith(
+      expect(console.log).toHaveBeenCalledWith(
         expect.stringMatching('Project_data_55555_aaaaaa_bbbbb_ccc_ddddd_eeeeee_ndjson.ndjson is created')
       );
     });
@@ -170,8 +170,8 @@ describe('CLI Bulk Commands', () => {
       });
       const testDirectory = 'testtargetdirectory';
       await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient', '--target-directory', testDirectory]);
-      expect(medplumDownloadSpy).toBeCalled();
-      expect(console.log).toBeCalledWith(expect.stringMatching(`${testDirectory}`));
+      expect(medplumDownloadSpy).toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`${testDirectory}`));
     });
   });
 
@@ -213,7 +213,7 @@ describe('CLI Bulk Commands', () => {
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);
-        expect(fetch).toBeCalledWith(
+        expect(fetch).toHaveBeenCalledWith(
           expect.stringMatching(`/fhir/R4`),
           expect.objectContaining({
             body: expect.stringContaining(
@@ -228,8 +228,8 @@ describe('CLI Bulk Commands', () => {
           })
         );
       });
-      expect(console.log).toBeCalledWith(expect.stringMatching(`"status": "201"`));
-      expect(console.log).toBeCalledWith(expect.stringMatching(`"text": "Created"`));
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`"status": "201"`));
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`"text": "Created"`));
     });
 
     test('success with option --num-resources-per-request', async () => {
@@ -237,7 +237,7 @@ describe('CLI Bulk Commands', () => {
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);
-        expect(fetch).toBeCalledWith(
+        expect(fetch).toHaveBeenCalledWith(
           expect.stringMatching(`/fhir/R4`),
           expect.objectContaining({
             body: expect.stringContaining(
@@ -253,7 +253,7 @@ describe('CLI Bulk Commands', () => {
         );
       });
 
-      expect(fetch).toBeCalled();
+      expect(fetch).toHaveBeenCalled();
     });
 
     test('success with option --target-directory', async () => {
@@ -261,7 +261,7 @@ describe('CLI Bulk Commands', () => {
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);
-        expect(fetch).toBeCalledWith(
+        expect(fetch).toHaveBeenCalledWith(
           expect.stringMatching(`/fhir/R4`),
           expect.objectContaining({
             body: expect.stringContaining(
@@ -277,32 +277,32 @@ describe('CLI Bulk Commands', () => {
         );
       });
 
-      expect(fetch).toBeCalled();
+      expect(fetch).toHaveBeenCalled();
     });
 
     test('success with option --add-extensions-for-missing-values', async () => {
       await main(['node', 'index.js', 'bulk', 'import', 'file.json', '--add-extensions-for-missing-values']);
 
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringMatching(`/fhir/R4`),
         expect.objectContaining({
           body: expect.stringContaining(`"resourceType":"ExplanationOfBenefit","id":"1111111"`),
         })
       );
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringMatching(`/fhir/R4`),
         expect.objectContaining({
           body: expect.stringContaining(`"provider":` + JSON.stringify(getUnsupportedExtension())),
         })
       );
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringMatching(`/fhir/R4`),
         expect.objectContaining({
           body: expect.stringContaining(`"productOrService":` + JSON.stringify(getUnsupportedExtension())),
         })
       );
 
-      expect(fetch).toBeCalled();
+      expect(fetch).toHaveBeenCalled();
     });
   });
 });

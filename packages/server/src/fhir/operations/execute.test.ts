@@ -127,7 +127,7 @@ describe('Execute', () => {
       .send(text);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
-    expect(writeFileSpy).toBeCalledTimes(1);
+    expect(writeFileSpy).toHaveBeenCalledTimes(1);
 
     const args = writeFileSpy.mock.calls[0];
     expect(args.length).toBe(3);

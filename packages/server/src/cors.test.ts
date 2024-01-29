@@ -14,7 +14,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { origin: false });
+    expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 
   test('No Origin', () => {
@@ -24,7 +24,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { origin: false });
+    expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 
   test('Allow appBaseUrl', () => {
@@ -34,7 +34,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(
+    expect(callback).toHaveBeenCalledWith(
       null,
       expect.objectContaining({ credentials: true, origin: 'http://localhost:3000' })
     );
@@ -48,7 +48,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(
+    expect(callback).toHaveBeenCalledWith(
       null,
       expect.objectContaining({ credentials: true, origin: 'https://example.com' })
     );
@@ -62,7 +62,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { origin: false });
+    expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 
   test('Allowed origins ', () => {
@@ -73,7 +73,7 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(
+    expect(callback).toHaveBeenCalledWith(
       null,
       expect.objectContaining({ credentials: true, origin: 'https://example.com' })
     );
@@ -87,6 +87,6 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { origin: false });
+    expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 });

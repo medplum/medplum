@@ -11,7 +11,7 @@ describe('EventTarget', () => {
     const target = new EventTarget();
     target.addEventListener('test', myCallback);
     target.dispatchEvent({ type: 'test' });
-    expect(myCallback).toBeCalled();
+    expect(myCallback).toHaveBeenCalled();
   });
 
   test('Add multiple event listeners', () => {
@@ -21,8 +21,8 @@ describe('EventTarget', () => {
     target.addEventListener('test', myCallback1);
     target.addEventListener('test', myCallback2);
     target.dispatchEvent({ type: 'test' });
-    expect(myCallback1).toBeCalled();
-    expect(myCallback2).toBeCalled();
+    expect(myCallback1).toHaveBeenCalled();
+    expect(myCallback2).toHaveBeenCalled();
   });
 
   test('Remove event listener', () => {
@@ -31,7 +31,7 @@ describe('EventTarget', () => {
     target.addEventListener('test', myCallback);
     target.removeEventListener('test', myCallback);
     target.dispatchEvent({ type: 'test' });
-    expect(myCallback).not.toBeCalled();
+    expect(myCallback).not.toHaveBeenCalled();
   });
 
   test('Remove event listener not found', () => {
@@ -41,6 +41,6 @@ describe('EventTarget', () => {
     target.addEventListener('test', myCallback);
     target.removeEventListener('test', jest.fn());
     expect(() => target.dispatchEvent({ type: 'test' })).not.toThrow();
-    expect(myCallback).toBeCalled();
+    expect(myCallback).toHaveBeenCalled();
   });
 });

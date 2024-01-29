@@ -32,17 +32,15 @@ describe('FHIRPath parser', () => {
   });
 
   test('Parser throws on missing closing parentheses', () => {
-    expect(() => parseFhirPath('(2 + 1')).toThrowError('Parse error: expected `)`');
+    expect(() => parseFhirPath('(2 + 1')).toThrow('Parse error: expected `)`');
   });
 
   test('Parser throws on unexpected symbol', () => {
-    expect(() => parseFhirPath('*')).toThrowError(
-      'Parse error at "*" (line 1, column 0). No matching prefix parselet.'
-    );
+    expect(() => parseFhirPath('*')).toThrow('Parse error at "*" (line 1, column 0). No matching prefix parselet.');
   });
 
   test('Parser throws on missing tokens', () => {
-    expect(() => parseFhirPath('1 * ')).toThrowError('Cant consume unknown more tokens.');
+    expect(() => parseFhirPath('1 * ')).toThrow('Cant consume unknown more tokens.');
   });
 
   test('Function minus number', () => {
@@ -305,11 +303,11 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate fails on function parentheses after non-symbol', () => {
-    expect(() => evalFhirPath('1()', [])).toThrowError('Unexpected parentheses');
+    expect(() => evalFhirPath('1()', [])).toThrow('Unexpected parentheses');
   });
 
   test('Evaluate fails on unrecognized function', () => {
-    expect(() => evalFhirPath('asdf()', [])).toThrowError('Unrecognized function');
+    expect(() => evalFhirPath('asdf()', [])).toThrow('Unrecognized function');
   });
 
   test('Evaluate FHIRPath where function', () => {
@@ -526,7 +524,7 @@ describe('FHIRPath parser', () => {
     };
     const variables = { '%current': toTypedValue(patient2) };
 
-    expect(() => evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables)).toThrowError(
+    expect(() => evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables)).toThrow(
       `Undefined variable %previous`
     );
   });

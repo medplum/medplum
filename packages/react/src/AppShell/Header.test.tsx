@@ -132,7 +132,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('My Other Project'));
     });
 
-    expect(window.location.reload).toBeCalled();
+    expect(window.location.reload).toHaveBeenCalled();
   });
 
   test('Add another account', async () => {
@@ -149,7 +149,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Add another account'));
     });
 
-    expect(navigateMock).toBeCalledWith('/signin');
+    expect(navigateMock).toHaveBeenCalledWith('/signin');
   });
 
   test('Account settings', async () => {
@@ -166,7 +166,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Account settings'));
     });
 
-    expect(navigateMock).toBeCalledWith('/Practitioner/123');
+    expect(navigateMock).toHaveBeenCalledWith('/Practitioner/123');
   });
 
   test('Sign out', async () => {
@@ -183,7 +183,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Sign out'));
     });
 
-    expect(navigateMock).toBeCalledWith('/signin');
+    expect(navigateMock).toHaveBeenCalledWith('/signin');
   });
 
   test('Dark mode', async () => {
