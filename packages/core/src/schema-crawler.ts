@@ -6,10 +6,10 @@ import {
   SlicingRules,
   tryGetProfile,
 } from './typeschema/types';
-import { isPopulated } from './utils';
+import { isPopulated, splitOnceRight } from './utils';
 
 function isSupportedSliceDefinition(slice: SliceDefinition): slice is SupportedSliceDefinition {
-  return slice.type !== undefined && slice.type.length > 0;
+  return isPopulated(slice.type);
 }
 
 type SupportedSliceDefinition = SliceDefinition & {
@@ -142,25 +142,23 @@ export class SchemaCrawler {
 
   private crawlSlicingImpl(slicing: SlicingRules, path: string): void {
     const slices = slicing.slices;
-    // if (this.sliceAllowList) {
-    // slices = slices.filter((s) => this.sliceAllowList?.includes(s));
-    // }
     const supportedSlices: SupportedSliceDefinition[] = [];
     for (const slice of slices) {
-      if (isSupportedSliceDefinition(slice)) {
-        const profileUrl = slice.type?.find((t) => isPopulated(t.profile))?.profile?.[0];
-        if (isPopulated(profileUrl)) {
-          const schema = isPopulated(profileUrl) ? tryGetProfile(profileUrl) : undefined;
-          if (profileUrl && !schema) {
-            this.debug('SLICE PROFILE SCHEMA NOT FOUND', profileUrl);
-          }
-          slice.typeSchema = schema;
-        }
-        supportedSlices.push(slice);
+      if (!isSupportedSliceDefinition(slice)) {
+        this.debug(`Ignoring slice ${slice.name} since it has no type information`);
+        continue;
       }
+      const profileUrl = slice.type.find((t) => isPopulated(t.profile))?.profile?.[0];
+      if (isPopulated(profileUrl)) {
+        const schema = tryGetProfile(profileUrl);
+        if (schema) {
+          slice.typeSchema = schema;
+        } else {
+          this.debug(`Schema for slice ${slice.name} and profile ${profileUrl} not found`);
+        }
+      }
+      supportedSlices.push(slice);
     }
-
-    // TODO - should also crawl unsupported slices for completeness
 
     const visitorSlicing = slicing as VisitorSlicingRules;
     visitorSlicing.slices = supportedSlices;
@@ -170,7 +168,7 @@ export class SchemaCrawler {
     }
 
     for (const slice of visitorSlicing.slices) {
-      if (this.sliceAllowList !== undefined) {
+      if (isPopulated(this.sliceAllowList)) {
         if (this.sliceAllowList.includes(slice)) {
           this.crawlSliceImpl(slice, path);
         }
@@ -315,23 +313,4 @@ function mergeElementsForContext(
     console.debug('ElementsContext elements same as parent context');
   }
   return result;
-}
-
-/**
- * Splits a string on the last occurrence of the delimiter
- * @param str - The string to split
- * @param delim - The delimiter string
- * @returns An array of two strings; the first consisting of the beginning of the
- * string up to the last occurrence of the delimiter. the second is the remainder of the
- * string after the last occurrence of the delimiter. If the delimiter is not present
- * in the string, the first element is empty and the second is the input string.
- */
-function splitOnceRight(str: string, delim: string): [string, string] {
-  const delimIndex = str.lastIndexOf(delim);
-  if (delimIndex === -1) {
-    return ['', str];
-  }
-  const beginning = str.substring(0, delimIndex);
-  const last = str.substring(delimIndex + delim.length);
-  return [beginning, last];
 }

@@ -72,17 +72,19 @@ describe('applyDefaultValues', () => {
       schema = getProfile(profileUrl);
     });
 
-    test('empty Blood Pressure', async () => {
+    test('new Blood Pressure observation', async () => {
       // casting since purposefully don't want to specify any values
       const resource = { resourceType: 'Observation' } as Observation;
 
       const withDefaults = applyDefaultValues(resource, schema, { debug: true });
 
+      // fixed values within value[x] purposefully excluded since value[x] itself is optional (min === 0)
+      // i.e. valueQuantity: {code: "mm[Hg]", system: "http://unitsofmeasure.org"} should not be included
+      // Observation.component.value[x].{code,system}
       expect(withDefaults).toEqual({
         resourceType: 'Observation',
         category: [
           {
-            __w: 'onEnterSlice[VSCat] min > 0',
             coding: [
               {
                 code: 'vital-signs',
@@ -101,7 +103,6 @@ describe('applyDefaultValues', () => {
         },
         component: [
           {
-            __w: 'onEnterSlice[systolic] min > 0',
             code: {
               coding: [
                 {
@@ -110,13 +111,8 @@ describe('applyDefaultValues', () => {
                 },
               ],
             },
-            valueQuantity: {
-              code: 'mm[Hg]',
-              system: 'http://unitsofmeasure.org',
-            },
           },
           {
-            __w: 'onEnterSlice[diastolic] min > 0',
             code: {
               coding: [
                 {
@@ -125,13 +121,9 @@ describe('applyDefaultValues', () => {
                 },
               ],
             },
-            valueQuantity: {
-              code: 'mm[Hg]',
-              system: 'http://unitsofmeasure.org',
-            },
           },
         ],
-        subject: {},
+        subject: undefined,
       });
     });
   });

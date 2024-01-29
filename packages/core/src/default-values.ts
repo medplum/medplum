@@ -7,7 +7,7 @@ import {
   SliceDiscriminator,
   SlicingRules,
 } from './typeschema/types';
-import { arrayify, capitalize, deepClone, isObject, isPopulated } from './utils';
+import { arrayify, capitalize, deepClone, isObject, isPopulated, splitOnceRight } from './utils';
 import { getNestedProperty } from './typeschema/crawler';
 import { TypedValue } from './types';
 import { matchDiscriminant } from './typeschema/validation';
@@ -118,20 +118,21 @@ class DefaultValueVisitor implements SchemaVisitor {
   onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
     this.debug(`onEnterElement ${path} ${element.min > 0 ? `min: ${element.min}` : ''}`);
 
-    const parentPath = this.value.path;
     const parentTVs = this.value.typedValues;
+    const parentPath = this.value.path;
     const key = getPathDifference(parentPath, path);
-    const noop = element.type.length > 1;
+
+    // eld-6	Rule	Fixed value may only be specified if there is one type
+    // eld-7	Rule	Pattern may only be specified if there is one type
+    const shouldSkip = element.type.length > 1;
+
     const elementType = element.type[0].code;
     const elements = elementsContext.elements;
     const isComplex = isComplexTypeCode(elementType);
 
-    if (path === 'Observation.effective[x]') {
-      debugger;
-    }
-
     const elementTVs: TypedValue[] = [];
 
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < parentTVs.length; i++) {
       const parentTV = parentTVs[i];
 
@@ -140,52 +141,61 @@ class DefaultValueVisitor implements SchemaVisitor {
         continue;
       }
 
-      if (noop) {
+      if (shouldSkip) {
         elementTVs.push({
-          type: 'TODO-noop',
+          type: 'TODO-skip',
           value: getValueAtKey(parentTV.value, key, element, elementsContext.elements),
         });
         continue;
       }
 
-      const existingValue = getValueAtKey(parentTV.value, key, element, elements);
-      if (element.min > 0 && existingValue === undefined) {
-        if (isComplex) {
-          if (element.isArray) {
-            // Do not create actual entries in the array; onEnterSlice takes care of that
-            setValueAtKey(parentTV.value, [], key, element);
-          } else {
-            if (element.min > 1) {
-              throw new Error('Element min count greater than 1 for non-array element.');
-            }
-            setValueAtKey(parentTV.value, {}, key, element);
+      let parentArray: any[];
+      if (Array.isArray(parentTV.value)) {
+        parentArray = parentTV.value;
+      } else {
+        parentArray = [parentTV.value];
+      }
+
+      for (const parent of parentArray) {
+        if (key.includes('.')) {
+          // check intermediate value for existence. If it doesn't exist, i.e. (=== undefined), then fixed/pattern
+          // values for nested elements should not be applied
+          const [directParentKey, _lastKeyPart] = splitOnceRight(key, '.');
+          const directParentElement = elements[directParentKey];
+          const directParentValue = getValueAtKey(parent, directParentKey, directParentElement, elements);
+          if (directParentValue === undefined) {
+            continue;
           }
         }
-      }
 
-      const modifiedParentValue = applyFixedOrPatternValue(parentTV, key, element, elements, true);
+        const existingValue = getValueAtKey(parent, key, element, elements);
 
-      if (parentTV.value === undefined && modifiedParentValue !== undefined) {
-        if (this.value.type === 'slice') {
-          this.value.typedValues[i] = { type: 'TODO-slice', value: [modifiedParentValue] };
-        } else if (this.value.type === 'resource') {
-          this.value.typedValues[i] = { type: 'TODO-resource', value: modifiedParentValue };
-        } else {
-          throw new Error('Cannot have element nested below element');
+        if (element.min > 0 && existingValue === undefined) {
+          if (isComplex) {
+            if (element.isArray) {
+              setValueAtKey(parent, [createEmptyObject(`onEnterElement[${key}] min > 0 isArray`)], key, element);
+            } else {
+              if (element.min > 1) {
+                throw new Error('Element min count greater than 1 for non-array element.');
+              }
+              this.debug(`created empty value for ${key}`);
+              setValueAtKey(parent, createEmptyObject(`onEnterElement[${key}] min > 0 nonArray`), key, element);
+            }
+          }
         }
+
+        applyFixedOrPatternValue(parentTV, key, element, elements, true);
       }
 
-      if (modifiedParentValue === undefined) {
-        elementTVs.push({ type: 'undefined', value: undefined });
-      } else if (Array.isArray(modifiedParentValue)) {
+      if (Array.isArray(parentTV.value)) {
         elementTVs.push({
           type: 'TODO-isArray',
-          value: modifiedParentValue.map((pv) => getValueAtKey(pv, key, element, elementsContext.elements)),
+          value: parentTV.value.map((pv) => getValueAtKey(pv, key, element, elementsContext.elements)),
         });
       } else {
         elementTVs.push({
           type: 'TODO-nonArray',
-          value: getValueAtKey(modifiedParentValue, key, element, elementsContext.elements),
+          value: getValueAtKey(parentTV.value, key, element, elementsContext.elements),
         });
       }
     }
@@ -206,6 +216,37 @@ class DefaultValueVisitor implements SchemaVisitor {
       throw new Error('Expected value context to exist when exiting element');
     }
     this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.typedValues)}`);
+
+    for (let valueIndex = 0; valueIndex < elementValueContext.typedValues.length; valueIndex++) {
+      const { value: elementValue } = elementValueContext.typedValues[valueIndex];
+      // for (const { value: elementValue } of elementValueContext.typedValues) {
+      if (Array.isArray(elementValue)) {
+        for (let i = elementValue.length - 1; i >= 0; i--) {
+          const value = elementValue[i];
+          // for (const value of elementValue) {
+          if (value !== undefined && (!isPopulated(value) || (Object.keys(value).length === 1 && '__w' in value))) {
+            this.debug(`empty value found in array`, JSON.stringify(value));
+            elementValue.splice(i, 1);
+          }
+        }
+      } else if (
+        elementValue !== undefined &&
+        (!isPopulated(elementValue) || (Object.keys(elementValue).length === 1 && '__w' in elementValue))
+      ) {
+        const parentValue = this.value.typedValues[valueIndex].value;
+        const fromParent = getValueAtKey(
+          parentValue,
+          getPathDifference(this.value.path, path),
+          _element,
+          _elementsContext.elements
+        );
+        this.debug(
+          `empty value found on object\n${JSON.stringify(elementValue)}\nfrom parent:\n${JSON.stringify(fromParent)}`,
+          elementValue === fromParent
+        );
+        setValueAtKey(parentValue, undefined, getPathDifference(this.value.path, path), _element);
+      }
+    }
   }
 
   onEnterSlicing(path: string, slicing: VisitorSlicingRules): void {
@@ -304,6 +345,12 @@ class DefaultValueVisitor implements SchemaVisitor {
   getDefaultValue(): Resource {
     return this.outputResource;
   }
+}
+
+function createEmptyObject(marker: string): object {
+  const obj = Object.create(null);
+  obj.__w = marker;
+  return obj;
 }
 
 function isDiscriminatorComponentMatch(
