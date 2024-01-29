@@ -1,8 +1,9 @@
-import { Operator } from '@medplum/core';
-import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
+import { Operator, SearchRequest } from '@medplum/core';
+import { Bundle } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient, MockRequestHandler } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
 describe('SearchControl', () => {
@@ -17,11 +18,12 @@ describe('SearchControl', () => {
     jest.useRealTimers();
   });
 
-  async function setup(args: SearchControlProps): Promise<void> {
+  async function setup(args: SearchControlProps, mockHandler?: MockRequestHandler): Promise<void> {
+    const medplum = new MockClient({ mockRequestHandler: mockHandler });
     await act(async () => {
       render(
         <MemoryRouter>
-          <MedplumProvider medplum={new MockClient()}>
+          <MedplumProvider medplum={medplum}>
             <SearchControl {...args} />
           </MedplumProvider>
         </MemoryRouter>
@@ -873,5 +875,169 @@ describe('SearchControl', () => {
 
     await waitFor(() => screen.getByText('Homer Simpson'));
     expect(onLoad).toBeCalled();
+  });
+
+  describe('Pagination', () => {
+    const onLoad = jest.fn();
+    const search: SearchRequest = {
+      resourceType: 'Patient',
+      count: 20,
+      offset: 0,
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Simpson',
+        },
+      ],
+      fields: ['id', '_lastUpdated', 'name'],
+    };
+    test('Single Page', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+      await setup(
+        props,
+        async (): Promise<any> => ({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          total: 5,
+          entry: [{ resource: HomerSimpson }],
+        })
+      );
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-5 of 5');
+    });
+
+    test('Multiple Pages', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+      await setup(
+        props,
+        async (): Promise<any> => ({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          total: 40,
+          entry: [{ resource: HomerSimpson }],
+        })
+      );
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-20 of 40');
+    });
+
+    test('Large Estimated Count', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+
+      await setup(
+        props,
+        async (_, path: string): Promise<any> => ({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          total: path.includes('estimate') ? 303091 : 403091,
+          entry: [{ resource: HomerSimpson }],
+        })
+      );
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-20 of >151,000');
+    });
+
+    test('Large Estimated Count w/ High Offset', async () => {
+      const props: SearchControlProps = {
+        search: { ...search, offset: 200000, count: 20 },
+        onLoad,
+      };
+
+      await setup(
+        props,
+        async (_, path: string): Promise<Bundle> => ({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          total: path.includes('estimate') ? 303091 : 403091,
+          entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+          link: [
+            {
+              relation: 'next',
+              url: '',
+            },
+          ],
+        })
+      );
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      expect(screen.getByTestId('count-display').textContent).toBe('200,001-200,020 of >200,020');
+    });
+
+    test('Large Estimated Count Close to Threshold', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+
+      await setup(
+        props,
+        async (_, path: string): Promise<any> => ({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          total: path.includes('estimate') ? 20101 : 19345,
+          entry: [{ resource: HomerSimpson }],
+        })
+      );
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-20 of >10,000');
+    });
+
+    test('Intermediate Estimated Count Close to Threshold', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+
+      await setup(
+        props,
+        async (_, path: string): Promise<any> => ({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          total: path.includes('estimate') ? 16001 : 15999,
+          entry: [{ resource: HomerSimpson }],
+        })
+      );
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-20 of >10,000');
+    });
+
+    test('Accurate Count is Below Threshold', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+
+      await setup(
+        props,
+        async (_, path: string): Promise<Bundle> => ({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          total: path.includes('estimate') ? 9532 : 10012,
+          entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+          link: [
+            {
+              relation: 'next',
+              url: '',
+            },
+          ],
+        })
+      );
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      expect(screen.getByTestId('count-display').textContent).toBe('1-20 of 9,532');
+    });
   });
 });

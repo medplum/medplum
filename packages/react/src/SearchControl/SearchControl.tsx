@@ -418,8 +418,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           </Group>
           <Group gap={2}>
             {lastResult && (
-              <Text size="xs" c="dimmed">
-                {getStart(search, totalEntries)}-{getEnd(search, totalEntries)}
+              <Text size="xs" c="dimmed" data-testid="count-display">
+                {getStart(search, totalEntries).toLocaleString()}-{getEnd(search, totalEntries).toLocaleString()}
                 {lastResult.total !== undefined &&
                   ` of ${totalEntries.comparator ?? ''}${totalEntries.value?.toLocaleString()}`}
               </Text>
