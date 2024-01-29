@@ -117,7 +117,7 @@ describe('SearchPopupMenu', () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(onPrompt).toBeCalledWith(searchParam, {
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
         code: 'birthdate',
         operator: option.operator,
         value: '',
@@ -294,7 +294,7 @@ describe('SearchPopupMenu', () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(onPrompt).toBeCalledWith(searchParam, {
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
         code: 'value-quantity',
         operator: option.operator,
         value: '',
@@ -424,7 +424,7 @@ describe('SearchPopupMenu', () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(onPrompt).toBeCalledWith(searchParam, {
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
         code: 'organization',
         operator: option.operator,
         value: '',
@@ -563,7 +563,7 @@ describe('SearchPopupMenu', () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(onPrompt).toBeCalledWith(searchParam, {
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
         code: 'name',
         operator: option.operator,
         value: '',

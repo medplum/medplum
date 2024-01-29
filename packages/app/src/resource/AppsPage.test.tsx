@@ -62,7 +62,7 @@ describe('AppsPage', () => {
       fireEvent.click(screen.getByText('Inferno Client'));
     });
 
-    expect(window.location.assign).toBeCalled();
+    expect(window.location.assign).toHaveBeenCalled();
   });
 
   test('Encounter Smart App Launch', async () => {
@@ -84,7 +84,7 @@ describe('AppsPage', () => {
       fireEvent.click(screen.getByText('Inferno Client'));
     });
 
-    expect(window.location.assign).toBeCalled();
+    expect(window.location.assign).toHaveBeenCalled();
   });
 
   test('Access denied to ClientApplications', async () => {

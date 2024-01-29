@@ -3,12 +3,12 @@ import { Quantity } from '@medplum/fhirtypes';
 import { useState, WheelEvent } from 'react';
 
 export interface QuantityInputProps {
-  name: string;
-  defaultValue?: Quantity;
-  autoFocus?: boolean;
-  required?: boolean;
-  onChange?: (value: Quantity) => void;
-  disableWheel?: boolean;
+  readonly name: string;
+  readonly defaultValue?: Quantity;
+  readonly autoFocus?: boolean;
+  readonly required?: boolean;
+  readonly onChange?: (value: Quantity) => void;
+  readonly disableWheel?: boolean;
 }
 
 export function QuantityInput(props: QuantityInputProps): JSX.Element {

@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 type ConnectionStatus = 'IDLE' | 'CONNECTING' | 'CONNECTED' | 'DISCONNECTING' | 'DISCONNECTED' | 'UNSUBSCRIBED';
 
 type WebSocketHandlerProps = {
-  clientId: string;
-  onMessage: (message: FhircastMessagePayload) => void;
-  subRequest?: SubscriptionRequest;
-  onStatusChange?: (status: ConnectionStatus) => void;
+  readonly clientId: string;
+  readonly onMessage: (message: FhircastMessagePayload) => void;
+  readonly subRequest?: SubscriptionRequest;
+  readonly onStatusChange?: (status: ConnectionStatus) => void;
 };
 
 export default function ConnectionHandler(props: WebSocketHandlerProps): null {

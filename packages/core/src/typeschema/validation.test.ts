@@ -920,12 +920,10 @@ describe('FHIR resource validation', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
 
     binary.data = 123 as unknown as string;
-    expect(() => validateResource(binary)).toThrowError(
-      'Invalid JSON type: expected string, but got number (Binary.data)'
-    );
+    expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got number (Binary.data)');
 
     binary.data = '===';
-    expect(() => validateResource(binary)).toThrowError('Invalid base64Binary format');
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
 
     binary.data = 'aGVsbG8=';
     expect(() => validateResource(binary)).not.toThrow();
@@ -935,7 +933,7 @@ describe('FHIR resource validation', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
     patient.active = 123 as unknown as boolean;
-    expect(() => validateResource(patient)).toThrowError(
+    expect(() => validateResource(patient)).toThrow(
       'Invalid JSON type: expected boolean, but got number (Patient.active)'
     );
 
@@ -950,12 +948,12 @@ describe('FHIR resource validation', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
     patient.birthDate = 123 as unknown as string;
-    expect(() => validateResource(patient)).toThrowError(
+    expect(() => validateResource(patient)).toThrow(
       'Invalid JSON type: expected string, but got number (Patient.birthDate)'
     );
 
     patient.birthDate = 'x';
-    expect(() => validateResource(patient)).toThrowError('Invalid date format');
+    expect(() => validateResource(patient)).toThrow('Invalid date format');
 
     patient.birthDate = '2000-01-01';
     expect(() => validateResource(patient)).not.toThrow();
@@ -965,12 +963,12 @@ describe('FHIR resource validation', () => {
     const condition: Condition = { resourceType: 'Condition', subject: { reference: 'Patient/1' } };
 
     condition.recordedDate = 123 as unknown as string;
-    expect(() => validateResource(condition)).toThrowError(
+    expect(() => validateResource(condition)).toThrow(
       'Invalid JSON type: expected string, but got number (Condition.recordedDate)'
     );
 
     condition.recordedDate = 'x';
-    expect(() => validateResource(condition)).toThrowError('Invalid dateTime format');
+    expect(() => validateResource(condition)).toThrow('Invalid dateTime format');
 
     condition.recordedDate = '2022-02-02';
     expect(() => validateResource(condition)).not.toThrow();
@@ -986,15 +984,15 @@ describe('FHIR resource validation', () => {
     const media: Media = { resourceType: 'Media', status: 'completed', content: { title: 'x' } };
 
     media.duration = 'x' as unknown as number;
-    expect(() => validateResource(media)).toThrowError(
+    expect(() => validateResource(media)).toThrow(
       'Invalid JSON type: expected number, but got string (Media.duration)'
     );
 
     media.duration = NaN;
-    expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
+    expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = Infinity;
-    expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
+    expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = 123.5;
     expect(() => validateResource(media)).not.toThrow();
@@ -1010,12 +1008,12 @@ describe('FHIR resource validation', () => {
     } as ImplementationGuide;
 
     ig.packageId = 123 as unknown as string;
-    expect(() => validateResource(ig)).toThrowError(
+    expect(() => validateResource(ig)).toThrow(
       'Invalid JSON type: expected string, but got number (ImplementationGuide.packageId)'
     );
 
     ig.packageId = '$';
-    expect(() => validateResource(ig)).toThrowError('Invalid id format');
+    expect(() => validateResource(ig)).toThrow('Invalid id format');
 
     ig.packageId = 'foo';
     expect(() => validateResource(ig)).not.toThrow();
@@ -1025,15 +1023,15 @@ describe('FHIR resource validation', () => {
     const obs: Observation = { resourceType: 'Observation', status: 'final', code: { text: 'x' } };
 
     obs.issued = 123 as unknown as string;
-    expect(() => validateResource(obs)).toThrowError(
+    expect(() => validateResource(obs)).toThrow(
       'Invalid JSON type: expected string, but got number (Observation.issued)'
     );
 
     obs.issued = 'x';
-    expect(() => validateResource(obs)).toThrowError('Invalid instant format');
+    expect(() => validateResource(obs)).toThrow('Invalid instant format');
 
     obs.issued = '2022-02-02';
-    expect(() => validateResource(obs)).toThrowError('Invalid instant format');
+    expect(() => validateResource(obs)).toThrow('Invalid instant format');
 
     obs.issued = '2022-02-02T12:00:00-04:00';
     expect(() => validateResource(obs)).not.toThrow();
@@ -1046,20 +1044,18 @@ describe('FHIR resource validation', () => {
     const sp: SubstanceProtein = { resourceType: 'SubstanceProtein' };
 
     sp.numberOfSubunits = 'x' as unknown as number;
-    expect(() => validateResource(sp)).toThrowError(
+    expect(() => validateResource(sp)).toThrow(
       'Invalid JSON type: expected number, but got string (SubstanceProtein.numberOfSubunits)'
     );
 
     sp.numberOfSubunits = NaN;
-    expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = Infinity;
-    expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 123.5;
-    expect(() => validateResource(sp)).toThrowError(
-      'Expected number to be an integer (SubstanceProtein.numberOfSubunits)'
-    );
+    expect(() => validateResource(sp)).toThrow('Expected number to be an integer (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 10;
     expect(() => validateResource(sp)).not.toThrow();
@@ -1069,12 +1065,10 @@ describe('FHIR resource validation', () => {
     const acct: Account = { resourceType: 'Account', status: 'active' };
 
     acct.name = 123 as unknown as string;
-    expect(() => validateResource(acct)).toThrowError(
-      'Invalid JSON type: expected string, but got number (Account.name)'
-    );
+    expect(() => validateResource(acct)).toThrow('Invalid JSON type: expected string, but got number (Account.name)');
 
     acct.name = '    ';
-    expect(() => validateResource(acct)).toThrowError('String must contain non-whitespace content (Account.name)');
+    expect(() => validateResource(acct)).toThrow('String must contain non-whitespace content (Account.name)');
 
     acct.name = 'test';
     expect(() => validateResource(acct)).not.toThrow();
@@ -1092,24 +1086,24 @@ describe('FHIR resource validation', () => {
     };
 
     appt.minutesDuration = 'x' as unknown as number;
-    expect(() => validateResource(appt)).toThrowError(
+    expect(() => validateResource(appt)).toThrow(
       'Invalid JSON type: expected number, but got string (Appointment.minutesDuration)'
     );
 
     appt.minutesDuration = NaN;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = Infinity;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = 123.5;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be an integer (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.minutesDuration)');
 
     appt.minutesDuration = -1;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
 
     appt.minutesDuration = 0;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
 
     appt.minutesDuration = 10;
     expect(() => validateResource(appt)).not.toThrow();
@@ -1127,21 +1121,21 @@ describe('FHIR resource validation', () => {
     };
 
     appt.priority = 'x' as unknown as number;
-    expect(() => validateResource(appt)).toThrowError(
+    expect(() => validateResource(appt)).toThrow(
       'Invalid JSON type: expected number, but got string (Appointment.priority)'
     );
 
     appt.priority = NaN;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = Infinity;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = 123.5;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be an integer (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.priority)');
 
     appt.priority = -1;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be non-negative (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be non-negative (Appointment.priority)');
 
     appt.priority = 0;
     expect(() => validateResource(appt)).not.toThrow();

@@ -361,7 +361,7 @@ describe('Client', () => {
     // First, test the initial reidrect
     const result1 = await client.signInWithRedirect();
     expect(result1).toBeUndefined();
-    expect(assign).toBeCalledWith(expect.stringMatching(/authorize\?.+scope=/));
+    expect(assign).toHaveBeenCalledWith(expect.stringMatching(/authorize\?.+scope=/));
 
     // Mock response code
     Object.defineProperty(window, 'location', {
@@ -390,7 +390,7 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
     client.signOutWithRedirect();
-    expect(window.location.assign).toBeCalled();
+    expect(window.location.assign).toHaveBeenCalled();
   });
 
   test('Sign in with external auth', async () => {
@@ -411,9 +411,9 @@ describe('Client', () => {
       }
     );
     expect(result).toBeUndefined();
-    expect(assign).toBeCalledWith(expect.stringMatching(/authorize\?.+scope=/));
-    expect(assign).toBeCalledWith(expect.stringContaining('code_challenge'));
-    expect(assign).toBeCalledWith(expect.stringContaining('code_challenge_method'));
+    expect(assign).toHaveBeenCalledWith(expect.stringMatching(/authorize\?.+scope=/));
+    expect(assign).toHaveBeenCalledWith(expect.stringContaining('code_challenge'));
+    expect(assign).toHaveBeenCalledWith(expect.stringContaining('code_challenge_method'));
   });
 
   test('Sign in with external auth -- disabled PKCE', async () => {
@@ -435,8 +435,8 @@ describe('Client', () => {
       false
     );
     expect(result).toBeUndefined();
-    expect(assign).not.toBeCalledWith(expect.stringContaining('code_challenge'));
-    expect(assign).not.toBeCalledWith(expect.stringContaining('code_challenge_method'));
+    expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge'));
+    expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge_method'));
   });
 
   test('External auth token exchange', async () => {
@@ -799,7 +799,7 @@ describe('Client', () => {
     const result2 = await client.readResource('Patient', '123');
     expect(result2).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({
         method: 'GET',
@@ -826,7 +826,7 @@ describe('Client', () => {
     const result2 = await client.readResource('Patient', '123');
     expect(result2).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({
         method: 'GET',
@@ -864,7 +864,7 @@ describe('Client', () => {
     const result2 = await client.readResource('Patient', patientId);
     expect(result2).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `https://api.medplum.com/fhir/R4/Patient/${patientId}`,
       expect.objectContaining({
         method: 'GET',
@@ -875,7 +875,7 @@ describe('Client', () => {
         },
       })
     );
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `https://api.medplum.com/oauth2/token`,
       expect.objectContaining({
         method: 'POST',
@@ -912,7 +912,7 @@ describe('Client', () => {
     const result2 = await client.readResource('Patient', patientId);
     expect(result2).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `https://api.medplum.com/fhir/R4/Patient/${patientId}`,
       expect.objectContaining({
         method: 'GET',
@@ -923,7 +923,7 @@ describe('Client', () => {
         },
       })
     );
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `https://api.medplum.com/oauth2/token`,
       expect.objectContaining({
         method: 'POST',
@@ -1102,7 +1102,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch, onUnauthenticated });
     const result = client.get('expired');
     await expect(result).rejects.toThrow('Unauthenticated');
-    expect(onUnauthenticated).toBeCalled();
+    expect(onUnauthenticated).toHaveBeenCalled();
   });
 
   test('fhirUrl', () => {
@@ -1118,7 +1118,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.readResource('Patient', '123');
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({ method: 'GET' })
     );
@@ -1131,7 +1131,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.readReference({ reference: 'Patient/123' });
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({ method: 'GET' })
     );
@@ -1175,7 +1175,7 @@ describe('Client', () => {
     expect(client.getCached('Patient', '123')).toBeUndefined(); // Promise in the cache
     const result = await readPromise;
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({ method: 'GET' })
     );
@@ -1212,7 +1212,7 @@ describe('Client', () => {
     expect(client.getCachedReference(reference)).toBeUndefined(); // Promise in the cache
     const result = await readPromise;
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({ method: 'GET' })
     );
@@ -1259,7 +1259,7 @@ describe('Client', () => {
     expect(client.getCached('Patient', '123')).toBeUndefined(); // Cache is disabled
     const result = await readPromise;
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({ method: 'GET' })
     );
@@ -1273,7 +1273,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.readHistory('Patient', '123');
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123/_history',
       expect.objectContaining({ method: 'GET' })
     );
@@ -1284,7 +1284,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.readPatientEverything('123');
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123/$everything',
       expect.objectContaining({ method: 'GET' })
     );
@@ -1295,7 +1295,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.createResource({ resourceType: 'Patient' });
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient',
       expect.objectContaining({
         method: 'POST',
@@ -1350,7 +1350,7 @@ describe('Client', () => {
       'name:contains=bob'
     );
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   test('Update resource', async () => {
@@ -1358,7 +1358,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.updateResource({ resourceType: 'Patient', id: '123' });
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({
         method: 'PUT',
@@ -1413,7 +1413,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.createAttachment('Hello world', undefined, ContentType.TEXT);
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary',
       expect.objectContaining({
         method: 'POST',
@@ -1431,7 +1431,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.createBinary('Hello world', undefined, ContentType.TEXT);
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary',
       expect.objectContaining({
         method: 'POST',
@@ -1449,7 +1449,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.createBinary('Hello world', 'hello.txt', ContentType.TEXT);
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt',
       expect.objectContaining({
         method: 'POST',
@@ -1482,8 +1482,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
     const promise = client.createBinary('Hello world', undefined, ContentType.TEXT, onProgress);
-    expect(xhrMock.open).toBeCalled();
-    expect(xhrMock.setRequestHeader).toBeCalled();
+    expect(xhrMock.open).toHaveBeenCalled();
+    expect(xhrMock.setRequestHeader).toHaveBeenCalled();
 
     // Emulate xhr progress events
     (xhrMock.upload?.onprogress as EventListener)(new Event(''));
@@ -1523,7 +1523,7 @@ describe('Client', () => {
       fonts
     );
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary',
       expect.objectContaining({
         method: 'POST',
@@ -1547,7 +1547,7 @@ describe('Client', () => {
       fonts
     );
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary?_filename=report.pdf',
       expect.objectContaining({
         method: 'POST',
@@ -1570,7 +1570,7 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(result.basedOn).toBeDefined();
     expect(result.encounter).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Communication',
       expect.objectContaining({
         method: 'POST',
@@ -1593,7 +1593,7 @@ describe('Client', () => {
     );
     expect(result).toBeDefined();
     expect(result.basedOn).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Communication',
       expect.objectContaining({
         method: 'POST',
@@ -1608,7 +1608,7 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(result.basedOn).toBeDefined();
     expect(result.subject).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Communication',
       expect.objectContaining({
         method: 'POST',
@@ -1623,7 +1623,7 @@ describe('Client', () => {
       { op: 'replace', path: '/name/0/family', value: 'Doe' },
     ]);
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({
         method: 'PATCH',
@@ -1636,7 +1636,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.deleteResource('Patient', 'xyz');
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/xyz',
       expect.objectContaining({
         method: 'DELETE',
@@ -1649,7 +1649,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.validateResource({ resourceType: 'Patient' });
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/$validate',
       expect.objectContaining({
         method: 'POST',
@@ -1670,7 +1670,7 @@ describe('Client', () => {
 
     const result1 = await client.executeBot(bot.id as string, {});
     expect(result1).toBeDefined();
-    expect(fetch).toBeCalledWith('https://api.medplum.com/fhir/R4/Bot/123/$execute', expect.objectContaining({}));
+    expect(fetch).toHaveBeenCalledWith('https://api.medplum.com/fhir/R4/Bot/123/$execute', expect.objectContaining({}));
   });
 
   test('Execute bot by Identifier', async () => {
@@ -1686,7 +1686,7 @@ describe('Client', () => {
 
     const result2 = await client.executeBot(bot.identifier?.[0] as Identifier, {});
     expect(result2).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com|123',
       expect.objectContaining({})
     );
@@ -1732,7 +1732,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.search('Patient', 'name:contains=alice');
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient?name%3Acontains=alice',
       expect.objectContaining({ method: 'GET' })
     );
@@ -1746,7 +1746,10 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const result = await client.search('Patient');
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith('https://api.medplum.com/fhir/R4/Patient', expect.objectContaining({ method: 'GET' }));
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient',
+      expect.objectContaining({ method: 'GET' })
+    );
   });
 
   test('Search one', async () => {
@@ -1942,7 +1945,7 @@ describe('Client', () => {
     const result = await client.searchValueSet('system', 'filter');
     expect(result).toBeDefined();
     expect(result.resourceType).toBe('ValueSet');
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('https://api.medplum.com/fhir/R4/ValueSet/$expand'),
       expect.objectContaining({ method: 'GET' })
     );
@@ -1954,7 +1957,7 @@ describe('Client', () => {
     const result = await client.valueSetExpand({ url: 'system', filter: 'filter', count: 20 });
     expect(result).toBeDefined();
     expect(result.resourceType).toBe('ValueSet');
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('https://api.medplum.com/fhir/R4/ValueSet/$expand'),
       expect.objectContaining({ method: 'GET' })
     );
@@ -2008,7 +2011,7 @@ describe('Client', () => {
       const client = new MedplumClient({ fetch });
       const result = await client.executeBatch(bundle);
       expect(result).toBeDefined();
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         'https://api.medplum.com/fhir/R4',
         expect.objectContaining({
           method: 'POST',
@@ -2032,7 +2035,7 @@ describe('Client', () => {
       const client = new MedplumClient({ fetch });
       const result = await client.executeBatch(bundle, options);
       expect(result).toBeDefined();
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         'https://api.medplum.com/fhir/R4',
         expect.objectContaining({
           method: 'POST',
@@ -2056,7 +2059,7 @@ describe('Client', () => {
       text: 'Hello',
     });
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/email/v1/send',
       expect.objectContaining({
         method: 'POST',
@@ -2080,7 +2083,7 @@ describe('Client', () => {
       ContentType.HL7_V2
     );
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Agent/123/$push',
       expect.objectContaining({
         method: 'POST',
@@ -2189,7 +2192,7 @@ describe('Client', () => {
     }
   }`);
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/$graphql',
       expect.objectContaining({
         method: 'POST',
@@ -2221,7 +2224,7 @@ describe('Client', () => {
       { patientId: '123' }
     );
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/$graphql',
       expect.objectContaining({
         body: expect.stringContaining('GetPatientById'),
@@ -2474,7 +2477,7 @@ describe('Client', () => {
     test('System Level', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport();
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/$export'),
         expect.objectContaining({
           headers: {
@@ -2484,20 +2487,20 @@ describe('Client', () => {
           },
         })
       );
-      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
-      expect(fetch).toBeCalledTimes(3);
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
+      expect(fetch).toHaveBeenCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
 
     test('with optional params type, since, options', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
         expect.any(Object)
       );
-      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
-      expect(fetch).toBeCalledTimes(3);
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
+      expect(fetch).toHaveBeenCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
 
@@ -2505,18 +2508,18 @@ describe('Client', () => {
       const medplum = new MedplumClient({ fetch });
       const groupId = randomUUID();
       const response = await medplum.bulkExport(`Group/${groupId}`);
-      expect(fetch).toBeCalledWith(expect.stringContaining(`/Group/${groupId}/$export`), expect.any(Object));
-      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
-      expect(fetch).toBeCalledTimes(3);
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`/Group/${groupId}/$export`), expect.any(Object));
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
+      expect(fetch).toHaveBeenCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
 
     test('All Patient', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport(`Patient`);
-      expect(fetch).toBeCalledWith(expect.stringContaining(`/Patient/$export`), expect.any(Object));
-      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
-      expect(fetch).toBeCalledTimes(3);
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`/Patient/$export`), expect.any(Object));
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
+      expect(fetch).toHaveBeenCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
 
@@ -2548,7 +2551,7 @@ describe('Client', () => {
       const response = await medplum.bulkExport();
 
       expect(response.output).not.toBeDefined();
-      expect(fetch).toBeCalledTimes(1);
+      expect(fetch).toHaveBeenCalledTimes(1);
     });
 
     test('Failed Kickoff', async () => {
@@ -2587,7 +2590,7 @@ describe('Client', () => {
 
     test('Downloading resources via URL', async () => {
       const blob = await client.download(baseUrl);
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         baseUrl,
         expect.objectContaining({
           headers: {
@@ -2601,7 +2604,7 @@ describe('Client', () => {
 
     test('Downloading resources via `Binary/{id}` URL', async () => {
       const blob = await client.download('Binary/fake-id');
-      expect(fetch).toBeCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         `${baseUrl}${fhirUrlPath}Binary/fake-id`,
         expect.objectContaining({
           headers: {
@@ -2620,7 +2623,7 @@ describe('Client', () => {
       const client = new MedplumClient({ fetch });
       const media = await client.uploadMedia('Hello world', 'text/plain', 'hello.txt');
       expect(media).toBeDefined();
-      expect(fetch).toBeCalledTimes(2);
+      expect(fetch).toHaveBeenCalledTimes(2);
 
       const calls = fetch.mock.calls;
       expect(calls).toHaveLength(2);
@@ -2729,17 +2732,17 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch, verbose: true });
     const result = await client.readResource('Patient', '123');
     expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123',
       expect.objectContaining({ method: 'GET' })
     );
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
-    expect(console.log).toBeCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/123');
-    expect(console.log).toBeCalledWith('> Accept: application/fhir+json, */*; q=0.1');
-    expect(console.log).toBeCalledWith('> X-Medplum: extended');
-    expect(console.log).toBeCalledWith('< 200 OK');
-    expect(console.log).toBeCalledWith('< foo: bar');
+    expect(console.log).toHaveBeenCalledWith('> GET https://api.medplum.com/fhir/R4/Patient/123');
+    expect(console.log).toHaveBeenCalledWith('> Accept: application/fhir+json, */*; q=0.1');
+    expect(console.log).toHaveBeenCalledWith('> X-Medplum: extended');
+    expect(console.log).toHaveBeenCalledWith('< 200 OK');
+    expect(console.log).toHaveBeenCalledWith('< foo: bar');
   });
 });
 

@@ -82,7 +82,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Change plan title', async () => {
@@ -110,7 +110,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Change action title', async () => {
@@ -147,7 +147,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Add appointment action', async () => {
@@ -187,7 +187,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Add lab action', async () => {
@@ -227,7 +227,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Add questionnaire action', async () => {
@@ -267,7 +267,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Add task action', async () => {
@@ -307,7 +307,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Remove action', async () => {
@@ -339,6 +339,6 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 });

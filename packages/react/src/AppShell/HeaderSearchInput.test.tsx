@@ -133,7 +133,7 @@ describe('HeaderSearchInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(navigateMock).toBeCalledWith('/Patient/' + HomerSimpson.id);
+    expect(navigateMock).toHaveBeenCalledWith('/Patient/' + HomerSimpson.id);
   });
 
   test('Search by UUID', async () => {
@@ -163,7 +163,7 @@ describe('HeaderSearchInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(navigateMock).toBeCalledWith('/Patient/' + HomerSimpson.id);
+    expect(navigateMock).toHaveBeenCalledWith('/Patient/' + HomerSimpson.id);
   });
 
   test.each(['Simpson', 'hom sim', 'abc', '9001'])('onChange with %s', async (query) => {

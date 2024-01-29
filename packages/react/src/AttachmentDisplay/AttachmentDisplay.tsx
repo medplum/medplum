@@ -2,8 +2,8 @@ import { Anchor } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 
 export interface AttachmentDisplayProps {
-  value?: Attachment;
-  maxWidth?: number;
+  readonly value?: Attachment;
+  readonly maxWidth?: number;
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | null {

@@ -3,8 +3,8 @@ import { ReactNode } from 'react';
 import classes from './DescriptionList.module.css';
 
 export interface DescriptionListProps {
-  children: ReactNode;
-  compact?: boolean;
+  readonly children: ReactNode;
+  readonly compact?: boolean;
 }
 
 export function DescriptionList(props: DescriptionListProps): JSX.Element {
@@ -13,8 +13,8 @@ export function DescriptionList(props: DescriptionListProps): JSX.Element {
 }
 
 export interface DescriptionListEntryProps {
-  term: string;
-  children: ReactNode;
+  readonly term: string;
+  readonly children: ReactNode;
 }
 
 export function DescriptionListEntry(props: DescriptionListEntryProps): JSX.Element {

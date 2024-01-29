@@ -604,6 +604,8 @@ export interface ValueSetExpandParams {
  *   6. Searching
  *   7. Making GraphQL queries
  *
+ * The client can also be used to integrate with other FHIR servers. For an example, see the Epic Connection Demo Bot [here](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic).
+ *
  * @example
  * Here is a quick example of how to use the client:
  *

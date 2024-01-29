@@ -18,7 +18,7 @@ Medplum provides the [`MockClient`](https://github.com/medplum/medplum/blob/main
 
 The first step is to set up your test framework in your Bots package. Medplum Bots will should work with any typescript/javascript test runner, and the Medplum team has tested our bots with [jest](https://jestjs.io/) and [vitest](https://vitest.dev/). Follow the instructions for your favorite framework to set up you package.
 
-Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](##query-the-results) work.
+Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](#query-the-results) work.
 
 <MedplumCodeBlock language="ts" selectBlocks="index-schema">
   {ExampleCode}

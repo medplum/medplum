@@ -8,8 +8,8 @@ import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-r
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 
 interface DeleteTaskProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function DeleteTask(props: DeleteTaskProps): JSX.Element {

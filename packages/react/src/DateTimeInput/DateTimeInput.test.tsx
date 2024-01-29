@@ -51,7 +51,7 @@ describe('DateTimeInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Placeholder'), { target: { value: localString } });
     });
 
-    expect(onChange).toBeCalledWith(isoString);
+    expect(onChange).toHaveBeenCalledWith(isoString);
   });
 
   test('Invalid date/time strings', () => {

@@ -10,14 +10,14 @@ import { useCallback, useState } from 'react';
 const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 
 interface ShowNotificationProps {
-  id: string;
-  title: string;
-  message: string;
-  color?: string;
-  icon?: JSX.Element | null;
-  withCloseButton?: boolean;
-  method?: 'show' | 'update';
-  loading?: boolean;
+  readonly id: string;
+  readonly title: string;
+  readonly message: string;
+  readonly color?: string;
+  readonly icon?: JSX.Element | null;
+  readonly withCloseButton?: boolean;
+  readonly method?: 'show' | 'update';
+  readonly loading?: boolean;
 }
 
 function showNotification({

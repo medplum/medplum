@@ -4,7 +4,7 @@ import { useResource } from '@medplum/react';
 import { InfoBar } from './InfoBar';
 
 export interface SpecimenHeaderProps {
-  specimen: Specimen | Reference<Specimen>;
+  readonly specimen: Specimen | Reference<Specimen>;
 }
 
 export function SpecimenHeader(props: SpecimenHeaderProps): JSX.Element | null {

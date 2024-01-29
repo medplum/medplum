@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { usePrevious } from '../hooks';
 
 interface TopicGeneratorProps {
-  onTopicChange?: (topic: string | undefined) => void;
+  readonly onTopicChange?: (topic: string | undefined) => void;
 }
 
 export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element {

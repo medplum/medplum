@@ -31,7 +31,7 @@ export class CodingTable extends LookupTable<Coding> {
       await this.deleteValuesForResource(client, resource);
 
       const elements = this.getCodeSystemElements(resource);
-      await importCodeSystem(resource as CodeSystem, elements.concepts, elements.properties);
+      await importCodeSystem(client, resource as CodeSystem, elements.concepts, elements.properties);
     }
   }
 

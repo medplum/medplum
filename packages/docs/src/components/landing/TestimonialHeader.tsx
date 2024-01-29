@@ -1,10 +1,10 @@
 import styles from './TestimonialHeader.module.css';
 
 export interface TestimonialHeaderProps {
-  imgSrc: string;
-  name: string;
-  title?: string;
-  twitter?: string;
+  readonly imgSrc: string;
+  readonly name: string;
+  readonly title?: string;
+  readonly twitter?: string;
 }
 
 export function TestimonialHeader(props: TestimonialHeaderProps): JSX.Element {

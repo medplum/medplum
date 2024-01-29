@@ -5,10 +5,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {
-  visible: boolean;
-  search: SearchRequest;
-  onOk: (search: SearchRequest) => void;
-  onCancel: () => void;
+  readonly visible: boolean;
+  readonly search: SearchRequest;
+  readonly onOk: (search: SearchRequest) => void;
+  readonly onCancel: () => void;
 }
 
 export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | null {

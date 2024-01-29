@@ -4,9 +4,9 @@ import { Delta, diff } from '../utils/diff';
 import classes from './ResourceDiff.module.css';
 
 export interface ResourceDiffProps {
-  original: Resource;
-  revised: Resource;
-  ignoreMeta?: boolean;
+  readonly original: Resource;
+  readonly revised: Resource;
+  readonly ignoreMeta?: boolean;
 }
 
 export function ResourceDiff(props: ResourceDiffProps): JSX.Element {

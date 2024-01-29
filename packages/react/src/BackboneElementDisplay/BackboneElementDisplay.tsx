@@ -5,10 +5,10 @@ import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourceProp
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 
 export interface BackboneElementDisplayProps {
-  value: TypedValue;
-  compact?: boolean;
-  ignoreMissingValues?: boolean;
-  link?: boolean;
+  readonly value: TypedValue;
+  readonly compact?: boolean;
+  readonly ignoreMissingValues?: boolean;
+  readonly link?: boolean;
 }
 
 export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.Element | null {

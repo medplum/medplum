@@ -7,7 +7,7 @@ import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInp
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export type ExtensionInputProps = ComplexTypeInputProps<Extension> & {
-  propertyType: ElementDefinitionType;
+  readonly propertyType: ElementDefinitionType;
 };
 
 export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {

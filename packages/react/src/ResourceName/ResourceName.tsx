@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface ResourceNameProps extends TextProps {
-  value?: Reference | Resource;
-  link?: boolean;
+  readonly value?: Reference | Resource;
+  readonly link?: boolean;
 }
 
 export function ResourceName(props: ResourceNameProps): JSX.Element | null {

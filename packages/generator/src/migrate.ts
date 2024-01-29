@@ -374,12 +374,12 @@ function buildLookupTable(result: SchemaDefinition, tableName: string, columns: 
   const tableDefinition: TableDefinition = {
     name: tableName,
     columns: [
-      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' },
+      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' }, // Deprecated - to be removed
       { name: 'resourceId', type: 'UUID NOT NULL' },
       { name: 'index', type: 'INTEGER NOT NULL' },
       { name: 'content', type: 'TEXT NOT NULL' },
     ],
-    indexes: [],
+    indexes: [{ columns: ['resourceId'], indexType: 'btree' }],
   };
 
   for (const column of columns) {
@@ -394,7 +394,8 @@ function buildValueSetElementTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'ValueSetElement',
     columns: [
-      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' },
+      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' }, // Deprecated - to be removed
+      { name: 'resourceId', type: 'UUID NOT NULL' },
       { name: 'system', type: 'TEXT' },
       { name: 'code', type: 'TEXT' },
       { name: 'display', type: 'TEXT' },

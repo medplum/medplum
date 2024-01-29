@@ -1382,7 +1382,7 @@ describe('OAuth2 Token', () => {
       client_assertion: jwt,
     });
     expect(res.status).toBe(200);
-    expect(jwtVerify).toBeCalledTimes(3);
+    expect(jwtVerify).toHaveBeenCalledTimes(3);
   });
 
   test('Client assertion multiple inner error', async () => {
@@ -1413,7 +1413,7 @@ describe('OAuth2 Token', () => {
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
-    expect(jwtVerify).toBeCalledTimes(2);
+    expect(jwtVerify).toHaveBeenCalledTimes(2);
   });
 
   test('Client assertion invalid assertion type', async () => {

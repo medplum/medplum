@@ -3,8 +3,8 @@ import { ReactNode } from 'react';
 import classes from './InfoButton.module.css';
 
 export interface InfoButtonProps {
-  onClick?: () => void;
-  children: ReactNode;
+  readonly onClick?: () => void;
+  readonly children: ReactNode;
 }
 
 export function InfoButton(props: InfoButtonProps): JSX.Element {

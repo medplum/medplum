@@ -3,7 +3,7 @@ import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface DefaultResourceTimelineProps {
-  resource: Resource | Reference;
+  readonly resource: Resource | Reference;
 }
 
 export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JSX.Element {

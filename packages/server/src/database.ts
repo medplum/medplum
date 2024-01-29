@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from 'pg';
-import { MedplumDatabaseConfig } from './config';
+import { MedplumServerConfig } from './config';
 import { globalLogger } from './logger';
 import * as migrations from './migrations/schema';
 
@@ -12,15 +12,29 @@ export function getClient(): Pool {
   return pool;
 }
 
-export async function initDatabase(config: MedplumDatabaseConfig, runMigrations = true): Promise<void> {
-  pool = new Pool({
+export const locks = {
+  migration: 1,
+};
+
+export async function initDatabase(serverConfig: MedplumServerConfig, runMigrations = true): Promise<void> {
+  const config = serverConfig.database;
+
+  const poolConfig = {
     host: config.host,
     port: config.port,
     database: config.dbname,
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-  });
+  };
+
+  if (serverConfig.databaseProxyEndpoint) {
+    poolConfig.host = serverConfig.databaseProxyEndpoint;
+    poolConfig.ssl = poolConfig.ssl ?? {};
+    poolConfig.ssl.require = true;
+  }
+
+  pool = new Pool(poolConfig);
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);
@@ -29,13 +43,13 @@ export async function initDatabase(config: MedplumDatabaseConfig, runMigrations 
   let client: PoolClient | undefined;
   try {
     client = await pool.connect();
-    await client.query('SELECT pg_advisory_lock(1)');
+    await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
     if (runMigrations) {
       await migrate(client);
     }
   } finally {
     if (client) {
-      await client.query('SELECT pg_advisory_unlock_all()');
+      await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
       client.release();
     }
   }
@@ -66,8 +80,9 @@ async function migrate(client: PoolClient): Promise<void> {
   for (let i = version + 1; i <= migrationKeys.length; i++) {
     const migration = (migrations as Record<string, migrations.Migration>)['v' + i];
     if (migration) {
-      globalLogger.info('Running database migration', { version: `v${i}` });
+      const start = Date.now();
       await migration.run(client);
+      globalLogger.info('Database schema migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
     }
   }

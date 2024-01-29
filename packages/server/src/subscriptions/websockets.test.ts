@@ -1,4 +1,4 @@
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, sleep } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -275,7 +275,7 @@ describe('Subscription Heartbeat', () => {
     await shutdownApp();
   });
 
-  test('Heartbeat received after connected', () =>
+  test('Heartbeat received after binding to token', () =>
     withTestContext(async () => {
       // Create subscription to watch patient
       const subscription = await repo.createResource<Subscription>({
@@ -324,6 +324,26 @@ describe('Subscription Heartbeat', () => {
             return false;
           }
           return true;
+        })
+        .close()
+        .expectClosed();
+    }));
+
+  test('Heartbeat not received before binding to token', () =>
+    withTestContext(async () => {
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .exec(async (ws) => {
+          await new Promise<void>((resolve, reject) => {
+            ws.addEventListener('message', () => {
+              reject(new Error('Expected not to receive a message'));
+            });
+
+            sleep(80)
+              .then(() => resolve())
+              .catch(reject);
+          });
         })
         .close()
         .expectClosed();

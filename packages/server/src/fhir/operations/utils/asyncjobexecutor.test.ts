@@ -38,7 +38,7 @@ describe('AsyncJobExecutor', () => {
       });
 
       expect(resource.status).toBe('accepted');
-      expect(callback).toBeCalled();
+      expect(callback).toHaveBeenCalled();
     }));
 
   test('start with error', () =>
@@ -55,7 +55,7 @@ describe('AsyncJobExecutor', () => {
         expect((err as Error).message).toBe('AsyncJob missing');
       }
 
-      expect(callback).not.toBeCalled();
+      expect(callback).not.toHaveBeenCalled();
     }));
 
   test('run', () =>
@@ -70,7 +70,7 @@ describe('AsyncJobExecutor', () => {
       });
 
       expect(resource.status).toBe('accepted');
-      expect(callback).toBeCalled();
+      expect(callback).toHaveBeenCalled();
     }));
 
   test('run with error', async () => {
@@ -86,7 +86,7 @@ describe('AsyncJobExecutor', () => {
       expect((err as Error).message).toBe('AsyncJob missing');
     }
 
-    expect(callback).not.toBeCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 
   test('getContentLocation', () =>
@@ -114,6 +114,6 @@ describe('AsyncJobExecutor', () => {
       expect((err as Error).message).toBe('AsyncJob missing');
     }
 
-    expect(callback).not.toBeCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 });

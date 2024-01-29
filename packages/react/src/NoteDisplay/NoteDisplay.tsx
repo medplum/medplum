@@ -3,7 +3,7 @@ import { Annotation } from '@medplum/fhirtypes';
 import classes from './NoteDisplay.module.css';
 
 export interface NoteDisplayProps {
-  value?: Annotation[];
+  readonly value?: Annotation[];
 }
 
 export function NoteDisplay({ value }: NoteDisplayProps): JSX.Element | null {
