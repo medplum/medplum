@@ -108,8 +108,8 @@ interface NonNullQuantity extends Quantity {
 }
 
 const ACCURATE_COUNT_THRESHOLD = 1000;
-const COUNT_TRUNCATION_THRESHOLD = 10000;
-const COUNT_QUERY_THRESHOLD = 2 * COUNT_TRUNCATION_THRESHOLD;
+const COUNT_TRUNCATION_THRESHOLD = 20000;
+const ESTIMATED_COUNT_SAFETY_FACTOR = 2;
 
 /**
  * The SearchControl component represents the embeddable search table control.
@@ -141,7 +141,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const loadResults = useCallback(
     (options?: RequestInit) => {
       setOutcome(undefined);
-      console.log('GOT HERE');
 
       medplum
         .search(
@@ -156,36 +155,47 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             if (totalType === 'accurate') {
               setTotalEntries({ value: response.total });
             }
-            // If we receive a large (>= 20K) estimated count, truncate
-            else if (response.total > COUNT_QUERY_THRESHOLD) {
-              setTotalEntries({ value: COUNT_TRUNCATION_THRESHOLD, comparator: '>' });
-            }
-            // If the count is very small (< 1000), assume the server fell back to an accurate count
+            // If the estimated count is very small (< 1000), assume the server fell back to an accurate count
             else if (response.total < ACCURATE_COUNT_THRESHOLD) {
               setTotalEntries({ value: response.total });
-            }
-            // If we receive an intermediate  estimated count (1000 < count <= 20K), perform an accurate count
-            else {
-              medplum
-                .search(
-                  search.resourceType as ResourceType,
-                  formatSearchQuery({ ...search, total: totalType, fields: undefined }) + '&_summary=count',
-                  options
-                )
-                .then((countResponse) => {
-                  // If we get an accurate count above the truncation limit, truncate to avoid discontinuous behavior
-                  if ((countResponse.total as number) > COUNT_TRUNCATION_THRESHOLD) {
-                    setTotalEntries({ value: COUNT_TRUNCATION_THRESHOLD, comparator: '>' });
-                  }
-                  // Otherwise, display the accurate count
-                  else {
-                    setTotalEntries({ value: response.total as number });
-                  }
-                })
-                .catch((reason) => {
-                  setState({ ...stateRef.current, searchResponse: undefined });
-                  setOutcome(reason);
-                });
+            } else {
+              // If we receive a large (>= 20K) estimated count,
+              // use the safety factor compute a lower-bound on the counts
+              const estimatedCount = response.total;
+              const lowerBound = getEstimatedLowerBound(estimatedCount);
+              if (lowerBound === estimatedCount) {
+                // If the estimated lower bound is the same as the count, we have an intermediate-size count
+                // If we receive an intermediate estimated count (1000 < count <= 20K), perform an accurate count
+                medplum
+                  .search(
+                    search.resourceType as ResourceType,
+                    formatSearchQuery({ ...search, total: totalType, fields: undefined }) + '&_summary=count',
+                    options
+                  )
+                  .then((countResponse) => {
+                    const accurateCount = countResponse.total as number;
+                    const estimationSafetyThreshold = Math.floor(
+                      COUNT_TRUNCATION_THRESHOLD / ESTIMATED_COUNT_SAFETY_FACTOR
+                    );
+                    if (accurateCount < estimationSafetyThreshold && accurateCount < COUNT_TRUNCATION_THRESHOLD) {
+                      // If the estimated count is small enough, use it as it
+                      setTotalEntries({ value: accurateCount });
+                    } else {
+                      // If the accurate count is inside our of safety margin, truncate it so that behavior is consistent
+                      // with our estimation logic
+                      setTotalEntries({
+                        value: estimationSafetyThreshold,
+                        comparator: '>',
+                      });
+                    }
+                  })
+                  .catch((reason) => {
+                    setState({ ...stateRef.current, searchResponse: undefined });
+                    setOutcome(reason);
+                  });
+              } else {
+                setTotalEntries({ value: lowerBound, comparator: '>' });
+              }
             }
           }
 
@@ -668,8 +678,23 @@ function updateTotalFromLastResult(
 ): void {
   const totalFromLastResult = (search.offset ?? 0) + (lastResult?.entry?.length ?? 0);
   const hasNext = !!lastResult?.link?.some((l) => l.relation === 'next');
-  console.log({ totalFromLastResult, totalEntries, hasNext });
   if (totalFromLastResult > totalEntries.value) {
     setTotalEntries({ value: totalFromLastResult, comparator: hasNext ? '>' : undefined });
   }
+}
+
+/**
+ * Computes a estimated
+ * @param estimatedCount - the estimated count of search results
+ * @returns A lower bound
+ */
+function getEstimatedLowerBound(estimatedCount: number): number {
+  if (estimatedCount >= COUNT_TRUNCATION_THRESHOLD) {
+    const threshold = Math.floor(estimatedCount / ESTIMATED_COUNT_SAFETY_FACTOR);
+    const numDigits = Math.ceil(Math.log10(threshold));
+    // Truncate to the nearest 1000s, 1000000s, etc.
+    const truncationFactor = Math.pow(10, Math.ceil(numDigits / 3 - 1) * 3);
+    return Math.floor(threshold / truncationFactor) * truncationFactor;
+  }
+  return estimatedCount;
 }
