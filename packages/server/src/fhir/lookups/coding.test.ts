@@ -1,9 +1,9 @@
 import { CodeSystem } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { systemRepo } from '../repo';
-import { getClient } from '../../database';
+import { getDatabasePool } from '../../database';
 import { withTestContext } from '../../test.setup';
+import { systemRepo } from '../repo';
 
 describe('Coding lookup table', () => {
   beforeAll(async () => {
@@ -31,7 +31,7 @@ describe('Coding lookup table', () => {
 
       const systemResource = await systemRepo.createResource(codeSystem);
 
-      const db = getClient();
+      const db = getDatabasePool();
       const results = await db.query('SELECT id, code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
       expect(results.rows.map((r) => `${r.code} (${r.display})`).sort()).toEqual([
         'AB (Ambulance)',
@@ -66,7 +66,7 @@ describe('Coding lookup table', () => {
 
       const systemResource = await systemRepo.createResource(codeSystem);
 
-      const db = getClient();
+      const db = getDatabasePool();
       const results = await db.query('SELECT code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
       expect(results.rowCount).toEqual(0);
     }));

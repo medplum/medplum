@@ -4,10 +4,10 @@ import { Request, Response } from 'express';
 import { URL } from 'url';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
+import { getRequestContext } from '../context';
 import { systemRepo } from '../fhir/repo';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
-import { getClient } from './utils';
-import { getRequestContext } from '../context';
+import { getClientApplication } from './utils';
 
 /*
  * Handles the OAuth/OpenID Authorization Endpoint.
@@ -53,7 +53,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   // If these are invalid, then show an error page.
   let client = undefined;
   try {
-    client = await getClient(params.client_id as string);
+    client = await getClientApplication(params.client_id as string);
   } catch (err) {
     res.status(400).send('Client not found');
     return false;

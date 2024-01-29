@@ -17,7 +17,7 @@ import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { getClient } from '../database';
+import { getDatabasePool } from '../database';
 import { bundleContains, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
@@ -833,7 +833,7 @@ describe('FHIR Repo', () => {
         subject: createReference(patient),
       });
 
-      const result = await getClient().query(
+      const result = await getDatabasePool().query(
         'SELECT "code", "system", "value" FROM "Observation_Token" WHERE "resourceId"=$1',
         [obs1.id]
       );
