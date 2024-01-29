@@ -115,16 +115,8 @@ export class SchemaCrawler {
   }
 
   private crawlElementsImpl(elements: InternalTypeSchema['elements'], path: string): void {
-    const sortPreference = ['code', 'category', 'component'];
-    let sortedElements = Object.entries(elements);
-    if (this.elementsContextStack.length === 1) {
-      sortedElements = sortedElements.filter((i) => sortPreference.includes(i[0]));
-    }
-    sortedElements.sort((a, b) => {
-      const aPref = sortPreference.indexOf(a[0]);
-      const bPref = sortPreference.indexOf(b[0]);
-      return aPref - bPref;
-    });
+    const sortedElements = Object.entries(elements);
+    sortedElements.sort();
     for (const [key, element] of sortedElements) {
       const elementPath = path + '.' + key;
       this.crawlElementImpl(element, elementPath);
@@ -144,8 +136,6 @@ export class SchemaCrawler {
     if (this.visitor.onEnterElement) {
       this.visitor.onEnterElement(path, element, this.elementsContext);
     }
-
-    // this.visitor.visitElement(path, element);
 
     if (isPopulated(element?.slicing?.slices)) {
       this.crawlSlicingImpl(element.slicing, path);

@@ -152,7 +152,7 @@ class DefaultValueVisitor implements SchemaVisitor {
     if (!valueContext) {
       throw new Error('Expected valueContext to exist when exiting resource');
     }
-    this.debug('onExitResource', JSON.stringify(valueContext.typedValues));
+    this.debug('onExitResource', JSON.stringify(valueContext.typedValues, undefined, 2));
     console.assert(this.valueStack.length === 0, 'Expected valueStack to be empty when exiting resource');
 
     this.schemaStack.pop();
@@ -160,106 +160,77 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
+    this.debug(`onEnterElement ${path} ${element.min > 0 ? `min: ${element.min}` : ''}`);
+
     const parentPath = this.value.path;
     const parentTVs = this.value.typedValues;
     const key = getPathDifference(parentPath, path);
-    this.debug('onEnterElement', path);
+    const noop = element.type.length > 1;
+    const elementType = element.type[0].code;
+    const elements = elementsContext.elements;
+    const isComplex = elementType.startsWith(elementType[0].toUpperCase());
 
-    if (path === 'Observation.code') {
-      // debugger;
+    if (path === 'Observation.effective[x]') {
+      debugger;
     }
-    if (path === 'Observation.category') {
-      // debugger;
-    }
-    if (path === 'Observation.category.coding.code') {
-      // debugger;
-    }
+
     const elementTVs: TypedValue[] = [];
 
     for (let i = 0; i < parentTVs.length; i++) {
       const parentTV = parentTVs[i];
-      let elementValues: (TypedValue | TypedValue[] | undefined)[];
-      if (Array.isArray(parentTV.value)) {
-        const parentType = parentTV.type;
-        // applyMinimum(parentValue, key, element, elementsContext.elements, true);
-        if (!isPopulated(parentTV.value)) {
-          debugger;
-          this.debug(`parentValue is missing: ${JSON.stringify(parentTV.value)}`);
-        }
 
-        const modifiedParentValue = applyFixedOrPatternValue(parentTV, key, element, elementsContext.elements, true);
-        debugger; //what is this?
-        const flattenedElementValues = (modifiedParentValue as any[])
-          .map((innerParentValue) =>
-            this.getValueAtPath(path, { type: parentType, value: innerParentValue }, parentPath, this.schema?.url)
-          )
-          .flat()
-          .filter((v) => v !== undefined);
-        elementValues = flattenedElementValues;
-      } else {
-        if (path === 'Observation.category.coding.id') {
-          debugger;
-        }
-        // applyMinimum(parentValue, key, element, elementsContext.elements, true);
-        const modifiedParentValue = applyFixedOrPatternValue(parentTV, key, element, elementsContext.elements, true);
-        if (parentTV.value === undefined && isPopulated(modifiedParentValue)) {
-          if (this.value.type === 'slice') {
-            this.value.typedValues[i] = { type: 'TODO', value: [modifiedParentValue] };
-          } else if (this.value.type === 'resource') {
-            throw new Error('This should not happen?');
-          } else {
-            throw new Error('Cannot have element nested below element');
-          }
-        }
-
-        const modifiedParentTV = { type: parentTV.type, value: modifiedParentValue };
-
-        const badGetValue = this.getValueAtPath(path, modifiedParentTV, parentPath, this.schema?.url);
-        const goodGetValue = getValueAtKey(
-          modifiedParentValue,
-          getPathDifference(parentPath, path),
-          element,
-          elementsContext.elements
-        );
-        this.debug(`good vs bad\nbad:\n${JSON.stringify(badGetValue)}\ngood:\n${JSON.stringify(goodGetValue)}`);
-
-        elementValues = this.getValueAtPath(path, modifiedParentTV, parentPath, this.schema?.url);
-        /*
-        if (element.isArray && element.min > 0 && elementValues.length === 0) {
-          const emptyArray: any[] = [];
-          (emptyArray as any).__w = `onEnterElement[${key}] min > 0`;
-          parentValue.push(emptyArray);
-          sliceValues.push(emptyArray);
-        }*/
+      if (parentTV.value === undefined) {
+        elementTVs.push({ type: 'undefined', value: undefined });
+        continue;
       }
 
-      if (elementValues.length === 0) {
-        elementTVs.push({ type: 'undefined', value: undefined });
-      } else {
-        for (const elementValue of elementValues) {
-          let typedValue: TypedValue;
+      if (noop) {
+        elementTVs.push({
+          type: 'TODO-noop',
+          value: getValueAtKey(parentTV.value, key, element, elementsContext.elements),
+        });
+        continue;
+      }
 
-          if (elementValue === undefined) {
-            typedValue = { type: 'undefined', value: undefined };
-          } else if (Array.isArray(elementValue)) {
-            debugger; //why?
-            if (elementValue.length === 0) {
-              // debugger;
-            }
-            typedValue = {
-              type: element.type[0].code, //elementValue[0].type,
-              value: elementValue.map((e) => e.value),
-            };
+      const existingValue = getValueAtKey(parentTV.value, key, element, elements);
+      if (element.min > 0 && existingValue === undefined) {
+        if (isComplex) {
+          if (element.isArray) {
+            // Do not create actual entries in the array; onEnterSlice takes care of that
+            setValueAtKey(parentTV.value, [], key, element);
           } else {
-            typedValue = elementValue;
-          }
-
-          elementTVs.push(typedValue);
-
-          if (typedValue.value !== undefined) {
-            this.debug('elementValue', JSON.stringify(typedValue));
+            if (element.min > 1) {
+              throw new Error('Element min count greater than 1 for non-array element.');
+            }
+            setValueAtKey(parentTV.value, {}, key, element);
           }
         }
+      }
+
+      const modifiedParentValue = applyFixedOrPatternValue(parentTV, key, element, elements, true);
+
+      if (parentTV.value === undefined && modifiedParentValue !== undefined) {
+        if (this.value.type === 'slice') {
+          this.value.typedValues[i] = { type: 'TODO-slice', value: [modifiedParentValue] };
+        } else if (this.value.type === 'resource') {
+          this.value.typedValues[i] = { type: 'TODO-resource', value: modifiedParentValue };
+        } else {
+          throw new Error('Cannot have element nested below element');
+        }
+      }
+
+      if (modifiedParentValue === undefined) {
+        elementTVs.push({ type: 'undefined', value: undefined });
+      } else if (Array.isArray(modifiedParentValue)) {
+        elementTVs.push({
+          type: 'TODO-isArray',
+          value: modifiedParentValue.map((pv) => getValueAtKey(pv, key, element, elementsContext.elements)),
+        });
+      } else {
+        elementTVs.push({
+          type: 'TODO-nonArray',
+          value: getValueAtKey(modifiedParentValue, key, element, elementsContext.elements),
+        });
       }
     }
 
@@ -278,14 +249,10 @@ class DefaultValueVisitor implements SchemaVisitor {
     if (!elementValueContext) {
       throw new Error('Expected value context to exist when exiting element');
     }
-
-    this.debug('onExitElement', elementValueContext.path);
-    this.debug(elementValueContext.typedValues);
+    this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.typedValues)}`);
+    return;
     for (let i = 0; i < this.value.typedValues.length; i++) {
       const elementTV = elementValueContext.typedValues[i];
-      if (elementTV === undefined) {
-        debugger;
-      }
       if (!isPopulated(elementTV.value)) {
         continue;
       }
@@ -307,23 +274,16 @@ class DefaultValueVisitor implements SchemaVisitor {
       this.debug(`elementValueInParent: ${JSON.stringify(elementValueInParent)}`);
       if (element.isArray) {
         if (!Array.isArray(elementTV.value)) {
+          debugger;
           throw new Error(`Expected array value for element ${path}`);
         }
       } else {
         if (Array.isArray(elementTV.value)) {
+          debugger;
           throw new Error(`Expected non-array value for element ${path}`);
         }
         this.debug('nonArray', elementTV.value);
       }
-      /*
-        if (parentValue === undefined) {
-          this.value.values[i] = elementValue;
-        } else {
-          if (!Array.isArray(this.value.values[i].value)) {
-            throw new Error('Sliced element should have an array value');
-          }
-          this.value.values[i].value.push(...elementValue.value);
-        }*/
     }
   }
 
@@ -351,54 +311,47 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   onEnterSlice(path: string, slice: VisitorSliceDefinition): void {
-    this.debug('onEnterSlice', path, slice.name);
+    this.debug(`onEnterSlice[${slice.name}] ${path} ${slice.min > 0 ? `min: ${slice.min}` : ''}`);
 
     const elementTVs = this.value.typedValues;
     const sliceTVs: TypedValue[] = [];
+    const sliceType = slice.type[0].code;
+    const isComplex = sliceType.startsWith(sliceType[0].toUpperCase());
+
     for (const elementTV of elementTVs) {
       if (elementTV.value === undefined) {
-        //TODO
-      } else if (!Array.isArray(elementTV.value)) {
-        throw new Error('Expected undefined or array value in sliced element');
+        continue;
       }
 
-      let elementType = elementTV.type;
-      let elementValueArray: any[] = elementTV.value;
-
-      if (elementTV.value === undefined) {
-        // if (slice.min > 0) {
-        // elementType = slice.typeSchema?.name ?? slice.type[0].code;
-        // elementValueArray = [];
-        // }
+      if (!Array.isArray(elementTV.value)) {
+        throw new Error('Expected array value for sliced element');
       }
 
-      if (isPopulated(elementValueArray)) {
-        this.debug('finding existing slice values in', JSON.stringify(elementValueArray));
-        const existingSliceValues: any[] = [];
-        for (const arrayValue of elementValueArray) {
-          const sliceName = getValueSliceName(
-            arrayValue,
-            [slice],
-            this.slicingContext.slicing.discriminator,
-            slice.typeSchema,
-            this.schema.url
-          );
-          if (sliceName === slice.name) {
-            this.debug(`found exisitng value for slice ${sliceName}`, JSON.stringify(arrayValue));
-            existingSliceValues.push(arrayValue);
-          }
+      const elementValueArray: any[] = elementTV.value;
+
+      const sliceValues: any[] = [];
+      for (const arrayValue of elementValueArray) {
+        const sliceName = getValueSliceName(
+          arrayValue,
+          [slice],
+          this.slicingContext.slicing.discriminator,
+          slice.typeSchema,
+          this.schema.url
+        );
+        if (sliceName === slice.name) {
+          this.debug(`found exisitng value for slice ${sliceName}`, JSON.stringify(arrayValue));
+          sliceValues.push(arrayValue);
         }
-        if (slice.min > 0 && existingSliceValues.length === 0) {
-          // TODO - is it possible that emptySlice should be something besides an object, e.g. a string for a simple type
-          // const emptySliceValue = Object.create(null);
-          // emptySliceValue.__w = `onEnterSlice[${slice.name}] min > 0`;
-          // parentValue.push(emptySliceValue);
-          // sliceValues.push(emptySliceValue);
-        }
-        sliceTVs.push({ type: elementType, value: existingSliceValues });
-      } else {
-        sliceTVs.push({ type: 'undefined', value: undefined });
       }
+      if (sliceValues.length < slice.min) {
+        // TODO - is it possible that emptySlice should be something besides an object, e.g. a string for a simple type
+        const emptySliceValue = Object.create(null);
+        emptySliceValue.__w = `onEnterSlice[${slice.name}] min > 0`;
+        this.debug(`created empty slice[${slice.name}] entry since found < slice.min`);
+        elementValueArray.push(emptySliceValue);
+        sliceValues.push(emptySliceValue);
+      }
+      sliceTVs.push({ type: sliceType, value: sliceValues });
     }
 
     this.valueStack.push({
@@ -430,11 +383,13 @@ class DefaultValueVisitor implements SchemaVisitor {
 
     this.debug('onExitSlice', sliceCtx.slice.name, JSON.stringify(sliceValueContext.typedValues));
     this.debug('parentValue', JSON.stringify(this.value.typedValues));
+    return;
     for (let i = 0; i < this.value.typedValues.length; i++) {
       const elementTV = this.value.typedValues[i];
       const elementType = elementTV.type;
       const elementValue = elementTV.value;
       const sliceTVs = sliceValueContext.typedValues[i];
+      debugger;
       if (isPopulated(sliceTVs.value)) {
         if (!Array.isArray(sliceTVs.value)) {
           throw new Error('Slice value should be an array');
@@ -443,19 +398,19 @@ class DefaultValueVisitor implements SchemaVisitor {
           `attach slice to element\nelementType:\n${elementType}\nelementValue:\n${JSON.stringify(this.value.typedValues[i].value)}\nsliceValues:\n${JSON.stringify(sliceTVs)}`
         );
         if (elementValue === undefined) {
-          this.value.typedValues[i] = sliceTVs;
+          this.value.typedValues[i] = { type: 'TODO-exitSlice', value: [] };
         } else if (!Array.isArray(elementValue)) {
           throw new Error('Sliced element should have an array value');
         }
 
-        this.value.typedValues[i].value.push(...sliceTVs.value);
-        this.debug(`result:\n${JSON.stringify(this.value.typedValues[i].value)}`);
+        // this.value.typedValues[i].value.push(...sliceTVs.value);
+        // this.debug(`result:\n${JSON.stringify(this.value.typedValues[i].value)}`);
       }
     }
   }
 
   getDefaultValue(): Resource {
-    return this.inputResource;
+    return this.outputResource;
   }
 }
 
@@ -507,6 +462,25 @@ function getPathDifference(parentPath: string, path: string): string {
     throw new Error(`Expected ${path} to be prefixed by ${parentPath}`);
   }
   return path.slice(parentPath.length + 1);
+}
+
+function setValueAtKey(parent: any, value: any, key: string, element: InternalSchemaElement): void {
+  if (key.includes('.')) {
+    throw new Error('key cannot be nested');
+  }
+
+  let resolvedKey = key;
+
+  if (key.includes('[x]')) {
+    const code = element.type[0].code;
+    resolvedKey = key.replace('[x]', capitalize(code));
+  }
+
+  if (value === undefined) {
+    delete parent[resolvedKey];
+  } else {
+    parent[resolvedKey] = value;
+  }
 }
 
 function getValueAtKey(
@@ -568,71 +542,6 @@ function getValueAtKey(
   }
 
   return answer;
-}
-
-// export function applyDefaultValuesAtPath<T>(value: T, path: string, profileUrl: string, debug?: boolean): T {
-// return value;
-// }
-
-function applyMinimum(
-  input: TypedValue,
-  key: string,
-  element: InternalSchemaElement,
-  elements: Record<string, InternalSchemaElement>,
-  debugMode: boolean
-): any {
-  const inputType = input.type;
-  const inputValue = input.value;
-  const outputValue = inputValue;
-
-  if (inputValue === undefined || inputValue === null) {
-    throw new Error('inputValue cannot be undefined or null');
-  }
-
-  if (Array.isArray(inputValue)) {
-    return inputValue.map((iv) => applyMinimum({ type: inputType, value: iv }, key, element, elements, debugMode));
-  }
-
-  inputValue satisfies object;
-
-  const debug: ConsoleDebug = debugMode ? console.debug : () => undefined;
-
-  if (element.min > 0) {
-    const elementType = element.type[0].code;
-    if (elementType.startsWith(elementType[0].toUpperCase())) {
-      const keyParts = key.split('.');
-      let last: any = outputValue;
-      for (let i = 0; i < keyParts.length; i++) {
-        let keyPart = keyParts[i];
-        if (keyPart.includes('[x]')) {
-          const keyPartElem = elements[keyParts.slice(0, i + 1).join('.')];
-          const code = keyPartElem.type[0].code;
-          keyPart = keyPart.replace('[x]', capitalize(code));
-        }
-
-        if (i === keyParts.length - 1) {
-          const lastArray = Array.isArray(last) ? last : [last];
-          for (const item of lastArray) {
-            if (element.isArray) {
-              // item[keyPart] = [Object.create(null)];
-              item[keyPart] = [];
-            } else {
-              item[keyPart] = Object.create(null);
-            }
-          }
-        } else {
-          if (!(keyPart in last)) {
-            const elementKey = keyParts.slice(0, i + 1).join('.');
-            debug(`creating empty value for ${elementKey}`);
-            last[keyPart] = elements[elementKey].isArray ? [Object.create(null)] : Object.create(null);
-          }
-          debug('setting last to', JSON.stringify(last[keyPart], undefined, 2));
-          last = last[keyPart];
-        }
-      }
-    }
-  }
-  return outputValue;
 }
 
 function applyFixedOrPatternValue(
