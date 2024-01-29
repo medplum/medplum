@@ -107,6 +107,10 @@ interface NonNullQuantity extends Quantity {
   value: number;
 }
 
+const ACCURATE_COUNT_THRESHOLD = 1000;
+const COUNT_TRUNCATION_THRESHOLD = 10000;
+const COUNT_QUERY_THRESHOLD = 2 * COUNT_TRUNCATION_THRESHOLD;
+
 /**
  * The SearchControl component represents the embeddable search table control.
  * It includes the table, rows, headers, sorting, etc.
@@ -137,6 +141,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const loadResults = useCallback(
     (options?: RequestInit) => {
       setOutcome(undefined);
+      console.log('GOT HERE');
 
       medplum
         .search(
@@ -146,16 +151,20 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         )
         .then((response) => {
           setState({ ...stateRef.current, searchResponse: response });
-          if (response.total) {
+          if (response.total !== undefined) {
             // User specified accurate counts
             if (totalType === 'accurate') {
               setTotalEntries({ value: response.total });
             }
             // If we receive a large (>= 20K) estimated count, truncate
-            else if (response.total > 20000) {
-              setTotalEntries({ value: 10000, comparator: '>' });
+            else if (response.total > COUNT_QUERY_THRESHOLD) {
+              setTotalEntries({ value: COUNT_TRUNCATION_THRESHOLD, comparator: '>' });
             }
-            // If we receive a small (<= 20K) estimated count, perform an accurate count
+            // If the count is very small (< 1000), assume the server fell back to an accurate count
+            else if (response.total < ACCURATE_COUNT_THRESHOLD) {
+              setTotalEntries({ value: response.total });
+            }
+            // If we receive an intermediate  estimated count (1000 < count <= 20K), perform an accurate count
             else {
               medplum
                 .search(
@@ -164,9 +173,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   options
                 )
                 .then((countResponse) => {
-                  // If we get an accurate count above the truncation limit, truncate
-                  if ((countResponse.total as number) > 10000) {
-                    setTotalEntries({ value: 10000, comparator: '>' });
+                  // If we get an accurate count above the truncation limit, truncate to avoid discontinuous behavior
+                  if ((countResponse.total as number) > COUNT_TRUNCATION_THRESHOLD) {
+                    setTotalEntries({ value: COUNT_TRUNCATION_THRESHOLD, comparator: '>' });
                   }
                   // Otherwise, display the accurate count
                   else {
@@ -316,6 +325,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const iconSize = 16;
   const isMobile = window.innerWidth < 768;
 
+  if (lastResult) {
+    updateTotalFromLastResult(search, lastResult, totalEntries, setTotalEntries);
+  }
+
   return (
     <div className={classes.root} data-testid="search-control">
       {!props.hideToolbar && (
@@ -389,7 +402,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           <Group gap={2}>
             {lastResult && (
               <Text size="xs" c="dimmed">
-                {getStart(search, totalEntries, lastResult)}-{getEnd(search, totalEntries, lastResult)}
+                {getStart(search, totalEntries)}-{getEnd(search, totalEntries)}
                 {lastResult.total !== undefined &&
                   ` of ${totalEntries.comparator ?? ''}${totalEntries.value?.toLocaleString()}`}
               </Text>
@@ -508,7 +521,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         <Center m="md" p="md">
           <Pagination
             value={getPage(search)}
-            total={getTotalPages(search, totalEntries, lastResult)}
+            total={getTotalPages(search, totalEntries)}
             onChange={(newPage) => emitSearchChange(setPage(search, newPage))}
             getControlProps={(control) => {
               switch (control) {
@@ -630,38 +643,33 @@ function getPage(search: SearchRequest): number {
   return Math.floor((search.offset ?? 0) / (search.count ?? DEFAULT_SEARCH_COUNT)) + 1;
 }
 
-function getTotalPages(search: SearchRequest, totalEntries: Quantity, lastResult: Bundle): number {
+function getTotalPages(search: SearchRequest, totalEntries: NonNullQuantity): number {
   const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
-  return Math.ceil(getTotal(search, totalEntries, lastResult) / pageSize);
-}
-
-function getStart(search: SearchRequest, totalEntries: Quantity, lastResult: Bundle): number {
-  return Math.min(getTotal(search, totalEntries, lastResult), (search.offset ?? 0) + 1);
-}
-
-function getEnd(search: SearchRequest, totalEntries: Quantity, lastResult: Bundle): number {
-  console.log(
-    getTotal(search, totalEntries, lastResult),
-    (search.offset ?? 0) + 1,
-    search.count ?? DEFAULT_SEARCH_COUNT,
-    ((search.offset ?? 0) + 1) * (search.count ?? DEFAULT_SEARCH_COUNT)
-  );
-  return Math.min(
-    getTotal(search, totalEntries, lastResult),
-    getStart(search, totalEntries, lastResult) + (search.count ?? DEFAULT_SEARCH_COUNT) - 1
-  );
-}
-
-function getTotal(search: SearchRequest, totalEntries: Quantity, lastResult: Bundle): number {
-  let total = totalEntries.value;
-  if (total === undefined || totalEntries.comparator === '>') {
-    // If the total is not specified, then we have to estimate it
-    total = Math.max(
-      totalEntries.value as number,
-      (search.offset ?? 0) +
-        (lastResult.entry?.length ?? 0) +
-        (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0)
-    );
+  const numPages = Math.ceil(totalEntries.value / pageSize);
+  if (totalEntries.comparator === '>') {
+    return numPages + 1;
   }
-  return total;
+  return numPages;
+}
+
+function getStart(search: SearchRequest, totalEntries: NonNullQuantity): number {
+  return Math.min(totalEntries.value, (search.offset ?? 0) + 1);
+}
+
+function getEnd(search: SearchRequest, totalEntries: NonNullQuantity): number {
+  return Math.min(totalEntries.value, getStart(search, totalEntries) + (search.count ?? DEFAULT_SEARCH_COUNT) - 1);
+}
+
+function updateTotalFromLastResult(
+  search: SearchRequest,
+  lastResult: Bundle,
+  totalEntries: NonNullQuantity,
+  setTotalEntries: (totalEntries: NonNullQuantity) => void
+): void {
+  const totalFromLastResult = (search.offset ?? 0) + (lastResult?.entry?.length ?? 0);
+  const hasNext = !!lastResult?.link?.some((l) => l.relation === 'next');
+  console.log({ totalFromLastResult, totalEntries, hasNext });
+  if (totalFromLastResult > totalEntries.value) {
+    setTotalEntries({ value: totalFromLastResult, comparator: hasNext ? '>' : undefined });
+  }
 }
