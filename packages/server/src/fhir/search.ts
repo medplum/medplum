@@ -768,7 +768,7 @@ function buildReferenceSearchFilter(details: SearchParameterDetails, values: str
     !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
   );
   if (details.array) {
-    return new Condition(details.columnName, 'ARRAY_CONTAINS', values);
+    return new Condition(details.columnName, 'ARRAY_CONTAINS', values, 'TEXT[]');
   } else if (values.length === 1) {
     return new Condition(details.columnName, '=', values[0]);
   }
