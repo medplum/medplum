@@ -265,12 +265,6 @@ export class App {
     }
   }
 
-  // Send ping
-  // TODO: Handle error
-  // What should return to user?
-  // Should we validate IP?
-  // What about linux vs windows? How to test?
-
   private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
     try {
       if (message.body && message.body !== 'PING') {
@@ -289,8 +283,6 @@ export class App {
       if (stderr) {
         throw new Error(`Received on stderr:\n\n${stderr}`);
       }
-      // TODO: parse stdout
-      // Unix: 12.245/13.927/16.017/1.567 ms (second is avg)
       this.log.info(`Ping result for ${message.remote}:\n\n${stdout}`);
       this.addToWebSocketQueue({
         type: 'agent:transmit:response',
