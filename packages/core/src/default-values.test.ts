@@ -2,9 +2,10 @@ import { USCoreStructureDefinitionList } from '@medplum/mock';
 import { InternalTypeSchema, getProfile, loadDataType } from './typeschema/types';
 import { isPopulated } from './utils';
 import { Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
-import { applyDefaultValues } from './default-values';
+import { DefaultValueVisitor, applyDefaultValuesToResource } from './default-values';
 import { HTTP_HL7_ORG } from './constants';
 import USOccipitalFrontal from './__test__/StructureDefinition-head-occipital-frontal-circumference-percentile.json';
+import { SchemaCrawler } from './schema-crawler';
 
 // const medplum = new MockClient();
 
@@ -22,13 +23,12 @@ describe('applyDefaultValues', () => {
     test('empty Occipital Frontal', async () => {
       const resource = { resourceType: 'Observation' } as Observation;
 
-      const withDefaults = applyDefaultValues(resource, schema, { debug: true });
+      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: true });
 
       expect(withDefaults).toEqual({
         resourceType: 'Observation',
         category: [
           {
-            __w: 'onEnterSlice[VSCat] min > 0',
             coding: [
               {
                 code: 'vital-signs',
@@ -50,6 +50,13 @@ describe('applyDefaultValues', () => {
     });
   });
 
+  function isStructureDefinition(sd: any): sd is StructureDefinition {
+    if (!isPopulated<StructureDefinition>(sd)) {
+      return false;
+    }
+    return sd.resourceType === 'StructureDefinition';
+  }
+
   describe('US Blood Pressure', () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-blood-pressure`;
     const profileUrls = [profileUrl];
@@ -57,11 +64,11 @@ describe('applyDefaultValues', () => {
     let schema: InternalTypeSchema;
 
     beforeAll(() => {
-      const sds = profileUrls
+      const sds: StructureDefinition[] = profileUrls
         .map((profileUrl) => {
-          return USCoreStructureDefinitionList.find((sd) => sd.url === profileUrl);
+          return (USCoreStructureDefinitionList as StructureDefinition[]).find((sd) => sd.url === profileUrl);
         })
-        .filter((sd): sd is StructureDefinition => isPopulated(sd));
+        .filter(isStructureDefinition);
 
       expect(sds.length).toEqual(profileUrls.length);
 
@@ -76,7 +83,7 @@ describe('applyDefaultValues', () => {
       // casting since purposefully don't want to specify any values
       const resource = { resourceType: 'Observation' } as Observation;
 
-      const withDefaults = applyDefaultValues(resource, schema, { debug: true });
+      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: true });
 
       // fixed values within value[x] purposefully excluded since value[x] itself is optional (min === 0)
       // i.e. valueQuantity: {code: "mm[Hg]", system: "http://unitsofmeasure.org"} should not be included
@@ -130,9 +137,10 @@ describe('applyDefaultValues', () => {
 
   describe('US Core Patient', () => {
     const profileUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
+    const raceExtensionUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race';
     const profileUrls = [
       profileUrl,
-      'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+      raceExtensionUrl,
       'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
       'http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex',
       'http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity',
@@ -141,11 +149,11 @@ describe('applyDefaultValues', () => {
     let schema: InternalTypeSchema;
 
     beforeAll(() => {
-      const sds = profileUrls
+      const sds: StructureDefinition[] = profileUrls
         .map((profileUrl) => {
-          return USCoreStructureDefinitionList.find((sd) => sd.url === profileUrl);
+          return (USCoreStructureDefinitionList as StructureDefinition[]).find((sd) => sd.url === profileUrl);
         })
-        .filter((sd): sd is StructureDefinition => isPopulated(sd));
+        .filter(isStructureDefinition);
 
       expect(sds.length).toEqual(profileUrls.length);
 
@@ -159,12 +167,47 @@ describe('applyDefaultValues', () => {
     test('new Patient', async () => {
       const resource: Patient = { resourceType: 'Patient' };
 
-      const withDefaults = applyDefaultValues(resource, schema, { debug: true });
+      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: true });
 
       expect(withDefaults).toEqual({
         resourceType: 'Patient',
         identifier: [],
         name: [],
+      });
+    });
+
+    describe('creating new extension values', () => {
+      test('new race extension entry', () => {
+        const key = 'extension';
+        const slicedElement = schema.elements[key];
+        if (!isPopulated(slicedElement)) {
+          fail(`Expected ${key} element to be defined`);
+        }
+
+        const slicing = slicedElement.slicing;
+        if (!isPopulated(slicing)) {
+          fail(`Expected slicing to exist on element`);
+        }
+
+        const sliceName = 'race';
+        const slice = slicedElement.slicing?.slices.find((s) => s.name === sliceName);
+        if (!isPopulated(slice)) {
+          fail(`Expected ${sliceName} slice to be defined`);
+        }
+
+        slice.min = 1;
+        slice.max = 1;
+
+        const visitor = new DefaultValueVisitor();
+        const crawler = new SchemaCrawler(schema, visitor);
+        visitor.setRootValue([], 'resource');
+        crawler.crawlSlice(slicedElement, key, slice, slicing);
+        const result = visitor.getDefaultValue();
+        expect(result).toEqual([
+          {
+            url: raceExtensionUrl,
+          },
+        ]);
       });
     });
   });

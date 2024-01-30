@@ -21,14 +21,15 @@ import {
 
 type ConsoleDebug = typeof console.debug;
 
-export function applyDefaultValues(
+export function applyDefaultValuesToResource(
   resource: Resource,
   schema: InternalTypeSchema,
   options?: { debug?: boolean }
 ): Resource {
   const debugMode = Boolean(options?.debug);
-  const visitor = new DefaultValueVisitor(resource);
+  const visitor = new DefaultValueVisitor();
   const crawler = new SchemaCrawler(schema, visitor);
+  visitor.setRootValue(resource, 'resource');
   crawler.crawlResource(debugMode);
   return visitor.getDefaultValue();
 }
@@ -51,9 +52,12 @@ type ValueContext = {
   typedValues: TypedValue[];
 };
 
-class DefaultValueVisitor implements SchemaVisitor {
-  private readonly inputResource: Resource;
-  private readonly outputResource: Resource;
+export class DefaultValueVisitor implements SchemaVisitor {
+  // private readonly inputResource: Resource;
+  // private readonly outputResource: Resource;
+
+  private inputRootValue: any;
+  private outputRootValue: any;
 
   private readonly schemaStack: InternalTypeSchema[];
   private valueStack: ValueContext[];
@@ -62,9 +66,9 @@ class DefaultValueVisitor implements SchemaVisitor {
 
   private debugMode: boolean = true;
 
-  constructor(resource: Resource) {
-    this.inputResource = resource;
-    this.outputResource = deepClone(this.inputResource);
+  constructor() {
+    // this.inputResource = resource;
+    // this.outputResource = deepClone(this.inputResource);
 
     this.schemaStack = [];
     this.valueStack = [];
@@ -76,13 +80,13 @@ class DefaultValueVisitor implements SchemaVisitor {
     return this.schemaStack[this.schemaStack.length - 1];
   }
 
-  private get slicingContext(): SlicingContext {
-    return this.slicingContextStack[this.slicingContextStack.length - 1];
-  }
+  // private get slicingContext(): SlicingContext {
+  // return this.slicingContextStack[this.slicingContextStack.length - 1];
+  // }
 
-  private get sliceContext(): SliceContext {
-    return this.sliceContextStack[this.sliceContextStack.length - 1];
-  }
+  // private get sliceContext(): SliceContext {
+  // return this.sliceContextStack[this.sliceContextStack.length - 1];
+  // }
 
   private get value(): ValueContext {
     return this.valueStack[this.valueStack.length - 1];
@@ -94,13 +98,32 @@ class DefaultValueVisitor implements SchemaVisitor {
     }
   }
 
-  onEnterResource(schema: InternalTypeSchema): void {
+  setRootValue(rootValue: any, type: ValueContext['type']): void {
+    this.inputRootValue = rootValue;
+    this.outputRootValue = deepClone(rootValue);
+
+    this.valueStack.push({
+      type: type,
+      path: 'TODO', // this.inputRootValue.resourceType,
+      typedValues: [{ type: 'TODO', value: this.outputRootValue }],
+    });
+  }
+
+  onEnterSchema(schema: InternalTypeSchema): void {
+    this.schemaStack.push(schema);
+  }
+
+  onExitSchema(): void {
+    this.schemaStack.pop();
+    // console.assert(this.schemaStack.length === 0, 'Expected schema stack to be empty when exiting resource');
+  }
+
+  onEnterResource(): void {
     this.valueStack.push({
       type: 'resource',
-      path: this.inputResource.resourceType,
-      typedValues: [{ type: schema.name, value: this.outputResource }],
+      path: this.inputRootValue.resourceType,
+      typedValues: [{ type: this.schema.name, value: this.outputRootValue }],
     });
-    this.schemaStack.push(schema);
   }
 
   onExitResource(): void {
@@ -110,9 +133,6 @@ class DefaultValueVisitor implements SchemaVisitor {
     }
     this.debug('onExitResource', JSON.stringify(valueContext.typedValues, undefined, 2));
     console.assert(this.valueStack.length === 0, 'Expected valueStack to be empty when exiting resource');
-
-    this.schemaStack.pop();
-    console.assert(this.schemaStack.length === 0, 'Expected schema stack to be empty when exiting resource');
   }
 
   onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
@@ -124,13 +144,17 @@ class DefaultValueVisitor implements SchemaVisitor {
 
     // eld-6	Rule	Fixed value may only be specified if there is one type
     // eld-7	Rule	Pattern may only be specified if there is one type
-    const shouldSkip = element.type.length > 1;
+    const canSkip = element.type.length > 1;
 
     const elementType = element.type[0].code;
     const elements = elementsContext.elements;
     const isComplex = isComplexTypeCode(elementType);
 
     const elementTVs: TypedValue[] = [];
+
+    if (path === 'Patient.extension.url') {
+      debugger;
+    }
 
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < parentTVs.length; i++) {
@@ -141,7 +165,7 @@ class DefaultValueVisitor implements SchemaVisitor {
         continue;
       }
 
-      if (shouldSkip) {
+      if (canSkip) {
         elementTVs.push({
           type: 'TODO-skip',
           value: getValueAtKey(parentTV.value, key, element, elementsContext.elements),
@@ -173,13 +197,13 @@ class DefaultValueVisitor implements SchemaVisitor {
         if (element.min > 0 && existingValue === undefined) {
           if (isComplex) {
             if (element.isArray) {
-              setValueAtKey(parent, [createEmptyObject(`onEnterElement[${key}] min > 0 isArray`)], key, element);
+              setValueAtKey(parent, [Object.create(null)], key, element);
             } else {
               if (element.min > 1) {
                 throw new Error('Element min count greater than 1 for non-array element.');
               }
               this.debug(`created empty value for ${key}`);
-              setValueAtKey(parent, createEmptyObject(`onEnterElement[${key}] min > 0 nonArray`), key, element);
+              setValueAtKey(parent, Object.create(null), key, element);
             }
           }
         }
@@ -217,22 +241,19 @@ class DefaultValueVisitor implements SchemaVisitor {
     }
     this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.typedValues)}`);
 
+    // TODO: remove all this for now?
     for (let valueIndex = 0; valueIndex < elementValueContext.typedValues.length; valueIndex++) {
-      const { value: elementValue } = elementValueContext.typedValues[valueIndex];
-      // for (const { value: elementValue } of elementValueContext.typedValues) {
+      const elementValue = elementValueContext.typedValues[valueIndex].value;
       if (Array.isArray(elementValue)) {
         for (let i = elementValue.length - 1; i >= 0; i--) {
           const value = elementValue[i];
           // for (const value of elementValue) {
-          if (value !== undefined && (!isPopulated(value) || (Object.keys(value).length === 1 && '__w' in value))) {
+          if (value !== undefined && !isPopulated(value)) {
             this.debug(`empty value found in array`, JSON.stringify(value));
             elementValue.splice(i, 1);
           }
         }
-      } else if (
-        elementValue !== undefined &&
-        (!isPopulated(elementValue) || (Object.keys(elementValue).length === 1 && '__w' in elementValue))
-      ) {
+      } else if (elementValue !== undefined && !isPopulated(elementValue)) {
         const parentValue = this.value.typedValues[valueIndex].value;
         const fromParent = getValueAtKey(
           parentValue,
@@ -250,7 +271,7 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   onEnterSlicing(path: string, slicing: VisitorSlicingRules): void {
-    const valuesBySliceName: Record<string, SliceValue> = {};
+    const valuesBySliceName: Record<string, SliceValue> = Object.create(null);
     for (const slice of slicing.slices) {
       valuesBySliceName[slice.name] = [];
     }
@@ -264,7 +285,7 @@ class DefaultValueVisitor implements SchemaVisitor {
     }
   }
 
-  onEnterSlice(path: string, slice: VisitorSliceDefinition): void {
+  onEnterSlice(path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules): void {
     this.debug(`onEnterSlice[${slice.name}] ${path} ${slice.min > 0 ? `min: ${slice.min}` : ''}`);
 
     const elementTVs = this.value.typedValues;
@@ -277,6 +298,8 @@ class DefaultValueVisitor implements SchemaVisitor {
         continue;
       }
 
+      debugger;
+
       if (!Array.isArray(elementTV.value)) {
         throw new Error('Expected array value for sliced element');
       }
@@ -288,7 +311,7 @@ class DefaultValueVisitor implements SchemaVisitor {
         const sliceName = getValueSliceName(
           arrayValue,
           [slice],
-          this.slicingContext.slicing.discriminator,
+          slicing.discriminator,
           slice.typeSchema,
           this.schema.url
         );
@@ -300,7 +323,6 @@ class DefaultValueVisitor implements SchemaVisitor {
       if (sliceValues.length < slice.min) {
         if (isComplex) {
           const emptySliceValue = Object.create(null);
-          emptySliceValue.__w = `onEnterSlice[${slice.name}] min > 0`;
           this.debug(`created empty slice[${slice.name}] entry since found < slice.min`);
           elementValueArray.push(emptySliceValue);
           sliceValues.push(emptySliceValue);
@@ -317,10 +339,6 @@ class DefaultValueVisitor implements SchemaVisitor {
       typedValues: sliceTVs,
     });
     this.sliceContextStack.push({ slice });
-
-    if (slice.typeSchema) {
-      this.schemaStack.push(slice.typeSchema);
-    }
   }
 
   onExitSlice(): void {
@@ -334,23 +352,13 @@ class DefaultValueVisitor implements SchemaVisitor {
       throw new Error('Expected slice context to exist on exit');
     }
 
-    if (sliceCtx.slice.typeSchema) {
-      this.schemaStack.pop();
-    }
-
     this.debug('onExitSlice', sliceCtx.slice.name, JSON.stringify(sliceValueContext.typedValues));
     this.debug('parentValue', JSON.stringify(this.value.typedValues));
   }
 
   getDefaultValue(): Resource {
-    return this.outputResource;
+    return this.outputRootValue;
   }
-}
-
-function createEmptyObject(marker: string): object {
-  const obj = Object.create(null);
-  obj.__w = marker;
-  return obj;
 }
 
 function isDiscriminatorComponentMatch(

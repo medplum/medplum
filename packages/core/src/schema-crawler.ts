@@ -24,6 +24,9 @@ export type VisitorSlicingRules = Omit<SlicingRules, 'slices'> & {
 };
 
 export interface SchemaVisitor {
+  onEnterSchema?: (schema: InternalTypeSchema) => void;
+  onExitSchema?: () => void;
+
   onEnterResource?: (schema: InternalTypeSchema) => void;
   onExitResource?: () => void;
 
@@ -34,7 +37,7 @@ export interface SchemaVisitor {
   onEnterSlicing?: (path: string, slicing: VisitorSlicingRules) => void;
   onExitSlicing?: () => void;
 
-  onEnterSlice?: (path: string, slice: VisitorSliceDefinition) => void;
+  onEnterSlice?: (path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules) => void;
   onExitSlice?: () => void;
 }
 
@@ -86,21 +89,36 @@ export class SchemaCrawler {
     }
   }
 
-  crawlSlice(element: InternalSchemaElement, key: string, slice: SliceDefinition): void {
-    if (this.visitor.onEnterResource) {
-      this.visitor.onEnterResource(this.rootSchema);
+  crawlSlice(element: InternalSchemaElement, key: string, slice: SliceDefinition, slicing: SlicingRules): void {
+    if (this.visitor.onEnterSchema) {
+      this.visitor.onEnterSchema(this.rootSchema);
+    }
+    // if (this.visitor.onEnterResource) {
+    // this.visitor.onEnterResource(this.rootSchema);
+    // }
+    const visitorSlicing = this.prepareSlices(slicing.slices, slicing);
+
+    if (!isPopulated(visitorSlicing.slices)) {
+      throw new Error(`cannot crawl slice ${slice.name} since it has no type information`);
     }
 
     this.sliceAllowList = [slice];
-    this.crawlElementImpl(element, this.rootPath + '.' + key);
+    this.crawlSliceImpl(visitorSlicing.slices[0], this.rootPath + '.' + key, visitorSlicing);
     this.sliceAllowList = undefined;
 
-    if (this.visitor.onExitResource) {
-      this.visitor.onExitResource();
+    // if (this.visitor.onExitResource) {
+    // this.visitor.onExitResource();
+    // }
+    if (this.visitor.onExitSchema) {
+      this.visitor.onExitSchema();
     }
   }
 
   crawlResource(debug?: boolean): void {
+    if (this.visitor.onEnterSchema) {
+      this.visitor.onEnterSchema(this.rootSchema);
+    }
+
     this.debugMode = Boolean(debug);
 
     if (this.visitor.onEnterResource) {
@@ -111,6 +129,9 @@ export class SchemaCrawler {
 
     if (this.visitor.onExitResource) {
       this.visitor.onExitResource();
+    }
+    if (this.visitor.onExitSchema) {
+      this.visitor.onExitSchema();
     }
   }
 
@@ -140,8 +161,7 @@ export class SchemaCrawler {
     }
   }
 
-  private crawlSlicingImpl(slicing: SlicingRules, path: string): void {
-    const slices = slicing.slices;
+  private prepareSlices(slices: SliceDefinition[], slicing: SlicingRules): VisitorSlicingRules {
     const supportedSlices: SupportedSliceDefinition[] = [];
     for (const slice of slices) {
       if (!isSupportedSliceDefinition(slice)) {
@@ -163,6 +183,12 @@ export class SchemaCrawler {
     const visitorSlicing = slicing as VisitorSlicingRules;
     visitorSlicing.slices = supportedSlices;
 
+    return visitorSlicing;
+  }
+
+  private crawlSlicingImpl(slicing: SlicingRules, path: string): void {
+    const visitorSlicing = this.prepareSlices(slicing.slices, slicing);
+
     if (this.visitor.onEnterSlicing) {
       this.visitor.onEnterSlicing(path, visitorSlicing);
     }
@@ -170,10 +196,10 @@ export class SchemaCrawler {
     for (const slice of visitorSlicing.slices) {
       if (isPopulated(this.sliceAllowList)) {
         if (this.sliceAllowList.includes(slice)) {
-          this.crawlSliceImpl(slice, path);
+          this.crawlSliceImpl(slice, path, visitorSlicing);
         }
       } else {
-        this.crawlSliceImpl(slice, path);
+        this.crawlSliceImpl(slice, path, visitorSlicing);
       }
     }
 
@@ -182,13 +208,20 @@ export class SchemaCrawler {
     }
   }
 
-  private crawlSliceImpl(slice: VisitorSliceDefinition, path: string): void {
+  private crawlSliceImpl(slice: VisitorSliceDefinition, path: string, slicing: VisitorSlicingRules): void {
     if (this.visitor.onEnterSlice) {
-      this.visitor.onEnterSlice(path, slice);
+      this.visitor.onEnterSlice(path, slice, slicing);
     }
 
-    const sliceType = slice.typeSchema?.type ?? slice.type[0].code;
-    const sliceElements = slice.typeSchema?.elements ?? slice.elements;
+    const sliceSchema = slice.typeSchema;
+    if (sliceSchema) {
+      if (this.visitor.onEnterSchema) {
+        this.visitor.onEnterSchema(sliceSchema);
+      }
+    }
+
+    const sliceType = sliceSchema?.type ?? slice.type[0].code;
+    const sliceElements = sliceSchema?.elements ?? slice.elements;
     let elementsContext: ElementsContextType | undefined;
     if (isPopulated(sliceElements)) {
       elementsContext = buildElementsContext({
@@ -203,6 +236,12 @@ export class SchemaCrawler {
 
     if (elementsContext) {
       this.elementsContextStack.pop();
+    }
+
+    if (sliceSchema) {
+      if (this.visitor.onExitSchema) {
+        this.visitor.onExitSchema();
+      }
     }
 
     if (this.visitor.onExitSlice) {
