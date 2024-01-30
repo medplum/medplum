@@ -110,7 +110,7 @@ export interface GoogleCredentialClaims extends JWTPayload {
  * @param clientId - The client ID.
  * @returns The client application.
  */
-export async function getClient(clientId: string): Promise<ClientApplication> {
+export async function getClientApplication(clientId: string): Promise<ClientApplication> {
   if (clientId === 'medplum-cli') {
     return {
       resourceType: 'ClientApplication',
@@ -127,7 +127,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 
   let client: ClientApplication | undefined;
   if (request.clientId) {
-    client = await getClient(request.clientId);
+    client = await getClientApplication(request.clientId);
   }
 
   validatePkce(request, client);

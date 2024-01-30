@@ -2,7 +2,7 @@ import { badRequest, Operator as SearchOperator } from '@medplum/core';
 import { ValueSet, ValueSetComposeInclude } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
-import { getClient } from '../../database';
+import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
 import { Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
@@ -58,7 +58,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     count = Math.max(1, Math.min(20, parseInt(req.query.count as string, 10)));
   }
 
-  const client = getClient();
+  const client = getDatabasePool();
   const query = new SelectQuery('ValueSetElement')
     .distinctOn('system')
     .distinctOn('code')

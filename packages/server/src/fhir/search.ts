@@ -99,10 +99,8 @@ export async function searchImpl<T extends Resource>(
   }
 
   let total = undefined;
-  if (searchRequest.total === 'accurate') {
-    total = await getAccurateCount(repo, searchRequest);
-  } else if (searchRequest.total === 'estimate') {
-    total = await getEstimateCount(repo, searchRequest, rowCount);
+  if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
+    total = await getCount(repo, searchRequest, rowCount);
   }
 
   return {
@@ -138,7 +136,7 @@ async function getSearchEntries<T extends Resource>(
   builder.limit(count + 1); // Request one extra to test if there are more results
   builder.offset(searchRequest.offset || 0);
 
-  const rows = await builder.execute(repo.getClient());
+  const rows = await builder.execute(repo.getDatabaseClient());
   const rowCount = rows.length;
   const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
@@ -390,6 +388,24 @@ function getSearchUrl(searchRequest: SearchRequest): string {
 }
 
 /**
+ * Returns the count for a search request.
+ * This ignores page number and page size.
+ * We always start with an "estimate" count to protect against expensive queries.
+ * If the estimate is less than 100,000, then we run an accurate count.
+ * @param repo - The repository.
+ * @param searchRequest - The search request.
+ * @param rowCount - The number of matching results if found.
+ * @returns The total number of matching results.
+ */
+async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount: number | undefined): Promise<number> {
+  const estimateCount = await getEstimateCount(repo, searchRequest, rowCount);
+  if (estimateCount < 100000) {
+    return getAccurateCount(repo, searchRequest);
+  }
+  return estimateCount;
+}
+
+/**
  * Returns the total number of matching results for a search request.
  * This ignores page number and page size.
  * @param repo - The repository.
@@ -408,7 +424,7 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
     builder.raw('COUNT("id")::int AS "count"');
   }
 
-  const rows = await builder.execute(repo.getClient());
+  const rows = await builder.execute(repo.getDatabaseClient());
   return rows[0].count as number;
 }
 
@@ -435,7 +451,7 @@ async function getEstimateCount(
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
-  const rows = await builder.execute(repo.getClient());
+  const rows = await builder.execute(repo.getDatabaseClient());
   let result = 0;
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];

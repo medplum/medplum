@@ -416,6 +416,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   // Wrap code in an async block for top-level await support
   const wrappedCode = `
   const exports = {};
+  const module = {exports};
 
   // Start user code
   ${code}

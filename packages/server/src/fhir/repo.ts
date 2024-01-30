@@ -54,7 +54,7 @@ import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
-import { getClient } from '../database';
+import { getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -252,7 +252,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     this.addSecurityFilters(builder, resourceType);
 
-    const rows = await builder.execute(this.getClient());
+    const rows = await builder.execute(this.getDatabaseClient());
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
@@ -363,7 +363,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
         .limit(100)
-        .execute(this.getClient());
+        .execute(this.getDatabaseClient());
 
       const entries: BundleEntry<T>[] = [];
 
@@ -428,7 +428,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .column('content')
         .where('id', '=', id)
         .where('versionId', '=', vid)
-        .execute(this.getClient());
+        .execute(this.getDatabaseClient());
 
       if (rows.length === 0) {
         throw new OperationOutcomeError(notFound);
@@ -698,7 +698,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       .raw(`COUNT (DISTINCT "versionId")::int AS "count"`)
       .where('id', '=', id)
       .where('lastUpdated', '>', new Date(Date.now() - 1000 * seconds))
-      .execute(this.getClient());
+      .execute(this.getDatabaseClient());
     return rows[0].count >= maxVersions;
   }
 
@@ -730,10 +730,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
-    // Do not use this.getClient() for the cursor!
+    // Do not use this.getDatabaseClient() for the cursor!
     // That would cause a deadlock.
-    // Instead, use getClient() directly over a separate connection.
-    const client = getClient();
+    // Instead, use getDatabasePool() directly over a separate connection.
+    const client = getDatabasePool();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
@@ -761,10 +761,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
-    // Do not use this.getClient() for the cursor!
+    // Do not use this.getDatabaseClient() for the cursor!
     // That would cause a deadlock.
-    // Instead, use getClient() directly over a separate connection.
-    const client = getClient();
+    // Instead, use getDatabasePool() directly over a separate connection.
+    const client = getDatabasePool();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.addDeletedFilter(builder);
 
@@ -911,8 +911,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', '=', id).execute(this.getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(this.getClient());
+    await new DeleteQuery(resourceType).where('id', '=', id).execute(this.getDatabaseClient());
+    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(this.getDatabaseClient());
     await deleteCacheEntry(resourceType, id);
   }
 
@@ -926,8 +926,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getClient());
-    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getClient());
+    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
+    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
     await deleteCacheEntries(resourceType, ids);
   }
 
@@ -941,8 +941,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(this.getClient());
-    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(this.getClient());
+    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(this.getDatabaseClient());
+    await new DeleteQuery(resourceType + '_History')
+      .where('lastUpdated', '<=', before)
+      .execute(this.getDatabaseClient());
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
@@ -1749,15 +1751,15 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * Otherwise, returns the pool (Pool).
    * @returns The database client.
    */
-  getClient(): Pool | PoolClient {
+  getDatabaseClient(): Pool | PoolClient {
     // If in a transaction, then use the transaction client.
     // Otherwise, use the pool client.
-    return this.conn ?? getClient();
+    return this.conn ?? getDatabasePool();
   }
 
   private async getConnection(): Promise<PoolClient> {
     if (!this.conn) {
-      this.conn = await getClient().connect();
+      this.conn = await getDatabasePool().connect();
     }
     return this.conn;
   }

@@ -6,7 +6,7 @@ import { loadTestConfig } from '../config';
 import { createTestClient, withTestContext } from '../test.setup';
 import {
   getAuthTokens,
-  getClient,
+  getClientApplication,
   getMembershipsForLogin,
   tryLogin,
   validateLoginRequest,
@@ -434,7 +434,7 @@ describe('OAuth utils', () => {
   });
 
   test('CLI client', async () => {
-    const client = await getClient('medplum-cli');
+    const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
     expect(client.id).toEqual('medplum-cli');
   });
