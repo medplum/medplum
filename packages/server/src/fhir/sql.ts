@@ -145,6 +145,10 @@ export class Condition implements Expression {
     readonly parameter: any,
     readonly parameterType?: string
   ) {
+    if (operator === 'ARRAY_CONTAINS' && !parameterType) {
+      throw new Error('ARRAY_CONTAINS requires paramType');
+    }
+
     this.column = getColumn(column);
   }
 

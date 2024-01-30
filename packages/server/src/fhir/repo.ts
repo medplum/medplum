@@ -182,6 +182,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
   private transactionDepth = 0;
+  private closed = false;
 
   constructor(context: RepositoryContext) {
     super();
@@ -189,6 +190,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
+  }
+
+  clone(): Repository {
+    return new Repository(this.context);
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -870,9 +875,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         ]).execute(conn);
 
         await this.deleteFromLookupTables(conn, resource);
+
         this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
-        await addSubscriptionJobs(resource, { interaction: 'delete' });
       });
+
+      await addSubscriptionJobs(resource, { interaction: 'delete' });
     } catch (err) {
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
@@ -1752,12 +1759,14 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @returns The database client.
    */
   getDatabaseClient(): Pool | PoolClient {
+    this.assertNotClosed();
     // If in a transaction, then use the transaction client.
     // Otherwise, use the pool client.
     return this.conn ?? getDatabasePool();
   }
 
   private async getConnection(): Promise<PoolClient> {
+    this.assertNotClosed();
     if (!this.conn) {
       this.conn = await getDatabasePool().connect();
     }
@@ -1786,6 +1795,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   private async beginTransaction(): Promise<PoolClient> {
+    this.assertNotClosed();
     this.transactionDepth++;
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
@@ -1797,9 +1807,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   private async commitTransaction(): Promise<void> {
-    if (this.transactionDepth <= 0) {
-      throw new Error('No transaction to commit');
-    }
+    this.assertInTransaction();
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
       await conn.query('COMMIT');
@@ -1809,9 +1817,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   private async rollbackTransaction(): Promise<void> {
-    if (this.transactionDepth <= 0) {
-      throw new Error('No transaction to rollback');
-    }
+    this.assertInTransaction();
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
@@ -1821,17 +1827,32 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   private endTransaction(): void {
-    if (this.transactionDepth <= 0) {
-      throw new Error('No transaction to end');
-    }
+    this.assertInTransaction();
     this.transactionDepth--;
     if (this.transactionDepth === 0) {
       this.releaseConnection();
     }
   }
 
+  private assertInTransaction(): void {
+    if (this.transactionDepth <= 0) {
+      throw new Error('Not in transaction');
+    }
+  }
+
   close(): void {
+    if (this.transactionDepth > 0) {
+      throw new Error('Closing with active transaction');
+    }
+    this.assertNotClosed();
     this.releaseConnection();
+    this.closed = true;
+  }
+
+  private assertNotClosed(): void {
+    if (this.closed) {
+      throw new Error('Already closed');
+    }
   }
 }
 
