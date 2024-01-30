@@ -9,30 +9,25 @@ jest.mock('node-windows');
 const medplum = new MockClient();
 
 describe('Agent Net Utils', () => {
+  let mockServer: Server;
+  let mySocket: Client | undefined = undefined;
+  let wsClient: Client;
+  let app: App;
+  let onMessage: (command: AgentMessage) => void;
+
   beforeAll(async () => {
     console.log = jest.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
     });
-  });
 
-  test('Ping', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
-    let mySocket: Client | undefined = undefined;
-
-    let resolve: (value: AgentMessage) => void;
-    let reject: (error: Error) => void;
-    const deferredPromise = new Promise<AgentMessage>((_resolve, _reject) => {
-      resolve = _resolve;
-      reject = _reject;
-    });
+    mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       mySocket = socket;
       socket.on('message', (data) => {
-        const command = JSON.parse((data as Buffer).toString('utf8'));
-        console.log(command);
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
         if (command.type === 'agent:connect:request') {
           socket.send(
             Buffer.from(
@@ -41,8 +36,8 @@ describe('Agent Net Utils', () => {
               })
             )
           );
-        } else if (command.type === 'agent:transmit:response' && command.contentType === ContentType.PING) {
-          resolve(command);
+        } else {
+          onMessage(command);
         }
       });
     });
@@ -52,7 +47,7 @@ describe('Agent Net Utils', () => {
     } as Agent);
 
     // Start the app
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
 
     // Wait for the WebSocket to connect
@@ -61,11 +56,26 @@ describe('Agent Net Utils', () => {
       await sleep(100);
     }
 
-    // At this point, we expect the websocket to be connected
-    expect(mySocket).toBeDefined();
+    wsClient = mySocket as unknown as Client;
+  });
 
-    // Send a push message
-    const wsClient = mySocket as unknown as Client;
+  afterAll(() => {
+    app.stop();
+    mockServer.stop();
+  });
+
+  test('Ping -- valid', async () => {
+    let resolve: (value: AgentMessage) => void;
+    let reject: (error: Error) => void;
+
+    const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    onMessage = (command) => resolve(command);
+
+    expect(wsClient).toBeDefined();
     wsClient.send(
       Buffer.from(
         JSON.stringify({
@@ -77,15 +87,42 @@ describe('Agent Net Utils', () => {
       )
     );
 
-    try {
-      const timer = setTimeout(() => {
-        reject(new Error('Timeout'));
-      }, 3500);
-      await deferredPromise;
-      clearTimeout(timer);
-    } finally {
-      app.stop();
-      mockServer.stop();
-    }
+    const timer = setTimeout(() => {
+      reject(new Error('Timeout'));
+    }, 3500);
+
+    await expect(messageReceived).resolves.toMatchObject({ type: 'agent:transmit:response', body: expect.any(String) });
+    clearTimeout(timer);
+  });
+
+  test('Ping -- non-IP remote', async () => {
+    let resolve: (value: AgentMessage) => void;
+    let reject: (error: Error) => void;
+
+    const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    onMessage = (command) => resolve(command);
+
+    expect(wsClient).toBeDefined();
+    wsClient.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.PING,
+          remote: 'https://localhost:3001',
+          body: 'PING',
+        })
+      )
+    );
+
+    const timer = setTimeout(() => {
+      reject(new Error('Timeout'));
+    }, 3500);
+
+    await expect(messageReceived).resolves.toMatchObject({ type: 'agent:error', body: expect.any(String) });
+    clearTimeout(timer);
   });
 });
