@@ -25,7 +25,13 @@ export const useCachedBinaryUrl = (binaryUrl: string | undefined): string | unde
     }
 
     // Check if the binaryUrl is a presigned S3 URL
-    const binaryUrlSearchParams = new URLSearchParams(new URL(binaryUrl).search);
+    let binaryUrlSearchParams: URLSearchParams;
+    try {
+      binaryUrlSearchParams = new URLSearchParams(new URL(binaryUrl).search);
+    } catch (e) {
+      return binaryUrl;
+    }
+
     if (!binaryUrlSearchParams.has('Key-Pair-Id') || !binaryUrlSearchParams.has('Signature')) {
       return binaryUrl;
     }
