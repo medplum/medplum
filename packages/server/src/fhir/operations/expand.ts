@@ -1,12 +1,19 @@
 import { badRequest, OperationOutcomeError, Operator, Operator as SearchOperator } from '@medplum/core';
-import { ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import {
+  CodeSystem,
+  ValueSet,
+  ValueSetComposeInclude,
+  ValueSetComposeIncludeFilter,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
-import { Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
 import { getAuthenticatedContext } from '../../context';
+import { parentProperty } from './codesystemimport';
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -161,6 +168,8 @@ async function expandValueSet(valueSet: ValueSet): Promise<ValueSet> {
   await computeExpansion(valueSet, expandedSet);
 }
 
+const MAX_EXPANSION_SIZE = 1001;
+
 async function computeExpansion(valueSet: ValueSet, expansion: ValueSetExpansionContains[]): Promise<void> {
   if (!valueSet.compose?.include.length) {
     throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
@@ -169,17 +178,107 @@ async function computeExpansion(valueSet: ValueSet, expansion: ValueSetExpansion
   const repo = getAuthenticatedContext().repo;
   for (const include of valueSet.compose.include) {
     if (include.valueSet?.length) {
-      for (const valueSetUrl of include.valueSet) {
-        const includedValueSet = await repo.searchOne<ValueSet>({
-          resourceType: 'ValueSet',
-          filters: [{ code: 'url', operator: Operator.EQUALS, value: valueSetUrl }],
-        });
-        if (!includedValueSet) {
-          throw new OperationOutcomeError(badRequest('Included ValueSet not found: ' + valueSetUrl));
-        }
+      // for (const valueSetUrl of include.valueSet) {
+      //   const includedValueSet = await repo.searchOne<ValueSet>({
+      //     resourceType: 'ValueSet',
+      //     filters: [{ code: 'url', operator: Operator.EQUALS, value: valueSetUrl }],
+      //   });
+      //   if (!includedValueSet) {
+      //     throw new OperationOutcomeError(badRequest('Included ValueSet not found: ' + valueSetUrl));
+      //   }
 
-        const nestedExpansion = await expandValueSet(includedValueSet);
+      //   const nestedExpansion = await expandValueSet(includedValueSet);
+      // }
+      throw new OperationOutcomeError(
+        badRequest('Recursive ValueSet expansion is not supported', 'ValueSet.compose.include.valueSet')
+      );
+    }
+
+    if (include.system) {
+      const codeSystem = await repo.searchOne<CodeSystem>({
+        resourceType: 'CodeSystem',
+        filters: [{ code: 'url', operator: Operator.EQUALS, value: include.system }],
+      });
+      if (!codeSystem) {
+        throw new OperationOutcomeError(
+          badRequest(`Code system ${include.system} not found`, 'ValueSet.compose.include.system')
+        );
+      }
+
+      let query = new SelectQuery('Coding')
+        .column('code')
+        .column('display')
+        .where('system', '=', codeSystem.id)
+        .limit(MAX_EXPANSION_SIZE);
+      query = addFilters(include.filter, query, codeSystem);
+      const results = await query.execute(repo.getDatabaseClient());
+      if (results.length === MAX_EXPANSION_SIZE) {
+        // Return partial expansion
+      }
+
+      expansion.push(
+        ...(results.map((r) => ({
+          code: r.code,
+          display: r.display,
+          system: codeSystem.url,
+        })) as ValueSetExpansionContains[])
+      );
+      if (expansion.length === MAX_EXPANSION_SIZE) {
+        // Return partial expansion
       }
     }
   }
+}
+
+function addFilters(
+  filters: ValueSetComposeIncludeFilter[] | undefined,
+  query: SelectQuery,
+  codeSystem: CodeSystem
+): SelectQuery {
+  if (!filters) {
+    return query;
+  }
+
+  for (const filter of filters) {
+    if (filter.op === 'is-a' || filter.op === 'is-not-a') {
+      if (codeSystem.hierarchyMeaning !== 'is-a') {
+        throw new OperationOutcomeError(
+          badRequest(
+            `Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`,
+            'ValueSet.compose.include.filter'
+          )
+        );
+      }
+      const properties = codeSystem.property?.filter((p) => p.uri === parentProperty).map((p) => p.code);
+
+      const propertyTable = query.getNextJoinAlias();
+      query.innerJoin(
+        'Coding_Property',
+        propertyTable,
+        new Conjunction([new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))])
+      );
+
+      const csPropertyTable = query.getNextJoinAlias();
+      query.innerJoin(
+        'CodeSystem_Property',
+        csPropertyTable,
+        new Conjunction([
+          new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+          new Condition(new Column(csPropertyTable, 'code'), '=', properties),
+        ])
+      );
+
+      const targetTable = query.getNextJoinAlias();
+      query.innerJoin(
+        'Coding',
+        targetTable,
+        new Conjunction([
+          new Condition(new Column(propertyTable, 'target'), '=', new Column(targetTable, 'id')),
+          new Condition(new Column(targetTable, 'code'), '=', filter.value),
+        ])
+      );
+    }
+  }
+
+  return query;
 }
