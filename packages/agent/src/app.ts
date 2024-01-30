@@ -1,6 +1,8 @@
 import {
+  AgentError,
   AgentMessage,
   AgentTransmitRequest,
+  AgentTransmitResponse,
   ContentType,
   Hl7Message,
   LogLevel,
@@ -10,10 +12,16 @@ import {
 } from '@medplum/core';
 import { Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
+import { exec as _exec } from 'node:child_process';
+import { isIP } from 'node:net';
+import { promisify } from 'node:util';
+import { platform } from 'os';
 import WebSocket from 'ws';
 import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+
+const exec = promisify(_exec);
 
 export class App {
   static instance: App;
@@ -137,7 +145,11 @@ export class App {
           // @ts-expect-error - Deprecated message type
           case 'push':
           case 'agent:transmit:request':
-            this.pushMessage(command);
+            if (command.contentType === ContentType.PING) {
+              await this.tryPingIp(command);
+            } else {
+              this.pushMessage(command);
+            }
             break;
           case 'agent:error':
             this.log.error(command.body);
@@ -250,6 +262,50 @@ export class App {
           channel.sendToRemote(msg);
         }
       }
+    }
+  }
+
+  // Send ping
+  // TODO: Handle error
+  // What should return to user?
+  // Should we validate IP?
+  // What about linux vs windows? How to test?
+
+  private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
+    try {
+      if (message.body && message.body !== 'PING') {
+        const warnMsg = 'Message body present but unused. Body should be empty for a ping request.';
+        this.log.warn(warnMsg);
+      }
+      if (!isIP(message.remote)) {
+        const errMsg = `Attempted to ping invalid IP: ${message.remote}`;
+        this.log.error(errMsg);
+        throw new Error(errMsg);
+      }
+      // This covers Windows, Linux, and Mac
+      const { stderr, stdout } = await exec(
+        platform() === 'win32' ? `ping ${message.remote}` : `ping -c 4 ${message.remote}`
+      );
+      if (stderr) {
+        throw new Error(`Received on stderr:\n\n${stderr}`);
+      }
+      // TODO: parse stdout
+      // Unix: 12.245/13.927/16.017/1.567 ms (second is avg)
+      this.log.info(`Ping result for ${message.remote}:\n\n${stdout}`);
+      this.addToWebSocketQueue({
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        contentType: ContentType.PING,
+        remote: message.remote,
+        callback: message.callback,
+        body: stdout,
+      } satisfies AgentTransmitResponse);
+    } catch (err) {
+      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_IP_GIVEN'}: ${normalizeErrorString(err)}`);
+      this.addToWebSocketQueue({
+        type: 'agent:error',
+        body: (err as Error).message,
+      } satisfies AgentError);
     }
   }
 
