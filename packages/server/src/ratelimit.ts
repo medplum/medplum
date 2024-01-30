@@ -16,7 +16,7 @@ export function getRateLimiter(): RateLimitRequestHandler {
       max: 600, // limit each IP to 600 requests per windowMs
       validate: false, // Ignore X-Forwarded-For warnings
       store,
-      handler: (req, res, next) => {
+      handler: (_, __, next) => {
         next(new OperationOutcomeError(tooManyRequests));
       },
     });
