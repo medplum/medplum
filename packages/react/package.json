@@ -103,7 +103,8 @@
     "rimraf": "5.0.5",
     "sinon": "17.0.1",
     "storybook": "7.6.10",
-    "typescript": "5.3.3"
+    "typescript": "5.3.3",
+    "vite-plugin-turbosnap": "^1.0.3"
   },
   "peerDependencies": {
     "@mantine/core": "^7.0.0",
