@@ -489,7 +489,7 @@ function buildValueCondition(tableName: string, operator: FhirOperator, value: s
     ctx.logger.warn('Potentially expensive token lookup query', { operator });
     return new Conjunction([
       new Condition(new Column(tableName, 'system'), '=', 'text'),
-      new Condition(column, 'LIKE', value.trim() + '%'),
+      new Condition(column, 'TSVECTOR_SIMPLE', value.trim() + ':*'),
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
     ctx.logger.warn('Potentially expensive token lookup query', { operator });
