@@ -397,9 +397,9 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Integer':
       return typeof value === 'number';
     case 'Date':
-      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?/.exec(value);
+      return isDateString(value);
     case 'DateTime':
-      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?T/.exec(value);
+      return isDateTimeString(value);
     case 'Time':
       return typeof value === 'string' && !!/^T\d/.exec(value);
     case 'Period':
@@ -412,13 +412,60 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
 }
 
 /**
+ * Returns true if the input value is a YYYY-MM-DD date string.
+ * @param input - Unknown input value.
+ * @returns True if the input is a date string.
+ */
+export function isDateString(input: unknown): input is string {
+  return typeof input === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?/.exec(input);
+}
+
+/**
+ * Returns true if the input value is a YYYY-MM-DDThh:mm:ss.sssZ date/time string.
+ * @param input - Unknown input value.
+ * @returns True if the input is a date/time string.
+ */
+export function isDateTimeString(input: unknown): input is string {
+  return typeof input === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?T/.exec(input);
+}
+
+/**
  * Determines if the input is a Period object.
  * This is heuristic based, as we do not have strong typing at runtime.
  * @param input - The input value.
  * @returns True if the input is a period.
  */
 export function isPeriod(input: unknown): input is Period {
-  return !!(input && typeof input === 'object' && 'start' in input);
+  return !!(
+    input &&
+    typeof input === 'object' &&
+    (('start' in input && isDateTimeString(input.start)) || ('end' in input && isDateTimeString(input.end)))
+  );
+}
+
+/**
+ * Tries to convert an inknown input value to a Period object.
+ * @param input - Unknown input value.
+ * @returns A Period object or undefined.
+ */
+export function toPeriod(input: unknown): Period | undefined {
+  if (!input) {
+    return undefined;
+  }
+
+  if (isDateString(input)) {
+    return { start: input + 'T00:00:00.000Z', end: input + 'T23:59:59.999Z' };
+  }
+
+  if (isDateTimeString(input)) {
+    return { start: input, end: input };
+  }
+
+  if (isPeriod(input)) {
+    return input;
+  }
+
+  return undefined;
 }
 
 /**

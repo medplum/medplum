@@ -30,6 +30,7 @@ import {
   satisfiedAccessPolicy,
   serverError,
   stringify,
+  toPeriod,
   tooManyRequests,
   validateResource,
   validateResourceType,
@@ -85,7 +86,7 @@ import { validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchImpl } from './search';
-import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery } from './sql';
+import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery, periodToRangeString } from './sql';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -1151,15 +1152,23 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     const details = getSearchParameterDetails(resource.resourceType, searchParam);
     const values = evalFhirPath(searchParam.expression as string, resource);
+    let columnValue = null;
 
     if (values.length > 0) {
       if (details.array) {
-        columns[details.columnName] = values.map((v) => this.buildColumnValue(searchParam, details, v));
+        columnValue = values.map((v) => this.buildColumnValue(searchParam, details, v));
       } else {
-        columns[details.columnName] = this.buildColumnValue(searchParam, details, values[0]);
+        columnValue = this.buildColumnValue(searchParam, details, values[0]);
       }
-    } else {
-      columns[details.columnName] = null;
+    }
+
+    columns[details.columnName] = columnValue;
+
+    // Handle special case for "MeasureReport-period"
+    // This is a trial for using "tstzrange" columns for date/time ranges.
+    // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+    if (searchParam.id === 'MeasureReport-period') {
+      columns['period_range'] = this.buildPeriodColumn(values[0]);
     }
   }
 
@@ -1245,6 +1254,20 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       if ('end' in value) {
         return this.buildDateTimeColumn(value.end);
       }
+    }
+    return undefined;
+  }
+
+  /**
+   * Builds the column value for a "date" search parameter.
+   * This is currently in trial mode. The intention is for this to replace all "date" and "date/time" search parameters.
+   * @param value - The FHIRPath result value.
+   * @returns The period column string value.
+   */
+  private buildPeriodColumn(value: any): string | undefined {
+    const period = toPeriod(value);
+    if (period) {
+      return periodToRangeString(period);
     }
     return undefined;
   }
