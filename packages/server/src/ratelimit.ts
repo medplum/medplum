@@ -1,4 +1,5 @@
 import rateLimit, { MemoryStore, RateLimitRequestHandler } from 'express-rate-limit';
+import { OperationOutcomeError, tooManyRequests } from '@medplum/core';
 
 /*
  * MemoryStore must be shutdown to cleanly stop the server.
@@ -15,6 +16,9 @@ export function getRateLimiter(): RateLimitRequestHandler {
       max: 600, // limit each IP to 600 requests per windowMs
       validate: false, // Ignore X-Forwarded-For warnings
       store,
+      handler: (req, res, next) => {
+        next(new OperationOutcomeError(tooManyRequests));
+      },
     });
   }
   return handler;
