@@ -175,7 +175,7 @@ export async function run(db: PoolClient): Promise<void> {
   for (const resourceType of resourceTypes) {
     const start = Date.now();
     await db.query(
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_text_tsv_idx" on "${resourceType}_Token" USING gin (to_tsvector('simple', value)) WHERE system = 'text'`
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_Token_text_idx_tsv" on "${resourceType}_Token" USING gin (to_tsvector('simple', value)) WHERE system = 'text'`
     );
     globalLogger.debug('Created new token text index', { resourceType, duration: `${Date.now() - start} ms` });
   }
