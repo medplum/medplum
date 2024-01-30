@@ -45,7 +45,7 @@ describe('applyDefaultValues', () => {
             },
           ],
         },
-        subject: {},
+        subject: undefined,
       });
     });
   });
