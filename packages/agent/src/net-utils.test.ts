@@ -1,5 +1,5 @@
-import { AgentMessage, allOk, ContentType, createReference, LogLevel, sleep } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import { AgentMessage, allOk, ContentType, LogLevel, sleep } from '@medplum/core';
+import { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
 import { App } from './app';
@@ -7,8 +7,6 @@ import { App } from './app';
 jest.mock('node-windows');
 
 const medplum = new MockClient();
-let bot: Bot;
-let endpoint: Endpoint;
 
 describe('Agent Net Utils', () => {
   beforeAll(async () => {
@@ -16,15 +14,6 @@ describe('Agent Net Utils', () => {
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
-    });
-
-    bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
-    endpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:57000',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
   });
 
@@ -60,13 +49,6 @@ describe('Agent Net Utils', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
-      channel: [
-        {
-          name: 'test',
-          endpoint: createReference(endpoint),
-          targetReference: createReference(bot),
-        },
-      ],
     } as Agent);
 
     // Start the app
