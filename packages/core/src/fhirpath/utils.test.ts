@@ -280,9 +280,24 @@ describe('FHIRPath utils', () => {
     expect(toPeriod(undefined)).toBeUndefined();
     expect(toPeriod(null)).toBeUndefined();
     expect(toPeriod('')).toBeUndefined();
+    expect(toPeriod('x')).toBeUndefined();
+    expect(toPeriod({})).toBeUndefined();
     expect(toPeriod('2020-01-01')).toMatchObject({
       start: '2020-01-01T00:00:00.000Z',
       end: '2020-01-01T23:59:59.999Z',
+    });
+    expect(toPeriod('2020-01-01T12:34:56.000Z')).toMatchObject({
+      start: '2020-01-01T12:34:56.000Z',
+      end: '2020-01-01T12:34:56.000Z',
+    });
+    expect(
+      toPeriod({
+        start: '2020-01-01T12:34:56.000Z',
+        end: '2020-01-01T12:34:56.999Z',
+      })
+    ).toMatchObject({
+      start: '2020-01-01T12:34:56.000Z',
+      end: '2020-01-01T12:34:56.999Z',
     });
   });
 });
