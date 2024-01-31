@@ -27,9 +27,8 @@ export function applyDefaultValuesToResource(
   options?: { debug?: boolean }
 ): Resource {
   const debugMode = Boolean(options?.debug);
-  const visitor = new DefaultValueVisitor();
+  const visitor = new DefaultValueVisitor(resource, resource.resourceType, 'resource');
   const crawler = new SchemaCrawler(schema, visitor);
-  visitor.setRootValue(resource, 'resource');
   crawler.crawlResource(debugMode);
   return visitor.getDefaultValue();
 }
@@ -47,15 +46,12 @@ type SliceContext = {
 };
 
 type ValueContext = {
-  path: string;
   type: 'resource' | 'element' | 'slice';
+  path: string;
   values: any[];
 };
 
 export class DefaultValueVisitor implements SchemaVisitor {
-  // private readonly inputResource: Resource;
-  // private readonly outputResource: Resource;
-
   private inputRootValue: any;
   private outputRootValue: any;
 
@@ -66,14 +62,13 @@ export class DefaultValueVisitor implements SchemaVisitor {
 
   private debugMode: boolean = true;
 
-  constructor() {
-    // this.inputResource = resource;
-    // this.outputResource = deepClone(this.inputResource);
-
+  constructor(rootValue: any, path: string, type: ValueContext['type']) {
     this.schemaStack = [];
     this.valueStack = [];
     this.slicingContextStack = [];
     this.sliceContextStack = [];
+
+    this.setRootValue(rootValue, path, type);
   }
 
   private get schema(): InternalTypeSchema {
@@ -98,15 +93,16 @@ export class DefaultValueVisitor implements SchemaVisitor {
     }
   }
 
-  setRootValue(rootValue: any, type: ValueContext['type']): void {
+  setRootValue(rootValue: any, rootPath: string, rootType: ValueContext['type']): void {
     this.inputRootValue = rootValue;
     this.outputRootValue = deepClone(rootValue);
-
-    this.valueStack.push({
-      type: type,
-      path: 'TODO', // this.inputRootValue.resourceType,
-      values: [this.outputRootValue],
-    });
+    this.valueStack = [
+      {
+        type: rootType,
+        path: rootPath,
+        values: [this.outputRootValue],
+      },
+    ];
   }
 
   onEnterSchema(schema: InternalTypeSchema): void {
@@ -232,6 +228,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
     }
     this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.values)}`);
 
+    return;
     // TODO: remove all this for now?
     for (let valueIndex = 0; valueIndex < elementValueContext.values.length; valueIndex++) {
       const elementValue = elementValueContext.values[valueIndex];
@@ -451,6 +448,7 @@ function getValueAtKey(
       } else {
         answer = last[keyPart];
       }
+      continue;
     }
 
     // intermediate key part

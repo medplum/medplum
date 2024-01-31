@@ -133,6 +133,40 @@ describe('applyDefaultValues', () => {
         subject: undefined,
       });
     });
+    describe('obtain required nested values on optional element', () => {
+      test.only('value for systolic', () => {
+        const slicedKey = 'component';
+        const slicedElement = schema.elements[slicedKey];
+        if (!isPopulated(slicedElement)) {
+          fail(`Expected ${slicedKey} element to be defined`);
+        }
+
+        const slicing = slicedElement.slicing;
+        if (!isPopulated(slicing)) {
+          fail(`Expected slicing to exist on element`);
+        }
+
+        const sliceName = 'systolic';
+        const slice = slicedElement.slicing?.slices.find((s) => s.name === sliceName);
+        if (!isPopulated(slice)) {
+          fail(`Expected ${sliceName} slice to be defined`);
+        }
+
+        const rootPath = 'Observation.component';
+        const key = 'value[x]';
+        const element = slice.elements[key];
+        const visitor = new DefaultValueVisitor({ valueQuantity: {} }, rootPath, 'element');
+        const crawler = new SchemaCrawler(schema, visitor, slice.elements);
+        crawler.crawlElement(element, key, rootPath);
+        const result = visitor.getDefaultValue();
+        expect(result).toEqual([
+          {
+            uri: 'http://unitsofmeasure.org',
+            code: 'mm[Hg]',
+          },
+        ]);
+      });
+    });
   });
 
   describe('US Core Patient', () => {
@@ -176,7 +210,7 @@ describe('applyDefaultValues', () => {
       });
     });
 
-    describe('creating new extension values', () => {
+    describe('add slice value', () => {
       test('new race extension entry', () => {
         const key = 'extension';
         const slicedElement = schema.elements[key];
@@ -195,13 +229,11 @@ describe('applyDefaultValues', () => {
           fail(`Expected ${sliceName} slice to be defined`);
         }
 
-        slice.min = 1;
-        slice.max = 1;
+        const modifiedSlice = { ...slice, min: 1, max: 1 };
 
-        const visitor = new DefaultValueVisitor();
+        const visitor = new DefaultValueVisitor([], slicedElement.path, 'element');
         const crawler = new SchemaCrawler(schema, visitor);
-        visitor.setRootValue([], 'resource');
-        crawler.crawlSlice(slicedElement, key, slice, slicing);
+        crawler.crawlSlice(slicedElement, key, modifiedSlice, slicing);
         const result = visitor.getDefaultValue();
         expect(result).toEqual([
           {

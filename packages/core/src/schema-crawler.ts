@@ -51,13 +51,13 @@ export class SchemaCrawler {
   private debugMode: boolean = false;
   private sliceAllowList: SliceDefinition[] | undefined;
 
-  constructor(schema: InternalTypeSchema, visitor: SchemaVisitor) {
+  constructor(schema: InternalTypeSchema, visitor: SchemaVisitor, elements?: InternalTypeSchema['elements']) {
     this.rootSchema = schema;
     this.elementsContextStack = [
       buildElementsContext({
         parentContext: undefined,
         parentPath: this.rootSchema.type as string,
-        elements: this.rootSchema.elements,
+        elements: elements ?? this.rootSchema.elements,
         parentType: this.rootSchema.type,
         profileUrl: this.rootSchema.name === this.rootSchema.type ? undefined : this.rootSchema.url,
       }),
@@ -77,15 +77,27 @@ export class SchemaCrawler {
     return this.elementsContextStack[this.elementsContextStack.length - 1];
   }
 
-  crawlElement(element: InternalSchemaElement, key: string): void {
-    if (this.visitor.onEnterResource) {
-      this.visitor.onEnterResource(this.rootSchema);
+  crawlElement(element: InternalSchemaElement, key: string, path: string): void {
+    if (this.visitor.onEnterSchema) {
+      this.visitor.onEnterSchema(this.rootSchema);
     }
+    // if (this.visitor.onEnterResource) {
+    // this.visitor.onEnterResource(this.rootSchema);
+    // }
 
-    this.crawlElementImpl(element, this.rootPath + '.' + key);
+    const allowedElements = Object.fromEntries(
+      Object.entries(this.elementsContext.elements).filter(([elementKey]) => {
+        return elementKey.startsWith(key);
+      })
+    );
+    this.crawlElementsImpl(allowedElements, path);
+    // this.crawlElementImpl(element, this.rootPath + '.' + key);
 
-    if (this.visitor.onExitResource) {
-      this.visitor.onExitResource();
+    // if (this.visitor.onExitResource) {
+    // this.visitor.onExitResource();
+    // }
+    if (this.visitor.onExitSchema) {
+      this.visitor.onExitSchema();
     }
   }
 
@@ -138,9 +150,31 @@ export class SchemaCrawler {
   private crawlElementsImpl(elements: InternalTypeSchema['elements'], path: string): void {
     const sortedElements = Object.entries(elements);
     sortedElements.sort();
-    for (const [key, element] of sortedElements) {
-      const elementPath = path + '.' + key;
-      this.crawlElementImpl(element, elementPath);
+    const elementTree = createElementTree(sortedElements);
+    for (const node of elementTree) {
+      this.crawlElementNode(node, path);
+    }
+    // for (const [key, element] of sortedElements) {
+    // const elementPath = path + '.' + key;
+    // this.crawlElementImpl(element, elementPath);
+    // }
+  }
+
+  private crawlElementNode(node: ElementNode, path: string): void {
+    if (this.visitor.onEnterElement) {
+      this.visitor.onEnterElement(path + '.' + node.key, node.element, this.elementsContext);
+    }
+
+    for (const child of node.children) {
+      this.crawlElementNode(child, path);
+    }
+
+    if (isPopulated(node.element?.slicing?.slices)) {
+      this.crawlSlicingImpl(node.element.slicing, path);
+    }
+
+    if (this.visitor.onExitElement) {
+      this.visitor.onExitElement(path + '.' + node.key, node.element, this.elementsContext);
     }
   }
 
@@ -352,4 +386,57 @@ function mergeElementsForContext(
     console.debug('ElementsContext elements same as parent context');
   }
   return result;
+}
+
+type ElementNode = {
+  key: string;
+  element: InternalSchemaElement;
+  children: ElementNode[];
+};
+
+// function createElementTree(elements: Record<string, InternalSchemaElement>): TreeNode[] {
+function createElementTree(elements: [string, InternalSchemaElement][]): ElementNode[] {
+  const rootNodes: ElementNode[] = [];
+
+  function isChildKey(parentKey: string, childKey: string): boolean {
+    return childKey.startsWith(parentKey + '.');
+  }
+
+  // Helper function to add a node
+  function addNode(currentNode: ElementNode, newNode: ElementNode): void {
+    for (const child of currentNode.children) {
+      // If the new node is a child of an existing child, recurse deeper
+      if (isChildKey(child.key, newNode.key)) {
+        addNode(child, newNode);
+        return;
+      }
+    }
+    // Otherwise, add it here
+    currentNode.children.push(newNode);
+  }
+
+  for (const [key, element] of elements) {
+    const newNode: ElementNode = { key, element, children: [] };
+    let added = false;
+
+    for (const rootNode of rootNodes) {
+      if (isChildKey(rootNode.key, key)) {
+        addNode(rootNode, newNode);
+        added = true;
+        break;
+      }
+    }
+
+    // If the string is not a child of any existing node, add it as a new root
+    if (!added) {
+      rootNodes.push(newNode);
+    }
+  }
+
+  return rootNodes;
+
+  // Remove any root nodes that are actually children of other nodes
+  // return rootNodes.filter((rootNode) => {
+  // return !strings.some((str) => str !== rootNode.element && rootNode.element.startsWith(str));
+  // });
 }
