@@ -13,6 +13,7 @@ import {
   isDateString,
   isDateTimeString,
   toJsBoolean,
+  toPeriod,
   toTypedValue,
 } from './utils';
 
@@ -273,5 +274,15 @@ describe('FHIRPath utils', () => {
     expect(isDateTimeString('2020-01')).toBe(true);
     expect(isDateTimeString('2020-01-01')).toBe(true);
     expect(isDateTimeString('2020-01-01T12:34:56Z')).toBe(true);
+  });
+
+  test('toPeriod', () => {
+    expect(toPeriod(undefined)).toBeUndefined();
+    expect(toPeriod(null)).toBeUndefined();
+    expect(toPeriod('')).toBeUndefined();
+    expect(toPeriod('2020-01-01')).toMatchObject({
+      start: '2020-01-01T00:00:00.000Z',
+      end: '2020-01-01T23:59:59.999Z',
+    });
   });
 });

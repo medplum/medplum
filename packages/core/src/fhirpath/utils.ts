@@ -445,7 +445,7 @@ export function isPeriod(input: unknown): input is Period {
 }
 
 /**
- * Tries to convert an inknown input value to a Period object.
+ * Tries to convert an unknown input value to a Period object.
  * @param input - Unknown input value.
  * @returns A Period object or undefined.
  */
