@@ -1788,6 +1788,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     return this.conn ?? getDatabasePool();
   }
 
+  /**
+   * Returns a proper database connection.
+   * Unlike getDatabaseClient(), this method always returns a PoolClient.
+   * @returns Database connection.
+   */
   private async getConnection(): Promise<PoolClient> {
     this.assertNotClosed();
     if (!this.conn) {
@@ -1796,9 +1801,15 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     return this.conn;
   }
 
-  private releaseConnection(): void {
+  /**
+   * Releases the database connection.
+   * Include an error to remove the connection from the pool.
+   * See: https://github.com/brianc/node-postgres/blob/master/packages/pg-pool/index.js#L333
+   * @param err - Optional error to remove the connection from the pool.
+   */
+  private releaseConnection(err?: boolean | Error): void {
     if (this.conn) {
-      this.conn.release();
+      this.conn.release(err);
       this.conn = undefined;
     }
   }
@@ -1810,8 +1821,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       await this.commitTransaction();
       return result;
     } catch (err) {
-      await this.rollbackTransaction();
-      throw err;
+      const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      await this.rollbackTransaction(operationOutcomeError);
+      throw operationOutcomeError;
     } finally {
       this.endTransaction();
     }
@@ -1839,11 +1851,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  private async rollbackTransaction(): Promise<void> {
+  private async rollbackTransaction(error: Error): Promise<void> {
     this.assertInTransaction();
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
+      this.releaseConnection(error);
     } else {
       await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
     }
