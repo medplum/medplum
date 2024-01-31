@@ -1,5 +1,5 @@
 import { Client } from 'pg';
-import { Column, Condition, Negation, SelectQuery, SqlBuilder } from './sql';
+import { Column, Condition, Negation, SelectQuery, SqlBuilder, periodToRangeString } from './sql';
 
 describe('SqlBuilder', () => {
   beforeEach(() => {
@@ -148,6 +148,13 @@ describe('SqlBuilder', () => {
   test('Select missing columns', () => {
     const sql = new SqlBuilder();
     expect(() => new SelectQuery('MyTable').buildSql(sql)).toThrow('No columns selected');
+  });
+
+  test('periodToRangeString', () => {
+    expect(periodToRangeString({})).toBeUndefined();
+    expect(periodToRangeString({ start: '2020-01-01' })).toBe('[2020-01-01,]');
+    expect(periodToRangeString({ end: '2020-01-01' })).toBe('[,2020-01-01]');
+    expect(periodToRangeString({ start: '2020-01-01', end: '2020-01-02' })).toBe('[2020-01-01,2020-01-02]');
   });
 
   test('Debug mode', async () => {

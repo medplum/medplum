@@ -24,6 +24,7 @@ import {
   Condition,
   DiagnosticReport,
   Encounter,
+  MeasureReport,
   Observation,
   Organization,
   Patient,
@@ -3280,4 +3281,129 @@ describe('FHIR Search', () => {
       expect(outcome.issue?.[0]?.details?.text).toBe('Unknown search parameter: xyz');
     }
   });
+
+  test('Date range search', () =>
+    withTestContext(async () => {
+      const ident = randomUUID();
+
+      const measureReport = await systemRepo.createResource<MeasureReport>({
+        resourceType: 'MeasureReport',
+        status: 'complete',
+        type: 'individual',
+        measure: 'http://example.com',
+        identifier: [{ value: ident }],
+        period: {
+          start: '2020-01-01T12:00:00.000Z',
+          end: '2020-01-15T12:00:00.000Z',
+        },
+      });
+      expect(measureReport).toBeDefined();
+
+      async function searchByPeriod(operator: Operator, value: string): Promise<boolean> {
+        const result = await systemRepo.searchOne<MeasureReport>({
+          resourceType: 'MeasureReport',
+          filters: [
+            { code: 'identifier', operator: Operator.EQUALS, value: ident },
+            { code: 'period', operator, value },
+          ],
+        });
+        return !!result;
+      }
+
+      expect(await searchByPeriod(Operator.EQUALS, '2019-12-31')).toBe(false);
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-01')).toBe(true);
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-02')).toBe(true);
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-15')).toBe(true);
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-16')).toBe(false);
+
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-01T11:59:59.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-01T12:00:00.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-15T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-15T12:00:00.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.EQUALS, '2020-01-15T12:00:01.000Z')).toBe(false);
+
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2019-12-31')).toBe(true);
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-01')).toBe(false);
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-02')).toBe(false);
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-15')).toBe(false);
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-16')).toBe(true);
+
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-01T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-01T12:00:00.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-15T11:59:59.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-15T12:00:00.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.NOT_EQUALS, '2020-01-15T12:00:01.000Z')).toBe(true);
+
+      expect(await searchByPeriod(Operator.LESS_THAN, '2019-12-31')).toBe(false);
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-01')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-02')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-15')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-16')).toBe(true);
+
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-01T11:59:59.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-01T12:00:00.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-15T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-15T12:00:00.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN, '2020-01-15T12:00:01.000Z')).toBe(true);
+
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2019-12-31')).toBe(false);
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-01')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-02')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-15')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-16')).toBe(true);
+
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-01T11:59:59.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-01T12:00:00.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-15T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-15T12:00:00.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.LESS_THAN_OR_EQUALS, '2020-01-15T12:00:01.000Z')).toBe(true);
+
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2019-12-31')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-01')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-02')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-15')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-16')).toBe(false);
+
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-01T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-01T12:00:00.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-15T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-15T12:00:00.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.GREATER_THAN, '2020-01-15T12:00:01.000Z')).toBe(false);
+
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2019-12-31')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-01')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-02')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-15')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-16')).toBe(false);
+
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-01T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-01T12:00:00.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-15T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-15T12:00:00.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.GREATER_THAN_OR_EQUALS, '2020-01-15T12:00:01.000Z')).toBe(false);
+
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2019-12-31')).toBe(true);
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-01')).toBe(false);
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-02')).toBe(false);
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-15')).toBe(false);
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-16')).toBe(false);
+
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-01T11:59:59.000Z')).toBe(true);
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-01T12:00:00.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-15T11:59:59.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-15T12:00:00.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.STARTS_AFTER, '2020-01-15T12:00:01.000Z')).toBe(false);
+
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2019-12-31')).toBe(false);
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-01')).toBe(false);
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-02')).toBe(false);
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-15')).toBe(false);
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-16')).toBe(true);
+
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-01T11:59:59.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-01T12:00:00.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-15T11:59:59.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-15T12:00:00.000Z')).toBe(false);
+      expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-15T12:00:01.000Z')).toBe(true);
+    }));
 });
