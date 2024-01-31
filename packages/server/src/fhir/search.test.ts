@@ -24,7 +24,6 @@ import {
   Condition,
   DiagnosticReport,
   Encounter,
-  Measure,
   MeasureReport,
   Observation,
   Organization,
