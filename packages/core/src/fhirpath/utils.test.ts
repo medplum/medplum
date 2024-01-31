@@ -10,6 +10,8 @@ import {
   fhirPathIs,
   getTypedPropertyValue,
   getTypedPropertyValueWithSchema,
+  isDateString,
+  isDateTimeString,
   toJsBoolean,
   toTypedValue,
 } from './utils';
@@ -249,5 +251,27 @@ describe('FHIRPath utils', () => {
       type: 'boolean',
       value: true,
     });
+  });
+
+  test('isDateString', () => {
+    expect(isDateString(undefined)).toBe(false);
+    expect(isDateString(null)).toBe(false);
+    expect(isDateString('')).toBe(false);
+    expect(isDateString('x')).toBe(false);
+    expect(isDateString('2020')).toBe(true);
+    expect(isDateString('2020-01')).toBe(true);
+    expect(isDateString('2020-01-01')).toBe(true);
+    expect(isDateString('2020-01-01T')).toBe(false);
+  });
+
+  test('isDateTimeString', () => {
+    expect(isDateTimeString(undefined)).toBe(false);
+    expect(isDateTimeString(null)).toBe(false);
+    expect(isDateTimeString('')).toBe(false);
+    expect(isDateTimeString('x')).toBe(false);
+    expect(isDateTimeString('2020')).toBe(true);
+    expect(isDateTimeString('2020-01')).toBe(true);
+    expect(isDateTimeString('2020-01-01')).toBe(true);
+    expect(isDateTimeString('2020-01-01T12:34:56Z')).toBe(true);
   });
 });

@@ -165,7 +165,11 @@ export class Tokenizer {
     const start = this.pos.index;
     this.consumeWhile(() => /[\d-]/.exec(this.curr()));
 
+    let foundTime = false;
+    let foundTimeZone = false;
+
     if (this.curr() === 'T') {
+      foundTime = true;
       this.advance();
       this.consumeWhile(() => /[\d:]/.exec(this.curr()));
 
@@ -175,14 +179,27 @@ export class Tokenizer {
       }
 
       if (this.curr() === 'Z') {
+        foundTimeZone = true;
         this.advance();
       } else if (this.curr() === '+' || this.curr() === '-') {
+        foundTimeZone = true;
         this.advance();
         this.consumeWhile(() => /[\d:]/.exec(this.curr()));
       }
     }
 
-    return this.buildToken('DateTime', this.str.substring(start, this.pos.index));
+    let value = this.str.substring(start, this.pos.index);
+    if (value.endsWith('T')) {
+      // The date/time string ended with a "T", which is valid FHIRPath, but not valid ISO8601.
+      // Strip the "T" and treat as a date.
+      value = value.substring(0, value.length - 1);
+    } else if (!value.startsWith('T') && foundTime && !foundTimeZone) {
+      // FHIRPath spec says timezone is optional: https://build.fhir.org/ig/HL7/FHIRPath/#datetime
+      // The FHIRPath test suite expects the timezone to be "Z" if not specified.
+      // See: https://github.com/HL7/FHIRPath/blob/master/tests/r4/tests-fhir-r4.xml
+      value += 'Z';
+    }
+    return this.buildToken('DateTime', value);
   }
 
   private consumeNumber(): Token {

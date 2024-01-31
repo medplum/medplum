@@ -2,6 +2,7 @@ import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { capitalize, isEmpty } from '../utils';
+import { validationRegexes } from '../typeschema/validation';
 
 /**
  * Returns a single element array with a typed boolean value.
@@ -417,7 +418,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
  * @returns True if the input is a date string.
  */
 export function isDateString(input: unknown): input is string {
-  return typeof input === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?/.exec(input);
+  return typeof input === 'string' && !!validationRegexes.date.exec(input);
 }
 
 /**
@@ -426,7 +427,7 @@ export function isDateString(input: unknown): input is string {
  * @returns True if the input is a date/time string.
  */
 export function isDateTimeString(input: unknown): input is string {
-  return typeof input === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?T/.exec(input);
+  return typeof input === 'string' && !!validationRegexes.dateTime.exec(input);
 }
 
 /**
@@ -454,7 +455,10 @@ export function toPeriod(input: unknown): Period | undefined {
   }
 
   if (isDateString(input)) {
-    return { start: input + 'T00:00:00.000Z', end: input + 'T23:59:59.999Z' };
+    return {
+      start: dateStringToInstantString(input, '0000-00-00T00:00:00.000Z'),
+      end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999Z'),
+    };
   }
 
   if (isDateTimeString(input)) {
@@ -466,6 +470,11 @@ export function toPeriod(input: unknown): Period | undefined {
   }
 
   return undefined;
+}
+
+function dateStringToInstantString(input: string, fill: string): string {
+  // Input can be any subset of YYYY-MM-DDThh:mm:ss.sssZ
+  return input + fill.substring(input.length);
 }
 
 /**

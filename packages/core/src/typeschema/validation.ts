@@ -59,13 +59,13 @@ export const fhirTypeToJsType = {
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-const validationRegexes: Record<string, RegExp> = {
+export const validationRegexes: Record<string, RegExp> = {
   base64Binary: /^([A-Za-z\d+/]{4})*([A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/,
   canonical: /^\S*$/,
   code: /^[^\s]+( [^\s]+)*$/,
   date: /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1]))?)?$/,
   dateTime:
-    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
+    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3])(:[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
   id: /^[A-Za-z0-9\-.]{1,64}$/,
   instant:
     /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00))$/,
@@ -471,8 +471,11 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
   }
   for (const slice of slicingRules.slices) {
     if (
-      slicingRules.discriminator.every((discriminator) =>
-        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
+      slicingRules.discriminator.every(
+        (discriminator) =>
+          arrayify(getNestedProperty(value, discriminator.path))?.some((v) =>
+            matchDiscriminant(v, discriminator, slice)
+          )
       )
     ) {
       return slice.name;
