@@ -92,37 +92,15 @@ describe('Expand', () => {
     const res = await request(app)
       .get(
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
-          'http://hl7.org/fhir/ValueSet/observation-codes'
-        )}&filter=left&offset=1&count=1`
+          'http://hl7.org/fhir/ValueSet/resource-types'
+        )}&filter=Med&offset=1&count=1`
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.expansion.offset).toBe(1);
+    console.log(res.body.expansion.contains);
     expect(res.body.expansion.contains.length).toBe(1);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
     expect(res.body.expansion.contains[0].display).toMatch(/left/i);
-  });
-
-  test('Resource types', async () => {
-    const valueSet = 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1';
-    const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet)}&filter=Patient`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({
-      resourceType: 'ValueSet',
-      url: 'http://hl7.org/fhir/ValueSet/resource-types',
-      expansion: {
-        offset: 0,
-        contains: [
-          {
-            system: 'http://hl7.org/fhir/resource-types',
-            code: 'Patient',
-            display: 'Patient',
-          },
-        ],
-      },
-    });
   });
 
   test('No duplicates', async () => {
@@ -135,7 +113,6 @@ describe('Expand', () => {
       resourceType: 'ValueSet',
       url: 'http://hl7.org/fhir/ValueSet/subscription-status',
       expansion: {
-        offset: 0,
         contains: [
           {
             system: 'http://hl7.org/fhir/subscription-status',
@@ -159,7 +136,6 @@ describe('Expand', () => {
       resourceType: 'ValueSet',
       url: valueSet,
       expansion: {
-        offset: 0,
         contains: [
           {
             system: SNOMED,
@@ -186,7 +162,6 @@ describe('Expand', () => {
       resourceType: 'ValueSet',
       url: valueSet,
       expansion: {
-        offset: 0,
         contains: [
           {
             system: 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus',
@@ -220,7 +195,7 @@ describe('Expand', () => {
     const res = await request(app)
       .get(
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
-          'http://hl7.org/fhir/ValueSet/observation-codes'
+          'http://hl7.org/fhir/ValueSet/care-plan-activity-kind'
         )}&filter=${encodeURIComponent('[')}`
       )
       .set('Authorization', 'Bearer ' + accessToken);
@@ -229,25 +204,23 @@ describe('Expand', () => {
 
   test('No null `display` field', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}`)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/care-plan-activity-kind')}`
+      )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
 
     const body = res.body as ValueSet;
     expect(body).toBeDefined();
 
-    let foundNullDisplay = false;
     const contains = body.expansion?.contains;
     expect(contains).toBeDefined();
     expect(contains?.length).toBeGreaterThan(0);
     for (const code of contains as ValueSetExpansionContains[]) {
-      if (code.display && code.display === null) {
-        foundNullDisplay = true;
-        break;
+      if (code.display === null) {
+        fail(`Found null display value for coding ${code.system}|${code.code}`);
       }
     }
-
-    expect(foundNullDisplay).toBe(false);
   });
 
   test('User uploaded ValueSet', async () => {
@@ -258,26 +231,23 @@ describe('Expand', () => {
       .send({
         resourceType: 'ValueSet',
         status: 'active',
-        url: 'https://example.com/fhir/ValueSet/fruits',
+        url: 'https://example.com/fhir/ValueSet/clinical-resources' + randomUUID(),
         expansion: {
           timestamp: '2023-09-13T23:24:00.000Z',
         },
         compose: {
           include: [
             {
-              system: 'http://example.com/fruits',
+              system: 'http://hl7.org/fhir/resource-types',
               concept: [
                 {
-                  code: 'apple',
-                  display: 'Apple',
+                  code: 'Patient',
                 },
                 {
-                  code: 'banana',
-                  display: 'Banana',
+                  code: 'Practitioner',
                 },
                 {
-                  code: 'cherry',
-                  display: 'Cherry',
+                  code: 'Observation',
                 },
               ],
             },
@@ -285,14 +255,26 @@ describe('Expand', () => {
         },
       });
     expect(res1.status).toBe(201);
+    const url = res1.body.url;
 
     const res2 = await request(app)
-      .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://example.com/fhir/ValueSet/fruits')}&filter=apple`
-      )
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.body.expansion.contains[0].system).toBe('http://example.com/fruits');
-    expect(res2.body.expansion.contains[0].display).toMatch(/apple/i);
+    expect(res2.body.expansion.contains).toContainEqual({
+      system: 'http://hl7.org/fhir/resource-types',
+      code: 'Patient',
+      display: 'Patient',
+    });
+    expect(res2.body.expansion.contains).toContainEqual({
+      system: 'http://hl7.org/fhir/resource-types',
+      code: 'Practitioner',
+      display: 'Practitioner',
+    });
+    expect(res2.body.expansion.contains).toContainEqual({
+      system: 'http://hl7.org/fhir/resource-types',
+      code: 'Observation',
+      display: 'Observation',
+    });
   });
 });

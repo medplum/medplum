@@ -8,12 +8,14 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
-import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
-import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 import { parentProperty } from './codesystemimport';
+import { clamp } from './utils/parameters';
+import { validateCode } from './codesystemvalidatecode';
+import { getDatabasePool } from '../../database';
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -43,16 +45,9 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   }
 
   // First, get the ValueSet resource
-  const valueSet = await getValueSetByUrl(url);
+  let valueSet = await getValueSetByUrl(url);
   if (!valueSet) {
     sendOutcome(res, badRequest('ValueSet not found'));
-    return;
-  }
-
-  // Build a collection of all systems to include
-  const systemExpressions = buildValueSetSystems(valueSet);
-  if (systemExpressions.length === 0) {
-    sendOutcome(res, badRequest('No systems found'));
     return;
   }
 
@@ -63,7 +58,41 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   let count = 10;
   if (req.query.count) {
-    count = Math.max(1, Math.min(20, parseInt(req.query.count as string, 10)));
+    count = clamp(parseInt(req.query.count as string, 10), 1, 1000);
+  }
+
+  if (await shouldUseLegacyTable()) {
+    const elements = await queryValueSetElements(valueSet, offset, count, filter);
+    res.status(200).json({
+      resourceType: 'ValueSet',
+      url,
+      expansion: {
+        offset,
+        contains: elements,
+      },
+    } as ValueSet);
+  } else {
+    valueSet = await expandValueSet(valueSet, offset, count, filter);
+    res.status(200).json(valueSet);
+  }
+});
+
+async function shouldUseLegacyTable(): Promise<boolean> {
+  const client = getDatabasePool();
+  const results = await new SelectQuery('Coding').column('id').limit(1).execute(client);
+  return results.length < 1;
+}
+
+async function queryValueSetElements(
+  valueSet: ValueSet,
+  offset: number,
+  count: number,
+  filter?: string
+): Promise<ValueSetExpansionContains[]> {
+  // Build a collection of all systems to include
+  const systemExpressions = buildValueSetSystems(valueSet);
+  if (systemExpressions.length === 0) {
+    throw new OperationOutcomeError(badRequest('No systems found'));
   }
 
   const client = getDatabasePool();
@@ -89,17 +118,10 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     system: row.system,
     code: row.code,
     display: row.display ?? undefined, // if display is NULL, we want to filter it out before sending this to the client
-  }));
+  })) as ValueSetExpansionContains[];
 
-  res.status(200).json({
-    resourceType: 'ValueSet',
-    url,
-    expansion: {
-      offset,
-      contains: elements,
-    },
-  } as ValueSet);
-});
+  return elements;
+}
 
 function filterToTsvectorQuery(filter: string | undefined): string | undefined {
   if (!filter) {
@@ -152,25 +174,46 @@ function processInclude(systemExpressions: Expression[], include: ValueSetCompos
   }
 }
 
-async function expandValueSet(valueSet: ValueSet): Promise<ValueSet> {
-  const expansion = valueSet.expansion;
-  if (expansion?.contains?.length && !expansion.parameter) {
-    if (expansion.total && expansion.total > expansion.contains.length) {
-      // Partial expansion, needs to be recomputed
-    }
+const MAX_EXPANSION_SIZE = 1001;
 
+export async function expandValueSet(
+  valueSet: ValueSet,
+  offset: number,
+  count: number,
+  filter?: string
+): Promise<ValueSet> {
+  const expansion = valueSet.expansion;
+  if (expansion?.contains?.length && !expansion.parameter && expansion.total === expansion.contains.length) {
     // Full expansion is already available, use that
     return valueSet;
   }
 
   // Compute expansion
   const expandedSet = [] as ValueSetExpansionContains[];
-  await computeExpansion(valueSet, expandedSet);
+  await computeExpansion(valueSet, expandedSet, offset, count, filter);
+  if (expandedSet.length >= MAX_EXPANSION_SIZE) {
+    valueSet.expansion = {
+      total: 1001,
+      timestamp: new Date().toISOString(),
+      contains: expandedSet.slice(0, 1000),
+    };
+  } else {
+    valueSet.expansion = {
+      total: expandedSet.length,
+      timestamp: new Date().toISOString(),
+      contains: expandedSet,
+    };
+  }
+  return valueSet;
 }
 
-const MAX_EXPANSION_SIZE = 1001;
-
-async function computeExpansion(valueSet: ValueSet, expansion: ValueSetExpansionContains[]): Promise<void> {
+async function computeExpansion(
+  valueSet: ValueSet,
+  expansion: ValueSetExpansionContains[],
+  offset: number,
+  count: number,
+  filter?: string
+): Promise<void> {
   if (!valueSet.compose?.include.length) {
     throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
   }
@@ -178,23 +221,12 @@ async function computeExpansion(valueSet: ValueSet, expansion: ValueSetExpansion
   const repo = getAuthenticatedContext().repo;
   for (const include of valueSet.compose.include) {
     if (include.valueSet?.length) {
-      // for (const valueSetUrl of include.valueSet) {
-      //   const includedValueSet = await repo.searchOne<ValueSet>({
-      //     resourceType: 'ValueSet',
-      //     filters: [{ code: 'url', operator: Operator.EQUALS, value: valueSetUrl }],
-      //   });
-      //   if (!includedValueSet) {
-      //     throw new OperationOutcomeError(badRequest('Included ValueSet not found: ' + valueSetUrl));
-      //   }
-
-      //   const nestedExpansion = await expandValueSet(includedValueSet);
-      // }
       throw new OperationOutcomeError(
         badRequest('Recursive ValueSet expansion is not supported', 'ValueSet.compose.include.valueSet')
       );
     }
 
-    if (include.system) {
+    if (include.system && !include.concept) {
       const codeSystem = await repo.searchOne<CodeSystem>({
         resourceType: 'CodeSystem',
         filters: [{ code: 'url', operator: Operator.EQUALS, value: include.system }],
@@ -209,13 +241,14 @@ async function computeExpansion(valueSet: ValueSet, expansion: ValueSetExpansion
         .column('code')
         .column('display')
         .where('system', '=', codeSystem.id)
-        .limit(MAX_EXPANSION_SIZE);
+        .limit(count + 1)
+        .offset(offset)
+        .orderBy('id');
+      if (filter) {
+        query.where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
+      }
       query = addFilters(include.filter, query, codeSystem);
       const results = await query.execute(repo.getDatabaseClient());
-      if (results.length === MAX_EXPANSION_SIZE) {
-        // Return partial expansion
-      }
-
       expansion.push(
         ...(results.map((r) => ({
           code: r.code,
@@ -223,9 +256,18 @@ async function computeExpansion(valueSet: ValueSet, expansion: ValueSetExpansion
           system: codeSystem.url,
         })) as ValueSetExpansionContains[])
       );
-      if (expansion.length === MAX_EXPANSION_SIZE) {
-        // Return partial expansion
-      }
+    } else if (include.system && include.concept) {
+      const concepts = await Promise.all(
+        include.concept.flatMap(async (c) =>
+          validateCode(include.system as string, c.code)
+        ) as ValueSetExpansionContains[]
+      );
+      expansion.push(...(filter ? concepts.filter((c) => c.display?.includes(filter)) : concepts));
+    }
+
+    if (expansion.length > count) {
+      // Return partial expansion
+      return;
     }
   }
 }
