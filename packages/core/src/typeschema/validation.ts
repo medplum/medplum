@@ -471,11 +471,8 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
   }
   for (const slice of slicingRules.slices) {
     if (
-      slicingRules.discriminator.every(
-        (discriminator) =>
-          arrayify(getNestedProperty(value, discriminator.path))?.some((v) =>
-            matchDiscriminant(v, discriminator, slice)
-          )
+      slicingRules.discriminator.every((discriminator) =>
+        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
       )
     ) {
       return slice.name;
