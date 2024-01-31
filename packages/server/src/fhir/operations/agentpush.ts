@@ -10,7 +10,7 @@ import {
 import { Agent, Device } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
-import { isIP } from 'node:net';
+import { isIPv4 } from 'node:net';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
@@ -145,14 +145,14 @@ async function getDevice(repo: Repository, destination: string): Promise<Device 
   if (destination.startsWith('Device/')) {
     try {
       return await repo.readReference<Device>({ reference: destination });
-    } catch (err) {
+    } catch (_err) {
       return undefined;
     }
   }
   if (destination.startsWith('Device?')) {
     return repo.searchOne<Device>(parseSearchDefinition(destination));
   }
-  if (isIP(destination)) {
+  if (isIPv4(destination)) {
     return { resourceType: 'Device', url: destination };
   }
   return undefined;

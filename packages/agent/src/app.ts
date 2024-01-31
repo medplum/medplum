@@ -13,7 +13,7 @@ import {
 import { Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { exec as _exec } from 'node:child_process';
-import { isIP } from 'node:net';
+import { isIPv4, isIPv6 } from 'node:net';
 import { promisify } from 'node:util';
 import { platform } from 'os';
 import WebSocket from 'ws';
@@ -271,8 +271,11 @@ export class App {
         const warnMsg = 'Message body present but unused. Body should be empty for a ping request.';
         this.log.warn(warnMsg);
       }
-      if (!isIP(message.remote)) {
-        const errMsg = `Attempted to ping invalid IP: ${message.remote}`;
+      if (!isIPv4(message.remote)) {
+        let errMsg = `Attempted to ping invalid IP: ${message.remote}`;
+        if (isIPv6(message.remote)) {
+          errMsg = `Attempted to ping an IPv6 address: ${message.remote}\n\nIPv6 is currently unsupported.`;
+        }
         this.log.error(errMsg);
         throw new Error(errMsg);
       }

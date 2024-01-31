@@ -2397,7 +2397,7 @@ export class MedplumClient extends EventTarget {
    */
   pushToAgent(
     agent: Agent | Reference<Agent>,
-    destination: Device | Reference<Device>,
+    destination: Device | Reference<Device> | string,
     body: any,
     contentType?: string,
     waitForResponse?: boolean,
@@ -2406,7 +2406,7 @@ export class MedplumClient extends EventTarget {
     return this.post(
       this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
       {
-        destination: getReferenceString(destination),
+        destination: typeof destination === 'string' ? destination : getReferenceString(destination),
         body,
         contentType,
         waitForResponse,

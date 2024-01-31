@@ -40,6 +40,10 @@ function getTabs(resourceType: string): string[] {
     result.push('Ranges');
   }
 
+  if (resourceType === 'Agent') {
+    result.push('Tools');
+  }
+
   result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps', 'Profiles');
   return result;
 }
