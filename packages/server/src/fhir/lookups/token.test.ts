@@ -475,7 +475,7 @@ describe('Identifier Lookup Table', () => {
 
   test('Identifier value with pipe', () =>
     withTestContext(async () => {
-      const system = 'https://www.example.com';
+      const system = randomUUID();
       const base = randomUUID();
       const id1 = base + '|1';
       const id2 = base + '|2';

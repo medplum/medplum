@@ -1088,6 +1088,7 @@ describe('Core Utils', () => {
       splitN('_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status', ':', 3)
     ).toEqual(['_has', 'Observation', 'subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status']);
     expect(splitN('organization', ':', 2)).toEqual(['organization']);
+    expect(splitN('system|', '|', 2)).toEqual(['system', '']);
   });
 
   test('lazy', () => {
