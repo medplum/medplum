@@ -8,6 +8,7 @@ import {
   LoginState,
   MedplumClient,
   MedplumClientOptions,
+  OperationOutcomeError,
   ProfileResource,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
@@ -23,7 +24,6 @@ import {
 } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
-import { OperationOutcomeError } from '@medplum/core';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import {
   BartSimpson,
