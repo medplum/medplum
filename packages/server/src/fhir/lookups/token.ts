@@ -8,6 +8,7 @@ import {
   OperationOutcomeError,
   PropertyType,
   SortRule,
+  splitN,
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
@@ -21,10 +22,10 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
+import { getRequestContext } from '../../context';
 import { Column, Condition, Conjunction, Disjunction, Exists, Expression, Negation, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays, deriveIdentifierSearchParameter } from './util';
-import { getRequestContext } from '../../context';
 
 interface Token {
   readonly code: string;
@@ -458,7 +459,7 @@ function buildWhereExpression(tableName: string, filter: Filter): Expression | u
  * @returns A WHERE Condition on the token table, if applicable, else undefined
  */
 function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression | undefined {
-  const parts = query.split('|');
+  const parts = splitN(query, '|', 2);
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const systemCondition = new Condition(new Column(tableName, 'system'), '=', parts[0]);

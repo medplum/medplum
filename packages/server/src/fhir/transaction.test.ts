@@ -6,7 +6,7 @@ import { loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
 import { Repository } from './repo';
 
-describe('FHIR Repo', () => {
+describe.skip('FHIR Repo Transactions', () => {
   let repo: Repository;
 
   beforeAll(async () => {

@@ -1,9 +1,17 @@
 import { Table } from '@mantine/core';
-import { capitalize, evalFhirPathTyped, getSearchParameterDetails, toTypedValue } from '@medplum/core';
+import {
+  InternalSchemaElement,
+  TypedValue,
+  arrayify,
+  capitalize,
+  evalFhirPathTyped,
+  getSearchParameterDetails,
+  toTypedValue,
+} from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useState } from 'react';
-import { createPatch } from 'rfc6902';
+import { useEffect, useMemo, useState } from 'react';
+import { Operation, createPatch } from 'rfc6902';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import classes from './ResourceDiffTable.module.css';
 
@@ -14,6 +22,7 @@ export interface ResourceDiffTableProps {
 
 export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | null {
   const medplum = useMedplum();
+  const { original, revised } = props;
   const [schemaLoaded, setSchemaLoaded] = useState(false);
 
   useEffect(() => {
@@ -23,13 +32,43 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
       .catch(console.log);
   }, [medplum, props.original.resourceType]);
 
-  if (!schemaLoaded) {
+  const diffTable = useMemo(() => {
+    if (!schemaLoaded) {
+      return null;
+    }
+
+    const typedOriginal = [toTypedValue(original)];
+    const typedRevised = [toTypedValue(revised)];
+    const result = [];
+
+    // First, we filter and conslidate the patch operations
+    // We can do this because we do not use the "value" field in the patch operations
+    // Remove patch operations on meta elements such as "meta.lastUpdated" and "meta.versionId"
+    // Consolidate patch operations on arrays
+    const patch = mergePatchOperations(createPatch(original, revised));
+
+    // Next, convert the patch operations to a diff table
+    for (const op of patch) {
+      const path = op.path;
+      const fhirPath = jsonPathToFhirPath(path);
+      const property = tryGetElementDefinition(original.resourceType, fhirPath);
+      const originalValue = op.op === 'add' ? undefined : evalFhirPathTyped(fhirPath, typedOriginal);
+      const revisedValue = op.op === 'remove' ? undefined : evalFhirPathTyped(fhirPath, typedRevised);
+      result.push({
+        key: `op-${op.op}-${op.path}`,
+        name: `${capitalize(op.op)} ${fhirPath}`,
+        property: property,
+        originalValue: touchUpValue(property, originalValue),
+        revisedValue: touchUpValue(property, revisedValue),
+      });
+    }
+
+    return result;
+  }, [schemaLoaded, original, revised]);
+
+  if (!diffTable) {
     return null;
   }
-
-  const patch = createPatch(props.original, props.revised);
-  const typedOriginal = [toTypedValue(props.original)];
-  const typedRevised = [toTypedValue(props.revised)];
 
   return (
     <Table className={classes.root}>
@@ -41,55 +80,56 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {patch.map((op) => {
-          if (op.path.startsWith('/meta')) {
-            return null;
-          }
-
-          const path = op.path;
-          const fhirPath = jsonPathToFhirPath(path);
-          const details = getSearchParameterDetails(props.original.resourceType, {
-            resourceType: 'SearchParameter',
-            base: [props.original.resourceType],
-            code: props.original.resourceType + '.' + fhirPath,
-            expression: props.original.resourceType + '.' + fhirPath,
-          } as SearchParameter);
-          const property = details?.elementDefinitions?.[0];
-          const isArray = !!property?.isArray;
-          const originalValue = op.op === 'add' ? undefined : evalFhirPathTyped(fhirPath, typedOriginal)?.[0];
-          const revisedValue = op.op === 'remove' ? undefined : evalFhirPathTyped(fhirPath, typedRevised)?.[0];
-
-          return (
-            <Table.Tr key={`op-${op.op}-${op.path}`}>
-              <Table.Td>
-                {capitalize(op.op)} {fhirPath}
-              </Table.Td>
-              <Table.Td className={classes.removed}>
-                {originalValue && (
-                  <ResourcePropertyDisplay
-                    property={property}
-                    propertyType={originalValue.type}
-                    value={fixArray(originalValue.value, isArray)}
-                    ignoreMissingValues={true}
-                  />
-                )}
-              </Table.Td>
-              <Table.Td className={classes.added}>
-                {revisedValue && (
-                  <ResourcePropertyDisplay
-                    property={property}
-                    propertyType={revisedValue.type}
-                    value={fixArray(revisedValue.value, isArray)}
-                    ignoreMissingValues={true}
-                  />
-                )}
-              </Table.Td>
-            </Table.Tr>
-          );
-        })}
+        {diffTable.map((row) => (
+          <Table.Tr key={row.key}>
+            <Table.Td>{row.name}</Table.Td>
+            <Table.Td className={classes.removed}>
+              {row.originalValue && (
+                <ResourcePropertyDisplay
+                  property={row.property}
+                  propertyType={row.originalValue.type}
+                  value={row.originalValue.value}
+                  ignoreMissingValues={true}
+                />
+              )}
+            </Table.Td>
+            <Table.Td className={classes.added}>
+              {row.revisedValue && (
+                <ResourcePropertyDisplay
+                  property={row.property}
+                  propertyType={row.revisedValue.type}
+                  value={row.revisedValue.value}
+                  ignoreMissingValues={true}
+                />
+              )}
+            </Table.Td>
+          </Table.Tr>
+        ))}
       </Table.Tbody>
     </Table>
   );
+}
+
+function mergePatchOperations(patch: Operation[]): Operation[] {
+  const result: Operation[] = [];
+  for (const patchOperation of patch) {
+    const { op, path } = patchOperation;
+    if (path.startsWith('/meta/lastUpdated') || path.startsWith('/meta/versionId')) {
+      continue;
+    }
+    const count = patch.filter((el) => el.op === op && el.path === path).length;
+    const resultOperation = { op, path } as Operation;
+    if (count > 1 && (op === 'add' || op === 'remove') && /\/[0-9-]+$/.test(path)) {
+      // Remove everything after the last slash
+      resultOperation.op = 'replace';
+      resultOperation.path = path.replace(/\/[^/]+$/, '');
+    }
+    if (!result.some((el) => el.op === resultOperation.op && el.path === resultOperation.path)) {
+      // Only add the operation if it doesn't already exist
+      result.push(resultOperation);
+    }
+  }
+  return result;
 }
 
 function jsonPathToFhirPath(path: string): string {
@@ -111,12 +151,30 @@ function jsonPathToFhirPath(path: string): string {
   return result;
 }
 
-function fixArray(inputValue: any, isArray: boolean): any {
-  if (Array.isArray(inputValue) && !isArray) {
-    return inputValue[0];
+function tryGetElementDefinition(resourceType: string, fhirPath: string): InternalSchemaElement | undefined {
+  const details = getSearchParameterDetails(resourceType, {
+    resourceType: 'SearchParameter',
+    base: [resourceType],
+    code: resourceType + '.' + fhirPath,
+    expression: resourceType + '.' + fhirPath,
+  } as SearchParameter);
+  return details?.elementDefinitions?.[0];
+}
+
+function touchUpValue(
+  property: InternalSchemaElement | undefined,
+  input: TypedValue[] | TypedValue | undefined
+): TypedValue | undefined {
+  if (!input) {
+    return input;
   }
-  if (!Array.isArray(inputValue) && isArray) {
-    return [inputValue];
-  }
-  return inputValue;
+  return {
+    type: Array.isArray(input) ? input[0].type : input.type,
+    value: fixArray(input, !!property?.isArray),
+  };
+}
+
+function fixArray(input: TypedValue[] | TypedValue, isArray: boolean): any {
+  const inputValue = (arrayify(input) as TypedValue[]).flatMap((v) => v.value);
+  return isArray ? inputValue : inputValue[0];
 }

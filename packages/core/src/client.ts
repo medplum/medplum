@@ -2397,7 +2397,7 @@ export class MedplumClient extends EventTarget {
    */
   pushToAgent(
     agent: Agent | Reference<Agent>,
-    destination: Device | Reference<Device>,
+    destination: Device | Reference<Device> | string,
     body: any,
     contentType?: string,
     waitForResponse?: boolean,
@@ -2406,7 +2406,7 @@ export class MedplumClient extends EventTarget {
     return this.post(
       this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
       {
-        destination: getReferenceString(destination),
+        destination: typeof destination === 'string' ? destination : getReferenceString(destination),
         body,
         contentType,
         waitForResponse,
@@ -2999,9 +2999,9 @@ export class MedplumClient extends EventTarget {
   private setRequestBody(options: RequestInit, data: any): void {
     if (
       typeof data === 'string' ||
-      (typeof Blob !== 'undefined' && data instanceof Blob) ||
-      (typeof File !== 'undefined' && data instanceof File) ||
-      (typeof Uint8Array !== 'undefined' && data instanceof Uint8Array)
+      (typeof Blob !== 'undefined' && (data instanceof Blob || data.constructor.name === 'Blob')) ||
+      (typeof File !== 'undefined' && (data instanceof File || data.constructor.name === 'File')) ||
+      (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data.constructor.name === 'Uint8Array'))
     ) {
       options.body = data;
     } else if (data) {

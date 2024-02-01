@@ -30,6 +30,7 @@ import {
   satisfiedAccessPolicy,
   serverError,
   stringify,
+  toPeriod,
   tooManyRequests,
   validateResource,
   validateResourceType,
@@ -55,6 +56,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
 import { getDatabasePool } from '../database';
+import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -85,7 +87,7 @@ import { validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchImpl } from './search';
-import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery } from './sql';
+import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery, periodToRangeString } from './sql';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -180,8 +182,6 @@ const lookupTables: LookupTable<unknown>[] = [
  */
 export class Repository extends BaseRepository implements FhirRepository<PoolClient> {
   private readonly context: RepositoryContext;
-  private conn?: PoolClient;
-  private transactionDepth = 0;
   private closed = false;
 
   constructor(context: RepositoryContext) {
@@ -1151,15 +1151,23 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     const details = getSearchParameterDetails(resource.resourceType, searchParam);
     const values = evalFhirPath(searchParam.expression as string, resource);
+    let columnValue = null;
 
     if (values.length > 0) {
       if (details.array) {
-        columns[details.columnName] = values.map((v) => this.buildColumnValue(searchParam, details, v));
+        columnValue = values.map((v) => this.buildColumnValue(searchParam, details, v));
       } else {
-        columns[details.columnName] = this.buildColumnValue(searchParam, details, values[0]);
+        columnValue = this.buildColumnValue(searchParam, details, values[0]);
       }
-    } else {
-      columns[details.columnName] = null;
+    }
+
+    columns[details.columnName] = columnValue;
+
+    // Handle special case for "MeasureReport-period"
+    // This is a trial for using "tstzrange" columns for date/time ranges.
+    // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+    if (searchParam.id === 'MeasureReport-period') {
+      columns['period_range'] = this.buildPeriodColumn(values[0]);
     }
   }
 
@@ -1245,6 +1253,20 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       if ('end' in value) {
         return this.buildDateTimeColumn(value.end);
       }
+    }
+    return undefined;
+  }
+
+  /**
+   * Builds the column value for a "date" search parameter.
+   * This is currently in trial mode. The intention is for this to replace all "date" and "date/time" search parameters.
+   * @param value - The FHIRPath result value.
+   * @returns The period column string value.
+   */
+  private buildPeriodColumn(value: any): string | undefined {
+    const period = toPeriod(value);
+    if (period) {
+      return periodToRangeString(period);
     }
     return undefined;
   }
@@ -1760,92 +1782,32 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    */
   getDatabaseClient(): Pool | PoolClient {
     this.assertNotClosed();
-    // If in a transaction, then use the transaction client.
-    // Otherwise, use the pool client.
-    return this.conn ?? getDatabasePool();
-  }
-
-  private async getConnection(): Promise<PoolClient> {
-    this.assertNotClosed();
-    if (!this.conn) {
-      this.conn = await getDatabasePool().connect();
-    }
-    return this.conn;
-  }
-
-  private releaseConnection(): void {
-    if (this.conn) {
-      this.conn.release();
-      this.conn = undefined;
-    }
+    return getDatabasePool();
   }
 
   async withTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
+    const conn = await getDatabasePool().connect();
     try {
-      const client = await this.beginTransaction();
-      const result = await callback(client);
-      await this.commitTransaction();
-      return result;
-    } catch (err) {
-      await this.rollbackTransaction();
-      throw err;
-    } finally {
-      this.endTransaction();
-    }
-  }
-
-  private async beginTransaction(): Promise<PoolClient> {
-    this.assertNotClosed();
-    this.transactionDepth++;
-    const conn = await this.getConnection();
-    if (this.transactionDepth === 1) {
       await conn.query('BEGIN');
-    } else {
-      await conn.query('SAVEPOINT sp' + this.transactionDepth);
-    }
-    return conn;
-  }
-
-  private async commitTransaction(): Promise<void> {
-    this.assertInTransaction();
-    const conn = await this.getConnection();
-    if (this.transactionDepth === 1) {
+      const result = await callback(conn);
       await conn.query('COMMIT');
-    } else {
-      await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
-    }
-  }
-
-  private async rollbackTransaction(): Promise<void> {
-    this.assertInTransaction();
-    const conn = await this.getConnection();
-    if (this.transactionDepth === 1) {
-      await conn.query('ROLLBACK');
-    } else {
-      await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
-    }
-  }
-
-  private endTransaction(): void {
-    this.assertInTransaction();
-    this.transactionDepth--;
-    if (this.transactionDepth === 0) {
-      this.releaseConnection();
-    }
-  }
-
-  private assertInTransaction(): void {
-    if (this.transactionDepth <= 0) {
-      throw new Error('Not in transaction');
+      conn.release();
+      return result;
+    } catch (err: any) {
+      globalLogger.error('Transaction error', err);
+      const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      try {
+        await conn.query('ROLLBACK');
+      } catch (err2: any) {
+        globalLogger.error('Rollback error', err2);
+      }
+      conn.release(err);
+      throw operationOutcomeError;
     }
   }
 
   close(): void {
-    if (this.transactionDepth > 0) {
-      throw new Error('Closing with active transaction');
-    }
     this.assertNotClosed();
-    this.releaseConnection();
     this.closed = true;
   }
 

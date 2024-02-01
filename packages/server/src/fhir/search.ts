@@ -27,6 +27,7 @@ import {
   SortRule,
   splitN,
   subsetResource,
+  toPeriod,
   toTypedValue,
   validateResourceType,
 } from '@medplum/core';
@@ -47,11 +48,13 @@ import { getFullUrl } from './response';
 import {
   ArraySubquery,
   Column,
+  ColumnType,
   Condition,
   Conjunction,
   Disjunction,
   Expression,
   Negation,
+  periodToRangeString,
   SelectQuery,
   Operator as SQL,
 } from './sql';
@@ -787,6 +790,45 @@ function buildDateSearchFilter(table: string, details: SearchParameterDetails, f
   if (isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${filter.value}`));
   }
+
+  if (table === 'MeasureReport' && details.columnName === 'period') {
+    // Handle special case for "MeasureReport.period"
+    // This is a trial for using "tstzrange" columns for date/time ranges.
+    // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+    // See Postgres Range Types: https://www.postgresql.org/docs/current/rangetypes.html
+    // See FHIR "date" search: https://hl7.org/fhir/r4/search.html#date
+    const column = new Column(table, 'period_range');
+    const period = toPeriod(filter.value);
+    if (!period) {
+      throw new OperationOutcomeError(badRequest(`Invalid period value: ${filter.value}`));
+    }
+    const periodRangeString = periodToRangeString(period);
+    if (!periodRangeString) {
+      throw new OperationOutcomeError(badRequest(`Invalid period value: ${filter.value}`));
+    }
+    switch (filter.operator) {
+      case Operator.EQUALS:
+        return new Condition(column, 'RANGE_OVERLAPS', periodRangeString);
+      case Operator.NOT:
+      case Operator.NOT_EQUALS:
+        return new Negation(new Condition(column, 'RANGE_OVERLAPS', periodRangeString));
+      case Operator.LESS_THAN:
+        return new Condition(column, 'RANGE_OVERLAPS', `(,${period.end})`, ColumnType.TSTZRANGE);
+      case Operator.LESS_THAN_OR_EQUALS:
+        return new Condition(column, 'RANGE_OVERLAPS', `(,${period.end}]`, ColumnType.TSTZRANGE);
+      case Operator.GREATER_THAN:
+        return new Condition(column, 'RANGE_OVERLAPS', `(${period.start},)`, ColumnType.TSTZRANGE);
+      case Operator.GREATER_THAN_OR_EQUALS:
+        return new Condition(column, 'RANGE_OVERLAPS', `[${period.start},)`, ColumnType.TSTZRANGE);
+      case Operator.STARTS_AFTER:
+        return new Condition(column, 'RANGE_STRICTLY_RIGHT_OF', periodRangeString, ColumnType.TSTZRANGE);
+      case Operator.ENDS_BEFORE:
+        return new Condition(column, 'RANGE_STRICTLY_LEFT_OF', periodRangeString, ColumnType.TSTZRANGE);
+      default:
+        throw new Error(`Unknown FHIR operator: ${filter.operator}`);
+    }
+  }
+
   return new Condition(new Column(table, details.columnName), fhirOperatorToSqlOperator(filter.operator), filter.value);
 }
 
