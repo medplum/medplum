@@ -1,16 +1,17 @@
 import { Group, Stack } from '@mantine/core';
-import { InternalSchemaElement, getPathDisplayName, isEmpty, tryGetProfile } from '@medplum/core';
+import { InternalSchemaElement, getPathDisplayName } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { MouseEvent, useEffect, useState } from 'react';
+import { MouseEvent, useContext, useEffect, useState } from 'react';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { SliceInput } from '../SliceInput/SliceInput';
-import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
+import { SupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
 import classes from './ResourceArrayInput.module.css';
-import { assignValuesIntoSlices } from './ResourceArrayInput.utils';
+import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
 
 export interface ResourceArrayInputProps {
   readonly property: InternalSchemaElement;
@@ -30,65 +31,26 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   const [slices, setSlices] = useState<SupportedSliceDefinition[]>([]);
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
-  const [slicedValues, setSlicedValues] = useState<any[][]>([[]]);
+  const [slicedValues, setSlicedValues] = useState<any[][]>(() => [defaultValue]);
+  const ctx = useContext(ElementsContext);
 
   const propertyTypeCode = property.type[0]?.code;
   useEffect(() => {
-    if (!property.slicing) {
-      const emptySlices: SupportedSliceDefinition[] = [];
-      setSlices(emptySlices);
-      const results = assignValuesIntoSlices(defaultValue, emptySlices, property.slicing);
-      setSlicedValues(results);
-      setLoading(false);
-      return;
-    }
-
-    const supportedSlices: SupportedSliceDefinition[] = [];
-    const profileUrls: (string | undefined)[] = [];
-    const promises: Promise<void>[] = [];
-    for (const slice of property.slicing.slices) {
-      if (!isSupportedSliceDefinition(slice)) {
-        continue;
-      }
-
-      const sliceType = slice.type[0];
-      let profileUrl: string | undefined;
-      if (isEmpty(slice.elements)) {
-        if (sliceType.profile) {
-          profileUrl = sliceType.profile[0];
-        }
-      }
-
-      // important to keep these three arrays the same length;
-      supportedSlices.push(slice);
-      profileUrls.push(profileUrl);
-      if (profileUrl) {
-        promises.push(medplum.requestProfileSchema(profileUrl));
-      } else {
-        promises.push(Promise.resolve());
-      }
-    }
-
-    Promise.all(promises)
-      .then(() => {
-        for (let i = 0; i < supportedSlices.length; i++) {
-          const slice = supportedSlices[i];
-          const profileUrl = profileUrls[i];
-          if (profileUrl) {
-            const typeSchema = tryGetProfile(profileUrl);
-            slice.typeSchema = typeSchema;
-          }
-        }
-        setSlices(supportedSlices);
-        const results = assignValuesIntoSlices(defaultValue, supportedSlices, property.slicing);
-        setSlicedValues(results);
+    prepareSlices({
+      medplum,
+      property,
+    })
+      .then((slices) => {
+        setSlices(slices);
+        const slicedValues = assignValuesIntoSlices(defaultValue, slices, property.slicing, ctx.profileUrl);
+        setSlicedValues(slicedValues);
         setLoading(false);
       })
       .catch((reason) => {
         console.error(reason);
         setLoading(false);
       });
-  }, [medplum, property.slicing, propertyTypeCode, defaultValue]);
+  }, [medplum, property, defaultValue, ctx.profileUrl, setSlicedValues, props.path]);
 
   function setValuesWrapper(newValues: any[], sliceIndex: number): void {
     const newSlicedValues = [...slicedValues];

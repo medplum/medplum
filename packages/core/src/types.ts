@@ -349,10 +349,15 @@ function capitalizeDisplayWord(word: string): string {
  * Returns an element definition by type and property name.
  * @param typeName - The type name.
  * @param propertyName - The property name.
+ * @param profileUrl - (optional) The URL of the current resource profile
  * @returns The element definition if found.
  */
-export function getElementDefinition(typeName: string, propertyName: string): InternalSchemaElement | undefined {
-  const typeSchema = tryGetDataType(typeName);
+export function getElementDefinition(
+  typeName: string,
+  propertyName: string,
+  profileUrl?: string
+): InternalSchemaElement | undefined {
+  const typeSchema = tryGetDataType(typeName, profileUrl);
   if (!typeSchema) {
     return undefined;
   }

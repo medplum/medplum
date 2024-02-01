@@ -1,40 +1,38 @@
 import {
+  InternalSchemaElement,
+  MedplumClient,
   SliceDiscriminator,
   SlicingRules,
   TypedValue,
   arrayify,
-  getElementDefinitionFromElements,
-  getTypedPropertyValueWithSchema,
+  getNestedProperty,
   isPopulated,
   matchDiscriminant,
+  tryGetProfile,
 } from '@medplum/core';
-import { SupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
+import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
 
 function isDiscriminatorComponentMatch(
   typedValue: TypedValue,
   discriminator: SliceDiscriminator,
-  slice: SupportedSliceDefinition
+  slice: SupportedSliceDefinition,
+  profileUrl: string | undefined
 ): boolean {
-  for (const elementList of [slice.elements, slice.typeSchema?.elements]) {
-    let nestedProp: TypedValue | TypedValue[] | undefined;
-    if (isPopulated(elementList)) {
-      const ed = getElementDefinitionFromElements(elementList, discriminator.path);
-      if (ed) {
-        nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
-      }
-    }
+  const nestedProp = getNestedProperty(typedValue, discriminator.path, { profileUrl });
 
-    if (nestedProp) {
-      return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
-    }
+  if (nestedProp) {
+    const elementList = slice.typeSchema?.elements ?? slice.elements;
+    return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
   }
 
+  console.assert(false, 'getNestedProperty[%s] in isDiscriminatorComponentMatch missed', discriminator.path);
   return false;
 }
 function getValueSliceName(
   value: any,
   slices: SupportedSliceDefinition[],
-  discriminators: SliceDiscriminator[]
+  discriminators: SliceDiscriminator[],
+  profileUrl?: string
 ): string | undefined {
   if (!value) {
     return undefined;
@@ -45,7 +43,11 @@ function getValueSliceName(
       value,
       type: slice.typeSchema?.name ?? slice.type[0].code,
     };
-    if (discriminators.every((d) => isDiscriminatorComponentMatch(typedValue, d, slice))) {
+    if (
+      discriminators.every((d) =>
+        isDiscriminatorComponentMatch(typedValue, d, slice, slice.typeSchema?.url ?? profileUrl)
+      )
+    ) {
       return slice.name;
     }
   }
@@ -55,9 +57,10 @@ function getValueSliceName(
 export function assignValuesIntoSlices(
   values: any[],
   slices: SupportedSliceDefinition[],
-  slicing: SlicingRules | undefined
+  slicing: SlicingRules | undefined,
+  profileUrl: string | undefined
 ): any[][] {
-  if (!slicing || slicing.slices.length === 0) {
+  if (!isPopulated(slicing?.slices)) {
     return [values];
   }
 
@@ -68,20 +71,83 @@ export function assignValuesIntoSlices(
   }
 
   for (const value of values) {
-    const sliceName = getValueSliceName(value, slices, slicing.discriminator);
+    const sliceName = getValueSliceName(value, slices, slicing.discriminator, profileUrl);
+
     let sliceIndex = sliceName ? slices.findIndex((slice) => slice.name === sliceName) : -1;
+    // -1 can come from either findIndex or the ternary else
     if (sliceIndex === -1) {
-      sliceIndex = slices.length; // values not matched to a slice go in the last entry for non-slice
+      sliceIndex = slices.length;
     }
     slicedValues[sliceIndex].push(value);
   }
 
-  // for slices without existing values, add a placeholder empty value
-  for (let i = 0; i < slices.length; i++) {
-    if (slicedValues[i].length === 0) {
-      slicedValues[i].push(undefined);
+  // add placeholder empty values
+  for (let sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
+    const slice = slices[sliceIndex];
+    const sliceValues = slicedValues[sliceIndex];
+
+    if (sliceValues.length < slice.min) {
+      while (sliceValues.length < slice.min) {
+        sliceValues.push(undefined);
+      }
+    } else if (sliceValues.length === 0) {
+      sliceValues.push(undefined);
     }
   }
 
   return slicedValues;
+}
+
+export async function prepareSlices({
+  medplum,
+  property,
+}: {
+  medplum: MedplumClient;
+  property: InternalSchemaElement;
+}): Promise<SupportedSliceDefinition[]> {
+  return new Promise((resolve, reject) => {
+    if (!property.slicing) {
+      resolve([]);
+      return;
+    }
+
+    const supportedSlices: SupportedSliceDefinition[] = [];
+    const profileUrls: (string | undefined)[] = [];
+    const promises: Promise<void>[] = [];
+    for (const slice of property.slicing.slices) {
+      if (!isSupportedSliceDefinition(slice)) {
+        console.debug('Unsupported slice definition', slice);
+        continue;
+      }
+
+      let profileUrl: string | undefined;
+      // If elements are not defined for the slice, look for a profile
+      if (!isPopulated(slice.elements)) {
+        profileUrl = slice.type[0]?.profile?.[0];
+      }
+
+      // important to keep these three arrays the same length;
+      supportedSlices.push(slice);
+      profileUrls.push(profileUrl);
+      if (profileUrl) {
+        promises.push(medplum.requestProfileSchema(profileUrl));
+      } else {
+        promises.push(Promise.resolve());
+      }
+    }
+
+    Promise.all(promises)
+      .then(() => {
+        for (let i = 0; i < supportedSlices.length; i++) {
+          const slice = supportedSlices[i];
+          const profileUrl = profileUrls[i];
+          if (profileUrl) {
+            const typeSchema = tryGetProfile(profileUrl);
+            slice.typeSchema = typeSchema;
+          }
+        }
+        resolve(supportedSlices);
+      })
+      .catch(reject);
+  });
 }
