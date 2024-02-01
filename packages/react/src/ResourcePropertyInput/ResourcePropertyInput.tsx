@@ -112,6 +112,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
       <NativeSelect
         style={{ width: '200px' }}
         defaultValue={selectedType.code}
+        data-testid={props.name && props.name + '-selector'}
         onChange={(e) => {
           setSelectedType(
             propertyTypes.find(
@@ -144,17 +145,13 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 }
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
-export type ElementDefinitionTypeInputProps = {
-  readonly name: ResourcePropertyInputProps['name'];
-  readonly path: string;
-  readonly defaultValue: ResourcePropertyInputProps['defaultValue'];
-  readonly onChange: ResourcePropertyInputProps['onChange'];
-  readonly outcome: ResourcePropertyInputProps['outcome'];
+export interface ElementDefinitionTypeInputProps
+  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'defaultValue' | 'onChange' | 'outcome'> {
   readonly elementDefinitionType: ElementDefinitionType;
   readonly min: number;
   readonly max: number;
   readonly binding: ElementDefinitionBinding | undefined;
-};
+}
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
   const { name, defaultValue, onChange, outcome, binding, path } = props;

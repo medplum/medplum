@@ -79,7 +79,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
         {values.map((value, valueIndex) => {
           return (
             <Group key={`${valueIndex}-${values.length}`} wrap="nowrap">
-              <div style={{ flexGrow: 1 }}>
+              <div style={{ flexGrow: 1 }} data-testid={props.testId && `${props.testId}-elements-${valueIndex}`}>
                 <ElementDefinitionTypeInput
                   elementDefinitionType={slice.type[0]}
                   name={slice.name}
