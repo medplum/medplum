@@ -311,7 +311,7 @@ function addFilters(
       );
 
       const targetTable = query.getNextJoinAlias();
-      query.innerJoin(
+      query.leftJoin(
         'Coding',
         targetTable,
         new Conjunction([
@@ -319,6 +319,8 @@ function addFilters(
           new Condition(new Column(targetTable, 'code'), '=', filter.value),
         ])
       );
+
+      query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '!=' : '=', null);
     }
   }
 
