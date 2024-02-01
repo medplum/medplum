@@ -61,7 +61,7 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
 
 export interface GetTypedPropertyValueOptions {
   /** (optional) URL of a resource profile for type resolution */
-  profileUrl?: string | undefined;
+  profileUrl?: string;
 }
 
 /**
