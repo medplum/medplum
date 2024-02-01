@@ -13,7 +13,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
+import { Agent, Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
@@ -668,6 +668,46 @@ describe('MockClient', () => {
     expect(homer).toBeDefined();
     expect(homer.name[0].given[0]).toEqual('Homer');
     expect(homer.name[0].family).toEqual('Simpson');
+  });
+
+  test('pushToAgent() -- Valid IP', async () => {
+    const medplum = new MockClient();
+    const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
+    await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toMatch(
+      /8.8.8.8 ping statistics/
+    );
+  });
+
+  test('pushToAgent() - Valid IP other than 8.8.8.8', async () => {
+    const medplum = new MockClient();
+    const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
+    const oldWarn = console.warn;
+    console.warn = jest.fn();
+    await expect(medplum.pushToAgent(agent, '127.0.0.1', 'PING', ContentType.PING, true)).rejects.toThrow(
+      OperationOutcomeError
+    );
+    expect(console.warn).toHaveBeenCalled();
+    console.warn = oldWarn;
+  });
+
+  test('pushToAgent() -- Invalid IP', async () => {
+    const medplum = new MockClient();
+    const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
+    await expect(medplum.pushToAgent(agent, 'abc123', 'PING', ContentType.PING, true)).rejects.toThrow(
+      OperationOutcomeError
+    );
+  });
+
+  test('pushToAgent() -- Agent Timeout', async () => {
+    const medplum = new MockClient();
+    const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
+    await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
+    medplum.setAgentAvailable(false);
+    await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).rejects.toThrow(
+      OperationOutcomeError
+    );
+    medplum.setAgentAvailable(true);
+    await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
   });
 });
 
