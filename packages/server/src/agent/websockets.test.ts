@@ -371,7 +371,7 @@ describe('Agent WebSockets', () => {
               'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
               'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           });
-        pushRequest.then(() => true);
+        pushRequest.then(() => undefined);
       })
       .expectText((str) => {
         const message = JSON.parse(str);
@@ -397,7 +397,7 @@ describe('Agent WebSockets', () => {
       .expectClosed();
   });
 
-  test('Ping', async () => {
+  test('Heartbeat', async () => {
     await request(server)
       .ws('/ws/agent')
       .sendText(
@@ -413,6 +413,58 @@ describe('Agent WebSockets', () => {
       .expectText('{"type":"agent:heartbeat:response"}')
       // Simulate a ping response
       .sendText(JSON.stringify({ type: 'agent:heartbeat:response' }))
+      .close()
+      .expectClosed();
+  });
+
+  test('Ping IP', async () => {
+    let pushRequest: any = undefined;
+    let pushResponse: any = undefined;
+
+    await request(server)
+      .ws('/ws/agent')
+      .sendText(
+        JSON.stringify({
+          type: 'agent:connect:request',
+          accessToken,
+          agentId: agent.id,
+        })
+      )
+      .expectText('{"type":"agent:connect:response"}')
+      .exec(async () => {
+        // Send the request but do not wait for the response
+        pushRequest = request(server)
+          .post(`/fhir/R4/Agent/${agent.id}/$push`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({
+            waitForResponse: true,
+            channel: 'test',
+            destination: '8.8.8.8',
+            contentType: ContentType.PING,
+            body: 'PING',
+          });
+        pushRequest.then(() => undefined);
+      })
+      .expectText((str) => {
+        const message = JSON.parse(str);
+        expect(message.type).toBe('agent:transmit:request');
+        expect(message.remote).toBe('8.8.8.8');
+        expect(message.callback).toBeDefined();
+        pushResponse = JSON.stringify({
+          type: 'agent:transmit:response',
+          callback: message.callback,
+          contentType: ContentType.PING,
+          body: 'PING',
+        });
+        return true;
+      })
+      .exec((ws) => ws.send(pushResponse))
+      .exec(async () => {
+        const res = await pushRequest;
+        expect(res.status).toBe(200);
+        expect(res.headers['content-type']).toBe('x-application/ping; charset=utf-8');
+      })
       .close()
       .expectClosed();
   });
