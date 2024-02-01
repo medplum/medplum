@@ -13,6 +13,14 @@ import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
 import { sendResponse } from '../response';
+import { parseInputParameters } from './utils/parameters';
+import { getOperationDefinition } from './definitions';
+
+const operation = getOperationDefinition('Patient', 'everything');
+
+type PatientEverythingParameters = {
+  _since?: string;
+};
 
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html
@@ -26,12 +34,13 @@ import { sendResponse } from '../response';
 export async function patientEverythingHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
+  const params = parseInputParameters<PatientEverythingParameters>(operation, req);
 
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
-
+  
   // Then read all of the patient data
-  const bundle = await getPatientEverything(ctx.repo, patient);
+  const bundle = await getPatientEverything(ctx.repo, patient, params);
 
   await sendResponse(res, allOk, bundle);
 }
@@ -41,12 +50,23 @@ export async function patientEverythingHandler(req: Request, res: Response): Pro
  * Searches for all resources related to the patient.
  * @param repo - The repository.
  * @param patient - The root patient.
+ * @param params - The operation input parameters.
  * @returns The patient everything search result bundle.
  */
-export async function getPatientEverything(repo: Repository, patient: Patient): Promise<Bundle> {
+export async function getPatientEverything(repo: Repository, patient: Patient, params: PatientEverythingParameters): Promise<Bundle> {
   const patientRef = getReferenceString(patient);
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
   const searches: SearchRequest[] = [];
+
+  // Build a list of filters to apply to the searches
+  const filters = []
+  if (params._since) {
+    filters.push({
+      code: '_lastUpdated',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: params._since,
+    });
+  }
 
   // Build a list of searches
   for (const resource of resourceList) {
@@ -64,6 +84,7 @@ export async function getPatientEverything(repo: Repository, patient: Patient): 
             operator: Operator.EQUALS,
             value: patientRef,
           },
+          ...filters
         ],
       });
     }
