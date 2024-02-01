@@ -1,4 +1,4 @@
-import { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
+import { InternalSchemaElement, InternalTypeSchema, TypedValue } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -30,26 +30,35 @@ export type ElementsContextType = {
    * the element has the default definition for the given type.
    */
   getModifiedNestedElement: (nestedElementPath: string) => InternalSchemaElement | undefined;
+  getElementByPath: (path: string) => InternalSchemaElement | undefined;
   elements: Record<string, InternalSchemaElement>;
   elementsByPath: Record<string, InternalSchemaElement>;
+  fixedProperties: { [key: string]: InternalSchemaElement & { fixed: TypedValue } };
 };
 
 export const ElementsContext = React.createContext<ElementsContextType>({
   profileUrl: undefined,
   debugMode: false,
   getModifiedNestedElement: () => undefined,
+  getElementByPath: () => undefined,
   elements: Object.create(null),
   elementsByPath: Object.create(null),
+  fixedProperties: Object.create(null),
 });
+ElementsContext.displayName = 'ElementsContext';
 
 export type BuildElementsContextArgs = {
-  parentContext: ElementsContextType | undefined;
-  elements?: InternalTypeSchema['elements'];
+  elements: InternalTypeSchema['elements'] | undefined;
   parentPath: string;
-  parentType?: string;
-  profileUrl?: string | undefined;
-  debugMode?: boolean | undefined;
+  parentContext: ElementsContextType | undefined;
+  parentType: string | undefined;
+  profileUrl?: string;
+  debugMode?: boolean;
 };
+
+function hasFixed(element: InternalSchemaElement): element is InternalSchemaElement & { fixed: TypedValue } {
+  return Boolean(element.fixed);
+}
 
 export function buildElementsContext({
   parentContext,
@@ -59,55 +68,88 @@ export function buildElementsContext({
   profileUrl,
   debugMode,
 }: BuildElementsContextArgs): ElementsContextType {
-  let mergedElements: ElementsContextType['elements'] | undefined;
-  if (elements && parentContext) {
-    mergedElements = mergeElementsForContext(parentPath, elements, parentContext);
+  if (debugMode) {
+    console.debug('Building ElementsContext', { parentPath, profileUrl, elements });
   }
+  const mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
+    parentPath,
+    elements,
+    parentContext,
+    Boolean(debugMode)
+  );
 
   const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
   const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
+  const fixedProperties: ElementsContextType['fixedProperties'] = Object.create(null);
 
-  function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement {
+  const seenKeys = new Set<string>();
+  for (const [key, property] of Object.entries(mergedElements)) {
+    elementsByPath[parentPath + '.' + key] = property;
+
+    if (hasFixed(property)) {
+      fixedProperties[key] = property;
+    }
+
+    const [beginning, _last] = splitOnceRight(key, '.');
+    // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
+    if (seenKeys.has(beginning)) {
+      nestedPaths[parentType + '.' + key] = property;
+    }
+    seenKeys.add(key);
+  }
+
+  function getElementByPath(path: string): InternalSchemaElement | undefined {
+    return elementsByPath[path];
+  }
+
+  function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement | undefined {
     return nestedPaths[nestedElementPath];
   }
 
-  if (mergedElements) {
-    const seenKeys = new Set<string>();
-    for (const [key, property] of Object.entries(mergedElements)) {
-      elementsByPath[parentPath + '.' + key] = property;
-
-      const [beginning, _last] = splitOnceRight(key, '.');
-      // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
-      if (seenKeys.has(beginning)) {
-        nestedPaths[parentType + '.' + key] = property;
-      }
-      seenKeys.add(key);
-    }
-  }
-
   return {
-    debugMode: debugMode ?? false,
-    profileUrl,
+    debugMode: debugMode ?? parentContext?.debugMode ?? false,
+    profileUrl: profileUrl ?? parentContext?.profileUrl,
     getModifiedNestedElement,
-    elements: mergedElements ?? Object.create(null),
+    getElementByPath,
+    elements: mergedElements,
     elementsByPath,
+    fixedProperties,
   };
 }
 
 function mergeElementsForContext(
-  path: string,
-  elements: Record<string, InternalSchemaElement>,
-  parentContext: ElementsContextType
+  parentPath: string,
+  elements: BuildElementsContextArgs['elements'],
+  parentContext: BuildElementsContextArgs['parentContext'],
+  debugMode: boolean
 ): ElementsContextType['elements'] {
   const result: ElementsContextType['elements'] = Object.create(null);
-  for (const [key, element] of Object.entries(elements)) {
-    const elementPath = path + '.' + key;
-    if (parentContext.elementsByPath[elementPath]) {
-      result[key] = parentContext.elementsByPath[elementPath];
-      console.log(`REPLACED ${elementPath}`, parentContext.elementsByPath[elementPath], element);
-    } else {
-      result[key] = element;
+
+  if (parentContext) {
+    const parentPathPrefix = parentPath + '.';
+    for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
+      if (path.startsWith(parentPathPrefix)) {
+        const key = path.slice(parentPathPrefix.length);
+        result[key] = element;
+      }
     }
+  }
+
+  let usedNewElements = false;
+  if (elements) {
+    for (const [key, element] of Object.entries(elements)) {
+      if (!(key in result)) {
+        result[key] = element;
+        usedNewElements = true;
+      }
+    }
+  }
+
+  // TODO if no new elements are used, the elementscontext is very likely not necessary;
+  // there could be an optimization where buildElementsContext returns undefined in this case
+  // to avoid needless contexts
+  if (debugMode && parentContext && !usedNewElements) {
+    console.debug('ElementsContext elements same as parent context');
   }
   return result;
 }
