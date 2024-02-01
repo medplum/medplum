@@ -76,7 +76,7 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
   const elementDefinition = getElementDefinition(input.type, path);
   if (elementDefinition) {
-    return getTypedPropertyValueWithSchema(input.value, path, elementDefinition);
+    return getTypedPropertyValueWithSchema(input, path, elementDefinition);
   }
 
   return getTypedPropertyValueWithoutSchema(input, path);
@@ -84,13 +84,13 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
 /**
  * Returns the value of the property and the property type using a type schema.
- * @param value - The base context (FHIR resource or backbone element).
+ * @param typedValue - The base context (FHIR resource or backbone element).
  * @param path - The property path.
  * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
 export function getTypedPropertyValueWithSchema(
-  value: TypedValue['value'],
+  typedValue: TypedValue,
   path: string,
   element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
@@ -115,6 +115,7 @@ export function getTypedPropertyValueWithSchema(
   // Therefore, cannot only check for endsWith('[x]') since FHIRPath uses this code path
   // with a path of 'value' and expects Choice of Types treatment
 
+  const value = typedValue.value;
   const types = element.type;
   if (!types || types.length === 0) {
     return undefined;

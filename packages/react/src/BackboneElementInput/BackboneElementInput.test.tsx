@@ -73,19 +73,19 @@ describe('BackboneElementInput', () => {
 
   test('Renders', async () => {
     await medplum.requestSchema('Patient');
-    await setup({ typeName: 'PatientContact' });
+    await setup({ typeName: 'PatientContact', path: 'Patient.contact' });
     expect(screen.getByText('Name')).toBeDefined();
   });
 
   test('Handles content reference', async () => {
     await medplum.requestSchema('ValueSet');
-    await setup({ typeName: 'ValueSetCompose' });
+    await setup({ typeName: 'ValueSetCompose', path: 'ValueSet.compose' });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
     expect(screen.getByText('Exclude')).toBeInTheDocument();
   });
 
   test('Not implemented', async () => {
-    await setup({ typeName: 'Foo' });
+    await setup({ typeName: 'Foo', path: 'Foo' });
     expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
   });
 
@@ -98,6 +98,7 @@ describe('BackboneElementInput', () => {
       indexStructureDefinitionBundle([profile], profile.url);
     }
     await setup({
+      path: fishPatientProfile.type,
       typeName: fishPatientProfile.name,
       profileUrl: fishPatientProfile.url,
       defaultValue: fishPatient,
