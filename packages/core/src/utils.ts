@@ -932,10 +932,11 @@ export const sleep = (ms: number): Promise<void> =>
 
 /**
  * Splits a string into an array of strings using the specified delimiter.
- * Unlike the built-in split function, this function will split the string into exactly n parts.
+ * Unlike the built-in split function, this function will split the string into a maximum of exactly n parts.
+ * Trailing empty strings are included in the result.
  * @param str - The string to split.
  * @param delim - The delimiter.
- * @param n - The number of splits.
+ * @param n - The maximum number of parts to split the string into.
  * @returns The resulting array of strings.
  */
 export function splitN(str: string, delim: string, n: number): string[] {
