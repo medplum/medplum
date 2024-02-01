@@ -702,6 +702,7 @@
       "resource": {
         "resourceType": "CodeSystem",
         "url": "http://loinc.org",
+        "version": "0.0.0",
         "status": "active",
         "content": "example",
         "concept": [
