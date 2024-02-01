@@ -1,9 +1,8 @@
 import { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { CodeableConceptInput } from './CodeableConceptInput';
+import { CodeableConceptInput, CodeableConceptInputProps } from './CodeableConceptInput';
 
 const medplum = new MockClient();
 const binding = 'https://example.com/test';
@@ -20,27 +19,39 @@ describe('CodeableConceptInput', () => {
     jest.useRealTimers();
   });
 
-  async function setup(child: ReactNode): Promise<void> {
+  async function setup(props?: Partial<CodeableConceptInputProps>): Promise<void> {
+    const finalProps: CodeableConceptInputProps = {
+      binding,
+      name: 'test',
+      path: 'Resource.test',
+      outcome: undefined,
+      onChange: jest.fn(),
+      ...props,
+    };
     await act(async () => {
-      render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
+      render(
+        <MedplumProvider medplum={medplum}>
+          <CodeableConceptInput {...finalProps} />
+        </MedplumProvider>
+      );
     });
   }
 
   test('Renders', async () => {
-    await setup(<CodeableConceptInput binding={binding} name="test" />);
+    await setup();
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
   test('Renders CodeableConcept default value', async () => {
-    await setup(<CodeableConceptInput binding={binding} name="test" defaultValue={{ coding: [{ code: 'abc' }] }} />);
+    await setup({ defaultValue: { coding: [{ code: 'abc' }] } });
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
     expect(screen.getByText('abc')).toBeDefined();
   });
 
   test('Searches for results', async () => {
-    await setup(<CodeableConceptInput binding={binding} name="test" />);
+    await setup();
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -70,7 +81,7 @@ describe('CodeableConceptInput', () => {
   test('Create unstructured value', async () => {
     let currValue: CodeableConcept | undefined;
 
-    await setup(<CodeableConceptInput binding={binding} name="test" onChange={(newValue) => (currValue = newValue)} />);
+    await setup({ onChange: (newValue) => (currValue = newValue) });
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -111,9 +122,7 @@ describe('CodeableConceptInput', () => {
       ],
     };
 
-    await setup(
-      <CodeableConceptInput binding={undefined} name="test" defaultValue={defaultValue} onChange={jest.fn()} />
-    );
+    await setup({ defaultValue });
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
