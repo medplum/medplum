@@ -231,7 +231,7 @@ async function computeExpansion(
         resourceType: 'CodeSystem',
         filters: [
           { code: 'url', operator: Operator.EQUALS, value: include.system },
-          { code: 'active', operator: Operator.EQUALS, value: 'true' },
+          { code: 'status', operator: Operator.EQUALS, value: 'active' },
         ],
         sortRules: [
           { code: 'version', descending: true }, // Select highest version (by lexical sort -- no version is assumed to be "current")
