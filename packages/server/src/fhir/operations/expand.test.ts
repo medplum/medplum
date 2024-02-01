@@ -1,4 +1,4 @@
-import { ContentType, LOINC, SNOMED } from '@medplum/core';
+import { ContentType, LOINC } from '@medplum/core';
 import { OperationOutcome, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -51,7 +51,7 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('No systems found');
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('Missing ValueSet definition');
   });
 
   test('No filter', async () => {
@@ -59,7 +59,7 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.expansion.contains.length).toBe(10);
+    expect(res.body.expansion.contains.length).toBe(8);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
   });
 
@@ -80,27 +80,26 @@ describe('Expand', () => {
       .get(
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
           'http://hl7.org/fhir/ValueSet/observation-codes'
-        )}&filter=left`
+        )}&filter=rate`
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
-    expect(res.body.expansion.contains[0].display).toMatch(/left/i);
+    expect(res.body.expansion.contains[0].display).toMatch(/heart rate/i);
   });
 
   test('Success with count and offset', async () => {
     const res = await request(app)
       .get(
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
-          'http://hl7.org/fhir/ValueSet/resource-types'
-        )}&filter=Med&offset=1&count=1`
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=blood&offset=1&count=1`
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    console.log(res.body.expansion.contains);
     expect(res.body.expansion.contains.length).toBe(1);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
-    expect(res.body.expansion.contains[0].display).toMatch(/left/i);
+    expect(res.body.expansion.contains[0].display).toMatch(/stolic blood pressure/i);
   });
 
   test('No duplicates', async () => {
@@ -123,28 +122,6 @@ describe('Expand', () => {
       },
     });
     expect(res.body.expansion.contains.length).toBe(1);
-  });
-
-  test('External system', async () => {
-    const valueSet = 'http://hl7.org/fhir/ValueSet/servicerequest-category';
-    const filter = 'imaging';
-    const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet)}&filter=${encodeURIComponent(filter)}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({
-      resourceType: 'ValueSet',
-      url: valueSet,
-      expansion: {
-        contains: [
-          {
-            system: SNOMED,
-            code: '363679005',
-            display: 'Imaging',
-          },
-        ],
-      },
-    });
   });
 
   test('Marital status', async () => {
@@ -183,12 +160,12 @@ describe('Expand', () => {
       .get(
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
           'http://hl7.org/fhir/ValueSet/observation-codes'
-        )}&filter=${encodeURIComponent('(left)')}`
+        )}&filter=${encodeURIComponent('intention - reported')}`
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
-    expect(res.body.expansion.contains[0].display).toMatch(/left/i);
+    expect(res.body.expansion.contains[0].display).toMatch(/pregnancy intention/i);
   });
 
   test('Handle empty string after punctuation', async () => {

@@ -696,6 +696,49 @@
           ]
         }
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/loinc-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://loinc.org",
+        "status": "active",
+        "content": "example",
+        "concept": [
+          {
+            "code": "11341-5",
+            "display": "History of Occupation industry"
+          },
+          {
+            "code": "86645-9",
+            "display": "Pregnancy intention in the next year - Reported"
+          },
+          {
+            "code": "82810-3",
+            "display": "Pregnancy status"
+          },
+          {
+            "code": "76690-7",
+            "display": "Sexual orientation"
+          },
+          {
+            "code": "77606-2",
+            "display": "Weight-for-length Per age and sex"
+          },
+          {
+            "code": "8480-6",
+            "display": "Systolic blood pressure"
+          },
+          {
+            "code": "8462-4",
+            "display": "Diastolic blood pressure"
+          },
+          {
+            "code": "8867-4",
+            "display": "Heart rate"
+          }
+        ]
+      }
     }
   ]
 }

@@ -27,7 +27,7 @@ export class CodingTable extends LookupTable<Coding> {
   }
 
   async indexResource(client: PoolClient, resource: Resource): Promise<void> {
-    if (resource.resourceType === 'CodeSystem' && resource.content === 'complete') {
+    if (resource.resourceType === 'CodeSystem' && (resource.content === 'complete' || resource.content === 'example')) {
       await this.deleteValuesForResource(client, resource);
 
       const elements = this.getCodeSystemElements(resource);
