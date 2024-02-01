@@ -11,9 +11,19 @@ import {
   ProfileResource,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
-import { Binary, Resource, SearchParameter, StructureDefinition, UserConfiguration } from '@medplum/fhirtypes';
+import {
+  Agent,
+  Binary,
+  Device,
+  Reference,
+  Resource,
+  SearchParameter,
+  StructureDefinition,
+  UserConfiguration,
+} from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
+import { OperationOutcomeError } from '@medplum/core';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import {
   BartSimpson,
@@ -21,7 +31,6 @@ import {
   DrAliceSmith,
   DrAliceSmithPreviousVersion,
   DrAliceSmithSchedule,
-  makeDrAliceSmithSlots,
   ExampleBot,
   ExampleClient,
   ExampleQuestionnaire,
@@ -44,6 +53,7 @@ import {
   HomerSimpson,
   HomerSimpsonPreviousVersion,
   HomerSimpsonSpecimen,
+  makeDrAliceSmithSlots,
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
@@ -178,6 +188,33 @@ export class MockClient extends MedplumClient {
       contentType,
       url: 'https://example.com/binary/123',
     };
+  }
+
+  async pushToAgent(
+    agent: Agent | Reference<Agent>,
+    destination: Device | Reference<Device> | string,
+    body: any,
+    contentType?: string | undefined,
+    _waitForResponse?: boolean | undefined,
+    _options?: RequestInit | undefined
+  ): Promise<any> {
+    if (contentType === ContentType.PING) {
+      if (typeof destination === 'string' && destination !== '8.8.8.8') {
+        console.warn('IPs other than 8.8.8.8 will always throw an error in MockClient');
+        throw new OperationOutcomeError(badRequest('Destination device not found'));
+      }
+      return `PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=115 time=10.977 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=13.037 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=23.159 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=115 time=12.725 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
+`;
+    }
+    return undefined;
   }
 }
 

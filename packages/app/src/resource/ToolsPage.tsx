@@ -2,7 +2,7 @@ import { Button, Input, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { ContentType } from '@medplum/core';
 import { Agent, Reference } from '@medplum/fhirtypes';
-import { Document, Form, useMedplum } from '@medplum/react';
+import { Document, Form, ResourceName, useMedplum } from '@medplum/react';
 import { IconRouter } from '@tabler/icons-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -29,13 +29,13 @@ export function ToolsPage(): JSX.Element | null {
         setLastPing(pingResult);
         setPinging(false);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         setPinging(false);
         if ((err as Error).message === 'Destination device not found') {
           // Report error
           showNotification({
             color: 'red',
-            message: 'Error: Destination device not found or IP invalid',
+            message: 'Error: Invalid IP entered',
           });
         }
       });
@@ -44,6 +44,9 @@ export function ToolsPage(): JSX.Element | null {
   return (
     <Document>
       <Title>Ping from Agent</Title>
+      <div style={{ marginBottom: 10 }}>
+        Agent: <ResourceName value={reference} link />
+      </div>
       <Form onSubmit={onSubmit}>
         <Input.Wrapper label="IP">
           <Input name="ip" onChange={(e) => setIp(e.target.value)} value={ip} />
