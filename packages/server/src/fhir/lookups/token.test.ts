@@ -472,4 +472,31 @@ describe('Identifier Lookup Table', () => {
       expect(bundleContains(searchResult1, sr1)).toBe(true);
       expect(bundleContains(searchResult1, sr2)).toBe(false);
     }));
+
+  test('Identifier value with pipe', () =>
+    withTestContext(async () => {
+      const system = 'https://www.example.com';
+      const base = randomUUID();
+      const id1 = base + '|1';
+      const id2 = base + '|2';
+
+      const p1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [{ system, value: id1 }],
+      });
+
+      await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [{ system, value: id2 }],
+      });
+
+      const r1 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: `${system}|${id1}` }],
+      });
+      expect(r1.entry?.length).toEqual(1);
+      expect(r1.entry?.[0]?.resource?.id).toEqual(p1.id);
+    }));
 });

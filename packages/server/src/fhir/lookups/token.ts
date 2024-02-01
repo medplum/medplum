@@ -459,7 +459,7 @@ function buildWhereExpression(tableName: string, filter: Filter): Expression | u
  * @returns A WHERE Condition on the token table, if applicable, else undefined
  */
 function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression | undefined {
-  const parts = splitN(query, '|');
+  const parts = splitN(query, '|', 2);
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const systemCondition = new Condition(new Column(tableName, 'system'), '=', parts[0]);
