@@ -88,6 +88,7 @@ export class MockClient extends MedplumClient {
   readonly client: MockFetchClient;
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
+  private agentAvailable: boolean = true;
   private readonly profile: ReturnType<MedplumClient['getProfile']>;
 
   constructor(clientOptions?: MockClientOptions) {
@@ -199,8 +200,14 @@ export class MockClient extends MedplumClient {
     _options?: RequestInit | undefined
   ): Promise<any> {
     if (contentType === ContentType.PING) {
+      if (!this.agentAvailable) {
+        throw new OperationOutcomeError(badRequest('Timeout'));
+      }
       if (typeof destination === 'string' && destination !== '8.8.8.8') {
-        console.warn('IPs other than 8.8.8.8 will always throw an error in MockClient');
+        // Exception for test case
+        if (destination !== 'abc123') {
+          console.warn('IPs other than 8.8.8.8 will always throw an error in MockClient');
+        }
         throw new OperationOutcomeError(badRequest('Destination device not found'));
       }
       return `PING 8.8.8.8 (8.8.8.8): 56 data bytes
@@ -215,6 +222,10 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 `;
     }
     return undefined;
+  }
+
+  setAgentAvailable(value: boolean): void {
+    this.agentAvailable = value;
   }
 }
 

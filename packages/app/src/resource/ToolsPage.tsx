@@ -35,7 +35,16 @@ export function ToolsPage(): JSX.Element | null {
           // Report error
           showNotification({
             color: 'red',
-            message: 'Error: Invalid IP entered',
+            title: 'Error',
+            message: 'Invalid IP entered',
+            autoClose: false,
+          });
+        } else if ((err as Error).message === 'Timeout') {
+          showNotification({
+            color: 'red',
+            title: 'Error',
+            message: '"$push" operation timed out. Agent may be unreachable',
+            autoClose: false,
           });
         }
       });

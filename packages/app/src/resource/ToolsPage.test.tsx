@@ -1,10 +1,11 @@
+import { Notifications } from '@mantine/notifications';
 import { getReferenceString } from '@medplum/core';
 import { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -16,6 +17,7 @@ describe('ToolsPage', () => {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <AppRoutes />
+          <Notifications />
         </MemoryRouter>
       </MedplumProvider>
     );
@@ -46,14 +48,32 @@ describe('ToolsPage', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('IP'), { target: { value: '8.8.8.8' } });
-      await userEvent.keyboard('8.8.8.8');
       fireEvent.click(screen.getByText('Ping'));
     });
 
     await expect(screen.findByText('statistics', { exact: false })).resolves.toBeInTheDocument();
   });
 
-  test('Displays error toast whenever invalid IP entered', async () => {
+  test('Displays error notification whenever invalid IP entered', async () => {
+    // load agent tools page
+    await act(async () => {
+      setup(`/${getReferenceString(agent)}/tools`);
+    });
+
+    expect(screen.getByText(agent.name)).toBeInTheDocument();
+    expect(screen.getByLabelText('IP')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('IP'), { target: { value: 'abc123' } });
+      fireEvent.click(screen.getByText('Ping'));
+    });
+
+    await expect(screen.findByText('Invalid IP entered')).resolves.toBeInTheDocument();
+  });
+
+  test('Displays error notification whenever agent unreachable', async () => {
+    medplum.setAgentAvailable(false);
+
     // load agent tools page
     await act(async () => {
       setup(`/${getReferenceString(agent)}/tools`);
@@ -64,10 +84,13 @@ describe('ToolsPage', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('IP'), { target: { value: '8.8.8.8' } });
-      await userEvent.keyboard('abc123');
       fireEvent.click(screen.getByText('Ping'));
     });
 
-    await expect(screen.findByText('Error: Invalid IP entered'));
+    await expect(
+      screen.findByText('"$push" operation timed out. Agent may be unreachable')
+    ).resolves.toBeInTheDocument();
+
+    medplum.setAgentAvailable(true);
   });
 });
