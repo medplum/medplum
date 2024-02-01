@@ -1,4 +1,4 @@
-import { InternalSchemaElement, InternalTypeSchema, TypedValue } from '@medplum/core';
+import { InternalSchemaElement, InternalTypeSchema, TypedValue, isPopulated } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -57,7 +57,7 @@ export type BuildElementsContextArgs = {
 };
 
 function hasFixed(element: InternalSchemaElement): element is InternalSchemaElement & { fixed: TypedValue } {
-  return Boolean(element.fixed);
+  return isPopulated(element.fixed?.type) && 'value' in element.fixed;
 }
 
 export function buildElementsContext({
