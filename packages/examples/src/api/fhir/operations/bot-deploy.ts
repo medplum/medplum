@@ -3,7 +3,7 @@ import { MedplumClient } from '@medplum/core';
 const medplum = new MedplumClient();
 
 // start-block deployTs
-await medplum.post(medplum.fhirUrl('Bot', '${id}', '$deploy').toString(), { foo: 'bar' });
+await medplum.post(medplum.fhirUrl('Bot', '[id]', '$deploy').toString(), { foo: 'bar' });
 // end-block deployTs
 
 /*
