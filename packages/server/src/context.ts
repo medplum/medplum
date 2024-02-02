@@ -101,15 +101,16 @@ export function closeRequestContext(): void {
   }
 }
 
-function requestIds(req: Request): { requestId: string; traceId: string } {
-  const requestId = randomUUID();
-  const traceIdHeader = req.header('x-trace-id');
-  const traceParentHeader = req.header('traceparent');
-  let traceId: string | undefined;
-  if (traceIdHeader && isUUID(traceIdHeader)) {
-    traceId = traceIdHeader;
-  } else if (traceParentHeader?.startsWith('00-')) {
-    const id = traceParentHeader.split('-')[1];
+const traceIdHeaderMap: {
+  [key: string]: (traceId: string) => string | false;
+} = {
+  'x-trace-id': (traceId) => isUUID(traceId) && traceId,
+  traceparent: (traceId) => {
+    if (!traceId.startsWith('00-')) {
+      return false;
+    }
+
+    const id = traceId.split('-')[1];
     const uuid = [
       id.substring(0, 8),
       id.substring(8, 12),
@@ -117,13 +118,31 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
       id.substring(16, 20),
       id.substring(20, 32),
     ].join('-');
-    if (isUUID(uuid)) {
-      traceId = uuid;
+
+    return isUUID(uuid) && uuid;
+  },
+  // https://github.com/getsentry/sentry-javascript/blob/6dfddc2dfc4b74cbb70dc325b4af165e25904ed4/packages/utils/src/tracing.ts#L117-L130
+  // {uuidv4}-{uuidv4.substring(16)}[-(0|1)]
+  'sentry-trace': (traceId: string) => {
+    return (traceId.length === 51 || traceId.length === 49) && traceId;
+  },
+} as const;
+const traceIdHeaders = Object.entries(traceIdHeaderMap);
+
+const getTraceIdHeader = (req: Request): string | undefined => {
+  for (const [header, isTraceId] of traceIdHeaders) {
+    const traceId = req.header(header);
+    if (traceId && isTraceId(traceId)) {
+      return traceId;
     }
   }
-  if (!traceId) {
-    traceId = randomUUID();
-  }
+  return undefined;
+};
+
+function requestIds(req: Request): { requestId: string; traceId: string } {
+  const requestId = randomUUID();
+  const traceId = getTraceIdHeader(req) ?? randomUUID();
+
   return { requestId, traceId };
 }
 
