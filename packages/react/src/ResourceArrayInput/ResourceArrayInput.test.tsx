@@ -82,8 +82,9 @@ const slicedProperty: InternalSchemaElement = {
   },
 };
 
-const defaultProps: Pick<ResourceArrayInputProps, 'name' | 'property' | 'outcome'> = {
+const defaultProps: Pick<ResourceArrayInputProps, 'name' | 'path' | 'property' | 'outcome'> = {
   name: 'myProp',
+  path: 'Fake.myProp',
   property,
   outcome: undefined,
 };
@@ -283,9 +284,8 @@ describe('ResourceArrayInput', () => {
       { url: 'greenVariety', valueString: 'Pistachio' },
     ];
 
-    expect(onChange.mock.calls.length).toBe(1);
-    expect(onChange.mock.calls[0][0].length).toBe(expectedValue.length);
-    expect(onChange).toHaveBeenCalledWith(expect.arrayContaining(expectedValue));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(expectedValue);
   });
 
   test('Hiding non-sliced values', async () => {
