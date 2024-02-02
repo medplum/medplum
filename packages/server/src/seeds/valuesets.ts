@@ -13,7 +13,7 @@ export async function rebuildR4ValueSets(): Promise<void> {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
       const resource = entry.resource as CodeSystem | ValueSet;
-      await deleteExisting(resource);
+      await deleteExisting(resource, r4ProjectId);
       await systemRepo.createResource({
         ...resource,
         meta: { ...resource.meta, project: r4ProjectId },
@@ -22,10 +22,13 @@ export async function rebuildR4ValueSets(): Promise<void> {
   }
 }
 
-async function deleteExisting(resource: CodeSystem | ValueSet): Promise<void> {
+async function deleteExisting(resource: CodeSystem | ValueSet, projectId: string): Promise<void> {
   const bundle = await systemRepo.search({
     resourceType: resource.resourceType,
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: resource.url as string }],
+    filters: [
+      { code: 'url', operator: Operator.EQUALS, value: resource.url as string },
+      { code: '_project', operator: Operator.EQUALS, value: projectId },
+    ],
   });
   if (bundle.entry && bundle.entry.length > 0) {
     for (const entry of bundle.entry) {
