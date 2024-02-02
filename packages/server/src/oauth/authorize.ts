@@ -5,7 +5,7 @@ import { URL } from 'url';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
 import { getClientApplication } from './utils';
 
@@ -110,6 +110,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   }
 
   if (prompt !== 'login' && existingLogin) {
+    const systemRepo = getSystemRepo();
     await systemRepo.updateResource<Login>({
       ...existingLogin,
       nonce: params.nonce as string,
@@ -196,6 +197,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
     return undefined;
   }
 
+  const systemRepo = getSystemRepo();
   return systemRepo.readResource<Login>('Login', existingLoginId);
 }
 
@@ -212,6 +214,7 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
     return undefined;
   }
 
+  const systemRepo = getSystemRepo();
   const bundle = await systemRepo.search<Login>({
     resourceType: 'Login',
     filters: [

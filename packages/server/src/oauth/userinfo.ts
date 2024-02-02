@@ -11,13 +11,14 @@ import { Reference, User } from '@medplum/fhirtypes';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
  */
 export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, res: Response) => {
+  const systemRepo = getSystemRepo();
   const ctx = getAuthenticatedContext();
   const user = await systemRepo.readReference(ctx.login.user as Reference<User>);
   const profile = await ctx.repo.readReference(ctx.profile);

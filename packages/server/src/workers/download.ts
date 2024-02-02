@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { getConfig, MedplumServerConfig } from '../config';
 import { getRequestContext } from '../context';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { globalLogger } from '../logger';
 
@@ -151,6 +151,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job - The download job details.
  */
 export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
+  const systemRepo = getSystemRepo();
   const ctx = getRequestContext();
   const { resourceType, id, url } = job.data;
 

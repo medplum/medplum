@@ -13,7 +13,7 @@ import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
@@ -30,6 +30,8 @@ export async function createProfile(
   if (email) {
     telecom = [{ system: 'email', use: 'work', value: email }];
   }
+
+  const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<ProfileResource>({
     resourceType,
     meta: {
@@ -55,6 +57,8 @@ export async function createProjectMembership(
 ): Promise<ProjectMembership> {
   const ctx = getRequestContext();
   ctx.logger.info('Creating project membership', { name: project.name });
+
+  const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<ProjectMembership>({
     ...details,
     resourceType: 'ProjectMembership',
@@ -74,6 +78,7 @@ export async function createProjectMembership(
  * @param login - The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
+  const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   if (user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
     res.json({ login: login.id, mfaRequired: true });
@@ -199,6 +204,7 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 

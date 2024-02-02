@@ -31,7 +31,7 @@ import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { getRequestContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
 import {
   generateAccessToken,
@@ -119,6 +119,7 @@ export async function getClientApplication(clientId: string): Promise<ClientAppl
       pkceOptional: true,
     };
   }
+  const systemRepo = getSystemRepo();
   return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
 }
 
@@ -132,6 +133,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 
   validatePkce(request, client);
 
+  const systemRepo = getSystemRepo();
   let launch: SmartAppLaunch | undefined;
   if (request.launchId) {
     launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
@@ -275,6 +277,7 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     throw new OperationOutcomeError(badRequest('Login already verified'));
   }
 
+  const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
   if (!user.mfaEnrolled) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
@@ -324,6 +327,7 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
     });
   }
 
+  const systemRepo = getSystemRepo();
   let memberships = await systemRepo.searchResources<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 100,
@@ -344,6 +348,7 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
  * @returns The project membership for the client application if found; otherwise undefined.
  */
 export function getClientApplicationMembership(client: ClientApplication): Promise<ProjectMembership | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -379,6 +384,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   }
 
   // Find the membership for the user
+  const systemRepo = getSystemRepo();
   let membership = undefined;
   try {
     membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
@@ -477,6 +483,7 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
   }
 
   // Otherwise update scope
+  const systemRepo = getSystemRepo();
   return systemRepo.updateResource<Login>({
     ...login,
     scope: submittedScopes.join(' '),
@@ -495,6 +502,7 @@ export async function getAuthTokens(login: Login, profile: Reference<ProfileReso
   }
 
   if (!login.granted) {
+    const systemRepo = getSystemRepo();
     await systemRepo.updateResource<Login>({
       ...login,
       granted: true,
@@ -536,6 +544,7 @@ export async function getAuthTokens(login: Login, profile: Reference<ProfileReso
 }
 
 export async function revokeLogin(login: Login): Promise<void> {
+  const systemRepo = getSystemRepo();
   await systemRepo.updateResource<Login>({
     ...login,
     revoked: true,
@@ -550,6 +559,7 @@ export async function revokeLogin(login: Login): Promise<void> {
  * @returns The user if found; otherwise, undefined.
  */
 export async function getUserByExternalId(externalId: string, projectId: string): Promise<User | undefined> {
+  const systemRepo = getSystemRepo();
   const membership = await systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -612,6 +622,7 @@ export async function getUserByEmail(email: string, projectId: string | undefine
  * @returns The user if found; otherwise, undefined.
  */
 export async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
+  const systemRepo = getSystemRepo();
   const bundle = await systemRepo.search({
     resourceType: 'User',
     filters: [
@@ -637,6 +648,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
  * @returns The user if found; otherwise, undefined.
  */
 export async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
+  const systemRepo = getSystemRepo();
   const bundle = await systemRepo.search({
     resourceType: 'User',
     filters: [
@@ -784,6 +796,7 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
   const verifyResult = await verifyJwt(accessToken);
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
 
+  const systemRepo = getSystemRepo();
   let login = undefined;
   try {
     login = await systemRepo.readResource<Login>('Login', claims.login_id);

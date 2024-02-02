@@ -2,7 +2,7 @@ import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Opera
 import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { ScimListResponse, ScimUser } from './types';
 
 /**
@@ -14,6 +14,7 @@ import { ScimListResponse, ScimUser } from './types';
  * @returns List of SCIM users in the project.
  */
 export async function searchScimUsers(project: Project): Promise<ScimListResponse<ScimUser>> {
+  const systemRepo = getSystemRepo();
   const memberships = await systemRepo.searchResources<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 1000,
@@ -88,6 +89,7 @@ export async function createScimUser(
  * @returns The user.
  */
 export async function readScimUser(project: Project, id: string): Promise<ScimUser> {
+  const systemRepo = getSystemRepo();
   const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
   if (membership.project?.reference !== getReferenceString(project)) {
     throw new OperationOutcomeError(forbidden);
@@ -107,6 +109,7 @@ export async function readScimUser(project: Project, id: string): Promise<ScimUs
  * @returns The updated user.
  */
 export async function updateScimUser(project: Project, scimUser: ScimUser): Promise<ScimUser> {
+  const systemRepo = getSystemRepo();
   let membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', scimUser.id as string);
   if (membership.project?.reference !== getReferenceString(project)) {
     throw new OperationOutcomeError(forbidden);
@@ -139,6 +142,7 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
  * @returns The user.
  */
 export async function deleteScimUser(project: Project, id: string): Promise<void> {
+  const systemRepo = getSystemRepo();
   const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
   if (membership.project?.reference !== getReferenceString(project)) {
     throw new OperationOutcomeError(forbidden);

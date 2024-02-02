@@ -9,7 +9,7 @@ import {
 } from '@medplum/core';
 import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { systemRepo } from './repo';
+import { getSystemRepo } from './repo';
 
 export async function validateReferences<T extends Resource>(resource: T): Promise<void> {
   return new FhirReferenceValidator(resource).validate();
@@ -81,6 +81,7 @@ export class FhirReferenceValidator<T extends Resource> {
     }
 
     try {
+      const systemRepo = getSystemRepo();
       const existing = await systemRepo.readReference(reference);
       if (existing.meta?.project && this.root.meta?.project && existing.meta.project !== this.root.meta.project) {
         this.issues.push(createStructureIssue(path, `Invalid reference (Not found)`));

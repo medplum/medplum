@@ -8,7 +8,7 @@ import {
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
-import { Repository, systemRepo } from './repo';
+import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
 
 /**
@@ -128,6 +128,7 @@ async function buildAccessPolicyResources(
   access: ProjectMembershipAccess,
   profile: Reference<ProfileResource>
 ): Promise<AccessPolicy> {
+  const systemRepo = getSystemRepo();
   const original = await systemRepo.readReference(access.policy as Reference<AccessPolicy>);
   const params = access.parameter || [];
   params.push({ name: 'profile', valueReference: profile });

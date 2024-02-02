@@ -44,12 +44,14 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { bundleContains, withTestContext } from '../test.setup';
-import { systemRepo } from './repo';
+import { getSystemRepo } from './repo';
 
 jest.mock('hibp');
 jest.mock('ioredis');
 
 describe('FHIR Search', () => {
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);

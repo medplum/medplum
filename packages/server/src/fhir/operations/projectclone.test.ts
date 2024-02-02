@@ -27,16 +27,17 @@ import {
   setupRecaptchaMock,
   withTestContext,
 } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 import { createProject } from './projectinit';
 
 jest.mock('node-fetch');
 jest.mock('hibp');
 
-const app = express();
-
 describe('Project clone', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

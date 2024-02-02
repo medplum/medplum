@@ -20,7 +20,7 @@ import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
 import {
@@ -100,6 +100,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const systemRepo = getSystemRepo();
   let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
@@ -160,6 +161,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const searchResult = await systemRepo.search({
     resourceType: 'Login',
     filters: [
@@ -256,6 +258,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', claims.login_id);
 
   if (login.refreshSecret === undefined) {
@@ -353,6 +356,7 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const projectId = await getProjectIdByClientId(clientId, undefined);
   const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   const idp = client.identityProvider;
@@ -467,6 +471,7 @@ async function parseClientAssertion(
     return { error: 'Invalid client assertion issuer' };
   }
 
+  const systemRepo = getSystemRepo();
   const clientId = claims.iss as string;
   let client: ClientApplication;
   try {
@@ -551,6 +556,7 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
   let encounter = undefined;
 
   if (login.launch) {
+    const systemRepo = getSystemRepo();
     const launch = await systemRepo.readReference(login.launch);
     patient = resolveId(launch.patient);
     encounter = resolveId(launch.encounter);
