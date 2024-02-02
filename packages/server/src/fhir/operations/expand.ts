@@ -229,10 +229,7 @@ async function computeExpansion(
     if (include.system && !include.concept) {
       const codeSystem = await repo.searchOne<CodeSystem>({
         resourceType: 'CodeSystem',
-        filters: [
-          { code: 'url', operator: Operator.EQUALS, value: include.system },
-          { code: 'status', operator: Operator.EQUALS, value: 'active' },
-        ],
+        filters: [{ code: 'url', operator: Operator.EQUALS, value: include.system }],
         sortRules: [
           { code: 'version', descending: true }, // Select highest version (by lexical sort -- no version is assumed to be "current")
           { code: '_lastUpdated', descending: true }, // Break ties by selecting more recently-updated resource
