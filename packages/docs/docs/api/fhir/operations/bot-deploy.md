@@ -11,7 +11,10 @@ If you're not familiar with Medplum Bots, you may want to review the [Bot Basics
 
 ## Invoke `$deploy` Operation
 
-To use the `$deploy` operation, you will need to make a `POST` request with the Bot's `id`.
+To use the `$deploy` operation, you will need to make a `POST` request with the Bot's `id`. Additionally, the `$deploy` operation takes two body parameters:
+
+1. `filename`: The name of the file the bot is stored in. If left blank, it will default to `index.js`.
+2. `code`: The bot's code that will be executed when it is run.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
