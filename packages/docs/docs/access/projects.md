@@ -47,7 +47,7 @@ Logging into the Super Admin project allows for potential dangerous operations a
 
 :::note Checking If You Are In The SuperAdmin Project
 
-To switch to the SuperAdmin project or check if you are already in it, you can use the **profile switcher**.
+To switch to the SuperAdmin project or check if you are already in it, you can use the [**profile selector**](/docs/app/app-introduction/index.md#profile-selector).
 
 ![project switcher](project-switcher.png)
 :::
