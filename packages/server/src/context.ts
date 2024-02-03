@@ -4,6 +4,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { Repository, systemRepo } from './fhir/repo';
+import { parseTraceparent } from './traceparent';
 
 export class RequestContext {
   readonly requestId: string;
@@ -102,38 +103,21 @@ export function closeRequestContext(): void {
 }
 
 const traceIdHeaderMap: {
-  [key: string]: (traceId: string) => string | false;
+  [key: string]: (traceId: string) => boolean;
 } = {
-  'x-trace-id': (traceId) => isUUID(traceId) && traceId,
-  traceparent: (traceId) => {
-    if (!traceId.startsWith('00-')) {
-      return false;
-    }
-
-    const id = traceId.split('-')[1];
-    const uuid = [
-      id.substring(0, 8),
-      id.substring(8, 12),
-      id.substring(12, 16),
-      id.substring(16, 20),
-      id.substring(20, 32),
-    ].join('-');
-
-    return isUUID(uuid) && uuid;
-  },
-  // https://github.com/getsentry/sentry-javascript/blob/6dfddc2dfc4b74cbb70dc325b4af165e25904ed4/packages/utils/src/tracing.ts#L117-L130
-  // {uuidv4}-{uuidv4.substring(16)}[-(0|1)]
-  'sentry-trace': (traceId: string) => {
-    return (traceId.length === 51 || traceId.length === 49) && traceId;
+  'x-trace-id': (value) => isUUID(value),
+  traceparent: (value) => {
+    const traceparent = parseTraceparent(value);
+    return traceparent.valid;
   },
 } as const;
 const traceIdHeaders = Object.entries(traceIdHeaderMap);
 
-const getTraceIdHeader = (req: Request): string | undefined => {
-  for (const [header, isTraceId] of traceIdHeaders) {
-    const traceId = req.header(header);
-    if (traceId && isTraceId(traceId)) {
-      return traceId;
+const getTraceId = (req: Request): string | undefined => {
+  for (const [headerKey, isTraceId] of traceIdHeaders) {
+    const value = req.header(headerKey);
+    if (value && isTraceId(value)) {
+      return value;
     }
   }
   return undefined;
@@ -141,7 +125,7 @@ const getTraceIdHeader = (req: Request): string | undefined => {
 
 function requestIds(req: Request): { requestId: string; traceId: string } {
   const requestId = randomUUID();
-  const traceId = getTraceIdHeader(req) ?? randomUUID();
+  const traceId = getTraceId(req) ?? randomUUID();
 
   return { requestId, traceId };
 }
