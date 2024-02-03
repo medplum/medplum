@@ -14,7 +14,7 @@ export type Traceparent =
     };
 
 export function parseTraceparent(traceparent: string): Traceparent {
-  const traceparentRegex = /^([0-9a-f]{2})?-?([0-9a-f]{32})-([0-9a-f]{16})-?([0-9a-f]{2})?$/i;
+  const traceparentRegex = /^([0-9a-f]{2})?-?([0-9a-f]{32})-([0-9a-f]{16})-?([0-9a-f]{1,2})?$/i;
 
   const match = traceparent.match(traceparentRegex);
   if (!match) {
