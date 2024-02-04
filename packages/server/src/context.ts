@@ -106,10 +106,7 @@ const traceIdHeaderMap: {
   [key: string]: (traceId: string) => boolean;
 } = {
   'x-trace-id': (value) => isUUID(value),
-  traceparent: (value) => {
-    const traceparent = parseTraceparent(value);
-    return traceparent.valid;
-  },
+  traceparent: (value) => !!parseTraceparent(value),
 } as const;
 const traceIdHeaders = Object.entries(traceIdHeaderMap);
 

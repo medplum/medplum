@@ -2,7 +2,6 @@ import { Traceparent, parseTraceparent } from './traceparent';
 
 describe('parseTraceparent', () => {
   const tp: Traceparent = {
-    valid: true,
     version: '00',
     traceId: '12345678901234567890123456789012',
     parentId: '3456789012345678',
@@ -30,10 +29,10 @@ describe('parseTraceparent', () => {
   });
 
   it('no more than 2 characters for flags', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-001`)).toEqual({ valid: false });
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-001`)).toEqual(undefined);
   });
 
   it('reports invalid', () => {
-    expect(parseTraceparent(`invalid-traceparent`)).toEqual({ valid: false });
+    expect(parseTraceparent(`invalid-traceparent`)).toEqual(undefined);
   });
 });
