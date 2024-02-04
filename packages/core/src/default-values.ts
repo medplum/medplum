@@ -228,7 +228,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
     }
     this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.values)}`);
 
-    return;
+    /*
     // TODO: remove all this for now?
     for (let valueIndex = 0; valueIndex < elementValueContext.values.length; valueIndex++) {
       const elementValue = elementValueContext.values[valueIndex];
@@ -255,7 +255,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
         );
         setValueAtKey(parentValue, undefined, getPathDifference(this.value.path, path), _element);
       }
-    }
+    }*/
   }
 
   onEnterSlicing(path: string, slicing: VisitorSlicingRules): void {

@@ -178,6 +178,7 @@ export class SchemaCrawler {
     }
   }
 
+  /*
   private crawlElementImpl(element: InternalSchemaElement, path: string): void {
     // A profile can be assigned on any element, but that is not supported.
     // If/when it is, it should be pushed onto the schema stack here.
@@ -194,6 +195,7 @@ export class SchemaCrawler {
       this.visitor.onExitElement(path, element, this.elementsContext);
     }
   }
+  */
 
   private prepareSlices(slices: SliceDefinition[], slicing: SlicingRules): VisitorSlicingRules {
     const supportedSlices: SupportedSliceDefinition[] = [];

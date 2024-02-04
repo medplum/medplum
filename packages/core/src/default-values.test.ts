@@ -159,12 +159,7 @@ describe('applyDefaultValues', () => {
         const crawler = new SchemaCrawler(schema, visitor, slice.elements);
         crawler.crawlElement(element, key, rootPath);
         const result = visitor.getDefaultValue();
-        expect(result).toEqual([
-          {
-            uri: 'http://unitsofmeasure.org',
-            code: 'mm[Hg]',
-          },
-        ]);
+        expect(result).toEqual({ valueQuantity: { code: 'mm[Hg]', system: 'http://unitsofmeasure.org' } });
       });
     });
   });
