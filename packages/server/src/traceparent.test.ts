@@ -13,26 +13,26 @@ describe('parseTraceparent', () => {
   });
 
   it('allow missing version', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-${tp.flags}`)).toEqual({ ...tp, version: null });
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-${tp.flags}`)).toEqual({ ...tp, version: undefined });
   });
 
   it('allow missing flags', () => {
-    expect(parseTraceparent(`${tp.version}-${tp.traceId}-${tp.parentId}`)).toEqual({ ...tp, flags: null });
+    expect(parseTraceparent(`${tp.version}-${tp.traceId}-${tp.parentId}`)).toEqual({ ...tp, flags: undefined });
   });
 
   it('allow missing version and flags', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}`)).toEqual({ ...tp, version: null, flags: null });
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}`)).toEqual({ ...tp, version: undefined, flags: undefined });
   });
 
   it('allow 1 character for flags', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-1`)).toEqual({ ...tp, version: null, flags: '1' });
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-1`)).toEqual({ ...tp, version: undefined, flags: '1' });
   });
 
   it('no more than 2 characters for flags', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-001`)).toEqual(undefined);
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-001`)).toEqual(null);
   });
 
   it('reports invalid', () => {
-    expect(parseTraceparent(`invalid-traceparent`)).toEqual(undefined);
+    expect(parseTraceparent(`invalid-traceparent`)).toEqual(null);
   });
 });

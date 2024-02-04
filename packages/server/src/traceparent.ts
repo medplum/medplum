@@ -4,24 +4,24 @@ type hex = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'a' | 'b'
 type twohex = `${hex}${hex}`;
 
 export type Traceparent = {
-  version: twohex | null;
+  version?: twohex;
   traceId: string;
   parentId: string;
-  flags: hex | twohex | null;
+  flags?: hex | twohex;
 };
 
-export function parseTraceparent(traceparent: string): Traceparent | undefined {
-  const traceparentRegex = /^([0-9a-f]{2})?-?([0-9a-f]{32})-([0-9a-f]{16})-?([0-9a-f]{1,2})?$/i;
+const traceparentRegex = /^([0-9a-f]{2})?-?([0-9a-f]{32})-([0-9a-f]{16})-?([0-9a-f]{1,2})?$/i;
 
+export function parseTraceparent(traceparent: string): Traceparent | null {
   const match = traceparent.match(traceparentRegex);
   if (!match) {
-    return undefined;
+    return null;
   }
 
-  const version = match[1] ?? null;
-  const traceId = match[2];
-  const parentId = match[3];
-  const flags = match[4] ?? null;
-
-  return { version: version as twohex, traceId, parentId, flags: flags as hex | twohex };
+  return {
+    version: (match[1] ?? undefined) as Traceparent['version'],
+    traceId: match[2],
+    parentId: match[3],
+    flags: (match[4] ?? undefined) as Traceparent['flags'],
+  };
 }
