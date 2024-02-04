@@ -56,6 +56,7 @@ export interface BotExecutionRequest {
   readonly remoteAddress?: string;
   readonly forwardedFor?: string;
   readonly requestTime?: string;
+  readonly traceId?: string;
 }
 
 export interface BotExecutionResult {
@@ -267,7 +268,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
  * @returns The bot execution result.
  */
 async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input, contentType } = request;
+  const { bot, runAs, input, contentType, traceId } = request;
   const config = getConfig();
   const accessToken = await getBotAccessToken(runAs);
   const secrets = await getBotSecrets(bot);
@@ -280,6 +281,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,
     secrets,
+    traceId,
   };
 
   // Build the command
@@ -370,7 +372,7 @@ function parseLambdaLog(logResult: string): string {
  * @returns The bot execution result.
  */
 async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input, contentType } = request;
+  const { bot, runAs, input, contentType, traceId } = request;
 
   const config = getConfig();
   if (!config.vmContextBotsEnabled) {
@@ -406,6 +408,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       input: input instanceof Hl7Message ? input.toString() : input,
       contentType,
       secrets,
+      traceId,
     },
   };
 

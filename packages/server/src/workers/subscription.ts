@@ -496,10 +496,11 @@ async function execBot(
   interaction: BackgroundJobInteraction,
   requestTime: string
 ): Promise<void> {
+  const ctx = getRequestContext();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    getRequestContext().logger.debug(`Ignore rest hook missing URL`);
+    ctx.logger.debug(`Ignore rest hook missing URL`);
     return;
   }
 
@@ -525,6 +526,7 @@ async function execBot(
     input: interaction === 'delete' ? { deletedResource: resource } : resource,
     contentType: ContentType.FHIR_JSON,
     requestTime,
+    traceId: ctx.traceId,
   });
 }
 
