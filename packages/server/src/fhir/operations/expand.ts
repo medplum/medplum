@@ -12,7 +12,7 @@ import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction } from '../sql';
 import { getAuthenticatedContext } from '../../context';
-import { parentProperty } from './codesystemimport';
+import { childProperty, parentProperty } from './codesystemimport';
 import { clamp } from './utils/parameters';
 import { validateCode } from './codesystemvalidatecode';
 import { getDatabasePool } from '../../database';
@@ -295,36 +295,41 @@ function addFilters(
           )
         );
       }
-      const properties = codeSystem.property?.filter((p) => p.uri === parentProperty).map((p) => p.code);
+      let properties = codeSystem.property?.filter((p) => p.uri === parentProperty || p.uri === childProperty);
+      if (!properties) {
+        // Implicit 'parent' property for hierarchical CodeSystems
+        properties = [{ code: 'parent', uri: parentProperty, type: 'code' }];
+      }
 
-      const propertyTable = query.getNextJoinAlias();
-      query.innerJoin(
-        'Coding_Property',
-        propertyTable,
-        new Conjunction([new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))])
-      );
+      for (const property of properties) {
+        const propertyTable = query.getNextJoinAlias();
+        query.innerJoin(
+          'Coding_Property',
+          propertyTable,
+          new Conjunction([new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))])
+        );
 
-      const csPropertyTable = query.getNextJoinAlias();
-      query.innerJoin(
-        'CodeSystem_Property',
-        csPropertyTable,
-        new Conjunction([
-          new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-          new Condition(new Column(csPropertyTable, 'code'), '=', properties),
-        ])
-      );
+        const csPropertyTable = query.getNextJoinAlias();
+        query.innerJoin(
+          'CodeSystem_Property',
+          csPropertyTable,
+          new Conjunction([
+            new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+            new Condition(new Column(csPropertyTable, 'code'), '=', property),
+          ])
+        );
 
-      const targetTable = query.getNextJoinAlias();
-      query.leftJoin(
-        'Coding',
-        targetTable,
-        new Conjunction([
-          new Condition(new Column(propertyTable, 'target'), '=', new Column(targetTable, 'id')),
-          new Condition(new Column(targetTable, 'code'), '=', filter.value),
-        ])
-      );
-
-      query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '!=' : '=', null);
+        const targetTable = query.getNextJoinAlias();
+        query.leftJoin(
+          'Coding',
+          targetTable,
+          new Conjunction([
+            new Condition(new Column(propertyTable, 'target'), '=', new Column(targetTable, 'id')),
+            new Condition(new Column(targetTable, 'code'), '=', filter.value),
+          ])
+        );
+        query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '!=' : '=', null);
+      }
     }
   }
 

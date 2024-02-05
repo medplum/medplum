@@ -61,18 +61,15 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
-  const codeSystems = await ctx.repo.searchResources<CodeSystem>({
+  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
     resourceType: 'CodeSystem',
     filters: [{ code: 'url', operator: Operator.EQUALS, value: params.system }],
+    sortRules: [{ code: 'version', descending: true }],
   });
-  if (codeSystems.length === 0) {
+  if (!codeSystem) {
     sendOutcome(res, badRequest('No CodeSystem found with URL ' + params.system));
     return;
-  } else if (codeSystems.length > 1) {
-    sendOutcome(res, badRequest('Ambiguous code system URI: ' + params.system));
-    return;
   }
-  const codeSystem = codeSystems[0];
 
   try {
     await ctx.repo.withTransaction(async (db) => {
@@ -159,6 +156,7 @@ async function processProperties(
 }
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
+export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
 
 async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolClient): Promise<[number, boolean]> {
   let prop = codeSystem.property?.find((p) => p.code === code);
