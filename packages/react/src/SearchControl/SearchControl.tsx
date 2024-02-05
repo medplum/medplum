@@ -333,8 +333,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           </Group>
           <Group gap={2}>
             {lastResult && (
-              <Text size="xs" c="dimmed">
-                {getStart(search, lastResult)}-{getEnd(search, lastResult)}
+              <Text size="xs" c="dimmed" data-testid="count-display">
+                {getStart(search, lastResult).toLocaleString()}-{getEnd(search, lastResult).toLocaleString()}
                 {lastResult.total !== undefined &&
                   ` of ${search.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
               </Text>
@@ -577,7 +577,8 @@ function getPage(search: SearchRequest): number {
 
 function getTotalPages(search: SearchRequest, lastResult: Bundle): number {
   const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
-  return Math.ceil(getTotal(search, lastResult) / pageSize);
+  const total = getTotal(search, lastResult);
+  return total > 0 ? Math.ceil(total / pageSize) : 1;
 }
 
 function getStart(search: SearchRequest, lastResult: Bundle): number {
@@ -585,7 +586,10 @@ function getStart(search: SearchRequest, lastResult: Bundle): number {
 }
 
 function getEnd(search: SearchRequest, lastResult: Bundle): number {
-  return Math.min(getTotal(search, lastResult), ((search.offset ?? 0) + 1) * (search.count ?? DEFAULT_SEARCH_COUNT));
+  return Math.min(
+    getTotal(search, lastResult),
+    getStart(search, lastResult) + (search.count ?? DEFAULT_SEARCH_COUNT) - 1
+  );
 }
 
 function getTotal(search: SearchRequest, lastResult: Bundle): number {
@@ -597,5 +601,5 @@ function getTotal(search: SearchRequest, lastResult: Bundle): number {
       (lastResult.entry?.length ?? 0) +
       (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0);
   }
-  return total;
+  return total ?? 0;
 }
