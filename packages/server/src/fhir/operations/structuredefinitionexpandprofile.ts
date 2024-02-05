@@ -1,4 +1,4 @@
-import { allOk, badRequest, isPopulated, Operator } from '@medplum/core';
+import { allOk, badRequest, Operator } from '@medplum/core';
 import { Bundle, BundleEntry, StructureDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
@@ -61,28 +61,24 @@ async function loadNestedStructureDefinitions(
 ): Promise<StructureDefinition[]> {
   const profilesUrlsToLoad: string[] = [];
 
-  if (isPopulated(profile.snapshot)) {
-    for (const element of profile.snapshot.element) {
-      const profiles = element.type
-        ?.map((t) => t.profile)
-        .flat()
-        .filter((p): p is string => p !== undefined);
+  profile.snapshot?.element?.forEach((element) => {
+    const profileUrls: string[] | undefined = element.type
+      ?.map((t) => t.profile)
+      .flat()
+      .filter((p): p is NonNullable<string> => p !== undefined);
 
-      if (isPopulated(profiles)) {
-        for (const subProfile of profiles) {
-          if (subProfile !== undefined) {
-            profilesUrlsToLoad.push(subProfile);
-          }
-        }
-      }
-    }
-  }
-  const promises: ReturnType<typeof fetchProfileByUrl>[] = profilesUrlsToLoad.map((url) =>
+    profileUrls?.forEach((p) => {
+      profilesUrlsToLoad.push(p);
+    });
+  });
+
+  const promises: Promise<StructureDefinition | undefined>[] = profilesUrlsToLoad.map((url) =>
     fetchProfileByUrl(repo, url)
   );
-  const results = await Promise.all(promises);
   const response = [];
-  for (const result of results) {
+
+  const sds = await Promise.all(promises);
+  for (const result of sds) {
     if (result === undefined) {
       continue;
     }
