@@ -578,7 +578,7 @@ function getPage(search: SearchRequest): number {
 function getTotalPages(search: SearchRequest, lastResult: Bundle): number {
   const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
   const total = getTotal(search, lastResult);
-  return total > 0 ? Math.ceil(total / pageSize) : 1;
+  return Math.ceil(total / pageSize);
 }
 
 function getStart(search: SearchRequest, lastResult: Bundle): number {
@@ -601,5 +601,5 @@ function getTotal(search: SearchRequest, lastResult: Bundle): number {
       (lastResult.entry?.length ?? 0) +
       (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0);
   }
-  return total ?? 0;
+  return total;
 }
