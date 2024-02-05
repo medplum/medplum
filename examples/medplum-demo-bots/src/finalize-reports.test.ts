@@ -150,9 +150,9 @@ describe('Finalize Report', async () => {
     await handler(medplum, { input: updatedReport, contentType, secrets: {} });
 
     // Ensure that no modification methods were called
-    expect(updateResourceSpy).not.toBeCalled();
-    expect(createResourceSpy).not.toBeCalled();
-    expect(patchResourceSpy).not.toBeCalled();
+    expect(updateResourceSpy).not.toHaveBeenCalled();
+    expect(createResourceSpy).not.toHaveBeenCalled();
+    expect(patchResourceSpy).not.toHaveBeenCalled();
     // end-block test-idempotent
   });
 });

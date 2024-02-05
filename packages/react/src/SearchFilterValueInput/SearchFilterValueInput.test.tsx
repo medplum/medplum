@@ -40,7 +40,7 @@ describe('SearchFilterValueInput', () => {
       fireEvent.change(screen.getByTestId('filter-value'), { target: { value: 'foo' } });
     });
 
-    expect(onChange).toBeCalledWith('foo');
+    expect(onChange).toHaveBeenCalledWith('foo');
   });
 
   test('Boolean input', async () => {
@@ -58,14 +58,14 @@ describe('SearchFilterValueInput', () => {
       fireEvent.click(screen.getByTestId('filter-value'));
     });
 
-    expect(onChange).toBeCalledWith('true');
+    expect(onChange).toHaveBeenCalledWith('true');
     onChange.mockClear();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('filter-value'));
     });
 
-    expect(onChange).toBeCalledWith('false');
+    expect(onChange).toHaveBeenCalledWith('false');
     onChange.mockClear();
   });
 
@@ -84,7 +84,7 @@ describe('SearchFilterValueInput', () => {
       fireEvent.change(screen.getByTestId('filter-value'), { target: { value: '1950-01-01' } });
     });
 
-    expect(onChange).toBeCalledWith('1950-01-01');
+    expect(onChange).toHaveBeenCalledWith('1950-01-01');
   });
 
   test('Date/Time input', async () => {
@@ -104,7 +104,7 @@ describe('SearchFilterValueInput', () => {
       fireEvent.change(screen.getByTestId('filter-value'), { target: { value: localString } });
     });
 
-    expect(onChange).toBeCalledWith(isoString);
+    expect(onChange).toHaveBeenCalledWith(isoString);
   });
 
   test('Quantity input', async () => {
@@ -122,7 +122,7 @@ describe('SearchFilterValueInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), { target: { value: '5' } });
     });
 
-    expect(onChange).toBeCalledWith('5');
+    expect(onChange).toHaveBeenCalledWith('5');
   });
 
   test('Reference input', async () => {

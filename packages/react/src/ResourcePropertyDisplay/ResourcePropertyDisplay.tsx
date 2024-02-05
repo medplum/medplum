@@ -26,13 +26,13 @@ import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  property?: InternalSchemaElement;
-  propertyType: string;
-  value: any;
-  arrayElement?: boolean;
-  maxWidth?: number;
-  ignoreMissingValues?: boolean;
-  link?: boolean;
+  readonly property?: InternalSchemaElement;
+  readonly propertyType: string;
+  readonly value: any;
+  readonly arrayElement?: boolean;
+  readonly maxWidth?: number;
+  readonly ignoreMissingValues?: boolean;
+  readonly link?: boolean;
 }
 
 /**

@@ -430,9 +430,9 @@ describe('ResourcePropertyDisplay', () => {
 
   test('Handles unknown property', () => {
     console.error = jest.fn();
-    expect(() =>
-      setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)
-    ).toThrowError(new Error('Displaying property of type BackboneElement requires element schema'));
-    expect(console.error).toBeCalled();
+    expect(() => setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)).toThrow(
+      new Error('Displaying property of type BackboneElement requires element schema')
+    );
+    expect(console.error).toHaveBeenCalled();
   });
 });

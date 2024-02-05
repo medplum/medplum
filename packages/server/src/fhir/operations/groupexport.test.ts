@@ -329,7 +329,7 @@ describe('Group Export', () => {
     await groupExportResources(exporter, project, group, systemRepo);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
-    expect(exportWriteResourceSpy).toBeCalledTimes(0);
+    expect(exportWriteResourceSpy).toHaveBeenCalledTimes(0);
   });
 
   test('groupExportResources members without reference', async () => {

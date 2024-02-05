@@ -44,7 +44,6 @@ export function SearchPage(): JSX.Element {
       <MemoizedSearchControl
         checkboxesEnabled={true}
         search={search}
-        userConfig={medplum.getUserConfiguration()}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {

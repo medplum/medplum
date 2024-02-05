@@ -12,8 +12,8 @@ import { PauseResumeTask } from './PauseResumeTask';
 import { CompleteTask } from './CompleteTask';
 
 interface TaskActionsProps {
-  task: Task;
-  onChange: (updatedTask: Task) => void;
+  readonly task: Task;
+  readonly onChange: (updatedTask: Task) => void;
 }
 
 export function TaskActions(props: TaskActionsProps): JSX.Element {

@@ -2,6 +2,7 @@ import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { capitalize, isEmpty } from '../utils';
+import { validationRegexes } from '../typeschema/validation';
 
 /**
  * Returns a single element array with a typed boolean value.
@@ -58,6 +59,11 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
   }
 }
 
+export interface GetTypedPropertyValueOptions {
+  /** (optional) URL of a resource profile for type resolution */
+  profileUrl?: string;
+}
+
 /**
  * Returns the value of the property and the property type.
  * Some property definitions support multiple types.
@@ -66,16 +72,21 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
  * This function returns the value and the type.
  * @param input - The base context (FHIR resource or backbone element).
  * @param path - The property path.
+ * @param options - (optional) Additional options
  * @returns The value of the property and the property type.
  */
-export function getTypedPropertyValue(input: TypedValue, path: string): TypedValue[] | TypedValue | undefined {
+export function getTypedPropertyValue(
+  input: TypedValue,
+  path: string,
+  options?: GetTypedPropertyValueOptions
+): TypedValue[] | TypedValue | undefined {
   if (!input.value) {
     return undefined;
   }
 
-  const elementDefinition = getElementDefinition(input.type, path);
+  const elementDefinition = getElementDefinition(input.type, path, options?.profileUrl);
   if (elementDefinition) {
-    return getTypedPropertyValueWithSchema(input.value, path, elementDefinition);
+    return getTypedPropertyValueWithSchema(input, path, elementDefinition);
   }
 
   return getTypedPropertyValueWithoutSchema(input, path);
@@ -83,13 +94,13 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
 /**
  * Returns the value of the property and the property type using a type schema.
- * @param value - The base context (FHIR resource or backbone element).
+ * @param typedValue - The base context (FHIR resource or backbone element).
  * @param path - The property path.
  * @param element - The property element definition.
  * @returns The value of the property and the property type.
  */
 export function getTypedPropertyValueWithSchema(
-  value: TypedValue['value'],
+  typedValue: TypedValue,
   path: string,
   element: InternalSchemaElement
 ): TypedValue[] | TypedValue | undefined {
@@ -114,6 +125,7 @@ export function getTypedPropertyValueWithSchema(
   // Therefore, cannot only check for endsWith('[x]') since FHIRPath uses this code path
   // with a path of 'value' and expects Choice of Types treatment
 
+  const value = typedValue.value;
   const types = element.type;
   if (!types || types.length === 0) {
     return undefined;
@@ -397,9 +409,9 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Integer':
       return typeof value === 'number';
     case 'Date':
-      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?/.exec(value);
+      return isDateString(value);
     case 'DateTime':
-      return typeof value === 'string' && !!/^\d{4}(-\d{2}(-\d{2})?)?T/.exec(value);
+      return isDateTimeString(value);
     case 'Time':
       return typeof value === 'string' && !!/^T\d/.exec(value);
     case 'Period':
@@ -412,13 +424,68 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
 }
 
 /**
+ * Returns true if the input value is a YYYY-MM-DD date string.
+ * @param input - Unknown input value.
+ * @returns True if the input is a date string.
+ */
+export function isDateString(input: unknown): input is string {
+  return typeof input === 'string' && !!validationRegexes.date.exec(input);
+}
+
+/**
+ * Returns true if the input value is a YYYY-MM-DDThh:mm:ss.sssZ date/time string.
+ * @param input - Unknown input value.
+ * @returns True if the input is a date/time string.
+ */
+export function isDateTimeString(input: unknown): input is string {
+  return typeof input === 'string' && !!validationRegexes.dateTime.exec(input);
+}
+
+/**
  * Determines if the input is a Period object.
  * This is heuristic based, as we do not have strong typing at runtime.
  * @param input - The input value.
  * @returns True if the input is a period.
  */
 export function isPeriod(input: unknown): input is Period {
-  return !!(input && typeof input === 'object' && 'start' in input);
+  return !!(
+    input &&
+    typeof input === 'object' &&
+    (('start' in input && isDateTimeString(input.start)) || ('end' in input && isDateTimeString(input.end)))
+  );
+}
+
+/**
+ * Tries to convert an unknown input value to a Period object.
+ * @param input - Unknown input value.
+ * @returns A Period object or undefined.
+ */
+export function toPeriod(input: unknown): Period | undefined {
+  if (!input) {
+    return undefined;
+  }
+
+  if (isDateString(input)) {
+    return {
+      start: dateStringToInstantString(input, '0000-00-00T00:00:00.000Z'),
+      end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999Z'),
+    };
+  }
+
+  if (isDateTimeString(input)) {
+    return { start: input, end: input };
+  }
+
+  if (isPeriod(input)) {
+    return input;
+  }
+
+  return undefined;
+}
+
+function dateStringToInstantString(input: string, fill: string): string {
+  // Input can be any subset of YYYY-MM-DDThh:mm:ss.sssZ
+  return input + fill.substring(input.length);
 }
 
 /**

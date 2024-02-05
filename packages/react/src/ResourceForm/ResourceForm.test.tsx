@@ -76,7 +76,7 @@ describe('ResourceForm', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Renders empty Observation form', async () => {
@@ -144,7 +144,7 @@ describe('ResourceForm', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const result = onSubmit.mock.calls[0][0];
     expect(result.resourceType).toBe('Observation');
@@ -171,8 +171,8 @@ describe('ResourceForm', () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    expect(onSubmit).not.toBeCalled();
-    expect(onDelete).toBeCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onDelete).toHaveBeenCalled();
   });
 
   test('Change Specimen.collection.collectedDateTime', async () => {
@@ -194,7 +194,7 @@ describe('ResourceForm', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const result = onSubmit.mock.calls[0][0] as Specimen;
     expect(result.resourceType).toBe('Specimen');
@@ -217,7 +217,7 @@ describe('ResourceForm', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const patient = onSubmit.mock.calls[0][0] as Patient;
     expect(patient.resourceType).toBe('Patient');

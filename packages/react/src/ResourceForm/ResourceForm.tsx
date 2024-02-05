@@ -7,13 +7,13 @@ import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInp
 import { FormSection } from '../FormSection/FormSection';
 
 export interface ResourceFormProps {
-  defaultValue: Partial<Resource> | Reference;
-  outcome?: OperationOutcome;
-  onSubmit: (resource: Resource) => void;
-  onDelete?: (resource: Resource) => void;
-  schemaName?: string;
+  readonly defaultValue: Partial<Resource> | Reference;
+  readonly outcome?: OperationOutcome;
+  readonly onSubmit: (resource: Resource) => void;
+  readonly onDelete?: (resource: Resource) => void;
+  readonly schemaName?: string;
   /** (optional) URL of the resource profile used to display the form. Takes priority over schemaName. */
-  profileUrl?: string;
+  readonly profileUrl?: string;
 }
 
 export function ResourceForm(props: ResourceFormProps): JSX.Element {
@@ -73,6 +73,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         </FormSection>
       </Stack>
       <BackboneElementInput
+        path={value.resourceType}
         typeName={schemaLoaded}
         defaultValue={value}
         outcome={outcome}

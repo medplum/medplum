@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createScriptTag } from '../utils/script';
 
 interface GoogleApi {
-  accounts: {
+  readonly accounts: {
     id: {
       initialize: (args: any) => void;
       renderButton: (parent: HTMLElement, args: any) => void;

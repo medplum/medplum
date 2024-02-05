@@ -5,10 +5,10 @@ import { ChangeEvent, MouseEvent, ReactNode, useRef } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentButtonProps {
-  onUpload: (attachment: Attachment) => void;
-  onUploadStart?: () => void;
-  onUploadProgress?: (e: ProgressEvent) => void;
-  onUploadError?: (outcome: OperationOutcome) => void;
+  readonly onUpload: (attachment: Attachment) => void;
+  readonly onUploadStart?: () => void;
+  readonly onUploadProgress?: (e: ProgressEvent) => void;
+  readonly onUploadError?: (outcome: OperationOutcome) => void;
   children(props: { onClick(e: MouseEvent): void }): ReactNode;
 }
 

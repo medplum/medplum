@@ -100,9 +100,9 @@ export function ProfilesPage(): JSX.Element | null {
 }
 
 type ProfileDetailProps = {
-  profile: SupportedProfileStructureDefinition;
-  resource: Resource;
-  onResourceUpdated: (newResource: Resource) => void;
+  readonly profile: SupportedProfileStructureDefinition;
+  readonly resource: Resource;
+  readonly onResourceUpdated: (newResource: Resource) => void;
 };
 
 const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resource, onResourceUpdated }) => {

@@ -2,10 +2,10 @@ import { CSSProperties, ReactNode, SyntheticEvent } from 'react';
 import { parseForm } from './FormUtils';
 
 export interface FormProps {
-  onSubmit?: (formData: Record<string, string>) => void;
-  style?: CSSProperties;
-  children?: ReactNode;
-  testid?: string;
+  readonly onSubmit?: (formData: Record<string, string>) => void;
+  readonly style?: CSSProperties;
+  readonly children?: ReactNode;
+  readonly testid?: string;
 }
 
 export function Form(props: FormProps): JSX.Element {

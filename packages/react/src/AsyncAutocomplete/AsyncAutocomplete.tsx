@@ -5,7 +5,7 @@ import { KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } fr
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
-  resource: T;
+  readonly resource: T;
 }
 
 export interface AsyncAutocompleteProps<T>

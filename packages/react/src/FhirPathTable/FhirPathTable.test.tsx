@@ -155,7 +155,7 @@ describe('FhirPathTable', () => {
       fireEvent.click(screen.getByText('Bulk...'));
     });
 
-    expect(onBulk).toBeCalled();
+    expect(onBulk).toHaveBeenCalled();
   });
 
   test('Click on row', async () => {
@@ -182,8 +182,8 @@ describe('FhirPathTable', () => {
       fireEvent.click(rows[0]);
     });
 
-    expect(props.onClick).toBeCalled();
-    expect(props.onAuxClick).not.toBeCalled();
+    expect(props.onClick).toHaveBeenCalled();
+    expect(props.onAuxClick).not.toHaveBeenCalled();
   });
 
   test('Aux click on row', async () => {
@@ -210,8 +210,8 @@ describe('FhirPathTable', () => {
       fireEvent.click(rows[0], { button: 1 });
     });
 
-    expect(props.onClick).not.toBeCalled();
-    expect(props.onAuxClick).toBeCalled();
+    expect(props.onClick).not.toHaveBeenCalled();
+    expect(props.onAuxClick).toHaveBeenCalled();
   });
 
   test('Click all checkbox', async () => {

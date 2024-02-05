@@ -3,9 +3,9 @@ import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { MepdlumNavigateFunction, reactContext } from './MedplumProvider.context';
 
 export interface MedplumProviderProps {
-  medplum: MedplumClient;
-  navigate?: MepdlumNavigateFunction;
-  children: ReactNode;
+  readonly medplum: MedplumClient;
+  readonly navigate?: MepdlumNavigateFunction;
+  readonly children: ReactNode;
 }
 
 /**

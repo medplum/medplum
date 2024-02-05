@@ -1,4 +1,5 @@
 import { OperationOutcomeError, append, conflict } from '@medplum/core';
+import { Period } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import { Client, Pool, PoolClient } from 'pg';
 import Cursor from 'pg-cursor';
@@ -10,6 +11,7 @@ export enum ColumnType {
   UUID = 'uuid',
   TIMESTAMP = 'timestamp',
   TEXT = 'text',
+  TSTZRANGE = 'tstzrange',
 }
 
 export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
@@ -105,6 +107,30 @@ export const Operator = {
     sql.append('||');
     sql.appendColumn(parameter as Column);
   },
+  RANGE_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' && ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' >> ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_LEFT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' << ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
 };
 
 function simpleBinaryOperator(operator: string): OperatorFunc {
@@ -145,6 +171,10 @@ export class Condition implements Expression {
     readonly parameter: any,
     readonly parameterType?: string
   ) {
+    if (operator === 'ARRAY_CONTAINS' && !parameterType) {
+      throw new Error('ARRAY_CONTAINS requires paramType');
+    }
+
     this.column = getColumn(column);
   }
 
@@ -199,10 +229,20 @@ export class Disjunction extends Connective {
   }
 }
 
+export class Exists implements Expression {
+  constructor(readonly selectQuery: SelectQuery) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('EXISTS(');
+    this.selectQuery.buildSql(sql);
+    sql.append(')');
+  }
+}
+
 export class Join {
   constructor(
     readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
-    readonly joinItem: string,
+    readonly joinItem: SelectQuery | string,
     readonly joinAlias: string,
     readonly onExpression: Expression
   ) {}
@@ -217,10 +257,6 @@ export class OrderBy {
     readonly column: Column,
     readonly descending?: boolean
   ) {}
-}
-
-export interface Expression {
-  buildSql(sql: SqlBuilder): void;
 }
 
 export class SqlBuilder {
@@ -391,12 +427,12 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joinCount}`;
   }
 
-  innerJoin(joinItem: string, joinAlias: string, onExpression: Expression): this {
+  innerJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
 
-  leftJoin(joinItem: string, joinAlias: string, onExpression: Expression): this {
+  leftJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('LEFT JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
@@ -493,6 +529,9 @@ export class SelectQuery extends BaseQuery {
   }
 
   private buildColumns(sql: SqlBuilder): void {
+    if (this.columns.length === 0) {
+      throw new Error('No columns selected');
+    }
     let first = true;
     for (const column of this.columns) {
       if (!first) {
@@ -509,7 +548,13 @@ export class SelectQuery extends BaseQuery {
 
     for (const join of this.joins) {
       sql.append(` ${join.joinType} `);
-      sql.appendIdentifier(join.joinItem);
+      if (join.joinItem instanceof SelectQuery) {
+        sql.append('(');
+        join.joinItem.buildSql(sql);
+        sql.append(')');
+      } else {
+        sql.appendIdentifier(join.joinItem);
+      }
       sql.append(' AS ');
       sql.appendIdentifier(join.joinAlias);
       sql.append(' ON ');
@@ -537,13 +582,7 @@ export class SelectQuery extends BaseQuery {
 
     for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
-      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
-        sql.append('MIN(');
-      }
       sql.appendColumn(orderBy.column);
-      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
-        sql.append(')');
-      }
       if (orderBy.descending) {
         sql.append(' DESC');
       }
@@ -702,4 +741,17 @@ function getColumn(column: Column | string, defaultTableName?: string): Column {
   } else {
     return column;
   }
+}
+
+export function periodToRangeString(period: Period): string | undefined {
+  if (period.start && period.end) {
+    return `[${period.start},${period.end}]`;
+  }
+  if (period.start) {
+    return `[${period.start},]`;
+  }
+  if (period.end) {
+    return `[,${period.end}]`;
+  }
+  return undefined;
 }

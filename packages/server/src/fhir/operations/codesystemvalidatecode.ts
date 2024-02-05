@@ -1,12 +1,12 @@
+import { Operator, allOk, badRequest } from '@medplum/core';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { allOk, badRequest, Operator } from '@medplum/core';
-import { getClient } from '../../database';
-import { Column, Condition, SelectQuery } from '../sql';
-import { sendOutcome } from '../outcomes';
-import { getOperationDefinition } from './definitions';
 import { getAuthenticatedContext } from '../../context';
+import { getDatabasePool } from '../../database';
+import { sendOutcome } from '../outcomes';
+import { Column, Condition, SelectQuery } from '../sql';
+import { getOperationDefinition } from './definitions';
+import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 
 const operation = getOperationDefinition('CodeSystem', 'validate-code');
 
@@ -57,7 +57,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
   );
   query.column('display').where(new Column(codeSystemTable, 'id'), '=', codeSystem.id).where('code', '=', coding.code);
 
-  const db = getClient();
+  const db = getDatabasePool();
   const result = await query.execute(db);
   const output: Record<string, any> = Object.create(null);
   if (result.length) {

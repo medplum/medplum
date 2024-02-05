@@ -1,19 +1,19 @@
 import { Group, Input } from '@mantine/core';
 import { ReactNode, useContext } from 'react';
-import { BackboneElementContext } from '../BackboneElementInput/BackboneElementInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 export interface CheckboxFormSectionProps {
-  htmlFor?: string;
-  title?: string;
-  description?: string;
-  withAsterisk?: boolean;
-  children?: ReactNode;
-  testId?: string;
-  fhirPath?: string;
+  readonly htmlFor?: string;
+  readonly title?: string;
+  readonly description?: string;
+  readonly withAsterisk?: boolean;
+  readonly children?: ReactNode;
+  readonly testId?: string;
+  readonly fhirPath?: string;
 }
 
 export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Element {
-  const { debugMode } = useContext(BackboneElementContext);
+  const { debugMode } = useContext(ElementsContext);
 
   let label: React.ReactNode;
   if (debugMode && props.fhirPath) {

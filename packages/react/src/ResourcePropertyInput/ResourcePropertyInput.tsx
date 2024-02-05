@@ -29,13 +29,15 @@ import { getErrorsForInput } from '../utils/outcomes';
 import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
 
 export interface ResourcePropertyInputProps {
-  property: InternalSchemaElement;
-  name: string;
-  defaultPropertyType?: string | undefined;
-  defaultValue: any;
-  arrayElement?: boolean | undefined;
-  onChange: ((value: any, propName?: string) => void) | undefined;
-  outcome: OperationOutcome | undefined;
+  readonly property: InternalSchemaElement;
+  readonly name: string;
+  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
+  readonly path: string;
+  readonly defaultPropertyType?: string | undefined;
+  readonly defaultValue: any;
+  readonly arrayElement?: boolean | undefined;
+  readonly onChange: ((value: any, propName?: string) => void) | undefined;
+  readonly outcome: OperationOutcome | undefined;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
@@ -58,6 +60,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
       <ResourceArrayInput
         property={property}
         name={name}
+        path={props.path}
         defaultValue={defaultValue}
         indent={indent}
         onChange={onChange}
@@ -84,14 +87,14 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         min={property.min}
         max={property.min}
         binding={property.binding}
-        path={property.path}
+        path={props.path}
       />
     );
   }
 }
 
 export interface ElementDefinitionSelectorProps extends ResourcePropertyInputProps {
-  elementDefinitionTypes: ElementDefinitionType[];
+  readonly elementDefinitionTypes: ElementDefinitionType[];
 }
 
 export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorProps): JSX.Element {
@@ -109,6 +112,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
       <NativeSelect
         style={{ width: '200px' }}
         defaultValue={selectedType.code}
+        data-testid={props.name && props.name + '-selector'}
         onChange={(e) => {
           setSelectedType(
             propertyTypes.find(
@@ -141,17 +145,13 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 }
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
-export type ElementDefinitionTypeInputProps = {
-  name: ResourcePropertyInputProps['name'];
-  path: string;
-  defaultValue: ResourcePropertyInputProps['defaultValue'];
-  onChange: ResourcePropertyInputProps['onChange'];
-  outcome: ResourcePropertyInputProps['outcome'];
-  elementDefinitionType: ElementDefinitionType;
-  min: number;
-  max: number;
-  binding: ElementDefinitionBinding | undefined;
-};
+export interface ElementDefinitionTypeInputProps
+  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'defaultValue' | 'onChange' | 'outcome'> {
+  readonly elementDefinitionType: ElementDefinitionType;
+  readonly min: number;
+  readonly max: number;
+  readonly binding: ElementDefinitionBinding | undefined;
+}
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
   const { name, defaultValue, onChange, outcome, binding, path } = props;
@@ -326,6 +326,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return (
         <BackboneElementInput
           typeName={propertyType}
+          path={properties.path}
           defaultValue={defaultValue}
           onChange={onChange}
           outcome={outcome}

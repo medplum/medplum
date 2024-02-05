@@ -40,7 +40,7 @@ describe('SearchFieldEditor', () => {
       fireEvent.click(screen.getByTestId('overlay-child'));
     });
 
-    expect(onCancel).not.toBeCalled();
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   test('Modal onClose called when overlay clicked while dropdown NOT open', async () => {
@@ -59,6 +59,6 @@ describe('SearchFieldEditor', () => {
       fireEvent.click(screen.getByTestId('overlay-child'));
     });
 
-    expect(onCancel).toBeCalled();
+    expect(onCancel).toHaveBeenCalled();
   });
 });

@@ -16,7 +16,7 @@ import { IconArrowNarrowRight } from '@tabler/icons-react';
 import { useState } from 'react';
 
 interface BundleDisplayProps {
-  bundle: Bundle;
+  readonly bundle: Bundle;
 }
 
 function BundleDisplay(props: BundleDisplayProps): JSX.Element {

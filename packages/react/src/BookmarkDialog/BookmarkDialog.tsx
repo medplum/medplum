@@ -6,12 +6,12 @@ import { useMedplum } from '@medplum/react-hooks';
 import { Form } from '../Form/Form';
 
 interface BookmarkDialogProps {
-  pathname: string;
-  searchParams: URLSearchParams;
-  visible: boolean;
-  onOk: () => void;
-  onCancel: () => void;
-  defaultValue?: string;
+  readonly pathname: string;
+  readonly searchParams: URLSearchParams;
+  readonly visible: boolean;
+  readonly onOk: () => void;
+  readonly onCancel: () => void;
+  readonly defaultValue?: string;
 }
 export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   const medplum = useMedplum();
@@ -61,7 +61,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
 }
 
 interface SelectMenuProps {
-  config: UserConfiguration | undefined;
+  readonly config: UserConfiguration | undefined;
 }
 
 function SelectMenu(props: SelectMenuProps): JSX.Element {

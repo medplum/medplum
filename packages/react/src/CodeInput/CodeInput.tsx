@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {
-  defaultValue?: string;
-  onChange?: (value: string | undefined) => void;
+  readonly defaultValue?: string;
+  readonly onChange?: (value: string | undefined) => void;
 }
 
 export function CodeInput(props: CodeInputProps): JSX.Element {

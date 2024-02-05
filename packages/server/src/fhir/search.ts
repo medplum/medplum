@@ -27,6 +27,7 @@ import {
   SortRule,
   splitN,
   subsetResource,
+  toPeriod,
   toTypedValue,
   validateResourceType,
 } from '@medplum/core';
@@ -41,18 +42,19 @@ import {
 } from '@medplum/fhirtypes';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getClient } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
 import { getFullUrl } from './response';
 import {
   ArraySubquery,
   Column,
+  ColumnType,
   Condition,
   Conjunction,
   Disjunction,
   Expression,
   Negation,
+  periodToRangeString,
   SelectQuery,
   Operator as SQL,
 } from './sql';
@@ -100,10 +102,8 @@ export async function searchImpl<T extends Resource>(
   }
 
   let total = undefined;
-  if (searchRequest.total === 'accurate') {
-    total = await getAccurateCount(repo, searchRequest);
-  } else if (searchRequest.total === 'estimate') {
-    total = await getEstimateCount(repo, searchRequest, rowCount);
+  if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
+    total = await getCount(repo, searchRequest, rowCount);
   }
 
   return {
@@ -126,7 +126,6 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequest
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
   const resourceType = searchRequest.resourceType;
-  const client = getClient();
   const builder = new SelectQuery(resourceType)
     .column({ tableName: resourceType, columnName: 'id' })
     .column({ tableName: resourceType, columnName: 'content' });
@@ -136,15 +135,11 @@ async function getSearchEntries<T extends Resource>(
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(builder, searchRequest);
 
-  if (builder.joins.length > 0) {
-    builder.groupBy({ tableName: resourceType, columnName: 'id' });
-  }
-
   const count = searchRequest.count as number;
   builder.limit(count + 1); // Request one extra to test if there are more results
   builder.offset(searchRequest.offset || 0);
 
-  const rows = await builder.execute(client);
+  const rows = await builder.execute(repo.getDatabaseClient());
   const rowCount = rows.length;
   const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
@@ -396,6 +391,24 @@ function getSearchUrl(searchRequest: SearchRequest): string {
 }
 
 /**
+ * Returns the count for a search request.
+ * This ignores page number and page size.
+ * We always start with an "estimate" count to protect against expensive queries.
+ * If the estimate is less than 100,000, then we run an accurate count.
+ * @param repo - The repository.
+ * @param searchRequest - The search request.
+ * @param rowCount - The number of matching results if found.
+ * @returns The total number of matching results.
+ */
+async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount: number | undefined): Promise<number> {
+  const estimateCount = await getEstimateCount(repo, searchRequest, rowCount);
+  if (estimateCount < 100000) {
+    return getAccurateCount(repo, searchRequest);
+  }
+  return estimateCount;
+}
+
+/**
  * Returns the total number of matching results for a search request.
  * This ignores page number and page size.
  * @param repo - The repository.
@@ -403,7 +416,6 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const client = getClient();
   const builder = new SelectQuery(searchRequest.resourceType);
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, searchRequest.resourceType);
@@ -415,7 +427,7 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
     builder.raw('COUNT("id")::int AS "count"');
   }
 
-  const rows = await builder.execute(client);
+  const rows = await builder.execute(repo.getDatabaseClient());
   return rows[0].count as number;
 }
 
@@ -434,20 +446,15 @@ async function getEstimateCount(
   rowCount: number | undefined
 ): Promise<number> {
   const resourceType = searchRequest.resourceType;
-  const client = getClient();
   const builder = new SelectQuery(resourceType).column('id');
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, searchRequest.resourceType);
   addSearchFilters(builder, searchRequest);
   builder.explain = true;
 
-  if (builder.joins.length > 0) {
-    builder.groupBy({ tableName: resourceType, columnName: 'id' });
-  }
-
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
-  const rows = await builder.execute(client);
+  const rows = await builder.execute(repo.getDatabaseClient());
   let result = 0;
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
@@ -764,7 +771,7 @@ function buildReferenceSearchFilter(details: SearchParameterDetails, values: str
     !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
   );
   if (details.array) {
-    return new Condition(details.columnName, 'ARRAY_CONTAINS', values);
+    return new Condition(details.columnName, 'ARRAY_CONTAINS', values, 'TEXT[]');
   } else if (values.length === 1) {
     return new Condition(details.columnName, '=', values[0]);
   }
@@ -783,6 +790,45 @@ function buildDateSearchFilter(table: string, details: SearchParameterDetails, f
   if (isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${filter.value}`));
   }
+
+  if (table === 'MeasureReport' && details.columnName === 'period') {
+    // Handle special case for "MeasureReport.period"
+    // This is a trial for using "tstzrange" columns for date/time ranges.
+    // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+    // See Postgres Range Types: https://www.postgresql.org/docs/current/rangetypes.html
+    // See FHIR "date" search: https://hl7.org/fhir/r4/search.html#date
+    const column = new Column(table, 'period_range');
+    const period = toPeriod(filter.value);
+    if (!period) {
+      throw new OperationOutcomeError(badRequest(`Invalid period value: ${filter.value}`));
+    }
+    const periodRangeString = periodToRangeString(period);
+    if (!periodRangeString) {
+      throw new OperationOutcomeError(badRequest(`Invalid period value: ${filter.value}`));
+    }
+    switch (filter.operator) {
+      case Operator.EQUALS:
+        return new Condition(column, 'RANGE_OVERLAPS', periodRangeString);
+      case Operator.NOT:
+      case Operator.NOT_EQUALS:
+        return new Negation(new Condition(column, 'RANGE_OVERLAPS', periodRangeString));
+      case Operator.LESS_THAN:
+        return new Condition(column, 'RANGE_OVERLAPS', `(,${period.end})`, ColumnType.TSTZRANGE);
+      case Operator.LESS_THAN_OR_EQUALS:
+        return new Condition(column, 'RANGE_OVERLAPS', `(,${period.end}]`, ColumnType.TSTZRANGE);
+      case Operator.GREATER_THAN:
+        return new Condition(column, 'RANGE_OVERLAPS', `(${period.start},)`, ColumnType.TSTZRANGE);
+      case Operator.GREATER_THAN_OR_EQUALS:
+        return new Condition(column, 'RANGE_OVERLAPS', `[${period.start},)`, ColumnType.TSTZRANGE);
+      case Operator.STARTS_AFTER:
+        return new Condition(column, 'RANGE_STRICTLY_RIGHT_OF', periodRangeString, ColumnType.TSTZRANGE);
+      case Operator.ENDS_BEFORE:
+        return new Condition(column, 'RANGE_STRICTLY_LEFT_OF', periodRangeString, ColumnType.TSTZRANGE);
+      default:
+        throw new Error(`Unknown FHIR operator: ${filter.operator}`);
+    }
+  }
+
   return new Condition(new Column(table, details.columnName), fhirOperatorToSqlOperator(filter.operator), filter.value);
 }
 

@@ -25,7 +25,7 @@ import { getTopicForUser } from '../fhircast/utils';
 import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
 import {
   getAuthTokens,
-  getClient,
+  getClientApplication,
   getClientApplicationMembership,
   getExternalUserInfo,
   revokeLogin,
@@ -202,7 +202,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   let client: ClientApplication | undefined;
   if (clientId) {
     try {
-      client = await getClient(clientId);
+      client = await getClientApplication(clientId);
     } catch (err) {
       sendTokenError(res, 'invalid_request', 'Invalid client');
       return;

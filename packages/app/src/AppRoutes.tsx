@@ -21,12 +21,12 @@ import { CreateClientPage } from './admin/CreateClientPage';
 import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { PatientsPage } from './admin/PatientsPage';
+import { ProjectAdminConfigPage } from './admin/ProjectAdminConfigPage';
 import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
 import { SecretsPage } from './admin/SecretsPage';
 import { SitesPage } from './admin/SitesPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
-import { ProjectAdminConfigPage } from './admin/ProjectAdminConfigPage';
 import { UsersPage } from './admin/UsersPage';
 import { AssaysPage } from './lab/AssaysPage';
 import { PanelsPage } from './lab/PanelsPage';
@@ -40,9 +40,12 @@ import { ChecklistPage } from './resource/ChecklistPage';
 import { DeletePage } from './resource/DeletePage';
 import { DetailsPage } from './resource/DetailsPage';
 import { EditPage } from './resource/EditPage';
+import { FormCreatePage } from './resource/FormCreatePage';
 import { HistoryPage } from './resource/HistoryPage';
+import { JsonCreatePage } from './resource/JsonCreatePage';
 import { JsonPage } from './resource/JsonPage';
 import { PreviewPage } from './resource/PreviewPage';
+import { ProfilesPage } from './resource/ProfilesPage';
 import { QuestionnaireBotsPage } from './resource/QuestionnaireBotsPage';
 import { QuestionnaireResponsePage } from './resource/QuestionnaireResponsePage';
 import { ReferenceRangesPage } from './resource/ReferenceRangesPage';
@@ -51,9 +54,7 @@ import { ResourcePage } from './resource/ResourcePage';
 import { ResourceVersionPage } from './resource/ResourceVersionPage';
 import { SubscriptionsPage } from './resource/SubscriptionsPage';
 import { TimelinePage } from './resource/TimelinePage';
-import { FormCreatePage } from './resource/FormCreatePage';
-import { JsonCreatePage } from './resource/JsonCreatePage';
-import { ProfilesPage } from './resource/ProfilesPage';
+import { ToolsPage } from './resource/ToolsPage';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -96,6 +97,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="form" element={<FormCreatePage />} />
           <Route path="json" element={<JsonCreatePage />} />
         </Route>
+        <Route path="/Agent/:id/tools" element={<ToolsPage />} />
         <Route path="/:resourceType/:id" element={<ResourcePage />}>
           <Route index element={<TimelinePage />} />
           <Route path="apply" element={<ApplyPage />} />

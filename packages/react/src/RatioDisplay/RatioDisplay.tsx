@@ -2,7 +2,7 @@ import { Ratio } from '@medplum/fhirtypes';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 
 export interface RatioDisplayProps {
-  value?: Ratio;
+  readonly value?: Ratio;
 }
 
 export function RatioDisplay(props: RatioDisplayProps): JSX.Element | null {

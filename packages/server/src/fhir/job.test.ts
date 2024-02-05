@@ -54,7 +54,7 @@ describe('Job status', () => {
         callback();
       });
 
-      expect(callback).toBeCalled();
+      expect(callback).toHaveBeenCalled();
 
       const resCompleted = await request(app)
         .get(`/fhir/R4/job/${job.id}/status`)

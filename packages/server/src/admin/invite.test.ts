@@ -638,9 +638,6 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(200);
-    if (!res2.body.user) {
-      console.log(JSON.stringify(res2.body, null, 2));
-    }
     expect(res2.body.user.display).toBe(lowerBobEmail);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);

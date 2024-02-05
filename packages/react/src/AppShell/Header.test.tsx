@@ -132,7 +132,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('My Other Project'));
     });
 
-    expect(window.location.reload).toBeCalled();
+    expect(window.location.reload).toHaveBeenCalled();
   });
 
   test('Add another account', async () => {
@@ -149,7 +149,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Add another account'));
     });
 
-    expect(navigateMock).toBeCalledWith('/signin');
+    expect(navigateMock).toHaveBeenCalledWith('/signin');
   });
 
   test('Account settings', async () => {
@@ -166,7 +166,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Account settings'));
     });
 
-    expect(navigateMock).toBeCalledWith('/Practitioner/123');
+    expect(navigateMock).toHaveBeenCalledWith('/Practitioner/123');
   });
 
   test('Sign out', async () => {
@@ -183,6 +183,24 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Sign out'));
     });
 
-    expect(navigateMock).toBeCalledWith('/signin');
+    expect(navigateMock).toHaveBeenCalledWith('/signin');
+  });
+
+  test('Dark mode', async () => {
+    await setup();
+
+    // Click the user menu to open the menu
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
+    });
+
+    // Click "Dark"
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Dark'));
+    });
+
+    // Get the root <html> element
+    const html = document.querySelector('html');
+    expect(html).toHaveAttribute('data-mantine-color-scheme', 'dark');
   });
 });

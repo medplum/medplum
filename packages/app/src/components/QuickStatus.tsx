@@ -4,9 +4,9 @@ import { useResource } from '@medplum/react';
 import classes from './QuickStatus.module.css';
 
 export interface QuickStatusProps {
-  valueSet: Reference<ValueSet> | ValueSet;
-  defaultValue?: string;
-  onChange: (newStatus: string) => void;
+  readonly valueSet: Reference<ValueSet> | ValueSet;
+  readonly defaultValue?: string;
+  readonly onChange: (newStatus: string) => void;
 }
 
 export function QuickStatus(props: QuickStatusProps): JSX.Element | null {

@@ -4,12 +4,12 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { Component, ErrorInfo, ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 export interface ErrorBoundaryState {
-  error?: Error;
-  lastLocation: string;
+  readonly error?: Error;
+  readonly lastLocation: string;
 }
 
 /**
@@ -17,7 +17,7 @@ export interface ErrorBoundaryState {
  * See: https://reactjs.org/docs/error-boundaries.html
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState;
+  readonly state: ErrorBoundaryState;
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { error, lastLocation: window.location.toString() };
   }
 
-  componentDidUpdate(_prevProps: Readonly<ErrorBoundaryProps>, _prevState: Readonly<ErrorBoundaryState>): void {
+  componentDidUpdate(_prevProps: ErrorBoundaryProps, _prevState: ErrorBoundaryState): void {
     if (window.location.toString() !== this.state.lastLocation) {
       this.setState({
         lastLocation: window.location.toString(),
@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
   }
 
-  shouldComponentUpdate(nextProps: Readonly<ErrorBoundaryProps>, nextState: Readonly<ErrorBoundaryState>): boolean {
+  shouldComponentUpdate(nextProps: ErrorBoundaryProps, nextState: ErrorBoundaryState): boolean {
     if (this.props.children !== nextProps.children) {
       return true;
     }

@@ -1,12 +1,12 @@
+import { Operator, TypedValue, allOk, badRequest, notFound } from '@medplum/core';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
+import { Request, Response } from 'express';
+import { getAuthenticatedContext } from '../../context';
+import { getDatabasePool } from '../../database';
+import { sendOutcome } from '../outcomes';
+import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { Request, Response } from 'express';
-import { Operator, TypedValue, allOk, badRequest, notFound } from '@medplum/core';
-import { Column, Condition, SelectQuery } from '../sql';
-import { sendOutcome } from '../outcomes';
-import { getClient } from '../../database';
-import { getAuthenticatedContext } from '../../context';
 
 const operation = getOperationDefinition('CodeSystem', 'lookup');
 
@@ -69,7 +69,7 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     .where(new Column(codeSystemTable, 'id'), '=', codeSystem.id)
     .where(new Column('Coding', 'code'), '=', coding.code);
 
-  const db = getClient();
+  const db = getDatabasePool();
   const result = await lookup.execute(db);
 
   if (result.length < 1) {

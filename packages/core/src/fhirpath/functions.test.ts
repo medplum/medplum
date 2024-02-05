@@ -146,7 +146,7 @@ describe('FHIRPath functions', () => {
   test('single', () => {
     expect(functions.single(context, [])).toEqual([]);
     expect(functions.single(context, [TYPED_1])).toEqual([TYPED_1]);
-    expect(() => functions.single(context, [TYPED_1, TYPED_2])).toThrowError('Expected input length one for single()');
+    expect(() => functions.single(context, [TYPED_1, TYPED_2])).toThrow('Expected input length one for single()');
   });
 
   test('first', () => {
@@ -175,7 +175,7 @@ describe('FHIRPath functions', () => {
 
   test('skip', () => {
     const nonNumber: Atom = { eval: () => [TYPED_XYZ] };
-    expect(() => functions.skip(context, [TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrowError(
+    expect(() => functions.skip(context, [TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrow(
       'Expected a number for skip(num)'
     );
 
@@ -200,7 +200,7 @@ describe('FHIRPath functions', () => {
 
   test('take', () => {
     const nonNumber: Atom = { eval: () => [TYPED_XYZ] };
-    expect(() => functions.take(context, [TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrowError(
+    expect(() => functions.take(context, [TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrow(
       'Expected a number for take(num)'
     );
 

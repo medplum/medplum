@@ -110,7 +110,7 @@ describe('createMedplumClient', () => {
       await medplumClient.post('Patient', {});
       throw new Error('testing');
     } catch {
-      expect(console.log).toBeCalledWith('Unauthenticated: run `npx medplum login` to sign in');
+      expect(console.log).toHaveBeenCalledWith('Unauthenticated: run `npx medplum login` to sign in');
     }
   });
 });
