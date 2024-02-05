@@ -1,6 +1,6 @@
-import { createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, createReference, loadDataType } from '@medplum/core';
 import { Observation, Patient, Specimen } from '@medplum/fhirtypes';
-import { HomerObservation1, MockClient } from '@medplum/mock';
+import { HomerObservation1, MockClient, USCoreStructureDefinitionList } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
@@ -9,10 +9,10 @@ import { ResourceForm, ResourceFormProps } from './ResourceForm';
 const medplum = new MockClient();
 
 describe('ResourceForm', () => {
-  async function setup(props: ResourceFormProps): Promise<void> {
+  async function setup(props: ResourceFormProps, medplumClient?: MockClient): Promise<void> {
     await act(async () => {
       render(
-        <MedplumProvider medplum={medplum}>
+        <MedplumProvider medplum={medplumClient ?? medplum}>
           <ResourceForm {...props} />
         </MedplumProvider>
       );
@@ -222,5 +222,28 @@ describe('ResourceForm', () => {
     const patient = onSubmit.mock.calls[0][0] as Patient;
     expect(patient.resourceType).toBe('Patient');
     expect(patient.active).toBe(true);
+  });
+
+  test.only('With profileUrl specified', async () => {
+    const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-implantable-device`;
+    const profilesToLoad = [profileUrl, `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`];
+    for (const url of profilesToLoad) {
+      const sd = USCoreStructureDefinitionList.find((sd) => sd.url === url);
+      if (!sd) {
+        fail(`could not find structure definition for ${url}`);
+      }
+      loadDataType(sd, sd.url);
+    }
+
+    const onSubmit = jest.fn();
+
+    const mockedMedplum = new MockClient();
+    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
+      return [profileUrl];
+    });
+    mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
+    await setup({ defaultValue: { resourceType: 'Device' }, profileUrl, onSubmit }, mockedMedplum);
+
+    expect(fakeRequestProfileSchema).toHaveBeenCalledTimes(1);
   });
 });
