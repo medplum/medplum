@@ -499,7 +499,9 @@ describe('FHIRPath parser', () => {
     const patient: Patient = {
       resourceType: 'Patient',
     };
-    const result = evalFhirPathTyped('%previous.exists().not()', [toTypedValue(patient)], { '%previous': toTypedValue({}) });
+    const result = evalFhirPathTyped('%previous.exists().not()', [toTypedValue(patient)], {
+      '%previous': toTypedValue({}),
+    });
 
     expect(result).toEqual([
       {
