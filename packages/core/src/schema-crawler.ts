@@ -88,7 +88,7 @@ export class SchemaCrawler {
     }
   }
 
-  crawlSlice(element: InternalSchemaElement, key: string, slice: SliceDefinition, slicing: SlicingRules): void {
+  crawlSlice(key: string, slice: SliceDefinition, slicing: SlicingRules): void {
     const visitorSlicing = this.prepareSlices(slicing.slices, slicing);
 
     if (!isPopulated(visitorSlicing.slices)) {

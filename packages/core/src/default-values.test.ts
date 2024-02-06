@@ -2,7 +2,12 @@ import { USCoreStructureDefinitionList } from '@medplum/mock';
 import { InternalTypeSchema, getProfile, loadDataType } from './typeschema/types';
 import { isPopulated } from './utils';
 import { Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
-import { DefaultValueVisitor, SLICE_NAME_KEY, applyDefaultValuesToResource } from './default-values';
+import {
+  DefaultValueVisitor,
+  SLICE_NAME_KEY,
+  applyDefaultValuesToResource,
+  getDefaultValuesForNewSliceEntry,
+} from './default-values';
 import { HTTP_HL7_ORG } from './constants';
 import USOccipitalFrontal from './__test__/StructureDefinition-head-occipital-frontal-circumference-percentile.json';
 import { SchemaCrawler } from './schema-crawler';
@@ -220,12 +225,36 @@ describe('applyDefaultValues', () => {
           fail(`Expected ${sliceName} slice to be defined`);
         }
 
-        const modifiedSlice = { ...slice, min: 1, max: 1 };
-
         const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: sliceName }], slicedElement.path, 'element');
         const crawler = new SchemaCrawler(schema, visitor);
-        crawler.crawlSlice(slicedElement, key, modifiedSlice, slicing);
+        crawler.crawlSlice(key, slice, slicing);
         const result = visitor.getDefaultValue();
+        expect(result).toEqual([
+          {
+            url: raceExtensionUrl,
+          },
+        ]);
+      });
+
+      test('new race extension entry', () => {
+        const key = 'extension';
+        const slicedElement = schema.elements[key];
+        if (!isPopulated(slicedElement)) {
+          fail(`Expected ${key} element to be defined`);
+        }
+
+        const slicing = slicedElement.slicing;
+        if (!isPopulated(slicing)) {
+          fail(`Expected slicing to exist on element`);
+        }
+
+        const sliceName = 'race';
+        const slice = slicedElement.slicing?.slices.find((s) => s.name === sliceName);
+        if (!isPopulated(slice)) {
+          fail(`Expected ${sliceName} slice to be defined`);
+        }
+
+        const result = getDefaultValuesForNewSliceEntry(key, slice, slicing, schema);
         expect(result).toEqual([
           {
             url: raceExtensionUrl,

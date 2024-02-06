@@ -1,5 +1,11 @@
 import { Resource } from '@medplum/fhirtypes';
-import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SliceDiscriminator } from './typeschema/types';
+import {
+  InternalSchemaElement,
+  InternalTypeSchema,
+  SliceDefinition,
+  SliceDiscriminator,
+  SlicingRules,
+} from './typeschema/types';
 import { arrayify, capitalize, deepClone, isObject, isPopulated } from './utils';
 import { getNestedProperty } from './typeschema/crawler';
 import { TypedValue } from './types';
@@ -25,6 +31,18 @@ export function applyDefaultValuesToResource(
   const visitor = new DefaultValueVisitor(resource, resource.resourceType, 'resource');
   const crawler = new SchemaCrawler(schema, visitor);
   crawler.crawlResource(debugMode);
+  return visitor.getDefaultValue();
+}
+
+export function getDefaultValuesForNewSliceEntry(
+  key: string,
+  slice: SliceDefinition,
+  slicing: SlicingRules,
+  schema: InternalTypeSchema
+): Resource {
+  const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: slice.name }], slice.path, 'element');
+  const crawler = new SchemaCrawler(schema, visitor);
+  crawler.crawlSlice(key, slice, slicing);
   return visitor.getDefaultValue();
 }
 
@@ -182,21 +200,19 @@ export class DefaultValueVisitor implements SchemaVisitor {
 
       const matchingItems: any[] = [];
       for (const arrayItem of elementValue) {
-        const sliceName = getValueSliceName(
-          arrayItem,
-          [slice],
-          slicing.discriminator,
-          slice.typeSchema,
-          this.schema.url
-        );
+        let sliceName: string | undefined = arrayItem[SLICE_NAME_KEY];
+
+        if (!sliceName) {
+          sliceName = getValueSliceName(arrayItem, [slice], slicing.discriminator, slice.typeSchema, this.schema.url);
+        }
+
         if (sliceName === slice.name) {
           matchingItems.push(arrayItem);
         }
       }
 
       // Make sure at least slice.min values exist
-      if (matchingItems.length < slice.min) {
-        // Slices of simple types not very well supported
+      for (let i = matchingItems.length; i < slice.min; i++) {
         if (isComplexTypeCode(slice.type[0].code)) {
           const emptySliceValue = Object.create(null);
           elementValue.push(emptySliceValue);
@@ -265,10 +281,6 @@ function getValueSliceName(
 ): string | undefined {
   if (!value) {
     return undefined;
-  }
-
-  if (isPopulated(value[SLICE_NAME_KEY])) {
-    return value[SLICE_NAME_KEY] as string;
   }
 
   for (const slice of slices) {
