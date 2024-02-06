@@ -6,6 +6,7 @@ import {
   DefaultValueVisitor,
   SLICE_NAME_KEY,
   applyDefaultValuesToResource,
+  getDefaultValuesForElement,
   getDefaultValuesForNewSliceEntry,
 } from './default-values';
 import { HTTP_HL7_ORG } from './constants';
@@ -163,6 +164,35 @@ describe('applyDefaultValues', () => {
         crawler.crawlElement(element, key, rootPath);
         const result = visitor.getDefaultValue();
         expect(result).toEqual({ valueQuantity: { code: 'mm[Hg]', system: 'http://unitsofmeasure.org' } });
+      });
+
+      test('value for systolic', () => {
+        const slicedKey = 'component';
+        const slicedElement = schema.elements[slicedKey];
+        if (!isPopulated(slicedElement)) {
+          fail(`Expected ${slicedKey} element to be defined`);
+        }
+
+        const slicing = slicedElement.slicing;
+        if (!isPopulated(slicing)) {
+          fail(`Expected slicing to exist on element`);
+        }
+
+        const sliceName = 'systolic';
+        const slice = slicedElement.slicing?.slices.find((s) => s.name === sliceName);
+        if (!isPopulated(slice)) {
+          fail(`Expected ${sliceName} slice to be defined`);
+        }
+
+        // const rootPath = 'Observation.component';
+        const key = 'value[x]';
+        const element = slice.elements[key];
+
+        // const profileUrl = slice.type?.[0]?.profile?.[0];
+        // const typeSchema = getProfile(profileUrl);
+
+        const result = getDefaultValuesForElement(undefined, key, element, slice.elements, schema);
+        expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });
       });
     });
   });

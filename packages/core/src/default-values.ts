@@ -6,7 +6,7 @@ import {
   SliceDiscriminator,
   SlicingRules,
 } from './typeschema/types';
-import { arrayify, capitalize, deepClone, isObject, isPopulated } from './utils';
+import { arrayify, capitalize, deepClone, isObject, isPopulated, splitOnceRight } from './utils';
 import { getNestedProperty } from './typeschema/crawler';
 import { TypedValue } from './types';
 import { matchDiscriminant } from './typeschema/validation';
@@ -28,7 +28,7 @@ export function applyDefaultValuesToResource(
   options?: { debug?: boolean }
 ): Resource {
   const debugMode = Boolean(options?.debug);
-  const visitor = new DefaultValueVisitor(resource, resource.resourceType, 'resource');
+  const visitor = new DefaultValueVisitor(resource, resource.resourceType, 'resource', options?.debug);
   const crawler = new SchemaCrawler(schema, visitor);
   crawler.crawlResource(debugMode);
   return visitor.getDefaultValue();
@@ -38,12 +38,35 @@ export function getDefaultValuesForNewSliceEntry(
   key: string,
   slice: SliceDefinition,
   slicing: SlicingRules,
-  schema: InternalTypeSchema
+  schema: InternalTypeSchema,
+  options?: { debug?: boolean }
 ): Resource {
-  const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: slice.name }], slice.path, 'element');
+  const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: slice.name }], slice.path, 'element', options?.debug);
   const crawler = new SchemaCrawler(schema, visitor);
   crawler.crawlSlice(key, slice, slicing);
   return visitor.getDefaultValue();
+}
+
+export function getDefaultValuesForElement(
+  existingValue: any,
+  key: string,
+  element: InternalSchemaElement,
+  elements: Record<string, InternalSchemaElement>,
+  schema: InternalTypeSchema,
+  options?: { debug?: boolean }
+): any {
+  const inputValue: object = existingValue ?? Object.create(null);
+
+  const container = Object.create(null);
+  setValueAtKey(container, inputValue, key, element);
+
+  const [containerPath, _rest] = splitOnceRight(element.path, '.');
+  const visitor = new DefaultValueVisitor(container, containerPath, 'element', options?.debug);
+  const crawler = new SchemaCrawler(schema, visitor, elements);
+  crawler.crawlElement(element, key, containerPath);
+  const modifiedContainer = visitor.getDefaultValue();
+
+  return getValueAtKey(modifiedContainer, key, element, elements);
 }
 
 type ValueContext = {
@@ -58,11 +81,12 @@ export class DefaultValueVisitor implements SchemaVisitor {
   private readonly schemaStack: InternalTypeSchema[];
   private valueStack: ValueContext[];
 
-  private debugMode: boolean = true;
+  private debugMode: boolean;
 
-  constructor(rootValue: any, path: string, type: ValueContext['type']) {
+  constructor(rootValue: any, path: string, type: ValueContext['type'], debug?: boolean) {
     this.schemaStack = [];
     this.valueStack = [];
+    this.debugMode = Boolean(debug);
 
     this.setRootValue(rootValue, path, type);
   }
@@ -134,7 +158,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
             }
           }
         }
-        applyFixedOrPatternValue(parent, key, element, elementsContext.elements, true);
+        applyFixedOrPatternValue(parent, key, element, elementsContext.elements, this.debugMode);
 
         const elementValue = getValueAtKey(parent, key, element, elementsContext.elements);
         if (elementValue !== undefined) {
@@ -481,6 +505,6 @@ function applyPattern(existingValue: any, pattern: any, debug: ConsoleDebug): an
   }
 }
 
-function isComplexTypeCode(code: string): boolean {
+export function isComplexTypeCode(code: string): boolean {
   return code.startsWith(code[0].toUpperCase());
 }

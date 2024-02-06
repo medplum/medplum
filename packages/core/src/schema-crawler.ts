@@ -36,17 +36,19 @@ export interface SchemaVisitor {
 }
 
 export class SchemaCrawler {
-  private readonly rootSchema: InternalTypeSchema;
+  private readonly rootSchema: InternalTypeSchema & { type: string };
   private readonly visitor: SchemaVisitor;
-  private readonly rootPath: string;
   private readonly elementsContextStack: ElementsContextType[];
 
-  private schema: InternalTypeSchema;
   private debugMode: boolean = false;
   private sliceAllowList: SliceDefinition[] | undefined;
 
   constructor(schema: InternalTypeSchema, visitor: SchemaVisitor, elements?: InternalTypeSchema['elements']) {
-    this.rootSchema = schema;
+    if (schema.type === undefined) {
+      throw new Error('schema must specify a type');
+    }
+
+    this.rootSchema = schema as InternalTypeSchema & { type: string };
     this.elementsContextStack = [
       buildElementsContext({
         parentContext: undefined,
@@ -56,14 +58,12 @@ export class SchemaCrawler {
         profileUrl: this.rootSchema.name === this.rootSchema.type ? undefined : this.rootSchema.url,
       }),
     ];
-    this.schema = schema;
     this.visitor = visitor;
-    this.rootPath = schema.type as string;
   }
 
   private debug(...data: any[]): void {
     if (this.debugMode) {
-      console.debug(`[${this.schema.name}]`, ...data);
+      console.debug(`[${this.rootSchema.name}]`, ...data);
     }
   }
 
@@ -71,7 +71,7 @@ export class SchemaCrawler {
     return this.elementsContextStack[this.elementsContextStack.length - 1];
   }
 
-  crawlElement(element: InternalSchemaElement, key: string, path: string): void {
+  crawlElement(element: InternalSchemaElement, key: string, _path: string): void {
     if (this.visitor.onEnterSchema) {
       this.visitor.onEnterSchema(this.rootSchema);
     }
@@ -82,7 +82,8 @@ export class SchemaCrawler {
       })
     );
 
-    this.crawlElementsImpl(allowedElements, path);
+    this.crawlElementsImpl(allowedElements, _path);
+
     if (this.visitor.onExitSchema) {
       this.visitor.onExitSchema();
     }
@@ -100,7 +101,8 @@ export class SchemaCrawler {
     }
 
     this.sliceAllowList = [slice];
-    this.crawlSliceImpl(visitorSlicing.slices[0], this.rootPath + '.' + key, visitorSlicing);
+
+    this.crawlSliceImpl(visitorSlicing.slices[0], slice.path, visitorSlicing);
     this.sliceAllowList = undefined;
 
     if (this.visitor.onExitSchema) {
@@ -119,7 +121,7 @@ export class SchemaCrawler {
       this.visitor.onEnterResource(this.rootSchema);
     }
 
-    this.crawlElementsImpl(this.rootSchema.elements, this.rootPath);
+    this.crawlElementsImpl(this.rootSchema.elements, this.rootSchema.type);
 
     if (this.visitor.onExitResource) {
       this.visitor.onExitResource();
