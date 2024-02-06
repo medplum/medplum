@@ -88,7 +88,7 @@ export class MockClient extends MedplumClient {
   readonly client: MockFetchClient;
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
-  private agentAvailable: boolean = true;
+  private agentAvailable = true;
   private readonly profile: ReturnType<MedplumClient['getProfile']>;
 
   constructor(clientOptions?: MockClientOptions) {

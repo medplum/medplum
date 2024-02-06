@@ -16,6 +16,17 @@ export function mockFetch(
   });
 }
 
+export function mockFetchWithStatus(
+  onFetch: (url: string, options?: any) => [number, any],
+  contentType = ContentType.FHIR_JSON
+): FetchLike & jest.Mock {
+  return jest.fn((url: string, options?: any) => {
+    const [status, response] = onFetch(url, options);
+    const responseStatus = isOperationOutcome(response) ? getStatus(response) : status;
+    return Promise.resolve(mockFetchResponse(responseStatus, response, { 'content-type': contentType }));
+  });
+}
+
 export function mockFetchResponse(status: number, body: any, headers?: Record<string, string>): Response {
   const headersMap = new Map<string, string>();
   if (headers) {

@@ -13,7 +13,12 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@medplum/core": ["../../packages/core/src"],
+      "@medplum/react": ["../../packages/react/src"],
+      "@medplum/react-hooks": ["../../packages/react-hooks/src"],
+    },
   },
-  "include": ["src"]
+  "include": ["src"],
 }
