@@ -297,8 +297,8 @@ function addFilters(
       }
       let properties = codeSystem.property?.filter((p) => p.uri === parentProperty || p.uri === childProperty);
       if (!properties) {
-        // Implicit 'parent' property for hierarchical CodeSystems
-        properties = [{ code: 'parent', uri: parentProperty, type: 'code' }];
+        // Implicit parent property for hierarchical CodeSystems
+        properties = [{ code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' }];
       }
 
       for (const property of properties) {
