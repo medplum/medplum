@@ -148,9 +148,15 @@ export class SchemaCrawler {
   }
 
   private crawlElementsImpl(elements: InternalTypeSchema['elements'], path: string): void {
-    const sortedElements = Object.entries(elements);
-    sortedElements.sort();
-    const elementTree = createElementTree(sortedElements);
+    let elementEntries = Object.entries(elements);
+    if (false) {
+      elementEntries = elementEntries.filter(
+        ([key]) =>
+          this.elementsContextStack.length > 1 || ['code', 'category', 'component'].some((s) => key.startsWith(s))
+      );
+    }
+    elementEntries.sort();
+    const elementTree = createElementTree(elementEntries);
     for (const node of elementTree) {
       this.crawlElementNode(node, path);
     }
@@ -161,8 +167,9 @@ export class SchemaCrawler {
   }
 
   private crawlElementNode(node: ElementNode, path: string): void {
+    const nodePath = path + '.' + node.key;
     if (this.visitor.onEnterElement) {
-      this.visitor.onEnterElement(path + '.' + node.key, node.element, this.elementsContext);
+      this.visitor.onEnterElement(nodePath, node.element, this.elementsContext);
     }
 
     for (const child of node.children) {
@@ -170,11 +177,11 @@ export class SchemaCrawler {
     }
 
     if (isPopulated(node.element?.slicing?.slices)) {
-      this.crawlSlicingImpl(node.element.slicing, path);
+      this.crawlSlicingImpl(node.element.slicing, nodePath);
     }
 
     if (this.visitor.onExitElement) {
-      this.visitor.onExitElement(path + '.' + node.key, node.element, this.elementsContext);
+      this.visitor.onExitElement(nodePath, node.element, this.elementsContext);
     }
   }
 
@@ -441,4 +448,8 @@ function createElementTree(elements: [string, InternalSchemaElement][]): Element
   // return rootNodes.filter((rootNode) => {
   // return !strings.some((str) => str !== rootNode.element && rootNode.element.startsWith(str));
   // });
+}
+
+function stringBeginsWithOne(str: string, strings: string[]): boolean {
+  return strings.some((s) => str.startsWith(s));
 }

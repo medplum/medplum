@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-for-of */
 /* eslint-disable no-debugger */
 import { Resource } from '@medplum/fhirtypes';
 import {
@@ -20,6 +21,8 @@ import {
 } from './schema-crawler';
 
 type ConsoleDebug = typeof console.debug;
+
+export const SLICE_NAME_KEY = '__sliceName';
 
 export function applyDefaultValuesToResource(
   resource: Resource,
@@ -111,16 +114,9 @@ export class DefaultValueVisitor implements SchemaVisitor {
 
   onExitSchema(): void {
     this.schemaStack.pop();
-    // console.assert(this.schemaStack.length === 0, 'Expected schema stack to be empty when exiting resource');
   }
 
-  onEnterResource(): void {
-    this.valueStack.push({
-      type: 'resource',
-      path: this.inputRootValue.resourceType,
-      values: [this.outputRootValue],
-    });
-  }
+  // onEnterResource(): void {}
 
   onExitResource(): void {
     const valueContext = this.valueStack.pop();
@@ -129,6 +125,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
     }
     this.debug('onExitResource', JSON.stringify(valueContext.values, undefined, 2));
     console.assert(this.valueStack.length === 0, 'Expected valueStack to be empty when exiting resource');
+    // console.assert(this.schemaStack.length === 0, 'Expected schema stack to be empty when exiting resource');
   }
 
   onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
@@ -142,53 +139,48 @@ export class DefaultValueVisitor implements SchemaVisitor {
     // eld-7	Rule	Pattern may only be specified if there is one type
     const canSkip = element.type.length > 1;
 
-    const elementType = element.type[0].code;
-    const elements = elementsContext.elements;
-    const isComplex = isComplexTypeCode(elementType);
-
     const elementValues: any[] = [];
 
-    if (path === 'Patient.extension.url') {
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    if (element.min > 0 || element.fixed || element.pattern) {
       debugger;
     }
-
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < parentValues.length; i++) {
       const parentValue = parentValues[i];
 
       if (parentValue === undefined) {
-        elementValues.push(undefined);
         continue;
       }
 
       if (canSkip) {
-        elementValues.push(getValueAtKey(parentValue, key, element, elementsContext.elements));
+        // elementValues.push(getValueAtKey(parentValue, key, element, elementsContext.elements));
         continue;
       }
 
-      let parentArray: any[];
-      if (Array.isArray(parentValue)) {
-        parentArray = parentValue;
-      } else {
-        parentArray = [parentValue];
-      }
-
+      const parentArray: any[] = Array.isArray(parentValue) ? parentValue : [parentValue];
       for (const parent of parentArray) {
         if (key.includes('.')) {
+          throw new Error('key should not be nested');
           // check intermediate value for existence. If it doesn't exist, i.e. (=== undefined), then fixed/pattern
           // values for nested elements should not be applied
           const [directParentKey, _lastKeyPart] = splitOnceRight(key, '.');
-          const directParentElement = elements[directParentKey];
-          const directParentValue = getValueAtKey(parent, directParentKey, directParentElement, elements);
+          const directParentElement = elementsContext.elements[directParentKey];
+          const directParentValue = getValueAtKey(
+            parent,
+            directParentKey,
+            directParentElement,
+            elementsContext.elements
+          );
           if (directParentValue === undefined) {
             continue;
           }
         }
 
-        const existingValue = getValueAtKey(parent, key, element, elements);
+        const existingValue = getValueAtKey(parent, key, element, elementsContext.elements);
 
         if (element.min > 0 && existingValue === undefined) {
-          if (isComplex) {
+          const elementType = element.type[0].code;
+          if (isComplexTypeCode(elementType)) {
             if (element.isArray) {
               setValueAtKey(parent, [Object.create(null)], key, element);
             } else {
@@ -200,20 +192,25 @@ export class DefaultValueVisitor implements SchemaVisitor {
             }
           }
         }
+        applyFixedOrPatternValue(parent, key, element, elementsContext.elements, true);
 
-        applyFixedOrPatternValue(parentValue, key, element, elements, true);
+        const elementValue = getValueAtKey(parent, key, element, elementsContext.elements);
+        if (elementValue !== undefined) {
+          elementValues.push(elementValue);
+        }
       }
+      // applyFixedOrPatternValue(parentValue, key, element, elements, true);
 
-      if (Array.isArray(parentValue)) {
-        elementValues.push(parentValue.map((v) => getValueAtKey(v, key, element, elementsContext.elements)));
-      } else {
-        elementValues.push(getValueAtKey(parentValue, key, element, elementsContext.elements));
-      }
+      // if (Array.isArray(parentValue)) {
+      // elementValues.push(parentValue.map((v) => getValueAtKey(v, key, element, elementsContext.elements)));
+      // } else {
+      // elementValues.push(getValueAtKey(parentValue, key, element, elementsContext.elements));
+      // }
     }
 
-    if (elementValues.length !== this.value.values.length) {
-      debugger;
-    }
+    // if (elementValues.length !== this.value.values.length) {
+    //   debugger;
+    // }
     this.valueStack.push({
       type: 'element',
       path: path,
@@ -221,27 +218,52 @@ export class DefaultValueVisitor implements SchemaVisitor {
     });
   }
 
-  onExitElement(path: string, _element: InternalSchemaElement, _elementsContext: ElementsContextType): void {
+  onExitElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
     const elementValueContext = this.valueStack.pop();
     if (!elementValueContext) {
       throw new Error('Expected value context to exist when exiting element');
     }
     this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.values)}`);
 
-    /*
-    // TODO: remove all this for now?
-    for (let valueIndex = 0; valueIndex < elementValueContext.values.length; valueIndex++) {
-      const elementValue = elementValueContext.values[valueIndex];
+    for (let parentIndex = 0; parentIndex < this.value.values.length; parentIndex++) {
+      const parentValue = this.value.values[parentIndex];
+      const elementValue = getValueAtKey(
+        parentValue,
+        getPathDifference(this.value.path, path),
+        element,
+        elementsContext.elements
+      );
+
       if (Array.isArray(elementValue)) {
+        // remove empty items
         for (let i = elementValue.length - 1; i >= 0; i--) {
           const value = elementValue[i];
-          // for (const value of elementValue) {
-          if (value !== undefined && !isPopulated(value)) {
-            this.debug(`empty value found in array`, JSON.stringify(value));
+          if (!isPopulated(value)) {
+            this.debug(`empty value removed from array: ${JSON.stringify(value)}`);
             elementValue.splice(i, 1);
           }
         }
-      } else if (elementValue !== undefined && !isPopulated(elementValue)) {
+      }
+
+      if (elementValue !== undefined && !isPopulated(elementValue)) {
+        setValueAtKey(parentValue, undefined, getPathDifference(this.value.path, path), element);
+      }
+    }
+    /*
+    for (let valueIndex = 0; valueIndex < elementValueContext.values.length; valueIndex++) {
+      const elementValue = elementValueContext.values[valueIndex];
+      if (Array.isArray(elementValue)) {
+        // remove empty items
+        for (let i = elementValue.length - 1; i >= 0; i--) {
+          const value = elementValue[i];
+          if (!isPopulated(value)) {
+            this.debug(`empty value removed from array: ${JSON.stringify(value)}`);
+            elementValue.splice(i, 1);
+          }
+        }
+      }
+
+      if (elementValue !== undefined && !isPopulated(elementValue)) {
         const parentValue = this.value.values[valueIndex];
         const fromParent = getValueAtKey(
           parentValue,
@@ -255,7 +277,8 @@ export class DefaultValueVisitor implements SchemaVisitor {
         );
         setValueAtKey(parentValue, undefined, getPathDifference(this.value.path, path), _element);
       }
-    }*/
+    }
+    */
   }
 
   onEnterSlicing(path: string, slicing: VisitorSlicingRules): void {
@@ -333,7 +356,16 @@ export class DefaultValueVisitor implements SchemaVisitor {
       throw new Error('Expected slice context to exist on exit');
     }
 
-    this.debug('onExitSlice', sliceCtx.slice.name, JSON.stringify(sliceValueContext.values));
+    for (const sliceValueArray of sliceValueContext.values) {
+      for (let i = sliceValueArray.length - 1; i >= 0; i--) {
+        const sliceValue = sliceValueArray[i];
+        if (SLICE_NAME_KEY in sliceValue) {
+          delete sliceValue[SLICE_NAME_KEY];
+        }
+      }
+    }
+
+    this.debug(`onExitSlice[${sliceCtx.slice.name}]`, sliceCtx.slice.name, JSON.stringify(sliceValueContext.values));
     this.debug('parentValue', JSON.stringify(this.value.values));
   }
 
@@ -370,6 +402,10 @@ function getValueSliceName(
 ): string | undefined {
   if (!value) {
     return undefined;
+  }
+
+  if (isPopulated(value[SLICE_NAME_KEY])) {
+    return value[SLICE_NAME_KEY] as string;
   }
 
   for (const slice of slices) {

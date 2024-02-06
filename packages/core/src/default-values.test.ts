@@ -2,7 +2,7 @@ import { USCoreStructureDefinitionList } from '@medplum/mock';
 import { InternalTypeSchema, getProfile, loadDataType } from './typeschema/types';
 import { isPopulated } from './utils';
 import { Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
-import { DefaultValueVisitor, applyDefaultValuesToResource } from './default-values';
+import { DefaultValueVisitor, SLICE_NAME_KEY, applyDefaultValuesToResource } from './default-values';
 import { HTTP_HL7_ORG } from './constants';
 import USOccipitalFrontal from './__test__/StructureDefinition-head-occipital-frontal-circumference-percentile.json';
 import { SchemaCrawler } from './schema-crawler';
@@ -45,7 +45,6 @@ describe('applyDefaultValues', () => {
             },
           ],
         },
-        subject: undefined,
       });
     });
   });
@@ -130,11 +129,10 @@ describe('applyDefaultValues', () => {
             },
           },
         ],
-        subject: undefined,
       });
     });
     describe('obtain required nested values on optional element', () => {
-      test.only('value for systolic', () => {
+      test('value for systolic', () => {
         const slicedKey = 'component';
         const slicedElement = schema.elements[slicedKey];
         if (!isPopulated(slicedElement)) {
@@ -200,8 +198,6 @@ describe('applyDefaultValues', () => {
 
       expect(withDefaults).toEqual({
         resourceType: 'Patient',
-        identifier: [],
-        name: [],
       });
     });
 
@@ -226,7 +222,7 @@ describe('applyDefaultValues', () => {
 
         const modifiedSlice = { ...slice, min: 1, max: 1 };
 
-        const visitor = new DefaultValueVisitor([], slicedElement.path, 'element');
+        const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: sliceName }], slicedElement.path, 'element');
         const crawler = new SchemaCrawler(schema, visitor);
         crawler.crawlSlice(slicedElement, key, modifiedSlice, slicing);
         const result = visitor.getDefaultValue();
