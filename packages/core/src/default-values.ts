@@ -1,14 +1,6 @@
-/* eslint-disable @typescript-eslint/prefer-for-of */
-/* eslint-disable no-debugger */
 import { Resource } from '@medplum/fhirtypes';
-import {
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SliceDefinition,
-  SliceDiscriminator,
-  SlicingRules,
-} from './typeschema/types';
-import { arrayify, capitalize, deepClone, isObject, isPopulated, splitOnceRight } from './utils';
+import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SliceDiscriminator } from './typeschema/types';
+import { arrayify, capitalize, deepClone, isObject, isPopulated } from './utils';
 import { getNestedProperty } from './typeschema/crawler';
 import { TypedValue } from './types';
 import { matchDiscriminant } from './typeschema/validation';
@@ -36,18 +28,6 @@ export function applyDefaultValuesToResource(
   return visitor.getDefaultValue();
 }
 
-type SliceValue = any;
-
-type SlicingContext = {
-  path: string;
-  slicing: SlicingRules;
-  valuesBySliceName: Record<string, SliceValue>;
-};
-
-type SliceContext = {
-  slice: VisitorSliceDefinition;
-};
-
 type ValueContext = {
   type: 'resource' | 'element' | 'slice';
   path: string;
@@ -55,21 +35,16 @@ type ValueContext = {
 };
 
 export class DefaultValueVisitor implements SchemaVisitor {
-  private inputRootValue: any;
   private outputRootValue: any;
 
   private readonly schemaStack: InternalTypeSchema[];
   private valueStack: ValueContext[];
-  private readonly slicingContextStack: SlicingContext[];
-  private readonly sliceContextStack: SliceContext[];
 
   private debugMode: boolean = true;
 
   constructor(rootValue: any, path: string, type: ValueContext['type']) {
     this.schemaStack = [];
     this.valueStack = [];
-    this.slicingContextStack = [];
-    this.sliceContextStack = [];
 
     this.setRootValue(rootValue, path, type);
   }
@@ -77,14 +52,6 @@ export class DefaultValueVisitor implements SchemaVisitor {
   private get schema(): InternalTypeSchema {
     return this.schemaStack[this.schemaStack.length - 1];
   }
-
-  // private get slicingContext(): SlicingContext {
-  // return this.slicingContextStack[this.slicingContextStack.length - 1];
-  // }
-
-  // private get sliceContext(): SliceContext {
-  // return this.sliceContextStack[this.sliceContextStack.length - 1];
-  // }
 
   private get value(): ValueContext {
     return this.valueStack[this.valueStack.length - 1];
@@ -97,7 +64,6 @@ export class DefaultValueVisitor implements SchemaVisitor {
   }
 
   setRootValue(rootValue: any, rootPath: string, rootType: ValueContext['type']): void {
-    this.inputRootValue = rootValue;
     this.outputRootValue = deepClone(rootValue);
     this.valueStack = [
       {
@@ -116,78 +82,36 @@ export class DefaultValueVisitor implements SchemaVisitor {
     this.schemaStack.pop();
   }
 
-  // onEnterResource(): void {}
-
-  onExitResource(): void {
-    const valueContext = this.valueStack.pop();
-    if (!valueContext) {
-      throw new Error('Expected valueContext to exist when exiting resource');
-    }
-    this.debug('onExitResource', JSON.stringify(valueContext.values, undefined, 2));
-    console.assert(this.valueStack.length === 0, 'Expected valueStack to be empty when exiting resource');
-    // console.assert(this.schemaStack.length === 0, 'Expected schema stack to be empty when exiting resource');
-  }
-
   onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
     this.debug(`onEnterElement ${path} ${element.min > 0 ? `min: ${element.min}` : ''}`);
 
     const parentValues = this.value.values;
     const parentPath = this.value.path;
     const key = getPathDifference(parentPath, path);
-
-    // eld-6	Rule	Fixed value may only be specified if there is one type
-    // eld-7	Rule	Pattern may only be specified if there is one type
-    const canSkip = element.type.length > 1;
-
     const elementValues: any[] = [];
 
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
-    if (element.min > 0 || element.fixed || element.pattern) {
-      debugger;
-    }
-    for (let i = 0; i < parentValues.length; i++) {
-      const parentValue = parentValues[i];
-
+    for (const parentValue of parentValues) {
       if (parentValue === undefined) {
         continue;
       }
 
-      if (canSkip) {
-        // elementValues.push(getValueAtKey(parentValue, key, element, elementsContext.elements));
+      // eld-6: Fixed value may only be specified if there is one type
+      // eld-7: Pattern may only be specified if there is one type
+      if (element.type.length > 1) {
+        if (element.fixed || element.pattern) {
+          this.debug(`skipping fixed/pattern for ${path} since the element has multiple types`);
+        }
         continue;
       }
 
       const parentArray: any[] = Array.isArray(parentValue) ? parentValue : [parentValue];
       for (const parent of parentArray) {
-        if (key.includes('.')) {
-          throw new Error('key should not be nested');
-          // check intermediate value for existence. If it doesn't exist, i.e. (=== undefined), then fixed/pattern
-          // values for nested elements should not be applied
-          const [directParentKey, _lastKeyPart] = splitOnceRight(key, '.');
-          const directParentElement = elementsContext.elements[directParentKey];
-          const directParentValue = getValueAtKey(
-            parent,
-            directParentKey,
-            directParentElement,
-            elementsContext.elements
-          );
-          if (directParentValue === undefined) {
-            continue;
-          }
-        }
-
         const existingValue = getValueAtKey(parent, key, element, elementsContext.elements);
-
         if (element.min > 0 && existingValue === undefined) {
-          const elementType = element.type[0].code;
-          if (isComplexTypeCode(elementType)) {
+          if (isComplexTypeCode(element.type[0].code)) {
             if (element.isArray) {
               setValueAtKey(parent, [Object.create(null)], key, element);
             } else {
-              if (element.min > 1) {
-                throw new Error('Element min count greater than 1 for non-array element.');
-              }
-              this.debug(`created empty value for ${key}`);
               setValueAtKey(parent, Object.create(null), key, element);
             }
           }
@@ -199,18 +123,8 @@ export class DefaultValueVisitor implements SchemaVisitor {
           elementValues.push(elementValue);
         }
       }
-      // applyFixedOrPatternValue(parentValue, key, element, elements, true);
-
-      // if (Array.isArray(parentValue)) {
-      // elementValues.push(parentValue.map((v) => getValueAtKey(v, key, element, elementsContext.elements)));
-      // } else {
-      // elementValues.push(getValueAtKey(parentValue, key, element, elementsContext.elements));
-      // }
     }
 
-    // if (elementValues.length !== this.value.values.length) {
-    //   debugger;
-    // }
     this.valueStack.push({
       type: 'element',
       path: path,
@@ -225,8 +139,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
     }
     this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.values)}`);
 
-    for (let parentIndex = 0; parentIndex < this.value.values.length; parentIndex++) {
-      const parentValue = this.value.values[parentIndex];
+    for (const parentValue of this.value.values) {
       const elementValue = getValueAtKey(
         parentValue,
         getPathDifference(this.value.path, path),
@@ -234,8 +147,8 @@ export class DefaultValueVisitor implements SchemaVisitor {
         elementsContext.elements
       );
 
+      // remove empty items from arrays
       if (Array.isArray(elementValue)) {
-        // remove empty items
         for (let i = elementValue.length - 1; i >= 0; i--) {
           const value = elementValue[i];
           if (!isPopulated(value)) {
@@ -245,54 +158,10 @@ export class DefaultValueVisitor implements SchemaVisitor {
         }
       }
 
+      // remove empty items from parent
       if (elementValue !== undefined && !isPopulated(elementValue)) {
         setValueAtKey(parentValue, undefined, getPathDifference(this.value.path, path), element);
       }
-    }
-    /*
-    for (let valueIndex = 0; valueIndex < elementValueContext.values.length; valueIndex++) {
-      const elementValue = elementValueContext.values[valueIndex];
-      if (Array.isArray(elementValue)) {
-        // remove empty items
-        for (let i = elementValue.length - 1; i >= 0; i--) {
-          const value = elementValue[i];
-          if (!isPopulated(value)) {
-            this.debug(`empty value removed from array: ${JSON.stringify(value)}`);
-            elementValue.splice(i, 1);
-          }
-        }
-      }
-
-      if (elementValue !== undefined && !isPopulated(elementValue)) {
-        const parentValue = this.value.values[valueIndex];
-        const fromParent = getValueAtKey(
-          parentValue,
-          getPathDifference(this.value.path, path),
-          _element,
-          _elementsContext.elements
-        );
-        this.debug(
-          `empty value found on object\n${JSON.stringify(elementValue)}\nfrom parent:\n${JSON.stringify(fromParent)}`,
-          elementValue === fromParent
-        );
-        setValueAtKey(parentValue, undefined, getPathDifference(this.value.path, path), _element);
-      }
-    }
-    */
-  }
-
-  onEnterSlicing(path: string, slicing: VisitorSlicingRules): void {
-    const valuesBySliceName: Record<string, SliceValue> = Object.create(null);
-    for (const slice of slicing.slices) {
-      valuesBySliceName[slice.name] = [];
-    }
-    this.slicingContextStack.push({ path, slicing, valuesBySliceName });
-  }
-
-  onExitSlicing(): void {
-    const context = this.slicingContextStack.pop();
-    if (!context) {
-      throw new Error('Expected slicing context to exist');
     }
   }
 
@@ -342,18 +211,12 @@ export class DefaultValueVisitor implements SchemaVisitor {
       path,
       values: sliceValues,
     });
-    this.sliceContextStack.push({ slice });
   }
 
-  onExitSlice(): void {
+  onExitSlice(path: string, slice: VisitorSliceDefinition): void {
     const sliceValueContext = this.valueStack.pop();
     if (!sliceValueContext) {
       throw new Error('Expected value context to exist in onExitSlice');
-    }
-
-    const sliceCtx = this.sliceContextStack.pop();
-    if (!sliceCtx) {
-      throw new Error('Expected slice context to exist on exit');
     }
 
     for (const sliceValueArray of sliceValueContext.values) {
@@ -365,7 +228,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
       }
     }
 
-    this.debug(`onExitSlice[${sliceCtx.slice.name}]`, sliceCtx.slice.name, JSON.stringify(sliceValueContext.values));
+    this.debug(`onExitSlice[${slice.name}]`, slice.name, JSON.stringify(sliceValueContext.values));
     this.debug('parentValue', JSON.stringify(this.value.values));
   }
 
@@ -547,7 +410,7 @@ function applyFixedOrPatternValue(
       const lastArray = Array.isArray(last) ? last : [last];
       for (const item of lastArray) {
         if (element.fixed) {
-          item[keyPart] = applyFixed(item[keyPart], element.fixed.value, debug);
+          item[keyPart] ??= element.fixed.value;
         } else if (element.pattern) {
           item[keyPart] = applyPattern(item[keyPart], element.pattern.value, debug);
         }
@@ -565,14 +428,6 @@ function applyFixedOrPatternValue(
   debug(`done`, JSON.stringify(outputValue, undefined, 2));
 
   return outputValue;
-}
-
-function applyFixed(value: any, fixed: any, debug: ConsoleDebug): any {
-  if (value === undefined) {
-    debug('applyFixed', fixed);
-    return fixed;
-  }
-  return value;
 }
 
 function applyPattern(existingValue: any, pattern: any, debug: ConsoleDebug): any {

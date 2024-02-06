@@ -1,4 +1,3 @@
-/* eslint-disable no-debugger */
 import {
   InternalSchemaElement,
   InternalTypeSchema,
@@ -20,7 +19,6 @@ type SupportedSliceDefinition = SliceDefinition & {
 export type VisitorSliceDefinition = SupportedSliceDefinition;
 export type VisitorSlicingRules = Omit<SlicingRules, 'slices'> & {
   slices: VisitorSliceDefinition[];
-  // slices: SupportedSliceDefinition[];
 };
 
 export interface SchemaVisitor {
@@ -30,15 +28,11 @@ export interface SchemaVisitor {
   onEnterResource?: (schema: InternalTypeSchema) => void;
   onExitResource?: () => void;
 
-  // visitElement: (path: string, element: InternalSchemaElement) => void;
   onEnterElement?: (path: string, element: InternalSchemaElement, elementsContext: ElementsContextType) => void;
   onExitElement?: (path: string, element: InternalSchemaElement, elementsContext: ElementsContextType) => void;
 
-  onEnterSlicing?: (path: string, slicing: VisitorSlicingRules) => void;
-  onExitSlicing?: () => void;
-
   onEnterSlice?: (path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules) => void;
-  onExitSlice?: () => void;
+  onExitSlice?: (path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules) => void;
 }
 
 export class SchemaCrawler {
@@ -81,46 +75,34 @@ export class SchemaCrawler {
     if (this.visitor.onEnterSchema) {
       this.visitor.onEnterSchema(this.rootSchema);
     }
-    // if (this.visitor.onEnterResource) {
-    // this.visitor.onEnterResource(this.rootSchema);
-    // }
 
     const allowedElements = Object.fromEntries(
       Object.entries(this.elementsContext.elements).filter(([elementKey]) => {
         return elementKey.startsWith(key);
       })
     );
-    this.crawlElementsImpl(allowedElements, path);
-    // this.crawlElementImpl(element, this.rootPath + '.' + key);
 
-    // if (this.visitor.onExitResource) {
-    // this.visitor.onExitResource();
-    // }
+    this.crawlElementsImpl(allowedElements, path);
     if (this.visitor.onExitSchema) {
       this.visitor.onExitSchema();
     }
   }
 
   crawlSlice(element: InternalSchemaElement, key: string, slice: SliceDefinition, slicing: SlicingRules): void {
-    if (this.visitor.onEnterSchema) {
-      this.visitor.onEnterSchema(this.rootSchema);
-    }
-    // if (this.visitor.onEnterResource) {
-    // this.visitor.onEnterResource(this.rootSchema);
-    // }
     const visitorSlicing = this.prepareSlices(slicing.slices, slicing);
 
     if (!isPopulated(visitorSlicing.slices)) {
       throw new Error(`cannot crawl slice ${slice.name} since it has no type information`);
     }
 
+    if (this.visitor.onEnterSchema) {
+      this.visitor.onEnterSchema(this.rootSchema);
+    }
+
     this.sliceAllowList = [slice];
     this.crawlSliceImpl(visitorSlicing.slices[0], this.rootPath + '.' + key, visitorSlicing);
     this.sliceAllowList = undefined;
 
-    // if (this.visitor.onExitResource) {
-    // this.visitor.onExitResource();
-    // }
     if (this.visitor.onExitSchema) {
       this.visitor.onExitSchema();
     }
@@ -148,22 +130,10 @@ export class SchemaCrawler {
   }
 
   private crawlElementsImpl(elements: InternalTypeSchema['elements'], path: string): void {
-    let elementEntries = Object.entries(elements);
-    if (false) {
-      elementEntries = elementEntries.filter(
-        ([key]) =>
-          this.elementsContextStack.length > 1 || ['code', 'category', 'component'].some((s) => key.startsWith(s))
-      );
-    }
-    elementEntries.sort();
-    const elementTree = createElementTree(elementEntries);
+    const elementTree = createElementTree(elements);
     for (const node of elementTree) {
       this.crawlElementNode(node, path);
     }
-    // for (const [key, element] of sortedElements) {
-    // const elementPath = path + '.' + key;
-    // this.crawlElementImpl(element, elementPath);
-    // }
   }
 
   private crawlElementNode(node: ElementNode, path: string): void {
@@ -184,25 +154,6 @@ export class SchemaCrawler {
       this.visitor.onExitElement(nodePath, node.element, this.elementsContext);
     }
   }
-
-  /*
-  private crawlElementImpl(element: InternalSchemaElement, path: string): void {
-    // A profile can be assigned on any element, but that is not supported.
-    // If/when it is, it should be pushed onto the schema stack here.
-
-    if (this.visitor.onEnterElement) {
-      this.visitor.onEnterElement(path, element, this.elementsContext);
-    }
-
-    if (isPopulated(element?.slicing?.slices)) {
-      this.crawlSlicingImpl(element.slicing, path);
-    }
-
-    if (this.visitor.onExitElement) {
-      this.visitor.onExitElement(path, element, this.elementsContext);
-    }
-  }
-  */
 
   private prepareSlices(slices: SliceDefinition[], slicing: SlicingRules): VisitorSlicingRules {
     const supportedSlices: SupportedSliceDefinition[] = [];
@@ -232,10 +183,6 @@ export class SchemaCrawler {
   private crawlSlicingImpl(slicing: SlicingRules, path: string): void {
     const visitorSlicing = this.prepareSlices(slicing.slices, slicing);
 
-    if (this.visitor.onEnterSlicing) {
-      this.visitor.onEnterSlicing(path, visitorSlicing);
-    }
-
     for (const slice of visitorSlicing.slices) {
       if (isPopulated(this.sliceAllowList)) {
         if (this.sliceAllowList.includes(slice)) {
@@ -244,10 +191,6 @@ export class SchemaCrawler {
       } else {
         this.crawlSliceImpl(slice, path, visitorSlicing);
       }
-    }
-
-    if (this.visitor.onExitSlicing) {
-      this.visitor.onExitSlicing();
     }
   }
 
@@ -288,7 +231,7 @@ export class SchemaCrawler {
     }
 
     if (this.visitor.onExitSlice) {
-      this.visitor.onExitSlice();
+      this.visitor.onExitSlice(path, slice, slicing);
     }
   }
 }
@@ -333,28 +276,15 @@ function buildElementsContext({
     elementsByPath[parentPath + '.' + key] = property;
 
     const [beginning, _last] = splitOnceRight(key, '.');
-    // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
     if (seenKeys.has(beginning)) {
       nestedPaths[parentType + '.' + key] = property;
     }
     seenKeys.add(key);
   }
 
-  /*
-  function getElementByPath(path: string): InternalSchemaElement | undefined {
-    return elementsByPath[path];
-  }
-
-  function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement | undefined {
-    return nestedPaths[nestedElementPath];
-  }
-  */
-
   return {
     debugMode: debugMode ?? false,
     profileUrl: profileUrl ?? parentContext?.profileUrl,
-    //getModifiedNestedElement,
-    //getElementByPath,
     elements: mergedElements,
     elementsByPath,
   };
@@ -403,15 +333,19 @@ type ElementNode = {
   children: ElementNode[];
 };
 
-// function createElementTree(elements: Record<string, InternalSchemaElement>): TreeNode[] {
-function createElementTree(elements: [string, InternalSchemaElement][]): ElementNode[] {
+/**
+ * Creates a tree of InternalSchemaElements nested by their key hierarchy:
+ *
+ * @param elements -
+ * @returns The list of root nodes of the tree
+ */
+function createElementTree(elements: Record<string, InternalSchemaElement>): ElementNode[] {
   const rootNodes: ElementNode[] = [];
 
   function isChildKey(parentKey: string, childKey: string): boolean {
     return childKey.startsWith(parentKey + '.');
   }
 
-  // Helper function to add a node
   function addNode(currentNode: ElementNode, newNode: ElementNode): void {
     for (const child of currentNode.children) {
       // If the new node is a child of an existing child, recurse deeper
@@ -424,10 +358,18 @@ function createElementTree(elements: [string, InternalSchemaElement][]): Element
     currentNode.children.push(newNode);
   }
 
-  for (const [key, element] of elements) {
-    const newNode: ElementNode = { key, element, children: [] };
-    let added = false;
+  const elementEntries = Object.entries(elements);
+  /*
+   By sorting beforehand, we guarantee that no false root nodes are created.
+   e.g. if 'a.b' were to be added to the tree before 'a', 'a.b' would be made a
+   root node when it should be a child of 'a'.
+  */
+  elementEntries.sort();
 
+  for (const [key, element] of elementEntries) {
+    const newNode: ElementNode = { key, element, children: [] };
+
+    let added = false;
     for (const rootNode of rootNodes) {
       if (isChildKey(rootNode.key, key)) {
         addNode(rootNode, newNode);
@@ -443,13 +385,4 @@ function createElementTree(elements: [string, InternalSchemaElement][]): Element
   }
 
   return rootNodes;
-
-  // Remove any root nodes that are actually children of other nodes
-  // return rootNodes.filter((rootNode) => {
-  // return !strings.some((str) => str !== rootNode.element && rootNode.element.startsWith(str));
-  // });
-}
-
-function stringBeginsWithOne(str: string, strings: string[]): boolean {
-  return strings.some((s) => str.startsWith(s));
 }
