@@ -1,5 +1,5 @@
 import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { deepClone, tryGetProfile } from '@medplum/core';
+import { applyDefaultValuesToResource, tryGetProfile } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { FormEvent, useEffect, useState } from 'react';
@@ -25,7 +25,6 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
 
   useEffect(() => {
     if (defaultValue) {
-      setValue(deepClone(defaultValue));
       if (props.profileUrl) {
         const profileUrl: string = props.profileUrl;
         medplum
@@ -34,6 +33,8 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
             const profile = tryGetProfile(profileUrl);
             if (profile) {
               setSchemaLoaded(profile.name);
+              const modifiedDefaultValue = applyDefaultValuesToResource(defaultValue, profile);
+              setValue(modifiedDefaultValue);
             } else {
               console.error(`Schema not found for ${profileUrl}`);
             }
@@ -45,7 +46,10 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         const schemaName = props.schemaName ?? defaultValue?.resourceType;
         medplum
           .requestSchema(schemaName)
-          .then(() => setSchemaLoaded(schemaName))
+          .then(() => {
+            setValue(defaultValue);
+            setSchemaLoaded(schemaName);
+          })
           .catch(console.log);
       }
     }
