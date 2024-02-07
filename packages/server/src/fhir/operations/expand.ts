@@ -227,18 +227,38 @@ async function computeExpansion(
     }
 
     if (include.system && !include.concept) {
-      const codeSystem = await repo.searchOne<CodeSystem>({
+      const codeSystems = await repo.searchResources<CodeSystem>({
         resourceType: 'CodeSystem',
         filters: [{ code: 'url', operator: Operator.EQUALS, value: include.system }],
         sortRules: [
-          { code: 'version', descending: true }, // Select highest version (by lexical sort -- no version is assumed to be "current")
-          { code: '_lastUpdated', descending: true }, // Break ties by selecting more recently-updated resource
+          // Select highest version (by lexical sort -- no version is assumed to be "current")
+          { code: 'version', descending: true },
+          // Break ties by selecting more recently-updated resource (lexically -- no date is assumed to be current)
+          { code: 'date', descending: true },
         ],
       });
-      if (!codeSystem) {
+
+      let codeSystem: CodeSystem;
+      if (!codeSystems.length) {
         throw new OperationOutcomeError(
           badRequest(`Code system ${include.system} not found`, 'ValueSet.compose.include.system')
         );
+      } else if (codeSystems.length === 1) {
+        codeSystem = codeSystems[0];
+      } else {
+        codeSystem = codeSystems.sort((a: CodeSystem, b: CodeSystem) => {
+          // Select the non-base FHIR versions of resources before the base FHIR ones
+          // This is kind of a kludge, but is required to break ties because some CodeSystems (including SNOMED)
+          // don't have a version and the base spec version doesn't include a date (and so is always considered current)
+          if (a.extension?.some((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/structuredefinition-wg')) {
+            return 1;
+          } else if (
+            b.extension?.some((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/structuredefinition-wg')
+          ) {
+            return -1;
+          }
+          return 0;
+        })[0];
       }
 
       let query = new SelectQuery('Coding')

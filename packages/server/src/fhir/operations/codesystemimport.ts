@@ -64,7 +64,10 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   const codeSystem = await ctx.repo.searchOne<CodeSystem>({
     resourceType: 'CodeSystem',
     filters: [{ code: 'url', operator: Operator.EQUALS, value: params.system }],
-    sortRules: [{ code: 'version', descending: true }],
+    sortRules: [
+      { code: 'version', descending: true },
+      { code: 'date', descending: true },
+    ],
   });
   if (!codeSystem) {
     sendOutcome(res, badRequest('No CodeSystem found with URL ' + params.system));
