@@ -1,6 +1,6 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
-import { HomerSimpson, MockClient, MockRequestHandler } from '@medplum/mock';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
@@ -18,8 +18,11 @@ describe('SearchControl', () => {
     jest.useRealTimers();
   });
 
-  async function setup(args: SearchControlProps, mockHandler?: MockRequestHandler): Promise<void> {
-    const medplum = new MockClient({ mockRequestHandler: mockHandler });
+  async function setup(args: SearchControlProps, returnVal?: Bundle): Promise<void> {
+    const medplum = new MockClient();
+    if (returnVal) {
+      medplum.search = jest.fn().mockResolvedValue(returnVal);
+    }
     await act(async () => {
       render(
         <MemoryRouter>
@@ -897,13 +900,11 @@ describe('SearchControl', () => {
         search,
         onLoad,
       };
-      await setup(props, async (): Promise<any> => {
-        return {
-          resourceType: 'Bundle',
-          type: 'searchset',
-          total: 5,
-          entry: [{ resource: HomerSimpson }],
-        };
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 5,
+        entry: [{ resource: HomerSimpson }],
       });
       await waitFor(() => screen.getByText('Homer Simpson'));
       const element = screen.getByTestId('count-display');
@@ -915,15 +916,12 @@ describe('SearchControl', () => {
         search,
         onLoad,
       };
-      await setup(
-        props,
-        async (): Promise<any> => ({
-          resourceType: 'Bundle',
-          type: 'searchset',
-          total: 40,
-          entry: [{ resource: HomerSimpson }],
-        })
-      );
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 40,
+        entry: [{ resource: HomerSimpson }],
+      });
       await waitFor(() => screen.getByText('Homer Simpson'));
       const element = screen.getByTestId('count-display');
       expect(element.textContent).toBe('1-20 of 40');
@@ -935,15 +933,12 @@ describe('SearchControl', () => {
         onLoad,
       };
 
-      await setup(
-        props,
-        async (_method: string, path: string): Promise<any> => ({
-          resourceType: 'Bundle',
-          type: 'searchset',
-          total: path.includes('estimate') ? 303091 : 403091,
-          entry: [{ resource: HomerSimpson }],
-        })
-      );
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 403091,
+        entry: [{ resource: HomerSimpson }],
+      });
       await waitFor(() => screen.getByText('Homer Simpson'));
       const element = screen.getByTestId('count-display');
       expect(element.textContent).toBe('1-20 of 403,091');
@@ -955,21 +950,18 @@ describe('SearchControl', () => {
         onLoad,
       };
 
-      await setup(
-        props,
-        async (_method: string, path: string): Promise<Bundle> => ({
-          resourceType: 'Bundle',
-          type: 'searchset',
-          total: path.includes('estimate') ? 303091 : 403091,
-          entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
-          link: [
-            {
-              relation: 'next',
-              url: '',
-            },
-          ],
-        })
-      );
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 403091,
+        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+        link: [
+          {
+            relation: 'next',
+            url: '',
+          },
+        ],
+      });
       await waitFor(() => screen.getByText('Homer Simpson'));
       expect(screen.getByTestId('count-display').textContent).toBe('200,001-200,020 of 403,091');
     });
