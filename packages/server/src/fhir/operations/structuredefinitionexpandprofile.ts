@@ -1,10 +1,9 @@
 import { allOk, badRequest, Operator } from '@medplum/core';
 import { Bundle, BundleEntry, StructureDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../repo';
-import { sendResponse } from '../response';
+import { getFullUrl, sendResponse } from '../response';
 import { sendOutcome } from '../outcomes';
 
 /**
@@ -29,7 +28,7 @@ export async function structureDefinitionExpandProfileHandler(req: Request, res:
     return;
   }
 
-  const sds = await loadNestedStructureDefinitions(ctx.repo, profile);
+  const sds = await loadNestedStructureDefinitions(ctx.repo, profile, new Set([url]), 1);
 
   const bundle = bundleResults([profile, ...sds]);
 
@@ -57,8 +56,15 @@ async function fetchProfileByUrl(repo: Repository, url: string): Promise<Structu
 
 async function loadNestedStructureDefinitions(
   repo: Repository,
-  profile: StructureDefinition
+  profile: StructureDefinition,
+  searchedProfiles: Set<string>,
+  depth: number
 ): Promise<StructureDefinition[]> {
+  // Recurse at most 10 levels deep
+  if (depth > 10) {
+    return [];
+  }
+
   const profilesUrlsToLoad: string[] = [];
 
   profile.snapshot?.element?.forEach((element) => {
@@ -68,7 +74,10 @@ async function loadNestedStructureDefinitions(
       .filter((p): p is NonNullable<string> => p !== undefined);
 
     profileUrls?.forEach((p) => {
-      profilesUrlsToLoad.push(p);
+      if (!searchedProfiles.has(p)) {
+        profilesUrlsToLoad.push(p);
+        searchedProfiles.add(p);
+      }
     });
   });
 
@@ -86,7 +95,7 @@ async function loadNestedStructureDefinitions(
     response.push(result);
 
     // recursive loop
-    const nested = await loadNestedStructureDefinitions(repo, result);
+    const nested = await loadNestedStructureDefinitions(repo, result, searchedProfiles, depth + 1);
     response.push(...nested);
   }
 
@@ -97,10 +106,12 @@ function bundleResults(profiles: StructureDefinition[]): Bundle<StructureDefinit
   const entry: BundleEntry<StructureDefinition>[] = [];
 
   for (const profile of profiles) {
-    entry.push({
-      fullUrl: `${getConfig().baseUrl}fhir/R4/StructureDefinition/${profile.id}`,
-      resource: profile,
-    });
+    if (profile.id !== undefined) {
+      entry.push({
+        fullUrl: getFullUrl('StructureDefinition', profile.id),
+        resource: profile,
+      });
+    }
   }
 
   return {
