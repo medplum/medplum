@@ -192,7 +192,6 @@ export class SubscriptionManager {
       })
       .catch(console.error);
 
-    // Bind to token
     return emitter;
   }
 

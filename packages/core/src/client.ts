@@ -30,7 +30,6 @@ import {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
-import { getWebSocketUrl } from './utils';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -76,6 +75,7 @@ import {
   arrayBufferToBase64,
   createReference,
   getReferenceString,
+  getWebSocketUrl,
   resolveId,
   sleep,
 } from './utils';
