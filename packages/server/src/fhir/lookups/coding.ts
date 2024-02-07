@@ -47,13 +47,15 @@ export class CodingTable extends LookupTable<Coding> {
       .execute(client);
     await new DeleteQuery('CodeSystem_Property').where('system', '=', resource.id).execute(client);
     if (deletedCodes.length) {
-      await new DeleteQuery('Coding_Property')
-        .where(
-          'coding',
-          'IN',
-          deletedCodes.map((c) => c.id)
-        )
-        .execute(client);
+      for (let i = 0; i < deletedCodes.length; i += 500) {
+        await new DeleteQuery('Coding_Property')
+          .where(
+            'coding',
+            'IN',
+            deletedCodes.slice(i, i + 500).map((c) => c.id)
+          )
+          .execute(client);
+      }
     }
   }
 
