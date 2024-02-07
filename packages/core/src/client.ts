@@ -1534,7 +1534,7 @@ export class MedplumClient extends EventTarget {
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
    * @param options - Optional fetch options.
-   * @returns The resource if available; undefined otherwise.
+   * @returns The resource if available.
    */
   readResource<K extends ResourceType>(
     resourceType: K,
@@ -1562,7 +1562,7 @@ export class MedplumClient extends EventTarget {
    * @category Read
    * @param reference - The FHIR reference object.
    * @param options - Optional fetch options.
-   * @returns The resource if available; undefined otherwise.
+   * @returns The resource if available.
    */
   readReference<T extends Resource>(reference: Reference<T>, options?: RequestInit): ReadablePromise<T> {
     const refString = reference.reference;
@@ -1736,7 +1736,7 @@ export class MedplumClient extends EventTarget {
    * @param id - The resource ID.
    * @param vid - The version ID.
    * @param options - Optional fetch options.
-   * @returns The resource if available; undefined otherwise.
+   * @returns The resource if available.
    */
   readVersion<K extends ResourceType>(
     resourceType: K,
