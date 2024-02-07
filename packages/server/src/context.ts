@@ -4,6 +4,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { Repository, systemRepo } from './fhir/repo';
+import { parseTraceparent } from './traceparent';
 
 export class RequestContext {
   readonly requestId: string;
@@ -101,29 +102,28 @@ export function closeRequestContext(): void {
   }
 }
 
-function requestIds(req: Request): { requestId: string; traceId: string } {
-  const requestId = randomUUID();
-  const traceIdHeader = req.header('x-trace-id');
-  const traceParentHeader = req.header('traceparent');
-  let traceId: string | undefined;
-  if (traceIdHeader && isUUID(traceIdHeader)) {
-    traceId = traceIdHeader;
-  } else if (traceParentHeader?.startsWith('00-')) {
-    const id = traceParentHeader.split('-')[1];
-    const uuid = [
-      id.substring(0, 8),
-      id.substring(8, 12),
-      id.substring(12, 16),
-      id.substring(16, 20),
-      id.substring(20, 32),
-    ].join('-');
-    if (isUUID(uuid)) {
-      traceId = uuid;
+const traceIdHeaderMap: {
+  [key: string]: (traceId: string) => boolean;
+} = {
+  'x-trace-id': (value) => isUUID(value),
+  traceparent: (value) => !!parseTraceparent(value),
+} as const;
+const traceIdHeaders = Object.entries(traceIdHeaderMap);
+
+const getTraceId = (req: Request): string | undefined => {
+  for (const [headerKey, isTraceId] of traceIdHeaders) {
+    const value = req.header(headerKey);
+    if (value && isTraceId(value)) {
+      return value;
     }
   }
-  if (!traceId) {
-    traceId = randomUUID();
-  }
+  return undefined;
+};
+
+function requestIds(req: Request): { requestId: string; traceId: string } {
+  const requestId = randomUUID();
+  const traceId = getTraceId(req) ?? randomUUID();
+
   return { requestId, traceId };
 }
 
