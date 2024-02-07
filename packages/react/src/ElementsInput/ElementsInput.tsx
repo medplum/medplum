@@ -31,12 +31,6 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
   }, [elementsContext.elements]);
 
   function setValueWrapper(newValue: any): void {
-    for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
-      // setPropertyValue cannot set nested properties
-      if (!key.includes('.')) {
-        // setPropertyValue(newValue, key, key, prop, prop.fixed.value);
-      }
-    }
     setValue(newValue);
     if (props.onChange) {
       props.onChange(newValue);

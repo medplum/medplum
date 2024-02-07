@@ -49,7 +49,8 @@ export function getDefaultValuesForNewSliceEntry(
 
 export function getDefaultValuesForElement(
   existingValue: any,
-  key: string,
+  path: string,
+  _key: string,
   element: InternalSchemaElement,
   elements: Record<string, InternalSchemaElement>,
   schema: InternalTypeSchema,
@@ -57,16 +58,36 @@ export function getDefaultValuesForElement(
 ): any {
   const inputValue: object = existingValue ?? Object.create(null);
 
+  const [containerPath, key] = splitOnceRight(path, '.');
   const container = Object.create(null);
   setValueAtKey(container, inputValue, key, element);
 
-  const [containerPath, _rest] = splitOnceRight(element.path, '.');
   const visitor = new DefaultValueVisitor(container, containerPath, 'element', options?.debug);
   const crawler = new SchemaCrawler(schema, visitor, elements);
   crawler.crawlElement(element, key, containerPath);
   const modifiedContainer = visitor.getDefaultValue();
 
   return getValueAtKey(modifiedContainer, key, element, elements);
+}
+
+export function applyDefaultValuesToElement(
+  existingValue: any,
+  key: string,
+  elements: Record<string, InternalSchemaElement>
+): void {
+  for (const [elementKey, element] of Object.entries(elements)) {
+    if (elementKey === key) {
+      applyFixedOrPatternValue(existingValue, key, element, elements, false);
+    } else if (elementKey.startsWith(key + '.')) {
+      const keyDifference = getPathDifference(key, elementKey);
+      if (keyDifference === undefined) {
+        throw new Error(`Expected ${elementKey} to be prefixed by ${key}`);
+      }
+      applyFixedOrPatternValue(existingValue, keyDifference, element, elements, false);
+    }
+  }
+
+  return existingValue;
 }
 
 type ValueContext = {
@@ -126,10 +147,16 @@ export class DefaultValueVisitor implements SchemaVisitor {
 
   onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
     this.debug(`onEnterElement ${path} ${element.min > 0 ? `min: ${element.min}` : ''}`);
+    if (path !== element.path) {
+      this.debug(`onEnterElement path mismatch: ${path} !== ${element.path}`);
+    }
 
     const parentValues = this.value.values;
     const parentPath = this.value.path;
     const key = getPathDifference(parentPath, path);
+    if (key === undefined) {
+      throw new Error(`Expected ${path} to be prefixed by ${parentPath}`);
+    }
     const elementValues: any[] = [];
 
     for (const parentValue of parentValues) {
@@ -182,12 +209,12 @@ export class DefaultValueVisitor implements SchemaVisitor {
     this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.values)}`);
 
     for (const parentValue of this.value.values) {
-      const elementValue = getValueAtKey(
-        parentValue,
-        getPathDifference(this.value.path, path),
-        element,
-        elementsContext.elements
-      );
+      const key = getPathDifference(this.value.path, path);
+      if (key === undefined) {
+        throw new Error(`Expected ${path} to be prefixed by ${this.value.path}`);
+      }
+
+      const elementValue = getValueAtKey(parentValue, key, element, elementsContext.elements);
 
       // remove empty items from arrays
       if (Array.isArray(elementValue)) {
@@ -202,7 +229,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
 
       // remove empty items from parent
       if (elementValue !== undefined && !isPopulated(elementValue)) {
-        setValueAtKey(parentValue, undefined, getPathDifference(this.value.path, path), element);
+        setValueAtKey(parentValue, undefined, key, element);
       }
     }
   }
@@ -320,11 +347,12 @@ function getValueSliceName(
   return undefined;
 }
 
-function getPathDifference(parentPath: string, path: string): string {
-  if (!path.startsWith(parentPath)) {
-    throw new Error(`Expected ${path} to be prefixed by ${parentPath}`);
+export function getPathDifference(parentPath: string, path: string): string | undefined {
+  const parentPathPrefix = parentPath + '.';
+  if (path.startsWith(parentPathPrefix)) {
+    return path.slice(parentPathPrefix.length);
   }
-  return path.slice(parentPath.length + 1);
+  return undefined;
 }
 
 function setValueAtKey(parent: any, value: any, key: string, element: InternalSchemaElement): void {

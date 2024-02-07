@@ -22,14 +22,13 @@ export interface BackboneElementInputProps {
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
   const [defaultValue] = useState(() => props.defaultValue ?? {});
   const parentElementsContext = useContext(ElementsContext);
-  const profileUrl = props.profileUrl ?? parentElementsContext.profileUrl;
+  const profileUrl = props.profileUrl ?? parentElementsContext?.profileUrl;
   const typeSchema = useMemo(() => tryGetDataType(props.typeName, profileUrl), [props.typeName, profileUrl]);
   const type = typeSchema?.type ?? props.typeName;
 
   const elementsContext = useMemo(() => {
     return buildElementsContext({
       parentContext: parentElementsContext,
-      typeSchema: typeSchema,
       elements: typeSchema?.elements,
       parentPath: props.path,
       parentType: type,

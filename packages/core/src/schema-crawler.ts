@@ -5,7 +5,7 @@ import {
   SlicingRules,
   tryGetProfile,
 } from './typeschema/types';
-import { isPopulated, splitOnceRight } from './utils';
+import { isPopulated } from './utils';
 
 function isSupportedSliceDefinition(slice: SliceDefinition): slice is SupportedSliceDefinition {
   return isPopulated(slice.type);
@@ -54,7 +54,6 @@ export class SchemaCrawler {
         parentContext: undefined,
         parentPath: this.rootSchema.type as string,
         elements: elements ?? this.rootSchema.elements,
-        parentType: this.rootSchema.type,
         profileUrl: this.rootSchema.name === this.rootSchema.type ? undefined : this.rootSchema.url,
       }),
     ];
@@ -71,7 +70,7 @@ export class SchemaCrawler {
     return this.elementsContextStack[this.elementsContextStack.length - 1];
   }
 
-  crawlElement(element: InternalSchemaElement, key: string, _path: string): void {
+  crawlElement(element: InternalSchemaElement, key: string, path: string): void {
     if (this.visitor.onEnterSchema) {
       this.visitor.onEnterSchema(this.rootSchema);
     }
@@ -82,7 +81,7 @@ export class SchemaCrawler {
       })
     );
 
-    this.crawlElementsImpl(allowedElements, _path);
+    this.crawlElementsImpl(allowedElements, path);
 
     if (this.visitor.onExitSchema) {
       this.visitor.onExitSchema();
@@ -208,7 +207,6 @@ export class SchemaCrawler {
       }
     }
 
-    const sliceType = sliceSchema?.type ?? slice.type[0].code;
     const sliceElements = sliceSchema?.elements ?? slice.elements;
     let elementsContext: ElementsContextType | undefined;
     if (isPopulated(sliceElements)) {
@@ -216,7 +214,6 @@ export class SchemaCrawler {
         parentContext: this.elementsContext,
         elements: sliceElements,
         parentPath: path,
-        parentType: sliceType,
       });
       this.elementsContextStack.push(elementsContext);
     }
@@ -242,27 +239,21 @@ export type ElementsContextType = {
   elements: Record<string, InternalSchemaElement>;
   elementsByPath: Record<string, InternalSchemaElement>;
   profileUrl: string | undefined;
-  debugMode: boolean;
 };
 
 function buildElementsContext({
   parentContext,
   elements,
   parentPath,
-  parentType,
   profileUrl,
   debugMode,
 }: {
   elements: InternalTypeSchema['elements'] | undefined;
   parentPath: string;
   parentContext: ElementsContextType | undefined;
-  parentType: string | undefined;
   profileUrl?: string;
   debugMode?: boolean;
 }): ElementsContextType {
-  if (debugMode) {
-    console.debug('Building ElementsContext', { parentPath, profileUrl, elements });
-  }
   const mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
     parentPath,
     elements,
@@ -270,22 +261,13 @@ function buildElementsContext({
     Boolean(debugMode)
   );
 
-  const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
   const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
 
-  const seenKeys = new Set<string>();
   for (const [key, property] of Object.entries(mergedElements)) {
     elementsByPath[parentPath + '.' + key] = property;
-
-    const [beginning, _last] = splitOnceRight(key, '.');
-    if (seenKeys.has(beginning)) {
-      nestedPaths[parentType + '.' + key] = property;
-    }
-    seenKeys.add(key);
   }
 
   return {
-    debugMode: debugMode ?? false,
     profileUrl: profileUrl ?? parentContext?.profileUrl,
     elements: mergedElements,
     elementsByPath,

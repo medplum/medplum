@@ -5,6 +5,7 @@ import { Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import {
   DefaultValueVisitor,
   SLICE_NAME_KEY,
+  applyDefaultValuesToElement,
   applyDefaultValuesToResource,
   getDefaultValuesForElement,
   getDefaultValuesForNewSliceEntry,
@@ -15,6 +16,7 @@ import { SchemaCrawler } from './schema-crawler';
 
 // const medplum = new MockClient();
 
+const DEBUG = false;
 describe('applyDefaultValues', () => {
   describe('US Occipital Frontal', () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/head-occipital-frontal-circumference-percentile`;
@@ -29,7 +31,7 @@ describe('applyDefaultValues', () => {
     test('empty Occipital Frontal', async () => {
       const resource = { resourceType: 'Observation' } as Observation;
 
-      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: true });
+      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: DEBUG });
 
       expect(withDefaults).toEqual({
         resourceType: 'Observation',
@@ -88,7 +90,7 @@ describe('applyDefaultValues', () => {
       // casting since purposefully don't want to specify any values
       const resource = { resourceType: 'Observation' } as Observation;
 
-      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: true });
+      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: DEBUG });
 
       // fixed values within value[x] purposefully excluded since value[x] itself is optional (min === 0)
       // i.e. valueQuantity: {code: "mm[Hg]", system: "http://unitsofmeasure.org"} should not be included
@@ -191,7 +193,37 @@ describe('applyDefaultValues', () => {
         // const profileUrl = slice.type?.[0]?.profile?.[0];
         // const typeSchema = getProfile(profileUrl);
 
-        const result = getDefaultValuesForElement(undefined, key, element, slice.elements, schema);
+        const result = getDefaultValuesForElement(
+          undefined,
+          'Observation.component.value[x]',
+          key,
+          element,
+          slice.elements,
+          schema
+        );
+        expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });
+      });
+
+      test('value for systolic', () => {
+        const slicedKey = 'component';
+        const slicedElement = schema.elements[slicedKey];
+        if (!isPopulated(slicedElement)) {
+          fail(`Expected ${slicedKey} element to be defined`);
+        }
+
+        const slicing = slicedElement.slicing;
+        if (!isPopulated(slicing)) {
+          fail(`Expected slicing to exist on element`);
+        }
+
+        const sliceName = 'systolic';
+        const slice = slicedElement.slicing?.slices.find((s) => s.name === sliceName);
+        if (!isPopulated(slice)) {
+          fail(`Expected ${sliceName} slice to be defined`);
+        }
+
+        const key = 'value[x]';
+        const result = applyDefaultValuesToElement(Object.create(null), key, slice.elements);
         expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });
       });
     });
@@ -229,7 +261,7 @@ describe('applyDefaultValues', () => {
     test('new Patient', async () => {
       const resource: Patient = { resourceType: 'Patient' };
 
-      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: true });
+      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: DEBUG });
 
       expect(withDefaults).toEqual({
         resourceType: 'Patient',

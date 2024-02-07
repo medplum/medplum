@@ -1,4 +1,4 @@
-import { InternalSchemaElement, InternalTypeSchema, TypedValue, isPopulated } from '@medplum/core';
+import { InternalSchemaElement, InternalTypeSchema, TypedValue, getPathDifference, isPopulated } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -21,7 +21,7 @@ function splitOnceRight(str: string, delim: string): [string, string] {
 }
 
 export type ElementsContextType = {
-  debugMode: boolean;
+  parentPath: string;
   profileUrl: string | undefined;
   /**
    * Get the element definition for the specified path if it has been modified by a profile.
@@ -30,27 +30,24 @@ export type ElementsContextType = {
    * the element has the default definition for the given type.
    */
   getModifiedNestedElement: (nestedElementPath: string) => InternalSchemaElement | undefined;
-  getElementByPath: (path: string) => InternalSchemaElement | undefined;
-  typeSchema: InternalTypeSchema;
   elements: Record<string, InternalSchemaElement>;
   elementsByPath: Record<string, InternalSchemaElement>;
   fixedProperties: { [key: string]: InternalSchemaElement & { fixed: TypedValue } };
+  debugMode: boolean;
 };
 
 export const ElementsContext = React.createContext<ElementsContextType>({
+  parentPath: '',
   profileUrl: undefined,
-  debugMode: false,
   getModifiedNestedElement: () => undefined,
-  getElementByPath: () => undefined,
-  typeSchema: { name: '', elements: Object.create(null), innerTypes: [] },
   elements: Object.create(null),
   elementsByPath: Object.create(null),
   fixedProperties: Object.create(null),
+  debugMode: false,
 });
 ElementsContext.displayName = 'ElementsContext';
 
 export type BuildElementsContextArgs = {
-  typeSchema: InternalTypeSchema | undefined;
   elements: InternalTypeSchema['elements'] | undefined;
   parentPath: string;
   parentContext: ElementsContextType | undefined;
@@ -65,7 +62,6 @@ function hasFixed(element: InternalSchemaElement): element is InternalSchemaElem
 
 export function buildElementsContext({
   parentContext,
-  typeSchema,
   elements,
   parentPath,
   parentType,
@@ -102,20 +98,15 @@ export function buildElementsContext({
     seenKeys.add(key);
   }
 
-  function getElementByPath(path: string): InternalSchemaElement | undefined {
-    return elementsByPath[path];
-  }
-
   function getModifiedNestedElement(nestedElementPath: string): InternalSchemaElement | undefined {
     return nestedPaths[nestedElementPath];
   }
 
   return {
+    parentPath,
     debugMode: debugMode ?? parentContext?.debugMode ?? false,
     profileUrl: profileUrl ?? parentContext?.profileUrl,
     getModifiedNestedElement,
-    getElementByPath,
-    typeSchema: typeSchema ?? parentContext?.typeSchema,
     elements: mergedElements,
     elementsByPath,
     fixedProperties,
@@ -131,10 +122,9 @@ function mergeElementsForContext(
   const result: ElementsContextType['elements'] = Object.create(null);
 
   if (parentContext) {
-    const parentPathPrefix = parentPath + '.';
     for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
-      if (path.startsWith(parentPathPrefix)) {
-        const key = path.slice(parentPathPrefix.length);
+      const key = getPathDifference(parentPath, path);
+      if (key !== undefined) {
         result[key] = element;
       }
     }

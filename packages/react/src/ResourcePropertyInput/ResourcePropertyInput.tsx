@@ -1,10 +1,12 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import {
+  applyDefaultValuesToElement,
   capitalize,
-  getDefaultValuesForElement,
+  getPathDifference,
   HTTP_HL7_ORG,
   InternalSchemaElement,
   isComplexTypeCode,
+  isPopulated,
   PropertyType,
 } from '@medplum/core';
 import { ElementDefinitionBinding, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
@@ -20,6 +22,7 @@ import { CodingInput } from '../CodingInput/CodingInput';
 import { ContactDetailInput } from '../ContactDetailInput/ContactDetailInput';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ExtensionInput } from '../ExtensionInput/ExtensionInput';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';
 import { IdentifierInput } from '../IdentifierInput/IdentifierInput';
@@ -34,7 +37,6 @@ import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
 import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
-import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 export interface ResourcePropertyInputProps {
   readonly property: InternalSchemaElement;
@@ -70,29 +72,21 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
       return props.defaultValue;
     }
 
-    const typeSchema = elementsContext.typeSchema;
-
-    if (!typeSchema) {
+    const key = getPathDifference(elementsContext.parentPath, props.path);
+    if (key === undefined) {
       return props.defaultValue;
     }
-    const key = name;
-    const element = props.property;
-    const elements = elementsContext.elements;
-    console.log('getDefaultValuesForElement', { key, element, elements, typeSchema });
-    const result = getDefaultValuesForElement(undefined, key, element, elements, typeSchema, { debug: false });
-    console.log('getDefaultValuesForElement result', result);
+    if (props.defaultValue === undefined) {
+      const withDefaults = Object.create(null);
+      applyDefaultValuesToElement(withDefaults, key, elementsContext.elements);
+      if (isPopulated(withDefaults)) {
+        console.log(props.path, 'withDefaults', withDefaults);
+        return withDefaults;
+      }
+    }
 
-    return result;
-  }, [
-    props.defaultValue,
-    elementsContext.elements,
-    elementsContext.typeSchema,
-    isArrayInput,
-    isInputSelectorInput,
-    name,
-    propertyTypes,
-    props.property,
-  ]);
+    return props.defaultValue;
+  }, [isArrayInput, isInputSelectorInput, propertyTypes, props.path, props.defaultValue, elementsContext]);
 
   if (isArrayInput) {
     if (defaultPropertyType === PropertyType.Attachment) {
