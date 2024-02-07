@@ -381,6 +381,32 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id": "Project.link",
+            "path": "Project.link",
+            "definition": "Linked Projects whose contents are made available to this one",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.link",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.link.project",
+            "path": "Project.link.project",
+            "definition": "A reference to the Project to be linked into this one",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "Reference"}],
+            "base": {
+              "path": "Project.link.project",
+              "min": 1,
+              "max": "1"
+            }
           }
         ]
       }
