@@ -10,6 +10,7 @@ export type SubscriptionEventMap = {
   error: { type: 'error'; payload: Error };
   message: { type: 'message'; payload: Bundle };
   close: { type: 'close' };
+  heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
 
 // export type SubManagerOptions = {
@@ -66,9 +67,14 @@ export class SubscriptionManager {
 
     ws.addEventListener('message', (event: MessageEvent) => {
       const bundle = JSON.parse(event.data) as Bundle;
-      this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
       // Get criteria for event
       const status = bundle?.entry?.[0]?.resource as SubscriptionStatus;
+      // Handle heartbeat
+      if (status.type === 'heartbeat') {
+        this.masterSubEmitter?.dispatchEvent({ type: 'heartbeat', payload: bundle });
+        return;
+      }
+      this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
       const criteria = this.subscriptionCriteriaLookup.get(resolveId(status.subscription) as string);
       if (!criteria) {
         console.error('Received notification for criteria the SubscriptionManager is not listening for');
