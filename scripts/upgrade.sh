@@ -16,7 +16,7 @@ git checkout -b "$BRANCH_NAME"
 
 # Exclude known problem packages
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-EXCLUDE="node-fetch"
+EXCLUDE="node-fetch chromatic"
 
 npx npm-check-updates -u -x "$EXCLUDE" --packageFile package.json
 

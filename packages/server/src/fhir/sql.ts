@@ -1,4 +1,5 @@
 import { OperationOutcomeError, append, conflict } from '@medplum/core';
+import { Period } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import { Client, Pool, PoolClient } from 'pg';
 import Cursor from 'pg-cursor';
@@ -10,6 +11,7 @@ export enum ColumnType {
   UUID = 'uuid',
   TIMESTAMP = 'timestamp',
   TEXT = 'text',
+  TSTZRANGE = 'tstzrange',
 }
 
 export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
@@ -105,6 +107,30 @@ export const Operator = {
     sql.append('||');
     sql.appendColumn(parameter as Column);
   },
+  RANGE_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' && ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' >> ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_LEFT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' << ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
 };
 
 function simpleBinaryOperator(operator: string): OperatorFunc {
@@ -145,6 +171,10 @@ export class Condition implements Expression {
     readonly parameter: any,
     readonly parameterType?: string
   ) {
+    if (operator === 'ARRAY_CONTAINS' && !parameterType) {
+      throw new Error('ARRAY_CONTAINS requires paramType');
+    }
+
     this.column = getColumn(column);
   }
 
@@ -711,4 +741,17 @@ function getColumn(column: Column | string, defaultTableName?: string): Column {
   } else {
     return column;
   }
+}
+
+export function periodToRangeString(period: Period): string | undefined {
+  if (period.start && period.end) {
+    return `[${period.start},${period.end}]`;
+  }
+  if (period.start) {
+    return `[${period.start},]`;
+  }
+  if (period.end) {
+    return `[,${period.end}]`;
+  }
+  return undefined;
 }

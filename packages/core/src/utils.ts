@@ -930,19 +930,27 @@ export const sleep = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
+/**
+ * Splits a string into an array of strings using the specified delimiter.
+ * Unlike the built-in split function, this function will split the string into a maximum of exactly n parts.
+ * Trailing empty strings are included in the result.
+ * @param str - The string to split.
+ * @param delim - The delimiter.
+ * @param n - The maximum number of parts to split the string into.
+ * @returns The resulting array of strings.
+ */
 export function splitN(str: string, delim: string, n: number): string[] {
   const result: string[] = [];
   for (let i = 0; i < n - 1; i++) {
-    let delimIndex = str.indexOf(delim);
+    const delimIndex = str.indexOf(delim);
     if (delimIndex < 0) {
-      delimIndex = str.length;
+      break;
+    } else {
+      result.push(str.slice(0, delimIndex));
+      str = str.slice(delimIndex + delim.length);
     }
-    result.push(str.slice(0, delimIndex));
-    str = str.slice(delimIndex + delim.length);
   }
-  if (str) {
-    result.push(str);
-  }
+  result.push(str);
   return result;
 }
 

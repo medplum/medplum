@@ -2,11 +2,13 @@ import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
-import { BackboneElementContext, buildBackboneElementContext } from './BackboneElementInput.utils';
+import { ElementsContext, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 export interface BackboneElementInputProps {
   /** Type name the backbone element represents */
   readonly typeName: string;
+  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
+  readonly path: string;
   /** (optional) The contents of the resource represented by the backbone element */
   readonly defaultValue?: any;
   /** (optional) OperationOutcome from the last attempted system action*/
@@ -18,36 +20,35 @@ export interface BackboneElementInputProps {
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
-  const { typeName } = props;
-  const [value, setValue] = useState<any>(props.defaultValue ?? {});
-  const backboneContext = useContext(BackboneElementContext);
-  const profileUrl = props.profileUrl ?? backboneContext.profileUrl;
-  const typeSchema = useMemo(() => tryGetDataType(typeName, profileUrl), [typeName, profileUrl]);
+  const [defaultValue] = useState(() => props.defaultValue ?? {});
+  const parentElementsContext = useContext(ElementsContext);
+  const profileUrl = props.profileUrl ?? parentElementsContext.profileUrl;
+  const typeSchema = useMemo(() => tryGetDataType(props.typeName, profileUrl), [props.typeName, profileUrl]);
+  const type = typeSchema?.type ?? props.typeName;
 
-  const context = useMemo(() => {
-    return buildBackboneElementContext(typeSchema, profileUrl);
-  }, [typeSchema, profileUrl]);
+  const elementsContext = useMemo(() => {
+    return buildElementsContext({
+      parentContext: parentElementsContext,
+      elements: typeSchema?.elements,
+      parentPath: props.path,
+      parentType: type,
+      profileUrl,
+    });
+  }, [parentElementsContext, typeSchema?.elements, props.path, type, profileUrl]);
 
   if (!typeSchema) {
-    return <div>{typeName}&nbsp;not implemented</div>;
-  }
-
-  function setValueWrapper(newValue: any): void {
-    setValue(newValue);
-    if (props.onChange) {
-      props.onChange(newValue);
-    }
+    return <div>{type}&nbsp;not implemented</div>;
   }
 
   return (
-    <BackboneElementContext.Provider value={context}>
+    <ElementsContext.Provider value={elementsContext}>
       <ElementsInput
-        type={typeSchema.type}
-        elements={typeSchema.elements}
-        defaultValue={value}
-        onChange={setValueWrapper}
+        path={props.path}
+        type={type}
+        defaultValue={defaultValue}
+        onChange={props.onChange}
         outcome={props.outcome}
       />
-    </BackboneElementContext.Provider>
+    </ElementsContext.Provider>
   );
 }

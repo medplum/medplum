@@ -48,6 +48,7 @@ export function SecretsPage(): JSX.Element {
       <ResourcePropertyInput
         property={getElementDefinition('Project', 'secret') as InternalSchemaElement}
         name="secret"
+        path="Project.secret"
         defaultValue={secrets}
         onChange={setSecrets}
         outcome={undefined}
