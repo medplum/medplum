@@ -12,7 +12,7 @@ import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction } from '../sql';
 import { getAuthenticatedContext } from '../../context';
-import { childProperty, parentProperty } from './codesystemimport';
+import { parentProperty } from './codesystemimport';
 import { clamp } from './utils/parameters';
 import { validateCode } from './codesystemvalidatecode';
 import { getDatabasePool } from '../../database';
@@ -315,8 +315,8 @@ function addFilters(
           )
         );
       }
-      let properties = codeSystem.property?.filter((p) => p.uri === parentProperty || p.uri === childProperty);
-      if (!properties) {
+      let properties = codeSystem.property?.filter((p) => p.uri === parentProperty);
+      if (!properties?.length) {
         // Implicit parent property for hierarchical CodeSystems
         properties = [{ code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' }];
       }
@@ -335,7 +335,7 @@ function addFilters(
           csPropertyTable,
           new Conjunction([
             new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-            new Condition(new Column(csPropertyTable, 'code'), '=', property),
+            new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
           ])
         );
 
@@ -348,7 +348,7 @@ function addFilters(
             new Condition(new Column(targetTable, 'code'), '=', filter.value),
           ])
         );
-        query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '!=' : '=', null);
+        query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '=' : '!=', null);
       }
     }
   }
