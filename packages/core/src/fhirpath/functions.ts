@@ -1,7 +1,7 @@
 import { Reference } from '@medplum/fhirtypes';
 import { Atom, AtomContext } from '../fhirlexer/parse';
 import { PropertyType, TypedValue, isResource } from '../types';
-import { calculateAge } from '../utils';
+import { calculateAge, isEmpty } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import { booleanToTypedValue, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean, toTypedValue } from './utils';
@@ -34,7 +34,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns True if the input collection is empty ({ }) and false otherwise.
    */
   empty: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return booleanToTypedValue(input.length === 0);
+    return booleanToTypedValue(input.length === 0 || input.every((e) => isEmpty(e.value)));
   },
 
   /**
@@ -67,7 +67,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (criteria) {
       return booleanToTypedValue(input.filter((e) => toJsBoolean(criteria.eval(context, [e]))).length > 0);
     } else {
-      return booleanToTypedValue(input.length > 0);
+      return booleanToTypedValue(input.length > 0 && input.every((e) => !isEmpty(e.value)));
     }
   },
 
