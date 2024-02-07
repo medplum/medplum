@@ -59,9 +59,6 @@ export function Chat(): JSX.Element | null {
   useSubscription(
     `Communication?sender=${profileRefStr},${DR_ALICE_SMITH.reference}&recipient=${DR_ALICE_SMITH.reference},${profileRefStr}`,
     (bundle: Bundle) => {
-      if (!bundle.entry?.[1]) {
-        return;
-      }
       const communication = bundle.entry?.[1]?.resource as Communication;
       upsertCommunications(communicationsRef.current, [communication], setCommunications);
     }
