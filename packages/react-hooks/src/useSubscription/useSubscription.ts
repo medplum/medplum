@@ -24,16 +24,16 @@ export function useSubscription(criteria: string, callback: (bundle: Bundle) => 
     if (prevCriteriaRef.current !== criteria) {
       setEmitter(medplum.subscribeToCriteria(criteria));
     }
+
+    // Set prev criteria to latest
+    prevCriteriaRef.current = criteria;
+
     return () => {
       unsubTimerRef.current = setTimeout(() => {
         setEmitter(undefined);
       }, SUBSCRIPTION_DEBOUNCE_MS);
     };
   }, [medplum, criteria]);
-
-  useEffect(() => {
-    prevCriteriaRef.current = criteria;
-  }, [criteria]);
 
   const emitterCallback = useCallback((event: SubscriptionEventMap['message']) => {
     callbackRef.current?.(event.payload);

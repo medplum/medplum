@@ -57,6 +57,7 @@
   "devDependencies": {
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
+    "@medplum/mock": "*",
     "jest-websocket-mock": "2.5.0"
   },
   "peerDependencies": {
