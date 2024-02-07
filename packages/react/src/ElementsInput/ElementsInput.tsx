@@ -34,7 +34,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
     for (const [key, prop] of Object.entries(elementsContext.fixedProperties)) {
       // setPropertyValue cannot set nested properties
       if (!key.includes('.')) {
-        setPropertyValue(newValue, key, key, prop, prop.fixed.value);
+        // setPropertyValue(newValue, key, key, prop, prop.fixed.value);
       }
     }
     setValue(newValue);

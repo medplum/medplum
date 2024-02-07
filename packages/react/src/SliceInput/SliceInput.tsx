@@ -44,6 +44,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
     if (isPopulated(sliceElements)) {
       return buildElementsContext({
         parentContext: parentElementsContextValue,
+        typeSchema: slice.typeSchema,
         elements: sliceElements,
         parentPath: props.path,
         parentType: sliceType,
@@ -51,7 +52,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
     }
     console.assert(false, 'Expected sliceElements to always be populated', props.path);
     return undefined;
-  }, [parentElementsContextValue, props.path, sliceElements, sliceType]);
+  }, [parentElementsContextValue, props.path, slice.typeSchema, sliceElements, sliceType]);
 
   function setValuesWrapper(newValues: any[]): void {
     setValues(newValues);

@@ -1,7 +1,14 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
-import { capitalize, HTTP_HL7_ORG, InternalSchemaElement, PropertyType } from '@medplum/core';
+import {
+  capitalize,
+  getDefaultValuesForElement,
+  HTTP_HL7_ORG,
+  InternalSchemaElement,
+  isComplexTypeCode,
+  PropertyType,
+} from '@medplum/core';
 import { ElementDefinitionBinding, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
 import { AttachmentArrayInput } from '../AttachmentArrayInput/AttachmentArrayInput';
@@ -27,6 +34,7 @@ import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
 import { ComplexTypeInputProps } from './ResourcePropertyInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 export interface ResourcePropertyInputProps {
   readonly property: InternalSchemaElement;
@@ -41,15 +49,52 @@ export interface ResourcePropertyInputProps {
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
-  const { property, name, defaultValue, onChange } = props;
+  const { property, name, onChange } = props;
   const defaultPropertyType =
     props.defaultPropertyType && props.defaultPropertyType !== 'undefined'
       ? props.defaultPropertyType
       : property.type[0].code;
-
   const propertyTypes = property.type as ElementDefinitionType[];
 
-  if ((property.isArray || property.max > 1) && !props.arrayElement) {
+  const elementsContext = useContext(ElementsContext);
+
+  const isArrayInput = (property.isArray || property.max > 1) && !props.arrayElement;
+  const isInputSelectorInput = propertyTypes.length > 1;
+
+  const defaultValue = useMemo(() => {
+    if (isArrayInput || isInputSelectorInput) {
+      return props.defaultValue;
+    }
+
+    if (!isComplexTypeCode(propertyTypes[0].code)) {
+      return props.defaultValue;
+    }
+
+    const typeSchema = elementsContext.typeSchema;
+
+    if (!typeSchema) {
+      return props.defaultValue;
+    }
+    const key = name;
+    const element = props.property;
+    const elements = elementsContext.elements;
+    console.log('getDefaultValuesForElement', { key, element, elements, typeSchema });
+    const result = getDefaultValuesForElement(undefined, key, element, elements, typeSchema, { debug: false });
+    console.log('getDefaultValuesForElement result', result);
+
+    return result;
+  }, [
+    props.defaultValue,
+    elementsContext.elements,
+    elementsContext.typeSchema,
+    isArrayInput,
+    isInputSelectorInput,
+    name,
+    propertyTypes,
+    props.property,
+  ]);
+
+  if (isArrayInput) {
     if (defaultPropertyType === PropertyType.Attachment) {
       return <AttachmentArrayInput name={name} defaultValue={defaultValue} onChange={onChange} />;
     }
@@ -69,7 +114,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
     );
   }
 
-  if (propertyTypes.length > 1) {
+  if (isInputSelectorInput) {
     return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {
     return (

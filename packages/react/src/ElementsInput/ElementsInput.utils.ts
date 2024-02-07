@@ -31,6 +31,7 @@ export type ElementsContextType = {
    */
   getModifiedNestedElement: (nestedElementPath: string) => InternalSchemaElement | undefined;
   getElementByPath: (path: string) => InternalSchemaElement | undefined;
+  typeSchema: InternalTypeSchema;
   elements: Record<string, InternalSchemaElement>;
   elementsByPath: Record<string, InternalSchemaElement>;
   fixedProperties: { [key: string]: InternalSchemaElement & { fixed: TypedValue } };
@@ -41,6 +42,7 @@ export const ElementsContext = React.createContext<ElementsContextType>({
   debugMode: false,
   getModifiedNestedElement: () => undefined,
   getElementByPath: () => undefined,
+  typeSchema: { name: '', elements: Object.create(null), innerTypes: [] },
   elements: Object.create(null),
   elementsByPath: Object.create(null),
   fixedProperties: Object.create(null),
@@ -48,6 +50,7 @@ export const ElementsContext = React.createContext<ElementsContextType>({
 ElementsContext.displayName = 'ElementsContext';
 
 export type BuildElementsContextArgs = {
+  typeSchema: InternalTypeSchema | undefined;
   elements: InternalTypeSchema['elements'] | undefined;
   parentPath: string;
   parentContext: ElementsContextType | undefined;
@@ -62,6 +65,7 @@ function hasFixed(element: InternalSchemaElement): element is InternalSchemaElem
 
 export function buildElementsContext({
   parentContext,
+  typeSchema,
   elements,
   parentPath,
   parentType,
@@ -111,6 +115,7 @@ export function buildElementsContext({
     profileUrl: profileUrl ?? parentContext?.profileUrl,
     getModifiedNestedElement,
     getElementByPath,
+    typeSchema: typeSchema ?? parentContext?.typeSchema,
     elements: mergedElements,
     elementsByPath,
     fixedProperties,

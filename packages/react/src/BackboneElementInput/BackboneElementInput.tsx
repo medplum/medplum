@@ -29,12 +29,13 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const elementsContext = useMemo(() => {
     return buildElementsContext({
       parentContext: parentElementsContext,
+      typeSchema: typeSchema,
       elements: typeSchema?.elements,
       parentPath: props.path,
       parentType: type,
       profileUrl,
     });
-  }, [parentElementsContext, typeSchema?.elements, props.path, type, profileUrl]);
+  }, [parentElementsContext, typeSchema, props.path, type, profileUrl]);
 
   if (!typeSchema) {
     return <div>{type}&nbsp;not implemented</div>;
