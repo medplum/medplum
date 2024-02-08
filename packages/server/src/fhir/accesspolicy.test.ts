@@ -2005,9 +2005,27 @@ describe('AccessPolicy', () => {
       const patient1 = await repo1.createResource(patientData);
       const patient2 = await repo2.createResource(patientData);
 
-      await expect(repo1.readResource('Patient', patient1.id as string)).resolves;
-      await expect(repo1.readResource('Patient', patient2.id as string)).rejects;
-      await expect(repo2.readResource('Patient', patient1.id as string)).resolves;
-      await expect(repo2.readResource('Patient', patient2.id as string)).resolves;
+      await expect(repo1.readResource('Patient', patient1.id as string)).resolves.toEqual(patient1);
+      await expect(repo1.readResource('Patient', patient2.id as string)).rejects.toBeInstanceOf(Error);
+      await expect(repo2.readResource('Patient', patient1.id as string)).resolves.toEqual(patient1);
+      await expect(repo2.readResource('Patient', patient2.id as string)).resolves.toEqual(patient2);
+    }));
+
+  test('Project Admin cannot link Projects', async () =>
+    withTestContext(async () => {
+      const { project, membership, login } = await registerNew({
+        firstName: 'Link',
+        lastName: 'Test',
+        projectName: 'Project link test',
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      expect(project.link).toBeUndefined();
+      const repo = await getRepoForLogin(login, membership, project, true);
+
+      project.link = [{ project: { reference: 'Project/foo' } }, { project: { reference: 'Project/bar' } }];
+
+      const updatedProject = await repo.updateResource(project);
+      expect(updatedProject.link).toBeUndefined();
     }));
 });
