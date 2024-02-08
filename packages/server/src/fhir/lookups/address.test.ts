@@ -3,10 +3,12 @@ import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { systemRepo } from '../repo';
 import { withTestContext } from '../../test.setup';
+import { getSystemRepo } from '../repo';
 
 describe('Address Lookup Table', () => {
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);

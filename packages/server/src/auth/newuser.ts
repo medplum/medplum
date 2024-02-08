@@ -6,7 +6,7 @@ import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -35,6 +35,8 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     sendOutcome(res, badRequest('Registration is disabled'));
     return;
   }
+
+  const systemRepo = getSystemRepo();
 
   let projectId = req.body.projectId as string | undefined;
 
@@ -101,6 +103,8 @@ export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>
 
   globalLogger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
+
+  const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,

@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -17,9 +17,9 @@ jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
-const app = express();
-
 describe('Reset Password', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
   const testRecaptchaSecretKey = 'testrecaptchasecretkey';
 
   beforeAll(async () => {

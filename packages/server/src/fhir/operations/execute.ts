@@ -40,7 +40,7 @@ import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createAuditEventEntities } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 
 export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
@@ -82,6 +82,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   // Then read the bot as system user to load extended metadata
+  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id as string);
 
   // Execute the bot
@@ -189,6 +190,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
  * @returns True if the bot is enabled.
  */
 export async function isBotEnabled(bot: Bot): Promise<boolean> {
+  const systemRepo = getSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   return !!project.features?.includes('bots');
 }
@@ -387,6 +389,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
     return { success: false, logResult: 'Executable code is not a Binary' };
   }
 
+  const systemRepo = getSystemRepo();
   const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
@@ -473,6 +476,8 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
 }
 
 async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
+  const systemRepo = getSystemRepo();
+
   // Create the Login resource
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -496,6 +501,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
 }
 
 async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSecret>> {
+  const systemRepo = getSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
   return secrets;
@@ -571,6 +577,7 @@ async function createAuditEvent(
 
   const destination = bot.auditEventDestination ?? ['resource'];
   if (destination.includes('resource')) {
+    const systemRepo = getSystemRepo();
     await systemRepo.createResource<AuditEvent>(auditEvent);
   }
   if (destination.includes('log')) {

@@ -2,7 +2,7 @@ import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { NIL as nullUuid, v5 } from 'uuid';
 import { bcryptHashPassword } from './auth/utils';
-import { systemRepo } from './fhir/repo';
+import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
@@ -15,6 +15,8 @@ export async function seedDatabase(): Promise<void> {
     globalLogger.info('Already seeded');
     return;
   }
+
+  const systemRepo = getSystemRepo();
 
   const [firstName, lastName, email] = ['Medplum', 'Admin', 'admin@example.com'];
   const passwordHash = await bcryptHashPassword('medplum_admin');
@@ -78,5 +80,6 @@ export async function seedDatabase(): Promise<void> {
  * @returns True if already seeded.
  */
 function isSeeded(): Promise<User | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne({ resourceType: 'User' });
 }

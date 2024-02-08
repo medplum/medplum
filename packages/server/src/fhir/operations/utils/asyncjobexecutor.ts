@@ -1,7 +1,7 @@
 import { AsyncJob } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import { getRequestContext } from '../../../context';
-import { Repository, systemRepo } from '../../repo';
+import { Repository, getSystemRepo } from '../../repo';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -39,6 +39,7 @@ export class AsyncJobExecutor {
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
+    const systemRepo = getSystemRepo();
     try {
       await callback();
       await systemRepo.updateResource<AsyncJob>({

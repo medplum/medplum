@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
 
 // Implements FHIR "Value Set Expansion"
@@ -110,6 +110,7 @@ function filterToTsvectorQuery(filter: string | undefined): string | undefined {
 }
 
 function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ValueSet>({
     resourceType: 'ValueSet',
     filters: [{ code: 'url', operator: SearchOperator.EQUALS, value: url }],

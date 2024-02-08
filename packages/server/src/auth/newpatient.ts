@@ -3,10 +3,10 @@ import { Login, Patient, Project, ProjectMembership, Reference, User } from '@me
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
-import { createProfile, createProjectMembership } from './utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { createProfile, createProjectMembership } from './utils';
 
 export const newPatientValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
@@ -20,6 +20,7 @@ export const newPatientValidator = makeValidationMiddleware([
  * @param res - The HTTP response.
  */
 export async function newPatientHandler(req: Request, res: Response): Promise<void> {
+  const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
@@ -61,6 +62,7 @@ export async function createPatient(
   firstName: string,
   lastName: string
 ): Promise<ProjectMembership> {
+  const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const project = await systemRepo.readResource<Project>('Project', projectId);
 

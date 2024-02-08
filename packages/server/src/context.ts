@@ -3,7 +3,7 @@ import { Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
-import { Repository, systemRepo } from './fhir/repo';
+import { Repository, getSystemRepo } from './fhir/repo';
 import { parseTraceparent } from './traceparent';
 
 export class RequestContext {
@@ -66,7 +66,7 @@ export class AuthenticatedRequestContext extends RequestContext {
       {} as unknown as Login,
       {} as unknown as Project,
       {} as unknown as ProjectMembership,
-      systemRepo,
+      getSystemRepo(),
       systemLogger
     );
   }
