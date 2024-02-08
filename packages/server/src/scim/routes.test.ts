@@ -6,14 +6,15 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
-import { addTestUser, withTestContext } from '../test.setup';
 import { AuthenticatedRequestContext, requestContextStore } from '../context';
-
-const app = express();
-let accessToken: string;
+import { getSystemRepo } from '../fhir/repo';
+import { addTestUser, withTestContext } from '../test.setup';
 
 describe('SCIM Routes', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

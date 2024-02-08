@@ -18,7 +18,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret } from './keys';
 import { hashCode } from './token';
@@ -56,18 +56,19 @@ jest.mock('jose', () => {
 
 jest.mock('node-fetch');
 
-const app = express();
-const domain = randomUUID() + '.example.com';
-const email = `text@${domain}`;
-const password = randomUUID();
-const redirectUri = `https://${domain}/auth/callback`;
-let config: MedplumServerConfig;
-let project: Project;
-let client: ClientApplication;
-let pkceOptionalClient: ClientApplication;
-let externalAuthClient: ClientApplication;
-
 describe('OAuth2 Token', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  const domain = randomUUID() + '.example.com';
+  const email = `text@${domain}`;
+  const password = randomUUID();
+  const redirectUri = `https://${domain}/auth/callback`;
+  let config: MedplumServerConfig;
+  let project: Project;
+  let client: ClientApplication;
+  let pkceOptionalClient: ClientApplication;
+  let externalAuthClient: ClientApplication;
+
   beforeAll(async () => {
     config = await loadTestConfig();
     await initApp(app, config);

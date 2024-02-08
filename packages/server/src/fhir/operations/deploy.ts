@@ -9,7 +9,7 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { allOk, badRequest, ContentType, getReferenceString, sleep } from '@medplum/core';
+import { ContentType, allOk, badRequest, getReferenceString, sleep } from '@medplum/core';
 import { Binary, Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import { Request, Response } from 'express';
@@ -19,7 +19,7 @@ import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { sendOutcome } from '../outcomes';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 import { isBotEnabled } from './execute';
 
@@ -111,6 +111,7 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   await ctx.repo.readResource<Bot>('Bot', id);
 
   // Then read the bot as system user to load extended metadata
+  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', id);
 
   if (!(await isBotEnabled(bot))) {

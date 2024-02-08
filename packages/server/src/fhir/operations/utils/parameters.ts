@@ -16,9 +16,9 @@ import {
   ParametersParameter,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { getRequestContext } from '../../../context';
 import { sendOutcome } from '../../outcomes';
 import { sendResponse } from '../../response';
-import { getRequestContext } from '../../../context';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -42,7 +42,10 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
     return {} as any;
   }
 
-  const input = req.body;
+  // If the request is a GET request, use the query parameters
+  // Otherwise, use the body
+  const input = req.method === 'GET' ? req.query : req.body;
+
   const inputParameters = operation.parameter.filter((p) => p.use === 'in');
   if (input.resourceType === 'Parameters') {
     if (!input.parameter) {

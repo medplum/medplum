@@ -31,10 +31,11 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { Repository, systemRepo } from './repo';
+import { getSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
   let testProject: Project;
+  const systemRepo = getSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();

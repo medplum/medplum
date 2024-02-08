@@ -3,8 +3,8 @@ import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { tryLogin } from '../oauth/utils';
-import { getProjectIdByClientId, sendLoginResult } from './utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 export const loginValidator = makeValidationMiddleware([
   body('email').isEmail().withMessage('Valid email address is required'),

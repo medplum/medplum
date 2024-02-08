@@ -3,10 +3,10 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getUserByEmail } from '../oauth/utils';
-import { registerNew } from './register';
 import { withTestContext } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('jose', () => {
   const original = jest.requireActual('jose');
@@ -144,6 +144,7 @@ describe('Google Auth', () => {
       });
 
       // As a super admin, update the project to require Google auth
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         features: ['google-auth-required'],
@@ -179,6 +180,7 @@ describe('Google Auth', () => {
       });
 
       // As a super admin, set the google client ID
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -221,6 +223,7 @@ describe('Google Auth', () => {
         });
 
         // As a super admin, set the google client ID
+        const systemRepo = getSystemRepo();
         await systemRepo.updateResource({
           ...project,
           site: [
@@ -266,6 +269,7 @@ describe('Google Auth', () => {
       });
 
       // As a super admin, set the google client ID
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -308,6 +312,7 @@ describe('Google Auth', () => {
       });
 
       // As a super admin, set the google client ID
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [

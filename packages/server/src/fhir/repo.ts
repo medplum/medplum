@@ -180,7 +180,7 @@ const lookupTables: LookupTable<unknown>[] = [
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends BaseRepository implements FhirRepository<PoolClient> {
+export class Repository extends BaseRepository implements FhirRepository<PoolClient>, Disposable {
   private readonly context: RepositoryContext;
   private closed = false;
 
@@ -1508,6 +1508,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       for (const patientRef of getPatients(updated)) {
         // If the resource is in a patient compartment, then lookup the patient.
         try {
+          const systemRepo = getSystemRepo();
           const patient = await systemRepo.readReference(patientRef);
           if (patient.meta?.account) {
             // If the patient has an account, then use it as the resource account.
@@ -1813,6 +1814,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     this.closed = true;
   }
 
+  [Symbol.dispose](): void {
+    this.close();
+  }
+
   private assertNotClosed(): void {
     if (this.closed) {
       throw new Error('Already closed');
@@ -1952,12 +1957,14 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
-export const systemRepo = new Repository({
-  superAdmin: true,
-  strictMode: true,
-  extendedMode: true,
-  author: {
-    reference: 'system',
-  },
-  // System repo does not have an associated Project; it can write to any
-});
+export function getSystemRepo(): Repository {
+  return new Repository({
+    superAdmin: true,
+    strictMode: true,
+    extendedMode: true,
+    author: {
+      reference: 'system',
+    },
+    // System repo does not have an associated Project; it can write to any
+  });
+}

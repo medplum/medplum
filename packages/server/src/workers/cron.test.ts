@@ -1,19 +1,20 @@
-import { Repository, systemRepo } from '../fhir/repo';
-import { loadTestConfig } from '../config';
-import { initAppServices, shutdownApp } from '../app';
-import { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
-import { createTestProject, withTestContext } from '../test.setup';
 import { createReference } from '@medplum/core';
-import { convertTimingToCron, CronJobData, execBot, getCronQueue } from './cron';
-import { randomUUID } from 'crypto';
+import { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
+import { randomUUID } from 'crypto';
+import { initAppServices, shutdownApp } from '../app';
+import { loadTestConfig } from '../config';
+import { Repository, getSystemRepo } from '../fhir/repo';
+import { createTestProject, withTestContext } from '../test.setup';
+import { CronJobData, convertTimingToCron, execBot, getCronQueue } from './cron';
 
 jest.mock('node-fetch');
 
-let botProject: Project;
-let botRepo: Repository;
-
 describe('Cron Worker', () => {
+  const systemRepo = getSystemRepo();
+  let botProject: Project;
+  let botRepo: Repository;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);

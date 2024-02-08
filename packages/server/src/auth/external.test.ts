@@ -8,7 +8,7 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -50,6 +50,8 @@ describe('External', () => {
       });
       project = registerResult.project;
       defaultClient = registerResult.client;
+
+      const systemRepo = getSystemRepo();
 
       // Create a domain configuration with external identity provider
       await systemRepo.createResource<DomainConfiguration>({
@@ -321,6 +323,8 @@ describe('External', () => {
 
   test('Subject auth success', async () => {
     const subjectAuthClient = await withTestContext(async () => {
+      const systemRepo = getSystemRepo();
+
       // Create a new client application with external subject auth
       const client = await createClient(systemRepo, {
         project,
@@ -377,6 +381,8 @@ describe('External', () => {
 
   test('Client secret post', async () => {
     const clientSecretPostClient = await withTestContext(async () => {
+      const systemRepo = getSystemRepo();
+
       // Create a new client application with external subject auth
       const client = await createClient(systemRepo, {
         project,
@@ -437,6 +443,8 @@ describe('External', () => {
     const domain = `${randomUUID()}.example.com`;
     const redirectUri = `https://${domain}/auth/callback`;
     const client = await withTestContext(async () => {
+      const systemRepo = getSystemRepo();
+
       // Create a new project
       const { project, client } = await registerNew({
         firstName: 'External',

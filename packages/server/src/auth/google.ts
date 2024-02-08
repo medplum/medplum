@@ -7,11 +7,11 @@ import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { URL } from 'url';
 import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
+import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
-import { makeValidationMiddleware } from '../util/validator';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -101,6 +101,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('User not found'));
       return;
     }
+    const systemRepo = getSystemRepo();
     await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
@@ -146,5 +147,6 @@ function getProjectsByGoogleClientId(googleClientId: string, projectId: string |
     });
   }
 
+  const systemRepo = getSystemRepo();
   return systemRepo.searchResources<Project>({ resourceType: 'Project', filters });
 }
