@@ -7,31 +7,104 @@ import {
 } from './typeschema/types';
 import { isPopulated } from './utils';
 
-function isSupportedSliceDefinition(slice: SliceDefinition): slice is SupportedSliceDefinition {
+function isSupportedSliceDefinition(slice: SliceDefinition): slice is VisitorSliceDefinition {
   return isPopulated(slice.type);
 }
 
-type SupportedSliceDefinition = SliceDefinition & {
+export type VisitorSliceDefinition = SliceDefinition & {
   type: NonNullable<SliceDefinition['type']>;
   typeSchema?: InternalTypeSchema;
 };
 
-export type VisitorSliceDefinition = SupportedSliceDefinition;
 export type VisitorSlicingRules = Omit<SlicingRules, 'slices'> & {
   slices: VisitorSliceDefinition[];
 };
 
 export interface SchemaVisitor {
+  /**
+   * Called when entering a schema. This is called once for the root profile and once for each
+   * extension with a profile associated with it.
+   * @param schema - The schema being entered.
+   */
   onEnterSchema?: (schema: InternalTypeSchema) => void;
-  onExitSchema?: () => void;
+  /**
+   * Called when exiting a schema. See `onEnterSchema` for more information.
+   * @param schema - The schema being exited.
+   */
+  onExitSchema?: (schema: InternalTypeSchema) => void;
 
-  onEnterResource?: (schema: InternalTypeSchema) => void;
-  onExitResource?: () => void;
-
+  /**
+   * Called when entering an element. This is called for every element in the schema in a
+   * tree-like fashion. If the element has slices, the slices are crawled after `onEnterElement`
+   * but before `onExitElement`.
+   *
+   * @example
+   * Example of tree-like method invocation ordering:
+   * '''typescript
+   * onEnterElement('Patient.name')
+   * onEnterElement('Patient.name.given')
+   * onExitElement('Patient.name.given')
+   * onEnterElement('Patient.name.family')
+   * onExitElement('Patient.name.family')
+   * onExitElement('Patient.name')
+   * '''
+   *
+   *
+   * @param path - The full path of the element being entered, even if within an extension. e.g The
+   * path of the ombCategory extension within the US Core Race extension will be
+   * 'Patient.extension.extension.value[x]' rather than 'Extension.extension.value[x]'. The latter is
+   * accessible on the element parameter.
+   * @param element - The element being entered.
+   * @param elementsContext - The context of the elements currently being crawled.
+   */
   onEnterElement?: (path: string, element: InternalSchemaElement, elementsContext: ElementsContextType) => void;
+
+  /**
+   * Called when exiting an element. See `onEnterElement` for more information.
+   * @param path - The full path of the element being exited.
+   * @param element - The element being exited.
+   * @param elementsContext - The context of the elements currently being crawled.
+   */
   onExitElement?: (path: string, element: InternalSchemaElement, elementsContext: ElementsContextType) => void;
 
+  /**
+   * Called when entering a slice. Called for every slice in a given sliced element. `onEnterElement` and `onExitElement`
+   * will be called in a tree-like fashion for elements within the slice followed by `onExitSlice`.
+   *
+   * @example
+   * Example of a sliced element being crawled with some elements excluded for brevity:
+   * '''typescript
+   * onEnterElement  ('Observation.component')
+   *
+   * // systolic
+   * onEnterSlice    ('Observation.component', systolicSlice, slicingRules)
+   * onEnterElement  ('Observation.component.code')
+   * onExitElement   ('Observation.component.code')
+   * onEnterElement  ('Observation.component.value[x]')
+   * onEnterElement  ('Observation.component.value[x].code')
+   * onExitElement   ('Observation.component.value[x].code')
+   * onEnterElement  ('Observation.component.value[x].system')
+   * onExitElement   ('Observation.component.value[x].system')
+   * onExitElement   ('Observation.component.value[x]')
+   * onExitSlice     ('Observation.component', systolicSlice, slicingRules)
+   *
+   * // similar set of invocations for diastolic slice
+   *
+   * onExitElement  ('Observation.component')
+   * '''
+   *
+   * @param path - The full path of the sliced element being entered. See `onEnterElement` for more information.
+   * @param slice - The slice being entered.
+   * @param slicing - The slicing rules related to the slice being entered.
+   */
   onEnterSlice?: (path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules) => void;
+
+  /**
+   * Called when exiting a slice. See `onEnterSlice` for more information.
+   * @param path - The full path of the sliced element being exited. See `onEnterElement` for more information.
+   * @param slice - The slice being exited.
+   * @param slicing - The slicing rules related to the slice.
+   */
   onExitSlice?: (path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules) => void;
 }
 
@@ -39,13 +112,11 @@ export class SchemaCrawler {
   private readonly rootSchema: InternalTypeSchema & { type: string };
   private readonly visitor: SchemaVisitor;
   private readonly elementsContextStack: ElementsContextType[];
-
-  private debugMode: boolean = false;
   private sliceAllowList: SliceDefinition[] | undefined;
 
   constructor(schema: InternalTypeSchema, visitor: SchemaVisitor, elements?: InternalTypeSchema['elements']) {
     if (schema.type === undefined) {
-      throw new Error('schema must specify a type');
+      throw new Error('schema must include a type');
     }
 
     this.rootSchema = schema as InternalTypeSchema & { type: string };
@@ -58,12 +129,6 @@ export class SchemaCrawler {
       }),
     ];
     this.visitor = visitor;
-  }
-
-  private debug(...data: any[]): void {
-    if (this.debugMode) {
-      console.debug(`[${this.rootSchema.name}]`, ...data);
-    }
   }
 
   private get elementsContext(): ElementsContextType {
@@ -84,7 +149,7 @@ export class SchemaCrawler {
     this.crawlElementsImpl(allowedElements, path);
 
     if (this.visitor.onExitSchema) {
-      this.visitor.onExitSchema();
+      this.visitor.onExitSchema(this.rootSchema);
     }
   }
 
@@ -105,28 +170,19 @@ export class SchemaCrawler {
     this.sliceAllowList = undefined;
 
     if (this.visitor.onExitSchema) {
-      this.visitor.onExitSchema();
+      this.visitor.onExitSchema(this.rootSchema);
     }
   }
 
-  crawlResource(debug?: boolean): void {
+  crawlResource(): void {
     if (this.visitor.onEnterSchema) {
       this.visitor.onEnterSchema(this.rootSchema);
     }
 
-    this.debugMode = Boolean(debug);
-
-    if (this.visitor.onEnterResource) {
-      this.visitor.onEnterResource(this.rootSchema);
-    }
-
     this.crawlElementsImpl(this.rootSchema.elements, this.rootSchema.type);
 
-    if (this.visitor.onExitResource) {
-      this.visitor.onExitResource();
-    }
     if (this.visitor.onExitSchema) {
-      this.visitor.onExitSchema();
+      this.visitor.onExitSchema(this.rootSchema);
     }
   }
 
@@ -157,10 +213,9 @@ export class SchemaCrawler {
   }
 
   private prepareSlices(slices: SliceDefinition[], slicing: SlicingRules): VisitorSlicingRules {
-    const supportedSlices: SupportedSliceDefinition[] = [];
+    const slicesToVisit: VisitorSliceDefinition[] = [];
     for (const slice of slices) {
       if (!isSupportedSliceDefinition(slice)) {
-        this.debug(`Ignoring slice ${slice.name} since it has no type information`);
         continue;
       }
       const profileUrl = slice.type.find((t) => isPopulated(t.profile))?.profile?.[0];
@@ -168,16 +223,12 @@ export class SchemaCrawler {
         const schema = tryGetProfile(profileUrl);
         if (schema) {
           slice.typeSchema = schema;
-        } else {
-          this.debug(`Schema for slice ${slice.name} and profile ${profileUrl} not found`);
         }
       }
-      supportedSlices.push(slice);
+      slicesToVisit.push(slice);
     }
 
-    const visitorSlicing = slicing as VisitorSlicingRules;
-    visitorSlicing.slices = supportedSlices;
-
+    const visitorSlicing = { ...slicing, slices: slicesToVisit } as VisitorSlicingRules;
     return visitorSlicing;
   }
 
@@ -185,21 +236,13 @@ export class SchemaCrawler {
     const visitorSlicing = this.prepareSlices(slicing.slices, slicing);
 
     for (const slice of visitorSlicing.slices) {
-      if (isPopulated(this.sliceAllowList)) {
-        if (this.sliceAllowList.includes(slice)) {
-          this.crawlSliceImpl(slice, path, visitorSlicing);
-        }
-      } else {
+      if (this.sliceAllowList === undefined || this.sliceAllowList.includes(slice)) {
         this.crawlSliceImpl(slice, path, visitorSlicing);
       }
     }
   }
 
   private crawlSliceImpl(slice: VisitorSliceDefinition, path: string, slicing: VisitorSlicingRules): void {
-    if (this.visitor.onEnterSlice) {
-      this.visitor.onEnterSlice(path, slice, slicing);
-    }
-
     const sliceSchema = slice.typeSchema;
     if (sliceSchema) {
       if (this.visitor.onEnterSchema) {
@@ -207,13 +250,18 @@ export class SchemaCrawler {
       }
     }
 
-    const sliceElements = sliceSchema?.elements ?? slice.elements;
+    if (this.visitor.onEnterSlice) {
+      this.visitor.onEnterSlice(path, slice, slicing);
+    }
+
     let elementsContext: ElementsContextType | undefined;
+
+    const sliceElements = sliceSchema?.elements ?? slice.elements;
     if (isPopulated(sliceElements)) {
       elementsContext = buildElementsContext({
+        parentPath: path,
         parentContext: this.elementsContext,
         elements: sliceElements,
-        parentPath: path,
       });
       this.elementsContextStack.push(elementsContext);
     }
@@ -223,14 +271,14 @@ export class SchemaCrawler {
       this.elementsContextStack.pop();
     }
 
-    if (sliceSchema) {
-      if (this.visitor.onExitSchema) {
-        this.visitor.onExitSchema();
-      }
-    }
-
     if (this.visitor.onExitSlice) {
       this.visitor.onExitSlice(path, slice, slicing);
+    }
+
+    if (sliceSchema) {
+      if (this.visitor.onExitSchema) {
+        this.visitor.onExitSchema(sliceSchema);
+      }
     }
   }
 }
