@@ -224,7 +224,7 @@ describe('ResourceForm', () => {
     expect(patient.active).toBe(true);
   });
 
-  test.only('With profileUrl specified', async () => {
+  test('With profileUrl specified', async () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-implantable-device`;
     const profilesToLoad = [profileUrl, `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`];
     for (const url of profilesToLoad) {
