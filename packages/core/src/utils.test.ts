@@ -32,8 +32,10 @@ import {
   getExtensionValue,
   getIdentifier,
   getImageSrc,
+  getPathDifference,
   getQuestionnaireAnswers,
   getReferenceString,
+  isComplexTypeCode,
   isEmpty,
   isLowerCase,
   isPopulated,
@@ -53,6 +55,7 @@ import {
   splitN,
   stringify,
 } from './utils';
+import { PropertyType } from './types';
 
 if (typeof btoa === 'undefined') {
   global.btoa = function (str) {
@@ -650,6 +653,25 @@ describe('Core Utils', () => {
     expect(isLowerCase('a')).toEqual(true);
     expect(isLowerCase('A')).toEqual(false);
     expect(isLowerCase('3')).toEqual(false);
+  });
+
+  test('isComplexTypeCode', () => {
+    expect(isComplexTypeCode('url')).toEqual(false);
+    expect(isComplexTypeCode(PropertyType.SystemString)).toEqual(false);
+    expect(isComplexTypeCode('')).toEqual(false);
+  });
+
+  test('getPathDifference', () => {
+    expect(getPathDifference('a', 'b')).toEqual(undefined);
+    expect(getPathDifference('a', 'a')).toEqual(undefined);
+    expect(getPathDifference('A', 'A')).toEqual(undefined);
+    expect(getPathDifference('a.b', 'a')).toEqual(undefined);
+
+    expect(getPathDifference('a', 'a.b')).toEqual('b');
+    expect(getPathDifference('A.b', 'A.b.c.d')).toEqual('c.d');
+    expect(getPathDifference('Patient.extension', 'Patient.extension.extension.value[x]')).toEqual(
+      'extension.value[x]'
+    );
   });
 
   test('isUUID', () => {

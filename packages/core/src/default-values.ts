@@ -1,44 +1,78 @@
 import { Resource } from '@medplum/fhirtypes';
 import {
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SliceDefinition,
-  SliceDiscriminator,
-  SlicingRules,
-} from './typeschema/types';
-import { arrayify, capitalize, deepClone, isObject, isPopulated, splitOnceRight } from './utils';
-import { getNestedProperty } from './typeschema/crawler';
-import { TypedValue } from './types';
-import { matchDiscriminant } from './typeschema/validation';
-import {
   ElementsContextType,
   SchemaCrawler,
   SchemaVisitor,
   VisitorSliceDefinition,
   VisitorSlicingRules,
 } from './schema-crawler';
+import { TypedValue } from './types';
+import { getNestedProperty } from './typeschema/crawler';
+import {
+  InternalSchemaElement,
+  InternalTypeSchema,
+  SliceDefinition,
+  SliceDiscriminator,
+  SlicingRules,
+} from './typeschema/types';
+import { matchDiscriminant } from './typeschema/validation';
+import {
+  arrayify,
+  capitalize,
+  deepClone,
+  getPathDifference,
+  isComplexTypeCode,
+  isObject,
+  isPopulated,
+  splitOnceRight,
+} from './utils';
 
-type ConsoleDebug = typeof console.debug;
+/**
+ * Used when an array entry, typically an empty one, needs to be assigned
+ * to a given slice even though it doesn't match the slice's discriminator.
+ */
+const SLICE_NAME_KEY = '__sliceName';
 
-export const SLICE_NAME_KEY = '__sliceName';
+export type ApplyDefautlValuesToResourceOptions = {
+  debug?: boolean;
+};
 
+/**
+ * Adds default values to `resource` based on the supplied `schema`. Default values includes all required fixed and pattern
+ * values specified on elements in the schema. If an element has a fixed/pattern value but is optional, i.e.
+ * `element.min === 0`, the default value is not added.
+ *
+ * @param resource - The resource to which default values should be added.
+ * @param schema - The schema to use for adding default values.
+ * @param options - (optional) additional options
+ * @returns A clone of `resource` with default values added.
+ */
 export function applyDefaultValuesToResource(
   resource: Resource,
   schema: InternalTypeSchema,
-  options?: { debug?: boolean }
+  options?: ApplyDefautlValuesToResourceOptions
 ): Resource {
-  const debugMode = Boolean(options?.debug);
   const visitor = new DefaultValueVisitor(resource, resource.resourceType, 'resource', options?.debug);
   const crawler = new SchemaCrawler(schema, visitor);
-  crawler.crawlResource(debugMode);
+  crawler.crawlResource();
   return visitor.getDefaultValue();
 }
 
+/**
+ * Adds default values to `existingValue` for the given `key` and its children. If `key` is undefined,
+ * default values are added to all elements in `elements`. Default values consist of all fixed and pattern
+ * values defined in the relevant elements.
+ * @param existingValue - The
+ * @param elements - The elements to which default values should be added.
+ * @param key - (optional) The key of the element(s) for which default values should be added. Elements with nested
+ * keys are also included. If undefined, default values for all elements are added.
+ * @returns `existingValue` with default values added
+ */
 export function applyDefaultValuesToElement(
-  existingValue: any,
-  key: string | undefined,
-  elements: Record<string, InternalSchemaElement>
-): void {
+  existingValue: object,
+  elements: Record<string, InternalSchemaElement>,
+  key?: string
+): object {
   for (const [elementKey, element] of Object.entries(elements)) {
     if (key === undefined || key === elementKey) {
       applyFixedOrPatternValue(existingValue, elementKey, element, elements, false);
@@ -95,11 +129,11 @@ type ValueContext = {
   values: any[];
 };
 
-export class DefaultValueVisitor implements SchemaVisitor {
-  private outputRootValue: any;
+class DefaultValueVisitor implements SchemaVisitor {
+  private rootValue: any;
 
   private readonly schemaStack: InternalTypeSchema[];
-  private valueStack: ValueContext[];
+  private readonly valueStack: ValueContext[];
 
   private debugMode: boolean;
 
@@ -108,7 +142,12 @@ export class DefaultValueVisitor implements SchemaVisitor {
     this.valueStack = [];
     this.debugMode = Boolean(debug);
 
-    this.setRootValue(rootValue, path, type);
+    this.rootValue = deepClone(rootValue);
+    this.valueStack.splice(0, this.valueStack.length, {
+      type,
+      path,
+      values: [this.rootValue],
+    });
   }
 
   private get schema(): InternalTypeSchema {
@@ -123,17 +162,6 @@ export class DefaultValueVisitor implements SchemaVisitor {
     if (this.debugMode) {
       console.debug(`[ApplyDefaults][${this.schema.name}]`, ...data);
     }
-  }
-
-  setRootValue(rootValue: any, rootPath: string, rootType: ValueContext['type']): void {
-    this.outputRootValue = deepClone(rootValue);
-    this.valueStack = [
-      {
-        type: rootType,
-        path: rootPath,
-        values: [this.outputRootValue],
-      },
-    ];
   }
 
   onEnterSchema(schema: InternalTypeSchema): void {
@@ -166,9 +194,6 @@ export class DefaultValueVisitor implements SchemaVisitor {
       // eld-6: Fixed value may only be specified if there is one type
       // eld-7: Pattern may only be specified if there is one type
       if (element.type.length > 1) {
-        if (element.fixed || element.pattern) {
-          this.debug(`skipping fixed/pattern for ${path} since the element has multiple types`);
-        }
         continue;
       }
 
@@ -220,14 +245,13 @@ export class DefaultValueVisitor implements SchemaVisitor {
         for (let i = elementValue.length - 1; i >= 0; i--) {
           const value = elementValue[i];
           if (!isPopulated(value)) {
-            this.debug(`empty value removed from array: ${JSON.stringify(value)}`);
             elementValue.splice(i, 1);
           }
         }
       }
 
-      // remove empty items from parent
-      if (elementValue !== undefined && !isPopulated(elementValue)) {
+      if (!isPopulated(elementValue)) {
+        // setting undefined to delete the key
         setValueAtKey(parentValue, undefined, key, element);
       }
     }
@@ -279,13 +303,13 @@ export class DefaultValueVisitor implements SchemaVisitor {
     });
   }
 
-  onExitSlice(path: string, slice: VisitorSliceDefinition): void {
-    const sliceValueContext = this.valueStack.pop();
-    if (!sliceValueContext) {
+  onExitSlice(_path: string, slice: VisitorSliceDefinition): void {
+    const sliceValuesContext = this.valueStack.pop();
+    if (!sliceValuesContext) {
       throw new Error('Expected value context to exist in onExitSlice');
     }
 
-    for (const sliceValueArray of sliceValueContext.values) {
+    for (const sliceValueArray of sliceValuesContext.values) {
       for (let i = sliceValueArray.length - 1; i >= 0; i--) {
         const sliceValue = sliceValueArray[i];
         if (SLICE_NAME_KEY in sliceValue) {
@@ -294,12 +318,11 @@ export class DefaultValueVisitor implements SchemaVisitor {
       }
     }
 
-    this.debug(`onExitSlice[${slice.name}]`, slice.name, JSON.stringify(sliceValueContext.values));
-    this.debug('parentValue', JSON.stringify(this.value.values));
+    this.debug(`onExitSlice[${slice.name}]`, slice.name, JSON.stringify(sliceValuesContext.values));
   }
 
   getDefaultValue(): any {
-    return this.outputRootValue;
+    return this.rootValue;
   }
 }
 
@@ -346,14 +369,6 @@ function getValueSliceName(
   return undefined;
 }
 
-export function getPathDifference(parentPath: string, path: string): string | undefined {
-  const parentPathPrefix = parentPath + '.';
-  if (path.startsWith(parentPathPrefix)) {
-    return path.slice(parentPathPrefix.length);
-  }
-  return undefined;
-}
-
 function setValueAtKey(parent: any, value: any, key: string, element: InternalSchemaElement): void {
   if (key.includes('.')) {
     throw new Error('key cannot be nested');
@@ -388,7 +403,7 @@ function getValueAtKey(
   }
 
   if (!isObject(value)) {
-    throw new Error('Expected value to be an object');
+    throw new Error('Expected value to be an array or object');
   }
 
   const keyParts = key.split('.');
@@ -436,14 +451,14 @@ function applyFixedOrPatternValue(
   key: string,
   element: InternalSchemaElement,
   elements: Record<string, InternalSchemaElement>,
-  debugMode: boolean
+  debug: boolean
 ): any {
   if (!(element.fixed || element.pattern)) {
     return inputValue;
   }
 
   if (Array.isArray(inputValue)) {
-    return inputValue.map((iv) => applyFixedOrPatternValue(iv, key, element, elements, debugMode));
+    return inputValue.map((iv) => applyFixedOrPatternValue(iv, key, element, elements, debug));
   }
 
   if (inputValue === undefined || inputValue === null) {
@@ -452,12 +467,12 @@ function applyFixedOrPatternValue(
 
   const outputValue = inputValue;
 
-  const debug: ConsoleDebug = debugMode ? console.debug : () => undefined;
-
-  debug(
-    `applyFixedPattern key: ${key} ${element.fixed ? 'fixed' : 'pattern'}: ${JSON.stringify((element.fixed ?? element.pattern)?.value)}`
-  );
-  debug(`begin`, JSON.stringify(inputValue, undefined, 2));
+  if (debug) {
+    console.debug(
+      `applyFixedPattern key: ${key} ${element.fixed ? 'fixed' : 'pattern'}: ${JSON.stringify((element.fixed ?? element.pattern)?.value)}`
+    );
+    console.debug(`begin`, JSON.stringify(inputValue, undefined, 2));
+  }
 
   const keyParts = key.split('.');
   let last: any = outputValue;
@@ -475,25 +490,25 @@ function applyFixedOrPatternValue(
         if (element.fixed) {
           item[keyPart] ??= element.fixed.value;
         } else if (element.pattern) {
-          item[keyPart] = applyPattern(item[keyPart], element.pattern.value, debug);
+          item[keyPart] = applyPattern(item[keyPart], element.pattern.value);
         }
       }
     } else {
       if (!(keyPart in last)) {
         const elementKey = keyParts.slice(0, i + 1).join('.');
-        debug(`creating empty value for ${elementKey}`);
         last[keyPart] = elements[elementKey].isArray ? [Object.create(null)] : Object.create(null);
       }
-      debug('setting last to', JSON.stringify(last[keyPart]));
       last = last[keyPart];
     }
   }
-  debug(`done`, JSON.stringify(outputValue, undefined, 2));
+  if (debug) {
+    console.debug(`done`, JSON.stringify(outputValue, undefined, 2));
+  }
 
   return outputValue;
 }
 
-function applyPattern(existingValue: any, pattern: any, debug: ConsoleDebug): any {
+function applyPattern(existingValue: any, pattern: any): any {
   try {
     const result = existingValue === undefined ? undefined : deepClone(existingValue);
 
@@ -504,7 +519,7 @@ function applyPattern(existingValue: any, pattern: any, debug: ConsoleDebug): an
             'Cannot yet apply a pattern to a non-empty array since that would require considering cardinality and slicing'
           );
         } else {
-          return pattern;
+          return deepClone(pattern);
         }
       } else {
         throw new Error('Type of value incompatible with array pattern');
@@ -513,12 +528,7 @@ function applyPattern(existingValue: any, pattern: any, debug: ConsoleDebug): an
       if (isObject(existingValue) || existingValue === undefined || existingValue === null) {
         const resultObj = (result ?? Object.create(null)) as { [key: string]: any };
         for (const key of Object.keys(pattern)) {
-          const output = applyPattern(resultObj[key], pattern[key], debug);
-          debug(
-            `object set ${key}`,
-            JSON.stringify({ existing: resultObj[key] ?? null, pattern: pattern[key], output }, undefined, 2)
-          );
-          resultObj[key] = applyPattern(resultObj[key], pattern[key], debug);
+          resultObj[key] = applyPattern(resultObj[key], pattern[key]);
         }
         return resultObj;
       } else {
@@ -530,8 +540,4 @@ function applyPattern(existingValue: any, pattern: any, debug: ConsoleDebug): an
   } catch (ex) {
     return existingValue;
   }
-}
-
-export function isComplexTypeCode(code: string): boolean {
-  return code.length > 0 && code.startsWith(code[0].toUpperCase());
 }

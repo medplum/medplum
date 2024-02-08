@@ -135,8 +135,7 @@ describe('apply default values', () => {
         const slice = getSlice(schema, 'component', 'systolic');
         expect(slice.elements['value[x]'].min).toEqual(0);
 
-        const key = 'value[x]';
-        const result = applyDefaultValuesToElement(Object.create(null), key, slice.elements);
+        const result = applyDefaultValuesToElement(Object.create(null), slice.elements, 'value[x]');
         expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });
       });
 
@@ -184,7 +183,7 @@ describe('apply default values', () => {
     describe('fixed/pattern values within non-required extension slice entry', () => {
       test('new race extension entry', () => {
         const sliceSchema = getProfile(raceExtensionUrl);
-        const result = applyDefaultValuesToElement(Object.create(null), undefined, sliceSchema.elements);
+        const result = applyDefaultValuesToElement(Object.create(null), sliceSchema.elements);
         expect(result).toEqual({ url: raceExtensionUrl });
       });
 

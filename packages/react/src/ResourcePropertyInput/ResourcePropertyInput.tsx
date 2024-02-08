@@ -181,13 +181,13 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
 
     const withDefaults = Object.create(null);
     if (elementsContext.parentPath === props.path) {
-      applyDefaultValuesToElement(withDefaults, undefined, elementsContext.elements);
+      applyDefaultValuesToElement(withDefaults, elementsContext.elements);
     } else {
       const key = getPathDifference(elementsContext.parentPath, props.path);
       if (key === undefined) {
         return props.defaultValue;
       }
-      applyDefaultValuesToElement(withDefaults, key, elementsContext.elements);
+      applyDefaultValuesToElement(withDefaults, elementsContext.elements, key);
     }
 
     if (isPopulated(withDefaults)) {
