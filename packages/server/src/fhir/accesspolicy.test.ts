@@ -1975,4 +1975,39 @@ describe('AccessPolicy', () => {
         expect(outcome.issue?.[0]?.code).toEqual('forbidden');
       }
     }));
+
+  test('Repo with multiple Projects', async () =>
+    withTestContext(async () => {
+      const patientData: Patient = {
+        resourceType: 'Patient',
+      };
+
+      const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const repo1 = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        projects: [project1.id as string],
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        checkReferencesOnWrite: true,
+      });
+
+      const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
+      const repo2 = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        projects: [project2.id as string, project1.id as string],
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        checkReferencesOnWrite: true,
+      });
+
+      const patient1 = await repo1.createResource(patientData);
+      const patient2 = await repo2.createResource(patientData);
+
+      await expect(repo1.readResource('Patient', patient1.id as string)).resolves;
+      await expect(repo1.readResource('Patient', patient2.id as string)).rejects;
+      await expect(repo2.readResource('Patient', patient1.id as string)).resolves;
+      await expect(repo2.readResource('Patient', patient2.id as string)).resolves;
+    }));
 });
