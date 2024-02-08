@@ -8,13 +8,12 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
-import { sendResponse } from '../response';
-import { parseInputParameters } from './utils/parameters';
+import { getFullUrl, sendResponse } from '../response';
 import { getOperationDefinition } from './definitions';
+import { parseInputParameters } from './utils/parameters';
 
 const operation = getOperationDefinition('Patient', 'everything');
 
@@ -38,7 +37,7 @@ export async function patientEverythingHandler(req: Request, res: Response): Pro
 
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
-  
+
   // Then read all of the patient data
   const bundle = await getPatientEverything(ctx.repo, patient, params);
 
@@ -53,14 +52,18 @@ export async function patientEverythingHandler(req: Request, res: Response): Pro
  * @param params - The operation input parameters.
  * @returns The patient everything search result bundle.
  */
-export async function getPatientEverything(repo: Repository, patient: Patient, params: PatientEverythingParameters): Promise<Bundle> {
+export async function getPatientEverything(
+  repo: Repository,
+  patient: Patient,
+  params?: PatientEverythingParameters
+): Promise<Bundle> {
   const patientRef = getReferenceString(patient);
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
   const searches: SearchRequest[] = [];
 
   // Build a list of filters to apply to the searches
-  const filters = []
-  if (params._since) {
+  const filters = [];
+  if (params?._since) {
     filters.push({
       code: '_lastUpdated',
       operator: Operator.GREATER_THAN_OR_EQUALS,
@@ -84,7 +87,7 @@ export async function getPatientEverything(repo: Repository, patient: Patient, p
             operator: Operator.EQUALS,
             value: patientRef,
           },
-          ...filters
+          ...filters,
         ],
       });
     }
@@ -96,12 +99,15 @@ export async function getPatientEverything(repo: Repository, patient: Patient, p
   const searchResults = await Promise.all(promises);
 
   // Build the result bundle
-  const entry: BundleEntry[] = [
-    {
-      fullUrl: `${getConfig().baseUrl}fhir/R4/Patient/${patient.id}`,
+  const entry: BundleEntry[] = [];
+
+  if (!params?._since || (patient.meta?.lastUpdated as string) >= params?._since) {
+    entry.push({
+      fullUrl: getFullUrl('Patient', patient.id as string),
       resource: patient,
-    },
-  ];
+    });
+  }
+
   const resourceSet = new Set<string>([getReferenceString(patient)]);
   for (const searchResult of searchResults) {
     if (searchResult.entry) {
