@@ -8,9 +8,9 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
-import { registerNew } from './register';
+import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('node-fetch');
 
@@ -50,6 +50,8 @@ describe('Token Exchange', () => {
         clientId: '123',
         clientSecret: '456',
       };
+
+      const systemRepo = getSystemRepo();
 
       // Create a new client application with external auth
       externalAuthClient = await createClient(systemRepo, {

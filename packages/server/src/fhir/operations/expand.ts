@@ -9,7 +9,7 @@ import {
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { sendOutcome } from '../outcomes';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 import { parentProperty } from './codesystemimport';
@@ -139,6 +139,7 @@ function filterToTsvectorQuery(filter: string | undefined): string | undefined {
 }
 
 function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ValueSet>({
     resourceType: 'ValueSet',
     filters: [{ code: 'url', operator: SearchOperator.EQUALS, value: url }],

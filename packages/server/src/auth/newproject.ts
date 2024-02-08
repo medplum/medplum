@@ -2,10 +2,10 @@ import { badRequest, createReference } from '@medplum/core';
 import { Login, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
-import { makeValidationMiddleware } from '../util/validator';
 import { createProject } from '../fhir/operations/projectinit';
+import { sendOutcome } from '../fhir/outcomes';
+import { getSystemRepo } from '../fhir/repo';
+import { makeValidationMiddleware } from '../util/validator';
 
 export interface NewProjectRequest {
   readonly loginId: string;
@@ -25,6 +25,7 @@ export const newProjectValidator = makeValidationMiddleware([
  * @param res - The HTTP response.
  */
 export async function newProjectHandler(req: Request, res: Response): Promise<void> {
+  const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {

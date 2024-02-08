@@ -16,7 +16,7 @@ import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context
 import { getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import * as dataMigrations from '../migrations/data';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
@@ -83,6 +83,7 @@ superAdminRouter.post(
     validateResourceType(resourceType);
 
     await sendAsyncResponse(req, res, async () => {
+      const systemRepo = getSystemRepo();
       await systemRepo.reindexResourceType(resourceType);
     });
   })
@@ -101,6 +102,7 @@ superAdminRouter.post(
     validateResourceType(resourceType);
 
     await sendAsyncResponse(req, res, async () => {
+      const systemRepo = getSystemRepo();
       await systemRepo.rebuildCompartmentsForResourceType(resourceType);
     });
   })
@@ -206,6 +208,7 @@ superAdminRouter.post(
     requireAsync(req);
 
     await sendAsyncResponse(req, res, async () => {
+      const systemRepo = getSystemRepo();
       const client = getDatabasePool();
       const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
       const version = result.rows[0]?.dataVersion as number;

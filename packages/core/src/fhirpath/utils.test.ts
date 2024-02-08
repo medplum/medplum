@@ -230,7 +230,7 @@ describe('FHIRPath utils', () => {
   });
 
   test('getTypedPropertyValueWithSchema', () => {
-    const value = { active: true };
+    const typedValue: TypedValue = { type: 'Patient', value: { active: true } };
     const path = 'active';
     const goodElement: InternalSchemaElement = {
       description: '',
@@ -239,8 +239,9 @@ describe('FHIRPath utils', () => {
       max: 0,
       type: [{ code: 'boolean' }],
     };
-    expect(getTypedPropertyValueWithSchema(value, path, goodElement)).toEqual({ type: 'boolean', value: true });
+    expect(getTypedPropertyValueWithSchema(typedValue, path, goodElement)).toEqual({ type: 'boolean', value: true });
 
+    const choiceOfTypeTypedValue: TypedValue = { type: 'Extension', value: { valueBoolean: true } };
     const extensionValueX: InternalSchemaElement = {
       description: '',
       path: 'Extension.value[x]',
@@ -248,7 +249,7 @@ describe('FHIRPath utils', () => {
       max: 1,
       type: [{ code: 'boolean' }],
     };
-    expect(getTypedPropertyValueWithSchema({ valueBoolean: true }, 'value[x]', extensionValueX)).toEqual({
+    expect(getTypedPropertyValueWithSchema(choiceOfTypeTypedValue, 'value[x]', extensionValueX)).toEqual({
       type: 'boolean',
       value: true,
     });

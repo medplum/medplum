@@ -7,15 +7,26 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { loadDataType } from '@medplum/core';
 
 const medplum = new MockClient();
 
 describe('ProfilesPage', () => {
   const fishPatientProfile = FishPatientResources.getFishPatientProfileSD();
   beforeAll(async () => {
+    const loadedProfileUrls: string[] = [];
     for (const profile of [fishPatientProfile, FishPatientResources.getFishSpeciesExtensionSD()]) {
-      await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
+      const sd = await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
+      loadedProfileUrls.push(sd.url);
+      loadDataType(sd, sd.url);
     }
+    medplum.requestProfileSchema = jest.fn((profileUrl) => {
+      if (loadedProfileUrls.includes(profileUrl)) {
+        return Promise.resolve([profileUrl]);
+      } else {
+        throw new Error('unexpected profileUrl');
+      }
+    });
   });
 
   async function setup(url: string): Promise<void> {

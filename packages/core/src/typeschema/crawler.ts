@@ -102,21 +102,25 @@ class ResourceCrawler {
   }
 }
 
-export function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedValue[] | undefined)[] {
+export function getNestedProperty(
+  value: TypedValue,
+  key: string,
+  options?: { profileUrl?: string }
+): (TypedValue | TypedValue[] | undefined)[] {
   if (key === '$this') {
     return [value];
   }
   const [firstProp, ...nestedProps] = key.split('.');
-  let propertyValues = [getTypedPropertyValue(value, firstProp)];
+  let propertyValues = [getTypedPropertyValue(value, firstProp, options)];
   for (const prop of nestedProps) {
     const next = [];
     for (const current of propertyValues) {
       if (Array.isArray(current)) {
         for (const element of current) {
-          next.push(getTypedPropertyValue(element, prop));
+          next.push(getTypedPropertyValue(element, prop, options));
         }
       } else if (current !== undefined) {
-        next.push(getTypedPropertyValue(current, prop));
+        next.push(getTypedPropertyValue(current, prop, options));
       }
     }
     propertyValues = next;

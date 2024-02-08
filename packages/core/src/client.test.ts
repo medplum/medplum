@@ -66,8 +66,9 @@ const schemaResponse = {
 };
 
 const patientProfileUrl = 'http://example.com/patient-profile';
+const patientProfileExtensionUrl = 'http://example.com/patient-profile-extension';
 
-const profileSchemaResponse = {
+const profileSD = {
   resourceType: 'StructureDefinition',
   name: 'PatientProfile',
   url: patientProfileUrl,
@@ -101,6 +102,31 @@ const profileSchemaResponse = {
             code: 'Extension',
           },
         ],
+      },
+      {
+        path: 'Patient.extension',
+        sliceName: 'fancy',
+        type: [
+          {
+            code: 'Extension',
+            profile: [patientProfileExtensionUrl],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const profileExtensionSD = {
+  resourceType: 'StructureDefinition',
+  type: 'Extension',
+  derivation: 'constraint',
+  name: 'PatientProfile',
+  url: patientProfileExtensionUrl,
+  snapshot: {
+    element: [
+      {
+        path: 'Extension',
       },
     ],
   },
@@ -1709,7 +1735,7 @@ describe('Client', () => {
   test('requestProfileSchema', async () => {
     const fetch = mockFetch(200, {
       resourceType: 'Bundle',
-      entry: [{ resource: profileSchemaResponse }],
+      entry: [{ resource: profileSD }],
     });
 
     const client = new MedplumClient({ fetch });
@@ -1721,7 +1747,28 @@ describe('Client', () => {
 
     await request1;
     expect(isProfileLoaded(patientProfileUrl)).toBe(true);
-    expect(getDataType(profileSchemaResponse.name, patientProfileUrl)).toBeDefined();
+    expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
+  });
+
+  test('requestProfileSchema expandProfile', async () => {
+    const fetch = mockFetch(200, {
+      resourceType: 'Bundle',
+      entry: [{ resource: profileSD }, { resource: profileExtensionSD }],
+    });
+
+    const client = new MedplumClient({ fetch });
+
+    // Issue two requests simultaneously
+    const request1 = client.requestProfileSchema(patientProfileUrl, { expandProfile: true });
+    const request2 = client.requestProfileSchema(patientProfileUrl, { expandProfile: true });
+    expect(request2).toBe(request1);
+
+    await request1;
+    await request2;
+    expect(isProfileLoaded(patientProfileUrl)).toBe(true);
+    expect(isProfileLoaded(patientProfileExtensionUrl)).toBe(true);
+    expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
+    expect(getDataType(profileExtensionSD.name, patientProfileExtensionUrl)).toBeDefined();
   });
 
   test('Search', async () => {

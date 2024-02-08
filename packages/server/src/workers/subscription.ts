@@ -18,15 +18,16 @@ import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import { MedplumServerConfig } from '../config';
-import { getRequestContext } from '../context';
+import { getRequestContext, RequestContext, requestContextStore } from '../context';
 import { executeBot } from '../fhir/operations/execute';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createSubEventNotification } from '../subscriptions/websockets';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
 import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
+import { parseTraceparent } from '../traceparent';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -55,6 +56,8 @@ export interface SubscriptionJobData {
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
   readonly requestTime: string;
+  readonly requestId: string;
+  readonly traceId: string;
 }
 
 const queueName = 'SubscriptionQueue';
@@ -84,10 +87,15 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<SubscriptionJobData>(queueName, execSubscriptionJob, {
-    ...defaultOptions,
-    ...config.bullmq,
-  });
+  worker = new Worker<SubscriptionJobData>(
+    queueName,
+    (job) =>
+      requestContextStore.run(new RequestContext(job.data.requestId, job.data.traceId), () => execSubscriptionJob(job)),
+    {
+      ...defaultOptions,
+      ...config.bullmq,
+    }
+  );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
@@ -152,6 +160,8 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
+        requestId: ctx.requestId,
+        traceId: ctx.traceId,
       });
     }
   }
@@ -263,6 +273,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
   if (!project) {
     return [];
   }
+  const systemRepo = getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -292,9 +303,10 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
+  const systemRepo = getSystemRepo();
   const { subscriptionId, resourceType, id, versionId, interaction, requestTime } = job.data;
 
-  const subscription = await tryGetSubscription(subscriptionId);
+  const subscription = await tryGetSubscription(systemRepo, subscriptionId);
   if (!subscription) {
     // If the subscription was deleted, then stop processing it.
     return;
@@ -306,7 +318,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 
   if (interaction !== 'delete') {
-    const currentVersion = await tryGetCurrentVersion(resourceType, id);
+    const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
     if (!currentVersion) {
       // If the resource was deleted, then stop processing it.
       return;
@@ -343,7 +355,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 }
 
-async function tryGetSubscription(subscriptionId: string): Promise<Subscription | undefined> {
+async function tryGetSubscription(systemRepo: Repository, subscriptionId: string): Promise<Subscription | undefined> {
   try {
     return await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
   } catch (err) {
@@ -357,7 +369,11 @@ async function tryGetSubscription(subscriptionId: string): Promise<Subscription 
   }
 }
 
-async function tryGetCurrentVersion(resourceType: string, id: string): Promise<Resource | undefined> {
+async function tryGetCurrentVersion(
+  systemRepo: Repository,
+  resourceType: string,
+  id: string
+): Promise<Resource | undefined> {
   try {
     return await systemRepo.readResource(resourceType, id);
   } catch (err) {
@@ -397,6 +413,11 @@ async function sendRestHook(
   const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
   if (interaction === 'delete') {
     headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
+  }
+  const traceId = job.data.traceId;
+  headers['x-trace-id'] = traceId;
+  if (parseTraceparent(traceId)) {
+    headers['traceparent'] = traceId;
   }
 
   const body = interaction === 'delete' ? '{}' : stringify(resource);
@@ -481,14 +502,16 @@ async function execBot(
   interaction: BackgroundJobInteraction,
   requestTime: string
 ): Promise<void> {
+  const ctx = getRequestContext();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    getRequestContext().logger.debug(`Ignore rest hook missing URL`);
+    ctx.logger.debug(`Ignore rest hook missing URL`);
     return;
   }
 
   // URL should be a Bot reference string
+  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;
@@ -510,6 +533,7 @@ async function execBot(
     input: interaction === 'delete' ? { deletedResource: resource } : resource,
     contentType: ContentType.FHIR_JSON,
     requestTime,
+    traceId: ctx.traceId,
   });
 }
 

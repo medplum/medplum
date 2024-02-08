@@ -13,8 +13,8 @@ jobs:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: 'medplum'
-      TURBO_REMOTE_ONLY: true
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
     permissions:
       actions: read
       contents: write
@@ -96,8 +96,8 @@ jobs:
     env:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: 'medplum'
-      TURBO_REMOTE_ONLY: true
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
     permissions:
       actions: read
       contents: write
@@ -171,8 +171,8 @@ jobs:
     env:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: 'medplum'
-      TURBO_REMOTE_ONLY: true
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
     permissions:
       actions: read
       contents: write

@@ -9,19 +9,20 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
 
 jest.mock('@aws-sdk/client-sesv2');
 
-const app = express();
-const email = randomUUID() + '@example.com';
-const password = randomUUID();
-let project: Project;
-let client: ClientApplication;
-
 describe('OAuth Authorize', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  const email = randomUUID() + '@example.com';
+  const password = randomUUID();
+  let project: Project;
+  let client: ClientApplication;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

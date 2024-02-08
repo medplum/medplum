@@ -6,12 +6,13 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { initTestAuth, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
-
-const app = express();
-let accessToken: string;
+import { getSystemRepo } from '../repo';
 
 describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }])('Expand with %j', (projectProps) => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

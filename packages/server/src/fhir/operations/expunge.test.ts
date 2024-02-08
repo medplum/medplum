@@ -8,14 +8,15 @@ import { loadTestConfig } from '../../config';
 import { getDatabasePool } from '../../database';
 import { getRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
 
-const app = express();
-let superAdminAccessToken: string;
-
 describe('Expunge', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let superAdminAccessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

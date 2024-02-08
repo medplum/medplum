@@ -397,6 +397,7 @@ function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {
     <ResourcePropertyInput
       property={timingProperty}
       name="timing[x]"
+      path="PlanDefinition.timing[x]"
       defaultValue={propertyValue}
       defaultPropertyType={propertyType}
       onChange={(newValue: any, propName?: string) => {

@@ -10,12 +10,13 @@ import Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
-import { sendEmail } from './email';
 import { withTestContext } from '../test.setup';
+import { sendEmail } from './email';
 
 describe('Email', () => {
+  const systemRepo = getSystemRepo();
   let mockSESv2Client: AwsClientStub<SESv2Client>;
 
   beforeAll(async () => {

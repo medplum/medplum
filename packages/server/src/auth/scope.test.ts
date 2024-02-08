@@ -4,15 +4,16 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
-import { registerNew } from './register';
+import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
-
-const app = express();
-const email = `multi${randomUUID()}@example.com`;
-const password = randomUUID();
+import { registerNew } from './register';
 
 describe('Scope', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  const email = `multi${randomUUID()}@example.com`;
+  const password = randomUUID();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

@@ -5,7 +5,7 @@ import { isValidCron } from 'cron-validator';
 import { MedplumServerConfig } from '../config';
 import { getRequestContext } from '../context';
 import { executeBot } from '../fhir/operations/execute';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { findProjectMembership } from './utils';
 
@@ -104,7 +104,9 @@ export async function addCronJobs(resource: Resource): Promise<void> {
   }
 
   const bot = resource;
+
   // Adding a new feature for project that allows users to add a cron
+  const systemRepo = getSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', resource.meta?.project as string);
   if (!project.features?.includes('cron')) {
     ctx.logger.debug('Cron not enabled. Cron needs to be enabled in project to create cron job for bot');
@@ -206,6 +208,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
+  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
   const project = bot.meta?.project as string;
   const runAs = await findProjectMembership(project, createReference(bot));

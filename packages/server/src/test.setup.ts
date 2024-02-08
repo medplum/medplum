@@ -15,7 +15,7 @@ import { Express } from 'express';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
 import { AuthenticatedRequestContext, requestContextStore } from './context';
-import { systemRepo } from './fhir/repo';
+import { getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 
@@ -30,6 +30,9 @@ export async function createTestProject(
   accessToken: string;
 }> {
   requestContextStore.enterWith(AuthenticatedRequestContext.system());
+
+  const systemRepo = getSystemRepo();
+
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Test Project',
@@ -116,6 +119,7 @@ export async function addTestUser(
 ): Promise<{ user: User; profile: ProfileResource; accessToken: string }> {
   requestContextStore.enterWith(AuthenticatedRequestContext.system());
   if (accessPolicy) {
+    const systemRepo = getSystemRepo();
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
       meta: { project: project.id },
@@ -220,6 +224,6 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
   throw new Error('Async Job did not complete');
 }
 
-export function withTestContext<T>(fn: () => T): T {
-  return requestContextStore.run(AuthenticatedRequestContext.system(), fn);
+export function withTestContext<T>(fn: () => T, ctx?: { requestId?: string; traceId?: string }): T {
+  return requestContextStore.run(AuthenticatedRequestContext.system(ctx), fn);
 }

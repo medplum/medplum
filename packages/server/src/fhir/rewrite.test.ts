@@ -5,10 +5,11 @@ import { URL } from 'url';
 import { initAppServices, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
-import { systemRepo } from './repo';
+import { getSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 
 describe('URL rewrite', () => {
+  const systemRepo = getSystemRepo();
   let config: MedplumServerConfig;
   let binary: Binary;
 

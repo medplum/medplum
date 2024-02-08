@@ -394,7 +394,7 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  * Returns the count for a search request.
  * This ignores page number and page size.
  * We always start with an "estimate" count to protect against expensive queries.
- * If the estimate is less than 100,000, then we run an accurate count.
+ * If the estimate is less than the "accurateCountThreshold" config setting (default 1,000,000), then we run an accurate count.
  * @param repo - The repository.
  * @param searchRequest - The search request.
  * @param rowCount - The number of matching results if found.
@@ -402,7 +402,7 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  */
 async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount: number | undefined): Promise<number> {
   const estimateCount = await getEstimateCount(repo, searchRequest, rowCount);
-  if (estimateCount < 100000) {
+  if (estimateCount < getConfig().accurateCountThreshold) {
     return getAccurateCount(repo, searchRequest);
   }
   return estimateCount;
