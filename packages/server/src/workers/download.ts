@@ -4,10 +4,11 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { getConfig, MedplumServerConfig } from '../config';
-import { getRequestContext } from '../context';
+import { getRequestContext, RequestContext, requestContextStore } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { globalLogger } from '../logger';
+import { parseTraceparent } from '../traceparent';
 
 /*
  * The download worker inspects resources,
@@ -24,6 +25,8 @@ export interface DownloadJobData {
   readonly resourceType: string;
   readonly id: string;
   readonly url: string;
+  readonly requestId: string;
+  readonly traceId: string;
 }
 
 const queueName = 'DownloadQueue';
@@ -53,10 +56,15 @@ export function initDownloadWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<DownloadJobData>(queueName, execDownloadJob, {
-    ...defaultOptions,
-    ...config.bullmq,
-  });
+  worker = new Worker<DownloadJobData>(
+    queueName,
+    (job) =>
+      requestContextStore.run(new RequestContext(job.data.requestId, job.data.traceId), () => execDownloadJob(job)),
+    {
+      ...defaultOptions,
+      ...config.bullmq,
+    }
+  );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
@@ -102,12 +110,15 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * @param resource - The resource that was created or updated.
  */
 export async function addDownloadJobs(resource: Resource): Promise<void> {
+  const ctx = getRequestContext();
   for (const attachment of getAttachments(resource)) {
     if (isExternalUrl(attachment.url)) {
       await addDownloadJobData({
         resourceType: resource.resourceType,
         id: resource.id as string,
         url: attachment.url,
+        requestId: ctx.requestId,
+        traceId: ctx.traceId,
       });
     }
   }
@@ -172,9 +183,18 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     return;
   }
 
+  const headers: HeadersInit = {};
+  const traceId = job.data.traceId;
+  headers['x-trace-id'] = traceId;
+  if (parseTraceparent(traceId)) {
+    headers['traceparent'] = traceId;
+  }
+
   try {
     ctx.logger.info('Requesting content at: ' + url);
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers,
+    });
 
     ctx.logger.info('Received status: ' + response.status);
     if (response.status >= 400) {

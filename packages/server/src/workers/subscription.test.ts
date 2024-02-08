@@ -182,49 +182,54 @@ describe('Subscription Worker', () => {
     }));
 
   test('Send subscription with custom headers', () =>
-    withTestContext(async () => {
-      const url = 'https://example.com/subscription';
+    withTestContext(
+      async () => {
+        const url = 'https://example.com/subscription';
 
-      const subscription = await repo.createResource<Subscription>({
-        resourceType: 'Subscription',
-        reason: 'test',
-        status: 'active',
-        criteria: 'Patient',
-        channel: {
-          type: 'rest-hook',
-          endpoint: url,
-          header: ['Authorization: Basic xyz'],
-        },
-      });
-      expect(subscription).toBeDefined();
-
-      const queue = getSubscriptionQueue() as any;
-      queue.add.mockClear();
-
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      });
-      expect(patient).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
-
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
-
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execSubscriptionJob(job);
-
-      expect(fetch).toHaveBeenCalledWith(
-        url,
-        expect.objectContaining({
-          method: 'POST',
-          body: stringify(patient),
-          headers: {
-            'Content-Type': ContentType.FHIR_JSON,
-            Authorization: 'Basic xyz',
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: url,
+            header: ['Authorization: Basic xyz'],
           },
-        })
-      );
-    }));
+        });
+        expect(subscription).toBeDefined();
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+        expect(queue.add).toHaveBeenCalled();
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+        const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+        await execSubscriptionJob(job);
+
+        expect(fetch).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            method: 'POST',
+            body: stringify(patient),
+            headers: {
+              'Content-Type': ContentType.FHIR_JSON,
+              Authorization: 'Basic xyz',
+              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
+              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+            },
+          })
+        );
+      },
+      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+    ));
 
   test('Create-only subscription', () =>
     withTestContext(async () => {
@@ -291,173 +296,188 @@ describe('Subscription Worker', () => {
     }));
 
   test('Delete-only subscription', () =>
-    withTestContext(async () => {
-      const url = 'https://example.com/subscription';
+    withTestContext(
+      async () => {
+        const url = 'https://example.com/subscription';
 
-      const subscription = await repo.createResource<Subscription>({
-        resourceType: 'Subscription',
-        reason: 'test',
-        status: 'active',
-        criteria: 'Patient',
-        channel: {
-          type: 'rest-hook',
-          endpoint: url,
-        },
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
-            valueCode: 'delete',
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: url,
           },
-        ],
-      });
-      expect(subscription).toBeDefined();
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+              valueCode: 'delete',
+            },
+          ],
+        });
+        expect(subscription).toBeDefined();
 
-      // Clear the queue
-      const queue = getSubscriptionQueue() as any;
-      queue.add.mockClear();
+        // Clear the queue
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
 
-      // Create the patient
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      });
-      expect(patient).toBeDefined();
+        // Create the patient
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
 
-      // Create should trigger the subscription
-      expect(queue.add).not.toHaveBeenCalled();
+        // Create should trigger the subscription
+        expect(queue.add).not.toHaveBeenCalled();
 
-      // Update the patient
-      await repo.updateResource({ ...patient, active: true });
+        // Update the patient
+        await repo.updateResource({ ...patient, active: true });
 
-      // Update should not trigger the subscription
-      expect(queue.add).not.toHaveBeenCalled();
+        // Update should not trigger the subscription
+        expect(queue.add).not.toHaveBeenCalled();
 
-      // Delete the patient
-      await repo.deleteResource('Patient', patient.id as string);
+        // Delete the patient
+        await repo.deleteResource('Patient', patient.id as string);
 
-      expect(queue.add).toHaveBeenCalled();
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execSubscriptionJob(job);
-      expect(fetch).toHaveBeenCalledWith(
-        url,
-        expect.objectContaining({
-          method: 'POST',
-          body: '{}',
-          headers: {
-            'Content-Type': ContentType.FHIR_JSON,
-            'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
-          },
-        })
-      );
-    }));
+        expect(queue.add).toHaveBeenCalled();
+        const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+        await execSubscriptionJob(job);
+        expect(fetch).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            method: 'POST',
+            body: '{}',
+            headers: {
+              'Content-Type': ContentType.FHIR_JSON,
+              'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
+              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
+              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+            },
+          })
+        );
+      },
+      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+    ));
 
   test('Send subscriptions with signature', () =>
-    withTestContext(async () => {
-      const url = 'https://example.com/subscription';
-      const secret = '0123456789';
+    withTestContext(
+      async () => {
+        const url = 'https://example.com/subscription';
+        const secret = '0123456789';
 
-      const subscription = await repo.createResource<Subscription>({
-        resourceType: 'Subscription',
-        reason: 'test',
-        status: 'active',
-        criteria: 'Patient',
-        channel: {
-          type: 'rest-hook',
-          endpoint: url,
-        },
-        extension: [
-          {
-            url: 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret',
-            valueString: secret,
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: url,
           },
-        ],
-      });
-      expect(subscription).toBeDefined();
+          extension: [
+            {
+              url: 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret',
+              valueString: secret,
+            },
+          ],
+        });
+        expect(subscription).toBeDefined();
 
-      const queue = getSubscriptionQueue() as any;
-      queue.add.mockClear();
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
 
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      });
-      expect(patient).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+        expect(queue.add).toHaveBeenCalled();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-      const body = stringify(patient);
-      const signature = createHmac('sha256', secret).update(body).digest('hex');
+        const body = stringify(patient);
+        const signature = createHmac('sha256', secret).update(body).digest('hex');
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execSubscriptionJob(job);
+        const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+        await execSubscriptionJob(job);
 
-      expect(fetch).toHaveBeenCalledWith(
-        url,
-        expect.objectContaining({
-          method: 'POST',
-          body,
-          headers: {
-            'Content-Type': ContentType.FHIR_JSON,
-            'X-Signature': signature,
-          },
-        })
-      );
-    }));
+        expect(fetch).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            method: 'POST',
+            body,
+            headers: {
+              'Content-Type': ContentType.FHIR_JSON,
+              'X-Signature': signature,
+              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
+              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+            },
+          })
+        );
+      },
+      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+    ));
 
   test('Send subscriptions with legacy signature extension', () =>
-    withTestContext(async () => {
-      const url = 'https://example.com/subscription';
-      const secret = '0123456789';
+    withTestContext(
+      async () => {
+        const url = 'https://example.com/subscription';
+        const secret = '0123456789';
 
-      const subscription = await repo.createResource<Subscription>({
-        resourceType: 'Subscription',
-        reason: 'test',
-        status: 'active',
-        criteria: 'Patient',
-        channel: {
-          type: 'rest-hook',
-          endpoint: url,
-        },
-        extension: [
-          {
-            url: 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret',
-            valueString: secret,
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: url,
           },
-        ],
-      });
-      expect(subscription).toBeDefined();
+          extension: [
+            {
+              url: 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret',
+              valueString: secret,
+            },
+          ],
+        });
+        expect(subscription).toBeDefined();
 
-      const queue = getSubscriptionQueue() as any;
-      queue.add.mockClear();
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
 
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      });
-      expect(patient).toBeDefined();
-      expect(queue.add).toHaveBeenCalled();
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+        expect(queue.add).toHaveBeenCalled();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-      const body = stringify(patient);
-      const signature = createHmac('sha256', secret).update(body).digest('hex');
+        const body = stringify(patient);
+        const signature = createHmac('sha256', secret).update(body).digest('hex');
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execSubscriptionJob(job);
+        const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+        await execSubscriptionJob(job);
 
-      expect(fetch).toHaveBeenCalledWith(
-        url,
-        expect.objectContaining({
-          method: 'POST',
-          body,
-          headers: {
-            'Content-Type': ContentType.FHIR_JSON,
-            'X-Signature': signature,
-          },
-        })
-      );
-    }));
+        expect(fetch).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            method: 'POST',
+            body,
+            headers: {
+              'Content-Type': ContentType.FHIR_JSON,
+              'X-Signature': signature,
+              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
+              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+            },
+          })
+        );
+      },
+      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+    ));
 
   test('Ignore non-subscription subscriptions', () =>
     withTestContext(async () => {
