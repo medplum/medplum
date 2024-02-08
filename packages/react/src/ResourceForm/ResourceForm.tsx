@@ -29,16 +29,18 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       if (props.profileUrl) {
         const profileUrl: string = props.profileUrl;
         medplum
-          .requestProfileSchema(props.profileUrl)
+          .requestProfileSchema(props.profileUrl, { expandProfile: true })
           .then(() => {
             const profile = tryGetProfile(profileUrl);
             if (profile) {
               setSchemaLoaded(profile.name);
             } else {
-              console.log(`Schema not found for ${profileUrl}`);
+              console.error(`Schema not found for ${profileUrl}`);
             }
           })
-          .catch(console.log);
+          .catch((reason) => {
+            console.error('Error in requestProfileSchema', reason);
+          });
       } else {
         const schemaName = props.schemaName ?? defaultValue?.resourceType;
         medplum

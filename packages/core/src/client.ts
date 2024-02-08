@@ -67,7 +67,7 @@ import {
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage, IClientStorage } from './storage';
 import { indexSearchParameter } from './types';
-import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
+import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, loadDataType } from './typeschema/types';
 import {
   CodeChallengeMethod,
   ProfileResource,
@@ -588,6 +588,11 @@ export interface ValueSetExpandParams {
   date?: string;
   offset?: number;
   count?: number;
+}
+
+export interface RequestProfileSchemaOptions {
+  /** (optional) Whether to include nested profiles, e.g. from extensions. Defaults to false. */
+  expandProfile?: boolean;
 }
 
 /**
@@ -1658,32 +1663,45 @@ export class MedplumClient extends EventTarget {
    * If the schema is already cached, the promise is resolved immediately.
    * @category Schema
    * @param profileUrl - The FHIR URL of the profile
-   * @returns Promise to a schema with the requested profile.
+   * @param options - (optional) Additional options
+   * @returns Promise with an array of URLs of the profile(s) loaded.
    */
-  requestProfileSchema(profileUrl: string): Promise<void> {
-    if (isProfileLoaded(profileUrl)) {
-      return Promise.resolve();
+  requestProfileSchema(profileUrl: string, options?: RequestProfileSchemaOptions): Promise<string[]> {
+    if (!options?.expandProfile && isProfileLoaded(profileUrl)) {
+      return Promise.resolve([profileUrl]);
     }
 
-    const cacheKey = profileUrl + '-requestSchema';
+    const cacheKey = profileUrl + '-requestSchema' + (options?.expandProfile ? '-nested' : '');
     const cached = this.getCacheEntry(cacheKey, undefined);
     if (cached) {
       return cached.value;
     }
 
-    const promise = new ReadablePromise<void>(
+    const promise = new ReadablePromise<string[]>(
       (async () => {
-        // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
-        // See https://hl7.org/fhir/references.html#canonical-matching for more discussion
-        const sd = await this.searchOne('StructureDefinition', {
-          url: profileUrl,
-          _sort: '-_lastUpdated',
-        });
-
-        if (!sd) {
-          console.warn(`No StructureDefinition found for ${profileUrl}!`);
+        if (options?.expandProfile) {
+          const url = this.fhirUrl('StructureDefinition', '$expand-profile');
+          url.search = new URLSearchParams({ url: profileUrl }).toString();
+          const sdBundle = await this.get<Bundle<StructureDefinition>>(url.toString());
+          return bundleToResourceArray(sdBundle).map((sd) => {
+            loadDataType(sd, sd.url);
+            return sd.url;
+          });
         } else {
+          // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
+          // See https://hl7.org/fhir/references.html#canonical-matching for more discussion
+          const sd = await this.searchOne('StructureDefinition', {
+            url: profileUrl,
+            _sort: '-_lastUpdated',
+          });
+
+          if (!sd) {
+            console.warn(`No StructureDefinition found for ${profileUrl}!`);
+            return [];
+          }
+
           indexStructureDefinitionBundle([sd], profileUrl);
+          return [profileUrl];
         }
       })()
     );
