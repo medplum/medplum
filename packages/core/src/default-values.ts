@@ -72,12 +72,12 @@ export function getDefaultValuesForElement(
 
 export function applyDefaultValuesToElement(
   existingValue: any,
-  key: string,
+  key: string | undefined,
   elements: Record<string, InternalSchemaElement>
 ): void {
   for (const [elementKey, element] of Object.entries(elements)) {
-    if (elementKey === key) {
-      applyFixedOrPatternValue(existingValue, key, element, elements, false);
+    if (key === undefined || key === elementKey) {
+      applyFixedOrPatternValue(existingValue, elementKey, element, elements, false);
     } else if (elementKey.startsWith(key + '.')) {
       const keyDifference = getPathDifference(key, elementKey);
       if (keyDifference === undefined) {
@@ -534,5 +534,5 @@ function applyPattern(existingValue: any, pattern: any, debug: ConsoleDebug): an
 }
 
 export function isComplexTypeCode(code: string): boolean {
-  return code.startsWith(code[0].toUpperCase());
+  return code.length > 0 && code.startsWith(code[0].toUpperCase());
 }

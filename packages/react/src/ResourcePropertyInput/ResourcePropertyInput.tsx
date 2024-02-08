@@ -58,35 +58,10 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
       : property.type[0].code;
   const propertyTypes = property.type as ElementDefinitionType[];
 
-  const elementsContext = useContext(ElementsContext);
-
   const isArrayInput = (property.isArray || property.max > 1) && !props.arrayElement;
   const isInputSelectorInput = propertyTypes.length > 1;
 
-  const defaultValue = useMemo(() => {
-    if (isArrayInput || isInputSelectorInput) {
-      return props.defaultValue;
-    }
-
-    if (!isComplexTypeCode(propertyTypes[0].code)) {
-      return props.defaultValue;
-    }
-
-    const key = getPathDifference(elementsContext.parentPath, props.path);
-    if (key === undefined) {
-      return props.defaultValue;
-    }
-    if (props.defaultValue === undefined) {
-      const withDefaults = Object.create(null);
-      applyDefaultValuesToElement(withDefaults, key, elementsContext.elements);
-      if (isPopulated(withDefaults)) {
-        console.log(props.path, 'withDefaults', withDefaults);
-        return withDefaults;
-      }
-    }
-
-    return props.defaultValue;
-  }, [isArrayInput, isInputSelectorInput, propertyTypes, props.path, props.defaultValue, elementsContext]);
+  const defaultValue = props.defaultValue;
 
   if (isArrayInput) {
     if (defaultPropertyType === PropertyType.Attachment) {
@@ -106,9 +81,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         outcome={props.outcome}
       />
     );
-  }
-
-  if (isInputSelectorInput) {
+  } else if (isInputSelectorInput) {
     return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {
     return (
@@ -193,10 +166,38 @@ export interface ElementDefinitionTypeInputProps
 }
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const { name, defaultValue, onChange, outcome, binding, path } = props;
-  const required = props.min !== undefined && props.min > 0;
-
+  const { name, onChange, outcome, binding, path } = props;
   const propertyType = props.elementDefinitionType.code;
+
+  const elementsContext = useContext(ElementsContext);
+  const defaultValue = useMemo(() => {
+    if (!isComplexTypeCode(propertyType)) {
+      return props.defaultValue;
+    }
+
+    if (props.defaultValue !== undefined) {
+      return props.defaultValue;
+    }
+
+    const withDefaults = Object.create(null);
+    if (elementsContext.parentPath === props.path) {
+      applyDefaultValuesToElement(withDefaults, undefined, elementsContext.elements);
+    } else {
+      const key = getPathDifference(elementsContext.parentPath, props.path);
+      if (key === undefined) {
+        return props.defaultValue;
+      }
+      applyDefaultValuesToElement(withDefaults, key, elementsContext.elements);
+    }
+
+    if (isPopulated(withDefaults)) {
+      return withDefaults;
+    }
+
+    return props.defaultValue;
+  }, [propertyType, elementsContext.parentPath, elementsContext.elements, props.path, props.defaultValue]);
+
+  const required = props.min !== undefined && props.min > 0;
 
   if (!propertyType) {
     return <div>Property type not specified </div>;
