@@ -13,7 +13,6 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   const { propertyType } = props;
 
   const medplum = useMedplum();
-  const [loadingProfile, setLoadingProfile] = useState(false);
   const [typeSchema, setTypeSchema] = useState<InternalTypeSchema | undefined>();
   const profileUrl: string | undefined = useMemo(() => {
     if (!propertyType.profile || propertyType.profile.length === 0) {
@@ -22,6 +21,7 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
 
     return propertyType.profile[0] satisfies string;
   }, [propertyType]);
+  const [loadingProfile, setLoadingProfile] = useState(profileUrl !== undefined);
 
   useEffect(() => {
     if (profileUrl) {
