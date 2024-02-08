@@ -1,8 +1,9 @@
-import { Operator } from '@medplum/core';
-import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
+import { Operator, SearchRequest } from '@medplum/core';
+import { Bundle } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
 describe('SearchControl', () => {
@@ -17,11 +18,15 @@ describe('SearchControl', () => {
     jest.useRealTimers();
   });
 
-  async function setup(args: SearchControlProps): Promise<void> {
+  async function setup(args: SearchControlProps, returnVal?: Bundle): Promise<void> {
+    const medplum = new MockClient();
+    if (returnVal) {
+      medplum.search = jest.fn().mockResolvedValue(returnVal);
+    }
     await act(async () => {
       render(
         <MemoryRouter>
-          <MedplumProvider medplum={new MockClient()}>
+          <MedplumProvider medplum={medplum}>
             <SearchControl {...args} />
           </MedplumProvider>
         </MemoryRouter>
@@ -873,5 +878,92 @@ describe('SearchControl', () => {
 
     await waitFor(() => screen.getByText('Homer Simpson'));
     expect(onLoad).toHaveBeenCalled();
+  });
+
+  describe('Pagination', () => {
+    const onLoad = jest.fn();
+    const search: SearchRequest = {
+      resourceType: 'Patient',
+      count: 20,
+      offset: 0,
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Simpson',
+        },
+      ],
+      fields: ['id', '_lastUpdated', 'name'],
+    };
+    test('Single Page', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 5,
+        entry: [{ resource: HomerSimpson }, ...Array(4).fill({ resourceType: 'Patient' })],
+      });
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-5 of 5');
+    });
+
+    test('Multiple Pages', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 40,
+        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+      });
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-20 of 40');
+    });
+
+    test('Large Estimated Count', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 403091,
+        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+      });
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-20 of 403,091');
+    });
+
+    test('Large Estimated Count w/ High Offset', async () => {
+      const props: SearchControlProps = {
+        search: { ...search, offset: 200000, count: 20 },
+        onLoad,
+      };
+
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 403091,
+        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+        link: [
+          {
+            relation: 'next',
+            url: '',
+          },
+        ],
+      });
+      await waitFor(() => screen.getByText('Homer Simpson'));
+      expect(screen.getByTestId('count-display').textContent).toBe('200,001-200,020 of 403,091');
+    });
   });
 });
