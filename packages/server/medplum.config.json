@@ -40,6 +40,5 @@
     "removeOnFail": { "count": 1 },
     "removeOnComplete": { "count": 1 }
   },
-  "shutdownTimeoutMilliseconds": 30000,
-  "logRequests": true
+  "shutdownTimeoutMilliseconds": 30000
 }
