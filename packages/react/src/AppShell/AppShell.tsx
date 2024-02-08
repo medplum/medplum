@@ -18,6 +18,7 @@ export interface AppShellProps {
   readonly children: ReactNode;
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;
+  readonly notifications?: ReactNode;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -71,6 +72,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           logo={props.logo}
           version={props.version}
           navbarToggle={toggleNavbar}
+          notifications={props.notifications}
         />
       )}
       {profile && navbarOpen ? (

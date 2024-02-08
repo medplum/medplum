@@ -12,6 +12,7 @@ export interface ResourceAvatarProps extends AvatarProps {
 export function ResourceAvatar(props: ResourceAvatarProps): JSX.Element {
   const resource = useResource(props.value);
   const text = resource ? getDisplayString(resource) : props.alt ?? '';
+  const initials = getInitials(text);
   const uncachedImageUrl = (resource && getImageSrc(resource)) ?? props.src;
   const imageUrl = useCachedBinaryUrl(uncachedImageUrl ?? undefined);
   const radius = props.radius ?? 'xl';
@@ -23,10 +24,23 @@ export function ResourceAvatar(props: ResourceAvatarProps): JSX.Element {
   if (props.link) {
     return (
       <MedplumLink to={resource}>
-        <Avatar src={imageUrl} alt={text} radius={radius} {...avatarProps} />
+        <Avatar src={imageUrl} alt={text} radius={radius} {...avatarProps}>
+          {initials}
+        </Avatar>
       </MedplumLink>
     );
   }
 
-  return <Avatar src={imageUrl} alt={text} radius={radius} {...avatarProps} />;
+  return (
+    <Avatar src={imageUrl} alt={text} radius={radius} {...avatarProps}>
+      {initials}
+    </Avatar>
+  );
+}
+
+function getInitials(input: string): string {
+  return input
+    .split(' ')
+    .map((s) => s[0])
+    .join('');
 }

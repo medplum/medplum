@@ -53,8 +53,6 @@ export class MockSubscriptionManager extends SubscriptionManager {
     this.emitters.get(criteria)?.dispatchEvent(event);
   }
 
-  // Guess this has to do with the unique symbols on the type definition...
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   getEmitter(criteria: string): SubscriptionEmitter | undefined {
     return this.emitters.get(criteria);
   }
