@@ -34,42 +34,6 @@ export function applyDefaultValuesToResource(
   return visitor.getDefaultValue();
 }
 
-export function getDefaultValuesForNewSliceEntry(
-  key: string,
-  slice: SliceDefinition,
-  slicing: SlicingRules,
-  schema: InternalTypeSchema,
-  options?: { debug?: boolean }
-): Resource {
-  const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: slice.name }], slice.path, 'element', options?.debug);
-  const crawler = new SchemaCrawler(schema, visitor);
-  crawler.crawlSlice(key, slice, slicing);
-  return visitor.getDefaultValue();
-}
-
-export function getDefaultValuesForElement(
-  existingValue: any,
-  path: string,
-  _key: string,
-  element: InternalSchemaElement,
-  elements: Record<string, InternalSchemaElement>,
-  schema: InternalTypeSchema,
-  options?: { debug?: boolean }
-): any {
-  const inputValue: object = existingValue ?? Object.create(null);
-
-  const [containerPath, key] = splitOnceRight(path, '.');
-  const container = Object.create(null);
-  setValueAtKey(container, inputValue, key, element);
-
-  const visitor = new DefaultValueVisitor(container, containerPath, 'element', options?.debug);
-  const crawler = new SchemaCrawler(schema, visitor, elements);
-  crawler.crawlElement(element, key, containerPath);
-  const modifiedContainer = visitor.getDefaultValue();
-
-  return getValueAtKey(modifiedContainer, key, element, elements);
-}
-
 export function applyDefaultValuesToElement(
   existingValue: any,
   key: string | undefined,
@@ -88,6 +52,41 @@ export function applyDefaultValuesToElement(
   }
 
   return existingValue;
+}
+
+export function applyDefaultValuesToElementWithVisitor(
+  existingValue: any,
+  path: string,
+  element: InternalSchemaElement,
+  elements: Record<string, InternalSchemaElement>,
+  schema: InternalTypeSchema,
+  options?: { debug?: boolean }
+): any {
+  const inputValue: object = existingValue ?? Object.create(null);
+
+  const [parentPath, key] = splitOnceRight(path, '.');
+  const parent = Object.create(null);
+  setValueAtKey(parent, inputValue, key, element);
+
+  const visitor = new DefaultValueVisitor(parent, parentPath, 'element', options?.debug);
+  const crawler = new SchemaCrawler(schema, visitor, elements);
+  crawler.crawlElement(element, key, parentPath);
+  const modifiedContainer = visitor.getDefaultValue();
+
+  return getValueAtKey(modifiedContainer, key, element, elements);
+}
+
+export function getDefaultValuesForNewSliceEntry(
+  key: string,
+  slice: SliceDefinition,
+  slicing: SlicingRules,
+  schema: InternalTypeSchema,
+  options?: { debug?: boolean }
+): Resource {
+  const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: slice.name }], slice.path, 'element', options?.debug);
+  const crawler = new SchemaCrawler(schema, visitor);
+  crawler.crawlSlice(key, slice, slicing);
+  return visitor.getDefaultValue()[0];
 }
 
 type ValueContext = {
@@ -299,7 +298,7 @@ export class DefaultValueVisitor implements SchemaVisitor {
     this.debug('parentValue', JSON.stringify(this.value.values));
   }
 
-  getDefaultValue(): Resource {
+  getDefaultValue(): any {
     return this.outputRootValue;
   }
 }
