@@ -1682,16 +1682,11 @@ export class MedplumClient extends EventTarget {
         if (options?.expandProfile) {
           const url = this.fhirUrl('StructureDefinition', '$expand-profile');
           url.search = new URLSearchParams({ url: profileUrl }).toString();
-          const sds = await new ReadablePromise(
-            this.get<Bundle<StructureDefinition>>(url.toString()).then(bundleToResourceArray)
-          );
-
-          const result: string[] = [];
-          for (const sd of sds) {
+          const sdBundle = await this.get<Bundle<StructureDefinition>>(url.toString());
+          return bundleToResourceArray(sdBundle).map((sd) => {
             loadDataType(sd, sd.url);
-            result.push(sd.url);
-          }
-          return result;
+            return sd.url;
+          });
         } else {
           // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
           // See https://hl7.org/fhir/references.html#canonical-matching for more discussion

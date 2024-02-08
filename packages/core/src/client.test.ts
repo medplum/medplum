@@ -1750,7 +1750,7 @@ describe('Client', () => {
     expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
   });
 
-  test.only('requestProfileSchema expandProfile', async () => {
+  test('requestProfileSchema expandProfile', async () => {
     const fetch = mockFetch(200, {
       resourceType: 'Bundle',
       entry: [{ resource: profileSD }, { resource: profileExtensionSD }],
