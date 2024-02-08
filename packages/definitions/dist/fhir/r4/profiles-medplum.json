@@ -204,7 +204,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/project-feature|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/project-feature"
             }
           },
           {

@@ -1,5 +1,5 @@
 import { ContentType, LOINC } from '@medplum/core';
-import { OperationOutcome, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { OperationOutcome, Project, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -11,18 +11,18 @@ import { systemRepo } from '../repo';
 const app = express();
 let accessToken: string;
 
-describe('Expand', () => {
+describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }])('Expand with %j', (projectProps) => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth(projectProps);
   });
 
   afterAll(async () => {
     await shutdownApp();
   });
 
-  test('No system', async () => {
+  test('No ValueSet URL', async () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand`)
       .set('Authorization', 'Bearer ' + accessToken);
@@ -38,7 +38,7 @@ describe('Expand', () => {
     expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('ValueSet not found');
   });
 
-  test('No systems', async () => {
+  test('No logical definition', async () => {
     const url = 'https://example.com/ValueSet/' + randomUUID();
     await withTestContext(() =>
       systemRepo.createResource({
@@ -51,7 +51,9 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('Missing ValueSet definition');
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toMatch(
+      /(^Missing ValueSet definition$)|(^No systems found$)/
+    );
   });
 
   test('No filter', async () => {
@@ -59,7 +61,7 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.expansion.contains.length).toBe(8);
+    expect(res.body.expansion.contains.length).toBe(10);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
   });
 
@@ -85,7 +87,7 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
-    expect(res.body.expansion.contains[0].display).toMatch(/heart rate/i);
+    expect(res.body.expansion.contains[0].display).toMatch(/rate/i);
   });
 
   test('Success with count and offset', async () => {
@@ -99,7 +101,7 @@ describe('Expand', () => {
     expect(res.status).toBe(200);
     expect(res.body.expansion.contains.length).toBe(1);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
-    expect(res.body.expansion.contains[0].display).toMatch(/stolic blood pressure/i);
+    expect(res.body.expansion.contains[0].display).toMatch(/blood/i);
   });
 
   test('No duplicates', async () => {

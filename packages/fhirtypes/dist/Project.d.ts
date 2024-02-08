@@ -80,7 +80,7 @@ export interface Project {
   /**
    * A list of optional features that are enabled for the project.
    */
-  features?: ('bots' | 'cron' | 'email' | 'google-auth-required' | 'graphql-introspection')[];
+  features?: ('bots' | 'cron' | 'email' | 'google-auth-required' | 'graphql-introspection' | 'terminology')[];
 
   /**
    * The default access policy for patients using open registration.

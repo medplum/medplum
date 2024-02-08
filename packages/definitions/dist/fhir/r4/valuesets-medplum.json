@@ -148,6 +148,11 @@
             "code": "graphql-introspection",
             "display": "GraphQL Introspection",
             "definition": "GraphQL Introspection"
+          },
+          {
+            "code": "terminology",
+            "display": "Terminology Service",
+            "definition": "Updated implementation of Terminology Service functionality"
           }
         ]
       }
@@ -737,6 +742,14 @@
           {
             "code": "8867-4",
             "display": "Heart rate"
+          },
+          {
+            "code": "2708-6",
+            "display": "Oxygen saturation in Arterial blood"
+          },
+          {
+            "code": "3151-8",
+            "display": "Inhaled oxygen flow rate"
           }
         ]
       }

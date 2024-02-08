@@ -61,7 +61,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     count = clamp(parseInt(req.query.count as string, 10), 1, 1000);
   }
 
-  if (await shouldUseLegacyTable()) {
+  if (shouldUseLegacyTable()) {
     const elements = await queryValueSetElements(valueSet, offset, count, filter);
     res.status(200).json({
       resourceType: 'ValueSet',
@@ -77,10 +77,9 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   }
 });
 
-async function shouldUseLegacyTable(): Promise<boolean> {
-  const client = getDatabasePool();
-  const results = await new SelectQuery('Coding').column('id').limit(1).execute(client);
-  return results.length < 1;
+function shouldUseLegacyTable(): boolean {
+  const ctx = getAuthenticatedContext();
+  return !ctx.project.features?.includes('terminology');
 }
 
 async function queryValueSetElements(
@@ -201,7 +200,7 @@ export async function expandValueSet(
     valueSet.expansion = {
       total: expandedSet.length,
       timestamp: new Date().toISOString(),
-      contains: expandedSet,
+      contains: expandedSet.slice(0, count),
     };
   }
   return valueSet;
