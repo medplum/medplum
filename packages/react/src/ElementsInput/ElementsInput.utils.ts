@@ -1,4 +1,4 @@
-import { InternalSchemaElement, InternalTypeSchema, TypedValue, getPathDifference, isPopulated } from '@medplum/core';
+import { InternalSchemaElement, InternalTypeSchema, getPathDifference } from '@medplum/core';
 import React from 'react';
 
 /**
@@ -32,7 +32,6 @@ export type ElementsContextType = {
   getModifiedNestedElement: (nestedElementPath: string) => InternalSchemaElement | undefined;
   elements: Record<string, InternalSchemaElement>;
   elementsByPath: Record<string, InternalSchemaElement>;
-  fixedProperties: { [key: string]: InternalSchemaElement & { fixed: TypedValue } };
   debugMode: boolean;
 };
 
@@ -42,23 +41,9 @@ export const ElementsContext = React.createContext<ElementsContextType>({
   getModifiedNestedElement: () => undefined,
   elements: Object.create(null),
   elementsByPath: Object.create(null),
-  fixedProperties: Object.create(null),
   debugMode: false,
 });
 ElementsContext.displayName = 'ElementsContext';
-
-export type BuildElementsContextArgs = {
-  elements: InternalTypeSchema['elements'] | undefined;
-  parentPath: string;
-  parentContext: ElementsContextType | undefined;
-  parentType: string | undefined;
-  profileUrl?: string;
-  debugMode?: boolean;
-};
-
-function hasFixed(element: InternalSchemaElement): element is InternalSchemaElement & { fixed: TypedValue } {
-  return isPopulated(element.fixed?.type) && 'value' in element.fixed;
-}
 
 export function buildElementsContext({
   parentContext,
@@ -67,7 +52,14 @@ export function buildElementsContext({
   parentType,
   profileUrl,
   debugMode,
-}: BuildElementsContextArgs): ElementsContextType {
+}: {
+  elements: InternalTypeSchema['elements'] | undefined;
+  parentPath: string;
+  parentContext: ElementsContextType | undefined;
+  parentType: string | undefined;
+  profileUrl?: string;
+  debugMode?: boolean;
+}): ElementsContextType {
   if (debugMode) {
     console.debug('Building ElementsContext', { parentPath, profileUrl, elements });
   }
@@ -80,15 +72,10 @@ export function buildElementsContext({
 
   const nestedPaths: Record<string, InternalSchemaElement> = Object.create(null);
   const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
-  const fixedProperties: ElementsContextType['fixedProperties'] = Object.create(null);
 
   const seenKeys = new Set<string>();
   for (const [key, property] of Object.entries(mergedElements)) {
     elementsByPath[parentPath + '.' + key] = property;
-
-    if (hasFixed(property)) {
-      fixedProperties[key] = property;
-    }
 
     const [beginning, _last] = splitOnceRight(key, '.');
     // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
@@ -109,14 +96,13 @@ export function buildElementsContext({
     getModifiedNestedElement,
     elements: mergedElements,
     elementsByPath,
-    fixedProperties,
   };
 }
 
 function mergeElementsForContext(
   parentPath: string,
-  elements: BuildElementsContextArgs['elements'],
-  parentContext: BuildElementsContextArgs['parentContext'],
+  elements: InternalTypeSchema['elements'] | undefined,
+  parentContext: ElementsContextType | undefined,
   debugMode: boolean
 ): ElementsContextType['elements'] {
   const result: ElementsContextType['elements'] = Object.create(null);
