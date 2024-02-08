@@ -39,4 +39,5 @@ export * from './types';
 export * from './typeschema/crawler';
 export * from './typeschema/types';
 export * from './typeschema/validation';
+export * from './typeschema/slices';
 export * from './utils';

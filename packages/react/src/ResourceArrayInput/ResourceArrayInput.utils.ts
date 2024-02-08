@@ -1,62 +1,17 @@
 import {
   InternalSchemaElement,
   MedplumClient,
-  SliceDiscriminator,
+  SliceDefinitionWithTypes,
   SlicingRules,
-  TypedValue,
-  arrayify,
-  getNestedProperty,
+  getValueSliceName,
   isPopulated,
-  matchDiscriminant,
+  isSliceDefinitionWithTypes,
   tryGetProfile,
 } from '@medplum/core';
-import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
-
-function isDiscriminatorComponentMatch(
-  typedValue: TypedValue,
-  discriminator: SliceDiscriminator,
-  slice: SupportedSliceDefinition,
-  profileUrl: string | undefined
-): boolean {
-  const nestedProp = getNestedProperty(typedValue, discriminator.path, { profileUrl });
-
-  if (nestedProp) {
-    const elementList = slice.typeSchema?.elements ?? slice.elements;
-    return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
-  }
-
-  console.assert(false, 'getNestedProperty[%s] in isDiscriminatorComponentMatch missed', discriminator.path);
-  return false;
-}
-function getValueSliceName(
-  value: any,
-  slices: SupportedSliceDefinition[],
-  discriminators: SliceDiscriminator[],
-  profileUrl?: string
-): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  for (const slice of slices) {
-    const typedValue: TypedValue = {
-      value,
-      type: slice.typeSchema?.name ?? slice.type[0].code,
-    };
-    if (
-      discriminators.every((d) =>
-        isDiscriminatorComponentMatch(typedValue, d, slice, slice.typeSchema?.url ?? profileUrl)
-      )
-    ) {
-      return slice.name;
-    }
-  }
-  return undefined;
-}
 
 export function assignValuesIntoSlices(
   values: any[],
-  slices: SupportedSliceDefinition[],
+  slices: SliceDefinitionWithTypes[],
   slicing: SlicingRules | undefined,
   profileUrl: string | undefined
 ): any[][] {
@@ -104,18 +59,18 @@ export async function prepareSlices({
 }: {
   medplum: MedplumClient;
   property: InternalSchemaElement;
-}): Promise<SupportedSliceDefinition[]> {
+}): Promise<SliceDefinitionWithTypes[]> {
   return new Promise((resolve, reject) => {
     if (!property.slicing) {
       resolve([]);
       return;
     }
 
-    const supportedSlices: SupportedSliceDefinition[] = [];
+    const supportedSlices: SliceDefinitionWithTypes[] = [];
     const profileUrls: (string | undefined)[] = [];
     const promises: Promise<string[]>[] = [];
     for (const slice of property.slicing.slices) {
-      if (!isSupportedSliceDefinition(slice)) {
+      if (!isSliceDefinitionWithTypes(slice)) {
         console.debug('Unsupported slice definition', slice);
         continue;
       }

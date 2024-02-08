@@ -1,23 +1,8 @@
 import { Resource } from '@medplum/fhirtypes';
+import { ElementsContextType, SchemaCrawler, SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
+import { SliceDefinitionWithTypes, getValueSliceName } from './typeschema/slices';
+import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
 import {
-  ElementsContextType,
-  SchemaCrawler,
-  SchemaVisitor,
-  VisitorSliceDefinition,
-  VisitorSlicingRules,
-} from './schema-crawler';
-import { TypedValue } from './types';
-import { getNestedProperty } from './typeschema/crawler';
-import {
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SliceDefinition,
-  SliceDiscriminator,
-  SlicingRules,
-} from './typeschema/types';
-import { matchDiscriminant } from './typeschema/validation';
-import {
-  arrayify,
   capitalize,
   deepClone,
   getPathDifference,
@@ -257,7 +242,7 @@ class DefaultValueVisitor implements SchemaVisitor {
     }
   }
 
-  onEnterSlice(path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules): void {
+  onEnterSlice(path: string, slice: SliceDefinitionWithTypes, slicing: VisitorSlicingRules): void {
     this.debug(`onEnterSlice[${slice.name}] ${path} ${slice.min > 0 ? `min: ${slice.min}` : ''}`);
 
     const elementValues = this.value.values;
@@ -277,7 +262,7 @@ class DefaultValueVisitor implements SchemaVisitor {
         let sliceName: string | undefined = arrayItem[SLICE_NAME_KEY];
 
         if (!sliceName) {
-          sliceName = getValueSliceName(arrayItem, [slice], slicing.discriminator, slice.typeSchema, this.schema.url);
+          sliceName = getValueSliceName(arrayItem, [slice], slicing.discriminator, this.schema.url);
         }
 
         if (sliceName === slice.name) {
@@ -303,7 +288,7 @@ class DefaultValueVisitor implements SchemaVisitor {
     });
   }
 
-  onExitSlice(_path: string, slice: VisitorSliceDefinition): void {
+  onExitSlice(_path: string, slice: SliceDefinitionWithTypes): void {
     const sliceValuesContext = this.valueStack.pop();
     if (!sliceValuesContext) {
       throw new Error('Expected value context to exist in onExitSlice');
@@ -324,49 +309,6 @@ class DefaultValueVisitor implements SchemaVisitor {
   getDefaultValue(): any {
     return this.rootValue;
   }
-}
-
-function isDiscriminatorComponentMatch(
-  typedValue: TypedValue,
-  discriminator: SliceDiscriminator,
-  slice: SliceDefinition,
-  sliceSchema: InternalTypeSchema | undefined,
-  profileUrl: string | undefined
-): boolean {
-  const nestedProp = getNestedProperty(typedValue, discriminator.path, { profileUrl: sliceSchema?.url ?? profileUrl });
-
-  if (nestedProp) {
-    const elementList = sliceSchema?.elements ?? slice.elements;
-    return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
-  }
-
-  console.assert(false, 'getNestedProperty[%s] in isDiscriminatorComponentMatch missed', discriminator.path);
-
-  return false;
-}
-
-function getValueSliceName(
-  value: any,
-  slices: SliceDefinition[],
-  discriminators: SliceDiscriminator[],
-  sliceSchema: InternalTypeSchema | undefined,
-  profileUrl: string | undefined
-): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  for (const slice of slices) {
-    const sliceType = sliceSchema?.name ?? slice.type?.[0].code ?? 'TODO';
-    const typedValue: TypedValue = {
-      value,
-      type: sliceType,
-    };
-    if (discriminators.every((d) => isDiscriminatorComponentMatch(typedValue, d, slice, sliceSchema, profileUrl))) {
-      return slice.name;
-    }
-  }
-  return undefined;
 }
 
 function setValueAtKey(parent: any, value: any, key: string, element: InternalSchemaElement): void {

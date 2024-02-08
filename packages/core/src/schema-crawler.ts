@@ -1,3 +1,4 @@
+import { SliceDefinitionWithTypes, isSliceDefinitionWithTypes } from './typeschema/slices';
 import {
   InternalSchemaElement,
   InternalTypeSchema,
@@ -7,17 +8,8 @@ import {
 } from './typeschema/types';
 import { isPopulated } from './utils';
 
-function isSupportedSliceDefinition(slice: SliceDefinition): slice is VisitorSliceDefinition {
-  return isPopulated(slice.type);
-}
-
-export type VisitorSliceDefinition = SliceDefinition & {
-  type: NonNullable<SliceDefinition['type']>;
-  typeSchema?: InternalTypeSchema;
-};
-
 export type VisitorSlicingRules = Omit<SlicingRules, 'slices'> & {
-  slices: VisitorSliceDefinition[];
+  slices: SliceDefinitionWithTypes[];
 };
 
 export interface SchemaVisitor {
@@ -97,7 +89,7 @@ export interface SchemaVisitor {
    * @param slice - The slice being entered.
    * @param slicing - The slicing rules related to the slice being entered.
    */
-  onEnterSlice?: (path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules) => void;
+  onEnterSlice?: (path: string, slice: SliceDefinitionWithTypes, slicing: VisitorSlicingRules) => void;
 
   /**
    * Called when exiting a slice. See `onEnterSlice` for more information.
@@ -105,7 +97,7 @@ export interface SchemaVisitor {
    * @param slice - The slice being exited.
    * @param slicing - The slicing rules related to the slice.
    */
-  onExitSlice?: (path: string, slice: VisitorSliceDefinition, slicing: VisitorSlicingRules) => void;
+  onExitSlice?: (path: string, slice: SliceDefinitionWithTypes, slicing: VisitorSlicingRules) => void;
 }
 
 export class SchemaCrawler {
@@ -213,9 +205,9 @@ export class SchemaCrawler {
   }
 
   private prepareSlices(slices: SliceDefinition[], slicing: SlicingRules): VisitorSlicingRules {
-    const slicesToVisit: VisitorSliceDefinition[] = [];
+    const slicesToVisit: SliceDefinitionWithTypes[] = [];
     for (const slice of slices) {
-      if (!isSupportedSliceDefinition(slice)) {
+      if (!isSliceDefinitionWithTypes(slice)) {
         continue;
       }
       const profileUrl = slice.type.find((t) => isPopulated(t.profile))?.profile?.[0];
@@ -242,7 +234,7 @@ export class SchemaCrawler {
     }
   }
 
-  private crawlSliceImpl(slice: VisitorSliceDefinition, path: string, slicing: VisitorSlicingRules): void {
+  private crawlSliceImpl(slice: SliceDefinitionWithTypes, path: string, slicing: VisitorSlicingRules): void {
     const sliceSchema = slice.typeSchema;
     if (sliceSchema) {
       if (this.visitor.onEnterSchema) {

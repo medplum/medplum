@@ -1,5 +1,11 @@
 import { Group, Stack } from '@mantine/core';
-import { InternalSchemaElement, getPropertyDisplayName, isEmpty, isPopulated } from '@medplum/core';
+import {
+  InternalSchemaElement,
+  SliceDefinitionWithTypes,
+  getPropertyDisplayName,
+  isEmpty,
+  isPopulated,
+} from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsContext, ElementsContextType, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -9,11 +15,10 @@ import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
 import classes from '../ResourceArrayInput/ResourceArrayInput.module.css';
-import { SupportedSliceDefinition } from './SliceInput.utils';
 
 export interface SliceInputProps {
   readonly path: string;
-  readonly slice: SupportedSliceDefinition;
+  readonly slice: SliceDefinitionWithTypes;
   readonly property: InternalSchemaElement;
   readonly defaultValue: any[];
   readonly onChange: (newValue: any[]) => void;
