@@ -39,7 +39,7 @@ superAdminRouter.post(
 
     await sendAsyncResponse(req, res, async () => {
       await rebuildR4ValueSets();
-      await systemRepo.reindexResourceType('CodeSystem');
+      await getSystemRepo().reindexResourceType('CodeSystem');
     });
   })
 );
