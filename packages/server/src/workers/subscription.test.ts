@@ -59,7 +59,7 @@ describe('Subscription Worker', () => {
 
     repo = new Repository({
       extendedMode: true,
-      project: testProject.id,
+      projects: [testProject.id as string],
       author: {
         reference: 'ClientApplication/' + randomUUID(),
       },
@@ -69,7 +69,7 @@ describe('Subscription Worker', () => {
     const botProjectDetails = await createTestProject();
     botRepo = new Repository({
       extendedMode: true,
-      project: botProjectDetails.project.id,
+      projects: [botProjectDetails.project.id as string],
       author: createReference(botProjectDetails.client),
     });
   });

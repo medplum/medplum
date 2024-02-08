@@ -107,11 +107,11 @@ export interface RepositoryContext {
   remoteAddress?: string;
 
   /**
-   * The current project reference.
-   * This should be the ID/UUID of the current project.
+   * Projects that the Repository is allowed to access.
+   * This should include the ID/UUID of the current project, but may also include other accessory Projects.
    * This value will be included in every resource as meta.project.
    */
-  project?: string;
+  projects?: string[];
 
   /**
    * Optional compartment restriction.
@@ -275,7 +275,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (this.isSuperAdmin()) {
       return true;
     }
-    if (cacheEntry.projectId !== this.context.project) {
+    if (!this.context.projects?.includes(cacheEntry.projectId)) {
       return false;
     }
     if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
@@ -602,13 +602,15 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
-    const projectId = this.context.project;
+    const projectIds = this.context.projects;
 
-    if (projectId) {
-      // Try retrieving from cache
-      const cachedProfile = await getProfileCacheEntry(projectId, url);
-      if (cachedProfile) {
-        return cachedProfile.resource;
+    if (projectIds?.length) {
+      for (const projectId of projectIds) {
+        // Try retrieving from cache
+        const cachedProfile = await getProfileCacheEntry(projectId, url);
+        if (cachedProfile) {
+          return cachedProfile.resource;
+        }
       }
     }
 
@@ -630,9 +632,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       ],
     });
 
-    if (projectId && profile) {
+    if (projectIds?.length && profile) {
       // Store loaded profile in cache
-      await setProfileCacheEntry(projectId, profile);
+      await setProfileCacheEntry(projectIds[0], profile);
     }
     return profile;
   }
@@ -1000,8 +1002,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param builder - The select query builder.
    */
   private addProjectFilters(builder: SelectQuery): void {
-    if (this.context.project) {
-      builder.where('compartments', 'ARRAY_CONTAINS', [this.context.project, r4ProjectId], 'UUID[]');
+    if (this.context.projects?.length) {
+      builder.where('compartments', 'ARRAY_CONTAINS', [...this.context.projects, r4ProjectId], 'UUID[]');
     }
   }
 
@@ -1453,7 +1455,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       return submittedProjectId;
     }
 
-    return existing?.meta?.project ?? this.context.project;
+    return existing?.meta?.project ?? this.context.projects?.[0];
   }
 
   /**
@@ -1596,7 +1598,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (protectedResourceTypes.includes(resourceType)) {
       return false;
     }
-    if (resource.meta?.project !== this.context.project) {
+    if (resource.meta?.project !== this.context.projects?.[0]) {
       return false;
     }
     return !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
@@ -1613,7 +1615,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       return true;
     }
 
-    if (current.meta?.project !== this.context.project) {
+    if (current.meta?.project !== this.context.projects?.[0]) {
       return false;
     }
 
@@ -1756,7 +1758,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
     const auditEvent = logRestfulEvent(
       subtype,
-      this.context.project as string,
+      this.context.projects?.[0] as string,
       this.context.author,
       this.context.remoteAddress,
       outcome,

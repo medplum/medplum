@@ -4,6 +4,7 @@ import {
   AccessPolicyIpAccessRule,
   AccessPolicyResource,
   Login,
+  Project,
   ProjectMembership,
   ProjectMembershipAccess,
   Reference,
@@ -18,30 +19,36 @@ import { applySmartScopes } from './smart';
  * This method ensures that the repository is setup correctly.
  * @param login - The user login.
  * @param membership - The active project membership.
- * @param strictMode - Optional flag to enable strict mode for in-depth FHIR schema validation.
+ * @param project - The Project the current user is a member of.
  * @param extendedMode - Optional flag to enable extended mode for custom Medplum properties.
- * @param checkReferencesOnWrite - Optional flag to enable reference checking on write.
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(
   login: Login,
   membership: ProjectMembership,
-  strictMode?: boolean,
-  extendedMode?: boolean,
-  checkReferencesOnWrite?: boolean
+  project: Project,
+  extendedMode?: boolean
 ): Promise<Repository> {
   const accessPolicy = await getAccessPolicyForLogin(login, membership);
 
+  let allowedProjects: string[] | undefined;
+  if (project.id) {
+    allowedProjects = [project.id];
+  }
+  if (project.link && allowedProjects?.length) {
+    allowedProjects.push(...project.link.map((l) => resolveId(l.project) as string));
+  }
+
   return new Repository({
-    project: resolveId(membership.project) as string,
+    projects: allowedProjects,
     author: membership.profile as Reference,
     remoteAddress: login.remoteAddress,
     superAdmin: login.superAdmin,
     projectAdmin: membership.admin,
     accessPolicy,
-    strictMode,
+    strictMode: project.strictMode,
     extendedMode,
-    checkReferencesOnWrite,
+    checkReferencesOnWrite: project.checkReferencesOnWrite,
   });
 }
 
