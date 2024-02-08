@@ -904,7 +904,7 @@ describe('SearchControl', () => {
         resourceType: 'Bundle',
         type: 'searchset',
         total: 5,
-        entry: [{ resource: HomerSimpson }],
+        entry: [{ resource: HomerSimpson }, ...Array(4).fill({ resourceType: 'Patient' })],
       });
       await waitFor(() => screen.getByText('Homer Simpson'));
       const element = screen.getByTestId('count-display');
@@ -920,7 +920,7 @@ describe('SearchControl', () => {
         resourceType: 'Bundle',
         type: 'searchset',
         total: 40,
-        entry: [{ resource: HomerSimpson }],
+        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
       });
       await waitFor(() => screen.getByText('Homer Simpson'));
       const element = screen.getByTestId('count-display');
@@ -937,7 +937,7 @@ describe('SearchControl', () => {
         resourceType: 'Bundle',
         type: 'searchset',
         total: 403091,
-        entry: [{ resource: HomerSimpson }],
+        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
       });
       await waitFor(() => screen.getByText('Homer Simpson'));
       const element = screen.getByTestId('count-display');

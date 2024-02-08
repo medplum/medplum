@@ -586,10 +586,7 @@ function getStart(search: SearchRequest, lastResult: Bundle): number {
 }
 
 function getEnd(search: SearchRequest, lastResult: Bundle): number {
-  return Math.min(
-    getTotal(search, lastResult),
-    getStart(search, lastResult) + (search.count ?? DEFAULT_SEARCH_COUNT) - 1
-  );
+  return getStart(search, lastResult) + (lastResult.entry?.length ?? 0) - 1;
 }
 
 function getTotal(search: SearchRequest, lastResult: Bundle): number {
