@@ -4,12 +4,12 @@ import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
 import { asyncWrap } from '../async';
+import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendLoginResult } from './utils';
-import { getAuthenticatedContext } from '../context';
 
 authenticator.options = {
   window: 1,
@@ -21,6 +21,7 @@ mfaRouter.get(
   '/status',
   authenticateRequest,
   asyncWrap(async (_req: Request, res: Response) => {
+    const systemRepo = getSystemRepo();
     const ctx = getAuthenticatedContext();
     let user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
     if (user.mfaEnrolled) {
@@ -52,6 +53,7 @@ mfaRouter.post(
   authenticateRequest,
   [body('token').notEmpty().withMessage('Missing token')],
   asyncWrap(async (req: Request, res: Response) => {
+    const systemRepo = getSystemRepo();
     const ctx = getAuthenticatedContext();
     const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
@@ -90,6 +92,7 @@ mfaRouter.post(
       return Promise.resolve();
     }
 
+    const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
     const result = await verifyMfaToken(login, req.body.token);
     return sendLoginResult(res, result);

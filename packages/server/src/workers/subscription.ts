@@ -20,7 +20,7 @@ import { URL } from 'url';
 import { MedplumServerConfig } from '../config';
 import { getRequestContext } from '../context';
 import { executeBot } from '../fhir/operations/execute';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createSubEventNotification } from '../subscriptions/websockets';
@@ -263,6 +263,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
   if (!project) {
     return [];
   }
+  const systemRepo = getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -292,9 +293,10 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
+  const systemRepo = getSystemRepo();
   const { subscriptionId, resourceType, id, versionId, interaction, requestTime } = job.data;
 
-  const subscription = await tryGetSubscription(subscriptionId);
+  const subscription = await tryGetSubscription(systemRepo, subscriptionId);
   if (!subscription) {
     // If the subscription was deleted, then stop processing it.
     return;
@@ -306,7 +308,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 
   if (interaction !== 'delete') {
-    const currentVersion = await tryGetCurrentVersion(resourceType, id);
+    const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
     if (!currentVersion) {
       // If the resource was deleted, then stop processing it.
       return;
@@ -343,7 +345,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 }
 
-async function tryGetSubscription(subscriptionId: string): Promise<Subscription | undefined> {
+async function tryGetSubscription(systemRepo: Repository, subscriptionId: string): Promise<Subscription | undefined> {
   try {
     return await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
   } catch (err) {
@@ -357,7 +359,11 @@ async function tryGetSubscription(subscriptionId: string): Promise<Subscription 
   }
 }
 
-async function tryGetCurrentVersion(resourceType: string, id: string): Promise<Resource | undefined> {
+async function tryGetCurrentVersion(
+  systemRepo: Repository,
+  resourceType: string,
+  id: string
+): Promise<Resource | undefined> {
   try {
     return await systemRepo.readResource(resourceType, id);
   } catch (err) {
@@ -489,6 +495,7 @@ async function execBot(
   }
 
   // URL should be a Bot reference string
+  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;

@@ -1,13 +1,14 @@
 import express from 'express';
-import { systemRepo } from '../../repo';
-import { AsyncJobExecutor } from './asyncjobexecutor';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config';
 import { withTestContext } from '../../../test.setup';
-
-const app = express();
+import { getSystemRepo } from '../../repo';
+import { AsyncJobExecutor } from './asyncjobexecutor';
 
 describe('AsyncJobExecutor', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

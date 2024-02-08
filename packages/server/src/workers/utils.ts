@@ -11,10 +11,11 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { getRequestContext } from '../context';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -49,6 +50,7 @@ export async function createAuditEvent(
   subscription?: Subscription,
   bot?: Bot
 ): Promise<void> {
+  const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
   await systemRepo.createResource<AuditEvent>({
@@ -124,6 +126,7 @@ export async function isFhirCriteriaMet(subscription: Subscription, currentResou
 }
 
 async function getPreviousResource(currentResource: Resource): Promise<Resource | undefined> {
+  const systemRepo = getSystemRepo();
   const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
 
   return history.entry?.find((_, idx) => {

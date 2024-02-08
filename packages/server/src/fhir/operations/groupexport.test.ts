@@ -5,14 +5,15 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
 
-const app = express();
-let accessToken: string;
-
 describe('Group Export', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

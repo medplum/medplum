@@ -3,9 +3,11 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getDatabasePool } from '../../database';
 import { withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 
 describe('Coding lookup table', () => {
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);

@@ -20,12 +20,14 @@ import { loadTestConfig } from '../config';
 import { getDatabasePool } from '../database';
 import { bundleContains, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { Repository, systemRepo } from './repo';
+import { getSystemRepo, Repository } from './repo';
 
 jest.mock('hibp');
 jest.mock('ioredis');
 
 describe('FHIR Repo', () => {
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);

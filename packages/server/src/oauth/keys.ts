@@ -14,7 +14,7 @@ import {
   SignJWT,
 } from 'jose';
 import { MedplumServerConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
 export interface MedplumBaseClaims extends JWTPayload {
@@ -101,6 +101,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     throw new Error('Missing issuer');
   }
 
+  const systemRepo = getSystemRepo();
   const searchResult = await systemRepo.searchResources<JsonWebKey>({
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],

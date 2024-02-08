@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 import { AuthenticatedRequestContext, getRequestContext, requestContextStore } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
 
 export interface AuthState {
@@ -61,6 +61,7 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
     throw new OperationOutcomeError(unauthorized);
   }
 
+  const systemRepo = getSystemRepo();
   let client = undefined;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
