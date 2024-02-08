@@ -112,7 +112,7 @@ export interface ProjectLink {
   /**
    * A reference to the Project to be linked into this one
    */
-  project: Reference;
+  project: Reference<Project>;
 }
 
 /**
