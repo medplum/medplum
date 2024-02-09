@@ -52,7 +52,7 @@ describe('WebSockets Subscriptions', () => {
 
     repo = new Repository({
       extendedMode: true,
-      project: project.id,
+      projects: [project.id as string],
       author: {
         reference: 'ClientApplication/' + randomUUID(),
       },
@@ -260,7 +260,7 @@ describe('Subscription Heartbeat', () => {
 
     repo = new Repository({
       extendedMode: true,
-      project: project.id,
+      projects: [project.id as string],
       author: {
         reference: 'ClientApplication/' + randomUUID(),
       },

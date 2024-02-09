@@ -19,15 +19,16 @@ describe('Reference checks', () => {
 
   test('Check references on write', () =>
     withTestContext(async () => {
-      const { membership } = await registerNew({
+      const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
+      project.checkReferencesOnWrite = true;
 
-      const repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, true, true, true);
+      const repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
 
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',

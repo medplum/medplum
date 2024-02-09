@@ -97,6 +97,22 @@ export interface Project {
    * Web application or web site that is associated with the project.
    */
   site?: ProjectSite[];
+
+  /**
+   * Linked Projects whose contents are made available to this one
+   */
+  link?: ProjectLink[];
+}
+
+/**
+ * Linked Projects whose contents are made available to this one
+ */
+export interface ProjectLink {
+
+  /**
+   * A reference to the Project to be linked into this one
+   */
+  project: Reference<Project>;
 }
 
 /**

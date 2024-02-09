@@ -245,7 +245,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       duration: `${duration} ms`,
       ip: req.ip,
       method: req.method,
-      path: req.path,
+      path: req.originalUrl,
       profile: userProfile,
       projectId,
       receivedAt: start,
