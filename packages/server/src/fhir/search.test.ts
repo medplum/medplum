@@ -56,9 +56,9 @@ describe('FHIR Search', () => {
     beforeAll(async () => {
       const config = await loadTestConfig();
       await initAppServices(config);
-      const testProject = await createTestProject();
+      const { project } = await createTestProject();
       repo = new Repository({
-        project: testProject.project.id as string,
+        projects: [project.id as string],
         author: { reference: 'User/' + randomUUID() },
       });
     });
