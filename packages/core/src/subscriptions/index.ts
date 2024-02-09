@@ -1,12 +1,13 @@
 import { Bundle, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
-import { OperationOutcomeError, validationError } from '../outcomes';
+import { OperationOutcomeError, badRequest, validationError } from '../outcomes';
 // import { ClientStorage, IClientStorage } from '../storage';
 import { ProfileResource, getReferenceString, resolveId } from '../utils';
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
+  disconnect: { type: 'disconnect'; payload: { subscriptionId: string } };
   error: { type: 'error'; payload: Error };
   message: { type: 'message'; payload: Bundle };
   close: { type: 'close' };
@@ -26,6 +27,7 @@ export function parseResourcesFromBundle(bundle: Bundle): Resource[] {
 */
 
 const kAddCriteria = Symbol('medplum.SubscriptionEmitter.addCriteria');
+const kRemoveCriteria = Symbol('medplum.SubscriptionEmitter.removeCriteria');
 
 /**
  * An `EventTarget` that emits events when new subscription notifications come in over WebSockets.
@@ -42,25 +44,38 @@ export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> 
   [kAddCriteria](criteria: string): void {
     this.criteria.add(criteria);
   }
+  [kRemoveCriteria](criteria: string): void {
+    this.criteria.delete(criteria);
+  }
 }
 
 export class SubscriptionManager {
-  private medplum: MedplumClient;
+  private readonly medplum: MedplumClient;
   private ws: WebSocket;
   // private storage: IClientStorage;
   private masterSubEmitter?: SubscriptionEmitter;
   private subEmitters: Map<string, SubscriptionEmitter>; // Map<criteria, SubscriptionEmitter>
+  private refCounts: Map<string, number>; // Map<criteria, refCount>
   private subscriptionCriteriaLookup: Map<string, string>; // Map<subscriptionId, criteria>
   private criteriaSubscriptionLookup: Map<string, string>; // Map<criteria, subscriptionId>
   private wsClosed: boolean;
 
   // constructor(medplum: MedplumClient, wsOrUrl: WebSocket | string, options?: SubManagerOptions) {
   constructor(medplum: MedplumClient, wsOrUrl: WebSocket | string) {
+    if (!(medplum instanceof MedplumClient)) {
+      throw new OperationOutcomeError(validationError('First arg of constructor should be a `MedplumClient`'));
+    }
     let ws: WebSocket;
     if (typeof wsOrUrl === 'string') {
-      ws = new WebSocket(wsOrUrl);
+      let url: string;
+      try {
+        url = new URL(wsOrUrl).toString();
+      } catch (_err) {
+        throw new OperationOutcomeError(validationError('Not a valid URL'));
+      }
+      ws = new WebSocket(url);
     } else if (!(wsOrUrl instanceof WebSocket)) {
-      throw new Error('Invalid WebSocket');
+      throw new OperationOutcomeError(validationError('Invalid WebSocket'));
     } else {
       ws = wsOrUrl;
     }
@@ -77,7 +92,7 @@ export class SubscriptionManager {
       this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
       const criteria = this.subscriptionCriteriaLookup.get(resolveId(status.subscription) as string);
       if (!criteria) {
-        console.error('Received notification for criteria the SubscriptionManager is not listening for');
+        console.warn('Received notification for criteria the SubscriptionManager is not listening for');
         return;
       }
       // Emit event for criteria
@@ -99,6 +114,7 @@ export class SubscriptionManager {
     // this.storage = options?.storage ?? new ClientStorage();
     this.masterSubEmitter = new SubscriptionEmitter();
     this.subEmitters = new Map<string, SubscriptionEmitter>();
+    this.refCounts = new Map<string, number>();
     this.subscriptionCriteriaLookup = new Map<string, string>();
     this.criteriaSubscriptionLookup = new Map<string, string>();
     this.wsClosed = false;
@@ -164,11 +180,6 @@ export class SubscriptionManager {
     if (!url) {
       throw new OperationOutcomeError(validationError('Failed to get URL from $get-ws-binding-token'));
     }
-    // if (url !== '/ws/subscriptions-r4') {
-    //   throw new OperationOutcomeError(
-    //     validationError(`The returned URL "${url}" doesn't match the expected "/ws/subscriptions-r4"`)
-    //   );
-    // }
 
     return [subscriptionId, token];
   }
@@ -178,6 +189,7 @@ export class SubscriptionManager {
       this.masterSubEmitter[kAddCriteria](criteria);
     }
     if (this.subEmitters.has(criteria)) {
+      this.refCounts.set(criteria, (this.refCounts.get(criteria) as number) + 1);
       return this.subEmitters.get(criteria) as SubscriptionEmitter;
     }
     const emitter = new SubscriptionEmitter(criteria);
@@ -192,10 +204,44 @@ export class SubscriptionManager {
       })
       .catch(console.error);
 
+    this.refCounts.set(criteria, 1);
     return emitter;
   }
 
-  async removeCriteria(_criteria: string): Promise<void> {}
+  derefCriteria(criteria: string): void {
+    if (!this.refCounts.has(criteria)) {
+      throw new OperationOutcomeError(
+        badRequest('Criteria not known to `SubscriptionManager`. Possibly called deref too many times.')
+      );
+    }
+
+    const newCount = (this.refCounts.get(criteria) as number) - 1;
+    if (newCount > 0) {
+      this.refCounts.set(criteria, newCount);
+      return;
+    }
+
+    // If we are here, time to actually remove criteria
+    this.refCounts.delete(criteria);
+
+    // If actually removing
+    const subscriptionId = this.criteriaSubscriptionLookup.get(criteria) as string;
+    const disconnectEvent = { type: 'disconnect', payload: { subscriptionId } } as SubscriptionEventMap['disconnect'];
+    // Remove from master
+    if (this.masterSubEmitter) {
+      this.masterSubEmitter[kRemoveCriteria](criteria);
+
+      // Emit disconnect on master
+      this.masterSubEmitter.dispatchEvent(disconnectEvent);
+    }
+    // Emit disconnect on criteria emitter
+    this.subEmitters.get(criteria)?.dispatchEvent(disconnectEvent);
+    this.subEmitters.delete(criteria);
+
+    // if (this.refCounts.size === 0) {
+    //   // Set timer to close WebSocket
+    // }
+  }
 
   closeWebSocket(): void {
     if (this.wsClosed) {
@@ -216,34 +262,3 @@ export class SubscriptionManager {
     return this.masterSubEmitter;
   }
 }
-
-/*
-===================
-  Non-React usage
-===================
-async function exampleMain() {
-  const medplum = new MedplumClient();
-  const patientRefStr = getReferenceString({ resourceType: 'Patient', id: '123abc' });
-  const docRefStr = getReferenceString({ resourceType: 'Patient', id: '123abc' });
-
-  const criteria = `Communication?sender=${patientRefStr},${docRefStr}&recipient=${patientRefStr},${docRefStr}`;
-  const listener = medplum.subscribeToCriteria(criteria);
-
-  const bundles = [] as Bundle[];
-
-  // Probably want to be able to listen to only certain kinds of messages...
-  // For a given criteria...
-  // listener.addEventListener('message', (event) =>
-
-  listener.addEventListener(`message:${criteria}`, (event) => {
-    const bundle = event.payload;
-    bundles.push(bundle);
-  });
-
-  while (bundles.length < 10) {
-    await sleep(100);
-  }
-
-  listener.removeCriteria(criteria);
-}
-*/
