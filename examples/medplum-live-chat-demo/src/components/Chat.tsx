@@ -168,7 +168,10 @@ export function Chat(): JSX.Element | null {
                         (currCommTime !== prevCommTime && <div style={{ textAlign: 'center' }}>{currCommTime}</div>)}
                       {c.sender?.reference === profileRefStr ? (
                         <Group justify="flex-end" gap="xs" mb="sm">
-                          <ChatBubble communication={c} showSeen={!!c.received && c.id === myLastCommunicationId} />
+                          <ChatBubble
+                            communication={c}
+                            showDelivered={!!c.received && c.id === myLastCommunicationId}
+                          />
                           <Avatar radius="xl" color="orange" />
                         </Group>
                       ) : (
@@ -237,7 +240,7 @@ export function Chat(): JSX.Element | null {
 
 interface ChatBubbleProps {
   communication: Communication;
-  showSeen?: boolean;
+  showDelivered?: boolean;
 }
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
@@ -246,9 +249,9 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
   return (
     <div className={classes.chatBubbleWrap}>
       <div className={classes.chatBubble}>{content}</div>
-      {props.showSeen && (
+      {props.showDelivered && (
         <div style={{ textAlign: 'right' }}>
-          Seen {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
+          Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
           {seenTime.getMinutes()}
         </div>
       )}
