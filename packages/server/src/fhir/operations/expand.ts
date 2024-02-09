@@ -9,13 +9,14 @@ import {
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { sendOutcome } from '../outcomes';
-import { getSystemRepo } from '../repo';
+import { getSystemRepo, Repository } from '../repo';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 import { parentProperty } from './codesystemimport';
 import { clamp } from './utils/parameters';
 import { validateCode } from './codesystemvalidatecode';
 import { getDatabasePool } from '../../database';
+import { r4ProjectId } from '../../seed';
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -24,7 +25,7 @@ import { getDatabasePool } from '../../database';
 // 1) The "url" parameter to identify the value set
 // 2) The "filter" parameter for text search
 // 3) Optional offset for pagination (default is zero for beginning)
-// 4) Optional count for pagination (default is 10, can be 1-20)
+// 4) Optional count for pagination (default is 10, can be 1-1000)
 
 export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   let url = req.query.url as string | undefined;
@@ -44,7 +45,6 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     url = url.substring(0, pipeIndex);
   }
 
-  // First, get the ValueSet resource
   let valueSet = await getValueSetByUrl(url);
   if (!valueSet) {
     sendOutcome(res, badRequest('ValueSet not found'));
@@ -220,79 +220,81 @@ async function computeExpansion(
 
   const repo = getAuthenticatedContext().repo;
   for (const include of valueSet.compose.include) {
-    if (include.valueSet?.length) {
-      throw new OperationOutcomeError(
-        badRequest('Recursive ValueSet expansion is not supported', 'ValueSet.compose.include.valueSet')
-      );
-    }
-
-    if (include.system && !include.concept) {
-      const codeSystems = await repo.searchResources<CodeSystem>({
-        resourceType: 'CodeSystem',
-        filters: [{ code: 'url', operator: Operator.EQUALS, value: include.system }],
-        sortRules: [
-          // Select highest version (by lexical sort -- no version is assumed to be "current")
-          { code: 'version', descending: true },
-          // Break ties by selecting more recently-updated resource (lexically -- no date is assumed to be current)
-          { code: 'date', descending: true },
-        ],
-      });
-
-      let codeSystem: CodeSystem;
-      if (!codeSystems.length) {
-        throw new OperationOutcomeError(
-          badRequest(`Code system ${include.system} not found`, 'ValueSet.compose.include.system')
-        );
-      } else if (codeSystems.length === 1) {
-        codeSystem = codeSystems[0];
-      } else {
-        codeSystem = codeSystems.sort((a: CodeSystem, b: CodeSystem) => {
-          // Select the non-base FHIR versions of resources before the base FHIR ones
-          // This is kind of a kludge, but is required to break ties because some CodeSystems (including SNOMED)
-          // don't have a version and the base spec version doesn't include a date (and so is always considered current)
-          if (a.extension?.some((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/structuredefinition-wg')) {
-            return 1;
-          } else if (
-            b.extension?.some((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/structuredefinition-wg')
-          ) {
-            return -1;
-          }
-          return 0;
-        })[0];
-      }
-
-      let query = new SelectQuery('Coding')
-        .column('code')
-        .column('display')
-        .where('system', '=', codeSystem.id)
-        .limit(count + 1)
-        .offset(offset)
-        .orderBy('id');
-      if (filter) {
-        query.where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
-      }
-      query = addFilters(include.filter, query, codeSystem);
-      const results = await query.execute(repo.getDatabaseClient());
-      expansion.push(
-        ...(results.map((r) => ({
-          code: r.code,
-          display: r.display,
-          system: codeSystem.url,
-        })) as ValueSetExpansionContains[])
-      );
-    } else if (include.system && include.concept) {
-      const concepts = await Promise.all(
-        include.concept.flatMap(async (c) =>
-          validateCode(include.system as string, c.code)
-        ) as ValueSetExpansionContains[]
-      );
-      expansion.push(...(filter ? concepts.filter((c) => c.display?.includes(filter)) : concepts));
-    }
-
+    await includeInExpansion(repo, include, expansion, offset, count, filter);
     if (expansion.length > count) {
       // Return partial expansion
       return;
     }
+  }
+}
+
+async function includeInExpansion(
+  repo: Repository,
+  include: ValueSetComposeInclude,
+  expansion: ValueSetExpansionContains[],
+  offset: number,
+  count: number,
+  filter?: string
+): Promise<void> {
+  if (include.valueSet?.length) {
+    throw new OperationOutcomeError(
+      badRequest('Recursive ValueSet expansion is not supported', 'ValueSet.compose.include.valueSet')
+    );
+  }
+
+  if (include.system && !include.concept) {
+    const codeSystems = await repo.searchResources<CodeSystem>({
+      resourceType: 'CodeSystem',
+      filters: [{ code: 'url', operator: Operator.EQUALS, value: include.system }],
+      sortRules: [
+        // Select highest version (by lexical sort -- no version is assumed to be "current")
+        { code: 'version', descending: true },
+        // Break ties by selecting more recently-updated resource (lexically -- no date is assumed to be current)
+        { code: 'date', descending: true },
+      ],
+    });
+
+    let codeSystem: CodeSystem;
+    if (!codeSystems.length) {
+      throw new OperationOutcomeError(
+        badRequest(`Code system ${include.system} not found`, 'ValueSet.compose.include.system')
+      );
+    } else if (codeSystems.length === 1) {
+      codeSystem = codeSystems[0];
+    } else {
+      codeSystem = codeSystems.sort((a: CodeSystem, b: CodeSystem) => {
+        // Select the non-base FHIR versions of resources before the base FHIR ones
+        // This is kind of a kludge, but is required to break ties because some CodeSystems (including SNOMED)
+        // don't have a version and the base spec version doesn't include a date (and so is always considered current)
+        if (a.meta?.project === r4ProjectId) {
+          return 1;
+        } else if (b.meta?.project === r4ProjectId) {
+          return -1;
+        }
+        return 0;
+      })[0];
+    }
+
+    let query = new SelectQuery('Coding')
+      .column('code')
+      .column('display')
+      .where('system', '=', codeSystem.id)
+      .limit(count + 1)
+      .offset(offset)
+      .orderBy('id');
+    if (filter) {
+      query.where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
+    }
+    query = addFilters(include.filter, query, codeSystem);
+    const results = await query.execute(repo.getDatabaseClient());
+    expansion.push(...results.map(({ code, display }) => ({ system: codeSystem.url, code, display })));
+  } else if (include.system && include.concept) {
+    const concepts = await Promise.all(
+      include.concept.flatMap(async (c) =>
+        validateCode(include.system as string, c.code)
+      ) as ValueSetExpansionContains[]
+    );
+    expansion.push(...(filter ? concepts.filter((c) => c.display?.includes(filter)) : concepts));
   }
 }
 

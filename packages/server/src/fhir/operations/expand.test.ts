@@ -1,5 +1,5 @@
 import { ContentType, LOINC } from '@medplum/core';
-import { OperationOutcome, Project, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { CodeSystem, OperationOutcome, Project, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -256,5 +256,77 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       code: 'Observation',
       display: 'Observation',
     });
+  });
+
+  test('CodeSystem resolution', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      url: 'http://example.com/CodeSystem/foo' + randomUUID(),
+      version: '1',
+      content: 'not-present',
+    };
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+
+    // First version of code system
+    const res1 = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(res1.status).toEqual(201);
+    const res2 = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: codeSystem.url },
+          { name: 'concept', valueCoding: { code: 'foo', display: 'Foo' } },
+          { name: 'concept', valueCoding: { code: 'bar', display: 'Bar' } },
+        ],
+      });
+    expect(res2.status).toEqual(200);
+
+    // Second version of code system
+    codeSystem.version = '2';
+    const res3 = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(res3.status).toEqual(201);
+    const res4 = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: codeSystem.url },
+          { name: 'concept', valueCoding: { code: 'baz', display: 'Baz' } },
+          { name: 'concept', valueCoding: { code: 'quux', display: 'Quux' } },
+        ],
+      });
+    expect(res4.status).toEqual(200);
+
+    // ValueSet containing all of target CodeSystem
+    const res5 = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'http://example.com/ValueSet/bar' + randomUUID(),
+        compose: {
+          include: [{ system: codeSystem.url }],
+        },
+      });
+    expect(res5.status).toEqual(201);
+    const valueSet = res5.body as ValueSet;
+
+    const res6 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res6.status).toEqual(200);
   });
 });
