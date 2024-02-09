@@ -1,14 +1,16 @@
 import { Group, Stack } from '@mantine/core';
 import {
+  ElementsContextType,
   InternalSchemaElement,
   SliceDefinitionWithTypes,
+  buildElementsContext,
   getPropertyDisplayName,
   isEmpty,
   isPopulated,
 } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
-import { ElementsContext, ElementsContextType, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import { ElementDefinitionTypeInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
@@ -39,7 +41,6 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
 
   const contextValue: ElementsContextType | undefined = useMemo(() => {
     if (isPopulated(sliceElements)) {
-      console.log('SliceInput buildElementsContext', props.path, slice.typeSchema?.url, sliceElements);
       return buildElementsContext({
         parentContext: parentElementsContextValue,
         elements: sliceElements,

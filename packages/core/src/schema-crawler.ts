@@ -1,3 +1,4 @@
+import { ElementsContextType, buildElementsContext } from './elements-context';
 import { SliceDefinitionWithTypes, isSliceDefinitionWithTypes } from './typeschema/slices';
 import {
   InternalSchemaElement,
@@ -6,7 +7,7 @@ import {
   SlicingRules,
   tryGetProfile,
 } from './typeschema/types';
-import { getPathDifference, isPopulated } from './utils';
+import { isPopulated } from './utils';
 
 export type VisitorSlicingRules = Omit<SlicingRules, 'slices'> & {
   slices: SliceDefinitionWithTypes[];
@@ -110,16 +111,19 @@ export class SchemaCrawler {
     if (schema.type === undefined) {
       throw new Error('schema must include a type');
     }
-
     this.rootSchema = schema as InternalTypeSchema & { type: string };
-    this.elementsContextStack = [
-      buildElementsContext({
-        parentContext: undefined,
-        path: this.rootSchema.type as string,
-        elements: elements ?? this.rootSchema.elements,
-        profileUrl: this.rootSchema.name === this.rootSchema.type ? undefined : this.rootSchema.url,
-      }),
-    ];
+
+    const rootContext = buildElementsContext({
+      parentContext: undefined,
+      path: this.rootSchema.type as string,
+      elements: elements ?? this.rootSchema.elements,
+      profileUrl: this.rootSchema.name === this.rootSchema.type ? undefined : this.rootSchema.url,
+    });
+    if (rootContext === undefined) {
+      throw new Error('Could not create root elements context');
+    }
+
+    this.elementsContextStack = [rootContext];
     this.visitor = visitor;
   }
 
@@ -255,8 +259,11 @@ export class SchemaCrawler {
         parentContext: this.elementsContext,
         elements: sliceElements,
       });
+    }
+    if (elementsContext) {
       this.elementsContextStack.push(elementsContext);
     }
+
     this.crawlElementsImpl(sliceElements, path);
 
     if (elementsContext) {
@@ -273,81 +280,6 @@ export class SchemaCrawler {
       }
     }
   }
-}
-
-export type ElementsContextType = {
-  elements: Record<string, InternalSchemaElement>;
-  elementsByPath: Record<string, InternalSchemaElement>;
-  profileUrl: string | undefined;
-};
-
-function buildElementsContext({
-  parentContext,
-  elements,
-  path,
-  profileUrl,
-  debugMode,
-}: {
-  elements: InternalTypeSchema['elements'];
-  path: string;
-  parentContext: ElementsContextType | undefined;
-  profileUrl?: string;
-  debugMode?: boolean;
-}): ElementsContextType {
-  const mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
-    path,
-    elements,
-    parentContext,
-    Boolean(debugMode)
-  );
-
-  const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
-
-  for (const [key, property] of Object.entries(mergedElements)) {
-    elementsByPath[path + '.' + key] = property;
-  }
-
-  return {
-    profileUrl: profileUrl ?? parentContext?.profileUrl,
-    elements: mergedElements,
-    elementsByPath,
-  };
-}
-
-function mergeElementsForContext(
-  path: string,
-  elements: Record<string, InternalSchemaElement> | undefined,
-  parentContext: ElementsContextType | undefined,
-  debugMode: boolean
-): Record<string, InternalSchemaElement> {
-  const result: ElementsContextType['elements'] = Object.create(null);
-
-  if (parentContext) {
-    for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
-      const key = getPathDifference(path, path);
-      if (key !== undefined) {
-        result[key] = element;
-      }
-    }
-  }
-
-  let usedNewElements = false;
-  if (elements) {
-    for (const [key, element] of Object.entries(elements)) {
-      if (!(key in result)) {
-        result[key] = element;
-        usedNewElements = true;
-      }
-    }
-  }
-
-  // TODO if no new elements are used, the elementscontext is very likely not necessary;
-  // there could be an optimization where buildElementsContext returns undefined in this case
-  // to avoid needless contexts
-  if (debugMode && parentContext && !usedNewElements) {
-    console.debug('ElementsContext elements same as parent context');
-  }
-  return result;
 }
 
 type ElementNode = {

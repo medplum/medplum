@@ -1,5 +1,5 @@
 import { Resource } from '@medplum/fhirtypes';
-import { ElementsContextType, SchemaCrawler, SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
+import { SchemaCrawler, SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
 import { SliceDefinitionWithTypes, getValueSliceName } from './typeschema/slices';
 import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
 import {
@@ -11,6 +11,7 @@ import {
   isPopulated,
   splitOnceRight,
 } from './utils';
+import { ElementsContextType } from './elements-context';
 
 /**
  * Used when an array entry, typically an empty one, needs to be assigned
