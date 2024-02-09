@@ -111,6 +111,7 @@ export interface RepositoryContext {
    * This should include the ID/UUID of the current project, but may also include other accessory Projects.
    * If this is undefined, the current user is a server user (e.g. Super Admin)
    * The usual case has two elements: the user's Project and the base R4 Project
+   * The user's "primary" Project will be the first element in the array (i.e. projects[0])
    * This value will be included in every resource as meta.project.
    */
   projects?: string[];
