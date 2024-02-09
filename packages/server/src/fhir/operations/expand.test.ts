@@ -387,7 +387,7 @@ describe('Updated implementation', () => {
     expect(
       expansion.contains?.find(
         (c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode' && c.code === 'FRND'
-      )
-    ).toBeDefined();
+      )?.display
+    ).toEqual('unrelated friend');
   });
 });
