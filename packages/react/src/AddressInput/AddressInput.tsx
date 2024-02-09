@@ -24,10 +24,6 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   const valueRef = useRef<Address>();
   valueRef.current = value;
 
-  // const stateElement = useMemo(
-  //   () => getModifiedNestedElement(props.path + '.state'),
-  //   [getModifiedNestedElement, props.path]
-  // );
   // TODO{profiles} is it worth the complexity of subbing in an autocomplete input when
   // a binding is defined in a profile? If so, it should go in a new wrapper around TextInput
   // e.g. US Core Patient Profile

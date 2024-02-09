@@ -13,13 +13,20 @@ describe('buildElementsContext', () => {
 
     const context = buildElementsContext({
       elements: schema.elements,
-      parentPath: 'MedicationRequest',
+      path: 'MedicationRequest',
       parentContext: undefined,
-      parentType: schema.type,
       profileUrl,
     });
 
+    if (context === undefined) {
+      fail('Expected context to be defined');
+    }
+
     expect(context.profileUrl).toEqual(sd.url);
-    expect(context.getModifiedNestedElement('MedicationRequest.dosageInstruction.method')).toBeDefined();
+    expect(context.elements['dosageInstruction.method']).toBeDefined();
+    expect(context.elementsByPath['MedicationRequest.dosageInstruction.method']).toBeDefined();
+    expect(context.elements['dosageInstruction.method']).toBe(
+      context.elementsByPath['MedicationRequest.dosageInstruction.method']
+    );
   });
 });

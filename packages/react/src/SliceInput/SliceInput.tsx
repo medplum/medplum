@@ -33,7 +33,6 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
     return props.defaultValue.map((v) => v ?? {});
   });
 
-  const sliceType = slice.typeSchema?.type ?? slice.type[0].code;
   const sliceElements = slice.typeSchema?.elements ?? slice.elements;
 
   const parentElementsContextValue = useContext(ElementsContext);
@@ -45,13 +44,12 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
         parentContext: parentElementsContextValue,
         elements: sliceElements,
         path: props.path,
-        parentType: sliceType,
         profileUrl: slice.typeSchema?.url,
       });
     }
     console.assert(false, 'Expected sliceElements to always be populated', props.path);
     return undefined;
-  }, [parentElementsContextValue, props.path, slice.typeSchema?.url, sliceElements, sliceType]);
+  }, [parentElementsContextValue, props.path, slice.typeSchema?.url, sliceElements]);
 
   function setValuesWrapper(newValues: any[]): void {
     setValues(newValues);

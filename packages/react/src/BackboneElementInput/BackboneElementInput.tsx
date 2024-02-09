@@ -35,10 +35,9 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
       parentContext: parentElementsContext,
       elements: typeSchema.elements,
       path: props.path,
-      parentType: type,
       profileUrl: typeSchema.url,
     });
-  }, [typeSchema, props.path, parentElementsContext, type]);
+  }, [typeSchema, props.path, parentElementsContext]);
 
   if (!typeSchema) {
     return <div>{type}&nbsp;not implemented</div>;

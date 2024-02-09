@@ -6,7 +6,7 @@ import {
   SlicingRules,
   tryGetProfile,
 } from './typeschema/types';
-import { isPopulated } from './utils';
+import { getPathDifference, isPopulated } from './utils';
 
 export type VisitorSlicingRules = Omit<SlicingRules, 'slices'> & {
   slices: SliceDefinitionWithTypes[];
@@ -115,7 +115,7 @@ export class SchemaCrawler {
     this.elementsContextStack = [
       buildElementsContext({
         parentContext: undefined,
-        parentPath: this.rootSchema.type as string,
+        path: this.rootSchema.type as string,
         elements: elements ?? this.rootSchema.elements,
         profileUrl: this.rootSchema.name === this.rootSchema.type ? undefined : this.rootSchema.url,
       }),
@@ -251,7 +251,7 @@ export class SchemaCrawler {
     const sliceElements = sliceSchema?.elements ?? slice.elements;
     if (isPopulated(sliceElements)) {
       elementsContext = buildElementsContext({
-        parentPath: path,
+        path,
         parentContext: this.elementsContext,
         elements: sliceElements,
       });
@@ -284,18 +284,18 @@ export type ElementsContextType = {
 function buildElementsContext({
   parentContext,
   elements,
-  parentPath,
+  path,
   profileUrl,
   debugMode,
 }: {
-  elements: InternalTypeSchema['elements'] | undefined;
-  parentPath: string;
+  elements: InternalTypeSchema['elements'];
+  path: string;
   parentContext: ElementsContextType | undefined;
   profileUrl?: string;
   debugMode?: boolean;
 }): ElementsContextType {
   const mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
-    parentPath,
+    path,
     elements,
     parentContext,
     Boolean(debugMode)
@@ -304,7 +304,7 @@ function buildElementsContext({
   const elementsByPath: ElementsContextType['elementsByPath'] = Object.create(null);
 
   for (const [key, property] of Object.entries(mergedElements)) {
-    elementsByPath[parentPath + '.' + key] = property;
+    elementsByPath[path + '.' + key] = property;
   }
 
   return {
@@ -315,7 +315,7 @@ function buildElementsContext({
 }
 
 function mergeElementsForContext(
-  parentPath: string,
+  path: string,
   elements: Record<string, InternalSchemaElement> | undefined,
   parentContext: ElementsContextType | undefined,
   debugMode: boolean
@@ -323,10 +323,9 @@ function mergeElementsForContext(
   const result: ElementsContextType['elements'] = Object.create(null);
 
   if (parentContext) {
-    const parentPathPrefix = parentPath + '.';
     for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
-      if (path.startsWith(parentPathPrefix)) {
-        const key = path.slice(parentPathPrefix.length);
+      const key = getPathDifference(path, path);
+      if (key !== undefined) {
         result[key] = element;
       }
     }
