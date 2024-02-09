@@ -96,7 +96,6 @@ describe('SubscriptionManager', () => {
     let wsServer: WS;
 
     beforeAll(async () => {
-      // console.log = jest.fn();
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
     });
 
@@ -277,13 +276,16 @@ describe('SubscriptionManager', () => {
       expect(() => manager.derefCriteria('DiagnosticReport')).toThrow(OperationOutcomeError);
     });
 
-    test('should not clean up a criteria if another subscriber outstanding is listening', (done) => {
+    test('should not clean up a criteria if there are outstanding listeners', (done) => {
+      let success = false;
       const emitter = manager.addCriteria('Communication');
       expect(emitter).toBeInstanceOf(SubscriptionEmitter);
 
       const handler = (): void => {
         emitter.removeEventListener('disconnect', handler);
-        done(new Error('Received `disconnect` when not expected'));
+        if (!success) {
+          done(new Error('Received `disconnect` when not expected'));
+        }
       };
       emitter.addEventListener('disconnect', handler);
 
@@ -292,15 +294,18 @@ describe('SubscriptionManager', () => {
       sleep(200)
         .then(() => {
           emitter.removeEventListener('disconnect', handler);
+          success = true;
           done();
         })
         .catch(console.error);
     });
 
     test('should clean up for a criteria if we are the last subscriber', (done) => {
+      let success = false;
       const handler = (): void => {
         emitter.removeEventListener('disconnect', handler);
         expect(true).toBeTruthy();
+        success = true;
         done();
       };
       emitter.addEventListener('disconnect', handler);
@@ -310,7 +315,9 @@ describe('SubscriptionManager', () => {
       sleep(200)
         .then(() => {
           emitter.removeEventListener('disconnect', handler);
-          done(new Error('Expected to receive `disconnect` message'));
+          if (!success) {
+            done(new Error('Expected to receive `disconnect` message'));
+          }
         })
         .catch(console.error);
     });
@@ -355,6 +362,63 @@ describe('SubscriptionManager', () => {
       expect(manager.getCriteriaCount()).toEqual(1);
       manager.derefCriteria('Communication');
       expect(manager.getCriteriaCount()).toEqual(0);
+    });
+  });
+
+  afterAll(() => {
+    WS.clean();
+  });
+
+  describe('closeWebSocket()', () => {
+    let wsServer: WS;
+
+    beforeAll(() => {
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+    });
+
+    afterAll(() => {
+      WS.clean();
+    });
+
+    test('should close websocket and emit `close` when called', async () => {
+      const ws = new WebSocket('wss://example.com/ws/subscriptions-r4');
+      const manager = new SubscriptionManager(medplum, ws);
+      await wsServer.connected;
+
+      const event = await new Promise<{ type: 'close' }>((resolve) => {
+        manager.getMasterEmitter().addEventListener('close', (event) => {
+          resolve(event);
+        });
+        expect(() => manager.closeWebSocket()).not.toThrow();
+        expect(ws.readyState).toBe(WebSocket.CLOSING);
+      });
+      expect(event?.type).toEqual('close');
+    });
+
+    test('should not emit close twice', async () => {
+      const ws = new WebSocket('wss://example.com/ws/subscriptions-r4');
+      const manager = new SubscriptionManager(medplum, ws);
+      await wsServer.connected;
+
+      const event = await new Promise<{ type: 'close' }>((resolve) => {
+        manager.getMasterEmitter().addEventListener('close', (event) => {
+          resolve(event);
+        });
+        expect(() => manager.closeWebSocket()).not.toThrow();
+        expect(ws.readyState).toBe(WebSocket.CLOSING);
+      });
+      expect(event?.type).toEqual('close');
+
+      await wsServer.closed;
+
+      await new Promise<void>((resolve, reject) => {
+        manager.getMasterEmitter().addEventListener('close', () => {
+          reject(new Error('Expected not to call'));
+        });
+        expect(() => manager.closeWebSocket()).not.toThrow();
+        expect(ws.readyState).toBe(WebSocket.CLOSED);
+        setTimeout(() => resolve(), 250);
+      });
     });
   });
 

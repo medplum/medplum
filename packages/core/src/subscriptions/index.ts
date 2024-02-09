@@ -1,7 +1,7 @@
 import { Bundle, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
-import { OperationOutcomeError, badRequest, validationError } from '../outcomes';
+import { OperationOutcomeError, badRequest, serverError, validationError } from '../outcomes';
 // import { ClientStorage, IClientStorage } from '../storage';
 import { ProfileResource, getReferenceString, resolveId } from '../utils';
 
@@ -100,7 +100,10 @@ export class SubscriptionManager {
     });
 
     ws.addEventListener('error', () => {
-      this.masterSubEmitter?.dispatchEvent({ type: 'error', payload: new Error('Error ') });
+      this.masterSubEmitter?.dispatchEvent({
+        type: 'error',
+        payload: new OperationOutcomeError(serverError(new Error('WebSocket error'))),
+      });
     });
 
     ws.addEventListener('close', () => {
