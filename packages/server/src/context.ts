@@ -59,10 +59,10 @@ export class AuthenticatedRequestContext extends RequestContext {
     this.repo.close();
   }
 
-  static system(): AuthenticatedRequestContext {
+  static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
     const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
     return new AuthenticatedRequestContext(
-      new RequestContext('', ''),
+      new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? ''),
       {} as unknown as Login,
       {} as unknown as Project,
       {} as unknown as ProjectMembership,

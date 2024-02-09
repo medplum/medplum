@@ -224,6 +224,6 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
   throw new Error('Async Job did not complete');
 }
 
-export function withTestContext<T>(fn: () => T): T {
-  return requestContextStore.run(AuthenticatedRequestContext.system(), fn);
+export function withTestContext<T>(fn: () => T, ctx?: { requestId?: string; traceId?: string }): T {
+  return requestContextStore.run(AuthenticatedRequestContext.system(ctx), fn);
 }

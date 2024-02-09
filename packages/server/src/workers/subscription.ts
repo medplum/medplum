@@ -18,7 +18,7 @@ import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import { MedplumServerConfig } from '../config';
-import { getRequestContext } from '../context';
+import { getRequestContext, RequestContext, requestContextStore } from '../context';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -27,6 +27,7 @@ import { createSubEventNotification } from '../subscriptions/websockets';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
 import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
+import { parseTraceparent } from '../traceparent';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -55,6 +56,8 @@ export interface SubscriptionJobData {
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
   readonly requestTime: string;
+  readonly requestId: string;
+  readonly traceId: string;
 }
 
 const queueName = 'SubscriptionQueue';
@@ -84,10 +87,15 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<SubscriptionJobData>(queueName, execSubscriptionJob, {
-    ...defaultOptions,
-    ...config.bullmq,
-  });
+  worker = new Worker<SubscriptionJobData>(
+    queueName,
+    (job) =>
+      requestContextStore.run(new RequestContext(job.data.requestId, job.data.traceId), () => execSubscriptionJob(job)),
+    {
+      ...defaultOptions,
+      ...config.bullmq,
+    }
+  );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
@@ -152,6 +160,8 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
+        requestId: ctx.requestId,
+        traceId: ctx.traceId,
       });
     }
   }
@@ -404,6 +414,11 @@ async function sendRestHook(
   if (interaction === 'delete') {
     headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
   }
+  const traceId = job.data.traceId;
+  headers['x-trace-id'] = traceId;
+  if (parseTraceparent(traceId)) {
+    headers['traceparent'] = traceId;
+  }
 
   const body = interaction === 'delete' ? '{}' : stringify(resource);
   let error: Error | undefined = undefined;
@@ -487,10 +502,11 @@ async function execBot(
   interaction: BackgroundJobInteraction,
   requestTime: string
 ): Promise<void> {
+  const ctx = getRequestContext();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    getRequestContext().logger.debug(`Ignore rest hook missing URL`);
+    ctx.logger.debug(`Ignore rest hook missing URL`);
     return;
   }
 
@@ -517,6 +533,7 @@ async function execBot(
     input: interaction === 'delete' ? { deletedResource: resource } : resource,
     contentType: ContentType.FHIR_JSON,
     requestTime,
+    traceId: ctx.traceId,
   });
 }
 
