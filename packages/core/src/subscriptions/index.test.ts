@@ -65,6 +65,32 @@ class MockMedplumClient extends MedplumClient {
 
 const medplum = new MockMedplumClient();
 
+describe('SubscriptionEmitter', () => {
+  test('getCriteria()', () => {
+    const kAddCriteria = Symbol.for('medplum.SubscriptionEmitter.addCriteria');
+    const kRemoveCriteria = Symbol.for('medplum.SubscriptionEmitter.removeCriteria');
+
+    const emitter = new SubscriptionEmitter();
+    expect(emitter.getCriteria().size).toEqual(0);
+    // @ts-expect-error Symbol for `addCriteria` is not on public interface
+    emitter[kAddCriteria]('Communication');
+    expect(emitter.getCriteria().size).toEqual(1);
+
+    // Should be able to add again without changing count
+    // @ts-expect-error Symbol for `addCriteria` is not on public interface
+    emitter[kAddCriteria]('Communication');
+    expect(emitter.getCriteria().size).toEqual(1);
+
+    // @ts-expect-error Symbol for `addCriteria` is not on public interface
+    emitter[kAddCriteria]('DiagnosticReport');
+    expect(emitter.getCriteria().size).toEqual(2);
+
+    // @ts-expect-error Symbol for `removeCriteria` is not on public interface
+    emitter[kRemoveCriteria]('DiagnosticReport');
+    expect(emitter.getCriteria().size).toEqual(1);
+  });
+});
+
 describe('SubscriptionManager', () => {
   describe('Constructor', () => {
     let wsServer: WS;
@@ -287,6 +313,147 @@ describe('SubscriptionManager', () => {
           done(new Error('Expected to receive `disconnect` message'));
         })
         .catch(console.error);
+    });
+  });
+
+  describe('getCriteriaCount()', () => {
+    let wsServer: WS;
+
+    beforeAll(() => {
+      medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'token',
+              valueString: 'token-123',
+            },
+            {
+              name: 'expiration',
+              valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            {
+              name: 'websocket-url',
+              valueUrl: 'wss://example.com/ws/subscriptions-r4',
+            },
+          ],
+        } as Parameters;
+      });
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+    });
+
+    afterAll(() => {
+      WS.clean();
+    });
+
+    test('should return the correct amount of criteria', async () => {
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
+
+      expect(manager.getCriteriaCount()).toEqual(0);
+      manager.addCriteria('Communication');
+      expect(manager.getCriteriaCount()).toEqual(1);
+      manager.derefCriteria('Communication');
+      expect(manager.getCriteriaCount()).toEqual(0);
+    });
+  });
+
+  describe('Scenarios', () => {
+    let wsServer: WS;
+
+    beforeAll(() => {
+      medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'token',
+              valueString: 'token-123',
+            },
+            {
+              name: 'expiration',
+              valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            {
+              name: 'websocket-url',
+              valueUrl: 'wss://example.com/ws/subscriptions-r4',
+            },
+          ],
+        } as Parameters;
+      });
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+    });
+
+    afterAll(() => {
+      WS.clean();
+    });
+
+    test("should warn when receiving notification for subscription we aren't expecting", async () => {
+      const originalWarn = console.warn;
+      console.warn = jest.fn();
+
+      // @ts-expect-error We don't use manager
+      const _manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
+
+      const timestamp = new Date().toISOString();
+      const resource = { resourceType: 'Communication', id: generateId() } as Communication;
+      const sentBundle = {
+        resourceType: 'Bundle',
+        timestamp,
+        type: 'history',
+        entry: [
+          {
+            resource: {
+              resourceType: 'SubscriptionStatus',
+              type: 'event-notification',
+              subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
+              notificationEvent: [{ eventNumber: '0', timestamp, focus: createReference(resource) }],
+            } as SubscriptionStatus,
+          },
+          {
+            resource,
+            fullUrl: `https://example.com/fhir/R4/Communication/${resource.id}`,
+          },
+        ],
+      } as Bundle;
+
+      wsServer.send(sentBundle);
+
+      expect(console.warn).toHaveBeenCalled();
+      console.warn = originalWarn;
+    });
+
+    test('should emit `heartbeat` event when heartbeat received', async () => {
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
+
+      const timestamp = new Date().toISOString();
+      const sentBundle = {
+        resourceType: 'Bundle',
+        timestamp,
+        type: 'history',
+        entry: [
+          {
+            resource: {
+              resourceType: 'SubscriptionStatus',
+              status: 'active',
+              type: 'heartbeat',
+              subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
+            } as SubscriptionStatus,
+          },
+        ],
+      } as Bundle;
+
+      const receivedBundle = await new Promise<Bundle>((resolve) => {
+        const emitter = manager.getMasterEmitter();
+        emitter.addEventListener('heartbeat', (event) => {
+          resolve(event.payload);
+        });
+        wsServer.send(sentBundle);
+      });
+
+      expect(receivedBundle).toEqual(sentBundle);
     });
   });
 });

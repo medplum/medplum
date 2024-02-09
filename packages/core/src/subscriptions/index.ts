@@ -26,8 +26,8 @@ export function parseResourcesFromBundle(bundle: Bundle): Resource[] {
 }
 */
 
-const kAddCriteria = Symbol('medplum.SubscriptionEmitter.addCriteria');
-const kRemoveCriteria = Symbol('medplum.SubscriptionEmitter.removeCriteria');
+const kAddCriteria = Symbol.for('medplum.SubscriptionEmitter.addCriteria');
+const kRemoveCriteria = Symbol.for('medplum.SubscriptionEmitter.removeCriteria');
 
 /**
  * An `EventTarget` that emits events when new subscription notifications come in over WebSockets.
