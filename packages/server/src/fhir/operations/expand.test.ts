@@ -1,5 +1,12 @@
 import { ContentType, LOINC } from '@medplum/core';
-import { CodeSystem, OperationOutcome, Project, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import {
+  CodeSystem,
+  OperationOutcome,
+  Project,
+  ValueSet,
+  ValueSetExpansion,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -328,5 +335,59 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toEqual(200);
+  });
+});
+
+describe('Updated implementation', () => {
+  const app = express();
+  let accessToken: string;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    accessToken = await initTestAuth({ features: ['terminology'] });
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('Returns error for recursive definition', async () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/fhir/ValueSet/recursive' + randomUUID(),
+      compose: {
+        include: [{ valueSet: ['http://example.com/ValueSet/recursive'] }],
+      },
+    };
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toEqual(400);
+  });
+
+  test('Subsumption', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=100`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    console.log(res.body.expansion.contains);
+    expect(
+      expansion.contains?.find(
+        (c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode' && c.code === 'FRND'
+      )
+    ).toBeDefined();
   });
 });
