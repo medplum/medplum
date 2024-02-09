@@ -104,7 +104,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     agentId = command.agentId;
 
     const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
-    const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+    const repo = await getRepoForLogin(login, membership, project, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
@@ -149,7 +149,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     }
 
     const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
-    const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+    const repo = await getRepoForLogin(login, membership, project, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {

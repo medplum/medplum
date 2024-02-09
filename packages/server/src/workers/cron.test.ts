@@ -24,7 +24,7 @@ describe('Cron Worker', () => {
     botProject = botProjectDetails.project;
     botRepo = new Repository({
       extendedMode: true,
-      project: botProjectDetails.project.id,
+      projects: [botProjectDetails.project.id as string],
       author: createReference(botProjectDetails.client),
     });
   });
@@ -180,7 +180,7 @@ describe('Cron Worker', () => {
 
       const repo = new Repository({
         extendedMode: true,
-        project: testProject.id,
+        projects: [testProject.id as string],
         author: {
           reference: 'ClientApplication/' + randomUUID(),
         },

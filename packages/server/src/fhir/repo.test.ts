@@ -6,6 +6,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  Project,
   ProjectMembership,
   Questionnaire,
   ResourceType,
@@ -26,6 +27,10 @@ jest.mock('hibp');
 jest.mock('ioredis');
 
 describe('FHIR Repo', () => {
+  const testProject: Project = {
+    resourceType: 'Project',
+    id: randomUUID(),
+  };
   const systemRepo = getSystemRepo();
 
   beforeAll(async () => {
@@ -39,7 +44,11 @@ describe('FHIR Repo', () => {
 
   test('getRepoForLogin', async () => {
     await expect(() =>
-      getRepoForLogin({ resourceType: 'Login' } as Login, { resourceType: 'ProjectMembership' } as ProjectMembership)
+      getRepoForLogin(
+        { resourceType: 'Login' } as Login,
+        { resourceType: 'ProjectMembership' } as ProjectMembership,
+        testProject
+      )
     ).rejects.toThrow('Invalid author reference');
   });
 
@@ -172,7 +181,7 @@ describe('FHIR Repo', () => {
       const projectId = randomUUID();
       const repo = new Repository({
         extendedMode: true,
-        project: projectId,
+        projects: [projectId],
         author: {
           reference: clientApp,
         },
@@ -233,7 +242,7 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
-      project: randomUUID(),
+      projects: [randomUUID()],
       extendedMode: true,
       author: {
         reference: author,
@@ -449,7 +458,7 @@ describe('FHIR Repo', () => {
       const result1 = await registerNew(registration1);
       expect(result1.profile).toBeDefined();
 
-      const repo1 = await getRepoForLogin({ resourceType: 'Login' } as Login, result1.membership);
+      const repo1 = await getRepoForLogin({ resourceType: 'Login' } as Login, result1.membership, result1.project);
       const patient1 = await repo1.createResource<Patient>({
         resourceType: 'Patient',
       });
@@ -472,7 +481,7 @@ describe('FHIR Repo', () => {
       const result2 = await registerNew(registration2);
       expect(result2.profile).toBeDefined();
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, result2.membership);
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, result2.membership, result2.project);
       try {
         await repo2.readResource('Patient', patient1.id as string);
         fail('Should have thrown');
@@ -516,7 +525,7 @@ describe('FHIR Repo', () => {
 
   test('Reindex resource type as non-admin', async () => {
     const repo = new Repository({
-      project: randomUUID(),
+      projects: [randomUUID()],
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
@@ -532,7 +541,7 @@ describe('FHIR Repo', () => {
 
   test('Reindex resource as non-admin', async () => {
     const repo = new Repository({
-      project: randomUUID(),
+      projects: [randomUUID()],
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
@@ -561,7 +570,7 @@ describe('FHIR Repo', () => {
 
   test('Rebuild compartments as non-admin', async () => {
     const repo = new Repository({
-      project: randomUUID(),
+      projects: [randomUUID()],
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
@@ -724,7 +733,7 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
-      project: randomUUID(),
+      projects: [randomUUID()],
       extendedMode: true,
       author: {
         reference: author,
@@ -744,7 +753,7 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
-      project: randomUUID(),
+      projects: [randomUUID()],
       extendedMode: true,
       author: {
         reference: author,
@@ -764,7 +773,7 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
-      project: randomUUID(),
+      projects: [randomUUID()],
       extendedMode: true,
       author: {
         reference: author,
@@ -914,7 +923,7 @@ describe('FHIR Repo', () => {
       const repo = new Repository({
         extendedMode: true,
         strictMode: true,
-        project: projectId,
+        projects: [projectId],
         author: {
           reference: clientApp,
         },
