@@ -1,13 +1,19 @@
-import { USCoreStructureDefinitionList } from '@medplum/mock';
 import { buildElementsContext } from './elements-context';
 import { HTTP_HL7_ORG } from './constants';
 import { isPopulated } from './utils';
 import { parseStructureDefinition } from './typeschema/types';
+import { StructureDefinition } from '@medplum/fhirtypes';
+import { readJson } from '@medplum/definitions';
 
 describe('buildElementsContext', () => {
+  let USCoreStructureDefinitions: StructureDefinition[];
+  beforeAll(() => {
+    USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
+  });
+
   test('deeply nested schema', () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-medicationrequest`;
-    const sd = USCoreStructureDefinitionList.find((sd) => sd.url === profileUrl);
+    const sd = USCoreStructureDefinitions.find((sd) => sd.url === profileUrl);
     if (!isPopulated(sd)) {
       fail(`Expected structure definition for ${profileUrl} to be found`);
     }

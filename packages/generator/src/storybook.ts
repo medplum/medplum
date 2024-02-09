@@ -99,7 +99,7 @@ export function main(): void {
     // from https://hl7.org/fhir/us/core/STU5.0.1/downloads.html
     buildUSCoreStructureDefinitions(
       '/absolute/path/to/expanded/package-file',
-      resolve(__dirname, '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json')
+      resolve(__dirname, '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json')
     );
   }
 }
@@ -176,5 +176,5 @@ function buildUSCoreStructureDefinitions(inputDirectory: string, outputFilename:
     cleanStructureDefinition(sd);
     sds.push(sd);
   }
-  writeFileSync(outputFilename, JSON.stringify(sds));
+  writeFileSync(outputFilename, JSON.stringify(sds, undefined, 2));
 }

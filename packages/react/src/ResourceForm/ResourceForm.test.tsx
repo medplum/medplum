@@ -1,14 +1,20 @@
 import { HTTP_HL7_ORG, createReference, loadDataType } from '@medplum/core';
-import { Observation, Patient, Specimen } from '@medplum/fhirtypes';
-import { HomerObservation1, MockClient, USCoreStructureDefinitionList } from '@medplum/mock';
+import { Observation, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
+import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { ResourceForm, ResourceFormProps } from './ResourceForm';
+import { readJson } from '@medplum/definitions';
 
 const medplum = new MockClient();
 
 describe('ResourceForm', () => {
+  let USCoreStructureDefinitions: StructureDefinition[];
+  beforeAll(() => {
+    USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
+  });
+
   async function setup(props: ResourceFormProps, medplumClient?: MockClient): Promise<void> {
     await act(async () => {
       render(
@@ -228,7 +234,7 @@ describe('ResourceForm', () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-implantable-device`;
     const profilesToLoad = [profileUrl, `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`];
     for (const url of profilesToLoad) {
-      const sd = USCoreStructureDefinitionList.find((sd) => sd.url === url);
+      const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
       if (!sd) {
         fail(`could not find structure definition for ${url}`);
       }

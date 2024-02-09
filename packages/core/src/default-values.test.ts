@@ -1,4 +1,3 @@
-import { USCoreStructureDefinitionList } from '@medplum/mock';
 import {
   InternalSchemaElement,
   InternalTypeSchema,
@@ -16,26 +15,13 @@ import {
   getDefaultValuesForNewSliceEntry,
 } from './default-values';
 import { HTTP_HL7_ORG } from './constants';
+import { readJson } from '@medplum/definitions';
 
 function isStructureDefinition(sd: any): sd is StructureDefinition {
   if (!isPopulated<StructureDefinition>(sd)) {
     return false;
   }
   return sd.resourceType === 'StructureDefinition';
-}
-
-function loadProfiles(profileUrls: string[]): void {
-  const sds: StructureDefinition[] = profileUrls
-    .map((profileUrl) => {
-      return (USCoreStructureDefinitionList as StructureDefinition[]).find((sd) => sd.url === profileUrl);
-    })
-    .filter(isStructureDefinition);
-
-  expect(sds.length).toEqual(profileUrls.length);
-
-  for (const sd of sds) {
-    loadDataType(sd, sd?.url);
-  }
 }
 
 function getSlicedElement(
@@ -65,6 +51,25 @@ function getSlice(schema: InternalTypeSchema, slicedElementKey: string, sliceNam
 const DEBUG = false;
 
 describe('apply default values', () => {
+  let USCoreStructureDefinitions: StructureDefinition[];
+  beforeAll(() => {
+    USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
+  });
+
+  function loadProfiles(profileUrls: string[]): void {
+    const sds: StructureDefinition[] = profileUrls
+      .map((profileUrl) => {
+        return (USCoreStructureDefinitions as StructureDefinition[]).find((sd) => sd.url === profileUrl);
+      })
+      .filter(isStructureDefinition);
+
+    expect(sds.length).toEqual(profileUrls.length);
+
+    for (const sd of sds) {
+      loadDataType(sd, sd?.url);
+    }
+  }
+
   describe('US Blood Pressure', () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-blood-pressure`;
     const profileUrls = [profileUrl];

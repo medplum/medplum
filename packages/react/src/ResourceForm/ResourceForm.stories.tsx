@@ -4,7 +4,6 @@ import {
   HomerSimpsonUSCorePatient,
   ImplantableDeviceKnee,
   TestOrganization,
-  USCoreStructureDefinitionList,
 } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
@@ -13,6 +12,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { MedplumClient, RequestProfileSchemaOptions, deepClone, loadDataType } from '@medplum/core';
 import { StructureDefinition } from '@medplum/fhirtypes';
+import { readJson } from '@medplum/definitions';
 
 export default {
   title: 'Medplum/ResourceForm',
@@ -149,16 +149,19 @@ export const Specimen = (): JSX.Element => (
 
 function useUSCoreDataTypes({ medplum }: { medplum: MedplumClient }): { loaded: boolean } {
   const [loaded, setLoaded] = useState(false);
+  const USCoreStructureDefinitions: StructureDefinition[] = useMemo(() => {
+    return readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
+  }, []);
   useEffect(() => {
     (async (): Promise<boolean> => {
-      for (const sd of USCoreStructureDefinitionList as StructureDefinition[]) {
+      for (const sd of USCoreStructureDefinitions as StructureDefinition[]) {
         loadDataType(sd, sd.url);
       }
       return true;
     })()
       .then(setLoaded)
       .catch(console.error);
-  }, [medplum]);
+  }, [USCoreStructureDefinitions, medplum]);
 
   const result = useMemo(() => {
     return { loaded };
@@ -191,13 +194,17 @@ function useFakeRequestProfileSchema(medplum: MedplumClient): void {
 }
 
 function useUSCoreProfile(profileName: string): StructureDefinition {
+  const USCoreStructureDefinitions: StructureDefinition[] = useMemo(() => {
+    return readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
+  }, []);
+
   const profileSD = useMemo<StructureDefinition>(() => {
-    const result = (USCoreStructureDefinitionList as StructureDefinition[]).find((sd) => sd.name === profileName);
+    const result = (USCoreStructureDefinitions as StructureDefinition[]).find((sd) => sd.name === profileName);
     if (!result) {
       throw new Error(`Could not find ${profileName}`);
     }
     return result;
-  }, [profileName]);
+  }, [USCoreStructureDefinitions, profileName]);
 
   return profileSD;
 }
