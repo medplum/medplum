@@ -1,0 +1,42 @@
+{
+  "name": "medplum-eligibility-demo",
+  "version": "3.0.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
+  "devDependencies": {
+    "@mantine/core": "7.5.1",
+    "@mantine/hooks": "7.5.1",
+    "@mantine/notifications": "7.5.1",
+    "@medplum/core": "3.0.3",
+    "@medplum/eslint-config": "3.0.3",
+    "@medplum/fhirtypes": "3.0.3",
+    "@medplum/react": "3.0.3",
+    "@tabler/icons-react": "2.46.0",
+    "@types/node": "20.11.16",
+    "@types/react": "18.2.51",
+    "@types/react-dom": "18.2.18",
+    "@vitejs/plugin-react": "4.2.1",
+    "postcss": "8.4.33",
+    "postcss-preset-mantine": "1.13.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.21.3",
+    "typescript": "5.3.3",
+    "vite": "5.0.12"
+  }
+}
