@@ -97,10 +97,10 @@ export function main(): void {
     // To build USCore, download and expand a USCore Implementation Guide package file,
     // such as https://hl7.org/fhir/us/core/STU5.0.1/package.tgz which is linked to
     // from https://hl7.org/fhir/us/core/STU5.0.1/downloads.html
-    buildUSCoreStructureDefinitions(
-      '/absolute/path/to/expanded/package-file',
-      resolve(__dirname, '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json')
-    );
+    buildUSCoreStructureDefinitions('/absolute/path/to/expanded/package-file', [
+      resolve(__dirname, '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json'),
+      resolve(__dirname, '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json'),
+    ]);
   }
 }
 
@@ -169,12 +169,14 @@ function cleanStructureDefinition(sd: StructureDefinition): void {
   }
 }
 
-function buildUSCoreStructureDefinitions(inputDirectory: string, outputFilename: string): void {
+function buildUSCoreStructureDefinitions(inputDirectory: string, outputFilenames: string[]): void {
   const sds = [];
   for (const file of USCoreStructureDefinitionFiles) {
     const sd = JSON.parse(readFileSync(resolve(inputDirectory, file), 'utf8'));
     cleanStructureDefinition(sd);
     sds.push(sd);
   }
-  writeFileSync(outputFilename, JSON.stringify(sds, undefined, 2));
+  for (const outputFilename of outputFilenames) {
+    writeFileSync(outputFilename, JSON.stringify(sds));
+  }
 }
