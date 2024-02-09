@@ -36,7 +36,9 @@ export async function getRepoForLogin(
     allowedProjects = [project.id];
   }
   if (project.link && allowedProjects?.length) {
-    allowedProjects.push(...project.link.map((l) => resolveId(l.project) as string));
+    for (const link of project.link) {
+      allowedProjects.push(resolveId(link.project) as string);
+    }
   }
 
   return new Repository({

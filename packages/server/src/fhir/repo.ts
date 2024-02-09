@@ -109,6 +109,8 @@ export interface RepositoryContext {
   /**
    * Projects that the Repository is allowed to access.
    * This should include the ID/UUID of the current project, but may also include other accessory Projects.
+   * If this is undefined, the current user is a server user (e.g. Super Admin)
+   * The usual case has two elements: the user's Project and the base R4 Project
    * This value will be included in every resource as meta.project.
    */
   projects?: string[];
@@ -187,6 +189,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   constructor(context: RepositoryContext) {
     super();
     this.context = context;
+    this.context.projects?.push?.(r4ProjectId);
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
@@ -605,13 +608,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     const projectIds = this.context.projects;
 
     if (projectIds?.length) {
-      for (const projectId of projectIds) {
-        // Try retrieving from cache
-        const cachedProfile = await getProfileCacheEntry(projectId, url);
-        if (cachedProfile) {
-          return cachedProfile.resource;
-        }
-      }
+      // Try loading from cache, using all available Project IDs
+      const cacheKeys = projectIds.map((id) => getProfileCacheKey(id, url));
+      const results = await getRedis().mget(...cacheKeys);
+      const cachedProfile = results.find(Boolean) as string | undefined;
+      return cachedProfile ? (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource : undefined;
     }
 
     // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
@@ -1003,7 +1004,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    */
   private addProjectFilters(builder: SelectQuery): void {
     if (this.context.projects?.length) {
-      builder.where('compartments', 'ARRAY_CONTAINS', [...this.context.projects, r4ProjectId], 'UUID[]');
+      builder.where('compartments', 'ARRAY_CONTAINS', this.context.projects, 'UUID[]');
     }
   }
 
@@ -1914,20 +1915,6 @@ async function deleteCacheEntries(resourceType: string, ids: string[]): Promise<
  */
 function getCacheKey(resourceType: string, id: string): string {
   return `${resourceType}/${id}`;
-}
-
-/**
- * Tries to read a FHIR profile cache entry from Redis by project and profile URL.
- * @param projectId - The project ID.
- * @param url - The profile URL.
- * @returns The cache entry if found; otherwise, undefined.
- */
-async function getProfileCacheEntry(
-  projectId: string,
-  url: string
-): Promise<CacheEntry<StructureDefinition> | undefined> {
-  const cachedValue = await getRedis().get(getProfileCacheKey(projectId, url));
-  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<StructureDefinition>) : undefined;
 }
 
 /**
