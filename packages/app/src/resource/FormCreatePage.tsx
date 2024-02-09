@@ -16,7 +16,7 @@ export function FormCreatePage(): JSX.Element {
 
   const isProfilesPage = location.pathname.toLowerCase().endsWith('profiles');
 
-  const onSubmit = useCallback(
+  const onProfileSubmit = useCallback(
     (resource: Resource): void => {
       const cleanedResource = cleanResource(resource);
       if (currentProfile) {
@@ -27,17 +27,23 @@ export function FormCreatePage(): JSX.Element {
     [currentProfile, handleSubmit]
   );
 
+  if (!isProfilesPage) {
+    return (
+      <Document>
+        <ResourceForm defaultValue={defaultValue} onSubmit={handleSubmit} outcome={outcome} />
+      </Document>
+    );
+  }
+
   return (
     <Document>
       <Stack>
-        {isProfilesPage && (
-          <ProfileTabs resource={defaultValue} currentProfile={currentProfile} onChange={setCurrentProfile} />
-        )}
+        <ProfileTabs resource={defaultValue} currentProfile={currentProfile} onChange={setCurrentProfile} />
         {currentProfile ? (
           <ResourceForm
             key={currentProfile.url}
             defaultValue={defaultValue}
-            onSubmit={onSubmit}
+            onSubmit={onProfileSubmit}
             outcome={outcome}
             profileUrl={currentProfile.url}
           />
