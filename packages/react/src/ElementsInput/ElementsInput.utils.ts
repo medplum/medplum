@@ -21,7 +21,7 @@ function splitOnceRight(str: string, delim: string): [string, string] {
 }
 
 export type ElementsContextType = {
-  parentPath: string;
+  path: string;
   profileUrl: string | undefined;
   /**
    * Get the element definition for the specified path if it has been modified by a profile.
@@ -36,7 +36,7 @@ export type ElementsContextType = {
 };
 
 export const ElementsContext = React.createContext<ElementsContextType>({
-  parentPath: '',
+  path: '',
   profileUrl: undefined,
   getModifiedNestedElement: () => undefined,
   elements: Object.create(null),
@@ -48,23 +48,28 @@ ElementsContext.displayName = 'ElementsContext';
 export function buildElementsContext({
   parentContext,
   elements,
-  parentPath,
+  path,
   parentType,
   profileUrl,
   debugMode,
 }: {
-  elements: InternalTypeSchema['elements'] | undefined;
-  parentPath: string;
+  elements: InternalTypeSchema['elements'];
+  path: string;
   parentContext: ElementsContextType | undefined;
   parentType: string | undefined;
   profileUrl?: string;
   debugMode?: boolean;
-}): ElementsContextType {
+}): ElementsContextType | undefined {
   if (debugMode) {
-    console.debug('Building ElementsContext', { parentPath, profileUrl, elements });
+    console.debug('Building ElementsContext', { path, profileUrl, elements });
   }
+
+  if (path === parentContext?.path) {
+    return undefined;
+  }
+
   const mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
-    parentPath,
+    path,
     elements,
     parentContext,
     Boolean(debugMode)
@@ -75,7 +80,7 @@ export function buildElementsContext({
 
   const seenKeys = new Set<string>();
   for (const [key, property] of Object.entries(mergedElements)) {
-    elementsByPath[parentPath + '.' + key] = property;
+    elementsByPath[path + '.' + key] = property;
 
     const [beginning, _last] = splitOnceRight(key, '.');
     // assume paths are hierarchically sorted, e.g. identifier comes before identifier.id
@@ -90,7 +95,7 @@ export function buildElementsContext({
   }
 
   return {
-    parentPath,
+    path: path,
     debugMode: debugMode ?? parentContext?.debugMode ?? false,
     profileUrl: profileUrl ?? parentContext?.profileUrl,
     getModifiedNestedElement,
@@ -100,16 +105,24 @@ export function buildElementsContext({
 }
 
 function mergeElementsForContext(
-  parentPath: string,
+  path: string,
   elements: InternalTypeSchema['elements'] | undefined,
   parentContext: ElementsContextType | undefined,
   debugMode: boolean
 ): ElementsContextType['elements'] {
   const result: ElementsContextType['elements'] = Object.create(null);
 
+  if (debugMode) {
+    console.log('Merging elements for context', {
+      path,
+      elements,
+      parentPath: parentContext?.path,
+      parentElements: parentContext?.elementsByPath,
+    });
+  }
   if (parentContext) {
     for (const [path, element] of Object.entries(parentContext.elementsByPath)) {
-      const key = getPathDifference(parentPath, path);
+      const key = getPathDifference(path, path);
       if (key !== undefined) {
         result[key] = element;
       }
@@ -126,11 +139,12 @@ function mergeElementsForContext(
     }
   }
 
-  // TODO if no new elements are used, the elementscontext is very likely not necessary;
-  // there could be an optimization where buildElementsContext returns undefined in this case
-  // to avoid needless contexts
-  if (debugMode && parentContext && !usedNewElements) {
-    console.debug('ElementsContext elements same as parent context');
+  // if no new elements are used, the ElementsContext is unnecessary.
+  // We could add another guard against unnecessary contexts if usedNewElements is false,
+  // but unnecessary contexts **should** already be taken care before
+  // this function is called. Leaving the debug logging in for now.
+  if (debugMode && !usedNewElements) {
+    console.debug('Unnecessary ElementsContext; not using any newly provided elements');
   }
   return result;
 }

@@ -180,10 +180,10 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     }
 
     const withDefaults = Object.create(null);
-    if (elementsContext.parentPath === props.path) {
+    if (elementsContext.path === props.path) {
       applyDefaultValuesToElement(withDefaults, elementsContext.elements);
     } else {
-      const key = getPathDifference(elementsContext.parentPath, props.path);
+      const key = getPathDifference(elementsContext.path, props.path);
       if (key === undefined) {
         return props.defaultValue;
       }
@@ -195,7 +195,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     }
 
     return props.defaultValue;
-  }, [propertyType, elementsContext.parentPath, elementsContext.elements, props.path, props.defaultValue]);
+  }, [propertyType, elementsContext.path, elementsContext.elements, props.path, props.defaultValue]);
 
   const required = props.min !== undefined && props.min > 0;
 

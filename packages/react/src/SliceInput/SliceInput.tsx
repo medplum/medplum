@@ -15,6 +15,7 @@ import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
 import classes from '../ResourceArrayInput/ResourceArrayInput.module.css';
+import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 export interface SliceInputProps {
   readonly path: string;
@@ -24,14 +25,6 @@ export interface SliceInputProps {
   readonly onChange: (newValue: any[]) => void;
   readonly outcome?: OperationOutcome;
   readonly testId?: string;
-}
-
-function maybeWrapWithContext(contextValue: ElementsContextType | undefined, contents: JSX.Element): JSX.Element {
-  if (contextValue) {
-    return <ElementsContext.Provider value={contextValue}>{contents}</ElementsContext.Provider>;
-  }
-
-  return contents;
 }
 
 export function SliceInput(props: SliceInputProps): JSX.Element | null {
@@ -45,18 +38,20 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
 
   const parentElementsContextValue = useContext(ElementsContext);
 
-  const contextValue = useMemo(() => {
+  const contextValue: ElementsContextType | undefined = useMemo(() => {
     if (isPopulated(sliceElements)) {
+      console.log('SliceInput buildElementsContext', props.path, slice.typeSchema?.url, sliceElements);
       return buildElementsContext({
         parentContext: parentElementsContextValue,
         elements: sliceElements,
-        parentPath: props.path,
+        path: props.path,
         parentType: sliceType,
+        profileUrl: slice.typeSchema?.url,
       });
     }
     console.assert(false, 'Expected sliceElements to always be populated', props.path);
     return undefined;
-  }, [parentElementsContextValue, props.path, sliceElements, sliceType]);
+  }, [parentElementsContextValue, props.path, slice.typeSchema?.url, sliceElements, sliceType]);
 
   function setValuesWrapper(newValues: any[]): void {
     setValues(newValues);
@@ -72,6 +67,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const indentedStack = isEmpty(slice.elements);
   const propertyDisplayName = getPropertyDisplayName(slice.name);
   return maybeWrapWithContext(
+    ElementsContext.Provider,
     contextValue,
     <FormSection
       title={propertyDisplayName}

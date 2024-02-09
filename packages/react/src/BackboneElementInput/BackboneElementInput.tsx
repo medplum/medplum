@@ -2,7 +2,8 @@ import { tryGetDataType } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
-import { ElementsContext, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { ElementsContext, ElementsContextType, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 export interface BackboneElementInputProps {
   /** Type name the backbone element represents */
@@ -26,29 +27,32 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const typeSchema = useMemo(() => tryGetDataType(props.typeName, profileUrl), [props.typeName, profileUrl]);
   const type = typeSchema?.type ?? props.typeName;
 
-  const elementsContext = useMemo(() => {
+  const contextValue: ElementsContextType | undefined = useMemo(() => {
+    if (!typeSchema) {
+      return undefined;
+    }
     return buildElementsContext({
       parentContext: parentElementsContext,
-      elements: typeSchema?.elements,
-      parentPath: props.path,
+      elements: typeSchema.elements,
+      path: props.path,
       parentType: type,
-      profileUrl,
+      profileUrl: typeSchema.url,
     });
-  }, [parentElementsContext, typeSchema, props.path, type, profileUrl]);
+  }, [typeSchema, props.path, parentElementsContext, type]);
 
   if (!typeSchema) {
     return <div>{type}&nbsp;not implemented</div>;
   }
 
-  return (
-    <ElementsContext.Provider value={elementsContext}>
-      <ElementsInput
-        path={props.path}
-        type={type}
-        defaultValue={defaultValue}
-        onChange={props.onChange}
-        outcome={props.outcome}
-      />
-    </ElementsContext.Provider>
+  return maybeWrapWithContext(
+    ElementsContext.Provider,
+    contextValue,
+    <ElementsInput
+      path={props.path}
+      type={type}
+      defaultValue={defaultValue}
+      onChange={props.onChange}
+      outcome={props.outcome}
+    />
   );
 }
