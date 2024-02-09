@@ -237,10 +237,6 @@ export class SubscriptionManager {
     // Emit disconnect on criteria emitter
     this.subEmitters.get(criteria)?.dispatchEvent(disconnectEvent);
     this.subEmitters.delete(criteria);
-
-    // if (this.refCounts.size === 0) {
-    //   // Set timer to close WebSocket
-    // }
   }
 
   closeWebSocket(): void {
