@@ -3536,7 +3536,7 @@ export class MedplumClient extends EventTarget {
     if (!this.subscriptionManager) {
       return;
     }
-    this.subscriptionManager.derefCriteria(criteria);
+    this.subscriptionManager.removeCriteria(criteria);
     if (this.subscriptionManager.getCriteriaCount() === 0) {
       this.subscriptionManager.closeWebSocket();
     }

@@ -223,7 +223,7 @@ describe('SubscriptionManager', () => {
     // test('should restore previously created subscriptions instead of creating new ones');
   });
 
-  describe('derefCriteria()', () => {
+  describe('removeCriteria()', () => {
     let wsServer: WS;
     let manager: SubscriptionManager;
     let emitter: SubscriptionEmitter;
@@ -274,8 +274,8 @@ describe('SubscriptionManager', () => {
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
     });
 
-    test('should throw when deref has been called on a criteria that is not known', () => {
-      expect(() => manager.derefCriteria('DiagnosticReport')).toThrow(OperationOutcomeError);
+    test('should throw when remove has been called on a criteria that is not known', () => {
+      expect(() => manager.removeCriteria('DiagnosticReport')).toThrow(OperationOutcomeError);
     });
 
     test('should not clean up a criteria if there are outstanding listeners', (done) => {
@@ -291,7 +291,7 @@ describe('SubscriptionManager', () => {
       };
       emitter.addEventListener('disconnect', handler);
 
-      manager.derefCriteria('Communication');
+      manager.removeCriteria('Communication');
 
       sleep(200)
         .then(() => {
@@ -312,7 +312,7 @@ describe('SubscriptionManager', () => {
       };
       emitter.addEventListener('disconnect', handler);
 
-      manager.derefCriteria('Communication');
+      manager.removeCriteria('Communication');
 
       sleep(200)
         .then(() => {
@@ -362,7 +362,7 @@ describe('SubscriptionManager', () => {
       expect(manager.getCriteriaCount()).toEqual(0);
       manager.addCriteria('Communication');
       expect(manager.getCriteriaCount()).toEqual(1);
-      manager.derefCriteria('Communication');
+      manager.removeCriteria('Communication');
       expect(manager.getCriteriaCount()).toEqual(0);
     });
   });

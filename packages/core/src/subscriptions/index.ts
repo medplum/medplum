@@ -189,10 +189,10 @@ export class SubscriptionManager {
     return emitter;
   }
 
-  derefCriteria(criteria: string): void {
+  removeCriteria(criteria: string): void {
     if (!this.refCounts.has(criteria)) {
       throw new OperationOutcomeError(
-        badRequest('Criteria not known to `SubscriptionManager`. Possibly called deref too many times.')
+        badRequest('Criteria not known to `SubscriptionManager`. Possibly called remove too many times.')
       );
     }
 
