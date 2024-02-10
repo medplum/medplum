@@ -574,12 +574,12 @@ async function createAuditEvent(
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
     outcomeDesc,
-    extension: ctx.traceId ? [
+    extension: [
       {
-        url: "https://medplum.com/fhir/StructureDefinition/trace-id",
+        url: 'https://medplum.com/fhir/StructureDefinition/trace-id',
         valueString: ctx.traceId,
-      }
-    ] : undefined,
+      },
+    ],
   };
 
   const destination = bot.auditEventDestination ?? ['resource'];

@@ -2,12 +2,15 @@ import { ContentType, createReference } from '@medplum/core';
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
+import { trace } from '@opentelemetry/api';
 import { MedplumServerConfig } from '../config';
-import { getRequestContext } from '../context';
+import { RequestContext, getRequestContext, requestContextStore } from '../context';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { findProjectMembership } from './utils';
+import { randomUUID } from 'crypto';
+import { traceparentFromSpan } from '../traceparent';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -59,10 +62,19 @@ export function initCronWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<CronJobData>(queueName, execBot, {
-    ...defaultOptions,
-    ...config.bullmq,
-  });
+  worker = new Worker<CronJobData>(
+    queueName,
+    (job) => {
+      return requestContextStore.run(
+        new RequestContext(randomUUID(), traceparentFromSpan(trace.getActiveSpan())?.toString() ?? randomUUID()),
+        () => execBot(job)
+      );
+    },
+    {
+      ...defaultOptions,
+      ...config.bullmq,
+    }
+  );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
@@ -208,6 +220,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
+  const ctx = getRequestContext();
   const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
   const project = bot.meta?.project as string;
@@ -217,7 +230,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     throw new Error('Could not find project membership for bot');
   }
 
-  await executeBot({ bot, runAs, input: bot, contentType: ContentType.FHIR_JSON });
+  await executeBot({ bot, runAs, input: bot, contentType: ContentType.FHIR_JSON, traceId: ctx.traceId });
 }
 
 export async function removeBullMQJobByKey(botId: string): Promise<void> {

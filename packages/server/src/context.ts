@@ -3,8 +3,9 @@ import { Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
+import { trace } from '@opentelemetry/api';
 import { Repository, getSystemRepo } from './fhir/repo';
-import { parseTraceparent } from './traceparent';
+import { parseTraceparent, traceparentFromSpan } from './traceparent';
 
 export class RequestContext {
   readonly requestId: string;
@@ -110,19 +111,20 @@ const traceIdHeaderMap: {
 } as const;
 const traceIdHeaders = Object.entries(traceIdHeaderMap);
 
-const getTraceId = (req: Request): string | undefined => {
+const getTraceId = (req: Request): string => {
   for (const [headerKey, isTraceId] of traceIdHeaders) {
     const value = req.header(headerKey);
     if (value && isTraceId(value)) {
       return value;
     }
   }
-  return undefined;
+
+  return traceparentFromSpan(trace.getActiveSpan())?.toString() ?? randomUUID();
 };
 
 function requestIds(req: Request): { requestId: string; traceId: string } {
   const requestId = randomUUID();
-  const traceId = getTraceId(req) ?? randomUUID();
+  const traceId = getTraceId(req);
 
   return { requestId, traceId };
 }
