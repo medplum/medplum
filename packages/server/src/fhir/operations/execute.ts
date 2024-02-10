@@ -38,7 +38,7 @@ import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
-import { createAuditEventEntities } from '../../workers/utils';
+import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
@@ -85,12 +85,23 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const systemRepo = getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id as string);
 
+  // Find the project membership
+  // If the bot is configured to run as the user, then use the current user's membership
+  // Otherwise, use the bot's project membership
+  const project = bot.meta?.project as string;
+  let runAs: ProjectMembership | undefined;
+  if (bot.runAsUser) {
+    runAs = ctx.membership;
+  } else {
+    runAs = (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
+  }
+
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
   // If the request is HTTP GET, then the query string is the input
   const result = await executeBot({
     bot,
-    runAs: ctx.membership,
+    runAs,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
   });
