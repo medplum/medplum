@@ -13,7 +13,7 @@ import {
   NewProjectRequest,
   NewUserRequest,
 } from './client';
-import { mockFetch, mockFetchResponse } from './client-test-utils';
+import { createFakeJwt, mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError, accepted, allOk, forbidden, notFound, unauthorized } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
@@ -2790,10 +2790,6 @@ function createPdf(
     pdfDoc.on('error', reject);
     pdfDoc.end();
   });
-}
-
-function createFakeJwt(claims: Record<string, string | number>): string {
-  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
 }
 
 function fail(message: string): never {

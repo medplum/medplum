@@ -1,7 +1,10 @@
-import { OperationOutcome } from '@medplum/fhirtypes';
-import { FetchLike } from './client';
+import { OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
+import { FetchLike, MedplumClient } from './client';
 import { ContentType } from './contenttype';
-import { getStatus, isOperationOutcome } from './outcomes';
+import { generateId } from './crypto';
+import { OperationOutcomeError, badRequest, getStatus, isOperationOutcome } from './outcomes';
+import { ReadablePromise } from './readablepromise';
+import { ProfileResource } from './utils';
 
 export function mockFetch(
   status: number,
@@ -52,4 +55,71 @@ export function mockFetchResponse(status: number, body: any, headers?: Record<st
     blob: streamReader,
     json: streamReader,
   } as unknown as Response;
+}
+
+export class MockFhirRouter {
+  routes: Map<string, () => Record<string, any>>;
+  constructor() {
+    this.routes = new Map();
+  }
+
+  makeKey(method: 'GET' | 'POST', path: string): string {
+    return `${method} ${path}`;
+  }
+
+  addRoute(method: 'GET' | 'POST', path: string, callback: () => Record<string, any>): void {
+    this.routes.set(this.makeKey(method, path), callback);
+  }
+
+  fetchRoute<T = Record<string, any>>(method: 'GET' | 'POST', path: string): T {
+    const key = this.makeKey(method, path);
+    if (!this.routes.has(key)) {
+      throw new OperationOutcomeError(badRequest('Invalid route'));
+    }
+    return (this.routes.get(key) as () => T)();
+  }
+}
+
+export interface MockClientOptions {
+  fetch?: FetchLike;
+}
+
+export class MockMedplumClient extends MedplumClient {
+  router: MockFhirRouter;
+  profile: Practitioner;
+  nextResourceId: string;
+
+  constructor(options?: MockClientOptions) {
+    // @ts-expect-error need to pass something for fetch otherwise MedplumClient ctor will complain
+    super({ fetch: options?.fetch ?? (() => undefined) });
+    this.router = new MockFhirRouter();
+    this.profile = { resourceType: 'Practitioner', id: generateId() } as Practitioner;
+    this.nextResourceId = 'DEFAULT_MOCK_ID';
+  }
+
+  get<T = any>(url: string | URL, _options?: RequestInit): ReadablePromise<T> {
+    return new ReadablePromise<T>(
+      new Promise<T>((resolve) => {
+        resolve(this.router.fetchRoute<T>('GET', url.toString()));
+      })
+    );
+  }
+
+  addNextResourceId(id: string): void {
+    this.nextResourceId = id;
+  }
+
+  createResource<T extends Resource = Resource>(resource: T, _options?: RequestInit | undefined): Promise<T> {
+    return new Promise((resolve) => {
+      resolve({ ...resource, id: this.nextResourceId } as T);
+    });
+  }
+
+  getProfile(): ProfileResource | undefined {
+    return this.profile;
+  }
+}
+
+export function createFakeJwt(claims: Record<string, string | number>): string {
+  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
 }

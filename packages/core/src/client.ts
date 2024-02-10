@@ -3509,7 +3509,7 @@ export class MedplumClient extends EventTarget {
     }
   }
 
-  private getSubscriptionManager(): SubscriptionManager {
+  getSubscriptionManager(): SubscriptionManager {
     if (!this.subscriptionManager) {
       this.subscriptionManager = new SubscriptionManager(
         this,

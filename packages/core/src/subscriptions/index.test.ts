@@ -1,69 +1,16 @@
-import { Bundle, Communication, Parameters, Practitioner, Resource, SubscriptionStatus } from '@medplum/fhirtypes';
+import { Bundle, Communication, Parameters, SubscriptionStatus } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
 import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from '.';
-import { MedplumClient } from '../client';
+import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
-import { OperationOutcomeError, badRequest } from '../outcomes';
-import { ReadablePromise } from '../readablepromise';
-import { ProfileResource, createReference, sleep } from '../utils';
+import { OperationOutcomeError } from '../outcomes';
+import { createReference, sleep } from '../utils';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
 
-class MockFhirRouter {
-  routes: Map<string, () => Record<string, any>>;
-  constructor() {
-    this.routes = new Map();
-  }
-
-  makeKey(method: 'GET' | 'POST', path: string): string {
-    return `${method} ${path}`;
-  }
-
-  addRoute(method: 'GET' | 'POST', path: string, callback: () => Record<string, any>): void {
-    this.routes.set(this.makeKey(method, path), callback);
-  }
-
-  fetchRoute<T = Record<string, any>>(method: 'GET' | 'POST', path: string): T {
-    const key = this.makeKey(method, path);
-    if (!this.routes.has(key)) {
-      throw new OperationOutcomeError(badRequest('Invalid route'));
-    }
-    return (this.routes.get(key) as () => T)();
-  }
-}
-
-class MockMedplumClient extends MedplumClient {
-  router: MockFhirRouter;
-  profile: Practitioner;
-
-  constructor() {
-    // @ts-expect-error need to pass something for fetch otherwise MedplumClient ctor will complain
-    super({ fetch: () => undefined });
-    this.router = new MockFhirRouter();
-    this.profile = { resourceType: 'Practitioner', id: generateId() } as Practitioner;
-  }
-
-  get<T = any>(url: string | URL, _options?: RequestInit): ReadablePromise<T> {
-    return new ReadablePromise<T>(
-      new Promise<T>((resolve) => {
-        resolve(this.router.fetchRoute<T>('GET', url.toString()));
-      })
-    );
-  }
-
-  createResource<T extends Resource>(resource: T, _options?: RequestInit | undefined): Promise<T> {
-    return new Promise((resolve) => {
-      resolve({ ...resource, id: resource.resourceType === 'Subscription' ? MOCK_SUBSCRIPTION_ID : generateId() } as T);
-    });
-  }
-
-  getProfile(): ProfileResource | undefined {
-    return this.profile;
-  }
-}
-
 const medplum = new MockMedplumClient();
+medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
 
 describe('SubscriptionEmitter', () => {
   test('getCriteria()', () => {
@@ -218,9 +165,99 @@ describe('SubscriptionManager', () => {
       expect(receivedBundle).toEqual(sentBundle);
     });
 
-    test('should throw when token or url missing from `Subscription/$get-ws-binding-token` operation', () => {});
+    test('should emit `error` when token or url missing from `Subscription/$get-ws-binding-token` operation', async () => {
+      const manager1 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
 
-    // test('should restore previously created subscriptions instead of creating new ones');
+      medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'expiration',
+              valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            {
+              name: 'websocket-url',
+              valueUrl: 'wss://example.com/ws/subscriptions-r4',
+            },
+          ],
+        } as Parameters;
+      });
+
+      const criteriaEmitter1 = manager1.addCriteria('Communication');
+
+      const [masterEvent1, criteriaEvent1] = await new Promise<SubscriptionEventMap['error'][]>((resolve, reject) => {
+        const promises = [];
+        promises.push(
+          new Promise<SubscriptionEventMap['error']>((resolve) => {
+            manager1.getMasterEmitter().addEventListener('error', (event) => {
+              resolve(event);
+            });
+          })
+        );
+        promises.push(
+          new Promise<SubscriptionEventMap['error']>((resolve) => {
+            criteriaEmitter1.addEventListener('error', (event) => {
+              resolve(event);
+            });
+          })
+        );
+
+        Promise.all(promises).then(resolve).catch(reject);
+      });
+
+      expect(masterEvent1?.type).toEqual('error');
+      expect(masterEvent1?.payload).toBeInstanceOf(OperationOutcomeError);
+      expect(criteriaEvent1?.type).toEqual('error');
+      expect(criteriaEvent1?.payload).toBeInstanceOf(OperationOutcomeError);
+
+      medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'token',
+              valueString: 'token-123',
+            },
+            {
+              name: 'expiration',
+              valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+          ],
+        } as Parameters;
+      });
+
+      const manager2 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
+
+      const criteriaEmitter2 = manager2.addCriteria('Communication');
+
+      const [masterEvent2, criteriaEvent2] = await new Promise<SubscriptionEventMap['error'][]>((resolve, reject) => {
+        const promises = [];
+        promises.push(
+          new Promise<SubscriptionEventMap['error']>((resolve) => {
+            manager2.getMasterEmitter().addEventListener('error', (event) => {
+              resolve(event);
+            });
+          })
+        );
+        promises.push(
+          new Promise<SubscriptionEventMap['error']>((resolve) => {
+            criteriaEmitter2.addEventListener('error', (event) => {
+              resolve(event);
+            });
+          })
+        );
+
+        Promise.all(promises).then(resolve).catch(reject);
+      });
+
+      expect(masterEvent2?.type).toEqual('error');
+      expect(masterEvent2?.payload).toBeInstanceOf(OperationOutcomeError);
+      expect(criteriaEvent2?.type).toEqual('error');
+      expect(criteriaEvent2?.payload).toBeInstanceOf(OperationOutcomeError);
+    });
   });
 
   describe('removeCriteria()', () => {

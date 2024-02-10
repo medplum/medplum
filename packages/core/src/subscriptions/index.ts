@@ -183,6 +183,7 @@ export class SubscriptionManager {
       })
       .catch((err) => {
         this.emitError(criteria, err);
+        this.subEmitters.delete(criteria);
       });
 
     this.refCounts.set(criteria, 1);
