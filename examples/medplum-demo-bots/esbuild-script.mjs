@@ -5,11 +5,12 @@
 
 import esbuild from 'esbuild';
 import { glob } from 'glob';
+import botLayer from '@medplum/bot-layer/package.json' with { type: 'json' };
 
 // Find all TypeScript files in your source directory
 const entryPoints = glob.sync('./src/**/*.ts').filter((file) => !file.endsWith('test.ts'));
 
-const external = ['form-data', 'node-fetch', 'pdfmake', 'ssh2', 'ssh2-sftp-client', 'dotenv', '@medplum/core'];
+const botLayerDeps = Object.keys(botLayer.dependencies);
 
 // Define the esbuild options
 const esbuildOptions = {
@@ -21,7 +22,7 @@ const esbuildOptions = {
     '.ts': 'ts', // Load TypeScript files
   },
   resolveExtensions: ['.ts'],
-  external,
+  external: botLayerDeps,
   format: 'cjs', // Set output format as ECMAScript modules
   target: 'es2020', // Set the target ECMAScript version
   tsconfig: 'tsconfig.json',

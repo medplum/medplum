@@ -2,10 +2,8 @@ import { SNOMED, createReference, indexSearchParameterBundle, indexStructureDefi
 import { readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import * as dotenv from 'dotenv';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createOrmMessage, handler } from './send-orm-message';
-dotenv.config();
 
 const CONNECTION_DETAILS = {
   SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },
