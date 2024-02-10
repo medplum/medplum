@@ -2,7 +2,6 @@ import { Bundle, Parameters, Subscription, SubscriptionStatus } from '@medplum/f
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, badRequest, serverError, validationError } from '../outcomes';
-import { ClientStorage, IClientStorage } from '../storage';
 import { ProfileResource, getReferenceString, resolveId } from '../utils';
 
 export type SubscriptionEventMap = {
@@ -13,18 +12,6 @@ export type SubscriptionEventMap = {
   close: { type: 'close' };
   heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
-
-export type SubManagerOptions = {
-  storage?: IClientStorage;
-};
-
-// TODO: Support async IClientStorage ?
-// TODO:
-/*
-export function parseResourcesFromBundle(bundle: Bundle): Resource[] {
-  return [];
-}
-*/
 
 const kAddCriteria = Symbol.for('medplum.SubscriptionEmitter.addCriteria');
 const kRemoveCriteria = Symbol.for('medplum.SubscriptionEmitter.removeCriteria');
@@ -52,7 +39,6 @@ export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> 
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
   private ws: WebSocket;
-  private storage: IClientStorage;
   private masterSubEmitter?: SubscriptionEmitter;
   private subEmitters: Map<string, SubscriptionEmitter>; // Map<criteria, SubscriptionEmitter>
   private refCounts: Map<string, number>; // Map<criteria, refCount>
@@ -60,7 +46,7 @@ export class SubscriptionManager {
   private criteriaSubscriptionLookup: Map<string, string>; // Map<criteria, subscriptionId>
   private wsClosed: boolean;
 
-  constructor(medplum: MedplumClient, wsOrUrl: WebSocket | string, options?: SubManagerOptions) {
+  constructor(medplum: MedplumClient, wsOrUrl: WebSocket | string) {
     if (!(medplum instanceof MedplumClient)) {
       throw new OperationOutcomeError(validationError('First arg of constructor should be a `MedplumClient`'));
     }
@@ -121,29 +107,12 @@ export class SubscriptionManager {
 
     this.medplum = medplum;
     this.ws = ws;
-    this.storage = options?.storage ?? new ClientStorage();
     this.masterSubEmitter = new SubscriptionEmitter();
     this.subEmitters = new Map<string, SubscriptionEmitter>();
     this.refCounts = new Map<string, number>();
     this.subscriptionCriteriaLookup = new Map<string, string>();
     this.criteriaSubscriptionLookup = new Map<string, string>();
     this.wsClosed = false;
-  }
-
-  private hydrateLookupTables(): Record<string, Subscription> {
-    const storageSubs = this.storage.getObject<Record<string, Subscription>>('activeR4Subscriptions');
-    if (!storageSubs) {
-      return {};
-    }
-    for (const [subscriptionId, subscription] of Object.entries(storageSubs)) {
-      // Get criteria
-      const criteria = subscription.criteria;
-      // Add criteria to sub -> criteria lookup
-      this.subscriptionCriteriaLookup.set(subscriptionId, criteria);
-      // Add criteria to criteria -> sub lookup
-      this.criteriaSubscriptionLookup.set(criteria, subscriptionId);
-    }
-    return storageSubs;
   }
 
   private emitConnect(subscriptionId: string): void {
@@ -161,7 +130,6 @@ export class SubscriptionManager {
   }
 
   private async getTokenForCriteria(criteria: string): Promise<[string, string]> {
-    const activeSubs = this.hydrateLookupTables();
     let subscriptionId = this.criteriaSubscriptionLookup.get(criteria);
     if (!subscriptionId) {
       // Make a new subscription
@@ -173,11 +141,6 @@ export class SubscriptionManager {
         channel: { type: 'websocket' },
       });
       subscriptionId = subscription.id as string;
-
-      // Add it to the active subscriptions
-      activeSubs[subscriptionId] = subscription;
-      // Set active subs to current obj
-      this.storage.setObject<Record<string, Subscription>>('activeR4Subscriptions', activeSubs);
 
       this.subscriptionCriteriaLookup.set(subscriptionId, criteria);
       this.criteriaSubscriptionLookup.set(criteria, subscriptionId);
