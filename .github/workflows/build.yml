@@ -56,8 +56,8 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - name: Setup turbo
-        if: secrets.TURBO_TOKEN
-        run: npx turbo login --token $TURBO_TOKEN --team $TURBO_TEAM --remote-only $TURBO_REMOTE_ONLY
+        if: ${{ secrets.TURBO_TOKEN }}
+        run: npx turbo login --token ${{ secrets.TURBO_TOKEN }} --team ${{ secrets.TURBO_TEAM }} --remote-only ${{ secrets.TURBO_REMOTE_ONLY }}
       - name: Build Project
         run: ./scripts/build.sh
         env:
