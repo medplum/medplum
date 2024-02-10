@@ -51,6 +51,7 @@ export interface MedplumServerConfig {
   heartbeatMilliseconds?: number;
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
+  defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
 
   /** @deprecated */
   auditEventLogGroup?: string;
@@ -296,6 +297,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.bullmq = { concurrency: 10, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
   config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
   config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
+  config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
   return config;
 }
 

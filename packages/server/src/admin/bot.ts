@@ -3,6 +3,7 @@ import { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { Readable } from 'stream';
+import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
@@ -54,7 +55,7 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     resourceType: 'Bot',
     name: request.name,
     description: request.description,
-    runtimeVersion: request.runtimeVersion ?? 'awslambda',
+    runtimeVersion: request.runtimeVersion ?? getConfig().defaultBotRuntimeVersion,
     sourceCode: {
       contentType,
       title: filename,
