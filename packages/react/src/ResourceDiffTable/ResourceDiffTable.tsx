@@ -148,6 +148,15 @@ function jsonPathToFhirPath(path: string): string {
       result += part;
     }
   }
+
+  // For attachments, remove the .url suffix
+  // Note that not all ".url" properties are attachments, but it is the common case.
+  // If the property is not an attachment, the diff will simply render the parent element,
+  // which is still fine.
+  if (result.endsWith('.url')) {
+    result = result.replace(/\.url$/, '');
+  }
+
   return result;
 }
 
