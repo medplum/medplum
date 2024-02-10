@@ -6,10 +6,20 @@ import {
   ProfileResource,
   resolveId,
 } from '@medplum/core';
-import { ContactPoint, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import {
+  Attachment,
+  ContactPoint,
+  Login,
+  OperationOutcome,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
+import { createHash } from 'node:crypto';
 import { getConfig } from '../config';
 import { getRequestContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
@@ -27,8 +37,10 @@ export async function createProfile(
   const ctx = getRequestContext();
   ctx.logger.info('Creating profile', { resourceType, firstName, lastName });
   let telecom: ContactPoint[] | undefined = undefined;
+  let photo: Attachment[] | undefined = undefined;
   if (email) {
     telecom = [{ system: 'email', use: 'work', value: email }];
+    photo = [{ url: getGravatar(email), contentType: 'image/png', title: 'profile.png' }];
   }
 
   const systemRepo = getSystemRepo();
@@ -44,6 +56,7 @@ export async function createProfile(
       },
     ],
     telecom,
+    photo,
   } as ProfileResource);
   ctx.logger.info('Created profile', { id: result.id });
   return result;
@@ -258,4 +271,14 @@ export function validateRecaptcha(projectValidation?: (p: Project) => OperationO
     }
     next();
   };
+}
+
+/**
+ * Returns the Gravatar URL for the given email address.
+ * @param email - The email address.
+ * @returns The Gravatar URL.
+ */
+function getGravatar(email: string): string {
+  const hash = createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
+  return `https://gravatar.com/avatar/${hash}?s=256&r=pg&d=retro`;
 }
