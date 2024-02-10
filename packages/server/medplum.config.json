@@ -22,6 +22,8 @@
   "maxJsonSize": "1mb",
   "botLambdaRoleArn": "",
   "botLambdaLayerName": "medplum-bot-layer",
+  "vmContextBotsEnabled": true,
+  "defaultBotRuntimeVersion": "vmcontext",
   "allowedOrigins": "*",
   "introspectionEnabled": true,
   "database": {
