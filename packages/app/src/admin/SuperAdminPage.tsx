@@ -1,13 +1,13 @@
 import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
 import { notifications, showNotification } from '@mantine/notifications';
-import { forbidden, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { MedplumClient, forbidden, normalizeErrorString } from '@medplum/core';
 import {
-  convertLocalToIso,
   DateTimeInput,
   Document,
   Form,
   FormSection,
   OperationOutcomeAlert,
+  convertLocalToIso,
   useMedplum,
 } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
@@ -187,6 +187,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
         title,
         message: 'Done',
         icon: <IconCheck size="1rem" />,
+        loading: false,
         autoClose: false,
         withCloseButton: true,
       });
@@ -198,6 +199,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
         title,
         message: normalizeErrorString(err),
         icon: <IconX size="1rem" />,
+        loading: false,
         autoClose: false,
         withCloseButton: true,
       });
