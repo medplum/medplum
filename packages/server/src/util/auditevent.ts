@@ -10,6 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { MedplumServerConfig, getConfig } from '../config';
 import { CloudWatchLogger } from './cloudwatch';
+import { getRequestContext } from '../context';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -204,6 +205,7 @@ function createAuditEvent(
   resource?: Resource,
   searchQuery?: string
 ): AuditEvent {
+  const ctx = getRequestContext();
   const config = getConfig();
 
   let entity: AuditEventEntity[] | undefined = undefined;
@@ -239,6 +241,12 @@ function createAuditEvent(
     outcome,
     outcomeDesc,
     entity,
+    extension: [
+      {
+        url: "https://medplum.com/fhir/StructureDefinition/trace-id",
+        valueString: ctx.traceId,
+      }
+    ]
   };
 
   return auditEvent;
