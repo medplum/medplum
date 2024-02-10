@@ -546,6 +546,7 @@ async function createAuditEvent(
   outcome: AuditEventOutcome,
   outcomeDesc: string
 ): Promise<void> {
+  const ctx = getRequestContext();
   const { bot } = request;
   const trigger = bot.auditEventTrigger ?? 'always';
   if (
@@ -589,6 +590,12 @@ async function createAuditEvent(
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
     outcomeDesc,
+    extension: [
+      {
+        url: "https://medplum.com/fhir/StructureDefinition/trace-id",
+        valueString: ctx.traceId,
+      }
+    ]
   };
 
   const destination = bot.auditEventDestination ?? ['resource'];
