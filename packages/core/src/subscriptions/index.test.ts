@@ -174,7 +174,7 @@ describe('SubscriptionManager', () => {
       expect(emitter).toBeInstanceOf(SubscriptionEmitter);
 
       const subscriptionId = await new Promise<string>((resolve) => {
-        const handler = (event: { type: 'connect'; payload: SubscriptionEventMap['connect']['payload'] }): void => {
+        const handler = (event: SubscriptionEventMap['connect']): void => {
           emitter.removeEventListener('connect', handler);
           resolve(event.payload.subscriptionId);
         };
@@ -207,7 +207,7 @@ describe('SubscriptionManager', () => {
       } as Bundle;
 
       const receivedBundle = await new Promise<Bundle>((resolve) => {
-        const handler = (event: { type: 'message'; payload: SubscriptionEventMap['message']['payload'] }): void => {
+        const handler = (event: SubscriptionEventMap['message']): void => {
           resolve(event.payload);
           emitter.removeEventListener('message', handler);
         };
@@ -217,6 +217,8 @@ describe('SubscriptionManager', () => {
       });
       expect(receivedBundle).toEqual(sentBundle);
     });
+
+    test('should throw when token or url missing from `Subscription/$get-ws-binding-token` operation', () => {});
 
     // test('should restore previously created subscriptions instead of creating new ones');
   });
@@ -261,7 +263,7 @@ describe('SubscriptionManager', () => {
       expect(emitter).toBeInstanceOf(SubscriptionEmitter);
 
       const subscriptionId = await new Promise<string>((resolve) => {
-        const handler = (event: { type: 'connect'; payload: SubscriptionEventMap['connect']['payload'] }): void => {
+        const handler = (event: SubscriptionEventMap['connect']): void => {
           emitter.removeEventListener('connect', handler);
           resolve(event.payload.subscriptionId);
         };
@@ -385,14 +387,33 @@ describe('SubscriptionManager', () => {
       const manager = new SubscriptionManager(medplum, ws);
       await wsServer.connected;
 
-      const event = await new Promise<{ type: 'close' }>((resolve) => {
-        manager.getMasterEmitter().addEventListener('close', (event) => {
-          resolve(event);
-        });
+      const criteriaEmitter = manager.addCriteria('Communication');
+
+      const [masterEvent, criteriaEvent] = await new Promise<SubscriptionEventMap['close'][]>((resolve, reject) => {
+        const promises = [];
+        promises.push(
+          new Promise<SubscriptionEventMap['close']>((resolve) => {
+            manager.getMasterEmitter().addEventListener('close', (event) => {
+              resolve(event);
+            });
+          })
+        );
+        promises.push(
+          new Promise<SubscriptionEventMap['close']>((resolve) => {
+            criteriaEmitter.addEventListener('close', (event) => {
+              resolve(event);
+            });
+          })
+        );
+
         expect(() => manager.closeWebSocket()).not.toThrow();
         expect(ws.readyState).toBe(WebSocket.CLOSING);
+
+        Promise.all(promises).then(resolve).catch(reject);
       });
-      expect(event?.type).toEqual('close');
+
+      expect(masterEvent?.type).toEqual('close');
+      expect(criteriaEvent?.type).toEqual('close');
     });
 
     test('should not emit close twice', async () => {
@@ -400,7 +421,7 @@ describe('SubscriptionManager', () => {
       const manager = new SubscriptionManager(medplum, ws);
       await wsServer.connected;
 
-      const event = await new Promise<{ type: 'close' }>((resolve) => {
+      const event = await new Promise<SubscriptionEventMap['close']>((resolve) => {
         manager.getMasterEmitter().addEventListener('close', (event) => {
           resolve(event);
         });
@@ -419,6 +440,24 @@ describe('SubscriptionManager', () => {
         expect(ws.readyState).toBe(WebSocket.CLOSED);
         setTimeout(() => resolve(), 250);
       });
+    });
+  });
+
+  describe('getMasterEmitter()', () => {
+    let wsServer: WS;
+
+    beforeAll(async () => {
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+    });
+
+    afterAll(() => {
+      WS.clean();
+    });
+
+    it('should always get the same emitter', async () => {
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
+      expect(manager.getMasterEmitter()).toEqual(manager.getMasterEmitter());
     });
   });
 
@@ -518,6 +557,20 @@ describe('SubscriptionManager', () => {
       });
 
       expect(receivedBundle).toEqual(sentBundle);
+    });
+
+    test('should emit `error` event when error received from WS', async () => {
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
+
+      const receivedEvent = await new Promise<SubscriptionEventMap['error']>((resolve) => {
+        manager.getMasterEmitter().addEventListener('error', (event) => {
+          resolve(event);
+        });
+        wsServer.error();
+      });
+
+      expect(receivedEvent).toMatchObject({ type: 'error', payload: expect.any(Error) });
     });
   });
 });

@@ -2,7 +2,7 @@ import { Bundle, Parameters, Subscription, SubscriptionStatus } from '@medplum/f
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, badRequest, serverError, validationError } from '../outcomes';
-// import { ClientStorage, IClientStorage } from '../storage';
+import { ClientStorage, IClientStorage } from '../storage';
 import { ProfileResource, getReferenceString, resolveId } from '../utils';
 
 export type SubscriptionEventMap = {
@@ -14,9 +14,9 @@ export type SubscriptionEventMap = {
   heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
 
-// export type SubManagerOptions = {
-//   // storage?: IClientStorage;
-// };
+export type SubManagerOptions = {
+  storage?: IClientStorage;
+};
 
 // TODO: Support async IClientStorage ?
 // TODO:
@@ -52,7 +52,7 @@ export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> 
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
   private ws: WebSocket;
-  // private storage: IClientStorage;
+  private storage: IClientStorage;
   private masterSubEmitter?: SubscriptionEmitter;
   private subEmitters: Map<string, SubscriptionEmitter>; // Map<criteria, SubscriptionEmitter>
   private refCounts: Map<string, number>; // Map<criteria, refCount>
@@ -60,8 +60,7 @@ export class SubscriptionManager {
   private criteriaSubscriptionLookup: Map<string, string>; // Map<criteria, subscriptionId>
   private wsClosed: boolean;
 
-  // constructor(medplum: MedplumClient, wsOrUrl: WebSocket | string, options?: SubManagerOptions) {
-  constructor(medplum: MedplumClient, wsOrUrl: WebSocket | string) {
+  constructor(medplum: MedplumClient, wsOrUrl: WebSocket | string, options?: SubManagerOptions) {
     if (!(medplum instanceof MedplumClient)) {
       throw new OperationOutcomeError(validationError('First arg of constructor should be a `MedplumClient`'));
     }
@@ -100,21 +99,29 @@ export class SubscriptionManager {
     });
 
     ws.addEventListener('error', () => {
-      this.masterSubEmitter?.dispatchEvent({
+      const errorEvent = {
         type: 'error',
         payload: new OperationOutcomeError(serverError(new Error('WebSocket error'))),
-      });
+      } as SubscriptionEventMap['error'];
+      this.masterSubEmitter?.dispatchEvent(errorEvent);
+      for (const emitter of this.subEmitters.values()) {
+        emitter.dispatchEvent(errorEvent);
+      }
     });
 
     ws.addEventListener('close', () => {
+      const closeEvent = { type: 'close' } as SubscriptionEventMap['close'];
       if (this.wsClosed) {
-        this.masterSubEmitter?.dispatchEvent({ type: 'close' });
+        this.masterSubEmitter?.dispatchEvent(closeEvent);
+      }
+      for (const emitter of this.subEmitters.values()) {
+        emitter.dispatchEvent(closeEvent);
       }
     });
 
     this.medplum = medplum;
     this.ws = ws;
-    // this.storage = options?.storage ?? new ClientStorage();
+    this.storage = options?.storage ?? new ClientStorage();
     this.masterSubEmitter = new SubscriptionEmitter();
     this.subEmitters = new Map<string, SubscriptionEmitter>();
     this.refCounts = new Map<string, number>();
@@ -123,21 +130,21 @@ export class SubscriptionManager {
     this.wsClosed = false;
   }
 
-  // private hydrateLookupTables(): Record<string, Subscription> {
-  //   const storageSubs = this.storage.getObject<Record<string, Subscription>>('activeR4Subscriptions');
-  //   if (!storageSubs) {
-  //     return {};
-  //   }
-  //   for (const [subscriptionId, subscription] of Object.entries(storageSubs)) {
-  //     // Get criteria
-  //     const criteria = subscription.criteria;
-  //     // Add criteria to sub -> criteria lookup
-  //     this.subscriptionCriteriaLookup.set(subscriptionId, criteria);
-  //     // Add criteria to criteria -> sub lookup
-  //     this.criteriaSubscriptionLookup.set(criteria, subscriptionId);
-  //   }
-  //   return storageSubs;
-  // }
+  private hydrateLookupTables(): Record<string, Subscription> {
+    const storageSubs = this.storage.getObject<Record<string, Subscription>>('activeR4Subscriptions');
+    if (!storageSubs) {
+      return {};
+    }
+    for (const [subscriptionId, subscription] of Object.entries(storageSubs)) {
+      // Get criteria
+      const criteria = subscription.criteria;
+      // Add criteria to sub -> criteria lookup
+      this.subscriptionCriteriaLookup.set(subscriptionId, criteria);
+      // Add criteria to criteria -> sub lookup
+      this.criteriaSubscriptionLookup.set(criteria, subscriptionId);
+    }
+    return storageSubs;
+  }
 
   private emitConnect(subscriptionId: string): void {
     const connectEvent = { type: 'connect', payload: { subscriptionId } } as SubscriptionEventMap['connect'];
@@ -147,8 +154,14 @@ export class SubscriptionManager {
     }
   }
 
+  private emitError(criteria: string, error: Error): void {
+    const errorEvent = { type: 'error', payload: error } as SubscriptionEventMap['error'];
+    this.masterSubEmitter?.dispatchEvent(errorEvent);
+    this.subEmitters.get(criteria)?.dispatchEvent(errorEvent);
+  }
+
   private async getTokenForCriteria(criteria: string): Promise<[string, string]> {
-    // const activeSubs = this.hydrateLookupTables();
+    const activeSubs = this.hydrateLookupTables();
     let subscriptionId = this.criteriaSubscriptionLookup.get(criteria);
     if (!subscriptionId) {
       // Make a new subscription
@@ -162,10 +175,10 @@ export class SubscriptionManager {
       subscriptionId = subscription.id as string;
 
       // Add it to the active subscriptions
-      // activeSubs[subscriptionId] = subscription;
+      activeSubs[subscriptionId] = subscription;
       // Set active subs to current obj
-      // this.storage.setObject<Record<string, Subscription>>('activeR4Subscriptions', activeSubs);
-      //
+      this.storage.setObject<Record<string, Subscription>>('activeR4Subscriptions', activeSubs);
+
       this.subscriptionCriteriaLookup.set(subscriptionId, criteria);
       this.criteriaSubscriptionLookup.set(criteria, subscriptionId);
     }
@@ -205,7 +218,9 @@ export class SubscriptionManager {
         // Send binding message
         this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
       })
-      .catch(console.error);
+      .catch((err) => {
+        this.emitError(criteria, err);
+      });
 
     this.refCounts.set(criteria, 1);
     return emitter;
