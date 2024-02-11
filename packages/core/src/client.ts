@@ -3509,6 +3509,12 @@ export class MedplumClient extends EventTarget {
     }
   }
 
+  /**
+   * Gets the `SubscriptionManager` for WebSocket subscriptions.
+   *
+   * @category Subscriptions
+   * @returns the `SubscriptionManager` for this client.
+   */
   getSubscriptionManager(): SubscriptionManager {
     if (!this.subscriptionManager) {
       this.subscriptionManager = new SubscriptionManager(
@@ -3520,8 +3526,26 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Subscribes to a given criteria, listening to notifications over WebSockets.
    *
+   * This uses Medplum's `WebSocket Subscriptions` under the hood.
    *
+   * A `SubscriptionEmitter` is returned from this function, which can be used to listen for updates to resources described by the given criteria.
+   *
+   * When subscribing to the same criteria multiple times, the same `SubscriptionEmitter` will be returned, and a reference count will be incremented.
+   *
+   * -----
+   * @example
+   * ```ts
+   * const emitter = medplum.subscribeToCriteria('Communication');
+   *
+   * emitter.addEventListener('message', (bundle: Bundle) => {
+   *   // Called when a `Communication` resource is created or modified
+   *   console.log(bundle?.entry?.[1]?.resource); // Logs the `Communication` resource that was updated
+   * });
+   * ```
+   *
+   * @category Subscriptions
    * @param criteria - The criteria to subscribe to.
    * @returns a `SubscriptionEmitter` that emits `Bundle` resources containing changes to resources based on the given criteria.
    */
@@ -3530,6 +3554,12 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Unsubscribes from the given criteria.
+   *
+   * When called the same amount of times as proceeding calls to `subscribeToCriteria` on a given `criteria`,
+   * the criteria is fully removed from the `SubscriptionManager`.
+   *
+   * @category Subscriptions
    * @param criteria - The criteria to unsubscribe from.
    */
   unsubscribeFromCriteria(criteria: string): void {
@@ -3542,6 +3572,27 @@ export class MedplumClient extends EventTarget {
     }
   }
 
+  /**
+   * Get the master `SubscriptionEmitter` for the `SubscriptionManager`.
+   *
+   * The master `SubscriptionEmitter` gets messages for all subscribed `criteria` as well as WebSocket errors, `connect` and `disconnect` events, and the `close` event.
+   *
+   * It can also be used to listen for `heartbeat` messages.
+   *
+   *------
+   * @example
+   * ### Listening for `heartbeat`:
+   * ```ts
+   * const masterEmitter = medplum.getMasterSubscriptionEmitter();
+   *
+   * masterEmitter.addEventListener('heartbeat', (bundle: Bundle<SubscriptionStatus>) => {
+   *   console.log(bundle?.entry?.[0]?.resource); // A `SubscriptionStatus` of type `heartbeat`
+   * });
+   *
+   * ```
+   * @category Subscriptions
+   * @returns the master `SubscriptionEmitter` from the `SubscriptionManager`.
+   */
   getMasterSubscriptionEmitter(): SubscriptionEmitter {
     return this.getSubscriptionManager().getMasterEmitter();
   }
