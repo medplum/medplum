@@ -58,3 +58,4 @@ export * as v56 from './v56';
 export * as v57 from './v57';
 export * as v58 from './v58';
 export * as v59 from './v59';
+export * as v60 from './v60';
