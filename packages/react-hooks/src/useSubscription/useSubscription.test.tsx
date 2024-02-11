@@ -25,23 +25,26 @@ describe('useSubscription()', () => {
 
   beforeAll(() => {
     console.error = jest.fn();
+    jest.useFakeTimers();
   });
 
-  async function setup(children: ReactNode): Promise<void> {
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
+  function setup(children: ReactNode): ReturnType<typeof render> {
     medplum = new MockClient();
-    await act(async () => {
-      render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      );
-    });
+    return render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+      </MemoryRouter>
+    );
   }
 
   test('Happy path', async () => {
-    await setup(<TestComponent />);
+    const { unmount } = setup(<TestComponent />);
 
-    await act(() => {
+    act(() => {
       medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
         type: 'message',
         payload: { resourceType: 'Bundle', id: generateId(), type: 'history' },
@@ -54,5 +57,10 @@ describe('useSubscription()', () => {
     const bundle = JSON.parse(el.innerHTML);
     expect(bundle.resourceType).toBe('Bundle');
     expect(bundle.type).toBe('history');
+
+    // Make sure subscription is cleaned up
+    unmount();
+    jest.advanceTimersByTime(5000);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 });

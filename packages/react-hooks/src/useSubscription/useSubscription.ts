@@ -31,6 +31,7 @@ export function useSubscription(criteria: string, callback: (bundle: Bundle) => 
     return () => {
       unsubTimerRef.current = setTimeout(() => {
         setEmitter(undefined);
+        medplum.unsubscribeFromCriteria(criteria);
       }, SUBSCRIPTION_DEBOUNCE_MS);
     };
   }, [medplum, criteria]);
