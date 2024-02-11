@@ -7,6 +7,7 @@ import {
   NewProjectRequest,
   NewUserRequest,
   OperationOutcomeError,
+  SubscriptionEmitter,
   allOk,
   getReferenceString,
   indexSearchParameterBundle,
@@ -18,6 +19,7 @@ import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
+import { MockSubscriptionManager } from './subscription-manager';
 
 describe('MockClient', () => {
   beforeAll(() => {
@@ -708,6 +710,36 @@ describe('MockClient', () => {
     );
     medplum.setAgentAvailable(true);
     await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
+  });
+
+  test('getSubscriptionManager()', () => {
+    const medplum = new MockClient();
+    expect(medplum.getSubscriptionManager()).toBeInstanceOf(MockSubscriptionManager);
+  });
+
+  test('getMasterSubscriptionEmitter()', () => {
+    const medplum = new MockClient();
+    expect(medplum.getMasterSubscriptionEmitter()).toBeInstanceOf(SubscriptionEmitter);
+  });
+
+  test('subscribeToCriteria()', () => {
+    const medplum = new MockClient();
+    const emitter1 = medplum.subscribeToCriteria('Communication');
+    expect(emitter1).toBeInstanceOf(SubscriptionEmitter);
+    const emitter2 = medplum.subscribeToCriteria('Communication');
+    expect(emitter1).toEqual(emitter2);
+  });
+
+  test('unsubscribeFromCriteria()', () => {
+    const medplum = new MockClient();
+
+    medplum.subscribeToCriteria('Communication');
+    medplum.subscribeToCriteria('Communication');
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+
+    medplum.unsubscribeFromCriteria('Communication');
+    medplum.unsubscribeFromCriteria('Communication');
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 });
 
