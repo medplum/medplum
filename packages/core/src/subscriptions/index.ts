@@ -18,6 +18,17 @@ const kRemoveCriteria = Symbol.for('medplum.SubscriptionEmitter.removeCriteria')
 
 /**
  * An `EventTarget` that emits events when new subscription notifications come in over WebSockets.
+ *
+ * -----
+ *
+ * ### Events emitted:
+ *
+ * - `connect` - A new subscription is connected to the `SubscriptionManager` and `message` events for this subscription can be expected.
+ * - `disconnect` - The specified subscription is no longer being monitored by the `SubscriptionManager`.
+ * - `error` - An error has occurred.
+ * - `message` - A message containing a notification `Bundle` has been received.
+ * - `close` - The WebSocket has been closed.
+ * - `heartbeat` - A `heartbeat` message has been received.
  */
 export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> {
   private criteria: Set<string>;
