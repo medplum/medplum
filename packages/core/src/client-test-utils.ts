@@ -98,11 +98,7 @@ export class MockMedplumClient extends MedplumClient {
   }
 
   get<T = any>(url: string | URL, _options?: RequestInit): ReadablePromise<T> {
-    return new ReadablePromise<T>(
-      new Promise<T>((resolve) => {
-        resolve(this.router.fetchRoute<T>('GET', url.toString()));
-      })
-    );
+    return new ReadablePromise<T>(Promise.resolve<T>(this.router.fetchRoute<T>('GET', url.toString())));
   }
 
   addNextResourceId(id: string): void {
@@ -110,9 +106,7 @@ export class MockMedplumClient extends MedplumClient {
   }
 
   createResource<T extends Resource = Resource>(resource: T, _options?: RequestInit | undefined): Promise<T> {
-    return new Promise((resolve) => {
-      resolve({ ...resource, id: this.nextResourceId } as T);
-    });
+    return Promise.resolve<T>({ ...resource, id: this.nextResourceId });
   }
 
   getProfile(): ProfileResource | undefined {
