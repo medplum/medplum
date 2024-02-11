@@ -1,4 +1,4 @@
-import { MedplumClient, SubscriptionEmitter, SubscriptionEventMap } from '@medplum/core';
+import { SubscriptionEmitter, SubscriptionEventMap } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
@@ -6,7 +6,7 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 const SUBSCRIPTION_DEBOUNCE_MS = 3000;
 
 export function useSubscription(criteria: string, callback: (bundle: Bundle) => void): void {
-  const medplum = useMedplum() as MedplumClient;
+  const medplum = useMedplum();
   const [emitter, setEmitter] = useState<SubscriptionEmitter>();
 
   const listeningRef = useRef(false);
