@@ -23,23 +23,23 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@graphiql/react": "0.20.2",
+    "@graphiql/react": "0.20.3",
     "@graphiql/toolkit": "0.9.1",
-    "@mantine/core": "7.5.1",
-    "@mantine/hooks": "7.5.1",
+    "@mantine/core": "7.5.2",
+    "@mantine/hooks": "7.5.2",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/react": "*",
-    "@types/react": "18.2.51",
-    "@types/react-dom": "18.2.18",
-    "graphiql": "3.1.0",
+    "@types/react": "18.2.55",
+    "@types/react-dom": "18.2.19",
+    "graphiql": "3.1.1",
     "graphql": "16.8.1",
     "graphql-ws": "5.14.3",
-    "postcss": "8.4.33",
+    "postcss": "8.4.35",
     "postcss-preset-mantine": "1.13.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vite": "5.0.12"
+    "vite": "5.1.1"
   },
   "engines": {
     "node": ">=18.0.0"
