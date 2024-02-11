@@ -265,7 +265,7 @@ describe('SubscriptionManager', () => {
     let manager: SubscriptionManager;
     let emitter: SubscriptionEmitter;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
         return {
           resourceType: 'Parameters',
@@ -286,13 +286,7 @@ describe('SubscriptionManager', () => {
         } as Parameters;
       });
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
-    });
 
-    afterAll(() => {
-      WS.clean();
-    });
-
-    beforeAll(async () => {
       manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
@@ -309,6 +303,10 @@ describe('SubscriptionManager', () => {
 
       expect(typeof subscriptionId).toEqual('string');
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+    });
+
+    afterAll(() => {
+      WS.clean();
     });
 
     test('should throw when remove has been called on a criteria that is not known', () => {
@@ -404,10 +402,6 @@ describe('SubscriptionManager', () => {
     });
   });
 
-  afterAll(() => {
-    WS.clean();
-  });
-
   describe('closeWebSocket()', () => {
     let wsServer: WS;
 
@@ -491,7 +485,7 @@ describe('SubscriptionManager', () => {
       WS.clean();
     });
 
-    it('should always get the same emitter', async () => {
+    test('should always get the same emitter', async () => {
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
       expect(manager.getMasterEmitter()).toEqual(manager.getMasterEmitter());
