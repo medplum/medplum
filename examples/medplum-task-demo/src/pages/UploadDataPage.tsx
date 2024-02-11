@@ -1,13 +1,15 @@
 import { Button } from '@mantine/core';
-import { MedplumClient, capitalize, normalizeErrorString } from '@medplum/core';
+import { MedplumClient, capitalize, isOk, normalizeErrorString } from '@medplum/core';
 import { Document, useMedplum } from '@medplum/react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { showNotification } from '@mantine/notifications';
-import { Bundle } from '@medplum/fhirtypes';
+import { Bundle, ValueSet } from '@medplum/fhirtypes';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
-import businessStatusValueSet from '../../data/core/business-status-value-sets.json';
+import businessStatusValueSet from '../../data/core/business-status-valueset.json';
+import practitionerRoleValueSet from '../../data/core/practitioner-role-valueset.json';
+import taskTypeValueSet from '../../data/core/task-type-valueset.json';
 import exampleMessageData from '../../data/example/respond-to-message-data.json';
 
 export function UploadDataPage(): JSX.Element {
@@ -50,12 +52,41 @@ export function UploadDataPage(): JSX.Element {
 }
 
 async function uploadCoreData(medplum: MedplumClient): Promise<void> {
-  await medplum.executeBatch(businessStatusValueSet as Bundle);
+  // Upload all the core ValueSets in a single batch request
+  const valueSets: ValueSet[] = [
+    businessStatusValueSet as ValueSet,
+    taskTypeValueSet as ValueSet,
+    practitionerRoleValueSet as ValueSet,
+  ];
+
+  const result = await medplum.executeBatch({
+    resourceType: 'Bundle',
+    type: 'batch',
+    entry: valueSets.map((valueSet) => ({
+      request: { method: 'POST', url: valueSet.resourceType, ifNoneExist: `url=${valueSet.url}` },
+      resource: valueSet,
+    })),
+  });
+
   showNotification({
     icon: <IconCircleCheck />,
     title: 'Success',
     message: 'Uploaded Business Statuses',
   });
+
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+    await setTimeout(
+      () =>
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Uploaded Business Statuses',
+        }),
+      1000
+    );
+  } else {
+    throw new Error('Error uploading core data');
+  }
 }
 
 async function uploadExampleData(medplum: MedplumClient): Promise<void> {

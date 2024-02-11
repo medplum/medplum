@@ -40,7 +40,7 @@ root.render(
   <StrictMode>
     <MedplumProvider medplum={medplum} navigate={router.navigate}>
       <MantineProvider theme={theme}>
-        <Notifications />
+        <Notifications position="bottom-right" />
         <RouterProvider router={router} />
       </MantineProvider>
     </MedplumProvider>

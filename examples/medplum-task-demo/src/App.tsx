@@ -80,35 +80,37 @@ export function App(): JSX.Element | null {
   }
 
   return (
-    <AppShell
-      logo={<Logo size={24} />}
-      menus={[
-        {
-          title: 'Tasks',
-          links: userLinks,
-        },
-        {
-          title: 'Upload Data',
-          links: [
-            { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
-            { icon: <IconFileImport />, label: 'Upload Example Data', href: '/upload/example' },
-          ],
-        },
-      ]}
-      resourceTypeSearchDisabled={true}
-      headerSearchDisabled={true}
-    >
-      <Suspense fallback={<Loading />}>
-        <Routes>
-          <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
-          <Route path="/signin" element={<SignInPage />} />
-          <Route path="/:resourceType" element={<SearchPage />} />
-          <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
-          <Route path="/Task/:id/*" element={<TaskPage />} />
-          <Route path="/Task" element={<SearchPage />} />
-          <Route path="/upload/:dataType" element={<UploadDataPage />} />
-        </Routes>
-      </Suspense>
-    </AppShell>
+    <>
+      <AppShell
+        logo={<Logo size={24} />}
+        menus={[
+          {
+            title: 'Tasks',
+            links: userLinks,
+          },
+          {
+            title: 'Upload Data',
+            links: [
+              { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
+              { icon: <IconFileImport />, label: 'Upload Example Data', href: '/upload/example' },
+            ],
+          },
+        ]}
+        resourceTypeSearchDisabled={true}
+        headerSearchDisabled={true}
+      >
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/:resourceType" element={<SearchPage />} />
+            <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
+            <Route path="/Task/:id/*" element={<TaskPage />} />
+            <Route path="/Task" element={<SearchPage />} />
+            <Route path="/upload/:dataType" element={<UploadDataPage />} />
+          </Routes>
+        </Suspense>
+      </AppShell>
+    </>
   );
 }

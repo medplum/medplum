@@ -8,8 +8,7 @@
         "resourceType": "Communication",
         "status": "in-progress",
         "subject": {
-          "reference": "Patient/8f0d3209-0ee0-487f-b186-4328a949190f",
-          "display": "Mr. Lucien408 Bosco882 PharmD"
+          "reference": "Patient/8f0d3209-0ee0-487f-b186-4328a949190f"
         },
         "topic": { "coding": [{ "code": "Lab test results", "display": "Lab test results" }] }
       },
