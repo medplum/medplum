@@ -65,6 +65,21 @@ export class SubscriptionManager {
       ws = wsOrUrl;
     }
 
+    this.medplum = medplum;
+    this.ws = ws;
+    this.masterSubEmitter = new SubscriptionEmitter();
+    this.subEmitters = new Map<string, SubscriptionEmitter>();
+    this.refCounts = new Map<string, number>();
+    this.subscriptionCriteriaLookup = new Map<string, string>();
+    this.criteriaSubscriptionLookup = new Map<string, string>();
+    this.wsClosed = false;
+
+    this.setupWebSocketListeners();
+  }
+
+  private setupWebSocketListeners(): void {
+    const ws = this.ws;
+
     ws.addEventListener('message', (event: MessageEvent) => {
       const bundle = JSON.parse(event.data) as Bundle;
       // Get criteria for event
@@ -104,15 +119,6 @@ export class SubscriptionManager {
         emitter.dispatchEvent(closeEvent);
       }
     });
-
-    this.medplum = medplum;
-    this.ws = ws;
-    this.masterSubEmitter = new SubscriptionEmitter();
-    this.subEmitters = new Map<string, SubscriptionEmitter>();
-    this.refCounts = new Map<string, number>();
-    this.subscriptionCriteriaLookup = new Map<string, string>();
-    this.criteriaSubscriptionLookup = new Map<string, string>();
-    this.wsClosed = false;
   }
 
   private emitConnect(subscriptionId: string): void {
