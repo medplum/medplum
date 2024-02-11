@@ -22,6 +22,9 @@ jobs:
     env:
       NODE_VERSION: ${{ matrix.node-version }}
       PG_VERSION: ${{ matrix.pg-version }}
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      SECRETS_TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      SECRETS_TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
@@ -56,8 +59,8 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - name: Setup turbo
-        if: ${{ secrets.TURBO_TOKEN }}
-        run: npx turbo login --token ${{ secrets.TURBO_TOKEN }} --team ${{ secrets.TURBO_TEAM }} --remote-only ${{ secrets.TURBO_REMOTE_ONLY }}
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: npx turbo login --token ${{ env.SECRETS_TURBO_TOKEN }} --team ${{ env.SECRETS_TURBO_TEAM }} --remote-only ${{ env.SECRETS_TURBO_REMOTE_ONLY }}
       - name: Build Project
         run: ./scripts/build.sh
         env:
