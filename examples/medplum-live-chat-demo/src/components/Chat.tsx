@@ -61,6 +61,17 @@ export function Chat(): JSX.Element | null {
     (bundle: Bundle) => {
       const communication = bundle.entry?.[1]?.resource as Communication;
       upsertCommunications(communicationsRef.current, [communication], setCommunications);
+      if (!(communication.received && communication.status === 'completed')) {
+        medplum
+          .updateResource<Communication>({
+            ...communication,
+            received: communication.received ?? new Date().toISOString(), // Mark as received if needed
+            status: 'completed', // Mark as read
+            // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
+            // for more info about recommended `Communication` lifecycle
+          })
+          .catch(console.error);
+      }
     }
   );
 
