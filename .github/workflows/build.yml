@@ -23,8 +23,6 @@ jobs:
       NODE_VERSION: ${{ matrix.node-version }}
       PG_VERSION: ${{ matrix.pg-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      SECRETS_TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      SECRETS_TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
@@ -58,9 +56,16 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - name: Setup turbo
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
         if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
-        run: npx turbo login --token ${{ env.SECRETS_TURBO_TOKEN }} --team ${{ env.SECRETS_TURBO_TEAM }} --remote-only ${{ env.SECRETS_TURBO_REMOTE_ONLY }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
       - name: Build Project
         run: ./scripts/build.sh
         env:
