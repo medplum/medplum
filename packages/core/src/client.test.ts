@@ -2440,84 +2440,38 @@ describe('Client', () => {
       let count = 0;
       fetch = jest.fn(async (url) => {
         if (url.includes('/$export?_since=200')) {
-          return {
-            status: 200,
-            headers: { get: () => ContentType.FHIR_JSON },
-            json: jest.fn(async () => {
-              return {
-                resourceType: 'OperationOutcome',
-                id: 'accepted',
-                issue: [
-                  {
-                    severity: 'information',
-                    code: 'informational',
-                    details: {
-                      text: 'Accepted',
-                    },
-                  },
-                ],
-              };
-            }),
-          };
+          return mockFetchResponse(200, accepted('bulkdata/id/status'), {
+            'content-type': ContentType.FHIR_JSON,
+            'content-location': 'bulkdata/id/status',
+          });
         }
 
         if (url.includes('/$export')) {
-          return {
-            status: 202,
-            json: jest.fn(async () => {
-              return {
-                resourceType: 'OperationOutcome',
-                id: 'accepted',
-                issue: [
-                  {
-                    severity: 'information',
-                    code: 'informational',
-                    details: {
-                      text: 'Accepted',
-                    },
-                  },
-                ],
-              };
-            }),
-            headers: {
-              get(name: string): string | undefined {
-                return {
-                  'content-type': ContentType.FHIR_JSON,
-                  'content-location': 'bulkdata/id/status',
-                }[name];
-              },
-            },
-          };
+          return mockFetchResponse(202, accepted('bulkdata/id/status'), {
+            'content-type': ContentType.FHIR_JSON,
+            'content-location': 'bulkdata/id/status',
+          });
         }
 
         if (url.includes('bulkdata/id/status')) {
           if (count < 1) {
             count++;
-            return {
-              status: 202,
-              json: jest.fn(async () => {
-                return {};
-              }),
-            };
+            return mockFetchResponse(202, {});
           }
         }
 
-        return {
-          status: 200,
-          headers: { get: () => ContentType.FHIR_JSON },
-          json: jest.fn(async () => ({
-            transactionTime: '2023-05-18T22:55:31.280Z',
-            request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
-            requiresAccessToken: false,
-            output: [
-              {
-                type: 'ProjectMembership',
-                url: 'https://api.medplum.com/storage/TEST',
-              },
-            ],
-            error: [],
-          })),
-        };
+        return mockFetchResponse(200, {
+          transactionTime: '2023-05-18T22:55:31.280Z',
+          request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
+          requiresAccessToken: false,
+          output: [
+            {
+              type: 'ProjectMembership',
+              url: 'https://api.medplum.com/storage/TEST',
+            },
+          ],
+          error: [],
+        });
       });
     });
 
@@ -2701,6 +2655,7 @@ describe('Client', () => {
   describe('Downloading resources', () => {
     const baseUrl = 'https://api.medplum.com/';
     const fhirUrlPath = 'fhir/R4/';
+    const accessToken = 'fake';
     let fetch: FetchLike;
     let client: MedplumClient;
 
@@ -2709,6 +2664,7 @@ describe('Client', () => {
         text: () => Promise.resolve(url),
       }));
       client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
     });
 
     test('Downloading resources via URL', async () => {
@@ -2718,6 +2674,7 @@ describe('Client', () => {
         expect.objectContaining({
           headers: {
             Accept: DEFAULT_ACCEPT,
+            Authorization: `Bearer ${accessToken}`,
             'X-Medplum': 'extended',
           },
         })
@@ -2732,6 +2689,7 @@ describe('Client', () => {
         expect.objectContaining({
           headers: {
             Accept: DEFAULT_ACCEPT,
+            Authorization: `Bearer ${accessToken}`,
             'X-Medplum': 'extended',
           },
         })
