@@ -607,6 +607,40 @@
         "type": "number",
         "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/CareTeam-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "CareTeam-name",
+        "url": "https://medplum.com/fhir/SearchParameter/CareTeam-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the care team",
+        "code": "name",
+        "base": ["CareTeam"],
+        "type": "string",
+        "expression": "CareTeam.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Group-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Group-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Group-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the group",
+        "code": "name",
+        "base": ["Group"],
+        "type": "string",
+        "expression": "Group.name"
+      }
     }
   ]
 }

@@ -1,9 +1,9 @@
+import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { forwardRef, useCallback, useState } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { Group, Text } from '@mantine/core';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
 /**
@@ -28,6 +28,7 @@ const NAME_RESOURCE_TYPES = [
   'ActivityDefinition',
   'Bot',
   'CapabilityStatement',
+  'CareTeam',
   'ClientApplication',
   'CodeSystem',
   'CompartmentDefinition',
@@ -39,6 +40,7 @@ const NAME_RESOURCE_TYPES = [
   'EvidenceVariable',
   'ExampleScenario',
   'GraphDefinition',
+  'Group',
   'HealthcareService',
   'ImplementationGuide',
   'InsurancePlan',
