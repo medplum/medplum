@@ -86,10 +86,10 @@ export async function createAuditEvent(
     outcomeDesc,
     extension: [
       {
-        url: "https://medplum.com/fhir/StructureDefinition/trace-id",
+        url: 'https://medplum.com/fhir/StructureDefinition/trace-id',
         valueString: ctx.traceId,
-      }
-    ]
+      },
+    ],
   });
 }
 

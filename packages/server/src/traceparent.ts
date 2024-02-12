@@ -17,12 +17,7 @@ export class Traceparent {
   parentId: string;
   flags?: hex | twohex;
 
-  constructor({
-    version,
-    traceId,
-    parentId,
-    flags,
-  }: TraceparentOpts) {
+  constructor({ version, traceId, parentId, flags }: TraceparentOpts) {
     this.traceId = traceId;
     this.parentId = parentId;
     this.version = version;
@@ -30,12 +25,7 @@ export class Traceparent {
   }
 
   toString(): string {
-    return [
-      this.version,
-      this.traceId,
-      this.parentId,
-      this.flags,
-    ].filter(Boolean).join('-');
+    return [this.version, this.traceId, this.parentId, this.flags].filter(Boolean).join('-');
   }
 }
 
@@ -71,5 +61,5 @@ export function traceparentFromSpan(span?: Span): Traceparent | undefined {
     traceId: spanCtx.traceId,
     parentId: spanCtx.spanId,
     flags: flags as twohex,
-  })
+  });
 }
