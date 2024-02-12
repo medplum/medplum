@@ -90,22 +90,26 @@ export class SubscriptionManager {
     const ws = this.ws;
 
     ws.addEventListener('message', (event: MessageEvent) => {
-      const bundle = JSON.parse(event.data) as Bundle;
-      // Get criteria for event
-      const status = bundle?.entry?.[0]?.resource as SubscriptionStatus;
-      // Handle heartbeat
-      if (status.type === 'heartbeat') {
-        this.masterSubEmitter?.dispatchEvent({ type: 'heartbeat', payload: bundle });
-        return;
+      try {
+        const bundle = JSON.parse(event.data) as Bundle;
+        // Get criteria for event
+        const status = bundle?.entry?.[0]?.resource as SubscriptionStatus;
+        // Handle heartbeat
+        if (status.type === 'heartbeat') {
+          this.masterSubEmitter?.dispatchEvent({ type: 'heartbeat', payload: bundle });
+          return;
+        }
+        this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
+        const criteria = this.subscriptionCriteriaLookup.get(resolveId(status.subscription) as string);
+        if (!criteria) {
+          console.warn('Received notification for criteria the SubscriptionManager is not listening for');
+          return;
+        }
+        // Emit event for criteria
+        this.subEmitters.get(criteria)?.dispatchEvent({ type: 'message', payload: bundle });
+      } catch (err: unknown) {
+        this.masterSubEmitter?.dispatchEvent({ type: 'error', payload: err as Error });
       }
-      this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
-      const criteria = this.subscriptionCriteriaLookup.get(resolveId(status.subscription) as string);
-      if (!criteria) {
-        console.warn('Received notification for criteria the SubscriptionManager is not listening for');
-        return;
-      }
-      // Emit event for criteria
-      this.subEmitters.get(criteria)?.dispatchEvent({ type: 'message', payload: bundle });
     });
 
     ws.addEventListener('error', () => {

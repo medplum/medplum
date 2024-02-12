@@ -591,5 +591,22 @@ describe('SubscriptionManager', () => {
 
       expect(receivedEvent).toMatchObject({ type: 'error', payload: expect.any(Error) });
     });
+
+    test('should emit `error` event when invalid message comes in over WebSocket', async () => {
+      const wsServer = new WS('wss://example.com/ws/subscriptions-r4');
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
+
+      const receivedEvent = await new Promise<SubscriptionEventMap['error']>((resolve) => {
+        manager.getMasterEmitter().addEventListener('error', (event) => {
+          resolve(event);
+        });
+        wsServer.send('invalid_json');
+      });
+
+      expect(receivedEvent?.type).toEqual('error');
+      expect(receivedEvent?.payload).toBeInstanceOf(SyntaxError);
+      expect(receivedEvent?.payload?.message).toMatch(/^Unexpected token/);
+    });
   });
 });
