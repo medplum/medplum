@@ -8,10 +8,16 @@ import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { useSubscription } from './useSubscription';
 
-function TestComponent({ callback }: { callback?: (bundle: Bundle) => void }): JSX.Element {
+function TestComponent({
+  criteria,
+  callback,
+}: {
+  criteria?: string;
+  callback?: (bundle: Bundle) => void;
+}): JSX.Element {
   const [lastReceived, setLastReceived] = useState<Bundle>();
   useSubscription(
-    'Communication',
+    criteria ?? 'Communication',
     callback ??
       ((bundle: Bundle) => {
         setLastReceived(bundle);
@@ -168,5 +174,70 @@ describe('useSubscription()', () => {
     expect(lastFromCb2?.resourceType).toEqual('Bundle');
     expect(lastFromCb2?.type).toEqual('history');
     expect(lastFromCb2?.id).toEqual(id2);
+  });
+
+  test('Criteria changed', () => {
+    let lastFromCb1: Bundle | undefined;
+    let lastFromCb2: Bundle | undefined;
+    const id1 = generateId();
+    const id2 = generateId();
+    const id3 = generateId();
+
+    const { rerender } = setup(
+      <TestComponent
+        criteria="Communication"
+        callback={(bundle: Bundle) => {
+          lastFromCb1 = bundle;
+        }}
+      />
+    );
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: id1, type: 'history' },
+      });
+    });
+
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+    expect(lastFromCb2).not.toBeDefined();
+
+    rerender(
+      <TestComponent
+        criteria="DiagnosticReport"
+        callback={(bundle: Bundle) => {
+          lastFromCb2 = bundle;
+        }}
+      />
+    );
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: id2, type: 'history' },
+      });
+    });
+
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+    expect(lastFromCb2).not.toBeDefined();
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('DiagnosticReport', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: id3, type: 'history' },
+      });
+    });
+
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+
+    expect(lastFromCb2?.resourceType).toEqual('Bundle');
+    expect(lastFromCb2?.type).toEqual('history');
+    expect(lastFromCb2?.id).toEqual(id3);
   });
 });
