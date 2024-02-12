@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
+import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 
 export function App(): JSX.Element | null {
@@ -26,15 +27,16 @@ export function App(): JSX.Element | null {
         {
           title: 'My Links',
           links: [
-            { icon: <IconFileCheck />, label: 'Coverages', href: '/' },
-            { icon: <IconUser />, label: 'Patients', href: '/' },
+            { icon: <IconFileCheck />, label: 'Coverages', href: '/Coverage' },
+            { icon: <IconUser />, label: 'Patients', href: '/Patient' },
           ],
         },
       ]}
     >
       <Suspense fallback={<Loading />}>
         <Routes>
-          <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
+          <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
+          <Route path="/:resourceType" element={<SearchPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/Patient/:id" element={<PatientPage />}>
             <Route index element={<PatientOverview />} />
