@@ -597,16 +597,35 @@ describe('SubscriptionManager', () => {
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
-      const receivedEvent = await new Promise<SubscriptionEventMap['error']>((resolve) => {
-        manager.getMasterEmitter().addEventListener('error', (event) => {
-          resolve(event);
-        });
+      const emitter = manager.addCriteria('Communication');
+      const [receivedEvent1, receivedEvent2] = await new Promise<SubscriptionEventMap['error'][]>((resolve, reject) => {
+        const promises = [];
+        promises.push(
+          new Promise<SubscriptionEventMap['error']>((resolve) => {
+            manager.getMasterEmitter().addEventListener('error', (event) => {
+              resolve(event);
+            });
+          })
+        );
+        promises.push(
+          new Promise<SubscriptionEventMap['error']>((resolve) => {
+            emitter.addEventListener('error', (event) => {
+              resolve(event);
+            });
+          })
+        );
+
         wsServer.send('invalid_json');
+        Promise.all(promises).then(resolve).catch(reject);
       });
 
-      expect(receivedEvent?.type).toEqual('error');
-      expect(receivedEvent?.payload).toBeInstanceOf(SyntaxError);
-      expect(receivedEvent?.payload?.message).toMatch(/^Unexpected token/);
+      expect(receivedEvent1?.type).toEqual('error');
+      expect(receivedEvent1?.payload).toBeInstanceOf(SyntaxError);
+      expect(receivedEvent1?.payload?.message).toMatch(/^Unexpected token/);
+
+      expect(receivedEvent2?.type).toEqual('error');
+      expect(receivedEvent2?.payload).toBeInstanceOf(SyntaxError);
+      expect(receivedEvent2?.payload?.message).toMatch(/^Unexpected token/);
     });
   });
 });

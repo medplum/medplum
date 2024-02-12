@@ -117,7 +117,11 @@ export class SubscriptionManager {
         // Emit event for criteria
         criteriaEntry.emitter.dispatchEvent({ type: 'message', payload: bundle });
       } catch (err: unknown) {
-        this.masterSubEmitter?.dispatchEvent({ type: 'error', payload: err as Error });
+        const errorEvent = { type: 'error', payload: err as Error } as SubscriptionEventMap['error'];
+        this.masterSubEmitter?.dispatchEvent(errorEvent);
+        for (const { emitter } of this.criteriaEntries.values()) {
+          emitter.dispatchEvent(errorEvent);
+        }
       }
     });
 
