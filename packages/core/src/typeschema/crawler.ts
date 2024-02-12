@@ -105,7 +105,7 @@ class ResourceCrawler {
 export function getNestedProperty(
   value: TypedValue,
   key: string,
-  options?: { profileUrl?: string; includeEmptyValues?: boolean }
+  options?: { profileUrl?: string }
 ): (TypedValue | TypedValue[] | undefined)[] {
   if (key === '$this') {
     return [value];
