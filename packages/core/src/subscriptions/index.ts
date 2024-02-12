@@ -52,14 +52,25 @@ export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> 
   }
 }
 
+class CriteriaEntry {
+  readonly criteria: string;
+  readonly emitter: SubscriptionEmitter;
+  refCount: number;
+  subscriptionId?: string;
+
+  constructor(criteria: string) {
+    this.criteria = criteria;
+    this.emitter = new SubscriptionEmitter(criteria);
+    this.refCount = 1;
+  }
+}
+
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
   private ws: WebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
-  private subEmitters: Map<string, SubscriptionEmitter>; // Map<criteria, SubscriptionEmitter>
-  private refCounts: Map<string, number>; // Map<criteria, refCount>
-  private subscriptionCriteriaLookup: Map<string, string>; // Map<subscriptionId, criteria>
-  private criteriaSubscriptionLookup: Map<string, string>; // Map<criteria, subscriptionId>
+  private criteriaEntries: Map<string, CriteriaEntry>; // Map<criteriaStr, CriteriaEntry>
+  private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
 
   constructor(medplum: MedplumClient, wsUrl: URL | string) {
@@ -77,10 +88,8 @@ export class SubscriptionManager {
     this.medplum = medplum;
     this.ws = ws;
     this.masterSubEmitter = new SubscriptionEmitter();
-    this.subEmitters = new Map<string, SubscriptionEmitter>();
-    this.refCounts = new Map<string, number>();
-    this.subscriptionCriteriaLookup = new Map<string, string>();
-    this.criteriaSubscriptionLookup = new Map<string, string>();
+    this.criteriaEntries = new Map<string, CriteriaEntry>();
+    this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
     this.wsClosed = false;
 
     this.setupWebSocketListeners();
@@ -100,13 +109,13 @@ export class SubscriptionManager {
           return;
         }
         this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
-        const criteria = this.subscriptionCriteriaLookup.get(resolveId(status.subscription) as string);
-        if (!criteria) {
+        const criteriaEntry = this.criteriaEntriesBySubscriptionId.get(resolveId(status.subscription) as string);
+        if (!criteriaEntry) {
           console.warn('Received notification for criteria the SubscriptionManager is not listening for');
           return;
         }
         // Emit event for criteria
-        this.subEmitters.get(criteria)?.dispatchEvent({ type: 'message', payload: bundle });
+        criteriaEntry.emitter.dispatchEvent({ type: 'message', payload: bundle });
       } catch (err: unknown) {
         this.masterSubEmitter?.dispatchEvent({ type: 'error', payload: err as Error });
       }
@@ -118,7 +127,7 @@ export class SubscriptionManager {
         payload: new OperationOutcomeError(serverError(new Error('WebSocket error'))),
       } as SubscriptionEventMap['error'];
       this.masterSubEmitter?.dispatchEvent(errorEvent);
-      for (const emitter of this.subEmitters.values()) {
+      for (const { emitter } of this.criteriaEntries.values()) {
         emitter.dispatchEvent(errorEvent);
       }
     });
@@ -128,7 +137,7 @@ export class SubscriptionManager {
       if (this.wsClosed) {
         this.masterSubEmitter?.dispatchEvent(closeEvent);
       }
-      for (const emitter of this.subEmitters.values()) {
+      for (const { emitter } of this.criteriaEntries.values()) {
         emitter.dispatchEvent(closeEvent);
       }
     });
@@ -137,7 +146,7 @@ export class SubscriptionManager {
   private emitConnect(subscriptionId: string): void {
     const connectEvent = { type: 'connect', payload: { subscriptionId } } as SubscriptionEventMap['connect'];
     this.masterSubEmitter?.dispatchEvent(connectEvent);
-    for (const emitter of this.subEmitters.values()) {
+    for (const { emitter } of this.criteriaEntries.values()) {
       emitter.dispatchEvent(connectEvent);
     }
   }
@@ -145,24 +154,21 @@ export class SubscriptionManager {
   private emitError(criteria: string, error: Error): void {
     const errorEvent = { type: 'error', payload: error } as SubscriptionEventMap['error'];
     this.masterSubEmitter?.dispatchEvent(errorEvent);
-    this.subEmitters.get(criteria)?.dispatchEvent(errorEvent);
+    this.criteriaEntries.get(criteria)?.emitter?.dispatchEvent(errorEvent);
   }
 
-  private async getTokenForCriteria(criteria: string): Promise<[string, string]> {
-    let subscriptionId = this.criteriaSubscriptionLookup.get(criteria);
+  private async getTokenForCriteria(criteriaEntry: CriteriaEntry): Promise<[string, string]> {
+    let subscriptionId = criteriaEntry?.subscriptionId;
     if (!subscriptionId) {
       // Make a new subscription
       const subscription = await this.medplum.createResource<Subscription>({
         resourceType: 'Subscription',
         status: 'active',
         reason: `WebSocket subscription for ${getReferenceString(this.medplum.getProfile() as ProfileResource)}`,
-        criteria,
+        criteria: criteriaEntry.criteria,
         channel: { type: 'websocket' },
       });
       subscriptionId = subscription.id as string;
-
-      this.subscriptionCriteriaLookup.set(subscriptionId, criteria);
-      this.criteriaSubscriptionLookup.set(criteria, subscriptionId);
     }
 
     // Get binding token
@@ -186,15 +192,19 @@ export class SubscriptionManager {
     if (this.masterSubEmitter) {
       this.masterSubEmitter._addCriteria(criteria);
     }
-    if (this.subEmitters.has(criteria)) {
-      this.refCounts.set(criteria, (this.refCounts.get(criteria) as number) + 1);
-      return this.subEmitters.get(criteria) as SubscriptionEmitter;
+    const criteriaEntry = this.criteriaEntries.get(criteria);
+    if (criteriaEntry) {
+      criteriaEntry.refCount += 1;
+      return criteriaEntry.emitter;
     }
-    const emitter = new SubscriptionEmitter(criteria);
-    this.subEmitters.set(criteria, emitter);
+    const newCriteriaEntry = new CriteriaEntry(criteria);
+    this.criteriaEntries.set(criteria, newCriteriaEntry);
 
-    this.getTokenForCriteria(criteria)
+    this.getTokenForCriteria(newCriteriaEntry)
       .then(([subscriptionId, token]) => {
+        newCriteriaEntry.subscriptionId = subscriptionId;
+        this.criteriaEntriesBySubscriptionId.set(subscriptionId, newCriteriaEntry);
+
         // Emit connect event
         this.emitConnect(subscriptionId);
         // Send binding message
@@ -202,31 +212,27 @@ export class SubscriptionManager {
       })
       .catch((err) => {
         this.emitError(criteria, err);
-        this.subEmitters.delete(criteria);
+        this.criteriaEntries.delete(criteria);
       });
 
-    this.refCounts.set(criteria, 1);
-    return emitter;
+    return newCriteriaEntry.emitter;
   }
 
   removeCriteria(criteria: string): void {
-    if (!this.refCounts.has(criteria)) {
+    const criteriaEntry = this.criteriaEntries.get(criteria);
+    if (!criteriaEntry) {
       throw new OperationOutcomeError(
         badRequest('Criteria not known to `SubscriptionManager`. Possibly called remove too many times.')
       );
     }
 
-    const newCount = (this.refCounts.get(criteria) as number) - 1;
-    if (newCount > 0) {
-      this.refCounts.set(criteria, newCount);
+    criteriaEntry.refCount -= 1;
+    if (criteriaEntry.refCount > 0) {
       return;
     }
 
-    // If we are here, time to actually remove criteria
-    this.refCounts.delete(criteria);
-
     // If actually removing
-    const subscriptionId = this.criteriaSubscriptionLookup.get(criteria) as string;
+    const subscriptionId = this.criteriaEntries.get(criteria)?.subscriptionId;
     const disconnectEvent = { type: 'disconnect', payload: { subscriptionId } } as SubscriptionEventMap['disconnect'];
     // Remove from master
     if (this.masterSubEmitter) {
@@ -236,8 +242,8 @@ export class SubscriptionManager {
       this.masterSubEmitter.dispatchEvent(disconnectEvent);
     }
     // Emit disconnect on criteria emitter
-    this.subEmitters.get(criteria)?.dispatchEvent(disconnectEvent);
-    this.subEmitters.delete(criteria);
+    this.criteriaEntries.get(criteria)?.emitter?.dispatchEvent(disconnectEvent);
+    this.criteriaEntries.delete(criteria);
   }
 
   closeWebSocket(): void {
@@ -249,12 +255,12 @@ export class SubscriptionManager {
   }
 
   getCriteriaCount(): number {
-    return this.subEmitters.size;
+    return this.criteriaEntries.size;
   }
 
   getMasterEmitter(): SubscriptionEmitter {
     if (!this.masterSubEmitter) {
-      this.masterSubEmitter = new SubscriptionEmitter(...Array.from(this.subEmitters.keys()));
+      this.masterSubEmitter = new SubscriptionEmitter(...Array.from(this.criteriaEntries.keys()));
     }
     return this.masterSubEmitter;
   }
