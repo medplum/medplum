@@ -167,6 +167,8 @@ export interface ElementDefinitionTypeInputProps
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
   const { name, onChange, outcome, binding, path } = props;
+  const required = props.min !== undefined && props.min > 0;
+
   const propertyType = props.elementDefinitionType.code;
 
   const elementsContext = useContext(ElementsContext);
@@ -196,8 +198,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
 
     return props.defaultValue;
   }, [propertyType, elementsContext.path, elementsContext.elements, props.path, props.defaultValue]);
-
-  const required = props.min !== undefined && props.min > 0;
 
   if (!propertyType) {
     return <div>Property type not specified </div>;

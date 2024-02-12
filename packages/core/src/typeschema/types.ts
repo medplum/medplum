@@ -205,15 +205,6 @@ export function tryGetProfile(profileUrl: string): InternalTypeSchema | undefine
   return PROFILE_SCHEMAS_BY_URL[profileUrl];
 }
 
-export function getProfile(profileUrl: string): InternalTypeSchema {
-  const schema = tryGetProfile(profileUrl);
-  if (!schema) {
-    throw new OperationOutcomeError(badRequest('Profile not loaded: ' + profileUrl));
-  }
-
-  return schema;
-}
-
 interface BackboneContext {
   type: InternalTypeSchema;
   path: string;

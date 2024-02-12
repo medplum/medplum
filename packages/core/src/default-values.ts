@@ -2,15 +2,7 @@ import { Resource } from '@medplum/fhirtypes';
 import { SchemaCrawler, SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
 import { SliceDefinitionWithTypes, getValueSliceName } from './typeschema/slices';
 import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
-import {
-  capitalize,
-  deepClone,
-  getPathDifference,
-  isComplexTypeCode,
-  isObject,
-  isPopulated,
-  splitOnceRight,
-} from './utils';
+import { capitalize, deepClone, getPathDifference, isComplexTypeCode, isObject, isPopulated } from './utils';
 import { ElementsContextType } from './elements-context';
 
 /**
@@ -425,4 +417,23 @@ function applyPattern(existingValue: any, pattern: any): any {
   }
 
   return existingValue;
+}
+
+/**
+ * Splits a string on the last occurrence of the delimiter
+ * @param str - The string to split
+ * @param delim - The delimiter string
+ * @returns An array of two strings; the first consisting of the beginning of the
+ * string up to the last occurrence of the delimiter. the second is the remainder of the
+ * string after the last occurrence of the delimiter. If the delimiter is not present
+ * in the string, the first element is empty and the second is the input string.
+ */
+function splitOnceRight(str: string, delim: string): [string, string] {
+  const delimIndex = str.lastIndexOf(delim);
+  if (delimIndex === -1) {
+    return ['', str];
+  }
+  const beginning = str.substring(0, delimIndex);
+  const last = str.substring(delimIndex + delim.length);
+  return [beginning, last];
 }

@@ -3,8 +3,8 @@ import {
   InternalTypeSchema,
   SliceDefinition,
   SlicingRules,
-  getProfile,
   loadDataType,
+  tryGetProfile,
 } from './typeschema/types';
 import { isPopulated } from './utils';
 import { Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
@@ -77,7 +77,10 @@ describe('apply default values', () => {
 
     beforeAll(() => {
       loadProfiles(profileUrls);
-      schema = getProfile(profileUrl);
+      schema = tryGetProfile(profileUrl) as InternalTypeSchema;
+      if (!schema) {
+        fail(`Failed to load schema for ${profileUrl}`);
+      }
     });
 
     test('new Blood Pressure observation', async () => {
@@ -172,7 +175,10 @@ describe('apply default values', () => {
 
     beforeAll(() => {
       loadProfiles(profileUrls);
-      schema = getProfile(profileUrl);
+      schema = tryGetProfile(profileUrl) as InternalTypeSchema;
+      if (!schema) {
+        fail(`Failed to load schema for ${profileUrl}`);
+      }
     });
 
     test('new Patient has no fixed/pattern values', async () => {
@@ -186,7 +192,10 @@ describe('apply default values', () => {
 
     describe('fixed/pattern values within non-required extension slice entry', () => {
       test('new race extension entry', () => {
-        const sliceSchema = getProfile(raceExtensionUrl);
+        const sliceSchema = tryGetProfile(raceExtensionUrl) as InternalTypeSchema;
+        if (!sliceSchema) {
+          fail(`Failed to load schema for ${raceExtensionUrl}`);
+        }
         const result = applyDefaultValuesToElement(Object.create(null), sliceSchema.elements);
         expect(result).toEqual({ url: raceExtensionUrl });
       });
