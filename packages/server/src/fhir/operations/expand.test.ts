@@ -1,4 +1,4 @@
-import { ContentType, LOINC } from '@medplum/core';
+import { ContentType, SNOMED, LOINC } from '@medplum/core';
 import {
   CodeSystem,
   OperationOutcome,
@@ -435,20 +435,38 @@ describe('Updated implementation', () => {
       .send({
         resourceType: 'CodeSystem',
         status: 'active',
-        url: 'http://loinc.org',
+        url: SNOMED,
         content: 'complete',
-        concept: [{ code: '00000-3.14159', display: 'Test LOINC override' }],
+        concept: [{ code: '314159265', display: 'Test SNOMED override' }],
       });
     expect(res1.status).toEqual(201);
 
     const res2 = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}`)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'https://example.com/snomed-all' + randomUUID(),
+        compose: {
+          include: [
+            {
+              system: SNOMED,
+            },
+          ],
+        },
+      });
+    expect(res2.status).toBe(201);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(res2.body.url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
-    const coding = res2.body.expansion.contains[0];
-    expect(coding.system).toBe(LOINC);
-    expect(coding.code).toBe('00000-3.14159');
-    expect(coding.display).toEqual('Test LOINC override');
+    expect(res3.status).toBe(200);
+    const coding = res3.body.expansion.contains[0];
+    expect(coding.system).toBe(SNOMED);
+    expect(coding.code).toBe('314159265');
+    expect(coding.display).toEqual('Test SNOMED override');
   });
 
   test('Returns error when property filter is invalid for CodeSystem', async () => {
