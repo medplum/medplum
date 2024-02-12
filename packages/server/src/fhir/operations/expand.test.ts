@@ -389,4 +389,106 @@ describe('Updated implementation', () => {
       )?.display
     ).toEqual('unrelated friend');
   });
+
+  test('Returns error when CodeSystem not found', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'https://example.com/csdne' + randomUUID(),
+        expansion: {
+          timestamp: '2023-09-13T23:24:00.000Z',
+        },
+        compose: {
+          include: [
+            {
+              system: 'http://example.com/the-codesystem-does-not-exist',
+              concept: [
+                {
+                  code: '0',
+                },
+              ],
+            },
+          ],
+        },
+      });
+    expect(res1.status).toBe(201);
+    const url = res1.body.url;
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0].details.text).toEqual(
+      'CodeSystem http://example.com/the-codesystem-does-not-exist not found'
+    );
+  });
+
+  test('Prefers current Project version of common CodeSystem', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        url: 'http://loinc.org',
+        content: 'complete',
+        concept: [{ code: '00000-3.14159', display: 'Test LOINC override' }],
+      });
+    expect(res1.status).toEqual(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    const coding = res2.body.expansion.contains[0];
+    expect(coding.system).toBe(LOINC);
+    expect(coding.code).toBe('00000-3.14159');
+    expect(coding.display).toEqual('Test LOINC override');
+  });
+
+  test('Returns error when property filter is invalid for CodeSystem', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        url: 'http://example.com/custom-code-system',
+        content: 'complete',
+        hierarchyMeaning: 'grouped-by',
+        concept: [{ code: 'A', concept: [{ code: 'B' }] }],
+      });
+    expect(res1.status).toEqual(201);
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'https://example.com/invalid-hierarchy' + randomUUID(),
+        compose: {
+          include: [
+            {
+              system: 'http://example.com/custom-code-system',
+              filter: [{ property: 'concept', op: 'is-a', value: 'A' }],
+            },
+          ],
+        },
+      });
+    expect(res2.status).toBe(201);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(res2.body.url)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(400);
+    expect(res3.body.issue[0].details.text).toMatch(/invalid filter/i);
+  });
 });
