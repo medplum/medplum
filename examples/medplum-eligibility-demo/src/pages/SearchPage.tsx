@@ -1,12 +1,23 @@
-import { Filter, formatSearchQuery, Operator, parseSearchDefinition, SearchRequest, SortRule } from '@medplum/core';
+import { useDisclosure } from '@mantine/hooks';
+import {
+  Filter,
+  formatSearchQuery,
+  getReferenceString,
+  Operator,
+  parseSearchDefinition,
+  SearchRequest,
+  SortRule,
+} from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CreateCoverageModal } from '../components/CreateCoverageModal';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
   const location = useLocation();
   const navigate = useNavigate();
+  const [opened, handlers] = useDisclosure();
 
   const [search, setSearch] = useState<SearchRequest>();
 
@@ -36,7 +47,13 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Document>
-      <SearchControl search={search} />
+      <SearchControl
+        search={search}
+        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+        hideFilters={true}
+        onNew={() => handlers.open()}
+      />
+      <CreateCoverageModal opened={opened} onClose={handlers.close} />
     </Document>
   );
 }
