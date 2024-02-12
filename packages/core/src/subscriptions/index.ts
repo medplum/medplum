@@ -62,24 +62,17 @@ export class SubscriptionManager {
   private criteriaSubscriptionLookup: Map<string, string>; // Map<criteria, subscriptionId>
   private wsClosed: boolean;
 
-  constructor(medplum: MedplumClient, wsOrUrl: WebSocket | string) {
+  constructor(medplum: MedplumClient, wsUrl: URL | string) {
     if (!(medplum instanceof MedplumClient)) {
       throw new OperationOutcomeError(validationError('First arg of constructor should be a `MedplumClient`'));
     }
-    let ws: WebSocket;
-    if (typeof wsOrUrl === 'string') {
-      let url: string;
-      try {
-        url = new URL(wsOrUrl).toString();
-      } catch (_err) {
-        throw new OperationOutcomeError(validationError('Not a valid URL'));
-      }
-      ws = new WebSocket(url);
-    } else if (!(wsOrUrl instanceof WebSocket)) {
-      throw new OperationOutcomeError(validationError('Invalid WebSocket'));
-    } else {
-      ws = wsOrUrl;
+    let url: string;
+    try {
+      url = new URL(wsUrl).toString();
+    } catch (_err) {
+      throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
+    const ws = new WebSocket(url);
 
     this.medplum = medplum;
     this.ws = ws;

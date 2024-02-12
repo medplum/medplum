@@ -50,28 +50,26 @@ describe('SubscriptionManager', () => {
       );
     });
 
-    test('should throw if `wsOrUrl` is not a WebSocket or URL string', async () => {
-      // @ts-expect-error Invalid value for `wsOrUrl`
+    test('should throw if `wsUrl` is not a URL or URL string', async () => {
+      // @ts-expect-error Invalid value for `wsUrl`
       expect(() => new SubscriptionManager(medplum, undefined)).toThrow(OperationOutcomeError);
-      // @ts-expect-error Invalid value for `wsOrUrl`
-      expect(() => new SubscriptionManager(medplum, new URL('wss://example.com/ws/subscriptions-r4'))).toThrow(
+      // @ts-expect-error Invalid value for `wsUrl`
+      expect(() => new SubscriptionManager(medplum, new WebSocket('wss://example.com/ws/subscriptions-r4'))).toThrow(
         OperationOutcomeError
       );
     });
 
-    test('should not throw if `wsOrUrl` is a valid WebSocket', async () => {
-      const manager = new SubscriptionManager(medplum, new WebSocket('wss://example.com/ws/subscriptions-r4'));
-      expect(manager).toBeDefined();
+    test('should NOT throw if `wsUrl` is a VALID URL or URL string', async () => {
+      const manager1 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      expect(manager1).toBeDefined();
+      await wsServer.connected;
+
+      const manager2 = new SubscriptionManager(medplum, new URL('wss://example.com/ws/subscriptions-r4'));
+      expect(manager2).toBeDefined();
       await wsServer.connected;
     });
 
-    test('should NOT throw if `wsOrUrl` is a VALID URL string', async () => {
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
-      expect(manager).toBeDefined();
-      await wsServer.connected;
-    });
-
-    test('should throw if `wsOrUrl` is an INVALID URL string', () => {
+    test('should throw if `wsUrl` is an INVALID URL string', () => {
       expect(() => new SubscriptionManager(medplum, 'abc123')).toThrow(OperationOutcomeError);
     });
   });
@@ -407,8 +405,7 @@ describe('SubscriptionManager', () => {
     });
 
     test('should close websocket and emit `close` when called', async () => {
-      const ws = new WebSocket('wss://example.com/ws/subscriptions-r4');
-      const manager = new SubscriptionManager(medplum, ws);
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
       const criteriaEmitter = manager.addCriteria('Communication');
@@ -431,18 +428,16 @@ describe('SubscriptionManager', () => {
         );
 
         expect(() => manager.closeWebSocket()).not.toThrow();
-        expect(ws.readyState).toBe(WebSocket.CLOSING);
-
         Promise.all(promises).then(resolve).catch(reject);
       });
 
+      await wsServer.closed;
       expect(masterEvent?.type).toEqual('close');
       expect(criteriaEvent?.type).toEqual('close');
     });
 
     test('should not emit close twice', async () => {
-      const ws = new WebSocket('wss://example.com/ws/subscriptions-r4');
-      const manager = new SubscriptionManager(medplum, ws);
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
       const event = await new Promise<SubscriptionEventMap['close']>((resolve) => {
@@ -450,7 +445,6 @@ describe('SubscriptionManager', () => {
           resolve(event);
         });
         expect(() => manager.closeWebSocket()).not.toThrow();
-        expect(ws.readyState).toBe(WebSocket.CLOSING);
       });
       expect(event?.type).toEqual('close');
 
@@ -461,9 +455,10 @@ describe('SubscriptionManager', () => {
           reject(new Error('Expected not to call'));
         });
         expect(() => manager.closeWebSocket()).not.toThrow();
-        expect(ws.readyState).toBe(WebSocket.CLOSED);
         setTimeout(() => resolve(), 250);
       });
+
+      await wsServer.closed;
     });
   });
 
