@@ -30,6 +30,7 @@
     "@aws-sdk/cloudfront-signer": "3.496.0",
     "@aws-sdk/lib-storage": "3.504.0",
     "@aws-sdk/types": "3.502.0",
+    "@jenniferplusplus/opentelemetry-instrumentation-bullmq": "^0.5.0",
     "@medplum/core": "*",
     "@medplum/definitions": "*",
     "@medplum/fhir-router": "*",
