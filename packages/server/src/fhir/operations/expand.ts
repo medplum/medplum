@@ -161,12 +161,12 @@ function processInclude(systemExpressions: Expression[], include: ValueSetCompos
     return;
   }
 
-  const systemExpression = new Condition('system', '=', include.system as string);
+  const systemExpression = new Condition('system', '=', include.system);
 
   if (include.concept) {
     const codeExpressions: Expression[] = [];
     for (const concept of include.concept) {
-      codeExpressions.push(new Condition('code', '=', concept.code as string));
+      codeExpressions.push(new Condition('code', '=', concept.code));
     }
     systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
   } else {
@@ -243,50 +243,8 @@ async function includeInExpansion(
   }
 
   if (include.system && !include.concept) {
-    const codeSystems = await repo.searchResources<CodeSystem>({
-      resourceType: 'CodeSystem',
-      filters: [{ code: 'url', operator: Operator.EQUALS, value: include.system }],
-      sortRules: [
-        // Select highest version (by lexical sort -- no version is assumed to be "current")
-        { code: 'version', descending: true },
-        // Break ties by selecting more recently-updated resource (lexically -- no date is assumed to be current)
-        { code: 'date', descending: true },
-      ],
-    });
-
-    let codeSystem: CodeSystem;
-    if (!codeSystems.length) {
-      throw new OperationOutcomeError(
-        badRequest(`Code system ${include.system} not found`, 'ValueSet.compose.include.system')
-      );
-    } else if (codeSystems.length === 1) {
-      codeSystem = codeSystems[0];
-    } else {
-      codeSystem = codeSystems.sort((a: CodeSystem, b: CodeSystem) => {
-        // Select the non-base FHIR versions of resources before the base FHIR ones
-        // This is kind of a kludge, but is required to break ties because some CodeSystems (including SNOMED)
-        // don't have a version and the base spec version doesn't include a date (and so is always considered current)
-        if (a.meta?.project === r4ProjectId) {
-          return 1;
-        } else if (b.meta?.project === r4ProjectId) {
-          return -1;
-        }
-        return 0;
-      })[0];
-    }
-
-    let query = new SelectQuery('Coding')
-      .column('code')
-      .column('display')
-      .where('system', '=', codeSystem.id)
-      .limit(count + 1)
-      .offset(offset)
-      .orderBy('id');
-    if (filter) {
-      query.where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
-    }
-    query = addFilters(include.filter, query, codeSystem);
-    const results = await query.execute(repo.getDatabaseClient());
+    const codeSystem = await findCodeSystem(include.system, repo);
+    const results = await searchCodings(include, codeSystem, repo, offset, count, filter);
     expansion.push(...results.map(({ code, display }) => ({ system: codeSystem.url, code, display })));
   } else if (include.system && include.concept) {
     const concepts = await Promise.all(
@@ -296,6 +254,61 @@ async function includeInExpansion(
     );
     expansion.push(...(filter ? concepts.filter((c) => c.display?.includes(filter)) : concepts));
   }
+}
+
+async function findCodeSystem(url: string, repo: Repository): Promise<CodeSystem> {
+  const codeSystems = await repo.searchResources<CodeSystem>({
+    resourceType: 'CodeSystem',
+    filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
+    sortRules: [
+      // Select highest version (by lexical sort -- no version is assumed to be "current")
+      { code: 'version', descending: true },
+      // Break ties by selecting more recently-updated resource (lexically -- no date is assumed to be current)
+      { code: 'date', descending: true },
+    ],
+  });
+
+  if (!codeSystems.length) {
+    throw new OperationOutcomeError(badRequest(`Code system ${url} not found`, 'ValueSet.compose.include.system'));
+  } else if (codeSystems.length === 1) {
+    return codeSystems[0];
+  } else {
+    codeSystems.sort((a: CodeSystem, b: CodeSystem) => {
+      // Select the non-base FHIR versions of resources before the base FHIR ones
+      // This is kind of a kludge, but is required to break ties because some CodeSystems (including SNOMED)
+      // don't have a version and the base spec version doesn't include a date (and so is always considered current)
+      if (a.meta?.project === r4ProjectId) {
+        return 1;
+      } else if (b.meta?.project === r4ProjectId) {
+        return -1;
+      }
+      return 0;
+    });
+    return codeSystems[0];
+  }
+}
+
+async function searchCodings(
+  include: ValueSetComposeInclude,
+  codeSystem: CodeSystem,
+  repo: Repository,
+  offset: number,
+  count: number,
+  filter?: string
+): Promise<{ code: string; display: string }[]> {
+  let query = new SelectQuery('Coding')
+    .column('code')
+    .column('display')
+    .where('system', '=', codeSystem.id)
+    .limit(count + 1)
+    .offset(offset)
+    .orderBy('id');
+  if (filter) {
+    query.where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
+  }
+  query = addFilters(include.filter, query, codeSystem);
+  const results = await query.execute(repo.getDatabaseClient());
+  return results.map((r) => ({ code: r.code, display: r.display }));
 }
 
 function addFilters(
@@ -317,41 +330,39 @@ function addFilters(
           )
         );
       }
-      let properties = codeSystem.property?.filter((p) => p.uri === parentProperty);
-      if (!properties?.length) {
+      let property = codeSystem.property?.find((p) => p.uri === parentProperty);
+      if (!property) {
         // Implicit parent property for hierarchical CodeSystems
-        properties = [{ code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' }];
+        property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
       }
 
-      for (const property of properties) {
-        const propertyTable = query.getNextJoinAlias();
-        query.innerJoin(
-          'Coding_Property',
-          propertyTable,
-          new Conjunction([new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))])
-        );
+      const propertyTable = query.getNextJoinAlias();
+      query.innerJoin(
+        'Coding_Property',
+        propertyTable,
+        new Conjunction([new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))])
+      );
 
-        const csPropertyTable = query.getNextJoinAlias();
-        query.innerJoin(
-          'CodeSystem_Property',
-          csPropertyTable,
-          new Conjunction([
-            new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-            new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-          ])
-        );
+      const csPropertyTable = query.getNextJoinAlias();
+      query.innerJoin(
+        'CodeSystem_Property',
+        csPropertyTable,
+        new Conjunction([
+          new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+          new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+        ])
+      );
 
-        const targetTable = query.getNextJoinAlias();
-        query.leftJoin(
-          'Coding',
-          targetTable,
-          new Conjunction([
-            new Condition(new Column(propertyTable, 'target'), '=', new Column(targetTable, 'id')),
-            new Condition(new Column(targetTable, 'code'), '=', filter.value),
-          ])
-        );
-        query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '=' : '!=', null);
-      }
+      const targetTable = query.getNextJoinAlias();
+      query.leftJoin(
+        'Coding',
+        targetTable,
+        new Conjunction([
+          new Condition(new Column(propertyTable, 'target'), '=', new Column(targetTable, 'id')),
+          new Condition(new Column(targetTable, 'code'), '=', filter.value),
+        ])
+      );
+      query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '=' : '!=', null);
     }
   }
 

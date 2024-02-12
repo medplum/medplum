@@ -383,7 +383,6 @@ describe('Updated implementation', () => {
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    console.log(res.body.expansion.contains);
     expect(
       expansion.contains?.find(
         (c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode' && c.code === 'FRND'
