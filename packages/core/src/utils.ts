@@ -606,7 +606,7 @@ function deepIncludesObject(value: { [key: string]: unknown }, pattern: { [key: 
  * @returns A deep clone of the input.
  */
 export function deepClone<T>(input: T): T {
-  return JSON.parse(JSON.stringify(input)) as T;
+  return input === undefined ? input : (JSON.parse(JSON.stringify(input)) as T);
 }
 
 /**

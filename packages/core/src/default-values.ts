@@ -53,11 +53,11 @@ export function applyDefaultValuesToElement(
   for (const [elementKey, element] of Object.entries(elements)) {
     if (key === undefined || key === elementKey) {
       applyFixedOrPatternValue(existingValue, elementKey, element, elements);
-    } else if (elementKey.startsWith(key + '.')) {
-      const keyDifference = getPathDifference(key, elementKey);
-      if (keyDifference === undefined) {
-        throw new Error(`Expected ${elementKey} to be prefixed by ${key}`);
-      }
+      continue;
+    }
+
+    const keyDifference = getPathDifference(key, elementKey);
+    if (keyDifference !== undefined) {
       applyFixedOrPatternValue(existingValue, keyDifference, element, elements);
     }
   }
@@ -139,6 +139,10 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
+    // eld-6: Fixed value may only be specified if there is one type
+    // eld-7: Pattern may only be specified if there is one type
+    // It may be possible to optimize this by checking element.type.length > 1 and short-circuiting
+
     const parentValues = this.value.values;
     const parentPath = this.value.path;
     const key = getPathDifference(parentPath, path);
@@ -152,26 +156,10 @@ class DefaultValueVisitor implements SchemaVisitor {
         continue;
       }
 
-      // eld-6: Fixed value may only be specified if there is one type
-      // eld-7: Pattern may only be specified if there is one type
-      if (element.type.length > 1) {
-        continue;
-      }
-
       const parentArray: any[] = Array.isArray(parentValue) ? parentValue : [parentValue];
       for (const parent of parentArray) {
-        const existingValue = getValueAtKey(parent, key, element, elementsContext.elements);
-        if (element.min > 0 && existingValue === undefined) {
-          if (isComplexTypeCode(element.type[0].code)) {
-            if (element.isArray) {
-              setValueAtKey(parent, [Object.create(null)], key, element);
-            } else {
-              setValueAtKey(parent, Object.create(null), key, element);
-            }
-          }
-        }
+        applyMinimums(parent, key, element, elementsContext.elements);
         applyFixedOrPatternValue(parent, key, element, elementsContext.elements);
-
         const elementValue = getValueAtKey(parent, key, element, elementsContext.elements);
         if (elementValue !== undefined) {
           elementValues.push(elementValue);
@@ -191,12 +179,13 @@ class DefaultValueVisitor implements SchemaVisitor {
     if (!elementValueContext) {
       throw new Error('Expected value context to exist when exiting element');
     }
-    for (const parentValue of this.value.values) {
-      const key = getPathDifference(this.value.path, path);
-      if (key === undefined) {
-        throw new Error(`Expected ${path} to be prefixed by ${this.value.path}`);
-      }
 
+    const key = getPathDifference(this.value.path, path);
+    if (key === undefined) {
+      throw new Error(`Expected ${path} to be prefixed by ${this.value.path}`);
+    }
+
+    for (const parentValue of this.value.values) {
       const elementValue = getValueAtKey(parentValue, key, element, elementsContext.elements);
 
       // remove empty items from arrays
@@ -229,27 +218,7 @@ class DefaultValueVisitor implements SchemaVisitor {
         throw new Error('Expected array value for sliced element');
       }
 
-      const matchingItems: any[] = [];
-      for (const arrayItem of elementValue) {
-        let sliceName: string | undefined = arrayItem[SLICE_NAME_KEY];
-
-        if (!sliceName) {
-          sliceName = getValueSliceName(arrayItem, [slice], slicing.discriminator, this.schema.url);
-        }
-
-        if (sliceName === slice.name) {
-          matchingItems.push(arrayItem);
-        }
-      }
-
-      // Make sure at least slice.min values exist
-      for (let i = matchingItems.length; i < slice.min; i++) {
-        if (isComplexTypeCode(slice.type[0].code)) {
-          const emptySliceValue = Object.create(null);
-          elementValue.push(emptySliceValue);
-          matchingItems.push(emptySliceValue);
-        }
-      }
+      const matchingItems: any[] = this.getMatchingSliceValues(elementValue, slice, slicing);
       sliceValues.push(matchingItems);
     }
 
@@ -258,6 +227,31 @@ class DefaultValueVisitor implements SchemaVisitor {
       path,
       values: sliceValues,
     });
+  }
+
+  getMatchingSliceValues(elementValue: any[], slice: SliceDefinitionWithTypes, slicing: VisitorSlicingRules): any[] {
+    const matchingItems: any[] = [];
+    for (const arrayItem of elementValue) {
+      const sliceName: string | undefined =
+        arrayItem[SLICE_NAME_KEY] ?? getValueSliceName(arrayItem, [slice], slicing.discriminator, this.schema.url);
+
+      if (sliceName === slice.name) {
+        matchingItems.push(arrayItem);
+      }
+    }
+
+    // Make sure at least slice.min values exist
+    for (let i = matchingItems.length; i < slice.min; i++) {
+      if (isComplexTypeCode(slice.type[0].code)) {
+        const emptySliceValue = Object.create(null);
+        matchingItems.push(emptySliceValue);
+
+        // push onto input array so that it propagates upwards as well
+        elementValue.push(emptySliceValue);
+      }
+    }
+
+    return matchingItems;
   }
 
   onExitSlice(): void {
@@ -278,6 +272,25 @@ class DefaultValueVisitor implements SchemaVisitor {
 
   getDefaultValue(): any {
     return this.rootValue;
+  }
+}
+
+function applyMinimums(
+  parent: any,
+  key: string,
+  element: InternalSchemaElement,
+  elements: Record<string, InternalSchemaElement>
+): void {
+  const existingValue = getValueAtKey(parent, key, element, elements);
+
+  if (element.min > 0 && existingValue === undefined) {
+    if (isComplexTypeCode(element.type[0].code)) {
+      if (element.isArray) {
+        setValueAtKey(parent, [Object.create(null)], key, element);
+      } else {
+        setValueAtKey(parent, Object.create(null), key, element);
+      }
+    }
   }
 }
 
@@ -306,21 +319,9 @@ function getValueAtKey(
   element: InternalSchemaElement,
   elements: Record<string, InternalSchemaElement>
 ): any {
-  if (!isPopulated(value)) {
-    return undefined;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((valueItem) => getValueAtKey(valueItem, key, element, elements));
-  }
-
-  if (!isObject(value)) {
-    throw new Error('Expected value to be an array or object');
-  }
-
   const keyParts = key.split('.');
   let last: any = value;
-  let answer;
+  let answer: any;
   for (let i = 0; i < keyParts.length; i++) {
     let keyPart = keyParts[i];
     if (keyPart.includes('[x]')) {
@@ -342,23 +343,21 @@ function getValueAtKey(
 
     // intermediate key part
     if (Array.isArray(last)) {
-      last = last.map((lastItem) => {
-        return lastItem[keyPart];
-      });
+      last = last.map((lastItem) => lastItem[keyPart]);
     } else if (isObject(last)) {
-      if (!(keyPart in last) || last[keyPart] === undefined) {
+      if (last[keyPart] === undefined) {
         return undefined;
       }
       last = last[keyPart];
     } else {
-      throw new Error('Expected value at intermediate key part to be an array or object');
+      return undefined;
     }
   }
 
   return answer;
 }
 
-function applyFixedOrPatternValue(
+export function applyFixedOrPatternValue(
   inputValue: any,
   key: string,
   element: InternalSchemaElement,
@@ -409,35 +408,21 @@ function applyFixedOrPatternValue(
 }
 
 function applyPattern(existingValue: any, pattern: any): any {
-  try {
-    const result = existingValue === undefined ? undefined : deepClone(existingValue);
-
-    if (Array.isArray(pattern)) {
-      if (Array.isArray(existingValue) || existingValue === undefined || existingValue === null) {
-        if ((existingValue?.length ?? 0) > 0) {
-          throw new Error(
-            'Cannot yet apply a pattern to a non-empty array since that would require considering cardinality and slicing'
-          );
-        } else {
-          return deepClone(pattern);
-        }
-      } else {
-        throw new Error('Type of value incompatible with array pattern');
-      }
-    } else if (isObject(pattern)) {
-      if (isObject(existingValue) || existingValue === undefined || existingValue === null) {
-        const resultObj = (result ?? Object.create(null)) as { [key: string]: any };
-        for (const key of Object.keys(pattern)) {
-          resultObj[key] = applyPattern(resultObj[key], pattern[key]);
-        }
-        return resultObj;
-      } else {
-        throw new Error('Type of value incompatible with object pattern');
-      }
+  if (Array.isArray(pattern) && (Array.isArray(existingValue) || existingValue === undefined)) {
+    if ((existingValue?.length ?? 0) > 0) {
+      // Cannot yet apply a pattern to a non-empty array since that would require considering cardinality and slicing
+      return existingValue;
     }
-
-    throw new Error('Unexpected type of pattern');
-  } catch (ex) {
-    return existingValue;
+    return deepClone(pattern);
+  } else if (isObject(pattern)) {
+    if ((isObject(existingValue) && !Array.isArray(existingValue)) || existingValue === undefined) {
+      const resultObj = (deepClone(existingValue) ?? Object.create(null)) as { [key: string]: any };
+      for (const key of Object.keys(pattern)) {
+        resultObj[key] = applyPattern(resultObj[key], pattern[key]);
+      }
+      return resultObj;
+    }
   }
+
+  return existingValue;
 }

@@ -13,6 +13,7 @@ import {
   applyDefaultValuesToResource,
   applyDefaultValuesToElementWithVisitor,
   getDefaultValuesForNewSliceEntry,
+  applyFixedOrPatternValue,
 } from './default-values';
 import { HTTP_HL7_ORG } from './constants';
 import { readJson } from '@medplum/definitions';
@@ -57,7 +58,7 @@ describe('apply default values', () => {
   function loadProfiles(profileUrls: string[]): void {
     const sds: StructureDefinition[] = profileUrls
       .map((profileUrl) => {
-        return (USCoreStructureDefinitions as StructureDefinition[]).find((sd) => sd.url === profileUrl);
+        return USCoreStructureDefinitions.find((sd) => sd.url === profileUrl);
       })
       .filter(isStructureDefinition);
 
@@ -196,6 +197,103 @@ describe('apply default values', () => {
         const result = getDefaultValuesForNewSliceEntry('extension', slice, slicedElement.slicing, schema);
         expect(result).toEqual({ url: raceExtensionUrl });
       });
+    });
+
+    test('applyFixedOrPatternValue with intermediate elements undefined', () => {
+      const elem = schema.elements['identifier.value'];
+      expect(elem).toBeDefined();
+      expect(elem.fixed).toBeUndefined();
+      // define a fake fixed value
+      elem.fixed = { type: 'string', value: '42' };
+      const result = applyFixedOrPatternValue({}, 'identifier.value', elem, schema.elements);
+      expect(result).toEqual({ identifier: [{ value: '42' }] });
+
+      delete elem.fixed;
+      expect(elem.fixed).toBeUndefined();
+    });
+
+    test('applyFixedOrPatternValue with intermediate elements undefined', () => {
+      const elem = schema.elements['identifier.value'];
+      expect(elem).toBeDefined();
+      expect(elem.fixed).toBeUndefined();
+      // define a fake fixed value
+      elem.fixed = { type: 'string', value: '42' };
+      const result = applyFixedOrPatternValue({}, 'identifier.value', elem, schema.elements);
+      expect(result).toEqual({ identifier: [{ value: '42' }] });
+
+      delete elem.fixed;
+      expect(elem.fixed).toBeUndefined();
+    });
+
+    test('applyFixedOrPatternValue on choice of types', () => {
+      const key = 'multipleBirth[x]';
+      const originalElem = schema.elements[key];
+      expect(originalElem).toBeDefined();
+
+      schema.elements[key] = {
+        ...originalElem,
+        fixed: {
+          type: 'integer',
+          value: 2,
+        },
+        type: [
+          {
+            code: 'integer',
+            targetProfile: undefined,
+            profile: undefined,
+          },
+        ],
+      };
+
+      const elem = schema.elements[key];
+      const result = applyFixedOrPatternValue({}, key, elem, schema.elements);
+      expect(result).toEqual({ multipleBirthInteger: 2 });
+
+      schema.elements[key] = originalElem;
+    });
+
+    test('applyFixedOrPatternValue with non-empty array', () => {
+      const key = 'maritalStatus';
+      const elem = schema.elements[key];
+      expect(elem).toBeDefined();
+      expect(elem.pattern).toBeUndefined();
+
+      // define a fake pattern value
+      elem.pattern = {
+        type: 'CodeableConcept',
+        value: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus',
+              code: 'UNK',
+            },
+          ],
+        },
+      };
+
+      expect(applyFixedOrPatternValue({}, key, elem, schema.elements)).toEqual({
+        maritalStatus: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus', code: 'UNK' }] },
+      });
+
+      expect(applyFixedOrPatternValue({ maritalStatus: { coding: [] } }, key, elem, schema.elements)).toEqual({
+        maritalStatus: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus', code: 'UNK' }] },
+      });
+
+      expect(applyFixedOrPatternValue({ maritalStatus: { coding: [{}] } }, key, elem, schema.elements)).toEqual({
+        maritalStatus: { coding: [{}] },
+      });
+
+      // degenerate case; maritalStatus should NOT be an array
+      expect(applyFixedOrPatternValue({ maritalStatus: [] }, key, elem, schema.elements)).toEqual({
+        maritalStatus: [],
+      });
+
+      // unexpected pattern value type
+      elem.pattern = { ...elem.pattern, value: 42 };
+      expect(applyFixedOrPatternValue({}, key, elem, schema.elements)).toEqual({});
+
+      delete elem.pattern;
+      expect(elem.pattern).toBeUndefined();
     });
   });
 });

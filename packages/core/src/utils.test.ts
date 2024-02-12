@@ -638,6 +638,8 @@ describe('Core Utils', () => {
     const output = deepClone(input);
     expect(output).toEqual(input);
     expect(output).not.toBe(input);
+
+    expect(deepClone(undefined)).toBeUndefined();
   });
 
   test('Capitalize', () => {
