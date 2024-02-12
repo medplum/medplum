@@ -13,9 +13,6 @@ export type SubscriptionEventMap = {
   heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
 
-const kAddCriteria = Symbol.for('medplum.SubscriptionEmitter.addCriteria');
-const kRemoveCriteria = Symbol.for('medplum.SubscriptionEmitter.removeCriteria');
-
 /**
  * An `EventTarget` that emits events when new subscription notifications come in over WebSockets.
  *
@@ -39,10 +36,18 @@ export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> 
   getCriteria(): Set<string> {
     return this.criteria;
   }
-  [kAddCriteria](criteria: string): void {
+  /**
+   * @internal
+   * @param criteria - The criteria to add to this `SubscriptionEmitter`.
+   */
+  _addCriteria(criteria: string): void {
     this.criteria.add(criteria);
   }
-  [kRemoveCriteria](criteria: string): void {
+  /**
+   * @internal
+   * @param criteria - The criteria to remove from this `SubscriptionEmitter`.
+   */
+  _removeCriteria(criteria: string): void {
     this.criteria.delete(criteria);
   }
 }
@@ -182,7 +187,7 @@ export class SubscriptionManager {
 
   addCriteria(criteria: string): SubscriptionEmitter {
     if (this.masterSubEmitter) {
-      this.masterSubEmitter[kAddCriteria](criteria);
+      this.masterSubEmitter._addCriteria(criteria);
     }
     if (this.subEmitters.has(criteria)) {
       this.refCounts.set(criteria, (this.refCounts.get(criteria) as number) + 1);
@@ -228,7 +233,7 @@ export class SubscriptionManager {
     const disconnectEvent = { type: 'disconnect', payload: { subscriptionId } } as SubscriptionEventMap['disconnect'];
     // Remove from master
     if (this.masterSubEmitter) {
-      this.masterSubEmitter[kRemoveCriteria](criteria);
+      this.masterSubEmitter._removeCriteria(criteria);
 
       // Emit disconnect on master
       this.masterSubEmitter.dispatchEvent(disconnectEvent);

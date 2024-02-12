@@ -9,9 +9,6 @@ import { createReference, sleep } from '../utils';
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
 
-const kAddCriteria = Symbol.for('medplum.SubscriptionEmitter.addCriteria');
-const kRemoveCriteria = Symbol.for('medplum.SubscriptionEmitter.removeCriteria');
-
 const medplum = new MockMedplumClient();
 medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
 
@@ -19,21 +16,17 @@ describe('SubscriptionEmitter', () => {
   test('getCriteria()', () => {
     const emitter = new SubscriptionEmitter();
     expect(emitter.getCriteria().size).toEqual(0);
-    // @ts-expect-error Symbol for `addCriteria` is not on public interface
-    emitter[kAddCriteria]('Communication');
+    emitter._addCriteria('Communication');
     expect(emitter.getCriteria().size).toEqual(1);
 
     // Should be able to add again without changing count
-    // @ts-expect-error Symbol for `addCriteria` is not on public interface
-    emitter[kAddCriteria]('Communication');
+    emitter._addCriteria('Communication');
     expect(emitter.getCriteria().size).toEqual(1);
 
-    // @ts-expect-error Symbol for `addCriteria` is not on public interface
-    emitter[kAddCriteria]('DiagnosticReport');
+    emitter._addCriteria('DiagnosticReport');
     expect(emitter.getCriteria().size).toEqual(2);
 
-    // @ts-expect-error Symbol for `removeCriteria` is not on public interface
-    emitter[kRemoveCriteria]('DiagnosticReport');
+    emitter._removeCriteria('DiagnosticReport');
     expect(emitter.getCriteria().size).toEqual(1);
   });
 });
