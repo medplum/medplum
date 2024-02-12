@@ -2797,20 +2797,28 @@ export class MedplumClient extends EventTarget {
 
     const contentType = response.headers.get('content-type');
     const isJson = contentType?.includes('json');
+
     if (response.status === 404 && !isJson) {
+      // Special case for non-JSON 404 responses
+      // In the common case, the 404 response will include an OperationOutcome in JSON with additional details.
+      // In the non-JSON case, we can't parse the response, so we'll just throw a generic "Not Found" error.
       throw new OperationOutcomeError(notFound);
     }
 
     const obj = await this.parseBody(response, isJson);
-    const contentLocation = await tryGetContentLocation(response, obj);
+
     const redirectMode = options.redirect ?? this.options.redirect;
-    if ((response.status === 200 || response.status === 201) && contentLocation && redirectMode === 'follow') {
-      // Follow redirect
-      return this.request('GET', contentLocation, { ...options, body: undefined });
+    if ((response.status === 200 || response.status === 201) && redirectMode === 'follow') {
+      const contentLocation = await tryGetContentLocation(response, obj);
+      if (contentLocation) {
+        // Follow redirect
+        return this.request('GET', contentLocation, { ...options, body: undefined });
+      }
     }
 
     const preferMode = (options.headers as Record<string, string> | undefined)?.['Prefer'];
     if (response.status === 202 && preferMode === 'respond-async') {
+      const contentLocation = await tryGetContentLocation(response, obj);
       const statusUrl = contentLocation ?? state.statusUrl;
       if (statusUrl) {
         return this.pollStatus(statusUrl, options, state);

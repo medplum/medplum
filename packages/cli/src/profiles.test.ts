@@ -32,7 +32,13 @@ describe('Profiles', () => {
       if (url.includes('/$export?_since=200')) {
         return {
           status: 200,
-          headers: { get: () => ContentType.FHIR_JSON },
+          headers: {
+            get(name: string): string | undefined {
+              return {
+                'content-type': ContentType.FHIR_JSON,
+              }[name];
+            },
+          },
           json: jest.fn(async () => {
             return {
               resourceType: 'OperationOutcome',
@@ -85,7 +91,13 @@ describe('Profiles', () => {
           count++;
           return {
             status: 202,
-            headers: { get: () => ContentType.FHIR_JSON },
+            headers: {
+              get(name: string): string | undefined {
+                return {
+                  'content-type': ContentType.FHIR_JSON,
+                }[name];
+              },
+            },
             json: jest.fn(async () => {
               return {};
             }),
@@ -95,7 +107,13 @@ describe('Profiles', () => {
 
       return {
         status: 200,
-        headers: { get: () => ContentType.FHIR_JSON },
+        headers: {
+          get(name: string): string | undefined {
+            return {
+              'content-type': ContentType.FHIR_JSON,
+            }[name];
+          },
+        },
         json: jest.fn(async () => ({
           transactionTime: '2023-05-18T22:55:31.280Z',
           request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
