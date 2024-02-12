@@ -1,9 +1,9 @@
-import { generateId } from '@medplum/core';
+import { SubscriptionEmitter, generateId } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import 'jest-websocket-mock';
-import { ReactNode, useState } from 'react';
+import { ReactNode, StrictMode, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { useSubscription } from './useSubscription';
@@ -32,7 +32,7 @@ describe('useSubscription()', () => {
   let medplum: MockClient;
 
   beforeAll(() => {
-    console.error = jest.fn();
+    medplum = new MockClient();
     jest.useFakeTimers();
   });
 
@@ -40,16 +40,24 @@ describe('useSubscription()', () => {
     jest.useRealTimers();
   });
 
-  function setup(children: ReactNode): {
+  function setup(
+    children: ReactNode,
+    strict = false
+  ): {
     unmount: ReturnType<typeof render>['unmount'];
     rerender: (element: JSX.Element) => void;
   } {
-    medplum = new MockClient();
-    const wrapper = (children: ReactNode): JSX.Element => (
+    const defaultWrapper = (children: ReactNode): JSX.Element => (
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
       </MemoryRouter>
     );
+
+    const strictWrapper = (children: ReactNode): JSX.Element => {
+      return <StrictMode>{defaultWrapper(children)}</StrictMode>;
+    };
+
+    const wrapper = strict ? strictWrapper : defaultWrapper;
     const { unmount, rerender } = render(wrapper(children));
     return { unmount, rerender: (element: JSX.Element) => rerender(wrapper(element)) };
   }
@@ -80,19 +88,36 @@ describe('useSubscription()', () => {
   test('Mount and remount before debounce timeout', async () => {
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
     const { rerender } = setup(<RenderToggleComponent render={true} />);
-
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+
+    const emitter = medplum.getSubscriptionManager().getEmitter('Communication') as SubscriptionEmitter;
+    expect(emitter).toBeInstanceOf(SubscriptionEmitter);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+
     rerender(<RenderToggleComponent render={false} />);
     jest.advanceTimersByTime(1000);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+
     rerender(<RenderToggleComponent render={true} />);
-    jest.advanceTimersByTime(4000);
+    jest.advanceTimersByTime(5000);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+    expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
 
     // Make sure we fully unmount later when actually unmounting
     rerender(<RenderToggleComponent render={false} />);
     jest.advanceTimersByTime(5000);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
+  });
+
+  test('Debounces properly in StrictMode', async () => {
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
+    const emitter = medplum.getSubscriptionManager().addCriteria('Communication');
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+
+    setup(<TestComponent />, true);
+    jest.advanceTimersByTime(5000);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+    expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
   });
 
   test('Callback changed', async () => {

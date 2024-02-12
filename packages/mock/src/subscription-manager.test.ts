@@ -30,6 +30,8 @@ describe('MockSubscriptionManager', () => {
     expect(manager.getCriteriaCount()).toEqual(1);
     manager.removeCriteria('Communication');
     expect(manager.getCriteriaCount()).toEqual(0);
+    expect(() => manager.removeCriteria('Communucation')).not.toThrow();
+    expect(manager.getCriteriaCount()).toEqual(0);
   });
 
   test('getMasterEmitter()', () => {
@@ -57,5 +59,22 @@ describe('MockSubscriptionManager', () => {
       type: 'message',
       payload: { resourceType: 'Bundle', id: bundleId },
     } as SubscriptionEventMap['message']);
+  });
+
+  test('closeWebSockets()', async () => {
+    const receivedEvent = await new Promise<SubscriptionEventMap['close']>((resolve) => {
+      manager.getMasterEmitter().addEventListener('close', (event) => {
+        resolve(event);
+      });
+      manager.closeWebSocket();
+    });
+    expect(receivedEvent?.type).toEqual('close');
+  });
+
+  test('getEmitter()', async () => {
+    expect(manager.getEmitter('Subscription')).toBeUndefined();
+    const emitter = manager.addCriteria('Subscription');
+    expect(emitter).toBeInstanceOf(SubscriptionEmitter);
+    expect(manager.getEmitter('Subscription')).toBe(emitter);
   });
 });

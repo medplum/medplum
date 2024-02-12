@@ -7,8 +7,8 @@ export class MockSubscriptionManager extends SubscriptionManager {
 
   constructor(medplum: MedplumClient, _wsOrUrl: WebSocket | string) {
     super(medplum, new WebSocket('wss://example.com/ws/subscriptions-r4'));
-    this.emitters = new Map();
-    this.counts = new Map();
+    this.emitters = new Map<string, SubscriptionEmitter>();
+    this.counts = new Map<string, number>();
     this.masterEmitter = new SubscriptionEmitter();
   }
 
@@ -51,5 +51,11 @@ export class MockSubscriptionManager extends SubscriptionManager {
     event: SubscriptionEventMap[K]
   ): void {
     this.emitters.get(criteria)?.dispatchEvent(event);
+  }
+
+  // Guess this has to do with the unique symbols on the type definition...
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  getEmitter(criteria: string): SubscriptionEmitter | undefined {
+    return this.emitters.get(criteria);
   }
 }
