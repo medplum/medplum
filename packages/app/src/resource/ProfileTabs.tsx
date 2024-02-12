@@ -3,11 +3,11 @@ import { Resource } from '@medplum/fhirtypes';
 import { SupportedProfileStructureDefinition, isSupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
 import { IconCircleFilled } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-export type ProfileTabsProps = {
-  resource: Resource;
-  currentProfile: SupportedProfileStructureDefinition | undefined;
-  onChange: (newProfile: SupportedProfileStructureDefinition) => void;
-};
+export interface ProfileTabsProps {
+  readonly resource: Resource;
+  readonly currentProfile: SupportedProfileStructureDefinition | undefined;
+  readonly onChange: (newProfile: SupportedProfileStructureDefinition) => void;
+}
 
 export function ProfileTabs({ resource, currentProfile, onChange }: ProfileTabsProps): JSX.Element {
   const resourceType = resource.resourceType;

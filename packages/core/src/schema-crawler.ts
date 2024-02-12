@@ -115,7 +115,7 @@ export class SchemaCrawler {
 
     const rootContext = buildElementsContext({
       parentContext: undefined,
-      path: this.rootSchema.type as string,
+      path: this.rootSchema.type,
       elements: elements ?? this.rootSchema.elements,
       profileUrl: this.rootSchema.name === this.rootSchema.type ? undefined : this.rootSchema.url,
     });
@@ -313,13 +313,12 @@ function createElementTree(elements: Record<string, InternalSchemaElement>): Ele
     currentNode.children.push(newNode);
   }
 
-  const elementEntries = Object.entries(elements);
   /*
    By sorting beforehand, we guarantee that no false root nodes are created.
    e.g. if 'a.b' were to be added to the tree before 'a', 'a.b' would be made a
    root node when it should be a child of 'a'.
   */
-  elementEntries.sort();
+  const elementEntries = Object.entries(elements).toSorted((a, b) => a[0].localeCompare(b[0]));
 
   for (const [key, element] of elementEntries) {
     const newNode: ElementNode = { key, element, children: [] };
