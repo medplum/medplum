@@ -269,7 +269,11 @@ export class MockFetchClient {
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
       headers: {
-        get: () => ContentType.FHIR_JSON,
+        get(name: string): string | undefined {
+          return {
+            'content-type': ContentType.FHIR_JSON,
+          }[name];
+        },
       } as unknown as Headers,
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
