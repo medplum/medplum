@@ -3518,10 +3518,7 @@ export class MedplumClient extends EventTarget {
    */
   getSubscriptionManager(): SubscriptionManager {
     if (!this.subscriptionManager) {
-      this.subscriptionManager = new SubscriptionManager(
-        this,
-        new WebSocket(getWebSocketUrl('/ws/subscriptions-r4', this.baseUrl))
-      );
+      this.subscriptionManager = new SubscriptionManager(this, getWebSocketUrl('/ws/subscriptions-r4', this.baseUrl));
     }
     return this.subscriptionManager;
   }
