@@ -11,6 +11,7 @@ type TraceparentOpts = {
   parentId: string;
   flags?: hex | twohex;
 };
+
 export class Traceparent {
   version?: twohex;
   traceId: string;

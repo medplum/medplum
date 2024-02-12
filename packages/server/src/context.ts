@@ -111,7 +111,7 @@ const traceIdHeaderMap: {
 } as const;
 const traceIdHeaders = Object.entries(traceIdHeaderMap);
 
-const getTraceId = (req: Request): string => {
+const getTraceId = (req: Request): string | undefined => {
   for (const [headerKey, isTraceId] of traceIdHeaders) {
     const value = req.header(headerKey);
     if (value && isTraceId(value)) {
@@ -119,12 +119,12 @@ const getTraceId = (req: Request): string => {
     }
   }
 
-  return traceparentFromSpan(trace.getActiveSpan())?.toString() ?? randomUUID();
+  return traceparentFromSpan(trace.getActiveSpan())?.toString();
 };
 
 function requestIds(req: Request): { requestId: string; traceId: string } {
   const requestId = randomUUID();
-  const traceId = getTraceId(req);
+  const traceId = getTraceId(req) ?? randomUUID();
 
   return { requestId, traceId };
 }
