@@ -22,7 +22,8 @@ export function mockFetchResponse(status: number, body: any, headers?: Record<st
     for (const [key, value] of Object.entries(headers)) {
       headersMap.set(key, value);
     }
-  } else {
+  }
+  if (!headersMap.has('content-type')) {
     headersMap.set('content-type', ContentType.FHIR_JSON);
   }
   return {

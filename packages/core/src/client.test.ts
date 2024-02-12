@@ -2440,17 +2440,11 @@ describe('Client', () => {
       let count = 0;
       fetch = jest.fn(async (url) => {
         if (url.includes('/$export?_since=200')) {
-          return mockFetchResponse(200, accepted('bulkdata/id/status'), {
-            'content-type': ContentType.FHIR_JSON,
-            'content-location': 'bulkdata/id/status',
-          });
+          return mockFetchResponse(200, accepted('bulkdata/id/status'), { 'content-location': 'bulkdata/id/status' });
         }
 
         if (url.includes('/$export')) {
-          return mockFetchResponse(202, accepted('bulkdata/id/status'), {
-            'content-type': ContentType.FHIR_JSON,
-            'content-location': 'bulkdata/id/status',
-          });
+          return mockFetchResponse(202, accepted('bulkdata/id/status'), { 'content-location': 'bulkdata/id/status' });
         }
 
         if (url.includes('bulkdata/id/status')) {
@@ -2635,7 +2629,7 @@ describe('Client', () => {
             // Report status complete, and send the location of the bulk export
             expect(options.method).toBeUndefined();
             expect(url).toBe('https://api.medplum.com/' + statusUrl);
-            return mockFetchResponse(201, {}, { 'content-type': 'application/json', location: locationUrl });
+            return mockFetchResponse(201, {}, { location: locationUrl });
           case 8:
             // What a journey! Finally, we can get the contents of the bulk export
             expect(options.method).toBeUndefined();
