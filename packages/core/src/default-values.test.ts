@@ -48,8 +48,6 @@ function getSlice(schema: InternalTypeSchema, slicedElementKey: string, sliceNam
   return slice;
 }
 
-const DEBUG = false;
-
 describe('apply default values', () => {
   let USCoreStructureDefinitions: StructureDefinition[];
   beforeAll(() => {
@@ -85,7 +83,7 @@ describe('apply default values', () => {
       // casting to avoid specifying any required (according to typescript) fields
       // since populating them is the point of the code being tested
       const resource: Observation = { resourceType: 'Observation' } as Observation;
-      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: DEBUG });
+      const withDefaults = applyDefaultValuesToResource(resource, schema);
 
       // fixed values in Observation.component.value[x] excluded since value[x] itself is optional (min === 0)
       // In other words, { valueQuantity: {code: "mm[Hg]", system: "http://unitsofmeasure.org"} } should NOT be included
@@ -178,7 +176,7 @@ describe('apply default values', () => {
 
     test('new Patient has no fixed/pattern values', async () => {
       const resource: Patient = { resourceType: 'Patient' };
-      const withDefaults = applyDefaultValuesToResource(resource, schema, { debug: DEBUG });
+      const withDefaults = applyDefaultValuesToResource(resource, schema);
 
       expect(withDefaults).toStrictEqual({ resourceType: 'Patient' });
       // For now, a different object is returned by design

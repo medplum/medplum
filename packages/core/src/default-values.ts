@@ -19,10 +19,6 @@ import { ElementsContextType } from './elements-context';
  */
 const SLICE_NAME_KEY = '__sliceName';
 
-export type ApplyDefautlValuesToResourceOptions = {
-  debug?: boolean;
-};
-
 /**
  * Adds default values to `resource` based on the supplied `schema`. Default values includes all required fixed and pattern
  * values specified on elements in the schema. If an element has a fixed/pattern value but is optional, i.e.
@@ -30,15 +26,10 @@ export type ApplyDefautlValuesToResourceOptions = {
  *
  * @param resource - The resource to which default values should be added.
  * @param schema - The schema to use for adding default values.
- * @param options - (optional) additional options
  * @returns A clone of `resource` with default values added.
  */
-export function applyDefaultValuesToResource(
-  resource: Resource,
-  schema: InternalTypeSchema,
-  options?: ApplyDefautlValuesToResourceOptions
-): Resource {
-  const visitor = new DefaultValueVisitor(resource, resource.resourceType, 'resource', options?.debug);
+export function applyDefaultValuesToResource(resource: Resource, schema: InternalTypeSchema): Resource {
+  const visitor = new DefaultValueVisitor(resource, resource.resourceType, 'resource');
   const crawler = new SchemaCrawler(schema, visitor);
   crawler.crawlResource();
   return visitor.getDefaultValue();
@@ -61,13 +52,13 @@ export function applyDefaultValuesToElement(
 ): object {
   for (const [elementKey, element] of Object.entries(elements)) {
     if (key === undefined || key === elementKey) {
-      applyFixedOrPatternValue(existingValue, elementKey, element, elements, false);
+      applyFixedOrPatternValue(existingValue, elementKey, element, elements);
     } else if (elementKey.startsWith(key + '.')) {
       const keyDifference = getPathDifference(key, elementKey);
       if (keyDifference === undefined) {
         throw new Error(`Expected ${elementKey} to be prefixed by ${key}`);
       }
-      applyFixedOrPatternValue(existingValue, keyDifference, element, elements, false);
+      applyFixedOrPatternValue(existingValue, keyDifference, element, elements);
     }
   }
 
@@ -79,8 +70,7 @@ export function applyDefaultValuesToElementWithVisitor(
   path: string,
   element: InternalSchemaElement,
   elements: Record<string, InternalSchemaElement>,
-  schema: InternalTypeSchema,
-  options?: { debug?: boolean }
+  schema: InternalTypeSchema
 ): any {
   const inputValue: object = existingValue ?? Object.create(null);
 
@@ -88,7 +78,7 @@ export function applyDefaultValuesToElementWithVisitor(
   const parent = Object.create(null);
   setValueAtKey(parent, inputValue, key, element);
 
-  const visitor = new DefaultValueVisitor(parent, parentPath, 'element', options?.debug);
+  const visitor = new DefaultValueVisitor(parent, parentPath, 'element');
   const crawler = new SchemaCrawler(schema, visitor, elements);
   crawler.crawlElement(element, key, parentPath);
   const modifiedContainer = visitor.getDefaultValue();
@@ -100,10 +90,9 @@ export function getDefaultValuesForNewSliceEntry(
   key: string,
   slice: SliceDefinition,
   slicing: SlicingRules,
-  schema: InternalTypeSchema,
-  options?: { debug?: boolean }
+  schema: InternalTypeSchema
 ): Resource {
-  const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: slice.name }], slice.path, 'element', options?.debug);
+  const visitor = new DefaultValueVisitor([{ [SLICE_NAME_KEY]: slice.name }], slice.path, 'element');
   const crawler = new SchemaCrawler(schema, visitor);
   crawler.crawlSlice(key, slice, slicing);
   return visitor.getDefaultValue()[0];
@@ -121,12 +110,9 @@ class DefaultValueVisitor implements SchemaVisitor {
   private readonly schemaStack: InternalTypeSchema[];
   private readonly valueStack: ValueContext[];
 
-  private debugMode: boolean;
-
-  constructor(rootValue: any, path: string, type: ValueContext['type'], debug?: boolean) {
+  constructor(rootValue: any, path: string, type: ValueContext['type']) {
     this.schemaStack = [];
     this.valueStack = [];
-    this.debugMode = Boolean(debug);
 
     this.rootValue = deepClone(rootValue);
     this.valueStack.splice(0, this.valueStack.length, {
@@ -144,12 +130,6 @@ class DefaultValueVisitor implements SchemaVisitor {
     return this.valueStack[this.valueStack.length - 1];
   }
 
-  private debug(...data: any[]): void {
-    if (this.debugMode) {
-      console.debug(`[ApplyDefaults][${this.schema.name}]`, ...data);
-    }
-  }
-
   onEnterSchema(schema: InternalTypeSchema): void {
     this.schemaStack.push(schema);
   }
@@ -159,11 +139,6 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   onEnterElement(path: string, element: InternalSchemaElement, elementsContext: ElementsContextType): void {
-    this.debug(`onEnterElement ${path} ${element.min > 0 ? `min: ${element.min}` : ''}`);
-    if (path !== element.path) {
-      this.debug(`onEnterElement path mismatch: ${path} !== ${element.path}`);
-    }
-
     const parentValues = this.value.values;
     const parentPath = this.value.path;
     const key = getPathDifference(parentPath, path);
@@ -195,7 +170,7 @@ class DefaultValueVisitor implements SchemaVisitor {
             }
           }
         }
-        applyFixedOrPatternValue(parent, key, element, elementsContext.elements, this.debugMode);
+        applyFixedOrPatternValue(parent, key, element, elementsContext.elements);
 
         const elementValue = getValueAtKey(parent, key, element, elementsContext.elements);
         if (elementValue !== undefined) {
@@ -216,8 +191,6 @@ class DefaultValueVisitor implements SchemaVisitor {
     if (!elementValueContext) {
       throw new Error('Expected value context to exist when exiting element');
     }
-    this.debug(`onExitElement ${path}\n${JSON.stringify(elementValueContext.values)}`);
-
     for (const parentValue of this.value.values) {
       const key = getPathDifference(this.value.path, path);
       if (key === undefined) {
@@ -244,8 +217,6 @@ class DefaultValueVisitor implements SchemaVisitor {
   }
 
   onEnterSlice(path: string, slice: SliceDefinitionWithTypes, slicing: VisitorSlicingRules): void {
-    this.debug(`onEnterSlice[${slice.name}] ${path} ${slice.min > 0 ? `min: ${slice.min}` : ''}`);
-
     const elementValues = this.value.values;
     const sliceValues: any[] = [];
 
@@ -289,7 +260,7 @@ class DefaultValueVisitor implements SchemaVisitor {
     });
   }
 
-  onExitSlice(_path: string, slice: SliceDefinitionWithTypes): void {
+  onExitSlice(): void {
     const sliceValuesContext = this.valueStack.pop();
     if (!sliceValuesContext) {
       throw new Error('Expected value context to exist in onExitSlice');
@@ -303,8 +274,6 @@ class DefaultValueVisitor implements SchemaVisitor {
         }
       }
     }
-
-    this.debug(`onExitSlice[${slice.name}]`, slice.name, JSON.stringify(sliceValuesContext.values));
   }
 
   getDefaultValue(): any {
@@ -393,15 +362,14 @@ function applyFixedOrPatternValue(
   inputValue: any,
   key: string,
   element: InternalSchemaElement,
-  elements: Record<string, InternalSchemaElement>,
-  debug: boolean
+  elements: Record<string, InternalSchemaElement>
 ): any {
   if (!(element.fixed || element.pattern)) {
     return inputValue;
   }
 
   if (Array.isArray(inputValue)) {
-    return inputValue.map((iv) => applyFixedOrPatternValue(iv, key, element, elements, debug));
+    return inputValue.map((iv) => applyFixedOrPatternValue(iv, key, element, elements));
   }
 
   if (inputValue === undefined || inputValue === null) {
@@ -409,13 +377,6 @@ function applyFixedOrPatternValue(
   }
 
   const outputValue = inputValue;
-
-  if (debug) {
-    console.debug(
-      `applyFixedPattern key: ${key} ${element.fixed ? 'fixed' : 'pattern'}: ${JSON.stringify((element.fixed ?? element.pattern)?.value)}`
-    );
-    console.debug(`begin`, JSON.stringify(inputValue, undefined, 2));
-  }
 
   const keyParts = key.split('.');
   let last: any = outputValue;
@@ -444,10 +405,6 @@ function applyFixedOrPatternValue(
       last = last[keyPart];
     }
   }
-  if (debug) {
-    console.debug(`done`, JSON.stringify(outputValue, undefined, 2));
-  }
-
   return outputValue;
 }
 

@@ -22,10 +22,6 @@ export function buildElementsContext({
   profileUrl?: string;
   debugMode?: boolean;
 }): ElementsContextType | undefined {
-  if (debugMode) {
-    console.debug('Building ElementsContext', { path, profileUrl, elements });
-  }
-
   if (path === parentContext?.path) {
     return undefined;
   }
@@ -59,14 +55,6 @@ function mergeElementsForContext(
 ): Record<string, InternalSchemaElement> {
   const result: Record<string, InternalSchemaElement> = Object.create(null);
 
-  if (debugMode) {
-    console.log('Merging elements for context', {
-      path,
-      elements,
-      parentPath: parentContext?.path,
-      parentElements: parentContext?.elementsByPath,
-    });
-  }
   if (parentContext) {
     for (const [elementPath, element] of Object.entries(parentContext.elementsByPath)) {
       const key = getPathDifference(path, elementPath);
@@ -89,9 +77,9 @@ function mergeElementsForContext(
   // if no new elements are used, the ElementsContext is unnecessary.
   // We could add another guard against unnecessary contexts if usedNewElements is false,
   // but unnecessary contexts **should** already be taken care before
-  // this function is called. Leaving the debug logging in for now.
-  if (debugMode && !usedNewElements) {
-    console.debug('Unnecessary ElementsContext; not using any newly provided elements');
+  // this is ever hit. Leaving the debug logging in for now.
+  if (debugMode) {
+    console.assert(usedNewElements, 'Unnecessary ElementsContext; not using any newly provided elements');
   }
   return result;
 }
