@@ -26,11 +26,19 @@ export function mockFetchResponse(status: number, body: any, headers?: Record<st
   if (!headersMap.has('content-type')) {
     headersMap.set('content-type', ContentType.FHIR_JSON);
   }
+  let streamRead = false;
+  const streamReader = async (): Promise<any> => {
+    if (streamRead) {
+      throw new Error('Stream already read');
+    }
+    streamRead = true;
+    return body;
+  };
   return {
     ok: status < 400,
     status,
     headers: headersMap,
-    blob: () => Promise.resolve(body),
-    json: () => Promise.resolve(body),
+    blob: streamReader,
+    json: streamReader,
   } as unknown as Response;
 }

@@ -15,7 +15,7 @@ import {
 } from './client';
 import { mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
-import { OperationOutcomeError, accepted, forbidden, notFound, unauthorized } from './outcomes';
+import { OperationOutcomeError, accepted, allOk, forbidden, notFound, unauthorized } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import { ProfileResource, createReference } from './utils';
@@ -2287,18 +2287,7 @@ describe('Client', () => {
 
   test('Auto batch single request error', async () => {
     const fetch = mockFetch(404, notFound);
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
-      status: 404,
-      json: () => notFound,
-      headers: {
-        get(name: string): string | undefined {
-          return {
-            'content-type': ContentType.FHIR_JSON,
-          }[name];
-        },
-      },
-    }));
-    const medplum = new MedplumClient({ fetch: fetch, autoBatchTime: 100 });
+    const medplum = new MedplumClient({ fetch, autoBatchTime: 100 });
 
     try {
       await medplum.readResource('Patient', 'xyz-not-found');
@@ -2519,29 +2508,7 @@ describe('Client', () => {
     });
 
     test('Kick off missing content-location', async () => {
-      const fetch = jest.fn(async () => {
-        return {
-          status: 202,
-          json: jest.fn(async () => {
-            return {
-              resourceType: 'OperationOutcome',
-              id: 'accepted',
-              issue: [
-                {
-                  severity: 'information',
-                  code: 'informational',
-                  details: {
-                    text: 'Accepted',
-                  },
-                },
-              ],
-            };
-          }),
-          headers: {
-            get: (key: string) => (key === 'content-type' ? ContentType.FHIR_JSON : null),
-          },
-        };
-      });
+      const fetch = mockFetch(202, allOk);
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport();
 
@@ -2627,12 +2594,12 @@ describe('Client', () => {
             return mockFetchResponse(202, accepted(statusUrl));
           case 7:
             // Report status complete, and send the location of the bulk export
-            expect(options.method).toBeUndefined();
+            expect(options.method).toBe('GET');
             expect(url).toBe('https://api.medplum.com/' + statusUrl);
             return mockFetchResponse(201, {}, { location: locationUrl });
           case 8:
             // What a journey! Finally, we can get the contents of the bulk export
-            expect(options.method).toBeUndefined();
+            expect(options.method).toBe('GET');
             expect(url).toBe('https://api.medplum.com/' + locationUrl);
             return mockFetchResponse(200, { resourceType: 'Bundle' });
         }
@@ -2721,66 +2688,34 @@ describe('Client', () => {
       const fetch = jest.fn();
 
       // First time, return 202 Accepted with Content-Location
-      fetch.mockImplementationOnce(async () => ({
-        ok: true,
-        status: 202,
-        headers: {
-          get: (key: string) => {
-            if (key.toLowerCase() === 'content-location') {
-              return 'https://example.com/content-location/1';
-            }
-            if (key.toLowerCase() === 'content-type') {
-              return ContentType.FHIR_JSON;
-            }
-            return null;
-          },
-        },
-        json: async () => ({}),
-      }));
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(
+          202,
+          {},
+          {
+            'content-location': 'https://example.com/content-location/1',
+          }
+        )
+      );
 
       // Second time, return 202 Accepted with Content-Location
-      fetch.mockImplementationOnce(async () => ({
-        ok: true,
-        status: 202,
-        headers: {
-          get: (key: string) => {
-            if (key.toLowerCase() === 'content-location') {
-              return 'https://example.com/content-location/1';
-            }
-            if (key.toLowerCase() === 'content-type') {
-              return ContentType.FHIR_JSON;
-            }
-            return null;
-          },
-        },
-        json: async () => ({}),
-      }));
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(
+          202,
+          {},
+          {
+            'content-location': 'https://example.com/content-location/1',
+          }
+        )
+      );
 
       // Third time, return 201 Created with Location
-      fetch.mockImplementationOnce(async () => ({
-        ok: true,
-        status: 201,
-        headers: {
-          get: (key: string) => {
-            if (key.toLowerCase() === 'location') {
-              return 'https://example.com/location/1';
-            }
-            if (key.toLowerCase() === 'content-type') {
-              return ContentType.FHIR_JSON;
-            }
-            return null;
-          },
-        },
-        json: async () => ({}),
-      }));
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(201, {}, { location: 'https://example.com/location/1' })
+      );
 
-      // Fourth time, return 200 with JSON
-      fetch.mockImplementationOnce(async () => ({
-        ok: true,
-        status: 201,
-        headers: { get: () => ContentType.FHIR_JSON },
-        json: async () => ({ resourceType: 'Patient' }),
-      }));
+      // Fourth time, return 201 with JSON
+      fetch.mockImplementationOnce(async () => mockFetchResponse(201, { resourceType: 'Patient' }));
 
       const client = new MedplumClient({ fetch });
       const response = await client.startAsyncRequest('/test', { method: 'POST', body: '{}' });
