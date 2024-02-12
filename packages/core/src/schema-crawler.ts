@@ -313,12 +313,13 @@ function createElementTree(elements: Record<string, InternalSchemaElement>): Ele
     currentNode.children.push(newNode);
   }
 
+  const elementEntries = Object.entries(elements);
   /*
    By sorting beforehand, we guarantee that no false root nodes are created.
    e.g. if 'a.b' were to be added to the tree before 'a', 'a.b' would be made a
    root node when it should be a child of 'a'.
   */
-  const elementEntries = Object.entries(elements).toSorted((a, b) => a[0].localeCompare(b[0]));
+  elementEntries.sort((a, b) => a[0].localeCompare(b[0]));
 
   for (const [key, element] of elementEntries) {
     const newNode: ElementNode = { key, element, children: [] };
