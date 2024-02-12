@@ -2236,7 +2236,8 @@ export class MedplumClient extends EventTarget {
       url = this.fhirUrl('Bot', id, '$execute');
     } else {
       const identifier = idOrIdentifier;
-      url = this.fhirUrl('Bot', '$execute').toString() + `?identifier=${identifier.system}|${identifier.value}`;
+      url = this.fhirUrl('Bot', '$execute');
+      url.searchParams.set('identifier', identifier.system + '|' + identifier.value);
     }
     return this.post(url, body, contentType, options);
   }
