@@ -2699,7 +2699,16 @@ export class MedplumClient extends EventTarget {
     const headers = options.headers as Record<string, string>;
     headers['Prefer'] = 'respond-async';
 
-    return this.request('POST', url, options);
+    const response = await this.fetchWithRetry(url, options);
+
+    if (response.status === 202) {
+      const contentLocation = await tryGetContentLocation(response);
+      if (contentLocation) {
+        return this.pollStatus(contentLocation);
+      }
+    }
+
+    return this.parseResponse(response, 'POST', url);
   }
 
   //
@@ -2800,19 +2809,11 @@ export class MedplumClient extends EventTarget {
       throw new OperationOutcomeError(notFound);
     }
 
-    const contentLocation = await tryGetContentLocation(response);
+    const contentLocation = response.headers.get('content-location');
     const redirectMode = options.redirect ?? this.options.redirect;
     if (response.status === 201 && contentLocation && redirectMode === 'follow') {
       // Follow redirect
       return this.request('GET', contentLocation, { ...options, body: undefined });
-    }
-
-    if (
-      response.status === 202 &&
-      contentLocation &&
-      (options.headers as Record<string, string> | undefined)?.['Prefer'] === 'respond-async'
-    ) {
-      return this.pollStatus(contentLocation);
     }
 
     let obj: any = undefined;
@@ -2893,7 +2894,7 @@ export class MedplumClient extends EventTarget {
         checkStatus = false;
         resultResponse = statusResponse;
 
-        if (statusResponse.status === 200 || statusResponse.status === 201) {
+        if (statusResponse.status === 201) {
           const contentLocation = await tryGetContentLocation(statusResponse);
           if (contentLocation) {
             resultResponse = await this.fetchWithRetry(contentLocation, fetchOptions);
