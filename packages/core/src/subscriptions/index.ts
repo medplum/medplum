@@ -244,6 +244,9 @@ export class SubscriptionManager {
     // Emit disconnect on criteria emitter
     this.criteriaEntries.get(criteria)?.emitter?.dispatchEvent(disconnectEvent);
     this.criteriaEntries.delete(criteria);
+    if (subscriptionId) {
+      this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
+    }
   }
 
   closeWebSocket(): void {
