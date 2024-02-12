@@ -6,7 +6,7 @@ export class MockSubscriptionManager extends SubscriptionManager {
   masterEmitter: SubscriptionEmitter;
 
   constructor(medplum: MedplumClient, _wsOrUrl: WebSocket | string) {
-    super(medplum, new WebSocket('wss://example.com/ws/subscriptions-r4'));
+    super(medplum, 'wss://example.com/ws/subscriptions-r4');
     this.emitters = new Map<string, SubscriptionEmitter>();
     this.counts = new Map<string, number>();
     this.masterEmitter = new SubscriptionEmitter();
