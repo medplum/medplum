@@ -113,6 +113,38 @@ const supportedOperations: Record<string, CapabilityStatementRestResourceOperati
   ],
 };
 
+/**
+ * A list of the advanced search parameters that are FHIR Search Result Parameters applicable to the server.
+ * See: https://www.hl7.org/fhir/search.html#modifyingresults
+ */
+const supportedSearchParams: CapabilityStatementRestResourceSearchParam[] = [
+  {
+    name: '_sort',
+    definition: 'https://www.hl7.org/fhir/search.html#_sort',
+    type: 'string',
+  },
+  {
+    name: '_total',
+    definition: 'https://www.hl7.org/fhir/search.html#_total',
+    type: 'string',
+  },
+  {
+    name: '_count',
+    definition: 'https://www.hl7.org/fhir/search.html#_count',
+    type: 'number',
+  },
+  {
+    name: '_summary',
+    definition: 'https://www.hl7.org/fhir/search.html#_summary',
+    type: 'token',
+  },
+  {
+    name: '_elements',
+    definition: 'https://www.hl7.org/fhir/search.html#_elements',
+    type: 'string',
+  },
+];
+
 let capabilityStatement: CapabilityStatement | undefined = undefined;
 
 export function getCapabilityStatement(): CapabilityStatement {
@@ -152,6 +184,7 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
       security: buildSecurity(config),
       resource: buildResourceTypes(),
       interaction: [{ code: 'transaction' }, { code: 'batch' }],
+      searchParam: supportedSearchParams,
     },
   ];
 }
