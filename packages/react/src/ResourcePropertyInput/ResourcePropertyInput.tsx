@@ -51,19 +51,14 @@ export interface ResourcePropertyInputProps {
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
-  const { property, name, onChange } = props;
+  const { property, name, onChange, defaultValue } = props;
   const defaultPropertyType =
     props.defaultPropertyType && props.defaultPropertyType !== 'undefined'
       ? props.defaultPropertyType
       : property.type[0].code;
   const propertyTypes = property.type as ElementDefinitionType[];
 
-  const isArrayInput = (property.isArray || property.max > 1) && !props.arrayElement;
-  const isInputSelectorInput = propertyTypes.length > 1;
-
-  const defaultValue = props.defaultValue;
-
-  if (isArrayInput) {
+  if ((property.isArray || property.max > 1) && !props.arrayElement) {
     if (defaultPropertyType === PropertyType.Attachment) {
       return <AttachmentArrayInput name={name} defaultValue={defaultValue} onChange={onChange} />;
     }
@@ -81,7 +76,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         outcome={props.outcome}
       />
     );
-  } else if (isInputSelectorInput) {
+  } else if (propertyTypes.length > 1) {
     return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {
     return (
