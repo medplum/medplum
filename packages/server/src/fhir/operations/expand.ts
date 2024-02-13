@@ -219,13 +219,16 @@ async function computeExpansion(
   }
 
   const repo = getAuthenticatedContext().repo;
+  const codeSystemCache: Record<string, CodeSystem> = Object.create(null);
   for (const include of valueSet.compose.include) {
     if (!include.system) {
       throw new OperationOutcomeError(
         badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
       );
     }
-    const codeSystem = await findCodeSystem(include.system, repo);
+
+    const codeSystem = codeSystemCache[include.system] ?? (await findCodeSystem(include.system, repo));
+    codeSystemCache[include.system] = codeSystem;
     if (include.concept) {
       const concepts = await Promise.all(
         include.concept.flatMap(async (c) => validateCode(codeSystem, c.code)) as ValueSetExpansionContains[]
