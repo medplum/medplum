@@ -12,12 +12,33 @@ export function mockFetch(
   return jest.fn((url: string, options?: any) => {
     const response = bodyFn(url, options);
     const responseStatus = isOperationOutcome(response) ? getStatus(response) : status;
-    return Promise.resolve({
-      ok: responseStatus < 400,
-      status: responseStatus,
-      headers: { get: () => contentType },
-      blob: () => Promise.resolve(response),
-      json: () => Promise.resolve(response),
-    });
+    return Promise.resolve(mockFetchResponse(responseStatus, response, { 'content-type': contentType }));
   });
+}
+
+export function mockFetchResponse(status: number, body: any, headers?: Record<string, string>): Response {
+  const headersMap = new Map<string, string>();
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
+      headersMap.set(key, value);
+    }
+  }
+  if (!headersMap.has('content-type')) {
+    headersMap.set('content-type', ContentType.FHIR_JSON);
+  }
+  let streamRead = false;
+  const streamReader = async (): Promise<any> => {
+    if (streamRead) {
+      throw new Error('Stream already read');
+    }
+    streamRead = true;
+    return body;
+  };
+  return {
+    ok: status < 400,
+    status,
+    headers: headersMap,
+    blob: streamReader,
+    json: streamReader,
+  } as unknown as Response;
 }

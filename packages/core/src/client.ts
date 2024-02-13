@@ -518,6 +518,11 @@ interface AutoBatchEntry<T = any> {
   readonly reject: (reason: any) => void;
 }
 
+interface RequestState {
+  statusUrl?: string;
+  pollCount?: number;
+}
+
 /**
  * OAuth 2.0 Grant Type Identifiers
  * Standard identifiers: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
@@ -2699,16 +2704,7 @@ export class MedplumClient extends EventTarget {
     const headers = options.headers as Record<string, string>;
     headers['Prefer'] = 'respond-async';
 
-    const response = await this.fetchWithRetry(url, options);
-
-    if (response.status === 202) {
-      const contentLocation = await tryGetContentLocation(response);
-      if (contentLocation) {
-        return this.pollStatus(contentLocation);
-      }
-    }
-
-    return this.parseResponse(response, 'POST', url);
+    return this.request('POST', url, options);
   }
 
   //
@@ -2773,9 +2769,15 @@ export class MedplumClient extends EventTarget {
    * @param method - The HTTP method (GET, POST, etc).
    * @param url - The target URL.
    * @param options - Optional fetch request init options.
+   * @param state - Optional request state.
    * @returns The JSON content body if available.
    */
-  private async request<T>(method: string, url: string, options: RequestInit = {}): Promise<T> {
+  private async request<T>(
+    method: string,
+    url: string,
+    options: RequestInit = {},
+    state: RequestState = {}
+  ): Promise<T> {
     await this.refreshIfExpired();
 
     options.method = method;
@@ -2783,15 +2785,6 @@ export class MedplumClient extends EventTarget {
 
     const response = await this.fetchWithRetry(url, options);
 
-    return this.parseResponse(response, method, url, options);
-  }
-
-  private async parseResponse<T>(
-    response: Response,
-    method: string,
-    url: string,
-    options: RequestInit = {}
-  ): Promise<T> {
     if (response.status === 401) {
       // Refresh and try again
       return this.handleUnauthenticated(method, url, options);
@@ -2806,16 +2799,40 @@ export class MedplumClient extends EventTarget {
     const isJson = contentType?.includes('json');
 
     if (response.status === 404 && !isJson) {
+      // Special case for non-JSON 404 responses
+      // In the common case, the 404 response will include an OperationOutcome in JSON with additional details.
+      // In the non-JSON case, we can't parse the response, so we'll just throw a generic "Not Found" error.
       throw new OperationOutcomeError(notFound);
     }
 
-    const contentLocation = response.headers.get('content-location');
+    const obj = await this.parseBody(response, isJson);
+
     const redirectMode = options.redirect ?? this.options.redirect;
-    if (response.status === 201 && contentLocation && redirectMode === 'follow') {
-      // Follow redirect
-      return this.request('GET', contentLocation, { ...options, body: undefined });
+    if ((response.status === 200 || response.status === 201) && redirectMode === 'follow') {
+      const contentLocation = await tryGetContentLocation(response, obj);
+      if (contentLocation) {
+        // Follow redirect
+        return this.request('GET', contentLocation, { ...options, body: undefined });
+      }
     }
 
+    const preferMode = (options.headers as Record<string, string> | undefined)?.['Prefer'];
+    if (response.status === 202 && preferMode === 'respond-async') {
+      const contentLocation = await tryGetContentLocation(response, obj);
+      const statusUrl = contentLocation ?? state.statusUrl;
+      if (statusUrl) {
+        return this.pollStatus(statusUrl, options, state);
+      }
+    }
+
+    if (response.status >= 400) {
+      throw new OperationOutcomeError(normalizeOperationOutcome(obj));
+    }
+
+    return obj;
+  }
+
+  private async parseBody(response: Response, isJson: boolean | undefined): Promise<any> {
     let obj: any = undefined;
     if (isJson) {
       try {
@@ -2827,11 +2844,6 @@ export class MedplumClient extends EventTarget {
     } else {
       obj = await response.text();
     }
-
-    if (response.status >= 400) {
-      throw new OperationOutcomeError(normalizeOperationOutcome(obj));
-    }
-
     return obj;
   }
 
@@ -2881,29 +2893,19 @@ export class MedplumClient extends EventTarget {
     }
   }
 
-  private async pollStatus<T>(statusUrl: string): Promise<T> {
-    let checkStatus = true;
-    let resultResponse;
-    const retryDelay = 2000;
-
-    while (checkStatus) {
-      const fetchOptions = {};
-      this.addFetchOptionsDefaults(fetchOptions);
-      const statusResponse = await this.fetchWithRetry(statusUrl, fetchOptions);
-      if (statusResponse.status !== 202) {
-        checkStatus = false;
-        resultResponse = statusResponse;
-
-        if (statusResponse.status === 201) {
-          const contentLocation = await tryGetContentLocation(statusResponse);
-          if (contentLocation) {
-            resultResponse = await this.fetchWithRetry(contentLocation, fetchOptions);
-          }
-        }
-      }
+  private async pollStatus<T>(statusUrl: string, options: RequestInit, state: RequestState): Promise<T> {
+    if (state.pollCount === undefined) {
+      // First request - try request immediately
+      options.redirect = 'follow';
+      state.statusUrl = statusUrl;
+      state.pollCount = 1;
+    } else {
+      // Subsequent requests - wait and retry
+      const retryDelay = 1000;
       await sleep(retryDelay);
+      state.pollCount++;
     }
-    return this.parseResponse(resultResponse as Response, 'POST', statusUrl);
+    return this.request('GET', statusUrl, options, state);
   }
 
   /**
@@ -3559,15 +3561,28 @@ function concatUrls(baseUrl: string, url: string): string {
  * most authoritative source for the content location. If this header is
  * not present, it falls back to the "Location" HTTP header.
  *
+ * Note that the FHIR spec does not follow the traditional HTTP semantics of "Content-Location" and "Location".
+ * "Content-Location" is not typically used with HTTP 202 responses because the content itself isn't available at the time of the response.
+ * However, the FHIR spec explicitly recommends it:
+ *
+ *   3.2.6.1.2 Kick-off Request
+ *   3.2.6.1.2.0.3 Response - Success
+ *   HTTP Status Code of 202 Accepted
+ *   Content-Location header with the absolute URL of an endpoint for subsequent status requests (polling location)
+ *
+ * Source: https://hl7.org/fhir/async-bulk.html
+ *
  * In cases where neither of these headers are available (for instance,
  * due to CORS restrictions), it attempts to retrieve the content location
  * from the 'diagnostics' field of the first issue in an OperationOutcome object
  * present in the response body. If all attempts fail, the function returns 'undefined'.
+ *
  * @async
  * @param response - The HTTP response object from which to extract the content location.
+ * @param body - The response body.
  * @returns A Promise that resolves to the content location string if it is found, or 'undefined' if the content location cannot be determined from the response.
  */
-async function tryGetContentLocation(response: Response): Promise<string | undefined> {
+async function tryGetContentLocation(response: Response, body: any): Promise<string | undefined> {
   // Accepted content location can come from multiple sources
   // The authoritative source is the "Content-Location" HTTP header.
   const contentLocation = response.headers.get('content-location');
@@ -3583,7 +3598,6 @@ async function tryGetContentLocation(response: Response): Promise<string | undef
 
   // However, "Content-Location" may not be available due to CORS limitations.
   // In this case, we use the OperationOutcome.diagnostics field.
-  const body = await response.json();
   if (isOperationOutcome(body) && body.issue?.[0]?.diagnostics) {
     return body.issue[0].diagnostics;
   }
