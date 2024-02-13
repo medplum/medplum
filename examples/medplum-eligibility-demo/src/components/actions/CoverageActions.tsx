@@ -1,15 +1,21 @@
 import { Button, Stack, Title } from '@mantine/core';
+import { Coverage } from '@medplum/fhirtypes';
 import { DeleteCoverage } from './DeleteCoverage';
 import { EditCoverage } from './EditCoverage';
 import { InitiateEligibilityRequest } from './InitiateEligibilityRequest';
 
-export function CoverageActions(): JSX.Element {
+interface CoverageActionsProps {
+  readonly coverage: Coverage;
+  readonly onChange: (updatedCoverage: Coverage) => void;
+}
+
+export function CoverageActions(props: CoverageActionsProps): JSX.Element {
   return (
     <Stack>
       <Title>Coverage Actions</Title>
       <Stack>
         <InitiateEligibilityRequest />
-        <EditCoverage />
+        <EditCoverage coverage={props.coverage} onChange={props.onChange} />
         <DeleteCoverage />
       </Stack>
     </Stack>

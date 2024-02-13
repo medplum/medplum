@@ -51,6 +51,10 @@ export function CoveragePage(): JSX.Element {
     fetchData().catch((err) => console.error(err));
   });
 
+  const onCoverageChange = (updatedCoverage: Coverage): void => {
+    setCoverage(updatedCoverage);
+  };
+
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string | null): void => {
     navigate(`/Task/${id}/${newTab ?? ''}`);
@@ -76,16 +80,21 @@ export function CoveragePage(): JSX.Element {
         </Paper>
       </Grid.Col>
       <Grid.Col span={3}>
-        <Actions />
+        <Actions coverage={coverage} onChange={onCoverageChange} />
       </Grid.Col>
     </Grid>
   );
 }
 
-function Actions(): JSX.Element {
+interface ActionsProps {
+  readonly coverage: Coverage;
+  readonly onChange: (updatedCoverage: Coverage) => void;
+}
+
+function Actions({ coverage, onChange }: ActionsProps): JSX.Element {
   return (
     <Paper p="md">
-      <CoverageActions />
+      <CoverageActions coverage={coverage} onChange={onChange} />
     </Paper>
   );
 }
