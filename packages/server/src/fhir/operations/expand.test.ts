@@ -423,7 +423,7 @@ describe('Updated implementation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(400);
     expect(res2.body.issue[0].details.text).toEqual(
-      'CodeSystem http://example.com/the-codesystem-does-not-exist not found'
+      'Code system http://example.com/the-codesystem-does-not-exist not found'
     );
   });
 
@@ -508,5 +508,21 @@ describe('Updated implementation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(400);
     expect(res3.body.issue[0].details.text).toMatch(/invalid filter/i);
+  });
+
+  test('Includes ancestor code in is-a filter', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/care-team-category')}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    console.log(res.body.issue);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains?.[0]).toEqual<ValueSetExpansionContains>({
+      system: LOINC,
+      code: 'LA28865-6',
+      display: expect.stringMatching(/care team/i),
+    });
   });
 });

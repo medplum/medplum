@@ -709,11 +709,12 @@
         "url": "http://loinc.org",
         "version": "0.0.0",
         "status": "active",
+        "hierarchyMeaning": "is-a",
         "content": "example",
         "concept": [
           {
-            "code": "11341-5",
-            "display": "History of Occupation industry"
+            "code": "LA28865-6",
+            "display": "Longitudinal care-coordination focused care team"
           },
           {
             "code": "86645-9",

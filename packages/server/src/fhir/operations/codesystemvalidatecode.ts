@@ -38,7 +38,15 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
     return;
   }
 
-  const result = await validateCode(coding.system as string, coding.code as string);
+  const ctx = getAuthenticatedContext();
+  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
+    resourceType: 'CodeSystem',
+    filters: [{ code: 'url', operator: Operator.EQUALS, value: coding.system as string }],
+  });
+  if (!codeSystem) {
+    throw new OperationOutcomeError(badRequest(`CodeSystem ${coding.system} not found`));
+  }
+  const result = await validateCode(codeSystem, coding.code as string);
 
   const output: Record<string, any> = Object.create(null);
   if (result) {
@@ -50,16 +58,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
   await sendOutputParameters(operation, res, allOk, output);
 }
 
-export async function validateCode(system: string, code: string): Promise<Coding | undefined> {
-  const ctx = getAuthenticatedContext();
-  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
-    resourceType: 'CodeSystem',
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: system }],
-  });
-  if (!codeSystem) {
-    throw new OperationOutcomeError(badRequest(`CodeSystem ${system} not found`));
-  }
-
+export async function validateCode(codeSystem: CodeSystem, code: string): Promise<Coding | undefined> {
   const query = new SelectQuery('Coding');
   const codeSystemTable = query.getNextJoinAlias();
   query.innerJoin(
@@ -71,5 +70,5 @@ export async function validateCode(system: string, code: string): Promise<Coding
 
   const db = getDatabasePool();
   const result = await query.execute(db);
-  return result.length ? { system, code, display: result[0].display } : undefined;
+  return result.length ? { system: codeSystem.url, code, display: result[0].display } : undefined;
 }

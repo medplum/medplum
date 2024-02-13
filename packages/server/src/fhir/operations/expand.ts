@@ -220,39 +220,25 @@ async function computeExpansion(
 
   const repo = getAuthenticatedContext().repo;
   for (const include of valueSet.compose.include) {
-    await includeInExpansion(repo, include, expansion, offset, count, filter);
+    if (!include.system) {
+      throw new OperationOutcomeError(
+        badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
+      );
+    }
+    const codeSystem = await findCodeSystem(include.system, repo);
+    if (include.concept) {
+      const concepts = await Promise.all(
+        include.concept.flatMap(async (c) => validateCode(codeSystem, c.code)) as ValueSetExpansionContains[]
+      );
+      expansion.push(...(filter ? concepts.filter((c) => c.display?.includes(filter)) : concepts));
+    } else {
+      await includeInExpansion(include, expansion, codeSystem, repo, offset, count, filter);
+    }
+
     if (expansion.length > count) {
       // Return partial expansion
       return;
     }
-  }
-}
-
-async function includeInExpansion(
-  repo: Repository,
-  include: ValueSetComposeInclude,
-  expansion: ValueSetExpansionContains[],
-  offset: number,
-  count: number,
-  filter?: string
-): Promise<void> {
-  if (include.valueSet?.length) {
-    throw new OperationOutcomeError(
-      badRequest('Recursive ValueSet expansion is not supported', 'ValueSet.compose.include.valueSet')
-    );
-  }
-
-  if (include.system && !include.concept) {
-    const codeSystem = await findCodeSystem(include.system, repo);
-    const results = await searchCodings(include, codeSystem, repo, offset, count, filter);
-    expansion.push(...results.map(({ code, display }) => ({ system: codeSystem.url, code, display })));
-  } else if (include.system && include.concept) {
-    const concepts = await Promise.all(
-      include.concept.flatMap(async (c) =>
-        validateCode(include.system as string, c.code)
-      ) as ValueSetExpansionContains[]
-    );
-    expansion.push(...(filter ? concepts.filter((c) => c.display?.includes(filter)) : concepts));
   }
 }
 
@@ -288,14 +274,15 @@ async function findCodeSystem(url: string, repo: Repository): Promise<CodeSystem
   }
 }
 
-async function searchCodings(
+async function includeInExpansion(
   include: ValueSetComposeInclude,
+  expansion: ValueSetExpansionContains[],
   codeSystem: CodeSystem,
   repo: Repository,
   offset: number,
   count: number,
   filter?: string
-): Promise<{ code: string; display: string }[]> {
+): Promise<void> {
   let query = new SelectQuery('Coding')
     .column('code')
     .column('display')
@@ -306,64 +293,66 @@ async function searchCodings(
   if (filter) {
     query.where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
   }
-  query = addFilters(include.filter, query, codeSystem);
-  const results = await query.execute(repo.getDatabaseClient());
-  return results.map((r) => ({ code: r.code, display: r.display }));
-}
-
-function addFilters(
-  filters: ValueSetComposeIncludeFilter[] | undefined,
-  query: SelectQuery,
-  codeSystem: CodeSystem
-): SelectQuery {
-  if (!filters) {
-    return query;
+  if (include.filter?.length) {
+    for (const filter of include.filter) {
+      if (filter.op === 'is-a') {
+        const coding = await validateCode(codeSystem, filter.value);
+        if (coding) {
+          expansion.push(coding);
+        }
+      }
+      query = addFilter(filter, query, codeSystem);
+    }
   }
 
-  for (const filter of filters) {
-    if (filter.op === 'is-a' || filter.op === 'is-not-a') {
-      if (codeSystem.hierarchyMeaning !== 'is-a') {
-        throw new OperationOutcomeError(
-          badRequest(
-            `Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`,
-            'ValueSet.compose.include.filter'
-          )
-        );
-      }
-      let property = codeSystem.property?.find((p) => p.uri === parentProperty);
-      if (!property) {
-        // Implicit parent property for hierarchical CodeSystems
-        property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
-      }
+  const results = await query.execute(repo.getDatabaseClient());
+  const system = codeSystem.url;
+  expansion.push(...results.map(({ code, display }) => ({ system, code, display })));
+}
 
-      const propertyTable = query.getNextJoinAlias();
-      query.innerJoin(
-        'Coding_Property',
-        propertyTable,
-        new Conjunction([new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))])
+function addFilter(filter: ValueSetComposeIncludeFilter, query: SelectQuery, codeSystem: CodeSystem): SelectQuery {
+  if (filter.op === 'is-a' || filter.op === 'is-not-a') {
+    if (codeSystem.hierarchyMeaning !== 'is-a') {
+      throw new OperationOutcomeError(
+        badRequest(
+          `Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`,
+          'ValueSet.compose.include.filter'
+        )
       );
-
-      const csPropertyTable = query.getNextJoinAlias();
-      query.innerJoin(
-        'CodeSystem_Property',
-        csPropertyTable,
-        new Conjunction([
-          new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-          new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-        ])
-      );
-
-      const targetTable = query.getNextJoinAlias();
-      query.leftJoin(
-        'Coding',
-        targetTable,
-        new Conjunction([
-          new Condition(new Column(propertyTable, 'target'), '=', new Column(targetTable, 'id')),
-          new Condition(new Column(targetTable, 'code'), '=', filter.value),
-        ])
-      );
-      query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '=' : '!=', null);
     }
+    let property = codeSystem.property?.find((p) => p.uri === parentProperty);
+    if (!property) {
+      // Implicit parent property for hierarchical CodeSystems
+      property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
+    }
+
+    const propertyTable = query.getNextJoinAlias();
+    query.innerJoin(
+      'Coding_Property',
+      propertyTable,
+      new Conjunction([new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))])
+    );
+
+    const csPropertyTable = query.getNextJoinAlias();
+    query.innerJoin(
+      'CodeSystem_Property',
+      csPropertyTable,
+      new Conjunction([
+        new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+        new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+      ])
+    );
+
+    const targetTable = query.getNextJoinAlias();
+    query.leftJoin(
+      'Coding',
+      targetTable,
+      new Conjunction([
+        new Condition(new Column(propertyTable, 'target'), '=', new Column(targetTable, 'id')),
+        new Condition(new Column(targetTable, 'code'), '=', filter.value),
+      ])
+    );
+    query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '=' : '!=', null);
   }
 
   return query;
