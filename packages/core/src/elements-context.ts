@@ -1,25 +1,49 @@
 import { InternalSchemaElement } from './typeschema/types';
 import { getPathDifference } from './utils';
 
+/**
+ * Information for the set of elements at a given path within in a resource. This mostly exists to
+ * normalize access to elements regardless of whether they are from a profile, extension, or slice.
+ */
 export type ElementsContextType = {
+  /** The FHIR path from the root resource to which the keys of `elements` are relative. */
   path: string;
-  profileUrl: string | undefined;
+  /**
+   * The mapping of keys to `InternalSchemaElement` at the current `path` relative to the
+   * root resource. `elements` originate from either `InternalTypeSchema.elements` or
+   * `SliceDefinition.elements` when the elements context is created within a slice.
+   */
   elements: Record<string, InternalSchemaElement>;
+  /**
+   * Similar mapping as `elements`, but with keys being the full path from the root resource rather
+   * than relative to `path`, in other words, the keys of the Record are `${path}.${key}`.
+   */
   elementsByPath: Record<string, InternalSchemaElement>;
+  /** The URL, if any, of the resource profile or extension from which the `elements` collection originated. */
+  profileUrl: string | undefined;
+  /** Whether debug logging is enabled */
   debugMode: boolean;
 };
 
 export function buildElementsContext({
   parentContext,
-  elements,
   path,
+  elements,
   profileUrl,
   debugMode,
 }: {
-  elements: Record<string, InternalSchemaElement>;
-  path: string;
+  /** The most recent `ElementsContextType` in which this context is being built. */
   parentContext: ElementsContextType | undefined;
+  /** The FHIR path from the root resource to which the keys of `elements` are relative. */
+  path: string;
+  /**
+   * The mapping of keys to `InternalSchemaElement` at the current `path` relative to the
+   * root resource. This should be either `InternalTypeSchema.elements` or `SliceDefinition.elements`.
+   */
+  elements: Record<string, InternalSchemaElement>;
+  /** The URL, if any, of the resource profile or extension from which the `elements` collection originated. */
   profileUrl?: string;
+  /** Whether debug logging is enabled */
   debugMode?: boolean;
 }): ElementsContextType | undefined {
   if (path === parentContext?.path) {
@@ -40,10 +64,10 @@ export function buildElementsContext({
 
   return {
     path: path,
-    debugMode: debugMode ?? parentContext?.debugMode ?? false,
-    profileUrl: profileUrl ?? parentContext?.profileUrl,
     elements: mergedElements,
     elementsByPath,
+    profileUrl: profileUrl ?? parentContext?.profileUrl,
+    debugMode: debugMode ?? parentContext?.debugMode ?? false,
   };
 }
 

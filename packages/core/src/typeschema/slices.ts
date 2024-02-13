@@ -21,8 +21,8 @@ function isDiscriminatorComponentMatch(
   const nestedProp = getNestedProperty(typedValue, discriminator.path, { profileUrl });
 
   if (nestedProp) {
-    const elementList = slice.typeSchema?.elements ?? slice.elements;
-    return nestedProp.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
+    const elements = slice.typeSchema?.elements ?? slice.elements;
+    return nestedProp.some((v: any) => matchDiscriminant(v, discriminator, slice, elements)) ?? false;
   }
 
   console.assert(false, 'getNestedProperty[%s] in isDiscriminatorComponentMatch missed', discriminator.path);
