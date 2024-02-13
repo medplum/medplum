@@ -141,17 +141,20 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 }
 
 async function createUser(request: ServerInviteRequest): Promise<User> {
-  const { firstName, lastName, externalId } = request;
+  const { firstName, lastName } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
-  if (request.resourceType === 'Patient' || externalId) {
+  if (request.resourceType === 'Patient') {
     // Users can optionally be scoped to a project.
-    // We force users to be scoped to a project if:
-    // 1) They are a patient
-    // 2) They are a practitioner with an externalId
+    // We force patient users to be project scoped.
+    //
+    // In the past, Practitioners with externalId auth were also project scoped.
+    // That was because, in the original implementation of externalId auth, the externalId was unique across all projects.
+    // Later, we moved externalId to ProjectMembership, so it is no longer global.
+    // And therefore, Practitioners with externalId auth are no longer project scoped.
     project = createReference(request.project);
   }
 

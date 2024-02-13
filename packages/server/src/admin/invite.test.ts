@@ -314,7 +314,7 @@ describe('Admin Invite', () => {
     expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
   });
 
-  test('Invite by externalId', async () => {
+  test('Invite patient by externalId', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
@@ -345,7 +345,40 @@ describe('Admin Invite', () => {
     expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
   });
 
+  test('Invite practitioner by externalId', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Second, Alice invites Bob to the project
+    const bobSub = randomUUID();
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: bobSub,
+      });
+
+    expect(res2.status).toBe(200);
+    expect(res2.body.profile.reference).toContain('Practitioner/');
+    expect(res2.body.admin).toBe(undefined);
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+  });
+
   test('Duplicate externalId', async () => {
+    console.log = jest.fn();
+
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
