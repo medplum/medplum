@@ -1,13 +1,12 @@
-import { Loader, Tabs } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { Grid, Loader, Paper, Title } from '@mantine/core';
+import { getDisplayString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react';
-import { Fragment } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Document, PatientSummary, useResource } from '@medplum/react';
+import { useParams } from 'react-router-dom';
+import { PatientDetails } from '../components/PatientDetails';
 import { PatientHeader } from './PatientHeader';
 
 export function PatientPage(): JSX.Element {
-  const navigate = useNavigate();
   const { id } = useParams();
   const patient = useResource<Patient>({ reference: `Patient/${id}` });
   if (!patient) {
@@ -15,16 +14,17 @@ export function PatientPage(): JSX.Element {
   }
 
   return (
-    <Fragment key={getReferenceString(patient)}>
-      <PatientHeader patient={patient} />
-      <Tabs onChange={(t) => navigate(`./${t}`)}>
-        <Tabs.List bg="white">
-          <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="timeline">Timeline</Tabs.Tab>
-          <Tabs.Tab value="history">History</Tabs.Tab>
-        </Tabs.List>
-      </Tabs>
-      <Outlet />
-    </Fragment>
+    <Grid>
+      <Grid.Col span={5}>
+        <Paper>
+          <PatientSummary patient={patient} />
+        </Paper>
+      </Grid.Col>
+      <Grid.Col span={7}>
+        <Paper>
+          <PatientDetails patient={patient} />
+        </Paper>
+      </Grid.Col>
+    </Grid>
   );
 }
