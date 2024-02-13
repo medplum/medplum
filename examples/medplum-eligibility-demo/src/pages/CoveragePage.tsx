@@ -1,17 +1,10 @@
-import { Grid, Paper } from '@mantine/core';
+import { Grid, Paper, Title } from '@mantine/core';
 import { resolveId } from '@medplum/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
-import {
-  Document,
-  PatientSummary,
-  ResourceForm,
-  ResourceHistoryTable,
-  ResourceTable,
-  useMedplum,
-  useMedplumNavigate,
-} from '@medplum/react';
+import { Document, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { CoverageActions } from '../components/actions/CoverageActions';
 import { CoverageDetails } from '../components/CoverageDetails';
 
 export function CoveragePage(): JSX.Element {
@@ -71,13 +64,16 @@ export function CoveragePage(): JSX.Element {
     <Grid>
       <Grid.Col span={4}>{patient ? <PatientSummary patient={patient} /> : <p>No linked patient</p>}</Grid.Col>
       <Grid.Col span={5}>
-        <CoverageDetails
-          coverage={coverage}
-          patient={patient}
-          tabs={tabs}
-          currentTab={currentTab}
-          handleTabChange={handleTabChange}
-        />
+        <Paper p="sm">
+          <Title>Coverage Details</Title>
+          <CoverageDetails
+            coverage={coverage}
+            patient={patient}
+            tabs={tabs}
+            currentTab={currentTab}
+            handleTabChange={handleTabChange}
+          />
+        </Paper>
       </Grid.Col>
       <Grid.Col span={3}>
         <Actions />
@@ -88,12 +84,8 @@ export function CoveragePage(): JSX.Element {
 
 function Actions(): JSX.Element {
   return (
-    <Paper>
-      <div>Coverage Actions</div>
-      <ul>
-        <li>Initiate Coverage Eligibility Request</li>
-        <li>Edit Coverage</li>
-      </ul>
+    <Paper p="md">
+      <CoverageActions />
     </Paper>
   );
 }
