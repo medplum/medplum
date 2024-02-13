@@ -1,7 +1,7 @@
 import { Bundle, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
-import { TypedEventTarget } from '../eventtarget';
-import { OperationOutcomeError, badRequest, serverError, validationError } from '../outcomes';
+import { EventTarget, TypedEventTarget } from '../eventtarget';
+import { OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { ProfileResource, getReferenceString, resolveId } from '../utils';
 
 export type SubscriptionEventMap = {
@@ -12,6 +12,66 @@ export type SubscriptionEventMap = {
   close: { type: 'close' };
   heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
+
+export class RobustWebSocket extends EventTarget {
+  private ws: WebSocket;
+  private messageBuffer: string[];
+  bufferedAmount = -Infinity;
+  extensions = 'NOT_IMPLEMENTED';
+
+  constructor(url: string) {
+    super();
+    this.messageBuffer = [];
+
+    const ws = new WebSocket(url);
+
+    ws.addEventListener('open', (event) => {
+      if (this.messageBuffer.length) {
+        const buffer = this.messageBuffer;
+        for (const msg of buffer) {
+          ws.send(msg);
+        }
+      }
+      this.dispatchEvent(event);
+    });
+
+    ws.addEventListener('error', (event) => {
+      this.dispatchEvent(event);
+    });
+
+    ws.addEventListener('message', (event) => {
+      this.dispatchEvent(event);
+    });
+
+    ws.addEventListener('close', (event) => {
+      this.dispatchEvent(event);
+    });
+
+    this.ws = ws;
+  }
+
+  get readyState(): number {
+    return this.ws.readyState;
+  }
+
+  close(): void {
+    this.ws.close();
+  }
+
+  send(message: string): void {
+    if (this.ws.readyState !== WebSocket.OPEN) {
+      this.messageBuffer.push(message);
+      return;
+    }
+
+    try {
+      this.ws.send(message);
+    } catch (err: unknown) {
+      this.dispatchEvent(new ErrorEvent('error', { error: err as Error, message: (err as Error).message }));
+      this.messageBuffer.push(message);
+    }
+  }
+}
 
 /**
  * An `EventTarget` that emits events when new subscription notifications come in over WebSockets.
@@ -83,7 +143,7 @@ export class SubscriptionManager {
     } catch (_err) {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
-    const ws = new WebSocket(url);
+    const ws = new RobustWebSocket(url);
 
     this.medplum = medplum;
     this.ws = ws;
@@ -117,6 +177,7 @@ export class SubscriptionManager {
         // Emit event for criteria
         criteriaEntry.emitter.dispatchEvent({ type: 'message', payload: bundle });
       } catch (err: unknown) {
+        console.error(err);
         const errorEvent = { type: 'error', payload: err as Error } as SubscriptionEventMap['error'];
         this.masterSubEmitter?.dispatchEvent(errorEvent);
         for (const { emitter } of this.criteriaEntries.values()) {
@@ -215,6 +276,7 @@ export class SubscriptionManager {
         this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
       })
       .catch((err) => {
+        console.error(err.message);
         this.emitError(criteria, err);
         this.criteriaEntries.delete(criteria);
       });
@@ -225,9 +287,8 @@ export class SubscriptionManager {
   removeCriteria(criteria: string): void {
     const criteriaEntry = this.criteriaEntries.get(criteria);
     if (!criteriaEntry) {
-      throw new OperationOutcomeError(
-        badRequest('Criteria not known to `SubscriptionManager`. Possibly called remove too many times.')
-      );
+      console.warn('Criteria not known to `SubscriptionManager`. Possibly called remove too many times.');
+      return;
     }
 
     criteriaEntry.refCount -= 1;

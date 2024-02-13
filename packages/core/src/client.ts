@@ -3561,11 +3561,8 @@ export class MedplumClient extends EventTarget {
    * @param criteria - The criteria to unsubscribe from.
    */
   unsubscribeFromCriteria(criteria: string): void {
-    if (!this.subscriptionManager) {
-      return;
-    }
-    this.subscriptionManager.removeCriteria(criteria);
-    if (this.subscriptionManager.getCriteriaCount() === 0) {
+    this.subscriptionManager?.removeCriteria(criteria);
+    if (this.subscriptionManager?.getCriteriaCount() === 0) {
       this.subscriptionManager.closeWebSocket();
     }
   }

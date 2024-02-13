@@ -1,6 +1,6 @@
 import { Bundle, Communication, Parameters, SubscriptionStatus } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
-import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from '.';
+import { RobustWebSocket, SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
 import { OperationOutcomeError } from '../outcomes';
@@ -11,6 +11,110 @@ const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
 
 const medplum = new MockMedplumClient();
 medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
+
+describe('RobustWebSocket', () => {
+  let wsServer: WS;
+
+  beforeEach(() => {
+    wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+  });
+
+  afterEach(() => {
+    WS.clean();
+  });
+
+  test('.close()', async () => {
+    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    await wsServer.connected;
+    expect(robustWebSocket.readyState).toEqual(WebSocket.OPEN);
+
+    robustWebSocket.close();
+    expect(robustWebSocket.readyState).not.toEqual(WebSocket.OPEN);
+  });
+
+  test('Getting readyState of underlying WebSocket', async () => {
+    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    expect(robustWebSocket.readyState).toEqual(WebSocket.CONNECTING);
+
+    await wsServer.connected;
+    expect(robustWebSocket.readyState).toEqual(WebSocket.OPEN);
+
+    robustWebSocket.close();
+    expect(robustWebSocket.readyState).toEqual(WebSocket.CLOSING);
+
+    await wsServer.closed;
+    expect(robustWebSocket.readyState).toEqual(WebSocket.CLOSED);
+  });
+
+  test('Sending before WebSocket is connected', async () => {
+    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    expect(() => robustWebSocket.send(JSON.stringify({ hello: 'medplum' }))).not.toThrow();
+    expect(() => robustWebSocket.send(JSON.stringify({ med: 'plum' }))).not.toThrow();
+
+    // Test that open is fired
+    await new Promise<void>((resolve) => {
+      robustWebSocket.addEventListener('open', () => {
+        resolve();
+      });
+    });
+
+    await expect(wsServer).toReceiveMessage({ hello: 'medplum' });
+    await expect(wsServer).toReceiveMessage({ med: 'plum' });
+  });
+
+  test('Wait for `open` before sending', async () => {
+    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    // Test that open is fired
+    await new Promise<void>((resolve) => {
+      robustWebSocket.addEventListener('open', () => {
+        resolve();
+      });
+    });
+
+    expect(() => robustWebSocket.send(JSON.stringify({ hello: 'medplum' }))).not.toThrow();
+    await expect(wsServer).toReceiveMessage({ hello: 'medplum' });
+    expect(() => robustWebSocket.send(JSON.stringify({ med: 'plum' }))).not.toThrow();
+    await expect(wsServer).toReceiveMessage({ med: 'plum' });
+  });
+
+  test('Should emit `message` when message received from WebSocket', async () => {
+    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    await wsServer.connected;
+    const receivedEvent = await new Promise<MessageEvent>((resolve) => {
+      robustWebSocket.addEventListener('message', (event) => {
+        resolve(event as MessageEvent);
+      });
+      wsServer.send({ med: 'plum' });
+    });
+    expect(receivedEvent?.type).toEqual('message');
+    expect(receivedEvent?.data).toBeDefined();
+    expect(JSON.parse(receivedEvent.data)).toEqual({ med: 'plum' });
+  });
+
+  test('Should emit `error` when error received from WebSocket', async () => {
+    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    await wsServer.connected;
+    const receivedEvent = await new Promise<MessageEvent>((resolve) => {
+      robustWebSocket.addEventListener('error', (event) => {
+        resolve(event as MessageEvent);
+      });
+      wsServer.error();
+    });
+    expect(receivedEvent?.type).toEqual('error');
+  });
+
+  test('Should emit `close` when server closes connection', async () => {
+    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    await wsServer.connected;
+    const receivedEvent = await new Promise<CloseEvent>((resolve) => {
+      robustWebSocket.addEventListener('close', (event) => {
+        resolve(event as CloseEvent);
+      });
+      wsServer.close();
+    });
+    expect(receivedEvent?.type).toEqual('close');
+  });
+});
 
 describe('SubscriptionEmitter', () => {
   test('getCriteria()', () => {
@@ -157,6 +261,9 @@ describe('SubscriptionManager', () => {
     });
 
     test('should emit `error` when token or url missing from `Subscription/$get-ws-binding-token` operation', async () => {
+      const originalError = console.error;
+      console.error = jest.fn();
+
       const manager1 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
@@ -248,6 +355,9 @@ describe('SubscriptionManager', () => {
       expect(masterEvent2?.payload).toBeInstanceOf(OperationOutcomeError);
       expect(criteriaEvent2?.type).toEqual('error');
       expect(criteriaEvent2?.payload).toBeInstanceOf(OperationOutcomeError);
+
+      expect(console.error).toHaveBeenCalledTimes(2);
+      console.error = originalError;
     });
   });
 
@@ -300,8 +410,12 @@ describe('SubscriptionManager', () => {
       WS.clean();
     });
 
-    test('should throw when remove has been called on a criteria that is not known', () => {
-      expect(() => manager.removeCriteria('DiagnosticReport')).toThrow(OperationOutcomeError);
+    test('should not throw when remove has been called on a criteria that is not known', () => {
+      const originalWarn = console.warn;
+      console.warn = jest.fn();
+      expect(() => manager.removeCriteria('DiagnosticReport')).not.toThrow();
+      expect(console.warn).toHaveBeenCalledTimes(1);
+      console.warn = originalWarn;
     });
 
     test('should not clean up a criteria if there are outstanding listeners', (done) => {
@@ -593,6 +707,9 @@ describe('SubscriptionManager', () => {
     });
 
     test('should emit `error` event when invalid message comes in over WebSocket', async () => {
+      const originalError = console.error;
+      console.error = jest.fn();
+
       const wsServer = new WS('wss://example.com/ws/subscriptions-r4');
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
@@ -626,6 +743,9 @@ describe('SubscriptionManager', () => {
       expect(receivedEvent2?.type).toEqual('error');
       expect(receivedEvent2?.payload).toBeInstanceOf(SyntaxError);
       expect(receivedEvent2?.payload?.message).toMatch(/^Unexpected token/);
+
+      expect(console.error).toHaveBeenCalledTimes(1);
+      console.error = originalError;
     });
   });
 });

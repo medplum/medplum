@@ -1,4 +1,5 @@
 import { Parameters, Patient } from '@medplum/fhirtypes';
+import WS from 'jest-websocket-mock';
 import { MedplumClient } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
 import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from './subscriptions';
@@ -47,10 +48,28 @@ const fetch = mockFetchWithStatus((url: string, options?: { body: string }) => {
   }
 });
 
-const medplum = new MedplumClient({ fetch, accessToken: createFakeJwt({ client_id: '123', login_id: '123' }) });
-
 describe('MedplumClient -- Subscriptions', () => {
+  let medplum: MedplumClient;
+  let warnMockFn: jest.Mock;
+  let originalWarn: typeof console.warn;
+
   beforeAll(async () => {
+    originalWarn = console.warn;
+    console.warn = warnMockFn = jest.fn();
+    jest.useFakeTimers();
+
+    // @ts-expect-error Need this to be here even if we are not using it so that WS reqs don't fail
+    const _wsServer = new WS('wss://api.medplum.com/ws/subscriptions-r4', { jsonProtocol: true });
+  });
+
+  afterAll(async () => {
+    console.warn = originalWarn;
+    jest.useRealTimers();
+  });
+
+  beforeEach(async () => {
+    warnMockFn.mockClear();
+    medplum = new MedplumClient({ fetch, accessToken: createFakeJwt({ client_id: '123', login_id: '123' }) });
     await medplum.getProfileAsync();
   });
 
@@ -74,22 +93,37 @@ describe('MedplumClient -- Subscriptions', () => {
     const emitter2 = medplum.subscribeToCriteria('Communication');
     expect(emitter2).toBeInstanceOf(SubscriptionEmitter);
     expect(emitter1).toBe(emitter2);
+
+    const connectEvent = await new Promise<SubscriptionEventMap['connect']>((resolve) => {
+      emitter1.addEventListener('connect', (event) => {
+        resolve(event);
+      });
+    });
+    expect(connectEvent?.type).toEqual('connect');
+    expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
   });
 
   test('unsubscribeFromCriteria() -- SubscriptionManager exists', async () => {
-    expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
-    expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
-    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
-
     const emitter = medplum.subscribeToCriteria('Communication');
 
-    const receivedEvent = await new Promise<SubscriptionEventMap['disconnect']>((resolve) => {
+    const connectEvent = await new Promise<SubscriptionEventMap['connect']>((resolve) => {
+      emitter.addEventListener('connect', (event) => {
+        resolve(event);
+      });
+    });
+    expect(connectEvent?.type).toEqual('connect');
+    expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
+
+    const disconnectEvent = await new Promise<SubscriptionEventMap['disconnect']>((resolve) => {
       emitter.addEventListener('disconnect', (event) => {
         resolve(event);
       });
       expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
     });
-    expect(receivedEvent?.type).toEqual('disconnect');
-    expect(receivedEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
+    expect(disconnectEvent?.type).toEqual('disconnect');
+    expect(disconnectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
+
+    expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
+    expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });
