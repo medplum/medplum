@@ -1,6 +1,6 @@
 import { Bundle, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
-import { EventTarget, TypedEventTarget } from '../eventtarget';
+import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { ProfileResource, getReferenceString, resolveId } from '../utils';
 
@@ -13,7 +13,14 @@ export type SubscriptionEventMap = {
   heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
 
-export class RobustWebSocket extends EventTarget {
+export type RobustWebSocketEventMap = {
+  open: { type: 'open' };
+  message: MessageEvent;
+  error: Event;
+  close: CloseEvent;
+};
+
+export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> {
   private ws: WebSocket;
   private messageBuffer: string[];
   bufferedAmount = -Infinity;
@@ -25,14 +32,14 @@ export class RobustWebSocket extends EventTarget {
 
     const ws = new WebSocket(url);
 
-    ws.addEventListener('open', (event) => {
+    ws.addEventListener('open', () => {
       if (this.messageBuffer.length) {
         const buffer = this.messageBuffer;
         for (const msg of buffer) {
           ws.send(msg);
         }
       }
-      this.dispatchEvent(event);
+      this.dispatchEvent(new Event('open'));
     });
 
     ws.addEventListener('error', (event) => {
@@ -40,6 +47,7 @@ export class RobustWebSocket extends EventTarget {
     });
 
     ws.addEventListener('message', (event) => {
+      // this.dispatchEvent({ type: 'message', payload: { data: event.data } });
       this.dispatchEvent(event);
     });
 
@@ -127,7 +135,7 @@ class CriteriaEntry {
 
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
-  private ws: WebSocket;
+  private ws: RobustWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
   private criteriaEntries: Map<string, CriteriaEntry>; // Map<criteriaStr, CriteriaEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
@@ -158,7 +166,7 @@ export class SubscriptionManager {
   private setupWebSocketListeners(): void {
     const ws = this.ws;
 
-    ws.addEventListener('message', (event: MessageEvent) => {
+    ws.addEventListener('message', (event) => {
       try {
         const bundle = JSON.parse(event.data) as Bundle;
         // Get criteria for event
