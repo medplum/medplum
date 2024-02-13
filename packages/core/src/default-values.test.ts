@@ -161,14 +161,15 @@ describe('apply default values', () => {
   });
 
   describe('US Core Patient', () => {
-    const profileUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
-    const raceExtensionUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race';
+    const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`;
+    const raceExtensionUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-race`;
+    const ethnicityExtensionUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-ethnicity`;
     const profileUrls = [
       profileUrl,
       raceExtensionUrl,
-      'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
-      'http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex',
-      'http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity',
+      ethnicityExtensionUrl,
+      `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
+      `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
     ];
 
     let schema: InternalTypeSchema;
@@ -185,9 +186,31 @@ describe('apply default values', () => {
       const resource: Patient = { resourceType: 'Patient' };
       const withDefaults = applyDefaultValuesToResource(resource, schema);
 
-      expect(withDefaults).toStrictEqual({ resourceType: 'Patient' });
+      expect(withDefaults).toEqual({ resourceType: 'Patient' });
       // For now, a different object is returned by design
       expect(withDefaults).not.toBe(resource);
+    });
+
+    test('HomerSimpsonUSCorePatient', async () => {
+      const resource = getComplexUSCorePatient();
+      const withDefaults = applyDefaultValuesToResource(resource, schema);
+
+      const expected = getComplexUSCorePatient();
+
+      // Prepare expected value
+      // Expect stub values for a slice named 'text' to have been added for race and ethnicity extensions
+      [ethnicityExtensionUrl, raceExtensionUrl].forEach((extUrl) => {
+        const ext = expected.extension?.find((e) => e.url === extUrl);
+        if (ext?.extension === undefined) {
+          fail(`expected ${extUrl} extensions to exist`);
+        }
+
+        const textExt = ext.extension?.find((e) => e.url === 'text');
+        expect(textExt).toBeUndefined();
+        ext.extension.push({ url: 'text' });
+      });
+
+      expect(withDefaults).toEqual(expected);
     });
 
     describe('fixed/pattern values within non-required extension slice entry', () => {
@@ -306,3 +329,78 @@ describe('apply default values', () => {
     });
   });
 });
+
+function getComplexUSCorePatient(): Patient {
+  return {
+    resourceType: 'Patient',
+    id: '123',
+    gender: 'male',
+    meta: {
+      versionId: '2',
+      lastUpdated: '2020-01-02T00:00:00.000Z',
+      author: {
+        reference: 'Practitioner/123',
+      },
+    },
+    identifier: [
+      { system: 'abc', value: '123' },
+      { system: 'def', value: '456' },
+    ],
+    active: true,
+    birthDate: '1956-05-12',
+    name: [
+      {
+        given: ['Homer'],
+        family: 'Simpson',
+      },
+    ],
+    extension: [
+      {
+        extension: [
+          {
+            valueCoding: {
+              system: 'urn:oid:2.16.840.1.113883.6.238',
+              code: '2106-3',
+              display: 'White',
+            },
+            url: 'ombCategory',
+          },
+        ],
+        url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-race`,
+      },
+      {
+        extension: [
+          {
+            valueCoding: {
+              system: 'urn:oid:2.16.840.1.113883.6.238',
+              code: '2186-5',
+              display: 'Not Hispanic or Latino',
+            },
+            url: 'ombCategory',
+          },
+        ],
+        url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-ethnicity`,
+      },
+      {
+        valueCode: 'M',
+        url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
+      },
+      {
+        valueCode: 'M',
+        url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-sex`,
+      },
+      {
+        valueCodeableConcept: {
+          coding: [
+            {
+              system: 'urn:oid:2.16.840.1.113762.1.4.1021.32',
+              code: 'M',
+              display: 'Male',
+            },
+          ],
+        },
+        url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
+      },
+    ],
+  };
+}

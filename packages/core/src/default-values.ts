@@ -2,7 +2,7 @@ import { Resource } from '@medplum/fhirtypes';
 import { SchemaCrawler, SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
 import { SliceDefinitionWithTypes, getValueSliceName } from './typeschema/slices';
 import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
-import { capitalize, deepClone, getPathDifference, isComplexTypeCode, isObject, isPopulated } from './utils';
+import { capitalize, deepClone, getPathDifference, isComplexTypeCode, isEmpty, isObject, isPopulated } from './utils';
 import { ElementsContextType } from './elements-context';
 
 /**
@@ -190,7 +190,7 @@ class DefaultValueVisitor implements SchemaVisitor {
         }
       }
 
-      if (!isPopulated(elementValue)) {
+      if (isEmpty(elementValue)) {
         // setting undefined to delete the key
         setValueAtKey(parentValue, undefined, key, element);
       }
