@@ -1,4 +1,4 @@
-import { Button, Stack, Title } from '@mantine/core';
+import { Stack, Title } from '@mantine/core';
 import { Coverage } from '@medplum/fhirtypes';
 import { DeleteCoverage } from './DeleteCoverage';
 import { EditCoverage } from './EditCoverage';

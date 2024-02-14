@@ -1,7 +1,7 @@
 import { Paper, Tabs } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
-import { Document, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
+import { ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect } from 'react';
 
 interface CoverageDetailsProps {

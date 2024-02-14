@@ -1,10 +1,9 @@
-import { Paper, Tabs } from '@mantine/core';
+import { Tabs } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString, parseSearchDefinition, SearchRequest } from '@medplum/core';
-import { Coverage, Patient, Resource } from '@medplum/fhirtypes';
+import { getReferenceString, normalizeErrorString, parseSearchDefinition } from '@medplum/core';
+import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { cleanResource } from './utils';

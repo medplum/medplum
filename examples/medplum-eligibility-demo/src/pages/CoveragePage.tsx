@@ -1,15 +1,7 @@
 import { Grid, Paper, Title } from '@mantine/core';
-import { getDisplayString, resolveId } from '@medplum/core';
-import { Coverage, Organization, Patient, Reference, RelatedPerson } from '@medplum/fhirtypes';
-import {
-  Document,
-  HumanNameDisplay,
-  MedplumLink,
-  PatientSummary,
-  useMedplum,
-  useMedplumNavigate,
-  useResource,
-} from '@medplum/react';
+import { resolveId } from '@medplum/core';
+import { Coverage, Patient } from '@medplum/fhirtypes';
+import { Document, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CoverageActions } from '../components/actions/CoverageActions';

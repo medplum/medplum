@@ -6,7 +6,6 @@ import {
   Operator,
   parseSearchDefinition,
   SearchRequest,
-  SortRule,
 } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
