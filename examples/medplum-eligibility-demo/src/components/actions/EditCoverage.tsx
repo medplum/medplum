@@ -5,6 +5,7 @@ import { Coverage, Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
 import { notifications } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { cleanResource } from '../utils';
 
 interface EditCoverageProps {
   readonly coverage: Coverage;
@@ -35,23 +36,6 @@ export function EditCoverage({ coverage, onChange }: EditCoverageProps): JSX.Ele
       });
     }
   };
-
-  // Clean the resource so that the meta details can be correctly updated
-  function cleanResource(resource: Resource): Resource {
-    let meta = resource.meta;
-    if (meta) {
-      meta = {
-        ...meta,
-        lastUpdated: undefined,
-        versionId: undefined,
-        author: undefined,
-      };
-    }
-    return {
-      ...resource,
-      meta,
-    };
-  }
 
   return (
     <div>

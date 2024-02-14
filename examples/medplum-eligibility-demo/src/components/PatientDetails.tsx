@@ -1,16 +1,21 @@
 import { Paper, Tabs } from '@mantine/core';
-import { getReferenceString, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { notifications } from '@mantine/notifications';
+import { getReferenceString, normalizeErrorString, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { Coverage, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { cleanResource } from './utils';
 
 interface PatientDetailsProps {
   readonly patient: Patient;
+  readonly onChange: (updatedPatient: Patient) => void;
 }
 
-export function PatientDetails({ patient }: PatientDetailsProps): JSX.Element {
+export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.Element {
+  const medplum = useMedplum();
   const navigate = useNavigate();
   const { id } = useParams() as { id: string };
 
@@ -24,8 +29,24 @@ export function PatientDetails({ patient }: PatientDetailsProps): JSX.Element {
   const coverageSearchQuery = `Coverage?patient=${getReferenceString(patient)}`;
   const coverageSearchRequest = parseSearchDefinition(coverageSearchQuery);
 
-  const onPatientEditSubmit = (updatedPatient: Resource) => {
-    console.log(updatedPatient);
+  const handlePatientEdit = async (newPatient: Resource) => {
+    try {
+      const updatedPatient = (await medplum.updateResource(cleanResource(newPatient))) as Patient;
+      notifications.show({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Patient updated',
+      });
+      onChange(updatedPatient);
+      navigate(`/Patient/${id}`);
+      window.scrollTo(0, 0);
+    } catch (error) {
+      notifications.show({
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(error),
+      });
+    }
   };
 
   const handleTabChange = (newTab: string | null): void => {
@@ -54,7 +75,7 @@ export function PatientDetails({ patient }: PatientDetailsProps): JSX.Element {
           />
         </Tabs.Panel>
         <Tabs.Panel value="edit">
-          <ResourceForm defaultValue={patient} onSubmit={onPatientEditSubmit} />
+          <ResourceForm defaultValue={patient} onSubmit={handlePatientEdit} />
         </Tabs.Panel>
         <Tabs.Panel value="history">
           <ResourceHistoryTable resourceType="Patient" id={patient.id} />
