@@ -1,16 +1,64 @@
-import { Button, Modal } from '@mantine/core';
+import { Alert, Button, Group, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
+import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { Coverage } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
+import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { NavigateFunction, useNavigate } from 'react-router-dom';
 
-export function DeleteCoverage(): JSX.Element {
+interface DeleteCoverageProps {
+  readonly coverage: Coverage;
+}
+
+export function DeleteCoverage({ coverage }: DeleteCoverageProps): JSX.Element {
+  const medplum = useMedplum();
+  const navigate = useNavigate();
   const [opened, { close, toggle }] = useDisclosure(false);
+
+  const handleDelete = async (
+    coverage: Coverage,
+    medplum: MedplumClient,
+    navigate: NavigateFunction
+  ): Promise<void> => {
+    const coverageId = coverage.id as string;
+
+    try {
+      await medplum.deleteResource('Coverage', coverageId);
+      notifications.show({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Coverage deleted',
+      });
+      // If the coverage is successfully deleted, you will be redirected to the Coverage search page
+      navigate('/Coverage');
+    } catch (err) {
+      notifications.show({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
+  };
 
   return (
     <div>
       <Button fullWidth onClick={toggle} color="red">
         Delete Coverage
       </Button>
-      <Modal opened={opened} onClose={close}>
-        <p>Are you sure you want to delete this coverage?</p>
+      <Modal withCloseButton={false} opened={opened} onClose={close}>
+        <Alert color="red" title="Warning" icon={<IconAlertCircle />}>
+          <b>Are you sure you want to delete this coverage?</b>
+          <Group mt="sm">
+            <Button onClick={() => handleDelete(coverage, medplum, navigate)} color="red">
+              Yes, Delete
+            </Button>
+            <Button onClick={close} color="red" variant="outline">
+              Cancel
+            </Button>
+          </Group>
+        </Alert>
       </Modal>
     </div>
   );

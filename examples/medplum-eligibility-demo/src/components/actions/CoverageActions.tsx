@@ -16,7 +16,7 @@ export function CoverageActions(props: CoverageActionsProps): JSX.Element {
       <Stack>
         <InitiateEligibilityRequest />
         <EditCoverage coverage={props.coverage} onChange={props.onChange} />
-        <DeleteCoverage />
+        <DeleteCoverage coverage={props.coverage} />
       </Stack>
     </Stack>
   );
