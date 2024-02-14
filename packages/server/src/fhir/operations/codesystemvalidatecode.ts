@@ -66,9 +66,13 @@ export async function validateCode(codeSystem: CodeSystem, code: string): Promis
     codeSystemTable,
     new Condition(new Column('Coding', 'system'), '=', new Column(codeSystemTable, 'id'))
   );
-  query.column('display').where(new Column(codeSystemTable, 'id'), '=', codeSystem.id).where('code', '=', code);
+  query
+    .column('id')
+    .column('display')
+    .where(new Column(codeSystemTable, 'id'), '=', codeSystem.id)
+    .where('code', '=', code);
 
   const db = getDatabasePool();
   const result = await query.execute(db);
-  return result.length ? { system: codeSystem.url, code, display: result[0].display } : undefined;
+  return result.length ? { id: result[0].id, system: codeSystem.url, code, display: result[0].display } : undefined;
 }

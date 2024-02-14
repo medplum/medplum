@@ -514,7 +514,6 @@ describe('Updated implementation', () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/care-team-category')}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    console.log(res.body.issue);
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 

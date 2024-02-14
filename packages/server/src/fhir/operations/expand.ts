@@ -1,6 +1,7 @@
 import { badRequest, OperationOutcomeError, Operator, Operator as SearchOperator } from '@medplum/core';
 import {
   CodeSystem,
+  Coding,
   ValueSet,
   ValueSetComposeInclude,
   ValueSetComposeIncludeFilter,
@@ -230,10 +231,13 @@ async function computeExpansion(
     const codeSystem = codeSystemCache[include.system] ?? (await findCodeSystem(include.system, repo));
     codeSystemCache[include.system] = codeSystem;
     if (include.concept) {
-      const concepts = await Promise.all(
+      let concepts = await Promise.all(
         include.concept.flatMap(async (c) => validateCode(codeSystem, c.code)) as ValueSetExpansionContains[]
       );
-      expansion.push(...(filter ? concepts.filter((c) => c.display?.includes(filter)) : concepts));
+      if (filter) {
+        concepts = concepts.filter((c) => c.display?.includes(filter));
+      }
+      expansion.push(...concepts.map((c) => ({ ...c, id: undefined })));
     } else {
       await includeInExpansion(include, expansion, codeSystem, repo, offset, count, filter);
     }
@@ -291,20 +295,34 @@ async function includeInExpansion(
     .column('display')
     .where('system', '=', codeSystem.id)
     .limit(count + 1)
-    .offset(offset)
-    .orderBy('display');
+    .offset(offset);
   if (filter) {
-    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
+    query
+      .where('display', '!=', null)
+      .where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter))
+      .orderBy('display');
+  } else {
+    query.orderBy('code');
   }
   if (include.filter?.length) {
     for (const condition of include.filter) {
-      if (condition.op === 'is-a') {
-        const coding = await validateCode(codeSystem, condition.value);
-        if (coding && (!filter || coding.display?.includes(filter))) {
-          expansion.push(coding);
-        }
+      switch (condition.op) {
+        case 'is-a':
+        case 'is-not-a':
+          {
+            const coding = await validateCode(codeSystem, condition.value);
+            if (!coding) {
+              return; // Invalid parent code, don't make DB query with incorrect filters
+            }
+            if (condition.op === 'is-a' && (!filter || coding.display?.includes(filter))) {
+              expansion.push({ ...coding, id: undefined });
+            }
+            query = addParentCondition(condition, query, codeSystem, coding);
+          }
+          break;
+        default:
+          return; // Unknown filter type, don't make DB query with incorrect filters
       }
-      query = addFilter(condition, query, codeSystem);
     }
   }
 
@@ -313,50 +331,46 @@ async function includeInExpansion(
   expansion.push(...results.map(({ code, display }) => ({ system, code, display })));
 }
 
-function addFilter(filter: ValueSetComposeIncludeFilter, query: SelectQuery, codeSystem: CodeSystem): SelectQuery {
-  if (filter.op === 'is-a' || filter.op === 'is-not-a') {
-    if (codeSystem.hierarchyMeaning !== 'is-a') {
-      throw new OperationOutcomeError(
-        badRequest(
-          `Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`,
-          'ValueSet.compose.include.filter'
-        )
-      );
-    }
-    let property = codeSystem.property?.find((p) => p.uri === parentProperty);
-    if (!property) {
-      // Implicit parent property for hierarchical CodeSystems
-      property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
-    }
-
-    const propertyTable = query.getNextJoinAlias();
-    query.innerJoin(
-      'Coding_Property',
-      propertyTable,
-      new Conjunction([new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))])
+function addParentCondition(
+  condition: ValueSetComposeIncludeFilter,
+  query: SelectQuery,
+  codeSystem: CodeSystem,
+  parent: Coding
+): SelectQuery {
+  if (codeSystem.hierarchyMeaning !== 'is-a') {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`,
+        'ValueSet.compose.include.filter'
+      )
     );
-
-    const csPropertyTable = query.getNextJoinAlias();
-    query.innerJoin(
-      'CodeSystem_Property',
-      csPropertyTable,
-      new Conjunction([
-        new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-        new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-      ])
-    );
-
-    const targetTable = query.getNextJoinAlias();
-    query.leftJoin(
-      'Coding',
-      targetTable,
-      new Conjunction([
-        new Condition(new Column(propertyTable, 'target'), '=', new Column(targetTable, 'id')),
-        new Condition(new Column(targetTable, 'code'), '=', filter.value),
-      ])
-    );
-    query.where(new Column(targetTable, 'id'), filter.op === 'is-not-a' ? '=' : '!=', null);
   }
+  let property = codeSystem.property?.find((p) => p.uri === parentProperty);
+  if (!property) {
+    // Implicit parent property for hierarchical CodeSystems
+    property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
+  }
+
+  const propertyTable = query.getNextJoinAlias();
+  query.leftJoin(
+    'Coding_Property',
+    propertyTable,
+    new Conjunction([
+      new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding')),
+      new Condition(new Column(propertyTable, 'target'), '=', parent.id),
+    ])
+  );
+
+  const csPropertyTable = query.getNextJoinAlias();
+  query.innerJoin(
+    'CodeSystem_Property',
+    csPropertyTable,
+    new Conjunction([
+      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+    ])
+  );
+  query.where(new Column(propertyTable, 'coding'), condition.op === 'is-not-a' ? '=' : '!=', null);
 
   return query;
 }
