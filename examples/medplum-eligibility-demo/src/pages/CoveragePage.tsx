@@ -1,18 +1,27 @@
 import { Grid, Paper, Title } from '@mantine/core';
-import { resolveId } from '@medplum/core';
-import { Coverage, Patient } from '@medplum/fhirtypes';
-import { Document, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
+import { getDisplayString, resolveId } from '@medplum/core';
+import { Coverage, Organization, Patient, Reference, RelatedPerson } from '@medplum/fhirtypes';
+import {
+  Document,
+  HumanNameDisplay,
+  MedplumLink,
+  PatientSummary,
+  useMedplum,
+  useMedplumNavigate,
+  useResource,
+} from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CoverageActions } from '../components/actions/CoverageActions';
 import { CoverageDetails } from '../components/CoverageDetails';
+import { CoverageHeader } from '../components/CoverageHeader';
 
 export function CoveragePage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useMedplumNavigate();
   const { id } = useParams() as { id: string };
   const [coverage, setCoverage] = useState<Coverage | undefined>();
-  const [patient, setPatient] = useState<Patient | undefined>();
+  const [patient, setPatient] = useState<Patient>();
 
   const tabs = ['Details', 'History', 'Eligibility Requests', 'Eligibility Responses'];
 
@@ -64,29 +73,32 @@ export function CoveragePage(): JSX.Element {
     navigate(`/Coverage/${id}/${newTab ?? ''}`);
   };
 
-  if (!coverage) {
+  if (!coverage || !patient) {
     return <Document>No Coverage Found</Document>;
   }
 
   return (
-    <Grid>
-      <Grid.Col span={4}>{patient ? <PatientSummary patient={patient} /> : <p>No linked patient</p>}</Grid.Col>
-      <Grid.Col span={5}>
-        <Paper p="sm">
-          <Title>Coverage Details</Title>
-          <CoverageDetails
-            coverage={coverage}
-            patient={patient}
-            tabs={tabs}
-            currentTab={currentTab}
-            handleTabChange={handleTabChange}
-          />
-        </Paper>
-      </Grid.Col>
-      <Grid.Col span={3}>
-        <Actions coverage={coverage} onChange={onCoverageChange} />
-      </Grid.Col>
-    </Grid>
+    <div>
+      <CoverageHeader patient={patient} payor={coverage.payor[0]} />
+      <Grid>
+        <Grid.Col span={4}>{patient ? <PatientSummary patient={patient} /> : <p>No linked patient</p>}</Grid.Col>
+        <Grid.Col span={5}>
+          <Paper p="sm">
+            <Title>Coverage Details</Title>
+            <CoverageDetails
+              coverage={coverage}
+              patient={patient}
+              tabs={tabs}
+              currentTab={currentTab}
+              handleTabChange={handleTabChange}
+            />
+          </Paper>
+        </Grid.Col>
+        <Grid.Col span={3}>
+          <Actions coverage={coverage} onChange={onCoverageChange} />
+        </Grid.Col>
+      </Grid>
+    </div>
   );
 }
 
