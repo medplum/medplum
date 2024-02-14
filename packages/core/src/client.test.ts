@@ -13,7 +13,7 @@ import {
   NewProjectRequest,
   NewUserRequest,
 } from './client';
-import { mockFetch, mockFetchResponse } from './client-test-utils';
+import { createFakeJwt, mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError, accepted, allOk, forbidden, notFound, unauthorized } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
@@ -1713,7 +1713,7 @@ describe('Client', () => {
     const result2 = await client.executeBot(bot.identifier?.[0] as Identifier, {});
     expect(result2).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com|123',
+      'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https%3A%2F%2Fexample.com%7C123',
       expect.objectContaining({})
     );
   });
@@ -2790,10 +2790,6 @@ function createPdf(
     pdfDoc.on('error', reject);
     pdfDoc.end();
   });
-}
-
-function createFakeJwt(claims: Record<string, string | number>): string {
-  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
 }
 
 function fail(message: string): never {

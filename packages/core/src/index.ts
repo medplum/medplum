@@ -33,6 +33,7 @@ export * from './search/match';
 export * from './search/search';
 export * from './sftp';
 export * from './storage';
+export * from './subscriptions';
 export * from './types';
 export * from './typeschema/crawler';
 export * from './typeschema/types';

@@ -66,6 +66,7 @@ import {
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage, IClientStorage } from './storage';
+import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
 import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, loadDataType } from './typeschema/types';
 import {
@@ -74,6 +75,7 @@ import {
   arrayBufferToBase64,
   createReference,
   getReferenceString,
+  getWebSocketUrl,
   resolveId,
   sleep,
 } from './utils';
@@ -672,6 +674,7 @@ export class MedplumClient extends EventTarget {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private subscriptionManager?: SubscriptionManager;
   private medplumServer?: boolean;
   private clientId?: string;
   private clientSecret?: string;
@@ -2227,13 +2230,14 @@ export class MedplumClient extends EventTarget {
     contentType?: string,
     options?: RequestInit
   ): Promise<any> {
-    let url;
+    let url: URL;
     if (typeof idOrIdentifier === 'string') {
       const id = idOrIdentifier;
       url = this.fhirUrl('Bot', id, '$execute');
     } else {
       const identifier = idOrIdentifier;
-      url = this.fhirUrl('Bot', '$execute') + `?identifier=${identifier.system}|${identifier.value}`;
+      url = this.fhirUrl('Bot', '$execute');
+      url.searchParams.set('identifier', identifier.system + '|' + identifier.value);
     }
     return this.post(url, body, contentType, options);
   }
@@ -3504,6 +3508,91 @@ export class MedplumClient extends EventTarget {
     if (retryNumber >= maxRetries - 1) {
       throw err;
     }
+  }
+
+  /**
+   * Gets the `SubscriptionManager` for WebSocket subscriptions.
+   *
+   * @category Subscriptions
+   * @returns the `SubscriptionManager` for this client.
+   */
+  getSubscriptionManager(): SubscriptionManager {
+    if (!this.subscriptionManager) {
+      this.subscriptionManager = new SubscriptionManager(this, getWebSocketUrl('/ws/subscriptions-r4', this.baseUrl));
+    }
+    return this.subscriptionManager;
+  }
+
+  /**
+   * Subscribes to a given criteria, listening to notifications over WebSockets.
+   *
+   * This uses Medplum's `WebSocket Subscriptions` under the hood.
+   *
+   * A `SubscriptionEmitter` is returned from this function, which can be used to listen for updates to resources described by the given criteria.
+   *
+   * When subscribing to the same criteria multiple times, the same `SubscriptionEmitter` will be returned, and a reference count will be incremented.
+   *
+   * -----
+   * @example
+   * ```ts
+   * const emitter = medplum.subscribeToCriteria('Communication');
+   *
+   * emitter.addEventListener('message', (bundle: Bundle) => {
+   *   // Called when a `Communication` resource is created or modified
+   *   console.log(bundle?.entry?.[1]?.resource); // Logs the `Communication` resource that was updated
+   * });
+   * ```
+   *
+   * @category Subscriptions
+   * @param criteria - The criteria to subscribe to.
+   * @returns a `SubscriptionEmitter` that emits `Bundle` resources containing changes to resources based on the given criteria.
+   */
+  subscribeToCriteria(criteria: string): SubscriptionEmitter {
+    return this.getSubscriptionManager().addCriteria(criteria);
+  }
+
+  /**
+   * Unsubscribes from the given criteria.
+   *
+   * When called the same amount of times as proceeding calls to `subscribeToCriteria` on a given `criteria`,
+   * the criteria is fully removed from the `SubscriptionManager`.
+   *
+   * @category Subscriptions
+   * @param criteria - The criteria to unsubscribe from.
+   */
+  unsubscribeFromCriteria(criteria: string): void {
+    if (!this.subscriptionManager) {
+      return;
+    }
+    this.subscriptionManager.removeCriteria(criteria);
+    if (this.subscriptionManager.getCriteriaCount() === 0) {
+      this.subscriptionManager.closeWebSocket();
+    }
+  }
+
+  /**
+   * Get the master `SubscriptionEmitter` for the `SubscriptionManager`.
+   *
+   * The master `SubscriptionEmitter` gets messages for all subscribed `criteria` as well as WebSocket errors, `connect` and `disconnect` events, and the `close` event.
+   *
+   * It can also be used to listen for `heartbeat` messages.
+   *
+   *------
+   * @example
+   * ### Listening for `heartbeat`:
+   * ```ts
+   * const masterEmitter = medplum.getMasterSubscriptionEmitter();
+   *
+   * masterEmitter.addEventListener('heartbeat', (bundle: Bundle<SubscriptionStatus>) => {
+   *   console.log(bundle?.entry?.[0]?.resource); // A `SubscriptionStatus` of type `heartbeat`
+   * });
+   *
+   * ```
+   * @category Subscriptions
+   * @returns the master `SubscriptionEmitter` from the `SubscriptionManager`.
+   */
+  getMasterSubscriptionEmitter(): SubscriptionEmitter {
+    return this.getSubscriptionManager().getMasterEmitter();
   }
 }
 

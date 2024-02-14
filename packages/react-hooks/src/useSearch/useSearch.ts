@@ -80,7 +80,7 @@ function useSearchImpl<K extends ResourceType, ReturnType>(
           setOutcome(normalizeOperationOutcome(err));
         });
     }
-  }, [medplum, searchFn, resourceType, query, searchKey, setResult]);
+  }, [medplum, searchFn, resourceType, query, searchKey]);
 
   return [result, loading, outcome];
 }

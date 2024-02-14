@@ -979,3 +979,7 @@ export function append<T>(array: T[] | undefined, value: T): T[] {
   array.push(value);
   return array;
 }
+
+export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
+  return new URL(path, baseUrl).toString().replace('http://', 'ws://').replace('https://', 'wss://');
+}

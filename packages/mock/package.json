@@ -58,6 +58,7 @@
     "@medplum/fhir-router": "*",
     "@medplum/fhirtypes": "*",
     "dataloader": "2.2.2",
+    "jest-websocket-mock": "2.5.0",
     "rfc6902": "5.1.1"
   },
   "devDependencies": {
