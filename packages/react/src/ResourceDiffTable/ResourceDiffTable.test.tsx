@@ -205,4 +205,29 @@ describe('ResourceDiffTable', () => {
     const operations = screen.getAllByText('Replace identifier');
     expect(operations).toHaveLength(1);
   });
+
+  test('Change attachment URL', async () => {
+    const original: Patient = {
+      resourceType: 'Patient',
+      id: '123',
+      meta: { versionId: '456' },
+      name: [{ family: 'Smith', given: ['John'] }],
+      photo: [{ url: 'http://example.com/foo.jpg' }],
+    };
+
+    const revised: Patient = {
+      ...original,
+      meta: { versionId: '457' },
+      photo: [{ url: 'http://example.com/bar.jpg' }],
+    };
+
+    await act(async () => {
+      setup({ original, revised });
+    });
+
+    await waitFor(() => screen.getByText('Replace photo[0]'));
+
+    // There should be 2 download links
+    expect(screen.getAllByText('Download')).toHaveLength(2);
+  });
 });

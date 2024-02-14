@@ -613,7 +613,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       const cacheKeys = projectIds.map((id) => getProfileCacheKey(id, url));
       const results = await getRedis().mget(...cacheKeys);
       const cachedProfile = results.find(Boolean) as string | undefined;
-      return cachedProfile ? (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource : undefined;
+      if (cachedProfile) {
+        return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
+      }
     }
 
     // Fall back to loading from the DB; descending version sort approximates version resolution for some cases

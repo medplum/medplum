@@ -1,15 +1,9 @@
 import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  MedplumClient,
-  ProfileResource,
-  createReference,
-  getReferenceString,
-  normalizeErrorString,
-} from '@medplum/core';
-import { Bundle, Communication, Parameters, Practitioner, Reference, Subscription } from '@medplum/fhirtypes';
+import { ProfileResource, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { Bundle, Communication, Practitioner, Reference } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
-import { Form, useMedplum } from '@medplum/react';
+import { Form, useMedplum, useSubscription } from '@medplum/react';
 import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import classes from './Chat.module.css';
@@ -49,44 +43,6 @@ function upsertCommunications(
   setCommunications(newCommunications);
 }
 
-async function listenForSub(
-  medplum: MedplumClient,
-  subscription: Subscription,
-  setWebSocket: (ws: WebSocket) => void,
-  onNewMessage: (c: Communication) => void
-): Promise<void> {
-  const { parameter } = (await medplum.get(
-    `/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`
-  )) as Parameters;
-  const token = parameter?.find((param) => param.name === 'token')?.valueString;
-  const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
-  if (!token) {
-    throw new Error('Failed to get token!');
-  }
-
-  if (!url) {
-    throw new Error('Failed to get URL from $get-ws-binding-token!');
-  }
-
-  const ws = new WebSocket(url);
-
-  ws.addEventListener('open', () => {
-    ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
-  });
-
-  ws.addEventListener('message', (event: MessageEvent<string>) => {
-    const bundle = JSON.parse(event.data) as Bundle;
-    const communication = bundle.entry?.[1]?.resource;
-    if (!communication || communication.resourceType !== 'Communication') {
-      console.error('Invalid chat bundle!');
-      return;
-    }
-    onNewMessage(communication);
-  });
-
-  setWebSocket(ws);
-}
-
 export function Chat(): JSX.Element | null {
   const medplum = useMedplum();
   const [open, setOpen] = useState(false);
@@ -94,22 +50,36 @@ export function Chat(): JSX.Element | null {
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
-  const [subscription, setSubscription] = useState<Subscription | undefined>(undefined);
-  const [webSocket, setWebSocket] = useState<WebSocket | undefined>();
-
-  const creatingSubRef = useRef(false);
-  const deleteSubTimerRef = useRef<NodeJS.Timeout | undefined>();
 
   const profileRefStr = useMemo<string>(
     () => (profile ? getReferenceString(medplum.getProfile() as ProfileResource) : ''),
     [profile, medplum]
   );
 
+  useSubscription(
+    `Communication?sender=${profileRefStr},${DR_ALICE_SMITH.reference}&recipient=${DR_ALICE_SMITH.reference},${profileRefStr}`,
+    (bundle: Bundle) => {
+      const communication = bundle.entry?.[1]?.resource as Communication;
+      upsertCommunications(communicationsRef.current, [communication], setCommunications);
+      if (!(communication.received && communication.status === 'completed')) {
+        medplum
+          .updateResource<Communication>({
+            ...communication,
+            received: communication.received ?? new Date().toISOString(), // Mark as received if needed
+            status: 'completed', // Mark as read
+            // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
+            // for more info about recommended `Communication` lifecycle
+          })
+          .catch(console.error);
+      }
+    }
+  );
+
   // Disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const latestProfile = medplum.getProfile();
-    if (profile !== latestProfile) {
+    if (profile?.id !== latestProfile?.id) {
       setProfile(latestProfile);
     }
   });
@@ -117,9 +87,6 @@ export function Chat(): JSX.Element | null {
   const communicationsRef = useRef<Communication[]>(communications);
   communicationsRef.current = communications;
   const prevCommunicationsRef = useRef<Communication[]>(communications);
-
-  const openRef = useRef<boolean>();
-  openRef.current = open;
 
   const scrollToBottomRef = useRef<boolean>(false);
 
@@ -135,66 +102,6 @@ export function Chat(): JSX.Element | null {
     );
     upsertCommunications(communicationsRef.current, searchResult, setCommunications);
   }, [medplum, profileRefStr]);
-
-  useEffect(() => {
-    // Create subscription...
-    // Check for creatingSubRef
-    if (!(profile && profileRefStr) || creatingSubRef.current) {
-      return () => undefined;
-    }
-    if (!subscription) {
-      creatingSubRef.current = true;
-      medplum
-        .createResource<Subscription>({
-          resourceType: 'Subscription',
-          criteria: `Communication?sender=${profileRefStr},${DR_ALICE_SMITH.reference}&recipient=${DR_ALICE_SMITH.reference},${profileRefStr}`,
-          status: 'active',
-          reason: `Watch for Communications between ${profileRefStr} and ${DR_ALICE_SMITH.reference}.`,
-          channel: {
-            type: 'websocket',
-          },
-        })
-        .then((subscription) => {
-          setSubscription(subscription);
-          listenForSub(medplum, subscription, setWebSocket, (communication) => {
-            upsertCommunications(communicationsRef.current, [communication], setCommunications);
-            // NOTE: We may normally want to do a guard like this to prevent our client from updating messages that we have sent ourselves, but in this case
-            // We allow them to be updated anyways so that we have received timestamps on our sent messages
-            // const senderId = resolveId(communication.sender);
-            // if (senderId === profile.id) {
-            //   return;
-            // }
-            // You may want to update received time and "completed" status independently, but for the purposes of this demo we are updating them together
-            if (!(communication.received && communication.status === 'completed')) {
-              medplum
-                .updateResource<Communication>({
-                  ...communication,
-                  received: new Date().toISOString(), // Mark as received
-                  status: 'completed', // Mark as read
-                  // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
-                  // for more info about recommended `Communication` lifecycle
-                })
-                .catch(console.error);
-            }
-          })
-            .then(() => {
-              creatingSubRef.current = false;
-            })
-            .catch(console.error);
-        })
-        .catch(console.error);
-    }
-    if (deleteSubTimerRef.current) {
-      clearTimeout(deleteSubTimerRef.current);
-      deleteSubTimerRef.current = undefined;
-    }
-    return () => {
-      if (deleteSubTimerRef.current) {
-        return;
-      }
-      deleteSubTimerRef.current = setTimeout(() => {}, 1000);
-    };
-  }, [medplum, profile, profileRefStr, subscription]);
 
   const sendMessage = useCallback(
     async (formData: Record<string, string>) => {
@@ -254,7 +161,7 @@ export function Chat(): JSX.Element | null {
     return null;
   }
 
-  if (open && webSocket) {
+  if (open) {
     return (
       <>
         <div className={classes.chatContainer}>
@@ -272,7 +179,10 @@ export function Chat(): JSX.Element | null {
                         (currCommTime !== prevCommTime && <div style={{ textAlign: 'center' }}>{currCommTime}</div>)}
                       {c.sender?.reference === profileRefStr ? (
                         <Group justify="flex-end" gap="xs" mb="sm">
-                          <ChatBubble communication={c} showSeen={!!c.received && c.id === myLastCommunicationId} />
+                          <ChatBubble
+                            communication={c}
+                            showDelivered={!!c.received && c.id === myLastCommunicationId}
+                          />
                           <Avatar radius="xl" color="orange" />
                         </Group>
                       ) : (
@@ -341,7 +251,7 @@ export function Chat(): JSX.Element | null {
 
 interface ChatBubbleProps {
   communication: Communication;
-  showSeen?: boolean;
+  showDelivered?: boolean;
 }
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
@@ -350,9 +260,9 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
   return (
     <div className={classes.chatBubbleWrap}>
       <div className={classes.chatBubble}>{content}</div>
-      {props.showSeen && (
+      {props.showDelivered && (
         <div style={{ textAlign: 'right' }}>
-          Seen {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
+          Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
           {seenTime.getMinutes()}
         </div>
       )}

@@ -15,7 +15,6 @@ export function createMedplumCommand(name: string): Command {
     .option('--audience <audience>', 'Audience for JWT authentication')
     .option('--issuer <issuer>', 'Issuer for JWT authentication')
     .option('--private-key-path <privateKeyPath>', 'Private key path for JWT assertion')
-    .option('--audience <audience>', 'Audience for JWT assertion')
     .option('-p, --profile <profile>', 'Profile name')
     .option('-v --verbose', 'Verbose output')
     .addOption(

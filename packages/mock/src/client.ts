@@ -10,6 +10,7 @@ import {
   MedplumClientOptions,
   OperationOutcomeError,
   ProfileResource,
+  SubscriptionEmitter,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
 import {
@@ -72,6 +73,7 @@ import {
   ExampleWorkflowTask2,
   ExampleWorkflowTask3,
 } from './mocks/workflow';
+import { MockSubscriptionManager } from './subscription-manager';
 
 export interface MockClientOptions extends MedplumClientOptions {
   readonly debug?: boolean;
@@ -88,8 +90,9 @@ export class MockClient extends MedplumClient {
   readonly client: MockFetchClient;
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
-  private agentAvailable: boolean = true;
+  private agentAvailable = true;
   private readonly profile: ReturnType<MedplumClient['getProfile']>;
+  subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
     const router = new FhirRouter();
@@ -227,6 +230,25 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
   setAgentAvailable(value: boolean): void {
     this.agentAvailable = value;
   }
+
+  getSubscriptionManager(): MockSubscriptionManager {
+    if (!this.subManager) {
+      this.subManager = new MockSubscriptionManager(this, 'wss://example.com/ws/subscriptions-r4');
+    }
+    return this.subManager;
+  }
+
+  subscribeToCriteria(criteria: string): SubscriptionEmitter {
+    return this.getSubscriptionManager().addCriteria(criteria);
+  }
+
+  unsubscribeFromCriteria(criteria: string): void {
+    this.getSubscriptionManager().removeCriteria(criteria);
+  }
+
+  getMasterSubscriptionEmitter(): SubscriptionEmitter {
+    return this.getSubscriptionManager().getMasterEmitter();
+  }
 }
 
 export class MockFetchClient {
@@ -269,7 +291,11 @@ export class MockFetchClient {
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
       headers: {
-        get: () => ContentType.FHIR_JSON,
+        get(name: string): string | undefined {
+          return {
+            'content-type': ContentType.FHIR_JSON,
+          }[name];
+        },
       } as unknown as Headers,
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),

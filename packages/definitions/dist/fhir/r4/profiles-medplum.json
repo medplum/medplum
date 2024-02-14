@@ -95,6 +95,22 @@
             }]
           },
           {
+            "id" : "Project.identifier",
+            "path" : "Project.identifier",
+            "short" : "An identifier for this project",
+            "definition" : "An identifier for this project.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "Project.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "Project.name",
             "path" : "Project.name",
             "definition" : "A name associated with the Project.",
@@ -733,6 +749,22 @@
             "type" : [{
               "code" : "code"
             }]
+          },
+          {
+            "id" : "User.identifier",
+            "path" : "User.identifier",
+            "short" : "An identifier for this user",
+            "definition" : "An identifier for this user.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "User.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "User.firstName",

@@ -885,6 +885,16 @@ describe('FHIR Repo', () => {
 
   test('Profile validation', async () =>
     withTestContext(async () => {
+      const clientApp = 'ClientApplication/' + randomUUID();
+      const projectId = randomUUID();
+      const repo = new Repository({
+        strictMode: true,
+        projects: [projectId],
+        author: {
+          reference: clientApp,
+        },
+      });
+
       const profile = JSON.parse(
         readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
       ) as StructureDefinition;
@@ -909,9 +919,9 @@ describe('FHIR Repo', () => {
         // Missing gender property is required by profile
       };
 
-      await expect(systemRepo.createResource(patient)).resolves.toBeTruthy();
-      await systemRepo.createResource(profile);
-      await expect(systemRepo.createResource(patient)).rejects.toEqual(
+      await expect(repo.createResource(patient)).resolves.toBeTruthy();
+      await repo.createResource(profile);
+      await expect(repo.createResource(patient)).rejects.toEqual(
         new Error('Missing required property (Patient.gender)')
       );
     }));

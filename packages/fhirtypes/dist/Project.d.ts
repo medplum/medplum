@@ -4,6 +4,7 @@
  */
 
 import { AccessPolicy } from './AccessPolicy';
+import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 import { User } from './User';
@@ -43,6 +44,11 @@ export interface Project {
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * An identifier for this project.
+   */
+  identifier?: Identifier[];
 
   /**
    * A name associated with the Project.

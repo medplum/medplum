@@ -30,7 +30,7 @@
     "@medplum/eslint-config": "3.0.3",
     "@medplum/fhirtypes": "3.0.3",
     "@medplum/mock": "3.0.3",
-    "@types/node": "20.11.16",
+    "@types/node": "20.11.17",
     "@types/node-fetch": "2.6.11",
     "@types/ssh2-sftp-client": "9.0.3",
     "@vitest/coverage-v8": "1.2.2",
@@ -41,7 +41,7 @@
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.9",
     "ssh2-sftp-client": "10.0.3",
-    "stripe": "14.14.0",
+    "stripe": "14.16.0",
     "typescript": "5.3.3",
     "vitest": "1.2.2"
   }

@@ -129,7 +129,7 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
         <Button size="compact-md" variant="outline" onClick={props.onEdit}>
           Edit
         </Button>
-        <Button size="size-md" variant="outline" onClick={props.onDelete}>
+        <Button size="compact-md" variant="outline" onClick={props.onDelete}>
           Delete
         </Button>
       </td>
