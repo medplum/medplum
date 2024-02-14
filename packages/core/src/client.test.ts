@@ -1713,7 +1713,7 @@ describe('Client', () => {
     const result2 = await client.executeBot(bot.identifier?.[0] as Identifier, {});
     expect(result2).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com|123',
+      'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https%3A%2F%2Fexample.com%7C123',
       expect.objectContaining({})
     );
   });

@@ -2230,7 +2230,7 @@ export class MedplumClient extends EventTarget {
     contentType?: string,
     options?: RequestInit
   ): Promise<any> {
-    let url: string | URL;
+    let url: URL;
     if (typeof idOrIdentifier === 'string') {
       const id = idOrIdentifier;
       url = this.fhirUrl('Bot', id, '$execute');
@@ -3561,8 +3561,11 @@ export class MedplumClient extends EventTarget {
    * @param criteria - The criteria to unsubscribe from.
    */
   unsubscribeFromCriteria(criteria: string): void {
-    this.subscriptionManager?.removeCriteria(criteria);
-    if (this.subscriptionManager?.getCriteriaCount() === 0) {
+    if (!this.subscriptionManager) {
+      return;
+    }
+    this.subscriptionManager.removeCriteria(criteria);
+    if (this.subscriptionManager.getCriteriaCount() === 0) {
       this.subscriptionManager.closeWebSocket();
     }
   }
