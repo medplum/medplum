@@ -34,7 +34,7 @@ A "Proxy" user, however, acts as an assistant or delegate, performing tasks on b
 
 ### What guidelines exist for prescribing to minors through Medplum? {#prescribing-to-minors}
 
-Surescripts requires e-Prescriptions sent for pediatric patients (defined as ages 18 and younger – up until their 19th birthday) to include a **height and weight**. This is a firm requirement across all prescribers; it was implemented in September of 2021 as part of the Surescripts update to SCRIPT Standard v2017071 which followed NCPDP regulations to maintain compliance.
+DoseSpot requires e-Prescriptions sent for pediatric patients (defined as ages 18 and younger – up until their 19th birthday) to include a **height and weight**. This is a firm requirement across all prescribers; it was implemented in September of 2021 as part of the DoseSpot update to SCRIPT Standard v2017071 which followed NCPDP regulations to maintain compliance.
 
 Client's 18 years old and under are required to have a documented height & weight on file otherwise eRX cannot be accessed. This requirement cannot be bypassed. Please ensure that any pediatric patients have their date of birth documented on their `Patient` resource, as well as update height and weight documented according to the [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses)
 
@@ -51,10 +51,6 @@ When formulary data indicates a need for ePA based on insurance, the clinician c
 ### Does Medplum support prescription submissions to pharmacies across all 50 states?
 
 Yes. Medplum utilizes the Surescripts Pharmacy network through our partnership with our eRx provider, DoseSpot, ensuring nationwide coverage.
-
-### Are there limits on a patient's choice of pharmacy?
-
-No. Patients are free to choose any pharmacy within the SureScripts network.
 
 ### Why might a pharmacy not appear in Medplum's search?
 
