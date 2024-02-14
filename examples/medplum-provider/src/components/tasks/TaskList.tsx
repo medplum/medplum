@@ -40,6 +40,7 @@ export function TaskList(): JSX.Element | null {
   const [tasks, setTasks] = useState<Task[]>([]);
   const medplum = useMedplum();
   const patient = useResource({ reference: `Patient/${id}` });
+
   useEffect(() => {
     medplum
       .searchResources(
