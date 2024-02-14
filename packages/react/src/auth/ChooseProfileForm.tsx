@@ -66,7 +66,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
 
         <div>
           <Combobox.Options>
-            {options.length > 0 ? options : <Combobox.Empty>Nothing found....</Combobox.Empty>}
+            {options.length > 0 ? options : <Combobox.Empty>Nothing found...</Combobox.Empty>}
           </Combobox.Options>
         </div>
       </Combobox>

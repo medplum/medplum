@@ -1,0 +1,74 @@
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { fireEvent, render, screen } from '../test-utils/render';
+import { ChooseProfileForm } from './ChooseProfileForm';
+import { makeMembership } from './ChooseProfileForm.stories';
+import { act } from 'react-dom/test-utils';
+
+describe('ChooseProfileForm', () => {
+  test('Renders', () => {
+    render(
+      <MedplumProvider medplum={new MockClient()}>
+        <ChooseProfileForm
+          login="x"
+          memberships={[
+            makeMembership('prod', 'Prod', 'Homer Simpson'),
+            makeMembership('staging', 'Staging', 'Homer Simpson'),
+          ]}
+          handleAuthResponse={console.log}
+        />
+      </MedplumProvider>
+    );
+
+    expect(screen.getByText('Choose profile')).toBeInTheDocument();
+    expect(screen.getByText('Prod')).toBeInTheDocument();
+    expect(screen.getByText('Staging')).toBeInTheDocument();
+  });
+
+  test('Filters', async () => {
+    render(
+      <MedplumProvider medplum={new MockClient()}>
+        <ChooseProfileForm
+          login="x"
+          memberships={[
+            makeMembership('prod', 'Prod', 'Homer Simpson'),
+            makeMembership('staging', 'Staging', 'Homer Simpson'),
+          ]}
+          handleAuthResponse={console.log}
+        />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText('Search') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'prod' } });
+    });
+
+    expect(screen.getByText('Prod')).toBeInTheDocument();
+    expect(screen.queryByText('Staging')).not.toBeInTheDocument();
+  });
+
+  test('No matches', async () => {
+    render(
+      <MedplumProvider medplum={new MockClient()}>
+        <ChooseProfileForm
+          login="x"
+          memberships={[
+            makeMembership('prod', 'Prod', 'Homer Simpson'),
+            makeMembership('staging', 'Staging', 'Homer Simpson'),
+          ]}
+          handleAuthResponse={console.log}
+        />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText('Search') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'xyz' } });
+    });
+
+    expect(screen.queryByText('Prod')).not.toBeInTheDocument();
+    expect(screen.queryByText('Staging')).not.toBeInTheDocument();
+    expect(screen.getByText('Nothing found...')).toBeInTheDocument();
+  });
+});
