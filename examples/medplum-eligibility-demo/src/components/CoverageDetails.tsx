@@ -58,7 +58,7 @@ export function CoverageDetails({
 
   return (
     <Paper>
-      <Tabs>
+      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab} value={tab.toLowerCase()}>

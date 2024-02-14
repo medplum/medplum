@@ -1,10 +1,8 @@
-import { Grid, Loader, Paper, Title } from '@mantine/core';
-import { getDisplayString } from '@medplum/core';
+import { Grid, Loader, Paper } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
-import { Document, PatientSummary, useResource } from '@medplum/react';
+import { PatientSummary, useResource } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 import { PatientDetails } from '../components/PatientDetails';
-import { PatientHeader } from './PatientHeader';
 
 export function PatientPage(): JSX.Element {
   const { id } = useParams();

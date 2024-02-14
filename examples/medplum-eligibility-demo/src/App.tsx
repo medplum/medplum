@@ -2,11 +2,7 @@ import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum
 import { IconFileCheck, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { PatientHistory } from './components/PatientHistory';
-import { PatientOverview } from './components/PatientOverview';
-import { Timeline } from './components/Timeline';
 import { CoveragePage } from './pages/CoveragePage';
-import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
@@ -39,13 +35,8 @@ export function App(): JSX.Element | null {
           <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
           <Route path="/:resourceType" element={<SearchPage />} />
           <Route path="/signin" element={<SignInPage />} />
-          <Route path="/Coverage/:id" element={<CoveragePage />} />
-          <Route path="/Patient/:id" element={<PatientPage />}>
-            <Route index element={<PatientOverview />} />
-            <Route path="overview" element={<PatientOverview />} />
-            <Route path="timeline" element={<Timeline />} />
-            <Route path="history" element={<PatientHistory />} />
-          </Route>
+          <Route path="/Coverage/:id/*" element={<CoveragePage />} />
+          <Route path="/Patient/:id/*" element={<PatientPage />} />
           <Route path="/:resourceType/:id" element={<ResourcePage />} />
           <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
         </Routes>

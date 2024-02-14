@@ -16,6 +16,7 @@ export function CoveragePage(): JSX.Element {
 
   const tabs = ['Details', 'History', 'Eligibility Requests', 'Eligibility Responses'];
 
+  // Set the current tab to what is in the URL. If no tab, default to Details
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
@@ -60,7 +61,7 @@ export function CoveragePage(): JSX.Element {
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string | null): void => {
-    navigate(`/Task/${id}/${newTab ?? ''}`);
+    navigate(`/Coverage/${id}/${newTab ?? ''}`);
   };
 
   if (!coverage) {
