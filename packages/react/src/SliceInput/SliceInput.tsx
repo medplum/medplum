@@ -31,9 +31,7 @@ export interface SliceInputProps {
 
 export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const { slice, property } = props;
-  const [values, setValues] = useState<any[]>(() => {
-    return props.defaultValue.map((v) => v ?? {});
-  });
+  const [values, setValues] = useState<any[]>(props.defaultValue);
 
   const sliceElements = slice.typeSchema?.elements ?? slice.elements;
 

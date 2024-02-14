@@ -6,6 +6,7 @@ import {
   HTTP_HL7_ORG,
   InternalSchemaElement,
   isComplexTypeCode,
+  isEmpty,
   isPopulated,
   PropertyType,
 } from '@medplum/core';
@@ -172,7 +173,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return props.defaultValue;
     }
 
-    if (props.defaultValue !== undefined) {
+    if (!isEmpty(props.defaultValue)) {
       return props.defaultValue;
     }
 
