@@ -32,12 +32,6 @@ A "Prescriber" is a user authorized to directly issue prescriptions, holding the
 
 A "Proxy" user, however, acts as an assistant or delegate, performing tasks on behalf of a Prescriber but does not have the authority to finalize prescriptions without review and approval by a Prescriber.
 
-### What guidelines exist for prescribing to minors through Medplum? {#prescribing-to-minors}
-
-DoseSpot requires e-Prescriptions sent for pediatric patients (defined as ages 18 and younger – up until their 19th birthday) to include a **height and weight**. This is a firm requirement across all prescribers; it was implemented in September of 2021 as part of the DoseSpot update to SCRIPT Standard v2017071 which followed NCPDP regulations to maintain compliance.
-
-Client's 18 years old and under are required to have a documented height & weight on file otherwise eRX cannot be accessed. This requirement cannot be bypassed. Please ensure that any pediatric patients have their date of birth documented on their `Patient` resource, as well as update height and weight documented according to the [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses)
-
 ### How do "Refill" and "Reorder" differ within Medplum?
 
 A "Refill" refers to authorizing additional quantities of a medication under an existing prescription, is initiated by the pharmacy.
@@ -50,21 +44,13 @@ When formulary data indicates a need for ePA based on insurance, the clinician c
 
 ### Does Medplum support prescription submissions to pharmacies across all 50 states?
 
-Yes. Medplum utilizes the Surescripts Pharmacy network through our partnership with our eRx provider, DoseSpot, ensuring nationwide coverage.
-
-### Why might a pharmacy not appear in Medplum's search?
-
-A pharmacy might not be found due to reasons such as it not being registered within the network Medplum uses, data entry errors, or it being outside the service area of our eRx integration partner.
-
-To verify that a pharmacy exists in the SureScripts database, you can navigate to to https://surescripts.com/network-connections and scroll to the section "Locate E-Prescribing Pharmacies."
+Yes. Medplum Medplum's integration with DoseSpot allows ordering prescriptions to any pharmacy across 50 states.
 
 ### How does Medplum collect and manage patient insurance details?
 
-Patient insurance details within Medplum's eRx system are pulled by DoseSpot from from Surescripts, which matches insurance information based on patient demographics: name, gender, and date of birth.
+Patient insurance details within Medplum's eRx system are pulled by DoseSpot, which matches insurance information based on patient demographics: name, gender, and date of birth.
 
-The SureScripts database covers approximately 95% of U.S. pharmacies. When patients enter information through their pharmacy, their data is uploaded to SureScripts.
-
-It's important to note that insurance information stored directly in Medplum **does not integrate with Surescripts**, nor can it be manually entered into the eRx system.
+It's important to note that insurance information stored directly in Medplum **does not integrate with DoseSpot**, nor can it be manually entered into the eRx system.
 
 ### What constitutes a transmission error in Medplum's eRx service?
 

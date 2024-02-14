@@ -42,4 +42,4 @@ No. Medplum does not have any special connections or partnerships with specific 
 
 It is best practice to maintain update date coverage information for each patient in Medplum, as it is important for both clinical and administrative workflows in the core EHR. See our [Guide on Patient Insurance](/docs/billing/patient-insurance) for more details.
 
-However, many eRx vendors do not allow users to directly input patient coverage details. Rather, they depend on clearinghouses such as Surescripts, to supply patient coverage data. Check with your eRx vendor for details on how patient coverage is managed.
+However, many eRx vendors do not allow users to directly input patient coverage details. Rather, they depend on clearinghouses to supply patient coverage data. Check with your eRx vendor for details on how patient coverage is managed.
