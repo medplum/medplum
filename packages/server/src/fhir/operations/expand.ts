@@ -292,19 +292,19 @@ async function includeInExpansion(
     .where('system', '=', codeSystem.id)
     .limit(count + 1)
     .offset(offset)
-    .orderBy('id');
+    .orderBy('display');
   if (filter) {
-    query.where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
+    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
   }
   if (include.filter?.length) {
-    for (const filter of include.filter) {
-      if (filter.op === 'is-a') {
-        const coding = await validateCode(codeSystem, filter.value);
-        if (coding) {
+    for (const condition of include.filter) {
+      if (condition.op === 'is-a') {
+        const coding = await validateCode(codeSystem, condition.value);
+        if (coding && (!filter || coding.display?.includes(filter))) {
           expansion.push(coding);
         }
       }
-      query = addFilter(filter, query, codeSystem);
+      query = addFilter(condition, query, codeSystem);
     }
   }
 
