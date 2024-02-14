@@ -17,6 +17,7 @@ export function EditCoverage({ coverage, onChange }: EditCoverageProps): JSX.Ele
 
   const handleSubmit = async (newCoverage: Resource) => {
     try {
+      // Update the coverage with the new details
       const updatedCoverage = (await medplum.updateResource(cleanResource(newCoverage))) as Coverage;
       notifications.show({
         icon: <IconCircleCheck />,
@@ -35,6 +36,7 @@ export function EditCoverage({ coverage, onChange }: EditCoverageProps): JSX.Ele
     }
   };
 
+  // Clean the resource so that the meta details can be correctly updated
   function cleanResource(resource: Resource): Resource {
     let meta = resource.meta;
     if (meta) {

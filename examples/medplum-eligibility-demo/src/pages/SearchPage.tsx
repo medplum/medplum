@@ -23,13 +23,13 @@ export function SearchPage(): JSX.Element {
 
   useEffect(() => {
     const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    // Default to the Coverage search page
     if (!parsedSearch.resourceType) {
       navigate('/Coverage');
       return;
     }
 
     const populatedSearch = getPopulatedSearch(parsedSearch);
-    console.log(populatedSearch);
 
     if (
       location.pathname === `/${populatedSearch.resourceType}` &&

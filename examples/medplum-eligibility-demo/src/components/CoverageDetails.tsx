@@ -28,6 +28,7 @@ export function CoverageDetails({
       }
 
       try {
+        // Search for all CoverageEligibilityRequest resources that reference the covered patient
         const eligibilityRequests = await medplum.searchResources('CoverageEligibilityRequest', {
           patient: getReferenceString(patient),
         });
@@ -42,6 +43,7 @@ export function CoverageDetails({
       }
 
       try {
+        // Search for all CoverageEligibilityResponse resources that reference the covered patient
         const eligibilityResponses = await medplum.searchResources('CoverageEligibilityResponse', {
           patient: getReferenceString(patient),
         });

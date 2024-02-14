@@ -19,11 +19,13 @@ export function CoveragePage(): JSX.Element {
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
+  // Get a reference to the patient covered by the Coverage
   const patientReference = coverage?.beneficiary;
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
       try {
+        // Get the coverage details for the given resource
         const coverageData = await medplum.readResource('Coverage', id);
         setCoverage(coverageData);
       } catch (err) {
@@ -35,6 +37,7 @@ export function CoveragePage(): JSX.Element {
       if (patientReference) {
         const patientId = resolveId(patientReference) as string;
         try {
+          // Search for the details of the patient covered by the Coverage
           const patientData = await medplum.readResource('Patient', patientId);
           setPatient(patientData);
         } catch (err) {
