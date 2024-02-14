@@ -1,17 +1,16 @@
 import { Loader, Paper, ScrollArea, Tabs } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
-import { PatientSummary, useResource } from '@medplum/react';
+import { PatientSummary } from '@medplum/react';
 import { Fragment, useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
 
-const tabs = ['Timeline', 'Encounter', 'Tasks', 'Meds', 'Labs'];
+const tabs = ['Timeline', 'Edit', 'Encounter', 'Tasks', 'Meds', 'Labs'];
 
 export function PatientPage(): JSX.Element {
-  const { id } = useParams();
   const navigate = useNavigate();
-  const patient = useResource<Patient>({ reference: `Patient/${id}` });
+  const patient = usePatient();
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tab = window.location.pathname.split('/').pop();
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
@@ -30,16 +29,14 @@ export function PatientPage(): JSX.Element {
       newTabName = tabs[0].toLowerCase();
     }
     setCurrentTab(newTabName);
-    navigate(`/Patient/${id}/${newTabName}`);
+    navigate(`/Patient/${patient?.id}/${newTabName}`);
   }
 
   return (
     <Fragment key={getReferenceString(patient)}>
       <div className={classes.container}>
         <div className={classes.sidebar}>
-          <ScrollArea w={350} h="100%" bg="white">
-            <PatientSummary w="100%" h="100vh" patient={patient} />
-          </ScrollArea>
+          <PatientSummary w={350} mb="auto" patient={patient} />
         </div>
         <div className={classes.content}>
           <Paper>
@@ -55,9 +52,7 @@ export function PatientPage(): JSX.Element {
               </Tabs>
             </ScrollArea>
           </Paper>
-          <ScrollArea>
-            <Outlet />
-          </ScrollArea>
+          <Outlet />
         </div>
       </div>
     </Fragment>

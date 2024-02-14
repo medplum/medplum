@@ -1,14 +1,15 @@
 import { Box, Flex, Text } from '@mantine/core';
+import { createReference } from '@medplum/core';
 import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { usePatient } from '../../hooks/usePatient';
 import { defaultSoapNoteQuestionnaire } from './SoapNote.questionnaire';
 
 export function SoapNote(): JSX.Element {
-  const { id } = useParams();
   const medplum = useMedplum();
+  const patient = usePatient();
   const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
@@ -30,9 +31,7 @@ export function SoapNote(): JSX.Element {
       focus: {
         reference: `QuestionnaireResponse/${response.id}`,
       },
-      for: {
-        reference: `Patient/${id}`,
-      },
+      for: patient ? createReference(patient) : undefined,
     };
     await medplum.createResource(newTask);
     setSubmitted(true);

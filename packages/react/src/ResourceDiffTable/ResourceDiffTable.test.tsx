@@ -20,6 +20,7 @@ describe('ResourceDiffTable', () => {
       resourceType: 'Patient',
       id: '123',
       meta: {
+        author: { reference: 'Practitioner/456' },
         versionId: '456',
       },
       birthDate: '1990-01-01',
@@ -30,6 +31,7 @@ describe('ResourceDiffTable', () => {
       resourceType: 'Patient',
       id: '123',
       meta: {
+        author: { reference: 'Practitioner/457' },
         versionId: '457',
       },
       birthDate: '1990-01-01',
@@ -56,6 +58,10 @@ describe('ResourceDiffTable', () => {
 
     // Birth date did not change, and therefore should not be shown
     expect(screen.queryByText('Birth Date')).toBeNull();
+
+    // Certain meta fields should not be shown
+    expect(screen.queryByText('Author')).toBeNull();
+    expect(screen.queryByText('Version ID')).toBeNull();
   });
 
   test('Array index operations', async () => {

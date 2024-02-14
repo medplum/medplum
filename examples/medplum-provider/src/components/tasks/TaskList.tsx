@@ -12,7 +12,7 @@ import {
 } from '@medplum/react';
 import { IconFilePencil, IconHeart, IconListCheck, IconReportMedical } from '@tabler/icons-react';
 import { Fragment, ReactNode, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { usePatient } from '../../hooks/usePatient';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
 import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
 
@@ -36,16 +36,15 @@ interface TaskItemProps {
 }
 
 export function TaskList(): JSX.Element | null {
-  const { id } = useParams();
-  const [tasks, setTasks] = useState<Task[]>([]);
   const medplum = useMedplum();
-  const patient = useResource({ reference: `Patient/${id}` });
+  const patient = usePatient();
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     medplum
       .searchResources(
         'Task',
-        `patient=${id}&status:not=completed&status:not=failed&status:not=rejected&focus:missing=false`
+        `patient=${patient?.id}&status:not=completed&status:not=failed&status:not=rejected&focus:missing=false`
       )
       .then((response) => {
         setTasks(response);

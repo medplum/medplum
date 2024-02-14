@@ -114,7 +114,12 @@ function mergePatchOperations(patch: Operation[]): Operation[] {
   const result: Operation[] = [];
   for (const patchOperation of patch) {
     const { op, path } = patchOperation;
-    if (path.startsWith('/meta/lastUpdated') || path.startsWith('/meta/versionId')) {
+    if (
+      path.startsWith('/meta/author') ||
+      path.startsWith('/meta/compartment') ||
+      path.startsWith('/meta/lastUpdated') ||
+      path.startsWith('/meta/versionId')
+    ) {
       continue;
     }
     const count = patch.filter((el) => el.op === op && el.path === path).length;
