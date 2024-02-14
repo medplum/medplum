@@ -47,7 +47,6 @@ export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> {
     });
 
     ws.addEventListener('message', (event) => {
-      // this.dispatchEvent({ type: 'message', payload: { data: event.data } });
       this.dispatchEvent(event);
     });
 
