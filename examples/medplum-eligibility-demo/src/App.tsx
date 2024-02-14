@@ -37,7 +37,7 @@ export function App(): JSX.Element | null {
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/Coverage/:id/*" element={<CoveragePage />} />
           <Route path="/Patient/:id/*" element={<PatientPage />} />
-          <Route path="/:resourceType/:id" element={<ResourcePage />} />
+          <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
           <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
         </Routes>
       </Suspense>

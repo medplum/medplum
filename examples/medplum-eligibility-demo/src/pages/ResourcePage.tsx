@@ -1,9 +1,12 @@
-import { Title } from '@mantine/core';
-import { getDisplayString, getReferenceString } from '@medplum/core';
+import { Tabs, Title } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, ResourceTable, useMedplum } from '@medplum/react';
+import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { cleanResource } from '../components/utils';
 
 /**
  * This is an example of a generic "Resource Display" page.
@@ -12,17 +15,57 @@ import { useParams } from 'react-router-dom';
  */
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
+  const navigate = useNavigate();
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
 
+  const tabs = ['Details', 'Edit', 'History'];
+
+  // Get the tab from the URL. If none, default to Details
+  const tab = window.location.pathname.split('/').pop();
+  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+
   useEffect(() => {
-    if (resourceType && id) {
-      medplum
-        .readResource(resourceType as ResourceType, id)
-        .then(setResource)
-        .catch(console.error);
-    }
+    const fetchResource = async (): Promise<void> => {
+      if (resourceType && id) {
+        try {
+          const resourceData = await medplum.readResource(resourceType as ResourceType, id);
+          setResource(resourceData);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    };
+
+    fetchResource();
   }, [medplum, resourceType, id]);
+
+  const handleTabChange = (newTab: string | null): void => {
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+  };
+
+  const handleEditSubmit = async (newResource: Resource): Promise<void> => {
+    try {
+      // Update the resource
+      const updatedResource = await medplum.updateResource(cleanResource(newResource));
+      // Set the resource to re-render the page
+      setResource(updatedResource);
+      notifications.show({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: `${resourceType} updated`,
+      });
+      // Navigate back to the top of the details page
+      navigate(`/${resourceType}/${id}`);
+      window.scrollTo(0, 0);
+    } catch (err) {
+      notifications.show({
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
+  };
 
   if (!resource) {
     return null;
@@ -31,7 +74,24 @@ export function ResourcePage(): JSX.Element | null {
   return (
     <Document key={getReferenceString(resource)}>
       <Title>{getDisplayString(resource)}</Title>
-      <ResourceTable key={`${resourceType}/${id}`} value={resource} />
+      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
+        <Tabs.List>
+          {tabs.map((tab) => (
+            <Tabs.Tab key={tab} value={tab.toLowerCase()}>
+              {tab}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+        <Tabs.Panel value="details">
+          <ResourceTable key={`${resourceType}/${id}`} value={resource} />
+        </Tabs.Panel>
+        <Tabs.Panel value="edit">
+          <ResourceForm defaultValue={resource} onSubmit={handleEditSubmit} />
+        </Tabs.Panel>
+        <Tabs.Panel value="history">
+          <ResourceHistoryTable resourceType={resourceType} id={id} />
+        </Tabs.Panel>
+      </Tabs>
     </Document>
   );
 }
