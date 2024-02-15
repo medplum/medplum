@@ -1,12 +1,25 @@
-import { HTTP_HL7_ORG, InternalTypeSchema, isProfileLoaded, loadDataType, tryGetProfile } from '@medplum/core';
+import {
+  HTTP_HL7_ORG,
+  InternalTypeSchema,
+  buildElementsContext,
+  isProfileLoaded,
+  loadDataType,
+  tryGetProfile,
+} from '@medplum/core';
 import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
-import { MockClient, USCoreStructureDefinitionList } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
 import { StructureDefinition } from '@medplum/fhirtypes';
-import { buildElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { readJson } from '@medplum/definitions';
 
 const medplum = new MockClient();
 
 describe('assignValuesIntoSlices', () => {
+  let USCoreStructureDefinitions: StructureDefinition[];
+
+  beforeAll(() => {
+    USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
+  });
+
   describe('US Core Patient', () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`;
     const profilesToLoad = [
@@ -16,13 +29,14 @@ describe('assignValuesIntoSlices', () => {
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
     ];
-    const patientSD = USCoreStructureDefinitionList.find((sd) => sd.url === profileUrl) as StructureDefinition;
+    let patientSD: StructureDefinition;
     let patientSchema: InternalTypeSchema;
 
     beforeAll(() => {
+      patientSD = USCoreStructureDefinitions.find((sd) => sd.url === profileUrl) as StructureDefinition;
       expect(patientSD).toBeDefined();
       for (const url of profilesToLoad) {
-        const sd = USCoreStructureDefinitionList.find((sd) => sd.url === url);
+        const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
         if (!sd) {
           fail(`could not find structure definition for ${url}`);
         }
@@ -80,10 +94,12 @@ describe('assignValuesIntoSlices', () => {
       const elementsContext = buildElementsContext({
         parentContext: undefined,
         elements: patientSchema.elements,
-        parentPath: 'Patient',
-        parentType: 'Patient',
+        path: 'Patient',
         profileUrl,
       });
+      if (!elementsContext) {
+        fail('elementsContext should be defined');
+      }
 
       const slices = await prepareSlices({
         medplum,
@@ -103,10 +119,11 @@ describe('assignValuesIntoSlices', () => {
 
   describe('US Core Blood Pressure', () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-blood-pressure`;
-    const bpSD = USCoreStructureDefinitionList.find((sd) => sd.url === profileUrl) as StructureDefinition;
+    let bpSD: StructureDefinition;
     let bpSchema: InternalTypeSchema;
 
     beforeAll(() => {
+      bpSD = USCoreStructureDefinitions.find((sd) => sd.url === profileUrl) as StructureDefinition;
       expect(bpSD).toBeDefined();
       loadDataType(bpSD, bpSD.url);
       expect(isProfileLoaded(profileUrl)).toBe(true);
@@ -133,10 +150,12 @@ describe('assignValuesIntoSlices', () => {
       const elementsContext = buildElementsContext({
         parentContext: undefined,
         elements: bpSchema.elements,
-        parentPath: 'Observation',
-        parentType: 'Observation',
+        path: 'Observation',
         profileUrl,
       });
+      if (!elementsContext) {
+        fail('elementsContext should be defined');
+      }
 
       const slices = await prepareSlices({
         medplum,
@@ -198,10 +217,13 @@ describe('assignValuesIntoSlices', () => {
       const elementsContext = buildElementsContext({
         parentContext: undefined,
         elements: bpSchema.elements,
-        parentPath: 'Observation',
-        parentType: 'Observation',
+        path: 'Observation',
         profileUrl,
       });
+
+      if (!elementsContext) {
+        fail('elementsContext should be defined');
+      }
 
       const slices = await prepareSlices({
         medplum,

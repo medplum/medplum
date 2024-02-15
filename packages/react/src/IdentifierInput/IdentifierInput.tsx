@@ -10,11 +10,11 @@ export type IdentifierInputProps = ComplexTypeInputProps<Identifier>;
 export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   const { path, outcome } = props;
   const [value, setValue] = useState(props.defaultValue);
-  const { getModifiedNestedElement } = useContext(ElementsContext);
+  const { elementsByPath } = useContext(ElementsContext);
 
   const [systemElement, valueElement] = useMemo(
-    () => ['system', 'value'].map((field) => getModifiedNestedElement(path + '.' + field)),
-    [getModifiedNestedElement, path]
+    () => ['system', 'value'].map((field) => elementsByPath[path + '.' + field]),
+    [elementsByPath, path]
   );
 
   function setValueWrapper(newValue: Identifier): void {

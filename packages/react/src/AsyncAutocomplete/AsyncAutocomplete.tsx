@@ -176,6 +176,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const handleValueSelect = (val: string): void => {
     setSearch('');
     setOptions([]);
+    combobox.closeDropdown();
     lastValueRef.current = undefined;
     if (val === '$create') {
       addSelected(search);
@@ -233,6 +234,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         setSearch('');
         setSelected([]);
         onChange([]);
+        combobox.closeDropdown();
       }}
     />
   );
@@ -256,18 +258,20 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
               </Pill>
             ))}
 
-            <Combobox.EventsTarget>
-              <PillsInput.Field
-                role="searchbox"
-                name={name}
-                value={search}
-                placeholder={placeholder}
-                onFocus={handleSearchChange}
-                onBlur={() => combobox.closeDropdown()}
-                onKeyDown={handleKeyDown}
-                onChange={handleSearchChange}
-              />
-            </Combobox.EventsTarget>
+            {(maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
+              <Combobox.EventsTarget>
+                <PillsInput.Field
+                  role="searchbox"
+                  name={name}
+                  value={search}
+                  placeholder={placeholder}
+                  onFocus={handleSearchChange}
+                  onBlur={() => combobox.closeDropdown()}
+                  onKeyDown={handleKeyDown}
+                  onChange={handleSearchChange}
+                />
+              </Combobox.EventsTarget>
+            )}
           </Pill.Group>
         </PillsInput>
       </Combobox.DropdownTarget>

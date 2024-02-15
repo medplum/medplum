@@ -21,6 +21,12 @@ Project Admins have the following privileges:
   - [`PasswordChangeRequest`](/docs/api/fhir/medplum/passwordchangerequest) - used to [send custom emails](/docs/auth/custom-emails#password-change-request-bot)
   - [`User`](/docs/api/fhir/medplum/user) - only for [project scoped users](/docs/auth/user-management-guide#project-scoped-users)
 
+:::note Applying Access Policies to Admins
+
+If you want to limit these privileges, you can apply Access Policies to your Admin users. See the [Access Policies docs](/docs/access/access-policies) for more details.
+
+:::
+
 ## Super Admin
 
 A super admin user has an increased level privileges for performing server-level operations. **This level of privilege can cause irreparable data changes, and should be limited to system administrators.**

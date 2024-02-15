@@ -1,7 +1,17 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
-import { capitalize, HTTP_HL7_ORG, InternalSchemaElement, PropertyType } from '@medplum/core';
+import {
+  applyDefaultValuesToElement,
+  capitalize,
+  getPathDifference,
+  HTTP_HL7_ORG,
+  InternalSchemaElement,
+  isComplexTypeCode,
+  isEmpty,
+  isPopulated,
+  PropertyType,
+} from '@medplum/core';
 import { ElementDefinitionBinding, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
 import { AttachmentArrayInput } from '../AttachmentArrayInput/AttachmentArrayInput';
@@ -13,6 +23,7 @@ import { CodingInput } from '../CodingInput/CodingInput';
 import { ContactDetailInput } from '../ContactDetailInput/ContactDetailInput';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ExtensionInput } from '../ExtensionInput/ExtensionInput';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';
 import { IdentifierInput } from '../IdentifierInput/IdentifierInput';
@@ -41,12 +52,11 @@ export interface ResourcePropertyInputProps {
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
-  const { property, name, defaultValue, onChange } = props;
+  const { property, name, onChange, defaultValue } = props;
   const defaultPropertyType =
     props.defaultPropertyType && props.defaultPropertyType !== 'undefined'
       ? props.defaultPropertyType
       : property.type[0].code;
-
   const propertyTypes = property.type as ElementDefinitionType[];
 
   if ((property.isArray || property.max > 1) && !props.arrayElement) {
@@ -67,9 +77,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         outcome={props.outcome}
       />
     );
-  }
-
-  if (propertyTypes.length > 1) {
+  } else if (propertyTypes.length > 1) {
     return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {
     return (
@@ -154,10 +162,38 @@ export interface ElementDefinitionTypeInputProps
 }
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const { name, defaultValue, onChange, outcome, binding, path } = props;
+  const { name, onChange, outcome, binding, path } = props;
   const required = props.min !== undefined && props.min > 0;
 
   const propertyType = props.elementDefinitionType.code;
+
+  const elementsContext = useContext(ElementsContext);
+  const defaultValue = useMemo(() => {
+    if (!isComplexTypeCode(propertyType)) {
+      return props.defaultValue;
+    }
+
+    if (!isEmpty(props.defaultValue)) {
+      return props.defaultValue;
+    }
+
+    const withDefaults = Object.create(null);
+    if (elementsContext.path === props.path) {
+      applyDefaultValuesToElement(withDefaults, elementsContext.elements);
+    } else {
+      const key = getPathDifference(elementsContext.path, props.path);
+      if (key === undefined) {
+        return props.defaultValue;
+      }
+      applyDefaultValuesToElement(withDefaults, elementsContext.elements, key);
+    }
+
+    if (isPopulated(withDefaults)) {
+      return withDefaults;
+    }
+
+    return props.defaultValue;
+  }, [propertyType, elementsContext.path, elementsContext.elements, props.path, props.defaultValue]);
 
   if (!propertyType) {
     return <div>Property type not specified </div>;

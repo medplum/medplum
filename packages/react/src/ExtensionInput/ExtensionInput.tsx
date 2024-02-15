@@ -1,4 +1,4 @@
-import { InternalTypeSchema, tryGetProfile, isProfileLoaded } from '@medplum/core';
+import { InternalTypeSchema, tryGetProfile, isProfileLoaded, isPopulated } from '@medplum/core';
 import { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,15 +13,15 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   const { propertyType } = props;
 
   const medplum = useMedplum();
-  const [loadingProfile, setLoadingProfile] = useState(false);
   const [typeSchema, setTypeSchema] = useState<InternalTypeSchema | undefined>();
   const profileUrl: string | undefined = useMemo(() => {
-    if (!propertyType.profile || propertyType.profile.length === 0) {
+    if (!isPopulated(propertyType.profile)) {
       return undefined;
     }
 
     return propertyType.profile[0] satisfies string;
   }, [propertyType]);
+  const [loadingProfile, setLoadingProfile] = useState(profileUrl !== undefined);
 
   useEffect(() => {
     if (profileUrl) {

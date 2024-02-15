@@ -1,13 +1,18 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
-import { LandingPage } from './pages/LandingPage';
-import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { EditTab } from './pages/patient/EditTab';
+import { EncounterTab } from './pages/patient/EncounterTab';
+import { LabsTab } from './pages/patient/LabsTab';
+import { MedsTab } from './pages/patient/MedsTab';
+import { PatientPage } from './pages/patient/PatientPage';
+import { TasksTab } from './pages/patient/TasksTab';
+import { TimelineTab } from './pages/patient/TimelineTab';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -30,12 +35,28 @@ export function App(): JSX.Element | null {
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <Routes>
-            <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/Patient/:id" element={<PatientPage />} />
-            <Route path="/:resourceType/:id" element={<ResourcePage />} />
-            <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
-            <Route path="/:resourceType" element={<SearchPage />} />
+            {profile ? (
+              <>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/Patient/:patientId" element={<PatientPage />}>
+                  <Route path="edit" element={<EditTab />} />
+                  <Route path="encounter" element={<EncounterTab />} />
+                  <Route path="labs" element={<LabsTab />} />
+                  <Route path="meds" element={<MedsTab />} />
+                  <Route path="tasks" element={<TasksTab />} />
+                  <Route path="timeline" element={<TimelineTab />} />
+                  <Route path="*" element={<TimelineTab />} />
+                </Route>
+                <Route path="/:resourceType/:id" element={<ResourcePage />} />
+                <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+                <Route path="/:resourceType" element={<SearchPage />} />
+              </>
+            ) : (
+              <>
+                <Route path="/signin" element={<SignInPage />} />
+                <Route path="*" element={<Navigate to="/signin" replace />} />
+              </>
+            )}
           </Routes>
         </Suspense>
       </ErrorBoundary>
