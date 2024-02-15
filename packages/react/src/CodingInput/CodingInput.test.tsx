@@ -34,7 +34,7 @@ describe('CodingInput', () => {
   test('Renders Coding default value', async () => {
     await setup(<CodingInput binding={binding} name="test" defaultValue={{ code: 'abc' }} />);
 
-    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.getByText('abc')).toBeDefined();
   });
 
