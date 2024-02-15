@@ -35,7 +35,7 @@ export function ManyMemberships(): JSX.Element {
   );
 }
 
-export function makeMembership(id: string, projectName: string, profileName: string): ProjectMembership {
+function makeMembership(id: string, projectName: string, profileName: string): ProjectMembership {
   return {
     resourceType: 'ProjectMembership',
     id,

@@ -1,9 +1,9 @@
+import { ProjectMembership } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act } from 'react-dom/test-utils';
 import { fireEvent, render, screen } from '../test-utils/render';
 import { ChooseProfileForm } from './ChooseProfileForm';
-import { makeMembership } from './ChooseProfileForm.stories';
-import { act } from 'react-dom/test-utils';
 
 describe('ChooseProfileForm', () => {
   test('Renders', () => {
@@ -72,3 +72,13 @@ describe('ChooseProfileForm', () => {
     expect(screen.getByText('Nothing found...')).toBeInTheDocument();
   });
 });
+
+function makeMembership(id: string, projectName: string, profileName: string): ProjectMembership {
+  return {
+    resourceType: 'ProjectMembership',
+    id,
+    project: { reference: 'Project/' + projectName, display: projectName },
+    user: { reference: 'User/x', display: 'x' },
+    profile: { reference: 'Practitioner/' + profileName, display: profileName },
+  };
+}
