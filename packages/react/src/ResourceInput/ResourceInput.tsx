@@ -1,5 +1,5 @@
 import { Group, Text } from '@mantine/core';
-import { getDisplayString, getReferenceString } from '@medplum/core';
+import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { forwardRef, useCallback, useState } from 'react';
@@ -121,7 +121,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     [onChange]
   );
 
-  if (props.defaultValue && !outcome && !defaultValue) {
+  if (isPopulated(props.defaultValue) && !outcome && !defaultValue) {
     // If a default value was specified, but the default resource is not loaded yet,
     // then return null to avoid rendering the input until the default resource is loaded.
     // The Mantine <MultiSelect> component does not reliably handle changes to defaultValue.

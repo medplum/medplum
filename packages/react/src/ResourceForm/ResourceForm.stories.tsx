@@ -151,7 +151,7 @@ function useUSCoreDataTypes({ medplum }: { medplum: MedplumClient }): { loaded: 
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     (async (): Promise<boolean> => {
-      for (const sd of USCoreStructureDefinitionList as StructureDefinition[]) {
+      for (const sd of USCoreStructureDefinitionList) {
         loadDataType(sd, sd.url);
       }
       return true;
@@ -192,7 +192,7 @@ function useFakeRequestProfileSchema(medplum: MedplumClient): void {
 
 function useUSCoreProfile(profileName: string): StructureDefinition {
   const profileSD = useMemo<StructureDefinition>(() => {
-    const result = (USCoreStructureDefinitionList as StructureDefinition[]).find((sd) => sd.name === profileName);
+    const result = USCoreStructureDefinitionList.find((sd) => sd.name === profileName);
     if (!result) {
       throw new Error(`Could not find ${profileName}`);
     }

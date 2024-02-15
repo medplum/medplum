@@ -606,7 +606,7 @@ function deepIncludesObject(value: { [key: string]: unknown }, pattern: { [key: 
  * @returns A deep clone of the input.
  */
 export function deepClone<T>(input: T): T {
-  return JSON.parse(JSON.stringify(input)) as T;
+  return input === undefined ? input : (JSON.parse(JSON.stringify(input)) as T);
 }
 
 /**
@@ -681,6 +681,24 @@ export function capitalize(word: string): string {
 
 export function isLowerCase(c: string): boolean {
   return c === c.toLowerCase() && c !== c.toUpperCase();
+}
+
+export function isComplexTypeCode(code: string): boolean {
+  return code.length > 0 && code.startsWith(code[0].toUpperCase());
+}
+
+/**
+ * Returns the difference between two paths which is often suitable to use as a key in a `Record<string, InternalSchemaElement>`
+ * @param parentPath - The parent path that will be removed from `path`.
+ * @param path - The element path that should be a child of `parentPath`.
+ * @returns - The difference between `path` and `parentPath` or `undefined` if `path` is not a child of `parentPath`.
+ */
+export function getPathDifference(parentPath: string, path: string): string | undefined {
+  const parentPathPrefix = parentPath + '.';
+  if (path.startsWith(parentPathPrefix)) {
+    return path.slice(parentPathPrefix.length);
+  }
+  return undefined;
 }
 
 /**

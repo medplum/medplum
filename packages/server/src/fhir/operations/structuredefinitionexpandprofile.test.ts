@@ -1,4 +1,3 @@
-import { USCoreStructureDefinitionList } from '@medplum/mock';
 import { ContentType, HTTP_HL7_ORG } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
@@ -6,31 +5,34 @@ import { loadTestConfig } from '../../config';
 import { initApp, shutdownApp } from '../../app';
 import { createTestProject } from '../../test.setup';
 import { Bundle, ElementDefinition, StructureDefinition, StructureDefinitionSnapshot } from '@medplum/fhirtypes';
+import { readJson } from '@medplum/definitions';
 
 jest.mock('node-fetch');
 
 const app = express();
 
-async function createSDs(profileUrls: string[], accessToken: string): Promise<void> {
-  for (const profileUrl of profileUrls) {
-    const sd = USCoreStructureDefinitionList.find((sd) => sd.url === profileUrl);
-
-    if (!sd) {
-      fail(`could not find structure definition for ${profileUrl}`);
-    }
-    const res = await request(app)
-      .post(`/fhir/R4/StructureDefinition`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send(sd);
-    expect(res.status).toEqual(201);
-  }
-}
-
 describe('StructureDefinition $expand-profile', () => {
+  let USCoreStructureDefinitions: StructureDefinition[];
   let accessToken: string;
 
+  async function createSDs(profileUrls: string[], accessToken: string): Promise<void> {
+    for (const profileUrl of profileUrls) {
+      const sd = USCoreStructureDefinitions.find((sd) => sd.url === profileUrl);
+
+      if (!sd) {
+        fail(`could not find structure definition for ${profileUrl}`);
+      }
+      const res = await request(app)
+        .post(`/fhir/R4/StructureDefinition`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(sd);
+      expect(res.status).toEqual(201);
+    }
+  }
+
   beforeAll(async () => {
+    USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
     const config = await loadTestConfig();
     await initApp(app, config);
   });

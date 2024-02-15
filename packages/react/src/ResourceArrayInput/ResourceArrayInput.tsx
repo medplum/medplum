@@ -1,12 +1,11 @@
 import { Group, Stack } from '@mantine/core';
-import { InternalSchemaElement, getPathDisplayName } from '@medplum/core';
+import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { MouseEvent, useContext, useEffect, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { SliceInput } from '../SliceInput/SliceInput';
-import { SupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
@@ -28,7 +27,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   const { property } = props;
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
-  const [slices, setSlices] = useState<SupportedSliceDefinition[]>([]);
+  const [slices, setSlices] = useState<SliceDefinitionWithTypes[]>([]);
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
   const [slicedValues, setSlicedValues] = useState<any[][]>(() => [defaultValue]);
