@@ -63,7 +63,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     return isQuestionEnabled(item, response?.item ?? []);
   }
 
-  if (!schemaLoaded || !questionnaire) {
+  if (!schemaLoaded || !questionnaire || !response) {
     return null;
   }
 
