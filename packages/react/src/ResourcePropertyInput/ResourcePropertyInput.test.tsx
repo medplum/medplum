@@ -514,9 +514,8 @@ describe('ResourcePropertyInput', () => {
     expect(comboboxes).toHaveLength(1);
     expect(comboboxes[0]).toBeInstanceOf(HTMLSelectElement);
 
-    const searchBoxes = screen.getAllByRole('searchbox');
-    expect(searchBoxes).toHaveLength(1);
-    expect(searchBoxes[0]).toBeInstanceOf(HTMLInputElement);
+    const searchBoxes = screen.queryAllByRole('searchbox');
+    expect(searchBoxes).toHaveLength(0);
   });
 
   test('Type selector', async () => {
