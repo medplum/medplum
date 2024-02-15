@@ -10,8 +10,10 @@ export function CreateResourcePage(): JSX.Element {
   const navigate = useNavigate();
   const theme = useMantineTheme();
   const { resourceType } = useParams();
-  const tab = window.location.pathname.split('/').pop();
-  const [currentTab, setCurrentTab] = useState<string>(tab ?? defaultTab);
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    const tab = window.location.pathname.split('/').pop();
+    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : defaultTab;
+  });
 
   /**
    * Handles a tab change event.
