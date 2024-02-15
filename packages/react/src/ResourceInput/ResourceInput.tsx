@@ -144,21 +144,23 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, any>(({ label, resource, ...others }: any, ref) => {
-  return (
-    <div ref={ref} {...others}>
-      <Group wrap="nowrap">
-        <ResourceAvatar value={resource} />
-        <div>
-          <Text>{label}</Text>
-          <Text size="xs" c="dimmed">
-            {(resource as Patient).birthDate}
-          </Text>
-        </div>
-      </Group>
-    </div>
-  );
-});
+const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
+  ({ label, resource, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
+    return (
+      <div ref={ref} {...others}>
+        <Group wrap="nowrap">
+          <ResourceAvatar value={resource} />
+          <div>
+            <Text>{label}</Text>
+            <Text size="xs" c="dimmed">
+              {(resource as Patient).birthDate}
+            </Text>
+          </div>
+        </Group>
+      </div>
+    );
+  }
+);
 
 /**
  * Returns the search parameter to use for the given resource type.
