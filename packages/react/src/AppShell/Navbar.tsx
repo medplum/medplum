@@ -58,6 +58,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 key={window.location.pathname}
                 name="resourceType"
                 placeholder="Resource Type"
+                maxValues={0}
                 onChange={(newValue) => navigateResourceType(newValue)}
               />
             </MantineAppShell.Section>
