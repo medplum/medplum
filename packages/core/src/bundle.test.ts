@@ -277,11 +277,7 @@ describe('Bundle tests', () => {
       };
 
       const result = convertToTransactionBundle(inputBundle);
-      expect(result).toMatchObject({
-        resourceType: 'Bundle',
-        type: 'transaction',
-        entry: [{ resource: expected }],
-      });
+      expect(result?.entry?.[0]?.resource).toEqual(expected);
     });
   });
 
