@@ -295,12 +295,7 @@ async function includeInExpansion(
     .limit(count + 1)
     .offset(offset);
   if (filter) {
-    query
-      .where('display', '!=', null)
-      .where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter))
-      .orderBy('display');
-  } else {
-    query.orderBy('code');
+    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
   }
   if (include.filter?.length) {
     for (const condition of include.filter) {
