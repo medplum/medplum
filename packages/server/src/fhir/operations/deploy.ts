@@ -38,8 +38,8 @@ exports.handler = async (event, context) => {
   const { baseUrl, accessToken, contentType, secrets, traceId } = event;
   const medplum = new MedplumClient({
     baseUrl,
-    fetch: function(url, options) {
-      options.headers = options.headers || {};
+    fetch: function(url, options = {}) {
+      options.headers ||= {};
       options.headers['X-Trace-Id'] = traceId;
       options.headers['traceparent'] = traceId;
       return fetch(url, options);
