@@ -1,5 +1,5 @@
 import { allOk, badRequest, resolveId } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { Parameters, Subscription } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
@@ -12,6 +12,7 @@ const ONE_HOUR = 60 * 60 * 1000;
 
 export type AdditionalWsBindingClaims = {
   subscription_id: string;
+  project_id: string;
 };
 
 /**
@@ -40,8 +41,16 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
   }
 
   const subscriptionId = req.params.id;
-  const subExists = await redis.exists(`Subscription/${subscriptionId}`);
-  if (!subExists) {
+  const cacheEntryStr = await redis.get(`Subscription/${subscriptionId}`);
+  if (!cacheEntryStr) {
+    await sendOutcome(res, badRequest('Content could not be parsed'));
+    return;
+  }
+
+  let cacheEntry: { resource: Subscription; projectId: string };
+  try {
+    cacheEntry = JSON.parse(cacheEntryStr);
+  } catch (err: unknown) {
     await sendOutcome(res, badRequest('Content could not be parsed'));
     return;
   }
@@ -57,6 +66,7 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
     },
     {
       subscription_id: subscriptionId,
+      project_id: cacheEntry.projectId,
     } satisfies AdditionalWsBindingClaims
   );
 
