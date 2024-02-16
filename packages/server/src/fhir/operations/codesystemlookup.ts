@@ -1,5 +1,5 @@
-import { Operator, TypedValue, allOk, badRequest, notFound } from '@medplum/core';
-import { CodeSystem, Coding } from '@medplum/fhirtypes';
+import { TypedValue, allOk, badRequest, notFound } from '@medplum/core';
+import { Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { getDatabasePool } from '../../database';
@@ -7,6 +7,7 @@ import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { findCodeSystem } from './expand';
 
 const operation = getOperationDefinition('CodeSystem', 'lookup');
 
@@ -31,14 +32,7 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
-    resourceType: 'CodeSystem',
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: coding.system as string }],
-  });
-  if (!codeSystem) {
-    sendOutcome(res, badRequest('CodeSystem not found'));
-    return;
-  }
+  const codeSystem = await findCodeSystem(coding.system as string, ctx.repo);
 
   const lookup = new SelectQuery('Coding');
   const codeSystemTable = lookup.getNextJoinAlias();

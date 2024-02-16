@@ -247,7 +247,7 @@ async function computeExpansion(
   }
 }
 
-async function findCodeSystem(url: string, repo: Repository): Promise<CodeSystem> {
+export async function findCodeSystem(url: string, repo: Repository): Promise<CodeSystem> {
   const codeSystems = await repo.searchResources<CodeSystem>({
     resourceType: 'CodeSystem',
     filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],

@@ -1,4 +1,4 @@
-import { OperationOutcomeError, Operator, allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
@@ -7,6 +7,7 @@ import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { findCodeSystem } from './expand';
 
 const operation = getOperationDefinition('CodeSystem', 'validate-code');
 
@@ -39,13 +40,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
   }
 
   const ctx = getAuthenticatedContext();
-  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
-    resourceType: 'CodeSystem',
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: coding.system as string }],
-  });
-  if (!codeSystem) {
-    throw new OperationOutcomeError(badRequest(`CodeSystem ${coding.system} not found`));
-  }
+  const codeSystem = await findCodeSystem(coding.system as string, ctx.repo);
   const result = await validateCode(codeSystem, coding.code as string);
 
   const output: Record<string, any> = Object.create(null);

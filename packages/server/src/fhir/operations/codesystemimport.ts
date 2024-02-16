@@ -1,4 +1,4 @@
-import { OperationOutcomeError, Operator, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { PoolClient } from 'pg';
@@ -6,6 +6,7 @@ import { requireSuperAdmin } from '../../admin/super';
 import { sendOutcome } from '../outcomes';
 import { InsertQuery, SelectQuery } from '../sql';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { findCodeSystem } from './expand';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -61,18 +62,7 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
-  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
-    resourceType: 'CodeSystem',
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: params.system }],
-    sortRules: [
-      { code: 'version', descending: true },
-      { code: 'date', descending: true },
-    ],
-  });
-  if (!codeSystem) {
-    sendOutcome(res, badRequest('No CodeSystem found with URL ' + params.system));
-    return;
-  }
+  const codeSystem = await findCodeSystem(params.system, ctx.repo);
 
   try {
     await ctx.repo.withTransaction(async (db) => {

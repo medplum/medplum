@@ -146,7 +146,7 @@ describe('CodeSystem validate-code', () => {
     expect(res.status).toEqual(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: `CodeSystem ${codeSystem.url} not found` } }],
+      issue: [{ severity: 'error', code: 'invalid', details: { text: `Code system ${codeSystem.url} not found` } }],
     });
   });
 });
