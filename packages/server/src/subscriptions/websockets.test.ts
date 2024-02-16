@@ -141,10 +141,10 @@ describe('WebSockets Subscriptions', () => {
           // Clear the queue
           queue.add.mockClear();
 
-          let isMember = false;
-          while (!isMember) {
+          let subActive = false;
+          while (!subActive) {
             await sleep(0);
-            isMember =
+            subActive =
               (
                 await getRedis().smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
@@ -152,7 +152,7 @@ describe('WebSockets Subscriptions', () => {
                 )
               )[0] === 1;
           }
-          expect(isMember).toEqual(true);
+          expect(subActive).toEqual(true);
         })
         .expectJson((msg: Bundle): boolean => {
           if (!msg.entry?.[1]) {
@@ -182,10 +182,10 @@ describe('WebSockets Subscriptions', () => {
       expect(subscription).toBeDefined();
       expect(subscription).toEqual(patientSubscription);
 
-      let isMember = true;
-      while (isMember) {
+      let subActive = true;
+      while (subActive) {
         await sleep(0);
-        isMember =
+        subActive =
           (
             await getRedis().smismember(
               `medplum:subscriptions:r4:project:${project.id}:active`,
@@ -193,7 +193,7 @@ describe('WebSockets Subscriptions', () => {
             )
           )[0] === 1;
       }
-      expect(isMember).toEqual(false);
+      expect(subActive).toEqual(false);
     }));
 
   test('Should reject if given an invalid binding token', () =>
