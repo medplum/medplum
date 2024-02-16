@@ -1,63 +1,10 @@
-import { Accordion, Button, Chip, Group, Title } from '@mantine/core';
-import { createReference } from '@medplum/core';
-import {
-  Bundle,
-  BundleEntry,
-  Communication,
-  Parameters,
-  Patient,
-  Practitioner,
-  Reference,
-  Subscription,
-} from '@medplum/fhirtypes';
-import { DrAliceSmith, HomerSimpson, MargeSimpson } from '@medplum/mock';
+import { Accordion, Button, Group, Title } from '@mantine/core';
+import { createReference, getReferenceString } from '@medplum/core';
+import { Bundle, Communication, Parameters, Patient, Practitioner, Subscription } from '@medplum/fhirtypes';
+import { HomerSimpson, MargeSimpson } from '@medplum/mock';
 import { Document, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconArrowNarrowRight } from '@tabler/icons-react';
 import { useState } from 'react';
-
-interface BundleDisplayProps {
-  readonly bundle: Bundle;
-}
-
-function BundleDisplay(props: BundleDisplayProps): JSX.Element {
-  const { bundle } = props;
-  const communication = bundle?.entry?.[1].resource as Communication;
-  const [senderType, senderId] = ((communication.sender as Reference).reference as string).split('/');
-  const [recipientType, recipientId] = ((communication.recipient?.[0] as Reference).reference as string).split('/');
-  return (
-    <Accordion.Item value={`${bundle?.timestamp ?? 'Unknown time'}: Chat Notification`}>
-      <Accordion.Control>
-        <Group>
-          {bundle.timestamp}{' '}
-          <Chip checked={false}>
-            {senderType}/{senderId.slice(0, 8)}
-          </Chip>
-          <IconArrowNarrowRight />
-          <Chip checked={false}>
-            {recipientType}/{recipientId.slice(0, 8)}
-          </Chip>
-          <Chip checked={communication.status === 'completed'} color="blue" variant="filled">
-            {communication.status === 'in-progress' ? 'Sent' : 'Received'}
-          </Chip>
-        </Group>
-      </Accordion.Control>
-      <Accordion.Panel>
-        <div
-          style={{
-            paddingLeft: 30,
-            paddingRight: 30,
-            paddingTop: 20,
-            paddingBottom: 20,
-            borderRadius: 10,
-            textAlign: 'left',
-          }}
-        >
-          <pre>{JSON.stringify(bundle, null, 2)}</pre>
-        </div>
-      </Accordion.Panel>
-    </Accordion.Item>
-  );
-}
+import { BundleDisplay } from '../components/BundleDisplay';
 
 /**
  * Home page that greets the user and displays a list of patients.
@@ -77,7 +24,6 @@ export function HomePage(): JSX.Element {
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [patient, setPatient] = useState<Patient | undefined>();
   const [anotherPatient, setAnotherPatient] = useState<Patient | undefined>();
-  const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
 
   async function createSubscriptions(): Promise<void> {
     if (working) {
@@ -88,25 +34,24 @@ export function HomePage(): JSX.Element {
 
     const homer = await medplum.createResourceIfNoneExist(HomerSimpson, 'name="Homer Simpson"');
     const marge = await medplum.createResourceIfNoneExist(MargeSimpson, 'name="Marge Simpson"');
-    const drAlice = await medplum.createResourceIfNoneExist(DrAliceSmith, 'name="Alice Smith"');
 
-    const drRefString = `${drAlice.resourceType}/${drAlice.id as string}`;
-    const homerRefString = `${homer.resourceType}/${homer.id as string}`;
+    const meRefString = getReferenceString(profile);
+    const homerRefString = getReferenceString(homer);
 
     const subscription1 = await medplum.createResource<Subscription>({
       resourceType: 'Subscription',
-      criteria: `Communication?_compartment=${homerRefString}&recipient=${drRefString}`,
+      criteria: `Communication?_compartment=${homerRefString}&recipient=${meRefString}`,
       status: 'active',
-      reason: `Watch for outgoing Communications for ${homerRefString} to ${drRefString}.`,
+      reason: `Watch for outgoing Communications for ${homerRefString} to ${meRefString}.`,
       channel: {
         type: 'websocket',
       },
     });
     const subscription2 = await medplum.createResource<Subscription>({
       resourceType: 'Subscription',
-      criteria: `Communication?_compartment=${homerRefString}&sender=${drRefString}`,
+      criteria: `Communication?_compartment=${homerRefString}&sender=${meRefString}`,
       status: 'active',
-      reason: `Watch for incoming Communications from ${drRefString} to ${homerRefString}.`,
+      reason: `Watch for incoming Communications from ${meRefString} to ${homerRefString}.`,
       channel: {
         type: 'websocket',
       },
@@ -115,7 +60,6 @@ export function HomePage(): JSX.Element {
     setSubscriptions([subscription1, subscription2]);
     setPatient(homer);
     setAnotherPatient(marge);
-    setPractitioner(drAlice);
     setWorking(false);
   }
 
@@ -157,23 +101,13 @@ export function HomePage(): JSX.Element {
 
     ws.addEventListener('message', (event: MessageEvent<string>) => {
       const bundle = JSON.parse(event.data) as Bundle;
-      for (const entry of bundle.entry as BundleEntry[]) {
-        const entryResource = entry?.resource;
-        if (
-          entryResource?.resourceType === 'Communication' &&
-          !(entryResource.received && entryResource.status === 'completed')
-        ) {
-          medplum
-            .updateResource<Communication>({
-              ...entryResource,
-              received: new Date().toISOString(), // Mark as received
-              status: 'completed', // Mark as read
-              // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
-              // for more info about recommended `Communication` lifecycle
-            })
-            .catch(console.error);
-        }
+
+      const firstResource = bundle.entry?.[0]?.resource;
+      if (firstResource?.resourceType === 'SubscriptionStatus' && firstResource.type === 'heartbeat') {
+        // Ignore heartbeat bundles
+        return;
       }
+
       setBundles((s) => [bundle, ...s]);
     });
 
@@ -182,29 +116,29 @@ export function HomePage(): JSX.Element {
   }
 
   async function createOutgoingMessage(): Promise<void> {
-    if (!(patient && practitioner)) {
+    if (!patient) {
       return;
     }
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'in-progress',
-      sender: createReference({ resourceType: 'Patient', id: patient.id as string }),
-      recipient: [createReference({ resourceType: 'Practitioner', id: practitioner.id as string })],
-      payload: [{ contentString: "I'm not feeling great, and not sure if the medicine is working" }],
+      sender: createReference(profile),
+      recipient: [createReference(patient)],
+      payload: [{ contentString: 'Can you come in tomorrow for a follow-up?' }],
       sent: new Date().toISOString(),
     });
   }
 
   async function createIncomingMessage(): Promise<void> {
-    if (!(patient && practitioner)) {
+    if (!patient) {
       return;
     }
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'in-progress',
-      sender: createReference({ resourceType: 'Practitioner', id: practitioner.id as string }),
-      recipient: [createReference({ resourceType: 'Patient', id: patient.id as string })],
-      payload: [{ contentString: 'Can you come in tomorrow for a follow-up?' }],
+      sender: createReference(patient),
+      recipient: [createReference(profile)],
+      payload: [{ contentString: "I'm not feeling great, and not sure if the medicine is working" }],
       sent: new Date().toISOString(),
     });
   }
@@ -213,14 +147,14 @@ export function HomePage(): JSX.Element {
   // Important when tweaking criteria with advanced queries, such as the inclusion of `_filter` expressions
   // How can we make this more natural in this example?
   async function createMessageForAnotherPatient(): Promise<void> {
-    if (!(anotherPatient && practitioner)) {
+    if (!anotherPatient) {
       return;
     }
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'in-progress',
-      sender: createReference({ resourceType: 'Practitioner', id: practitioner.id as string }),
-      recipient: [createReference({ resourceType: 'Patient', id: anotherPatient.id as string })],
+      sender: createReference(profile),
+      recipient: [createReference(anotherPatient)],
       payload: [{ contentString: 'Are you going to be able to make it to your appointment today?' }],
       sent: new Date().toISOString(),
     });
@@ -245,7 +179,6 @@ export function HomePage(): JSX.Element {
     }
     setSubscriptions(undefined);
     setPatient(undefined);
-    setPractitioner(undefined);
     setWorking(false);
   }
 
