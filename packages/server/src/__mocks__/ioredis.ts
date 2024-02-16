@@ -128,6 +128,24 @@ class Redis {
     return added;
   }
 
+  async srem(setKey: string, members: string[]): Promise<number> {
+    const keySet = sets.get(setKey);
+    if (!keySet) {
+      return 0;
+    }
+    if (!(keySet instanceof Set)) {
+      throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
+    }
+    let removed = 0;
+    for (const member of members) {
+      if (keySet.has(member)) {
+        keySet.delete(member);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
   async smembers(setKey: string): Promise<string[]> {
     const keySet = sets.get(setKey);
     if (!keySet) {
@@ -137,6 +155,20 @@ class Redis {
       throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
     }
     return Array.from(keySet.keys());
+  }
+
+  async smismember(setKey: string, ...members: string[]): Promise<number[]> {
+    const keySet = sets.get(setKey);
+    if (!keySet) {
+      return new Array(members.length).fill(0);
+    }
+    if (!(keySet instanceof Set)) {
+      throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
+    }
+    return members.map((member) => {
+      // console.log('is a member?', member, keySet.has(member));
+      return keySet.has(member) ? 1 : 0;
+    });
   }
 
   async scard(setKey: string): Promise<number> {

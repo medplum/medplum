@@ -290,7 +290,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${project}:subs`);
+  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${project}:active`);
   const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
   if (redisOnlySubStrs.length) {
     const arrLen = redisOnlySubStrs.length;
