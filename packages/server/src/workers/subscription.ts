@@ -24,10 +24,10 @@ import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createSubEventNotification } from '../subscriptions/websockets';
+import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
 import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
-import { parseTraceparent } from '../traceparent';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -290,10 +290,25 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  const inMemorySubscriptionsStr = await getRedis().get(`medplum:subscriptions:r4:project:${project}`);
-  if (inMemorySubscriptionsStr) {
-    const inMemorySubscriptions = JSON.parse(inMemorySubscriptionsStr) as Subscription[];
-    subscriptions.push(...inMemorySubscriptions);
+  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${project}:subs`);
+  const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
+  if (redisOnlySubStrs.length) {
+    const arrLen = redisOnlySubStrs.length;
+    let subArrStr = '[';
+    for (let i = 0; i < arrLen - 1; i++) {
+      const result = redisOnlySubStrs[i];
+      if (result === null) {
+        continue;
+      }
+      subArrStr += result;
+      subArrStr += ',';
+    }
+    subArrStr += redisOnlySubStrs[arrLen - 1];
+    subArrStr += ']';
+    const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
+    for (const { resource } of inMemorySubs) {
+      subscriptions.push(resource);
+    }
   }
   return subscriptions;
 }

@@ -2,6 +2,8 @@ const values = new Map<string, string>();
 const sets = new Map<string, Set<string>>();
 const subscribers = new Map<string, Set<Redis>>();
 
+class ReplyError extends Error {}
+
 class Redis {
   private callback?: (...args: any[]) => void;
 
@@ -18,12 +20,18 @@ class Redis {
     return 'PONG';
   }
 
-  async get(key: string): Promise<string | undefined> {
-    return values.get(key);
+  async get(key: string): Promise<string | null> {
+    return values.get(key) ?? null;
   }
 
-  async mget(...keys: string[]): Promise<(string | undefined)[]> {
-    return keys.map((key) => values.get(key));
+  async mget(...keys: string[] | string[][]): Promise<(string | null)[]> {
+    let normalizedKeys: string[];
+    if (keys.length === 1 && Array.isArray(keys[0])) {
+      normalizedKeys = keys[0];
+    } else {
+      normalizedKeys = keys as string[];
+    }
+    return normalizedKeys.map((key) => values.get(key) ?? null);
   }
 
   async set(key: string, value: string, ...args: (string | number)[]): Promise<undefined | null | string> {
@@ -98,12 +106,16 @@ class Redis {
   }
 
   async sadd(setKey: string, ...members: string[]): Promise<number> {
+    const existingValue = sets.get(setKey);
     let keySet: Set<string>;
-    if (!sets.has(setKey)) {
+    if (existingValue) {
+      if (!(existingValue instanceof Set)) {
+        throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
+      }
+      keySet = existingValue;
+    } else {
       keySet = new Set<string>();
       sets.set(setKey, keySet);
-    } else {
-      keySet = sets.get(setKey) as Set<string>;
     }
     let added = 0;
     for (const member of members) {
@@ -117,11 +129,14 @@ class Redis {
   }
 
   async smembers(setKey: string): Promise<string[]> {
-    const set = sets.get(setKey);
-    if (!set) {
+    const keySet = sets.get(setKey);
+    if (!keySet) {
       return [];
     }
-    return Array.from(set.keys());
+    if (!(keySet instanceof Set)) {
+      throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
+    }
+    return Array.from(keySet.keys());
   }
 
   async scard(setKey: string): Promise<number> {
