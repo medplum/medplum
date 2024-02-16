@@ -15,11 +15,16 @@ export function CoveragePage(): JSX.Element {
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [patient, setPatient] = useState<Patient>();
 
-  const tabs = ['Details', 'History', 'Eligibility Requests', 'Eligibility Responses'];
+  const tabs = [
+    ['Details', 'Details'],
+    ['History', 'History'],
+    ['Requests', 'Eligibility Requests'],
+    ['Responses', 'Eligibility Responses'],
+  ];
 
   // Set the current tab to what is in the URL. If no tab, default to Details
   const tab = window.location.pathname.split('/').pop();
-  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+  const currentTab = tab && tabs.map((t) => t[0].toLowerCase()).includes(tab) ? tab : tabs[0][0].toLowerCase();
 
   // Get a reference to the patient covered by the Coverage
   const patientReference = coverage?.beneficiary;
@@ -62,6 +67,7 @@ export function CoveragePage(): JSX.Element {
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string | null): void => {
+    console.log(newTab);
     navigate(`/Coverage/${id}/${newTab ?? ''}`);
   };
 
@@ -79,7 +85,6 @@ export function CoveragePage(): JSX.Element {
             <Title>Coverage Details</Title>
             <CoverageDetails
               coverage={coverage}
-              patient={patient}
               tabs={tabs}
               currentTab={currentTab}
               handleTabChange={handleTabChange}

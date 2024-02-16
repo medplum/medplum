@@ -1,68 +1,39 @@
 import { Paper, Tabs } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
-import { ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
-import { useEffect } from 'react';
+import { ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
+import { useNavigate } from 'react-router-dom';
 
 interface CoverageDetailsProps {
   readonly coverage: Coverage;
-  readonly patient?: Patient;
-  readonly tabs: string[];
+  readonly tabs: string[][];
   readonly currentTab: string;
   readonly handleTabChange: (newTab: string | null) => void;
 }
 
-export function CoverageDetails({
-  coverage,
-  patient,
-  tabs,
-  currentTab,
-  handleTabChange,
-}: CoverageDetailsProps): JSX.Element {
+export function CoverageDetails({ coverage, tabs, currentTab, handleTabChange }: CoverageDetailsProps): JSX.Element {
   const medplum = useMedplum();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchEligibilityRequests = async (): Promise<void> => {
-      if (!patient) {
-        return;
-      }
+  const eligibilityRequestSearch: SearchRequest = {
+    resourceType: 'CoverageEligibilityRequest',
+    filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
+    fields: ['status', 'patient', 'outcome'],
+  };
 
-      try {
-        // Search for all CoverageEligibilityRequest resources that reference the covered patient
-        const eligibilityRequests = await medplum.searchResources('CoverageEligibilityRequest', {
-          patient: getReferenceString(patient),
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    const fetchEligibilityResponses = async (): Promise<void> => {
-      if (!patient) {
-        return;
-      }
-
-      try {
-        // Search for all CoverageEligibilityResponse resources that reference the covered patient
-        const eligibilityResponses = await medplum.searchResources('CoverageEligibilityResponse', {
-          patient: getReferenceString(patient),
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchEligibilityRequests();
-    fetchEligibilityResponses();
-  });
+  const eligibilityResponseSearch: SearchRequest = {
+    resourceType: 'CoverageEligibilityResponse',
+    filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
+    fields: ['status', 'patient', 'outcome'],
+  };
 
   return (
     <Paper>
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
           {tabs.map((tab) => (
-            <Tabs.Tab key={tab} value={tab.toLowerCase()}>
-              {tab}
+            <Tabs.Tab key={tab[1]} value={tab[0].toLowerCase()}>
+              {tab[1]}
             </Tabs.Tab>
           ))}
         </Tabs.List>
@@ -72,8 +43,23 @@ export function CoverageDetails({
         <Tabs.Panel value="history">
           <ResourceHistoryTable resourceType="Coverage" id={coverage.id} />
         </Tabs.Panel>
+        <Tabs.Panel value="requests">
+          <SearchControl
+            search={eligibilityRequestSearch}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            hideFilters={true}
+            hideToolbar={true}
+          />
+        </Tabs.Panel>
+        <Tabs.Panel value="responses">
+          <SearchControl
+            search={eligibilityResponseSearch}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            hideFilters={true}
+            hideToolbar={true}
+          />
+        </Tabs.Panel>
       </Tabs>
-      <ResourceTable value={coverage} />
     </Paper>
   );
 }
