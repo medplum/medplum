@@ -231,11 +231,13 @@ async function computeExpansion(
     const codeSystem = codeSystemCache[include.system] ?? (await findCodeSystem(include.system, repo));
     codeSystemCache[include.system] = codeSystem;
     if (include.concept) {
-      let concepts = await Promise.all(include.concept.flatMap(async (c) => validateCode(codeSystem, c.code)));
-      if (filter) {
-        concepts = concepts.filter((c) => c?.display?.includes(filter));
+      const concepts = await Promise.all(include.concept.flatMap((c) => validateCode(codeSystem, c.code)));
+      for (const c of concepts) {
+        if (c && (!filter || c.display?.includes(filter))) {
+          c.id = undefined;
+          expansion.push(c);
+        }
       }
-      expansion.push(...concepts.map((c) => ({ ...c, id: undefined })));
     } else {
       await includeInExpansion(include, expansion, codeSystem, repo, offset, count, filter);
     }
