@@ -4,6 +4,42 @@ const subscribers = new Map<string, Set<Redis>>();
 
 class ReplyError extends Error {}
 
+type Command = {
+  command: 'srem' | 'del';
+  args: string[];
+};
+
+type Result = number | null;
+
+class MultiClient {
+  private redis: Redis;
+  private commandQueue: Command[];
+
+  constructor(redis: Redis) {
+    this.redis = redis;
+    this.commandQueue = [];
+  }
+
+  srem(setKey: string, members: string[]): this {
+    this.commandQueue.push({ command: 'srem', args: [setKey, ...members] });
+    return this;
+  }
+
+  del(setKey: string | string[]): this {
+    this.commandQueue.push({ command: 'del', args: [...setKey] });
+    return this;
+  }
+
+  async exec(): Promise<Result[]> {
+    const results = [] as Result[];
+    for (const cmd of this.commandQueue) {
+      results.push((await this.redis[cmd.command](cmd.args[0], cmd.args.slice(1))) ?? null);
+    }
+    this.commandQueue = [];
+    return results;
+  }
+}
+
 class Redis {
   private callback?: (...args: any[]) => void;
 
@@ -128,7 +164,7 @@ class Redis {
     return added;
   }
 
-  async srem(setKey: string, members: string[]): Promise<number> {
+  async srem(setKey: string, ...members: string[]): Promise<number> {
     const keySet = sets.get(setKey);
     if (!keySet) {
       return 0;
@@ -136,8 +172,14 @@ class Redis {
     if (!(keySet instanceof Set)) {
       throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
     }
+    let normalizedMembers: string[];
+    if (Array.isArray(members[0])) {
+      normalizedMembers = members[0];
+    } else {
+      normalizedMembers = members;
+    }
     let removed = 0;
-    for (const member of members) {
+    for (const member of normalizedMembers) {
       if (keySet.has(member)) {
         keySet.delete(member);
         removed += 1;
@@ -166,7 +208,6 @@ class Redis {
       throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
     }
     return members.map((member) => {
-      // console.log('is a member?', member, keySet.has(member));
       return keySet.has(member) ? 1 : 0;
     });
   }
@@ -177,6 +218,10 @@ class Redis {
       return 0;
     }
     return set.size;
+  }
+
+  multi(): MultiClient {
+    return new MultiClient(this);
   }
 }
 
