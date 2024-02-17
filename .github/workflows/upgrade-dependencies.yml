@@ -1,6 +1,11 @@
 name: Upgrade dependencies
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  schedule:
+    # Every Monday at 9:00 AM UTC
+    # Every Monday at 1:00 AM PST (2:00 AM PDT)
+    - cron: '0 9 * * 1'
 
 jobs:
   upgrade-dependencies:
