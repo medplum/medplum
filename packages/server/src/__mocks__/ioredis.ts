@@ -164,7 +164,8 @@ class Redis {
     return added;
   }
 
-  async srem(setKey: string, ...members: string[]): Promise<number> {
+  async srem(setKey: string, member: string[]): Promise<number>;
+  async srem(setKey: string, ...members: string[] | string[][]): Promise<number> {
     const keySet = sets.get(setKey);
     if (!keySet) {
       return 0;
@@ -176,7 +177,7 @@ class Redis {
     if (Array.isArray(members[0])) {
       normalizedMembers = members[0];
     } else {
-      normalizedMembers = members;
+      normalizedMembers = members as string[];
     }
     let removed = 0;
     for (const member of normalizedMembers) {
