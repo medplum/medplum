@@ -1,7 +1,7 @@
 import { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useState } from 'react';
-import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeableConceptInputProps
   extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange'>,
@@ -25,6 +25,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
     <ValueSetAutocomplete
       defaultValue={value && codeableConceptToValueSetElement(value)}
       onChange={handleChange}
+      withHelpText
       {...rest}
     />
   );

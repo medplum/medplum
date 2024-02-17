@@ -20,7 +20,9 @@ export function CodeInput(props: CodeInputProps): JSX.Element {
     }
   }
 
-  return <ValueSetAutocomplete defaultValue={codeToValueSetElement(value)} onChange={handleChange} {...rest} />;
+  return (
+    <ValueSetAutocomplete defaultValue={codeToValueSetElement(value)} onChange={handleChange} withHelpText {...rest} />
+  );
 }
 
 function codeToValueSetElement(code: string | undefined): ValueSetExpansionContains | undefined {

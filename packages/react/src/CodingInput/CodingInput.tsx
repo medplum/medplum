@@ -25,6 +25,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
       defaultValue={value && codingToValueSetElement(value)}
       maxValues={1}
       onChange={handleChange}
+      withHelpText
       {...rest}
     />
   );

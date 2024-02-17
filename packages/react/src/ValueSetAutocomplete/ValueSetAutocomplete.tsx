@@ -15,6 +15,7 @@ export interface ValueSetAutocompleteProps
   readonly creatable?: boolean;
   readonly clearable?: boolean;
   readonly expandParams?: Partial<ValueSetExpandParams>;
+  readonly withHelpText?: boolean;
 }
 
 function toKey(element: ValueSetExpansionContains): string {
@@ -54,7 +55,7 @@ function createValue(input: string): ValueSetExpansionContains {
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { binding, creatable, clearable, expandParams, ...rest } = props;
+  const { binding, creatable, clearable, expandParams, withHelpText, ...rest } = props;
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
@@ -90,7 +91,7 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       toOption={toOption}
       loadOptions={loadValues}
       onCreate={createValue}
-      itemComponent={ItemComponent}
+      itemComponent={withHelpText ? ItemComponent : undefined}
     />
   );
 }
