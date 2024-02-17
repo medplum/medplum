@@ -293,18 +293,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
   const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${project}:active`);
   const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
   if (redisOnlySubStrs.length) {
-    const arrLen = redisOnlySubStrs.length;
-    let subArrStr = '[';
-    for (let i = 0; i < arrLen - 1; i++) {
-      const result = redisOnlySubStrs[i];
-      if (result === null) {
-        continue;
-      }
-      subArrStr += result;
-      subArrStr += ',';
-    }
-    subArrStr += redisOnlySubStrs[arrLen - 1];
-    subArrStr += ']';
+    const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
     const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
     for (const { resource } of inMemorySubs) {
       subscriptions.push(resource);

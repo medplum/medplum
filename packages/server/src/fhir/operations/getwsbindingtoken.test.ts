@@ -63,7 +63,6 @@ describe('Get WebSocket binding token', () => {
     expect(payload?.aud).toBeDefined();
     expect(payload?.username).toBeDefined();
     expect(payload?.subscription_id).toBeDefined();
-    expect(payload?.project_id).toBeDefined();
 
     expect(params.parameter?.[1]).toBeDefined();
     expect(params.parameter?.[1]?.name).toEqual('expiration');

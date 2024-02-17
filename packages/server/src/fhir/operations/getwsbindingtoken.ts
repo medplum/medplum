@@ -4,7 +4,6 @@ import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
-import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
 import { sendResponse } from '../response';
 
@@ -12,7 +11,6 @@ const ONE_HOUR = 60 * 60 * 1000;
 
 export type AdditionalWsBindingClaims = {
   subscription_id: string;
-  project_id: string;
 };
 
 /**
@@ -29,29 +27,21 @@ export type AdditionalWsBindingClaims = {
  * @param res - The HTTP response.
  */
 export async function getWsBindingTokenHandler(req: Request, res: Response): Promise<void> {
-  const { login, profile } = getAuthenticatedContext();
+  const { login, profile, repo } = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const redis = getRedis();
 
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
-    await sendOutcome(res, badRequest('Login missing user'));
+    sendOutcome(res, badRequest('Login missing user'));
     return;
   }
 
   const subscriptionId = req.params.id;
-  const cacheEntryStr = await redis.get(`Subscription/${subscriptionId}`);
-  if (!cacheEntryStr) {
-    await sendOutcome(res, badRequest('Content could not be parsed'));
-    return;
-  }
-
-  let cacheEntry: { resource: Subscription; projectId: string };
   try {
-    cacheEntry = JSON.parse(cacheEntryStr);
-  } catch (err: unknown) {
-    await sendOutcome(res, badRequest('Content could not be parsed'));
+    await repo.readResource<Subscription>('Subscription', subscriptionId);
+  } catch (_err: unknown) {
+    sendOutcome(res, badRequest('Subscription does not exist or does not have a project ID associated with it'));
     return;
   }
 
@@ -66,7 +56,6 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
     },
     {
       subscription_id: subscriptionId,
-      project_id: cacheEntry.projectId,
     } satisfies AdditionalWsBindingClaims
   );
 

@@ -1,4 +1,4 @@
-import { getReferenceString, sleep } from '@medplum/core';
+import { OperationOutcomeError, getReferenceString, sleep } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -11,15 +11,12 @@ import {
 import { Job } from 'bullmq';
 import express, { Express } from 'express';
 import { Server } from 'http';
-import { JWTPayload } from 'jose';
 import { randomUUID } from 'node:crypto';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { MedplumServerConfig, loadTestConfig } from '../config';
-import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import { Repository } from '../fhir/repo';
-import { MedplumAccessTokenClaims, generateAccessToken, verifyJwt } from '../oauth/keys';
 import { getRedis } from '../redis';
 import { withTestContext } from '../test.setup';
 import { execSubscriptionJob, getSubscriptionQueue } from '../workers/subscription';
@@ -175,13 +172,8 @@ describe('WebSockets Subscriptions', () => {
         .expectClosed();
     }));
 
-  test('Subscription marked as inactive after WebSocket closed', () =>
+  test('Subscription removed from active and deleted after WebSocket closed', () =>
     withTestContext(async () => {
-      // Check Patient subscription is still in the cache
-      const subscription = await repo.readResource('Subscription', patientSubscription?.id as string);
-      expect(subscription).toBeDefined();
-      expect(subscription).toEqual(patientSubscription);
-
       let subActive = true;
       while (subActive) {
         await sleep(0);
@@ -194,6 +186,11 @@ describe('WebSockets Subscriptions', () => {
           )[0] === 1;
       }
       expect(subActive).toEqual(false);
+
+      // Check Patient subscription is NOT still in the cache
+      await expect(repo.readResource<Subscription>('Subscription', patientSubscription?.id as string)).rejects.toThrow(
+        OperationOutcomeError
+      );
     }));
 
   test('Should reject if given an invalid binding token', () =>
@@ -221,11 +218,11 @@ describe('WebSockets Subscriptions', () => {
       expect(subscription).toBeDefined();
 
       // Call $get-ws-binding-token
-      const res1 = await request(server)
+      const res = await request(server)
         .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
 
-      expect(res1.body).toBeDefined();
+      expect(res.body).toBeDefined();
 
       await request(server)
         .ws('/ws/subscriptions-r4')
@@ -247,68 +244,6 @@ describe('WebSockets Subscriptions', () => {
             },
           });
           expect(version2).toBeDefined();
-
-          const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-          await execSubscriptionJob(job);
-
-          // Update should also trigger the subscription
-          expect(queue.add).toHaveBeenCalled();
-
-          // Clear the queue
-          queue.add.mockClear();
-        })
-        .expectJson({
-          resourceType: 'OperationOutcome',
-          issue: [
-            {
-              severity: 'error',
-              code: 'invalid',
-              details: { text: 'Token claims missing project_id. Make sure you are sending the correct token.' },
-            },
-          ],
-        })
-        .close()
-        .expectClosed();
-
-      // Call $get-ws-binding-token
-      const res2 = await request(server)
-        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
-        .set('Authorization', 'Bearer ' + accessToken);
-
-      expect(res2.body).toBeDefined();
-
-      const claims = (await verifyJwt(res2.body?.parameter?.[0]?.valueString)).payload as JWTPayload;
-      // Unset our additional claims
-      claims.subscription_id = undefined;
-      claims.project_id = undefined;
-
-      await request(server)
-        .ws('/ws/subscriptions-r4')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .sendJson({
-          type: 'bind-with-token',
-          payload: {
-            token: await generateAccessToken(claims as MedplumAccessTokenClaims, {
-              project_id: project.id as string,
-            } satisfies Partial<AdditionalWsBindingClaims>),
-          },
-        })
-        // Add a new patient for this project
-        .exec(async () => {
-          const queue = getSubscriptionQueue() as any;
-          queue.add.mockClear();
-
-          // Update the patient
-          const version3 = await repo.updateResource<Patient>({
-            resourceType: 'Patient',
-            id: version1.id,
-            name: [{ given: ['Alice', 'Jane'], family: 'Smith' }],
-            active: true,
-            meta: {
-              lastUpdated: new Date().toISOString(),
-            },
-          });
-          expect(version3).toBeDefined();
 
           const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
           await execSubscriptionJob(job);
