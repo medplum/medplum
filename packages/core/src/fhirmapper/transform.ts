@@ -41,12 +41,29 @@ export function structureMapTransform(
   return evalStructureMap({ root: structureMap, loader }, structureMap, input);
 }
 
+/**
+ * Evaluates a FHIR StructureMap.
+ *
+ * @param ctx - The transform context.
+ * @param structureMap - The FHIR StructureMap definition.
+ * @param input - The input values.
+ * @returns The transformed values.
+ * @internal
+ */
 function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, input: TypedValue[]): TypedValue[] {
   evalImports(ctx, structureMap);
   hoistGroups(ctx, structureMap);
-  return evalGroup(ctx, (structureMap.group as StructureMapGroup[])[0], input);
+  return evalGroup(ctx, structureMap.group[0], input);
 }
 
+/**
+ * Evaluates the imports in a FHIR StructureMap.
+ * For each import statement, the loader function is called to load the imported StructureMap.
+ * The imported StructureMap is then hoisted into the current context.
+ * @param ctx - The transform context.
+ * @param structureMap - The FHIR StructureMap definition.
+ * @internal
+ */
 function evalImports(ctx: TransformContext, structureMap: StructureMap): void {
   if (ctx.loader && structureMap.import) {
     for (const url of structureMap.import) {
@@ -58,6 +75,14 @@ function evalImports(ctx: TransformContext, structureMap: StructureMap): void {
   }
 }
 
+/**
+ * Hoists the groups in a FHIR StructureMap into the current context.
+ * This is necessary to allow groups to reference each other.
+ *
+ * @param ctx - The transform context.
+ * @param structureMap - The FHIR StructureMap definition.
+ * @internal
+ */
 function hoistGroups(ctx: TransformContext, structureMap: StructureMap): void {
   if (structureMap.group) {
     for (const group of structureMap.group) {
@@ -66,6 +91,17 @@ function hoistGroups(ctx: TransformContext, structureMap: StructureMap): void {
   }
 }
 
+/**
+ * Evaluates a FHIR StructureMapGroup.
+ *
+ * A "group" is similar to a function in a programming language.
+ *
+ * @param ctx - The transform context.
+ * @param group - The FHIR StructureMapGroup definition.
+ * @param input - The input values.
+ * @returns The transformed values.
+ * @internal
+ */
 function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: TypedValue[]): TypedValue[] {
   const sourceDefinitions: StructureMapGroupInput[] = [];
   const targetDefinitions: StructureMapGroupInput[] = [];
@@ -123,9 +159,13 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
 }
 
 /**
- * Recursively evaluates a FHIR Mapping rule.
+ * Entry point for evaluating a rule.
+ * Rule sources are evaluated first, followed by the rule target, child rules, and dependent groups.
+ * Rule sources are evaluated recursively to handle multiple source statements.
+ *
  * @param ctx - The transform context.
  * @param rule - The FHIR Mapping rule definition.
+ * @internal
  */
 function evalRule(ctx: TransformContext, rule: StructureMapGroupRule): void {
   // https://build.fhir.org/mapping-language.html#7.8.0.8.1
@@ -139,6 +179,14 @@ function evalRule(ctx: TransformContext, rule: StructureMapGroupRule): void {
   }
 }
 
+/**
+ * Recursively evaluates a rule at a specific source index.
+ *
+ * @param ctx - The transform context.
+ * @param rule - The FHIR Mapping rule definition.
+ * @param index - The source index to evaluate.
+ * @internal
+ */
 function evalRuleAtSource(
   ctx: TransformContext,
   rule: StructureMapGroupRule & { source: StructureMapGroupRuleSource[] },
@@ -174,6 +222,17 @@ function evalRuleAtSource(
   }
 }
 
+/**
+ * Evaluates a FHIR Mapping source definition.
+ *
+ * If the source has a condition, the condition is evaluated.
+ * If the source has a check, the check is evaluated.
+ *
+ * @param ctx - The transform context.
+ * @param source - The FHIR Mapping source definition.
+ * @returns The evaluated source values.
+ * @internal
+ */
 function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource): TypedValue[] {
   const sourceContext = getVariable(ctx, source.context as string) as TypedValue | undefined;
   if (!sourceContext) {
@@ -209,10 +268,29 @@ function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource):
   return sourceValue;
 }
 
+/**
+ * Evaluates a FHIRPath condition for a FHIR Mapping source.
+ *
+ * This is used for both the "condition" and "check" properties.
+ *
+ * @param input - The input value, typically the rule source.
+ * @param variables - The variables in scope for the FHIRPath expression.
+ * @param condition - The FHIRPath condition to evaluate.
+ * @returns True if the condition is true, false otherwise.
+ * @internal
+ */
 function evalCondition(input: TypedValue, variables: Record<string, TypedValue>, condition: string): boolean {
   return toJsBoolean(evalFhirPathTyped(condition, [input], variables));
 }
 
+/**
+ * Evaluates the list mode for a FHIR Mapping source.
+ *
+ * @param source - The FHIR Mapping source definition.
+ * @param sourceValue - The source values.
+ * @returns The evaluated source values.
+ * @internal
+ */
 function evalListMode(source: StructureMapGroupRuleSource, sourceValue: TypedValue[]): TypedValue[] {
   // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
   switch (source.listMode) {
@@ -233,6 +311,13 @@ function evalListMode(source: StructureMapGroupRuleSource, sourceValue: TypedVal
   return sourceValue;
 }
 
+/**
+ * Evaluates a FHIR Mapping target definition.
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @internal
+ */
 function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget): void {
   const targetContext = getVariable(ctx, target.context as string) as TypedValue | undefined;
   if (!targetContext) {
@@ -301,22 +386,69 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
   }
 }
 
+/**
+ * Returns true if the target property is an array field.
+ *
+ * @param targetContext - The target context.
+ * @param element - The element to check (i.e., the property name).
+ * @returns True if the target property is an array field.
+ * @internal
+ */
 function isArrayProperty(targetContext: TypedValue, element: string): boolean | undefined {
   const targetContextTypeDefinition = tryGetDataType(targetContext.type);
   const targetPropertyTypeDefinition = targetContextTypeDefinition?.elements?.[element];
   return targetPropertyTypeDefinition?.isArray;
 }
 
+/**
+ * Evaluates the "append" transform.
+ *
+ * "Source is element or string - just append them all together"
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
 function evalAppend(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const arg1 = resolveParameter(ctx, target.parameter?.[0])?.[0]?.value;
   const arg2 = resolveParameter(ctx, target.parameter?.[1])?.[0]?.value;
   return [{ type: 'string', value: (arg1 ?? '').toString() + (arg2 ?? '').toString() }];
 }
 
+/**
+ * Evaluates the "copy" transform.
+ *
+ * "Simply copy the source to the target as is (only allowed when the types in source and target match- typically for primitive types).
+ * In the concrete syntax, this is simply represented as the source variable, e.g. src.a = tgt.b"
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
 function evalCopy(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   return (target.parameter as StructureMapGroupRuleTargetParameter[]).flatMap((p) => resolveParameter(ctx, p));
 }
 
+/**
+ * Evaluates the "create" transform.
+ *
+ * "Use the standard API to create a new instance of data.
+ * Where structure definitions have been provided, the type parameter must be a string which is a known type of a root element.
+ * Where they haven't, the application must know the name somehow.""
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
 function evalCreate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const result: Record<string, unknown> = {};
   if (target.parameter && target.parameter.length > 0) {
@@ -325,12 +457,39 @@ function evalCreate(ctx: TransformContext, target: StructureMapGroupRuleTarget):
   return [toTypedValue(result)];
 }
 
+/**
+ * Evaluates the "evaluate" transform.
+ *
+ * "Execute the supplied FHIRPath expression and use the value returned by that."
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
 function evalEvaluate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const typedExpr = resolveParameter(ctx, target.parameter?.[0]);
   const expr = typedExpr[0].value as string;
   return evalFhirPathTyped(expr, [], buildFhirPathVariables(ctx) as Record<string, TypedValue>);
 }
 
+/**
+ * Evaluates the "translate" transform.
+ *
+ * "Use the translate operation. The source is some type of code or coded datatype,
+ * and the source and map_uri are passed to the translate operation.
+ * The output determines what value from the translate operation is used for the result of the operation
+ * (code, system, display, Coding, or CodeableConcept)"
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
 function evalTranslate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const args = (target.parameter as StructureMapGroupRuleTargetParameter[]).flatMap((p) => resolveParameter(ctx, p));
   const sourceValue = args[0].value;
@@ -343,6 +502,18 @@ function evalTranslate(ctx: TransformContext, target: StructureMapGroupRuleTarge
   return [toTypedValue(result.match?.[0]?.concept?.code)];
 }
 
+/**
+ * Evaluates the "truncate" transform.
+ *
+ * "Source must be some stringy type that has some meaningful length property"
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
 function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const targetValue = resolveParameter(ctx, target.parameter?.[0])?.[0];
   const targetLength = resolveParameter(ctx, target.parameter?.[1])?.[0]?.value as number;
@@ -352,6 +523,15 @@ function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget
   return [targetValue];
 }
 
+/**
+ * Evaluates a rule dependent group.
+ *
+ * See: https://hl7.org/fhir/r4/structuremap-definitions.html#StructureMap.group.rule.dependent
+ *
+ * @param ctx - The transform context.
+ * @param dependent - The FHIR Mapping dependent definition.
+ * @internal
+ */
 function evalDependent(ctx: TransformContext, dependent: StructureMapGroupRuleDependent): void {
   const dependentGroup = getVariable(ctx, dependent.name as string) as TypedValue | undefined;
   if (!dependentGroup) {
@@ -372,6 +552,18 @@ function evalDependent(ctx: TransformContext, dependent: StructureMapGroupRuleDe
   evalGroup(newContext, dependentGroup.value as StructureMapGroup, args);
 }
 
+/**
+ * Resolves the value of a FHIR Mapping target parameter.
+ *
+ * For literal values, the value is returned as-is.
+ *
+ * For variables, the value is looked up in the current context.
+ *
+ * @param ctx - The transform context.
+ * @param parameter - The FHIR Mapping target parameter definition.
+ * @returns The resolved parameter values.
+ * @internal
+ */
 function resolveParameter(
   ctx: TransformContext,
   parameter: StructureMapGroupRuleTargetParameter | undefined
@@ -395,6 +587,16 @@ function resolveParameter(
   return paramValue;
 }
 
+/**
+ * Returns a variable value by name.
+ *
+ * Recursively searches the parent context if the variable is not found in the current context.
+ *
+ * @param ctx - The transform context.
+ * @param name - The variable name.
+ * @returns The variable value.
+ * @internal
+ */
 function getVariable(ctx: TransformContext, name: string): TypedValue[] | TypedValue | undefined {
   const value = ctx.variables?.[name];
   if (value) {
@@ -406,6 +608,16 @@ function getVariable(ctx: TransformContext, name: string): TypedValue[] | TypedV
   return undefined;
 }
 
+/**
+ * Builds a collection of FHIRPath variables from the current context.
+ *
+ * Recursively searches the parent context to build the complete set of variables.
+ *
+ * @param ctx - The transform context.
+ * @param result - The builder output.
+ * @returns The result with the FHIRPath variables.
+ * @internal
+ */
 function buildFhirPathVariables(
   ctx: TransformContext,
   result: Record<string, TypedValue[] | TypedValue> = {}
@@ -422,6 +634,14 @@ function buildFhirPathVariables(
   return result;
 }
 
+/**
+ * Sets a variable value in the current context.
+ *
+ * @param ctx - The transform context.
+ * @param name - The variable name.
+ * @param value - The variable value.
+ * @internal
+ */
 function setVariable(ctx: TransformContext, name: string, value: TypedValue[] | TypedValue): void {
   if (!ctx.variables) {
     ctx.variables = {};
