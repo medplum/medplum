@@ -199,6 +199,9 @@ class StructureMapParser {
 
   private parseRuleSources(): StructureMapGroupRuleSource[] {
     if (this.parser.hasMore() && this.parser.peek()?.value === 'for') {
+      // The "for" keyword is optional
+      // It is not in the official grammar: https://build.fhir.org/mapping.g4
+      // But it is used in the examples: https://build.fhir.org/mapping-tutorial.html
       this.parser.consume('Symbol', 'for');
     }
     const sources = [this.parseRuleSource()];
