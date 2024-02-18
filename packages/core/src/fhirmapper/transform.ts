@@ -124,8 +124,8 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
 
 /**
  * Recursively evaluates a FHIR Mapping rule.
- * @param ctx The transform context.
- * @param rule The FHIR Mapping rule definition.
+ * @param ctx - The transform context.
+ * @param rule - The FHIR Mapping rule definition.
  */
 function evalRule(ctx: TransformContext, rule: StructureMapGroupRule): void {
   // https://build.fhir.org/mapping-language.html#7.8.0.8.1
