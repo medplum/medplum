@@ -38,6 +38,7 @@ export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
       creatable={false}
       maxValues={props.maxValues ?? 1}
       clearable={false}
+      withHelpText={false}
     />
   );
 }

@@ -8,7 +8,7 @@ export interface CodingInputProps extends Omit<ValueSetAutocompleteProps, 'defau
 }
 
 export function CodingInput(props: CodingInputProps): JSX.Element {
-  const { defaultValue, onChange, ...rest } = props;
+  const { defaultValue, onChange, withHelpText, ...rest } = props;
   const [value, setValue] = useState<Coding | undefined>(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
@@ -25,6 +25,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
       defaultValue={value && codingToValueSetElement(value)}
       maxValues={1}
       onChange={handleChange}
+      withHelpText={withHelpText ?? true}
       {...rest}
     />
   );
