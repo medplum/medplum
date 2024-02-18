@@ -94,7 +94,7 @@ Content-Type: application/json
 ```
 
 **Note**
-The token endpoint returns `refresh_token` only when the `grant_type` is `authorization_code`.
+The token endpoint returns `refresh_token` only when the `grant_type` is `authorization_code` and the requested scopes during login included `offline` or `offline_access`.
 
 ### Exchanging client credentials for an access token
 
