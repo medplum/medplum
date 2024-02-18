@@ -198,6 +198,9 @@ class StructureMapParser {
   }
 
   private parseRuleSources(): StructureMapGroupRuleSource[] {
+    if (this.parser.hasMore() && this.parser.peek()?.value === 'for') {
+      this.parser.consume('Symbol', 'for');
+    }
     const sources = [this.parseRuleSource()];
     while (this.parser.hasMore() && this.parser.peek()?.value === ',') {
       this.parser.consume(',');

@@ -122,56 +122,77 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
   return outputs;
 }
 
+/**
+ * Recursively evaluates a FHIR Mapping rule.
+ * @param ctx The transform context.
+ * @param rule The FHIR Mapping rule definition.
+ */
 function evalRule(ctx: TransformContext, rule: StructureMapGroupRule): void {
-  let haveSource = false;
+  // https://build.fhir.org/mapping-language.html#7.8.0.8.1
+  // If there are multiple source statements, the rule applies for the permutation of the source elements from each source statement.
+  // E.g. if there are 2 source statements, each with 2 matching elements, the rule applies 4 times, one for each combination.
+  // Typically, if there is more than one source statement, only one of the elements would repeat.
+  // If any of the source data elements have no value, then the rule never applies;
+  // only existing permutations are executed: for multiple source statements, all of them need to match.
   if (rule.source) {
-    for (const source of rule.source) {
-      if (evalSource(ctx, source)) {
-        haveSource = true;
+    evalRuleAtSource(ctx, rule, 0);
+  }
+}
+
+function evalRuleAtSource(
+  ctx: TransformContext,
+  rule: StructureMapGroupRule & { source: StructureMapGroupRuleSource[] },
+  index: number
+): void {
+  const source = rule.source[index];
+  for (const sourceValue of evalSource(ctx, source)) {
+    if (source.variable) {
+      setVariable(ctx, source.variable as string, sourceValue);
+    }
+
+    if (index === rule.source.length - 1) {
+      // If this is the inner-most source, then evaluate the rule
+      if (rule.target) {
+        for (const target of rule.target) {
+          evalTarget(ctx, target);
+        }
       }
-    }
-  }
-
-  if (!haveSource) {
-    return;
-  }
-
-  if (rule.target) {
-    for (const target of rule.target) {
-      evalTarget(ctx, target);
-    }
-  }
-  if (rule.rule) {
-    for (const childRule of rule.rule) {
-      evalRule(ctx, childRule);
-    }
-  }
-  if (rule.dependent) {
-    for (const dependent of rule.dependent) {
-      evalDependent(ctx, dependent);
+      if (rule.rule) {
+        for (const childRule of rule.rule) {
+          evalRule(ctx, childRule);
+        }
+      }
+      if (rule.dependent) {
+        for (const dependent of rule.dependent) {
+          evalDependent(ctx, dependent);
+        }
+      }
+    } else {
+      // Otherwise, evaluate the next source
+      evalRuleAtSource(ctx, rule, index + 1);
     }
   }
 }
 
-function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource): boolean {
+function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource): TypedValue[] {
   const sourceContext = getVariable(ctx, source.context as string) as TypedValue | undefined;
   if (!sourceContext) {
-    return false;
+    return [];
   }
 
   const sourceElement = source.element;
   if (!sourceElement) {
-    return true;
+    return [sourceContext];
   }
 
   let sourceValue = evalFhirPathTyped(sourceElement, [sourceContext]);
   if (!sourceValue || sourceValue.length === 0) {
-    return false;
+    return [];
   }
 
   if (source.condition) {
     if (!evalCondition(sourceContext, { [source.variable as string]: sourceValue[0] }, source.condition)) {
-      return false;
+      return [];
     }
   }
 
@@ -185,11 +206,7 @@ function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource):
     sourceValue = evalListMode(source, sourceValue);
   }
 
-  if (source.variable) {
-    setVariable(ctx, source.variable, unarrayify(sourceValue));
-  }
-
-  return true;
+  return sourceValue;
 }
 
 function evalCondition(input: TypedValue, variables: Record<string, TypedValue>, condition: string): boolean {
