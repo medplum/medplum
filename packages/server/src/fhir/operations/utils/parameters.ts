@@ -106,8 +106,9 @@ function parseParams(
 }
 
 export async function sendOutputParameters(
-  operation: OperationDefinition,
+  req: Request,
   res: Response,
+  operation: OperationDefinition,
   outcome: OperationOutcome,
   output: any
 ): Promise<void> {
@@ -121,7 +122,7 @@ export async function sendOutputParameters(
       );
     } else {
       // Send Resource as output directly, instead of using Parameters format
-      await sendResponse(res, outcome, output);
+      await sendResponse(req, res, outcome, output);
     }
     return;
   }

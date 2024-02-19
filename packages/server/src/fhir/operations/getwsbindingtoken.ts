@@ -79,5 +79,5 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
     ],
   } satisfies Parameters;
 
-  await sendResponse(res, allOk, tokenParams);
+  await sendResponse(req, res, allOk, tokenParams);
 }

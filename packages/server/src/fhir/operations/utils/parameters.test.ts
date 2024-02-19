@@ -231,6 +231,10 @@ describe('Operation Input Parameters parsing', () => {
 });
 
 describe('Send Operation output Parameters', () => {
+  const req = {
+    query: {},
+  } as unknown as Request;
+
   const res = {
     set: jest.fn(),
     status: jest.fn(),
@@ -243,7 +247,7 @@ describe('Send Operation output Parameters', () => {
   });
 
   test('Single required parameter', async () => {
-    await sendOutputParameters(opDef, res, allOk, { singleOut: { value: 20.2, unit: 'kg/m^2' } });
+    await sendOutputParameters(req, res, opDef, allOk, { singleOut: { value: 20.2, unit: 'kg/m^2' } });
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith<[Parameters]>({
@@ -253,7 +257,7 @@ describe('Send Operation output Parameters', () => {
   });
 
   test('Optional output parameter', async () => {
-    await sendOutputParameters(opDef, res, created, {
+    await sendOutputParameters(req, res, opDef, created, {
       singleOut: { value: 20.2, unit: 'kg/m^2' },
       multiOut: [{ reference: 'Observation/height' }, { reference: 'Observation/weight' }],
     });
@@ -286,7 +290,7 @@ describe('Send Operation output Parameters', () => {
           unit: 'kg/m^2',
         },
       } as Observation;
-      await sendOutputParameters(resourceReturnOp, res, allOk, obs);
+      await sendOutputParameters(req, res, resourceReturnOp, allOk, obs);
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(obs);
@@ -299,7 +303,7 @@ describe('Send Operation output Parameters', () => {
         parameter: [{ name: 'return', use: 'out', type: 'Observation', min: 1, max: '1' }],
       };
       const ref = { reference: 'Observation/bmi' } as Reference;
-      await sendOutputParameters(resourceReturnOp, res, allOk, ref);
+      await sendOutputParameters(req, res, resourceReturnOp, allOk, ref);
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
@@ -324,7 +328,7 @@ describe('Send Operation output Parameters', () => {
         parameter: [{ name: 'return', use: 'out', type: 'Observation', min: 1, max: '1' }],
       };
       const patient = { resourceType: 'Patient' } as Patient;
-      await sendOutputParameters(resourceReturnOp, res, allOk, patient);
+      await sendOutputParameters(req, res, resourceReturnOp, allOk, patient);
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
@@ -344,7 +348,7 @@ describe('Send Operation output Parameters', () => {
 
   test('Missing required parameter', () =>
     withTestContext(async () => {
-      await sendOutputParameters(opDef, res, allOk, { incorrectOut: { value: 20.2, unit: 'kg/m^2' } });
+      await sendOutputParameters(req, res, opDef, allOk, { incorrectOut: { value: 20.2, unit: 'kg/m^2' } });
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
@@ -363,7 +367,7 @@ describe('Send Operation output Parameters', () => {
     }));
 
   test('Omits extraneous parameters', async () => {
-    await sendOutputParameters(opDef, res, allOk, { singleOut: { value: 20.2, unit: 'kg/m^2' }, extraOut: 'foo' });
+    await sendOutputParameters(req, res, opDef, allOk, { singleOut: { value: 20.2, unit: 'kg/m^2' }, extraOut: 'foo' });
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith<[Parameters]>({
@@ -374,7 +378,7 @@ describe('Send Operation output Parameters', () => {
 
   test('Returns error on invalid output', () =>
     withTestContext(async () => {
-      await sendOutputParameters(opDef, res, allOk, { singleOut: { reference: 'Observation/foo' } });
+      await sendOutputParameters(req, res, opDef, allOk, { singleOut: { reference: 'Observation/foo' } });
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith<[OperationOutcome]>(
