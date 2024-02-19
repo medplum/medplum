@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { ContentType, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
+import { ContentType, LogLevel, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
 import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { Job } from 'bullmq';
@@ -9,6 +9,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -43,6 +44,8 @@ describe('Subscription Worker', () => {
   });
 
   beforeAll(async () => {
+    globalLogger.level = LogLevel.WARN;
+
     const config = await loadTestConfig();
     await initAppServices(config);
 
@@ -54,6 +57,7 @@ describe('Subscription Worker', () => {
         owner: {
           reference: 'User/' + randomUUID(),
         },
+        features: ['websocket-subscriptions'],
       })
     );
 
@@ -75,6 +79,8 @@ describe('Subscription Worker', () => {
   });
 
   afterAll(async () => {
+    globalLogger.level = LogLevel.NONE;
+
     await shutdownApp();
     await closeSubscriptionWorker(); // Double close to ensure quite ignore
   });
@@ -1333,7 +1339,7 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
     }));
 
-  test('WebSocket Subscription', () =>
+  test('WebSocket Subscription -- Enabled', () =>
     withTestContext(async () => {
       const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
@@ -1395,5 +1401,75 @@ describe('Subscription Worker', () => {
       expect(queue.add).toHaveBeenCalled();
 
       await deferredPromise;
+    }));
+
+  test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
+    withTestContext(async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const noWsSubProject = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Test Project',
+        owner: {
+          reference: 'User/' + randomUUID(),
+        },
+      });
+
+      const noWsSubRepo = new Repository({
+        extendedMode: true,
+        projects: [noWsSubProject.id as string],
+        author: {
+          reference: 'ClientApplication/' + randomUUID(),
+        },
+      });
+
+      const subscription = await noWsSubRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      });
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Subscribe to the topic
+      const subscriber = getRedis().duplicate();
+      await subscriber.subscribe(subscription.id as string);
+
+      let resolve: () => void;
+      let reject: (error: Error) => void;
+
+      const deferredPromise = new Promise<void>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      subscriber.on('message', () => {
+        reject(new Error('Should not have been called'));
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await noWsSubRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      // Give some time for the callback to get called (it shouldn't)
+      setTimeout(() => {
+        resolve();
+      }, 150);
+
+      await deferredPromise;
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringMatching(/WebSocket Subscriptions/));
+
+      console.log = originalConsoleLog;
     }));
 });
