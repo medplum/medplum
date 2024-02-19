@@ -114,4 +114,37 @@ describe('Get WebSocket binding token', () => {
         issue: [{ severity: 'error', code: 'invalid' }],
       });
     }));
+
+  test('should return OperationOutcome error if user does not have access to this Subscription', async () => {
+    // Create subscription to watch patient
+    const res1 = await request(app)
+      .post(`/fhir/R4/Subscription`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      } satisfies Subscription);
+    const createdSub = res1.body as Subscription;
+    expect(res1.status).toBe(201);
+    expect(createdSub).toBeDefined();
+    expect(createdSub.id).toBeDefined();
+
+    const anotherUserToken = await initTestAuth();
+
+    // Call $get-ws-binding-token
+    const res2 = await request(app)
+      .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
+      .set('Authorization', 'Bearer ' + anotherUserToken);
+
+    expect(res2.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid' }],
+    });
+  });
 });
