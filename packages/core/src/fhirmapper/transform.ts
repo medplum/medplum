@@ -175,7 +175,7 @@ function evalRule(ctx: TransformContext, rule: StructureMapGroupRule): void {
   // If any of the source data elements have no value, then the rule never applies;
   // only existing permutations are executed: for multiple source statements, all of them need to match.
   if (rule.source) {
-    evalRuleAtSource(ctx, rule, 0);
+    evalRuleSourceAt(ctx, rule, 0);
   }
 }
 
@@ -187,7 +187,7 @@ function evalRule(ctx: TransformContext, rule: StructureMapGroupRule): void {
  * @param index - The source index to evaluate.
  * @internal
  */
-function evalRuleAtSource(
+function evalRuleSourceAt(
   ctx: TransformContext,
   rule: StructureMapGroupRule & { source: StructureMapGroupRuleSource[] },
   index: number
@@ -198,26 +198,39 @@ function evalRuleAtSource(
       setVariable(ctx, source.variable as string, sourceValue);
     }
 
-    if (index === rule.source.length - 1) {
-      // If this is the inner-most source, then evaluate the rule
-      if (rule.target) {
-        for (const target of rule.target) {
-          evalTarget(ctx, target);
-        }
-      }
-      if (rule.rule) {
-        for (const childRule of rule.rule) {
-          evalRule(ctx, childRule);
-        }
-      }
-      if (rule.dependent) {
-        for (const dependent of rule.dependent) {
-          evalDependent(ctx, dependent);
-        }
-      }
+    if (index < rule.source.length - 1) {
+      // If there are more sources, evaluate the next source
+      evalRuleSourceAt(ctx, rule, index + 1);
     } else {
-      // Otherwise, evaluate the next source
-      evalRuleAtSource(ctx, rule, index + 1);
+      // Otherwise, evaluate the rule after the sources
+      evalRuleAfterSources(ctx, rule);
+    }
+  }
+}
+
+/**
+ * Evaluates a rule after the sources have been evaluated.
+ *
+ * This includes the rule targets, child rules, and dependent groups.
+ *
+ * @param ctx - The transform context.
+ * @param rule - The FHIR Mapping rule definition.
+ * @internal
+ */
+function evalRuleAfterSources(ctx: TransformContext, rule: StructureMapGroupRule): void {
+  if (rule.target) {
+    for (const target of rule.target) {
+      evalTarget(ctx, target);
+    }
+  }
+  if (rule.rule) {
+    for (const childRule of rule.rule) {
+      evalRule(ctx, childRule);
+    }
+  }
+  if (rule.dependent) {
+    for (const dependent of rule.dependent) {
+      evalDependent(ctx, dependent);
     }
   }
 }
