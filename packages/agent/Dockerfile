@@ -9,6 +9,7 @@ ENV MEDPLUM_VERSION ${MEDPLUM_VERSION}
 RUN adduser -u 5678 --disabled-password --gecos "" app
 
 COPY bin/medplum-agent-${MEDPLUM_VERSION}-linux /srv/medplum-agent
+RUN chmod +x /srv/medplum-agent
 
 WORKDIR /srv
 
