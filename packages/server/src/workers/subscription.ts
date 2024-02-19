@@ -3,6 +3,7 @@ import {
   createReference,
   getExtension,
   getExtensionValue,
+  getReferenceString,
   isGone,
   matchesSearchRequest,
   normalizeOperationOutcome,
@@ -12,7 +13,7 @@ import {
   serverError,
   stringify,
 } from '@medplum/core';
-import { Bot, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Project, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -269,8 +270,8 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
-  const project = resource.meta?.project;
-  if (!project) {
+  const projectId = resource.meta?.project;
+  if (!projectId) {
     return [];
   }
   const systemRepo = getSystemRepo();
@@ -281,7 +282,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       {
         code: '_project',
         operator: Operator.EQUALS,
-        value: project,
+        value: projectId,
       },
       {
         code: 'status',
@@ -290,13 +291,20 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${project}:active`);
+  const project = await systemRepo.readResource<Project>('Project', projectId);
+  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
   const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
   if (redisOnlySubStrs.length) {
-    const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
-    const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
-    for (const { resource } of inMemorySubs) {
-      subscriptions.push(resource);
+    if (project.features?.includes('websocket-subscriptions')) {
+      const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
+      const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
+      for (const { resource } of inMemorySubs) {
+        subscriptions.push(resource);
+      }
+    } else {
+      globalLogger.warn(
+        `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
+      );
     }
   }
   return subscriptions;
