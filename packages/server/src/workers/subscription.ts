@@ -291,21 +291,25 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  const project = await systemRepo.readResource<Project>('Project', projectId);
-  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
-  const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
-  if (redisOnlySubStrs.length) {
-    if (project.features?.includes('websocket-subscriptions')) {
-      const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
-      const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
-      for (const { resource } of inMemorySubs) {
-        subscriptions.push(resource);
+  try {
+    const project = await systemRepo.readResource<Project>('Project', projectId);
+    const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
+    const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
+    if (redisOnlySubStrs.length) {
+      if (project.features?.includes('websocket-subscriptions')) {
+        const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
+        const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
+        for (const { resource } of inMemorySubs) {
+          subscriptions.push(resource);
+        }
+      } else {
+        globalLogger.warn(
+          `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
+        );
       }
-    } else {
-      globalLogger.warn(
-        `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
-      );
     }
+  } catch (err: unknown) {
+    globalLogger.error((err as Error).message);
   }
   return subscriptions;
 }

@@ -44,8 +44,6 @@ describe('Subscription Worker', () => {
   });
 
   beforeAll(async () => {
-    globalLogger.level = LogLevel.WARN;
-
     const config = await loadTestConfig();
     await initAppServices(config);
 
@@ -79,8 +77,6 @@ describe('Subscription Worker', () => {
   });
 
   afterAll(async () => {
-    globalLogger.level = LogLevel.NONE;
-
     await shutdownApp();
     await closeSubscriptionWorker(); // Double close to ensure quite ignore
   });
@@ -1405,6 +1401,7 @@ describe('Subscription Worker', () => {
 
   test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
     withTestContext(async () => {
+      globalLogger.level = LogLevel.WARN;
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -1471,5 +1468,6 @@ describe('Subscription Worker', () => {
       expect(console.log).toHaveBeenLastCalledWith(expect.stringMatching(/WebSocket Subscriptions/));
 
       console.log = originalConsoleLog;
+      globalLogger.level = LogLevel.NONE;
     }));
 });
