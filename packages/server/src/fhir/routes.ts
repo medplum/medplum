@@ -225,7 +225,7 @@ protectedRoutes.use(
       }
       sendOutcome(res, result[0]);
     } else {
-      await sendResponse(res, result[0], result[1]);
+      await sendResponse(req, res, result[0], result[1]);
     }
   })
 );

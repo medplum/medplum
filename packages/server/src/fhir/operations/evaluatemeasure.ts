@@ -50,7 +50,7 @@ export async function evaluateMeasureHandler(req: Request, res: Response): Promi
   }
 
   const measureReport = await evaluateMeasure(ctx.repo, params, measure);
-  await sendResponse(res, created, measureReport);
+  await sendResponse(req, res, created, measureReport);
 }
 
 /**

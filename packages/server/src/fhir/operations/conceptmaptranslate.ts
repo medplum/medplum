@@ -26,7 +26,7 @@ export async function conceptMapTranslateHandler(req: Request, res: Response): P
   }
 
   const output = conceptMapTranslate(map, params);
-  await sendOutputParameters(operation, res, allOk, output);
+  await sendOutputParameters(req, res, operation, allOk, output);
 }
 
 async function lookupConceptMap(

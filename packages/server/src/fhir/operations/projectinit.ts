@@ -111,7 +111,7 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   }
 
   const { project } = await createProject(params.name, owner);
-  await sendOutputParameters(projectInitOperation, res, created, project);
+  await sendOutputParameters(req, res, projectInitOperation, created, project);
 }
 
 /**

@@ -50,7 +50,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   }
 
   const { membership } = await inviteUser(inviteRequest);
-  return sendResponse(res, allOk, membership);
+  return sendResponse(req, res, allOk, membership);
 }
 
 export interface ServerInviteRequest extends InviteRequest {

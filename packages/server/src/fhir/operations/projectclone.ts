@@ -26,7 +26,7 @@ export async function projectCloneHandler(req: Request, res: Response): Promise<
   const { name, resourceTypes, includeIds, excludeIds } = req.body;
   const cloner = new ProjectCloner(ctx.repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();
-  await sendResponse(res, created, result);
+  await sendResponse(req, res, created, result);
 }
 
 class ProjectCloner {

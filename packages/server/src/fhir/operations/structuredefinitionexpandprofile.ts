@@ -32,7 +32,7 @@ export async function structureDefinitionExpandProfileHandler(req: Request, res:
 
   const bundle = bundleResults([profile, ...sds]);
 
-  await sendResponse(res, allOk, bundle);
+  await sendResponse(req, res, allOk, bundle);
 }
 
 async function fetchProfileByUrl(repo: Repository, url: string): Promise<StructureDefinition | undefined> {
