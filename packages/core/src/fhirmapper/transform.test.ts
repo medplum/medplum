@@ -321,4 +321,102 @@ describe('FHIR Mapper transform', () => {
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toMatchObject(expected);
   });
+
+  test('Co-dependency in translation', () => {
+    // https://build.fhir.org/mapping-tutorial.html#step9
+    // Another common translation is where the target mapping for one element depends on the value of another element.
+
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        src.i as i where m < 2 -> tgt.j = i;
+        src.i as i where m >= 2 -> tgt.k = i;
+      }
+    `;
+
+    const input1 = [toTypedValue({ i: 'foo', m: 1 })];
+    const expected1 = [toTypedValue({ j: 'foo' })];
+    const actual1 = structureMapTransform(parseMappingLanguage(map), input1);
+    expect(actual1).toMatchObject(expected1);
+
+    const input2 = [toTypedValue({ i: 'foo', m: 3 })];
+    const expected2 = [toTypedValue({ k: 'foo' })];
+    const actual2 = structureMapTransform(parseMappingLanguage(map), input2);
+    expect(actual2).toMatchObject(expected2);
+  });
+
+  test('Reworking Structure #1', () => {
+    // https://build.fhir.org/mapping-tutorial.html#step11
+    // It's now time to start moving away from relatively simple cases to some of the harder ones to manage mappings for.
+    // The first mixes list management, and converting from a specific structure to a general structure:
+
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        src.e as s_e -> tgt.e as t_e then {
+          for s_e -> t_e.f = s_e, t_e.g = 'g1';
+        };
+
+        src.f as s_f -> tgt.e as t_e first then {
+          s_f -> t_e.f = s_f, t_e.g = 'g2';
+        };
+      }
+    `;
+
+    const input = [toTypedValue({ e: ['foo', 'bar'], f: 'baz' }), toTypedValue({ e: [] })];
+    const expected = [
+      toTypedValue({
+        e: [
+          { f: 'foo', g: 'g1' },
+          { f: 'bar', g: 'g1' },
+          { f: 'baz', g: 'g2' },
+        ],
+      }),
+    ];
+    const actual = structureMapTransform(parseMappingLanguage(map), input);
+    expect(actual).toMatchObject(expected);
+  });
+
+  test('Reworking Structure #2', () => {
+    // https://build.fhir.org/mapping-tutorial.html#step12
+    // The second example for reworking structure moves cardinality around the hierarchy.
+    // In this case, the source has an optional structure that contains a repeating structure,
+    // while the target puts the cardinality at the next level up:
+
+    const map = `
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
+      uses "http://hl7.org/fhir/StructureDefinition/tutorial-right" as target
+
+      group tutorial(source src : TLeft, target tgt : TRight) {
+        // setting up a variable for the parent
+        src.az1 as s_az1 then {
+
+          // one tgt.az1 for each az3
+          s_az1.az3 as s_az3 -> tgt.az1 as t_az1 then {
+            // value for az2. Note that this refers to a previous context in the source
+            s_az1.az2 as az2 -> t_az1.az2 = az2;
+
+            // value for az3
+            s_az3 -> t_az1.az3 = s_az3;
+          };
+        };
+      }
+    `;
+
+    const input = [toTypedValue({ az1: { az2: 'foo', az3: ['bar', 'baz'] }, f: 'baz' }), toTypedValue({ az1: [] })];
+    const expected = [
+      toTypedValue({
+        az1: [
+          { az2: 'foo', az3: 'bar' },
+          { az2: 'foo', az3: 'baz' },
+        ],
+      }),
+    ];
+    const actual = structureMapTransform(parseMappingLanguage(map), input);
+    expect(actual).toMatchObject(expected);
+  });
 });
