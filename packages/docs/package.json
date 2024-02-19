@@ -46,7 +46,7 @@
     "@docusaurus/theme-mermaid": "3.1.1",
     "@docusaurus/tsconfig": "3.1.1",
     "@docusaurus/types": "3.1.1",
-    "@mdx-js/react": "3.0.0",
+    "@mdx-js/react": "3.0.1",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
@@ -58,7 +58,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-intersection-observer": "9.8.0",
-    "react-router-dom": "6.22.0",
+    "react-router-dom": "6.22.1",
     "typescript": "5.3.3",
     "url-loader": "4.1.1"
   },
