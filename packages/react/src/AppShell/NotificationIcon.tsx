@@ -1,10 +1,11 @@
-import { ActionIcon, Indicator } from '@mantine/core';
+import { ActionIcon, Indicator, Tooltip } from '@mantine/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface NotificationIconProps {
   readonly iconComponent: JSX.Element;
+  readonly label: string;
   readonly resourceType: ResourceType;
   readonly countCriteria: string;
   readonly subscriptionCriteria: string;
@@ -13,7 +14,7 @@ export interface NotificationIconProps {
 
 export function NotificationIcon(props: NotificationIconProps): JSX.Element {
   const medplum = useMedplum();
-  const { resourceType, countCriteria, subscriptionCriteria, onClick } = props;
+  const { label, resourceType, countCriteria, subscriptionCriteria, onClick } = props;
   const [unreadCount, setUnreadCount] = useState(0);
 
   const updateCount = useCallback(
@@ -41,9 +42,11 @@ export function NotificationIcon(props: NotificationIconProps): JSX.Element {
   });
 
   const icon = (
-    <ActionIcon variant="subtle" color="gray" size="lg" aria-label={resourceType} onClick={onClick}>
-      {props.iconComponent}
-    </ActionIcon>
+    <Tooltip label={label}>
+      <ActionIcon variant="subtle" color="gray" size="lg" aria-label={label} onClick={onClick}>
+        {props.iconComponent}
+      </ActionIcon>
+    </Tooltip>
   );
 
   return unreadCount > 0 ? (

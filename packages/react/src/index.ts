@@ -8,6 +8,7 @@ export * from './AnnotationInput/AnnotationInput';
 export * from './AppShell/AppShell';
 export * from './AppShell/Header';
 export * from './AppShell/Navbar';
+export * from './AppShell/NotificationIcon';
 export * from './AsyncAutocomplete/AsyncAutocomplete';
 export * from './AttachmentArrayDisplay/AttachmentArrayDisplay';
 export * from './AttachmentArrayInput/AttachmentArrayInput';

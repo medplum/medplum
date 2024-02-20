@@ -156,6 +156,7 @@ export function NotificationIcons(): JSX.Element {
         notifications={
           <>
             <NotificationIcon
+              label="Mail"
               resourceType="Communication"
               countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
               subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
@@ -163,6 +164,7 @@ export function NotificationIcons(): JSX.Element {
               onClick={() => console.log('foo')}
             />
             <NotificationIcon
+              label="Tasks"
               resourceType="Task"
               countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
               subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
