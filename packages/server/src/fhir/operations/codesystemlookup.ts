@@ -1,12 +1,12 @@
-import { Operator, TypedValue, allOk, badRequest, notFound } from '@medplum/core';
-import { CodeSystem, Coding } from '@medplum/fhirtypes';
+import { TypedValue, allOk, badRequest, notFound } from '@medplum/core';
+import { Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getAuthenticatedContext } from '../../context';
 import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { findCodeSystem } from './expand';
 
 const operation = getOperationDefinition('CodeSystem', 'lookup');
 
@@ -18,7 +18,6 @@ type CodeSystemLookupParameters = {
 };
 
 export async function codeSystemLookupHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getAuthenticatedContext();
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
 
   let coding: Coding;
@@ -31,14 +30,7 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const codeSystem = await ctx.repo.searchOne<CodeSystem>({
-    resourceType: 'CodeSystem',
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: coding.system as string }],
-  });
-  if (!codeSystem) {
-    sendOutcome(res, badRequest('CodeSystem not found'));
-    return;
-  }
+  const codeSystem = await findCodeSystem(coding.system as string);
 
   const lookup = new SelectQuery('Coding');
   const codeSystemTable = lookup.getNextJoinAlias();

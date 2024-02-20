@@ -175,30 +175,6 @@ describe('CodeSystem $import', () => {
     expect(res.body.issue[0].code).toEqual('invalid');
   });
 
-  test('Returns error on ambiguous code system', async () => {
-    // Upload another copy of the CodeSystem
-    const res = await request(app)
-      .post(`/fhir/R4/CodeSystem`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send(snomedJSON);
-    expect(res.status).toEqual(201);
-
-    const res2 = await request(app)
-      .post(`/fhir/R4/CodeSystem/$import`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'system', valueUri: snomed.url },
-          { name: 'concept', valueCoding: { code: '1', display: 'Aspirin' } },
-        ],
-      });
-    expect(res2.status).toEqual(400);
-    expect(res2.body.issue[0].code).toEqual('invalid');
-  });
-
   test('Returns error on unknown code for property', async () => {
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)

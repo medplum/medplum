@@ -37,7 +37,10 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4ValueSets());
+    await sendAsyncResponse(req, res, async () => {
+      await rebuildR4ValueSets();
+      await getSystemRepo().reindexResourceType('CodeSystem');
+    });
   })
 );
 
