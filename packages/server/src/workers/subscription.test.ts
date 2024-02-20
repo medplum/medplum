@@ -48,23 +48,17 @@ describe('Subscription Worker', () => {
     await initAppServices(config);
 
     // Create one simple project with no advanced features enabled
-    const testProject = await withTestContext(() =>
-      systemRepo.createResource<Project>({
-        resourceType: 'Project',
+    const { project, client } = await withTestContext(() =>
+      createTestProject({
         name: 'Test Project',
-        owner: {
-          reference: 'User/' + randomUUID(),
-        },
         features: ['websocket-subscriptions'],
       })
     );
 
     repo = new Repository({
       extendedMode: true,
-      projects: [testProject.id as string],
-      author: {
-        reference: 'ClientApplication/' + randomUUID(),
-      },
+      projects: [project.id as string],
+      author: createReference(client),
     });
 
     // Create another project, this one with bots enabled
@@ -1116,7 +1110,7 @@ describe('Subscription Worker', () => {
 
   test('AuditEvent has Subscription account details', () =>
     withTestContext(async () => {
-      const project = randomUUID();
+      const project = (await createTestProject()).project.id as string;
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
@@ -1168,15 +1162,15 @@ describe('Subscription Worker', () => {
       });
       expect(bundle.entry?.length).toEqual(1);
 
-      const auditEvent = bundle.entry?.[0].resource as AuditEvent;
+      const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
       expect(auditEvent.meta?.account).toBeDefined();
       expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
       expect(auditEvent.entity).toHaveLength(2);
     }));
 
-  test('Audit Event outcome from custom codes', () =>
+  test('AuditEvent outcome from custom codes', () =>
     withTestContext(async () => {
-      const project = randomUUID();
+      const project = (await createTestProject()).project.id as string;
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
