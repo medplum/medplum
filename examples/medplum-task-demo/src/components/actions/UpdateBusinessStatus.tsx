@@ -83,7 +83,7 @@ const updateStatusQuestionnaire: Questionnaire = {
       linkId: 'update-status',
       text: 'Update Status',
       type: 'choice',
-      answerValueSet: 'https://medplum.com/medplum-task-example-app/task-status-valueset',
+      answerValueSet: 'https://medplum.com/medplum-task-example-app/task-status',
     },
   ],
 };
