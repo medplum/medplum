@@ -65,6 +65,6 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   const project = doProjectInit(params);
 
   // Special case: single `return` output parameter means respond with the Project resource directly
-  await sendOutputParameters(operation, res, created, project);
+  await sendOutputParameters(req, res, operation, created, project);
 }
 ```

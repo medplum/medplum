@@ -73,7 +73,7 @@ export async function planDefinitionApplyHandler(req: Request, res: Response): P
     intent: 'order',
     action: actions,
   });
-  await sendResponse(res, allOk, requestGroup);
+  await sendResponse(req, res, allOk, requestGroup);
 }
 
 /**

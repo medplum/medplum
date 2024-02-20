@@ -18,6 +18,8 @@ export interface SearchRequest<T extends Resource = Resource> {
   include?: IncludeTarget[];
   revInclude?: IncludeTarget[];
   summary?: 'true' | 'text' | 'data';
+  format?: string;
+  pretty?: boolean;
 }
 
 export interface Filter {
@@ -256,6 +258,14 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     case '_fields':
     case '_elements':
       searchRequest.fields = value.split(',');
+      break;
+
+    case '_format':
+      searchRequest.format = value;
+      break;
+
+    case '_pretty':
+      searchRequest.pretty = value === 'true';
       break;
 
     default: {

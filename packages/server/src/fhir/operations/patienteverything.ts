@@ -41,7 +41,7 @@ export async function patientEverythingHandler(req: Request, res: Response): Pro
   // Then read all of the patient data
   const bundle = await getPatientEverything(ctx.repo, patient, params);
 
-  await sendResponse(res, allOk, bundle);
+  await sendResponse(req, res, allOk, bundle);
 }
 
 /**

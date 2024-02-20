@@ -1,6 +1,6 @@
 {
   "name": "@medplum/agent",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -25,7 +25,7 @@
   "dependencies": {
     "@medplum/core": "*",
     "@medplum/hl7": "*",
-    "dcmjs-dimse": "0.1.24",
+    "dcmjs-dimse": "0.1.25",
     "node-windows": "1.0.0-beta.8",
     "ws": "8.16.0"
   },

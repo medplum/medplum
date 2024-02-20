@@ -409,6 +409,7 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly contentType: string;
   readonly input: T;
   readonly secrets: Record<string, ProjectSecret>;
+  readonly traceId?: string;
 }
 
 export interface InviteRequest {

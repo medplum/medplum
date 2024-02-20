@@ -6,7 +6,7 @@ authors:
   title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
-tags: [pediatrics, fhir-datastore, self-host]
+tags: [pediatrics, fhir-datastore, self-host, ai]
 ---
 
 # Develo Pediatric EHR

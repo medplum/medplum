@@ -160,11 +160,19 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Read resourcex', async () => {
+  test('Read resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+  });
+
+  test('Read resource _pretty', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Patient/${patientId}?_pretty=true`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.text).toEqual(JSON.stringify(res.body, undefined, 2));
   });
 
   test('Read resource invalid UUID', async () => {

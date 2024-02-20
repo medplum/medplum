@@ -429,10 +429,15 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   // End user code
 
   (async () => {
-    const { baseUrl, accessToken, contentType, secrets } = event;
+    const { baseUrl, accessToken, contentType, secrets, traceId } = event;
     const medplum = new MedplumClient({
       baseUrl,
-      fetch,
+      fetch: function(url, options = {}) {
+        options.headers ||= {};
+        options.headers['X-Trace-Id'] = traceId;
+        options.headers['traceparent'] = traceId;
+        return fetch(url, options);
+      },
     });
     medplum.setAccessToken(accessToken);
     try {
@@ -440,7 +445,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { input, contentType, secrets });
+      let result = await exports.handler(medplum, { input, contentType, secrets, traceId });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }

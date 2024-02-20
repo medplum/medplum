@@ -89,5 +89,5 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     }
   }
 
-  await sendOutputParameters(operation, res, allOk, output);
+  await sendOutputParameters(req, res, operation, allOk, output);
 }

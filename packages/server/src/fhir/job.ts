@@ -24,7 +24,7 @@ jobRouter.get(
       return;
     }
 
-    await sendResponse(res, allOk, asyncJob);
+    await sendResponse(req, res, allOk, asyncJob);
   })
 );
 
