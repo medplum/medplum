@@ -1,4 +1,5 @@
 import {
+  AccessPolicyInteraction,
   ContentType,
   createReference,
   getExtension,
@@ -10,6 +11,7 @@ import {
   OperationOutcomeError,
   Operator,
   parseSearchUrl,
+  satisfiedAccessPolicy,
   serverError,
   stringify,
 } from '@medplum/core';
@@ -20,6 +22,7 @@ import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import { MedplumServerConfig } from '../config';
 import { getRequestContext, RequestContext, requestContextStore } from '../context';
+import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -128,6 +131,43 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
 }
 
 /**
+ * Checks if this resource should be create a notification for this `Subscription` based on the access policy that should be applied for this `Subscription`.
+ * The `AccessPolicy` of author's `ProjectMembership` this resource's `Project` is used when evaluating whether the `AccessPolicy` is satisfied.
+ *
+ * Currently we log if the `AccessPolicy` is not satifisied
+ *
+ * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied.
+ *
+ * @param resource - The resource to evaluate against the `AccessPolicy`.
+ * @param project - The project containing the resource.
+ * @param subscription - The `Subscription` to get the `AccessPolicy` for.
+ */
+async function checkAccessPolicy(resource: Resource, project: Project, subscription: Subscription): Promise<void> {
+  // Check access policy
+  const subAuthor = subscription.meta?.author;
+  if (subAuthor) {
+    const membership = await findProjectMembership(project.id as string, subAuthor);
+    if (membership) {
+      const accessPolicy = await buildAccessPolicy(membership);
+      const satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
+      if (!satisfied) {
+        globalLogger.warn(
+          `[Subscription Access Policy]: Access Policy not satisfied for '${getReferenceString(resource)}'`,
+          { author: subAuthor, project, accessPolicy }
+        );
+      }
+    } else {
+      globalLogger.warn(
+        `[Subscription Access Policy]: No membership for author '${getReferenceString(subAuthor)}' in project '${getReferenceString(project)}'`
+      );
+    }
+  } else {
+    // Log it if there is no author for this Subscription (this is not good)
+    globalLogger.warn(`[Subscription Access Policy]: No author for subscription '${getReferenceString(subscription)}'`);
+  }
+}
+
+/**
  * Adds all subscription jobs for a given resource.
  *
  * There are a few important structural considerations:
@@ -148,10 +188,28 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
     // Never send subscriptions for audit events
     return;
   }
+
+  const systemRepo = getSystemRepo();
+  let project: Project | undefined;
+  try {
+    const projectId = resource.meta?.project;
+    if (projectId) {
+      project = await systemRepo.readResource<Project>('Project', projectId);
+    }
+  } catch (_err: unknown) {
+    project = undefined;
+  }
+
   const requestTime = new Date().toISOString();
-  const subscriptions = await getSubscriptions(resource);
+  if (!project) {
+    ctx.logger.debug('Did not evaluate subscriptions for resource without project');
+    globalLogger.warn(`[Subscription Access Policy]: No project for resource '${getReferenceString(resource)}'`);
+    return;
+  }
+  const subscriptions = await getSubscriptions(resource, project);
   ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
+    await checkAccessPolicy(resource, project, subscription);
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
       await addSubscriptionJobData({
@@ -267,13 +325,11 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
 /**
  * Loads the list of all subscriptions in this repository.
  * @param resource - The resource that was created or updated.
+ * @param project - The project that contains this resource.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
-  const projectId = resource.meta?.project;
-  if (!projectId) {
-    return [];
-  }
+async function getSubscriptions(resource: Resource, project: Project): Promise<Subscription[]> {
+  const projectId = project.id as string;
   const systemRepo = getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
@@ -291,25 +347,20 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  try {
-    const project = await systemRepo.readResource<Project>('Project', projectId);
-    const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
+  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
+  if (redisOnlySubRefStrs.length) {
     const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
-    if (redisOnlySubStrs.length) {
-      if (project.features?.includes('websocket-subscriptions')) {
-        const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
-        const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
-        for (const { resource } of inMemorySubs) {
-          subscriptions.push(resource);
-        }
-      } else {
-        globalLogger.warn(
-          `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
-        );
+    if (project.features?.includes('websocket-subscriptions')) {
+      const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
+      const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
+      for (const { resource } of inMemorySubs) {
+        subscriptions.push(resource);
       }
+    } else {
+      globalLogger.warn(
+        `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
+      );
     }
-  } catch (err: unknown) {
-    globalLogger.error((err as Error).message);
   }
   return subscriptions;
 }
