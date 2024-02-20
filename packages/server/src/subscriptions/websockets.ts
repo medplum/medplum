@@ -1,9 +1,11 @@
 import { badRequest, createReference } from '@medplum/core';
-import { Bundle, Resource } from '@medplum/fhirtypes';
+import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
 import ws from 'ws';
+import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
+import { CacheEntry } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
@@ -24,10 +26,19 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
   const redis = getRedis();
   const subscriptionIds = [] as string[];
   let redisSubscriber: Redis;
-  let onDisconnect: (() => void) | undefined;
+  let onDisconnect: (() => Promise<void>) | undefined;
   let heartbeatHandler: (() => void) | undefined;
 
-  const onBind = async (tokenPayload: JWTPayload): Promise<void> => {
+  const onBind = async (tokenPayload: JWTPayload & Partial<AdditionalWsBindingClaims>): Promise<void> => {
+    const subscriptionId = tokenPayload?.subscription_id;
+    if (!subscriptionId) {
+      socket.send(
+        JSON.stringify(badRequest('Token claims missing subscription_id. Make sure you are sending the correct token.'))
+      );
+      socket.terminate();
+      return;
+    }
+
     if (!redisSubscriber) {
       // Create a redis client for this connection.
       // According to Redis documentation: http://redis.io/commands/subscribe
@@ -40,16 +51,18 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
         socket.send(message, { binary: false });
       });
 
-      onDisconnect = () => redisSubscriber.disconnect();
+      onDisconnect = async (): Promise<void> => {
+        redisSubscriber.disconnect();
+        const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
+        if (!cacheEntryStr) {
+          globalLogger.error('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect.');
+          return;
+        }
+        const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+        await markInMemorySubscriptionsInactive(cacheEntry.projectId, subscriptionIds);
+      };
     }
 
-    const subscriptionId = tokenPayload?.subscription_id as string | undefined;
-    if (!subscriptionId) {
-      socket.send(
-        JSON.stringify(badRequest('Token claims missing subscription_id. Make sure you are sending the correct token.'))
-      );
-      return;
-    }
     if (!subscriptionIds.includes(subscriptionId)) {
       subscriptionIds.push(subscriptionId);
     }
@@ -92,7 +105,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
 
   socket.on('close', async () => {
     if (onDisconnect) {
-      onDisconnect();
+      onDisconnect().catch(console.error);
     }
     if (heartbeatHandler) {
       heartbeat.removeEventListener('heartbeat', heartbeatHandler);
@@ -159,4 +172,13 @@ export function createSubEventNotification<ResourceType extends Resource = Resou
         : []),
     ],
   };
+}
+
+export async function markInMemorySubscriptionsInactive(projectId: string, subscriptionIds: string[]): Promise<void> {
+  const refStrs = [];
+  for (const subscriptionId of subscriptionIds) {
+    refStrs.push(`Subscription/${subscriptionId}`);
+  }
+  const redis = getRedis();
+  await redis.multi().srem(`medplum:subscriptions:r4:project:${projectId}:active`, refStrs).del(refStrs).exec();
 }
