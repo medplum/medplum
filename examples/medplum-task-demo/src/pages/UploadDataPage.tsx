@@ -11,6 +11,7 @@ import businessStatusValueSet from '../../data/core/business-status-valueset.jso
 import practitionerRoleValueSet from '../../data/core/practitioner-role-valueset.json';
 import taskTypeValueSet from '../../data/core/task-type-valueset.json';
 import exampleMessageData from '../../data/example/respond-to-message-data.json';
+import exampleTaskData from '../../data/example/example-tasks.json';
 
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
@@ -25,8 +26,10 @@ export function UploadDataPage(): JSX.Element {
     let uploadFunction: (medplum: MedplumClient) => Promise<void>;
     if (dataType === 'core') {
       uploadFunction = uploadCoreData;
-    } else if (dataType === 'example') {
-      uploadFunction = uploadExampleData;
+    } else if (dataType === 'task') {
+      uploadFunction = uploadExampleTaskData;
+    } else if (dataType === 'message') {
+      uploadFunction = uploadExampleMessageData;
     } else {
       throw new Error(`Invalid upload type '${dataType}'`);
     }
@@ -89,11 +92,20 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
   }
 }
 
-async function uploadExampleData(medplum: MedplumClient): Promise<void> {
+async function uploadExampleMessageData(medplum: MedplumClient): Promise<void> {
   await medplum.executeBatch(exampleMessageData as Bundle);
   showNotification({
     icon: <IconCircleCheck />,
     title: 'Success',
     message: 'Uploaded Example Message Data',
+  });
+}
+
+async function uploadExampleTaskData(medplum: MedplumClient): Promise<void> {
+  await medplum.executeBatch(exampleTaskData as Bundle);
+  showNotification({
+    icon: <IconCircleCheck />,
+    title: 'Success',
+    message: 'Uploaded Task Message Data',
   });
 }
