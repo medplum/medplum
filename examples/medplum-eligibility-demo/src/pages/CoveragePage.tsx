@@ -67,7 +67,6 @@ export function CoveragePage(): JSX.Element {
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string | null): void => {
-    console.log(newTab);
     navigate(`/Coverage/${id}/${newTab ?? ''}`);
   };
 

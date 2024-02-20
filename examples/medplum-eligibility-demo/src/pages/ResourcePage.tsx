@@ -1,11 +1,13 @@
-import { Tabs, Title } from '@mantine/core';
+import { Button, Flex, Modal, Tabs, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Resource, ResourceType } from '@medplum/fhirtypes';
+import { CoverageEligibilityRequest, CoverageEligibilityResponse, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { UpdateCoverageEligibilityStatus } from '../components/actions/UpdateCoverageEligibilityStatus';
 import { cleanResource } from '../components/utils';
 
 /**
@@ -18,6 +20,7 @@ export function ResourcePage(): JSX.Element | null {
   const navigate = useNavigate();
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
+  const [opened, handlers] = useDisclosure(false);
 
   const tabs = ['Details', 'Edit', 'History'];
 
@@ -39,6 +42,10 @@ export function ResourcePage(): JSX.Element | null {
 
     fetchResource();
   }, [medplum, resourceType, id]);
+
+  const handleUpdateStatus = (updatedCoverageEligibility: Resource) => {
+    setResource(updatedCoverageEligibility);
+  };
 
   const handleTabChange = (newTab: string | null): void => {
     navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
@@ -73,7 +80,12 @@ export function ResourcePage(): JSX.Element | null {
 
   return (
     <Document key={getReferenceString(resource)}>
-      <Title>{getDisplayString(resource)}</Title>
+      <Flex gap="md" justify="space-between">
+        <Title>{getDisplayString(resource)}</Title>
+        {resourceType === 'CoverageEligibilityRequest' || resourceType === 'CoverageEligibilityResponse' ? (
+          <Button onClick={handlers.open}>Update Status</Button>
+        ) : null}
+      </Flex>
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List>
           {tabs.map((tab) => (
@@ -92,6 +104,13 @@ export function ResourcePage(): JSX.Element | null {
           <ResourceHistoryTable resourceType={resourceType} id={id} />
         </Tabs.Panel>
       </Tabs>
+      <Modal opened={opened} onClose={handlers.close}>
+        <UpdateCoverageEligibilityStatus
+          coverageEligibility={resource as CoverageEligibilityRequest | CoverageEligibilityResponse}
+          onChange={handleUpdateStatus}
+          close={handlers.close}
+        />
+      </Modal>
     </Document>
   );
 }

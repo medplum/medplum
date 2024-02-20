@@ -1,7 +1,7 @@
 import { Paper, Tabs } from '@mantine/core';
 import { getReferenceString, Operator, SearchRequest } from '@medplum/core';
-import { Coverage, Patient } from '@medplum/fhirtypes';
-import { ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
+import { Coverage } from '@medplum/fhirtypes';
+import { ResourceHistoryTable, ResourceTable, SearchControl } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
 
 interface CoverageDetailsProps {
@@ -12,7 +12,6 @@ interface CoverageDetailsProps {
 }
 
 export function CoverageDetails({ coverage, tabs, currentTab, handleTabChange }: CoverageDetailsProps): JSX.Element {
-  const medplum = useMedplum();
   const navigate = useNavigate();
 
   const eligibilityRequestSearch: SearchRequest = {
