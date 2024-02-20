@@ -1,9 +1,10 @@
-import { allOk, badRequest, normalizeErrorString, resolveId } from '@medplum/core';
-import { Parameters, Subscription } from '@medplum/fhirtypes';
+import { allOk, badRequest, resolveId } from '@medplum/core';
+import { Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
+import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
 import { sendResponse } from '../response';
 
@@ -27,21 +28,21 @@ export type AdditionalWsBindingClaims = {
  * @param res - The HTTP response.
  */
 export async function getWsBindingTokenHandler(req: Request, res: Response): Promise<void> {
-  const { login, profile, repo } = getAuthenticatedContext();
+  const { login, profile } = getAuthenticatedContext();
   const { baseUrl } = getConfig();
+  const redis = getRedis();
 
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
-    sendOutcome(res, badRequest('Login missing user'));
+    await sendOutcome(res, badRequest('Login missing user'));
     return;
   }
 
   const subscriptionId = req.params.id;
-  try {
-    await repo.readResource<Subscription>('Subscription', subscriptionId);
-  } catch (err: unknown) {
-    sendOutcome(res, badRequest(`Error reading subscription: ${normalizeErrorString(err)}`));
+  const subExists = await redis.exists(`Subscription/${subscriptionId}`);
+  if (!subExists) {
+    await sendOutcome(res, badRequest('Content could not be parsed'));
     return;
   }
 

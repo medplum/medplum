@@ -47,6 +47,7 @@ import {
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  Subscription,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
@@ -540,7 +541,19 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${result.id}`);
+      const currentWsSubscriptionsStr = await redis.get(`medplum:subscriptions:r4:project:${project}`);
+      const currentWsSubscriptions = (
+        currentWsSubscriptionsStr ? JSON.parse(currentWsSubscriptionsStr) : []
+      ) as Subscription[];
+      const existingIdx = currentWsSubscriptions.findIndex(
+        (sub: Subscription) => (sub.id as string) === (result.id as string)
+      );
+      if (existingIdx !== -1) {
+        currentWsSubscriptions[existingIdx] = result;
+      } else {
+        currentWsSubscriptions.push(result);
+      }
+      await redis.set(`medplum:subscriptions:r4:project:${project}`, JSON.stringify(currentWsSubscriptions));
     }
   }
 

@@ -1,4 +1,4 @@
-import { OperationOutcomeError, getReferenceString, sleep } from '@medplum/core';
+import { getReferenceString, sleep } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -17,7 +17,6 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';
-import { getRedis } from '../redis';
 import { withTestContext } from '../test.setup';
 import { execSubscriptionJob, getSubscriptionQueue } from '../workers/subscription';
 
@@ -31,7 +30,6 @@ describe('WebSockets Subscriptions', () => {
   let project: Project;
   let repo: Repository;
   let accessToken: string;
-  let patientSubscription: Subscription;
 
   beforeAll(async () => {
     app = express();
@@ -60,9 +58,6 @@ describe('WebSockets Subscriptions', () => {
       },
     });
 
-    // TODO: Remove this when the websocket-subscriptions feature flag is removed
-    project = await withTestContext(() => repo.updateResource({ ...project, features: ['websocket-subscriptions'] }));
-
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 511, resolve);
     });
@@ -85,7 +80,7 @@ describe('WebSockets Subscriptions', () => {
       expect(version1.id).toBeDefined();
 
       // Create subscription to watch patient
-      patientSubscription = await repo.createResource<Subscription>({
+      const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         status: 'active',
@@ -94,11 +89,11 @@ describe('WebSockets Subscriptions', () => {
           type: 'websocket',
         },
       });
-      expect(patientSubscription).toBeDefined();
+      expect(subscription).toBeDefined();
 
       // Call $get-ws-binding-token
       const res = await request(server)
-        .get(`/fhir/R4/Subscription/${patientSubscription.id}/$get-ws-binding-token`)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.body).toBeDefined();
@@ -108,13 +103,11 @@ describe('WebSockets Subscriptions', () => {
       expect(body.parameter?.[0]?.name).toEqual('token');
       expect(body.parameter?.[0]?.valueString).toBeDefined();
 
-      const token = body.parameter?.[0]?.valueString as string;
-
       let version2: Patient;
       await request(server)
         .ws('/ws/subscriptions-r4')
         .set('Authorization', 'Bearer ' + accessToken)
-        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .sendJson({ type: 'bind-with-token', payload: { token: body.parameter?.[0]?.valueString as string } })
         // Add a new patient for this project
         .exec(async () => {
           const queue = getSubscriptionQueue() as any;
@@ -140,19 +133,6 @@ describe('WebSockets Subscriptions', () => {
 
           // Clear the queue
           queue.add.mockClear();
-
-          let subActive = false;
-          while (!subActive) {
-            await sleep(0);
-            subActive =
-              (
-                await getRedis().smismember(
-                  `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${patientSubscription?.id as string}`
-                )
-              )[0] === 1;
-          }
-          expect(subActive).toEqual(true);
         })
         .expectJson((msg: Bundle): boolean => {
           if (!msg.entry?.[1]) {
@@ -173,27 +153,6 @@ describe('WebSockets Subscriptions', () => {
         })
         .close()
         .expectClosed();
-    }));
-
-  test('Subscription removed from active and deleted after WebSocket closed', () =>
-    withTestContext(async () => {
-      let subActive = true;
-      while (subActive) {
-        await sleep(0);
-        subActive =
-          (
-            await getRedis().smismember(
-              `medplum:subscriptions:r4:project:${project.id}:active`,
-              `Subscription/${patientSubscription?.id as string}`
-            )
-          )[0] === 1;
-      }
-      expect(subActive).toEqual(false);
-
-      // Check Patient subscription is NOT still in the cache
-      await expect(repo.readResource<Subscription>('Subscription', patientSubscription?.id as string)).rejects.toThrow(
-        OperationOutcomeError
-      );
     }));
 
   test('Should reject if given an invalid binding token', () =>

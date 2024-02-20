@@ -89,7 +89,7 @@ export async function getAccessPolicyForLogin(
  * @param membership - The user project membership.
  * @returns The parameterized compound access policy.
  */
-export async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessPolicy> {
+async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessPolicy> {
   let access: ProjectMembershipAccess[] = [];
 
   if (membership.accessPolicy) {
