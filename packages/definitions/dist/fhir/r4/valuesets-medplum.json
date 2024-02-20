@@ -148,6 +148,11 @@
             "code": "graphql-introspection",
             "display": "GraphQL Introspection",
             "definition": "GraphQL Introspection"
+          },
+          {
+            "code": "websocket-subscriptions",
+            "display": "WebSocket Subscriptions",
+            "definition": "WebSocket Subscriptions"
           }
         ]
       }

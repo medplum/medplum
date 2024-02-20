@@ -2,6 +2,44 @@ const values = new Map<string, string>();
 const sets = new Map<string, Set<string>>();
 const subscribers = new Map<string, Set<Redis>>();
 
+class ReplyError extends Error {}
+
+type Command = {
+  command: 'srem' | 'del';
+  args: string[];
+};
+
+type Result = number | null;
+
+class MultiClient {
+  private redis: Redis;
+  private commandQueue: Command[];
+
+  constructor(redis: Redis) {
+    this.redis = redis;
+    this.commandQueue = [];
+  }
+
+  srem(setKey: string, members: string[]): this {
+    this.commandQueue.push({ command: 'srem', args: [setKey, ...members] });
+    return this;
+  }
+
+  del(setKey: string | string[]): this {
+    this.commandQueue.push({ command: 'del', args: [...setKey] });
+    return this;
+  }
+
+  async exec(): Promise<Result[]> {
+    const results = [] as Result[];
+    for (const cmd of this.commandQueue) {
+      results.push((await this.redis[cmd.command](cmd.args[0], cmd.args.slice(1))) ?? null);
+    }
+    this.commandQueue = [];
+    return results;
+  }
+}
+
 class Redis {
   private callback?: (...args: any[]) => void;
 
@@ -18,12 +56,18 @@ class Redis {
     return 'PONG';
   }
 
-  async get(key: string): Promise<string | undefined> {
-    return values.get(key);
+  async get(key: string): Promise<string | null> {
+    return values.get(key) ?? null;
   }
 
-  async mget(...keys: string[]): Promise<(string | undefined)[]> {
-    return keys.map((key) => values.get(key));
+  async mget(...keys: string[] | string[][]): Promise<(string | null)[]> {
+    let normalizedKeys: string[];
+    if (keys.length === 1 && Array.isArray(keys[0])) {
+      normalizedKeys = keys[0];
+    } else {
+      normalizedKeys = keys as string[];
+    }
+    return normalizedKeys.map((key) => values.get(key) ?? null);
   }
 
   async set(key: string, value: string, ...args: (string | number)[]): Promise<undefined | null | string> {
@@ -98,12 +142,16 @@ class Redis {
   }
 
   async sadd(setKey: string, ...members: string[]): Promise<number> {
+    const existingValue = sets.get(setKey);
     let keySet: Set<string>;
-    if (!sets.has(setKey)) {
+    if (existingValue) {
+      if (!(existingValue instanceof Set)) {
+        throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
+      }
+      keySet = existingValue;
+    } else {
       keySet = new Set<string>();
       sets.set(setKey, keySet);
-    } else {
-      keySet = sets.get(setKey) as Set<string>;
     }
     let added = 0;
     for (const member of members) {
@@ -116,12 +164,53 @@ class Redis {
     return added;
   }
 
+  async srem(setKey: string, member: string[]): Promise<number>;
+  async srem(setKey: string, ...members: string[] | string[][]): Promise<number> {
+    const keySet = sets.get(setKey);
+    if (!keySet) {
+      return 0;
+    }
+    if (!(keySet instanceof Set)) {
+      throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
+    }
+    let normalizedMembers: string[];
+    if (Array.isArray(members[0])) {
+      normalizedMembers = members[0];
+    } else {
+      normalizedMembers = members as string[];
+    }
+    let removed = 0;
+    for (const member of normalizedMembers) {
+      if (keySet.has(member)) {
+        keySet.delete(member);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
   async smembers(setKey: string): Promise<string[]> {
-    const set = sets.get(setKey);
-    if (!set) {
+    const keySet = sets.get(setKey);
+    if (!keySet) {
       return [];
     }
-    return Array.from(set.keys());
+    if (!(keySet instanceof Set)) {
+      throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
+    }
+    return Array.from(keySet.keys());
+  }
+
+  async smismember(setKey: string, ...members: string[]): Promise<number[]> {
+    const keySet = sets.get(setKey);
+    if (!keySet) {
+      return new Array(members.length).fill(0);
+    }
+    if (!(keySet instanceof Set)) {
+      throw new ReplyError('WRONGTYPE Operation against a key holding the wrong kind of value');
+    }
+    return members.map((member) => {
+      return keySet.has(member) ? 1 : 0;
+    });
   }
 
   async scard(setKey: string): Promise<number> {
@@ -130,6 +219,10 @@ class Redis {
       return 0;
     }
     return set.size;
+  }
+
+  multi(): MultiClient {
+    return new MultiClient(this);
   }
 }
 
