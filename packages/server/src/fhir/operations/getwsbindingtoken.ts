@@ -1,4 +1,4 @@
-import { allOk, badRequest, resolveId } from '@medplum/core';
+import { allOk, badRequest, normalizeErrorString, resolveId } from '@medplum/core';
 import { Parameters, Subscription } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
@@ -40,8 +40,8 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
   const subscriptionId = req.params.id;
   try {
     await repo.readResource<Subscription>('Subscription', subscriptionId);
-  } catch (_err: unknown) {
-    sendOutcome(res, badRequest('Subscription does not exist or does not have a project ID associated with it'));
+  } catch (err: unknown) {
+    sendOutcome(res, badRequest(`Error reading subscription: ${normalizeErrorString(err)}`));
     return;
   }
 
