@@ -105,7 +105,7 @@ export function SearchPage(): JSX.Element {
         <SearchControl
           search={search}
           onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
-          hideToolbar={true}
+          hideToolbar={false}
           hideFilters={true}
           onChange={(e) => {
             navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);

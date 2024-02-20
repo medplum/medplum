@@ -17,14 +17,19 @@ import { SignInPage } from './pages/SignInPage';
 import { TaskPage } from './pages/TaskPage';
 import { UploadDataPage } from './pages/UploadDataPage';
 
+const SEARCH_TABLE_FIELDS = ['code', '_lastUpdated', 'owner', 'for', 'priority'];
+const ALL_TASKS_LINK = {
+  icon: <IconGridDots />,
+  label: 'All Tasks',
+  href: `/Task?_fields=${[...SEARCH_TABLE_FIELDS, 'performerType'].join(',')}`,
+};
+
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
   const profileReference = profile && getReferenceString(profile);
-  const [userLinks, setUserLinks] = useState<NavbarLink[]>([
-    { icon: <IconGridDots />, label: 'All Tasks', href: '/Task' },
-  ]);
+  const [userLinks, setUserLinks] = useState<NavbarLink[]>([ALL_TASKS_LINK]);
 
   useEffect(() => {
     if (!profileReference) {
@@ -32,7 +37,7 @@ export function App(): JSX.Element | null {
     }
     const myTasksQuery = formatSearchQuery({
       resourceType: 'Task',
-      fields: ['code', '_lastUpdated', 'owner', 'for', 'priority'],
+      fields: SEARCH_TABLE_FIELDS,
       sortRules: [{ code: '-priority-order,due-date' }],
       filters: [
         { code: 'owner', operator: Operator.EQUALS, value: profileReference },
@@ -57,10 +62,11 @@ export function App(): JSX.Element | null {
 
           const search: SearchRequest = {
             resourceType: 'Task',
-            fields: ['code', '_lastUpdated', 'owner', 'for', 'priority'],
+            fields: SEARCH_TABLE_FIELDS,
             sortRules: [{ code: '-priority-order,due-date' }],
             filters: [
               { code: 'owner:missing', operator: Operator.EQUALS, value: 'true' },
+              { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
               { code: 'performer', operator: Operator.EQUALS, value: roleCode?.coding?.[0]?.code },
             ],
           };
@@ -70,7 +76,7 @@ export function App(): JSX.Element | null {
           roleLinks.push({ icon: <IconUser />, label: `${roleDisplay} Tasks`, href: `/Task${searchQuery}` });
         }
 
-        setUserLinks([myTasksLink, ...roleLinks, { icon: <IconGridDots />, label: 'All Tasks', href: '/Task' }]);
+        setUserLinks([myTasksLink, ...roleLinks, ALL_TASKS_LINK]);
       })
       .catch((error) => console.error('Failed to fetch PractitionerRoles', normalizeErrorString(error)));
   }, [profileReference, medplum]);

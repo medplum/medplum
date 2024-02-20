@@ -74,58 +74,20 @@
       "fullUrl": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120002",
       "resource": {
         "resourceType": "Practitioner",
-        "identifier": [
-          {
-            "system": "http://hl7.org/fhir/sid/us-npi",
-            "value": "1234567890"
-          }
-        ],
+        "active": true,
         "name": [
           {
-            "family": "Smith",
-            "given": [
-              "Alice"
-            ],
             "prefix": [
-              "Dr."
-            ]
+              "Nurse"
+            ],
+            "given": [
+              "Bob"
+            ],
+            "family": "Jones"
           }
         ],
-        "gender": "female",
-        "qualification": [
-          {
-            "code": {
-              "coding": [
-                {
-                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
-                  "code": "MD"
-                }
-              ],
-              "text": "MD"
-            },
-            "issuer": {
-              "display": "State of New York"
-            },
-            "extension": [
-              {
-                "url": "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification",
-                "extension": [
-                  {
-                    "url": "whereValid",
-                    "valueCodeableConcept": {
-                      "coding": [
-                        {
-                          "system": "https://www.usps.com/",
-                          "code": "NY"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+        "gender": "male",
+        "birthDate": "1973-11-02"
       },
       "request": {
         "method": "POST",
@@ -195,7 +157,7 @@
       }
     },
     {
-      "fullUrl": "38c3942d-1885-4230-b8c6-2d852396357a",
+      "fullUrl": "fa6ad189-d8ce-4a76-aafc-98aaf1acc347",
       "resource": {
         "resourceType": "PractitionerRole",
         "code": [
@@ -220,7 +182,7 @@
       }
     },
     {
-      "fullUrl": "cad46008-450b-4ef3-8e15-ba5b70e836f5",
+      "fullUrl": "20a78a94-da0f-4854-9506-1c83269b8419",
       "resource": {
         "resourceType": "PractitionerRole",
         "code": [
@@ -236,7 +198,7 @@
         ],
         "practitioner": {
           "reference": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120002",
-          "display": "Dr. Alice Smith"
+          "display": "Nurse Bob Jones"
         }
       },
       "request": {
@@ -245,7 +207,7 @@
       }
     },
     {
-      "fullUrl": "8a084924-bb16-4236-9f93-bb6b7dbb0fea",
+      "fullUrl": "de68d529-fb10-4c52-9af6-a00f90bb8a6b",
       "resource": {
         "resourceType": "PractitionerRole",
         "code": [
@@ -1096,7 +1058,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:23d56a3e-63d4-4baf-ae1d-33abf06b883f",
+      "fullUrl": "urn:uuid:3385ee9e-f180-4e8b-8b12-cf4833144e7b",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -1142,7 +1104,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:f98b3b54-e7dc-4981-8a55-cdeb912ac6ed",
+      "fullUrl": "urn:uuid:94e4378e-9336-4538-98f5-47dcf1ded634",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -1188,7 +1150,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:5f20790e-5bb0-4f10-bab2-e3a77641b9ab",
+      "fullUrl": "urn:uuid:3b7c71bb-1357-4cac-88d7-3e374676e988",
       "resource": {
         "resourceType": "Observation",
         "id": "hdlcholesterol",
@@ -1239,7 +1201,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:eef75de8-cae1-4377-b644-5eddd75c59dc",
+      "fullUrl": "urn:uuid:f2aedf86-166c-4f14-995e-9320ebab06e7",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -1285,7 +1247,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:e6470c22-fc62-4e9a-b100-666e6edf5fd6",
+      "fullUrl": "urn:uuid:e2b02def-3968-476c-b7be-d404b4a459ed",
       "resource": {
         "resourceType": "DiagnosticReport",
         "identifier": [
@@ -1328,16 +1290,16 @@
         ],
         "result": [
           {
-            "reference": "urn:uuid:23d56a3e-63d4-4baf-ae1d-33abf06b883f"
+            "reference": "urn:uuid:3385ee9e-f180-4e8b-8b12-cf4833144e7b"
           },
           {
-            "reference": "urn:uuid:f98b3b54-e7dc-4981-8a55-cdeb912ac6ed"
+            "reference": "urn:uuid:94e4378e-9336-4538-98f5-47dcf1ded634"
           },
           {
-            "reference": "urn:uuid:5f20790e-5bb0-4f10-bab2-e3a77641b9ab"
+            "reference": "urn:uuid:3b7c71bb-1357-4cac-88d7-3e374676e988"
           },
           {
-            "reference": "urn:uuid:eef75de8-cae1-4377-b644-5eddd75c59dc"
+            "reference": "urn:uuid:f2aedf86-166c-4f14-995e-9320ebab06e7"
           }
         ]
       },
@@ -1351,7 +1313,7 @@
         "resourceType": "Task",
         "status": "ready",
         "focus": {
-          "reference": "urn:uuid:e6470c22-fc62-4e9a-b100-666e6edf5fd6"
+          "reference": "urn:uuid:e2b02def-3968-476c-b7be-d404b4a459ed"
         },
         "intent": "order",
         "for": {
@@ -1394,7 +1356,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb",
+      "fullUrl": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8",
       "resource": {
         "resourceType": "DocumentReference",
         "status": "current",
@@ -1422,7 +1384,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb",
+      "fullUrl": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8",
       "resource": {
         "resourceType": "DocumentReference",
         "status": "current",
@@ -1450,7 +1412,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb",
+      "fullUrl": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8",
       "resource": {
         "resourceType": "DocumentReference",
         "status": "current",
@@ -1482,7 +1444,7 @@
         "resourceType": "Task",
         "status": "ready",
         "focus": {
-          "reference": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb"
+          "reference": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8"
         },
         "intent": "order",
         "for": {
@@ -1529,7 +1491,7 @@
         "resourceType": "Task",
         "status": "ready",
         "focus": {
-          "reference": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb"
+          "reference": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8"
         },
         "intent": "order",
         "for": {
@@ -1576,7 +1538,7 @@
         "resourceType": "Task",
         "status": "ready",
         "focus": {
-          "reference": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb"
+          "reference": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8"
         },
         "intent": "order",
         "for": {
