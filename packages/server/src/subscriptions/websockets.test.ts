@@ -60,6 +60,9 @@ describe('WebSockets Subscriptions', () => {
       },
     });
 
+    // TODO: Remove this when the websocket-subscriptions feature flag is removed
+    project = await withTestContext(() => repo.updateResource({ ...project, features: ['websocket-subscriptions'] }));
+
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 511, resolve);
     });
