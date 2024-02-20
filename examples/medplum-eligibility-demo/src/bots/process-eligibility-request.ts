@@ -5,7 +5,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<CoverageEl
   const request = event.input as CoverageEligibilityRequest;
 
   const response = processRequest(request);
-  await medplum.createResource(response);
+
+  if (response) {
+    await medplum.createResource(response);
+  }
 }
 
 function processRequest(request: CoverageEligibilityRequest) {
@@ -14,7 +17,8 @@ function processRequest(request: CoverageEligibilityRequest) {
   const coverage = request.insurance?.[0].coverage;
 
   if (!coverage) {
-    throw new Error('Error: No linked coverage for request');
+    console.log('This request has no linked coverage');
+    return;
   }
 
   const response: CoverageEligibilityResponse = {
