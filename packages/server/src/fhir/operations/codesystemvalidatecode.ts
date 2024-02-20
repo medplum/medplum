@@ -48,7 +48,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
   } else {
     output.result = false;
   }
-  await sendOutputParameters(operation, res, allOk, output);
+  await sendOutputParameters(req, res, operation, allOk, output);
 }
 
 export async function validateCode(codeSystem: CodeSystem, code: string): Promise<Coding | undefined> {

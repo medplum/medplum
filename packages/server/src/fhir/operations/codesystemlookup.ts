@@ -1,7 +1,6 @@
 import { TypedValue, allOk, badRequest, notFound } from '@medplum/core';
 import { Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getAuthenticatedContext } from '../../context';
 import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
@@ -19,7 +18,6 @@ type CodeSystemLookupParameters = {
 };
 
 export async function codeSystemLookupHandler(req: Request, res: Response): Promise<void> {
-  const ctx = getAuthenticatedContext();
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
 
   let coding: Coding;
@@ -32,7 +30,7 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const codeSystem = await findCodeSystem(coding.system as string, ctx.repo);
+  const codeSystem = await findCodeSystem(coding.system as string);
 
   const lookup = new SelectQuery('Coding');
   const codeSystemTable = lookup.getNextJoinAlias();

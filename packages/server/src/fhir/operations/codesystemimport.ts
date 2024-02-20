@@ -62,7 +62,7 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
-  const codeSystem = await findCodeSystem(params.system, ctx.repo);
+  const codeSystem = await findCodeSystem(params.system);
 
   try {
     await ctx.repo.withTransaction(async (db) => {
