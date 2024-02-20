@@ -132,9 +132,9 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
 
 /**
  * Checks if this resource should create a notification for this `Subscription` based on the access policy that should be applied for this `Subscription`.
- * The `AccessPolicy` of author's `ProjectMembership` this resource's `Project` is used when evaluating whether the `AccessPolicy` is satisfied.
+ * The `AccessPolicy` of author's `ProjectMembership` for this resource's `Project` is used when evaluating whether the `AccessPolicy` is satisfied.
  *
- * Currently we log if the `AccessPolicy` is not satifisied
+ * Currently we log if the `AccessPolicy` is not satisfied only.
  *
  * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied.
  *
