@@ -22,7 +22,9 @@
         ],
         "name": [
           {
-            "given": ["Jane"],
+            "given": [
+              "Jane"
+            ],
             "family": "Doe "
           }
         ],
@@ -30,7 +32,9 @@
         "address": [
           {
             "use": "home",
-            "line": ["123 Main St."],
+            "line": [
+              "123 Main St."
+            ],
             "city": "Springfiled",
             "state": "IL",
             "postalCode": "98732"
@@ -48,8 +52,13 @@
         "resourceType": "Practitioner",
         "name": [
           {
-            "prefix": ["Care", "Coordinator"],
-            "given": ["Chuck"],
+            "prefix": [
+              "Care",
+              "Coordinator"
+            ],
+            "given": [
+              "Chuck"
+            ],
             "family": "Finnegan"
           }
         ],
@@ -74,8 +83,12 @@
         "name": [
           {
             "family": "Smith",
-            "given": ["Alice"],
-            "prefix": ["Dr."]
+            "given": [
+              "Alice"
+            ],
+            "prefix": [
+              "Dr."
+            ]
           }
         ],
         "gender": "female",
@@ -132,8 +145,12 @@
         "name": [
           {
             "family": "Smith",
-            "given": ["Alice"],
-            "prefix": ["Dr."]
+            "given": [
+              "Alice"
+            ],
+            "prefix": [
+              "Dr."
+            ]
           }
         ],
         "gender": "female",
@@ -178,12 +195,88 @@
       }
     },
     {
+      "fullUrl": "38c3942d-1885-4230-b8c6-2d852396357a",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "158965000",
+                "display": "Doctor"
+              }
+            ]
+          }
+        ],
+        "practitioner": {
+          "reference": "urn:uuid:c9d3cba2-1234-11ee-8c90-0242ac120002",
+          "display": "Dr. Alice Smith"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "PractitionerRole"
+      }
+    },
+    {
+      "fullUrl": "cad46008-450b-4ef3-8e15-ba5b70e836f5",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "224535009",
+                "display": "Registered Nurse"
+              }
+            ]
+          }
+        ],
+        "practitioner": {
+          "reference": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120002",
+          "display": "Dr. Alice Smith"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "PractitionerRole"
+      }
+    },
+    {
+      "fullUrl": "8a084924-bb16-4236-9f93-bb6b7dbb0fea",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "code": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "768820003",
+                "display": "Care Coordinator"
+              }
+            ]
+          }
+        ],
+        "practitioner": {
+          "reference": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120812",
+          "display": "Care Coordinator Chuck Finnegan"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "PractitionerRole"
+      }
+    },
+    {
       "fullUrl": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002",
       "resource": {
         "resourceType": "Communication",
         "status": "in-progress",
         "subject": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "topic": {
           "coding": [
@@ -217,7 +310,8 @@
           }
         ],
         "sender": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "sent": "2023-12-18T14:26:06.531Z"
       },
@@ -271,7 +365,8 @@
           }
         ],
         "sender": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "sent": "2023-12-18T14:46:06.531Z"
       },
@@ -367,7 +462,8 @@
           }
         ],
         "sender": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "sent": "2023-12-18T14:26:06.531Z"
       },
@@ -385,7 +481,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -440,7 +537,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -495,7 +593,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -550,7 +649,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -605,7 +705,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -660,7 +761,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -715,7 +817,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -770,7 +873,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -825,7 +929,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -880,7 +985,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -951,7 +1057,8 @@
         },
         "intent": "order",
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -989,7 +1096,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:d7520b91-70ea-4845-96d7-10fa4ccbe3d5",
+      "fullUrl": "urn:uuid:23d56a3e-63d4-4baf-ae1d-33abf06b883f",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -1004,7 +1111,8 @@
           "text": "Cholesterol"
         },
         "subject": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performer": [
           {
@@ -1034,7 +1142,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:98df3322-706d-4daf-b12f-b3205889b8dd",
+      "fullUrl": "urn:uuid:f98b3b54-e7dc-4981-8a55-cdeb912ac6ed",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -1049,7 +1157,8 @@
           "text": "Triglyceride"
         },
         "subject": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performer": [
           {
@@ -1079,7 +1188,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:d4bb18f4-c354-4e64-a833-167d59c934d4",
+      "fullUrl": "urn:uuid:5f20790e-5bb0-4f10-bab2-e3a77641b9ab",
       "resource": {
         "resourceType": "Observation",
         "id": "hdlcholesterol",
@@ -1099,7 +1208,8 @@
           "text": "Cholesterol in HDL"
         },
         "subject": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performer": [
           {
@@ -1129,7 +1239,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:2f52645a-3eea-4aac-a8e0-a87a4f891432",
+      "fullUrl": "urn:uuid:eef75de8-cae1-4377-b644-5eddd75c59dc",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -1144,7 +1254,8 @@
           "text": "LDL Chol. (Calc)"
         },
         "subject": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performer": [
           {
@@ -1174,7 +1285,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:8c04a4d6-041e-43ab-872d-396decd45a5e",
+      "fullUrl": "urn:uuid:e6470c22-fc62-4e9a-b100-666e6edf5fd6",
       "resource": {
         "resourceType": "DiagnosticReport",
         "identifier": [
@@ -1205,7 +1316,8 @@
           "text": "Lipid Panel"
         },
         "subject": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "effectiveDateTime": "2011-03-04T08:30:00+11:00",
         "issued": "2013-01-27T11:45:33+11:00",
@@ -1216,16 +1328,16 @@
         ],
         "result": [
           {
-            "reference": "urn:uuid:d7520b91-70ea-4845-96d7-10fa4ccbe3d5"
+            "reference": "urn:uuid:23d56a3e-63d4-4baf-ae1d-33abf06b883f"
           },
           {
-            "reference": "urn:uuid:98df3322-706d-4daf-b12f-b3205889b8dd"
+            "reference": "urn:uuid:f98b3b54-e7dc-4981-8a55-cdeb912ac6ed"
           },
           {
-            "reference": "urn:uuid:d4bb18f4-c354-4e64-a833-167d59c934d4"
+            "reference": "urn:uuid:5f20790e-5bb0-4f10-bab2-e3a77641b9ab"
           },
           {
-            "reference": "urn:uuid:2f52645a-3eea-4aac-a8e0-a87a4f891432"
+            "reference": "urn:uuid:eef75de8-cae1-4377-b644-5eddd75c59dc"
           }
         ]
       },
@@ -1239,11 +1351,12 @@
         "resourceType": "Task",
         "status": "ready",
         "focus": {
-          "reference": "urn:uuid:8c04a4d6-041e-43ab-872d-396decd45a5e"
+          "reference": "urn:uuid:e6470c22-fc62-4e9a-b100-666e6edf5fd6"
         },
         "intent": "order",
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -1281,7 +1394,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:4aba5a5d-a365-4dba-b21f-8bd3a756c6e2",
+      "fullUrl": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb",
       "resource": {
         "resourceType": "DocumentReference",
         "status": "current",
@@ -1309,7 +1422,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:4aba5a5d-a365-4dba-b21f-8bd3a756c6e2",
+      "fullUrl": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb",
       "resource": {
         "resourceType": "DocumentReference",
         "status": "current",
@@ -1337,7 +1450,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:4aba5a5d-a365-4dba-b21f-8bd3a756c6e2",
+      "fullUrl": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb",
       "resource": {
         "resourceType": "DocumentReference",
         "status": "current",
@@ -1369,11 +1482,12 @@
         "resourceType": "Task",
         "status": "ready",
         "focus": {
-          "reference": "urn:uuid:4aba5a5d-a365-4dba-b21f-8bd3a756c6e2"
+          "reference": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb"
         },
         "intent": "order",
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -1415,11 +1529,12 @@
         "resourceType": "Task",
         "status": "ready",
         "focus": {
-          "reference": "urn:uuid:4aba5a5d-a365-4dba-b21f-8bd3a756c6e2"
+          "reference": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb"
         },
         "intent": "order",
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
@@ -1461,11 +1576,12 @@
         "resourceType": "Task",
         "status": "ready",
         "focus": {
-          "reference": "urn:uuid:4aba5a5d-a365-4dba-b21f-8bd3a756c6e2"
+          "reference": "urn:uuid:771c91ad-63e2-46a3-9b7e-debf274e49bb"
         },
         "intent": "order",
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002"
+          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
+          "display": "Jane Doe"
         },
         "performerType": [
           {
