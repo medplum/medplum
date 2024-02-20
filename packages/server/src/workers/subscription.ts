@@ -142,7 +142,11 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * @param project - The project containing the resource.
  * @param subscription - The `Subscription` to get the `AccessPolicy` for.
  */
-async function checkAccessPolicy(resource: Resource, project: Project, subscription: Subscription): Promise<void> {
+export async function checkAccessPolicy(
+  resource: Resource,
+  project: Project,
+  subscription: Subscription
+): Promise<void> {
   // Check access policy
   const subAuthor = subscription.meta?.author;
   if (subAuthor) {
@@ -209,7 +213,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   const subscriptions = await getSubscriptions(resource, project);
   ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
-    await checkAccessPolicy(resource, project, subscription);
+    // await checkAccessPolicy(resource, project, subscription);
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
       await addSubscriptionJobData({
