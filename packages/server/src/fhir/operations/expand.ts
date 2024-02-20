@@ -10,7 +10,7 @@ import {
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { sendOutcome } from '../outcomes';
-import { getSystemRepo, Repository } from '../repo';
+import { getSystemRepo } from '../repo';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 import { parentProperty } from './codesystemimport';
@@ -219,7 +219,6 @@ async function computeExpansion(
     throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
   }
 
-  const repo = getAuthenticatedContext().repo;
   const codeSystemCache: Record<string, CodeSystem> = Object.create(null);
   for (const include of valueSet.compose.include) {
     if (!include.system) {
@@ -228,7 +227,7 @@ async function computeExpansion(
       );
     }
 
-    const codeSystem = codeSystemCache[include.system] ?? (await findCodeSystem(include.system, repo));
+    const codeSystem = codeSystemCache[include.system] ?? (await findCodeSystem(include.system));
     codeSystemCache[include.system] = codeSystem;
     if (include.concept) {
       const concepts = await Promise.all(include.concept.flatMap((c) => validateCode(codeSystem, c.code)));
@@ -239,7 +238,7 @@ async function computeExpansion(
         }
       }
     } else {
-      await includeInExpansion(include, expansion, codeSystem, repo, offset, count, filter);
+      await includeInExpansion(include, expansion, codeSystem, offset, count, filter);
     }
 
     if (expansion.length > count) {
@@ -249,7 +248,8 @@ async function computeExpansion(
   }
 }
 
-export async function findCodeSystem(url: string, repo: Repository): Promise<CodeSystem> {
+export async function findCodeSystem(url: string): Promise<CodeSystem> {
+  const { repo, logger } = getAuthenticatedContext();
   const codeSystems = await repo.searchResources<CodeSystem>({
     resourceType: 'CodeSystem',
     filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
@@ -277,6 +277,7 @@ export async function findCodeSystem(url: string, repo: Repository): Promise<Cod
       }
       return 0;
     });
+    logger.warn('Possibly ambiguous CodeSystem', { url, codeSystems: codeSystems.map((cs) => cs.id) });
     return codeSystems[0];
   }
 }
@@ -285,11 +286,12 @@ async function includeInExpansion(
   include: ValueSetComposeInclude,
   expansion: ValueSetExpansionContains[],
   codeSystem: CodeSystem,
-  repo: Repository,
   offset: number,
   count: number,
   filter?: string
 ): Promise<void> {
+  const ctx = getAuthenticatedContext();
+
   let query = new SelectQuery('Coding')
     .column('code')
     .column('display')
@@ -303,27 +305,30 @@ async function includeInExpansion(
     for (const condition of include.filter) {
       switch (condition.op) {
         case 'is-a':
-        case 'is-not-a':
           {
             const coding = await validateCode(codeSystem, condition.value);
             if (!coding) {
+              ctx.logger.warn('Invalid parent code in ValueSet', { codeSystem: codeSystem.id, code: condition.value });
               return; // Invalid parent code, don't make DB query with incorrect filters
             }
-            if (condition.op === 'is-a' && (!filter || coding.display?.includes(filter))) {
+            if (!filter || coding.display?.includes(filter)) {
               expansion.push({ ...coding, id: undefined });
             }
             query = addParentCondition(condition, query, codeSystem, coding);
           }
           break;
         default:
+          ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
           return; // Unknown filter type, don't make DB query with incorrect filters
       }
     }
   }
 
-  const results = await query.execute(repo.getDatabaseClient());
+  const results = await query.execute(ctx.repo.getDatabaseClient());
   const system = codeSystem.url;
-  expansion.push(...results.map(({ code, display }) => ({ system, code, display })));
+  for (const { code, display } of results) {
+    expansion.push({ system, code, display });
+  }
 }
 
 function addParentCondition(

@@ -1,7 +1,6 @@
 import { allOk, badRequest } from '@medplum/core';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getAuthenticatedContext } from '../../context';
 import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
@@ -39,8 +38,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
     return;
   }
 
-  const ctx = getAuthenticatedContext();
-  const codeSystem = await findCodeSystem(coding.system as string, ctx.repo);
+  const codeSystem = await findCodeSystem(coding.system as string);
   const result = await validateCode(codeSystem, coding.code as string);
 
   const output: Record<string, any> = Object.create(null);
