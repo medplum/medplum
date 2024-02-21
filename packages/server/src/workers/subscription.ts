@@ -143,9 +143,6 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * @param subscription - The `Subscription` to get the `AccessPolicy` for.
  */
 async function checkAccessPolicy(resource: Resource, project: Project, subscription: Subscription): Promise<void> {
-  if (subscription.criteria === 'Communication') {
-    console.log(subscription);
-  }
   try {
     // Check access policy
     const subAuthor = subscription.meta?.author;
