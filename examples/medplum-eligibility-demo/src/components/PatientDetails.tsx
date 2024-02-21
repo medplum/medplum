@@ -31,6 +31,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
 
   const handlePatientEdit = async (newPatient: Resource) => {
     try {
+      // Update the patient and navigate to its details page
       const updatedPatient = (await medplum.updateResource(cleanResource(newPatient))) as Patient;
       notifications.show({
         icon: <IconCircleCheck />,

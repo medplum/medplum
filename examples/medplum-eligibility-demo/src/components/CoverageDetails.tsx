@@ -14,12 +14,14 @@ interface CoverageDetailsProps {
 export function CoverageDetails({ coverage, tabs, currentTab, handleTabChange }: CoverageDetailsProps): JSX.Element {
   const navigate = useNavigate();
 
+  // A search request to show all CoverageEligibilityRequest resources that are related the current coverage's beneficiary
   const eligibilityRequestSearch: SearchRequest = {
     resourceType: 'CoverageEligibilityRequest',
     filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
     fields: ['patient', 'purpose', 'item', 'insurance'],
   };
 
+  // A search request to show all CoverageEligibilityResponse resources that are related the current coverage's beneficiary
   const eligibilityResponseSearch: SearchRequest = {
     resourceType: 'CoverageEligibilityResponse',
     filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],

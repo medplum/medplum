@@ -1,7 +1,7 @@
 import { Grid, Paper, Title } from '@mantine/core';
 import { resolveId } from '@medplum/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
-import { Document, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
+import { Loading, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CoverageActions } from '../components/actions/CoverageActions';
@@ -32,7 +32,7 @@ export function CoveragePage(): JSX.Element {
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
       try {
-        // Get the coverage details for the given resource
+        // Get the coverage details for the given resource. For more details on Coverage, see https://www.medplum.com/docs/billing/patient-insurance
         const coverageData = await medplum.readResource('Coverage', id);
         setCoverage(coverageData);
       } catch (err) {
@@ -53,12 +53,8 @@ export function CoveragePage(): JSX.Element {
       }
     };
 
-    const fetchData = async (): Promise<void> => {
-      await fetchCoverage();
-      await fetchLinkedPatient();
-    };
-
-    fetchData().catch((err) => console.error(err));
+    fetchCoverage();
+    fetchLinkedPatient();
   });
 
   const onCoverageChange = (updatedCoverage: Coverage): void => {
@@ -71,7 +67,7 @@ export function CoveragePage(): JSX.Element {
   };
 
   if (!coverage || !patient) {
-    return <Document>No Coverage Found</Document>;
+    return <Loading />;
   }
 
   return (

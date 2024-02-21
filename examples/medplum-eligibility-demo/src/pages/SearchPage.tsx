@@ -30,6 +30,7 @@ export function SearchPage(): JSX.Element {
 
     const populatedSearch = getPopulatedSearch(parsedSearch);
 
+    // Set the search if we are on the correct page, otherwise navigate to the correct page
     if (
       location.pathname === `/${populatedSearch.resourceType}` &&
       location.search === formatSearchQuery(populatedSearch)

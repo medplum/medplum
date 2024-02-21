@@ -16,9 +16,11 @@ export function CreateCoverageModal({ opened, onClose }: CreateCoverageModalProp
   const location = useLocation();
   const resourceType = location.pathname.split('/')[1];
 
+  // Create a blank resource so you can add any details you would like.
   const defaultResource = { resourceType } as Resource;
 
   const handleSubmit = (newResource: Resource) => {
+    // Create the Coverage and navigate to its details page
     medplum
       .createResource(newResource)
       .then((result) => navigate(`/${getReferenceString(result)}`))

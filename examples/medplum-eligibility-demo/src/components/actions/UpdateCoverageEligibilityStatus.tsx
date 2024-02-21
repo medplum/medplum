@@ -22,6 +22,7 @@ export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibility
   const medplum = useMedplum();
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
+    // Get the status selected from the questionnaire
     const status = getQuestionnaireAnswers(formData)['new-status'].valueCoding;
     if (!status) {
       throw new Error('Please select a valid status');
@@ -37,11 +38,13 @@ export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibility
   ) => {
     const coverageEligibilityId = coverageEligibility.id as string;
 
+    // We use a patch operation here to avoid race conditions. This ensures that if multiple users try to add a note simultaneously, only one will be successful.
     const ops: PatchOperation[] = [
       { op: 'test', path: '/meta/versionId', value: coverageEligibility.meta?.versionId },
       { op: 'replace', path: '/status', value: status.code },
     ];
 
+    // Update the resource on the server using a patch request. See https://www.medplum.com/docs/sdk/core.medplumclient.patchresource
     try {
       const result = await medplum.patchResource(coverageEligibility.resourceType, coverageEligibilityId, ops);
       notifications.show({
@@ -77,6 +80,7 @@ const updateStatusQuestionnaire: Questionnaire = {
       linkId: 'new-status',
       text: 'Update Status',
       type: 'choice',
+      // The choices are pulled from a FHIR ValueSet containing all allowed statuses.
       answerValueSet: 'http://hl7.org/fhir/ValueSet/fm-status',
       required: true,
     },

@@ -9,7 +9,6 @@ export function PatientPage(): JSX.Element {
   const medplum = useMedplum();
   const { id } = useParams();
   const [patient, setPatient] = useState<Patient | undefined>();
-  // const patient = useResource<Patient>({ reference: `Patient/${id}` });
 
   useEffect(() => {
     const fetchPatient = async (): Promise<void> => {
@@ -18,6 +17,7 @@ export function PatientPage(): JSX.Element {
       }
 
       try {
+        // Search for the patient.
         const patientData = await medplum.readResource('Patient', id);
         setPatient(patientData);
       } catch (error) {
@@ -29,6 +29,7 @@ export function PatientPage(): JSX.Element {
   });
 
   const onPatientChange = (updatedPatient: Patient): void => {
+    // Re-render when the patient is updated
     setPatient(updatedPatient);
   };
 

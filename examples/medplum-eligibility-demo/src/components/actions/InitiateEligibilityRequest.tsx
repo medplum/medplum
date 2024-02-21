@@ -62,6 +62,8 @@ export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequ
     if (!patient || !insurer) {
       throw new Error('Invalid data');
     }
+
+    // Create a `CoverageEligibilityRequest`. For more details on eligibility checks see https://www.medplum.com/docs/billing/insurance-eligibility-checks
     const eligibilityRequest: CoverageEligibilityRequest = {
       resourceType: 'CoverageEligibilityRequest',
       status: 'active',

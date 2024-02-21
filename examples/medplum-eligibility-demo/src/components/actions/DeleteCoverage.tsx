@@ -24,13 +24,13 @@ export function DeleteCoverage({ coverage }: DeleteCoverageProps): JSX.Element {
     const coverageId = coverage.id as string;
 
     try {
+      // Delete the task and navigate back to the Coverage search page
       await medplum.deleteResource('Coverage', coverageId);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Coverage deleted',
       });
-      // If the coverage is successfully deleted, you will be redirected to the Coverage search page
       navigate('/Coverage');
     } catch (err) {
       notifications.show({
