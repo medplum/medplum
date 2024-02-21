@@ -150,17 +150,23 @@ async function checkAccessPolicy(resource: Resource, project: Project, subscript
       const membership = await findProjectMembership(project.id as string, subAuthor);
       if (membership) {
         const accessPolicy = await buildAccessPolicy(membership);
-        const satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
+        const satisfied = satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
         if (!satisfied) {
+          const resourceReference = getReferenceString(resource);
+          const subReference = getReferenceString(subscription);
+          const projectReference = getReferenceString(project);
           globalLogger.warn(
-            `[Subscription Access Policy]: Access Policy not satisfied on '${getReferenceString(resource)}' for '${getReferenceString(project)}'`,
-            { subscription, project: createReference(project), accessPolicy }
+            `[Subscription Access Policy]: Access Policy not satisfied on '${resourceReference}' for '${subReference}'`,
+            { subscription: subReference, project: projectReference, accessPolicy }
           );
         }
       } else {
+        const projectReference = getReferenceString(project);
+        const authorReference = getReferenceString(subAuthor);
+        const subReference = getReferenceString(subscription);
         globalLogger.warn(
-          `[Subscription Access Policy]: No membership for subscription author '${getReferenceString(subAuthor)}' in project '${getReferenceString(project)}'`,
-          { subscription }
+          `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
+          { subscription: subReference }
         );
       }
     } else {
@@ -170,9 +176,11 @@ async function checkAccessPolicy(resource: Resource, project: Project, subscript
       );
     }
   } catch (err: unknown) {
+    const resourceReference = getReferenceString(resource);
+    const subReference = getReferenceString(subscription);
     globalLogger.warn(
-      `[Subscription Access Policy]: Error occurred while checking access policy for resource '${getReferenceString(resource)}' against '${getReferenceString(subscription)}'`,
-      { error: err, subscription }
+      `[Subscription Access Policy]: Error occurred while checking access policy for resource '${resourceReference}' against '${subReference}'`,
+      { error: err, subscription: subReference }
     );
   }
 }
