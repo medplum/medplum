@@ -21,9 +21,7 @@ export function NotificationIcon(props: NotificationIconProps): JSX.Element {
     (cache: 'default' | 'reload') => {
       medplum
         .search(resourceType, countCriteria, { cache })
-        .then((result) => {
-          setUnreadCount(result.total as number);
-        })
+        .then((result) => setUnreadCount(result.total as number))
         .catch(console.error);
     },
     [medplum, resourceType, countCriteria]

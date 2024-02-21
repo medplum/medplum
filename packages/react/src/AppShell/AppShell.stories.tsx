@@ -13,9 +13,9 @@ import {
   IconSettings,
 } from '@tabler/icons-react';
 import { Logo } from '../Logo/Logo';
+import { NotificationIcon } from '../NotificationIcon/NotificationIcon';
 import { AppShell } from './AppShell';
 import classes from './AppShell.stories.module.css';
-import { NotificationIcon } from './NotificationIcon';
 
 export default {
   title: 'Medplum/AppShell',
