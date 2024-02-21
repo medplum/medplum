@@ -214,18 +214,24 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
     if (projectId) {
       project = await systemRepo.readResource<Project>('Project', projectId);
     }
-  } catch (_err: unknown) {
-    project = undefined;
+  } catch (err: unknown) {
+    const resourceReference = getReferenceString(resource);
+    globalLogger.error(`[Subscription]: No project found for '${resourceReference}' -- something is very wrong.`, {
+      error: err,
+      resource: resourceReference,
+    });
+    return;
   }
-
-  const requestTime = new Date().toISOString();
   if (!project) {
     ctx.logger.debug('Did not evaluate subscriptions for resource without project');
     globalLogger.warn(`[Subscription Access Policy]: No project for resource '${getReferenceString(resource)}'`);
     return;
   }
+
+  const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource, project);
   ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
+
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
