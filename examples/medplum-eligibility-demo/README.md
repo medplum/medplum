@@ -1,5 +1,5 @@
-<h1 align="center">Medplum Hello World</h1>
-<p align="center">A starter application for using the Medplum platform.</p>
+<h1 align="center">Medplum Eligibility Demo</h1>
+<p align="center">A demo application for insurance coverage and related workflows.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
@@ -8,18 +8,28 @@
 
 This example app demonstrates the following:
 
-- Creating a new React app with Vite and TypeScript
-- Adding Medplum dependencies
-- Adding basic URL routing
-- Using the [Medplum client](https://www.medplum.com/docs/sdk/classes/MedplumClient) to search for FHIR resources
-- Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
-- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display FHIR data
+- Creating a new React app with Vite and TypeScript to demonstrate [`Coverage`](/docs/api/fhir/resources/coverage)-based workflows.
+- Managing the insurance eligibility check workflow.
+  - Initiating checks with the [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) resource.
+  - Managing the status of [`CoverageEligibilityRequests`](/docs/api/fhir/resources/coverageeligibilityrequest)
+  - Receiving and reviewing responses with the [`CoverageEligibilityResponse`](/docs/api/fhir/resources/coverageeligibilityresponse) resource.
+- Creating [`Coverage`](/docs/api/fhir/resources/coverage) and [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) resources.
+- Editing a [`Coverage`](/docs/api/fhir/resources/coverage) resource.
+- Deleting a [`Coverage`](/docs/api/fhir/resources/coverage) resource.
+
+### Code Organization
+
+This repo is organized into two main directories: `src` and `data`.
+
+The `src` directory contains the app, including `pages` and `components` directories. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) for use. The bots in this directory are intended as an example, and will need to be modified by users for real-world use.
+
+The `data` directory contains data that can be uploaded to use in the demo. The `example` directory contains data that is meant to be used for learning and testing, while the `core` directory contains resources, terminologies, and more that are required to use the demo.
 
 ### Getting Started
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-hello-world/fork) and clone the repo.
+[Fork](https://github.com/medplum/medplum-eligibility-demo/fork) and clone the repo.
 
 Next, install the dependencies
 
