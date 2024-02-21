@@ -8,10 +8,11 @@ import {
   CoverageEligibilityRequest,
   Organization,
   Patient,
+  Practitioner,
   Questionnaire,
   QuestionnaireResponse,
 } from '@medplum/fhirtypes';
-import { QuestionnaireForm, useMedplum } from '@medplum/react';
+import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
@@ -21,6 +22,7 @@ interface InitiateEligibilityRequestProps {
 
 export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequestProps): JSX.Element {
   const medplum = useMedplum();
+  const profile = useMedplumProfile() as Practitioner;
   const [opened, { toggle, close }] = useDisclosure(false);
   const [patient, setPatient] = useState<Patient | undefined>();
   const [insurer, setInsurer] = useState<Organization | undefined>();
@@ -89,6 +91,9 @@ export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequ
         start,
         end,
       },
+      enterer: {
+        reference: getReferenceString(profile),
+      },
     };
 
     try {
@@ -128,16 +133,22 @@ const initiateEligibilityRequestQuestionnaire: Questionnaire = {
   title: 'Eligibility Request',
   item: [
     {
-      linkId: 'start',
-      text: 'When will the requested procedure or service begin?',
-      type: 'date',
-      required: true,
-    },
-    {
-      linkId: 'end',
-      text: 'When will the requested procedure or service end?',
-      type: 'date',
-      required: true,
+      linkId: 'date',
+      type: 'group',
+      item: [
+        {
+          linkId: 'start',
+          text: 'Starting date of service',
+          type: 'date',
+          required: true,
+        },
+        {
+          linkId: 'end',
+          text: 'Ending date of service',
+          type: 'date',
+          required: true,
+        },
+      ],
     },
     {
       linkId: 'service-type',
