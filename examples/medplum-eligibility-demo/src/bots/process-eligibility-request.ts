@@ -1,19 +1,18 @@
 import { BotEvent, getReferenceString, MedplumClient } from '@medplum/core';
-import { CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
+import { Coding, CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<CoverageEligibilityRequest>): Promise<void> {
   const request = event.input as CoverageEligibilityRequest;
+  const serviceType = request.item?.[0].category?.coding?.[0];
 
-  const response = processRequest(request);
+  const response = processRequest(request, serviceType);
 
   if (response) {
     await medplum.createResource(response);
   }
 }
 
-function processRequest(request: CoverageEligibilityRequest) {
-  console.log(request);
-
+function processRequest(request: CoverageEligibilityRequest, serviceType?: Coding) {
   const coverage = request.insurance?.[0].coverage;
 
   if (!coverage) {
@@ -37,7 +36,7 @@ function processRequest(request: CoverageEligibilityRequest) {
         coverage,
         item: [
           {
-            excluded: Math.floor(Math.random()) % 2 === 0 ? true : false,
+            excluded: serviceType?.code === '30' ? true : false,
           },
         ],
       },
