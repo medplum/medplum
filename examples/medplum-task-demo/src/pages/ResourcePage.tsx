@@ -41,7 +41,7 @@ export function ResourcePage(): JSX.Element | null {
         </Tabs.List>
         <Tabs.Panel value="details">
           <Paper mt={'lg'}>
-            <ResourceTable key={`${resourceType}/${id}`} value={resource} />
+            <ResourceTable key={`${resourceType}/${id}`} value={resource} ignoreMissingValues />
           </Paper>
         </Tabs.Panel>
         <Tabs.Panel value="timeline">
