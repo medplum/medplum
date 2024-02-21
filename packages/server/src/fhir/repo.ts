@@ -200,18 +200,16 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
+    const resourceWithId = {
+      ...resource,
+      id: randomUUID(),
+    };
     try {
-      const result = await this.updateResourceImpl(
-        {
-          ...resource,
-          id: randomUUID(),
-        },
-        true
-      );
+      const result = await this.updateResourceImpl(resourceWithId, true);
       this.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
-      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, resource);
+      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, resourceWithId);
       throw err;
     }
   }

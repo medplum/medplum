@@ -143,27 +143,40 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * @param subscription - The `Subscription` to get the `AccessPolicy` for.
  */
 async function checkAccessPolicy(resource: Resource, project: Project, subscription: Subscription): Promise<void> {
-  // Check access policy
-  const subAuthor = subscription.meta?.author;
-  if (subAuthor) {
-    const membership = await findProjectMembership(project.id as string, subAuthor);
-    if (membership) {
-      const accessPolicy = await buildAccessPolicy(membership);
-      const satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
-      if (!satisfied) {
+  if (subscription.criteria === 'Communication') {
+    console.log(subscription);
+  }
+  try {
+    // Check access policy
+    const subAuthor = subscription.meta?.author;
+    if (subAuthor) {
+      const membership = await findProjectMembership(project.id as string, subAuthor);
+      if (membership) {
+        const accessPolicy = await buildAccessPolicy(membership);
+        const satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
+        if (!satisfied) {
+          globalLogger.warn(
+            `[Subscription Access Policy]: Access Policy not satisfied on '${getReferenceString(resource)}' for '${getReferenceString(project)}'`,
+            { subscription, project: createReference(project), accessPolicy }
+          );
+        }
+      } else {
         globalLogger.warn(
-          `[Subscription Access Policy]: Access Policy not satisfied for '${getReferenceString(resource)}'`,
-          { author: subAuthor, project, accessPolicy }
+          `[Subscription Access Policy]: No membership for subscription author '${getReferenceString(subAuthor)}' in project '${getReferenceString(project)}'`,
+          { subscription }
         );
       }
     } else {
+      // Log it if there is no author for this Subscription (this is not good)
       globalLogger.warn(
-        `[Subscription Access Policy]: No membership for author '${getReferenceString(subAuthor)}' in project '${getReferenceString(project)}'`
+        `[Subscription Access Policy]: No author for subscription '${getReferenceString(subscription)}'`
       );
     }
-  } else {
-    // Log it if there is no author for this Subscription (this is not good)
-    globalLogger.warn(`[Subscription Access Policy]: No author for subscription '${getReferenceString(subscription)}'`);
+  } catch (err: unknown) {
+    globalLogger.warn(
+      `[Subscription Access Policy]: Error occurred while checking access policy for resource '${getReferenceString(resource)}' against '${getReferenceString(subscription)}'`,
+      { error: err, subscription }
+    );
   }
 }
 
@@ -209,9 +222,9 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   const subscriptions = await getSubscriptions(resource, project);
   ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
-    await checkAccessPolicy(resource, project, subscription);
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
+      await checkAccessPolicy(resource, project, subscription);
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
