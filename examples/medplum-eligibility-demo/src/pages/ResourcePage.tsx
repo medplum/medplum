@@ -82,9 +82,7 @@ export function ResourcePage(): JSX.Element | null {
     <Document key={getReferenceString(resource)}>
       <Flex gap="md" justify="space-between">
         <Title>{getDisplayString(resource)}</Title>
-        {resourceType === 'CoverageEligibilityRequest' || resourceType === 'CoverageEligibilityResponse' ? (
-          <Button onClick={handlers.open}>Update Status</Button>
-        ) : null}
+        {resourceType === 'CoverageEligibilityRequest' ? <Button onClick={handlers.open}>Update Status</Button> : null}
       </Flex>
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List>

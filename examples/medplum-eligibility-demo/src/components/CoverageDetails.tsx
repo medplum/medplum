@@ -17,13 +17,13 @@ export function CoverageDetails({ coverage, tabs, currentTab, handleTabChange }:
   const eligibilityRequestSearch: SearchRequest = {
     resourceType: 'CoverageEligibilityRequest',
     filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
-    fields: ['status', 'patient', 'outcome'],
+    fields: ['patient', 'purpose', 'item', 'insurance'],
   };
 
   const eligibilityResponseSearch: SearchRequest = {
     resourceType: 'CoverageEligibilityResponse',
     filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
-    fields: ['status', 'patient', 'outcome'],
+    fields: ['patient', 'outcome', 'disposition', 'insurance'],
   };
 
   return (

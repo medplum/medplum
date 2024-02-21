@@ -27,6 +27,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
   // Get all Coverage resources related to the Patient
   const coverageSearchQuery = `Coverage?patient=${getReferenceString(patient)}`;
   const coverageSearchRequest = parseSearchDefinition(coverageSearchQuery);
+  coverageSearchRequest.fields = ['payor', 'relationship', 'period'];
 
   const handlePatientEdit = async (newPatient: Resource) => {
     try {
