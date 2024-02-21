@@ -1338,7 +1338,7 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
     }));
 
-  test('Subscription -- AccessPolicy check throws', () =>
+  test('Subscription -- AccessPolicy check throws (regression in #3978, see #4003)', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
       const originalConsoleLog = console.log;
