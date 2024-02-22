@@ -524,4 +524,21 @@ describe('Updated implementation', () => {
       display: expect.stringMatching(/care team/i),
     });
   });
+
+  test('Recursive subsumption', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=200`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(
+      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v2-0131')
+    ).toHaveLength(12);
+    expect(
+      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode')
+    ).toHaveLength(110);
+  });
 });
