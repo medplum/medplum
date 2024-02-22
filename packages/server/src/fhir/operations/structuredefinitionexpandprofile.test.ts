@@ -58,7 +58,7 @@ describe('StructureDefinition $expand-profile', () => {
     await createSDs(expectedProfiles, accessToken);
 
     const res = await request(app)
-      .get(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
+      .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toEqual(200);
@@ -79,7 +79,7 @@ describe('StructureDefinition $expand-profile', () => {
     await createSDs(expectedProfiles, accessToken);
 
     const res = await request(app)
-      .get(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
+      .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toEqual(200);
@@ -98,7 +98,7 @@ describe('StructureDefinition $expand-profile', () => {
     // Note that nothing is created in the database, so we expect an empty bundle
 
     const res = await request(app)
-      .get(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
+      .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toEqual(400);
@@ -106,7 +106,7 @@ describe('StructureDefinition $expand-profile', () => {
 
   test('Profile URL not specified', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/StructureDefinition/$expand-profile`)
+      .post(`/fhir/R4/StructureDefinition/$expand-profile`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toEqual(400);
@@ -119,7 +119,7 @@ describe('StructureDefinition $expand-profile', () => {
     expect(sds.length).toBe(extensionCount + 1);
     const profileUrl = sds[0].url;
     const res = await request(app)
-      .get(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
+      .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toEqual(200);
@@ -137,7 +137,7 @@ describe('StructureDefinition $expand-profile', () => {
     expect(sds.length).toBe(extensionCount + 1);
     const profileUrl = sds[0].url;
     const res = await request(app)
-      .get(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
+      .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toEqual(200);
