@@ -21,8 +21,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getLogger } from 'nodemailer/lib/shared';
-import { getAuthenticatedContext } from '../../context';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { Repository } from '../repo';
 import { sendResponse } from '../response';
 

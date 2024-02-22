@@ -13,11 +13,10 @@ import { Practitioner, Project, ProjectMembership, Reference, User } from '@medp
 import { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
-import { getLogger } from 'nodemailer/lib/shared';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, getLogger } from '../context';
 import { sendEmail } from '../email/email';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { sendResponse } from '../fhir/response';

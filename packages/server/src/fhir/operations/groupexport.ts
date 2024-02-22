@@ -1,9 +1,8 @@
 import { accepted } from '@medplum/core';
 import { Group, Patient, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getLogger } from 'nodemailer/lib/shared';
 import { getConfig } from '../../config';
-import { getAuthenticatedContext } from '../../context';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { getPatientEverything } from './patienteverything';
