@@ -26,6 +26,7 @@ const esbuildOptions = {
   format: 'cjs', // Set output format as ECMAScript modules
   target: 'es2020', // Set the target ECMAScript version
   tsconfig: 'tsconfig.json',
+  footer: { js: 'Object.assign(exports, module.exports);' }, // Required for VM Context Bots
 };
 
 // Build using esbuild
