@@ -21,7 +21,7 @@ import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { createHash } from 'node:crypto';
 import { getConfig } from '../config';
-import { getRequestContext } from '../context';
+import { getLogger } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
@@ -34,8 +34,8 @@ export async function createProfile(
   lastName: string,
   email: string | undefined
 ): Promise<ProfileResource> {
-  const ctx = getRequestContext();
-  ctx.logger.info('Creating profile', { resourceType, firstName, lastName });
+  const logger = getLogger();
+  logger.info('Creating profile', { resourceType, firstName, lastName });
   let telecom: ContactPoint[] | undefined = undefined;
   let photo: Attachment[] | undefined = undefined;
   if (email) {
@@ -58,7 +58,7 @@ export async function createProfile(
     telecom,
     photo,
   } as ProfileResource);
-  ctx.logger.info('Created profile', { id: result.id });
+  logger.info('Created profile', { id: result.id });
   return result;
 }
 
@@ -68,8 +68,8 @@ export async function createProjectMembership(
   profile: ProfileResource,
   details?: Partial<ProjectMembership>
 ): Promise<ProjectMembership> {
-  const ctx = getRequestContext();
-  ctx.logger.info('Creating project membership', { name: project.name });
+  const logger = getLogger();
+  logger.info('Creating project membership', { name: project.name });
 
   const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<ProjectMembership>({
@@ -79,7 +79,7 @@ export async function createProjectMembership(
     user: createReference(user),
     profile: createReference(profile),
   });
-  ctx.logger.info('Created project memberships', { id: result.id });
+  logger.info('Created project memberships', { id: result.id });
   return result;
 }
 

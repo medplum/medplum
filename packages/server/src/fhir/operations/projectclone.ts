@@ -46,7 +46,6 @@ class ProjectCloner {
     const resourceTypes = getResourceTypes();
     const allResources: Resource[] = [];
     const maxResourcesPerResourceType = 1000;
-    let newProject: Project | undefined = undefined;
 
     for (const resourceType of resourceTypes) {
       const bundle = await repo.search({
@@ -58,25 +57,28 @@ class ProjectCloner {
         for (const entry of bundle.entry) {
           if (entry.resource && this.isResourceAllowed(entry.resource)) {
             this.idMap.set(entry.resource.id as string, randomUUID());
-            allResources.push(entry.resource);
+            if (entry.resource.resourceType !== 'Project') {
+              allResources.push(entry.resource);
+            }
           }
         }
       }
     }
 
+    // Create the project first - otherwise project references will fail
+    const newProject = await repo.updateResource<Project>(this.rewriteIds(project));
+
+    // Then create all other resources
     for (const resource of allResources) {
       // Use updateResource to create with specified ID
       // That feature is only available to super admins
       const result = await repo.updateResource(this.rewriteIds(resource));
-      if (result.resourceType === 'Project') {
-        newProject = result;
-      }
       if (resource.resourceType === 'Binary') {
         await getBinaryStorage().copyBinary(resource, result as Binary);
       }
     }
 
-    return newProject as Project;
+    return newProject;
   }
 
   isResourceAllowed(resource: Resource): boolean {
@@ -108,7 +110,7 @@ class ProjectCloner {
     return true;
   }
 
-  rewriteIds(resource: Resource): Resource {
+  rewriteIds<T extends Resource>(resource: T): T {
     const resourceObj = JSON.parse(JSON.stringify(resource, (k, v) => this.rewriteKeyReplacer(k, v)));
 
     if (this.projectName) {

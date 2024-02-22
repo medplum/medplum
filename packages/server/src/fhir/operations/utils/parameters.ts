@@ -16,7 +16,7 @@ import {
   ParametersParameter,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getRequestContext } from '../../../context';
+import { getLogger } from '../../../context';
 import { sendOutcome } from '../../outcomes';
 import { sendResponse } from '../../response';
 
@@ -175,7 +175,7 @@ export async function sendOutputParameters(
     validateResource(response);
     res.status(getStatus(outcome)).json(response);
   } catch (err: any) {
-    getRequestContext().logger.error('Malformed operation output Parameters', { error: err.toString() });
+    getLogger().error('Malformed operation output Parameters', { error: err.toString() });
     sendOutcome(res, serverError(err));
   }
 }

@@ -29,7 +29,7 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository } from './repo';
 
@@ -42,11 +42,8 @@ describe('AccessPolicy', () => {
     await initAppServices(config);
   });
 
-  beforeEach(() => {
-    testProject = {
-      resourceType: 'Project',
-      id: randomUUID(),
-    };
+  beforeEach(async () => {
+    testProject = (await createTestProject()).project;
   });
 
   afterAll(async () => {
@@ -608,27 +605,22 @@ describe('AccessPolicy', () => {
 
   test('Multiple entries per resource type', () =>
     withTestContext(async () => {
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'ServiceRequest',
-            criteria: `ServiceRequest?status=active`,
-          },
-          {
-            resourceType: 'ServiceRequest',
-            criteria: `ServiceRequest?status=completed`,
-            readonly: true,
-          },
-        ],
-      };
-
-      const repo = new Repository({
-        extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'ServiceRequest',
+              criteria: `ServiceRequest?status=active`,
+            },
+            {
+              resourceType: 'ServiceRequest',
+              criteria: `ServiceRequest?status=completed`,
+              readonly: true,
+            },
+          ],
         },
-        accessPolicy: accessPolicy,
       });
 
       // User can create a ServiceRequest with status=active
@@ -1527,6 +1519,7 @@ describe('AccessPolicy', () => {
 
       const membership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
+        meta: { project: testProject.id },
         user: { reference: 'User/' + randomUUID() },
         project: { reference: 'Project/' + testProject.id },
         profile: { reference: 'Practitioner/' + randomUUID() },

@@ -2,10 +2,10 @@ import { ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
+import { getLogger } from '../context';
 import { tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
-import { getRequestContext } from '../context';
 
 export const loginValidator = makeValidationMiddleware([
   body('email').isEmail().withMessage('Valid email address is required'),
@@ -43,7 +43,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     allowNoMembership: req.body.projectId === 'new',
   });
 
-  getRequestContext().logger.info('Login success', { email: req.body.email, projectId });
+  getLogger().info('Login success', { email: req.body.email, projectId });
 
   await sendLoginResult(res, login);
 }

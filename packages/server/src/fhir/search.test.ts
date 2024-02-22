@@ -30,6 +30,7 @@ import {
   Patient,
   PlanDefinition,
   Practitioner,
+  Project,
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
@@ -44,7 +45,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
-import { Repository, getSystemRepo } from './repo';
+import { getSystemRepo, Repository } from './repo';
 
 jest.mock('hibp');
 jest.mock('ioredis');
@@ -3206,8 +3207,8 @@ describe('FHIR Search', () => {
 
     test('Filter by _project', () =>
       withTestContext(async () => {
-        const project1 = randomUUID();
-        const project2 = randomUUID();
+        const project1 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
+        const project2 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
@@ -3364,7 +3365,7 @@ describe('FHIR Search', () => {
 
     test('Sort by _lastUpdated', () =>
       withTestContext(async () => {
-        const project = randomUUID();
+        const project = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',

@@ -1,4 +1,4 @@
-import { ContentType, SNOMED, LOINC } from '@medplum/core';
+import { ContentType, LOINC, SNOMED } from '@medplum/core';
 import {
   CodeSystem,
   OperationOutcome,
@@ -345,7 +345,7 @@ describe('Updated implementation', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ features: ['terminology'] });
+    accessToken = await initTestAuth({ project: { features: ['terminology'] } });
   });
 
   afterAll(async () => {

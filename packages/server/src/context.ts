@@ -28,6 +28,8 @@ export class RequestContext {
   }
 }
 
+const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
+
 export class AuthenticatedRequestContext extends RequestContext {
   readonly repo: Repository;
   readonly project: Project;
@@ -60,7 +62,6 @@ export class AuthenticatedRequestContext extends RequestContext {
   }
 
   static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
-    const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
     return new AuthenticatedRequestContext(
       new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? ''),
       {} as unknown as Login,
@@ -73,6 +74,10 @@ export class AuthenticatedRequestContext extends RequestContext {
 }
 
 export const requestContextStore = new AsyncLocalStorage<RequestContext>();
+
+export function tryGetRequestContext(): RequestContext | undefined {
+  return requestContextStore.getStore();
+}
 
 export function getRequestContext(): RequestContext {
   const ctx = requestContextStore.getStore();
@@ -99,6 +104,19 @@ export function closeRequestContext(): void {
   const ctx = requestContextStore.getStore();
   if (ctx) {
     ctx.close();
+  }
+}
+
+export function getLogger(): Logger {
+  const ctx = requestContextStore.getStore();
+  return ctx ? ctx.logger : systemLogger;
+}
+
+export function tryRunInContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {
+  if (requestId && traceId) {
+    return requestContextStore.run(new RequestContext(requestId, traceId), fn);
+  } else {
+    return fn();
   }
 }
 

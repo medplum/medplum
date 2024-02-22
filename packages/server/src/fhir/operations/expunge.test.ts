@@ -66,7 +66,7 @@ describe('Expunge', () => {
   });
 
   test('Expunge project compartment', async () => {
-    const { project, client, membership } = await createTestProject();
+    const { project, client, membership } = await createTestProject({ withClient: true });
     expect(project).toBeDefined();
     expect(client).toBeDefined();
     expect(membership).toBeDefined();
@@ -105,7 +105,7 @@ describe('Expunge', () => {
 
   test('Expunger.expunge() expunges all resource types', async () => {
     //setup
-    const { project, client, membership } = await createTestProject();
+    const { project, client, membership } = await createTestProject({ withClient: true });
     expect(project).toBeDefined();
     expect(client).toBeDefined();
     expect(membership).toBeDefined();

@@ -15,102 +15,145 @@ import { Express } from 'express';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
 import { AuthenticatedRequestContext, requestContextStore } from './context';
-import { getSystemRepo } from './fhir/repo';
+import { getSystemRepo, Repository } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 
-export async function createTestProject(
-  projectOptions?: Partial<Project>,
-  membershipOptions?: Partial<ProjectMembership>
-): Promise<{
+export interface TestProjectOptions {
+  project?: Partial<Project>;
+  accessPolicy?: Partial<AccessPolicy>;
+  membership?: Partial<ProjectMembership>;
+  superAdmin?: boolean;
+  withClient?: boolean;
+  withAccessToken?: boolean;
+  withRepo?: boolean;
+}
+
+export type TestProjectResult<T extends TestProjectOptions = TestProjectOptions> = {
   project: Project;
-  client: ClientApplication;
-  membership: ProjectMembership;
-  login: Login;
-  accessToken: string;
-}> {
-  requestContextStore.enterWith(AuthenticatedRequestContext.system());
+  accessPolicy: T['accessPolicy'] extends AccessPolicy ? AccessPolicy : undefined;
+  client: T['withClient'] extends true ? ClientApplication : undefined;
+  membership: T['withClient'] extends true ? ProjectMembership : undefined;
+  login: T['withAccessToken'] extends true ? Login : undefined;
+  accessToken: T['withAccessToken'] extends true ? string : undefined;
+  repo: T['withRepo'] extends true ? Repository : undefined;
+};
 
-  const systemRepo = getSystemRepo();
+export async function createTestProject<T extends TestProjectOptions = TestProjectOptions>(
+  options: T = {} as T
+): Promise<TestProjectResult<T>> {
+  return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
+    const systemRepo = getSystemRepo();
 
-  const project = await systemRepo.createResource<Project>({
-    resourceType: 'Project',
-    name: 'Test Project',
-    owner: {
-      reference: 'User/' + randomUUID(),
-    },
-    strictMode: true,
-    features: ['bots', 'email', 'graphql-introspection', 'cron'],
-    secret: [
-      {
-        name: 'foo',
-        valueString: 'bar',
+    const project = await systemRepo.createResource<Project>({
+      resourceType: 'Project',
+      name: 'Test Project',
+      owner: {
+        reference: 'User/' + randomUUID(),
       },
-    ],
-    ...projectOptions,
+      strictMode: true,
+      features: ['bots', 'email', 'graphql-introspection', 'cron'],
+      secret: [
+        {
+          name: 'foo',
+          valueString: 'bar',
+        },
+      ],
+      superAdmin: options?.superAdmin,
+      ...options?.project,
+    });
+
+    let client: ClientApplication | undefined = undefined;
+    let accessPolicy: AccessPolicy | undefined = undefined;
+    let membership: ProjectMembership | undefined = undefined;
+    let login: Login | undefined = undefined;
+    let accessToken: string | undefined = undefined;
+    let repo: Repository | undefined = undefined;
+
+    if (options?.withClient || options?.withAccessToken || options?.withRepo) {
+      client = await systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        secret: randomUUID(),
+        redirectUri: 'https://example.com/',
+        meta: {
+          project: project.id as string,
+        },
+        name: 'Test Client Application',
+      });
+
+      if (options?.accessPolicy) {
+        accessPolicy = await systemRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: project.id },
+          ...options.accessPolicy,
+        });
+      }
+
+      membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: createReference(client),
+        profile: createReference(client),
+        project: createReference(project),
+        accessPolicy: accessPolicy && createReference(accessPolicy),
+        ...options?.membership,
+      });
+
+      if (options?.withAccessToken) {
+        const scope = 'openid';
+
+        login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'client',
+          user: createReference(client),
+          client: createReference(client),
+          membership: createReference(membership),
+          authTime: new Date().toISOString(),
+          superAdmin: options?.superAdmin,
+          scope,
+        });
+
+        accessToken = await generateAccessToken({
+          login_id: login.id as string,
+          sub: client.id as string,
+          username: client.id as string,
+          client_id: client.id as string,
+          profile: client.resourceType + '/' + client.id,
+          scope,
+        });
+      }
+
+      if (options?.withRepo) {
+        repo = new Repository({
+          projects: [project.id as string],
+          author: createReference(client),
+          superAdmin: options?.superAdmin,
+          projectAdmin: options?.membership?.admin,
+          accessPolicy,
+          strictMode: project.strictMode,
+          extendedMode: true,
+          checkReferencesOnWrite: project.checkReferencesOnWrite,
+        });
+      }
+    }
+
+    return {
+      project,
+      accessPolicy,
+      client,
+      membership,
+      login,
+      accessToken,
+      repo,
+    } as TestProjectResult<T>;
   });
-
-  const client = await systemRepo.createResource<ClientApplication>({
-    resourceType: 'ClientApplication',
-    secret: randomUUID(),
-    redirectUri: 'https://example.com/',
-    meta: {
-      project: project.id as string,
-    },
-    name: 'Test Client Application',
-  });
-
-  const membership = await systemRepo.createResource<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    user: createReference(client),
-    profile: createReference(client),
-    project: createReference(project),
-    ...membershipOptions,
-  });
-
-  const scope = 'openid';
-
-  const login = await systemRepo.createResource<Login>({
-    resourceType: 'Login',
-    authMethod: 'client',
-    user: createReference(client),
-    client: createReference(client),
-    membership: createReference(membership),
-    authTime: new Date().toISOString(),
-    superAdmin: projectOptions?.superAdmin,
-    scope,
-  });
-
-  const accessToken = await generateAccessToken({
-    login_id: login.id as string,
-    sub: client.id as string,
-    username: client.id as string,
-    client_id: client.id as string,
-    profile: client.resourceType + '/' + client.id,
-    scope,
-  });
-
-  return {
-    project,
-    client,
-    membership,
-    login,
-    accessToken,
-  };
 }
 
-export async function createTestClient(
-  projectOptions?: Partial<Project>,
-  membershipOptions?: Partial<ProjectMembership>
-): Promise<ClientApplication> {
-  return (await createTestProject(projectOptions, membershipOptions)).client;
+export async function createTestClient(options?: TestProjectOptions): Promise<ClientApplication> {
+  return (await createTestProject({ ...options, withClient: true })).client as ClientApplication;
 }
 
-export async function initTestAuth(
-  projectOptions?: Partial<Project>,
-  membershipOptions?: Partial<ProjectMembership>
-): Promise<string> {
-  return (await createTestProject(projectOptions, membershipOptions)).accessToken;
+export async function initTestAuth(options?: TestProjectOptions): Promise<string> {
+  return (await createTestProject({ ...options, withAccessToken: true })).accessToken as string;
 }
 
 export async function addTestUser(

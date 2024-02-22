@@ -20,7 +20,7 @@ describe('Cron Worker', () => {
     await initAppServices(config);
 
     // Create a project
-    const botProjectDetails = await createTestProject();
+    const botProjectDetails = await createTestProject({ withClient: true });
     botProject = botProjectDetails.project;
     botRepo = new Repository({
       extendedMode: true,

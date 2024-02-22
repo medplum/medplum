@@ -13,6 +13,7 @@ import { Practitioner, Project, ProjectMembership, Reference, User } from '@medp
 import { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
+import { getLogger } from 'nodemailer/lib/shared';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
@@ -65,7 +66,8 @@ export interface ServerInviteResponse {
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
   const systemRepo = getSystemRepo();
-  const ctx = getAuthenticatedContext();
+  const logger = getLogger();
+
   if (request.email) {
     request.email = request.email.toLowerCase();
   }
@@ -86,15 +88,15 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   if (!user) {
     existingUser = false;
-    ctx.logger.info('User creation request received', { email });
+    logger.info('User creation request received', { email });
     user = await createUser(request);
-    ctx.logger.info('User created', { id: user.id, email });
+    logger.info('User created', { id: user.id, email });
     passwordResetUrl = await resetPassword(user, 'invite');
   }
 
   let profile = await searchForExistingProfile(request);
   if (!profile) {
-    ctx.logger.info('Creating profile for invite request', {
+    logger.info('Creating profile for invite request', {
       project: getReferenceString(project),
       email,
       profileType: request.resourceType,
@@ -107,7 +109,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       email
     )) as Practitioner;
 
-    ctx.logger.info('Profile  created', { profile: getReferenceString(profile) });
+    logger.info('Profile  created', { profile: getReferenceString(profile) });
   }
 
   const membershipTemplate = request.membership ?? {};
