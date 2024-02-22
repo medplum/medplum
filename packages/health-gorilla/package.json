@@ -39,7 +39,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "*",
+    "@medplum/core": "3.0.4",
     "@medplum/fhirtypes": "*"
   },
   "devDependencies": {
