@@ -99,7 +99,7 @@ describe('update-server command', () => {
 
     medplum = {
       startAsyncRequest: jest.fn(),
-      get: jest.fn().mockResolvedValue(`{"version":"2.4.17-b27a9f"}`),
+      get: jest.fn().mockResolvedValue({ version: '2.4.17-b27a9f' }),
     } as unknown as MedplumClient;
     (createMedplumClient as unknown as jest.Mock).mockResolvedValue(medplum);
   });
