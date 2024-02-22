@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@aws-sdk/types": "3.515.0",
-    "@medplum/core": "*",
+    "@medplum/core": "3.0.4",
     "aws-cdk-lib": "2.128.0",
     "cdk": "2.128.0",
     "cdk-nag": "2.28.39",
