@@ -5,6 +5,7 @@ import {
   MedplumClient,
   Operator,
   allOk,
+  arrayify,
   badRequest,
   createReference,
   getIdentifier,
@@ -33,7 +34,7 @@ import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getAuthenticatedContext, getLogger, buildTracingExtension } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
@@ -546,7 +547,6 @@ async function createAuditEvent(
   outcome: AuditEventOutcome,
   outcomeDesc: string
 ): Promise<void> {
-  const ctx = getRequestContext();
   const { bot } = request;
   const trigger = bot.auditEventTrigger ?? 'always';
   if (
@@ -590,12 +590,7 @@ async function createAuditEvent(
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
     outcomeDesc,
-    extension: [
-      {
-        url: "https://medplum.com/fhir/StructureDefinition/trace-id",
-        valueString: ctx.traceId,
-      }
-    ]
+    extension: arrayify(buildTracingExtension()),
   };
 
   const destination = bot.auditEventDestination ?? ['resource'];
