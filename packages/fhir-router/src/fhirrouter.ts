@@ -5,6 +5,7 @@ import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
 import { FhirRepository } from './repo';
 import { HttpMethod, Router } from './urlrouter';
+import EventEmitter from 'events';
 
 export type FhirRequest = {
   method: HttpMethod;
@@ -111,11 +112,12 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
-export class FhirRouter {
+export class FhirRouter extends EventEmitter {
   readonly router = new Router<FhirRouteHandler>();
   readonly options: FhirOptions;
 
   constructor(options = {}) {
+    super();
     this.options = options;
 
     this.router.add('POST', '', batch);

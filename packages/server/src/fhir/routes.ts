@@ -31,6 +31,7 @@ import { sendOutcome } from './outcomes';
 import { isFhirJsonContentType, sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
+import { recordHistogramValue } from '../otel/otel';
 
 export const fhirRouter = Router();
 
@@ -209,6 +210,16 @@ protectedRoutes.use(
     const ctx = getAuthenticatedContext();
     if (!internalFhirRouter) {
       internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+      internalFhirRouter.on('warn', (msg, data) => ctx.logger.warn(msg, data));
+      internalFhirRouter.on('batch', ({ count, errors, size, bundleType }) => {
+        recordHistogramValue('medplum.batch.entries', count, { bundleType });
+        recordHistogramValue('medplum.batch.errors', errors, { bundleType });
+        recordHistogramValue('medplum.batch.size', size, { bundleType });
+
+        if (errors > 0 && bundleType === 'transaction') {
+          ctx.logger.warn('Error processing transaction Bundle', { count, errors, size });
+        }
+      });
     }
     const request: FhirRequest = {
       method: req.method as HttpMethod,

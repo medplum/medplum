@@ -68,24 +68,35 @@ class BatchProcessor {
     }
 
     const resultEntries: BundleEntry[] = [];
+    let count = 0;
+    let errors = 0;
     for (const entry of entries) {
       const rewritten = this.rewriteIdsInObject(entry);
-      // If the resource 'id' element is specified, we want to replace teh `urn:uuid:*` string and
+      // If the resource 'id' element is specified, we want to replace the `urn:uuid:*` string and
       // remove the `resourceType` prefix
       if (entry.resource?.id) {
         rewritten.resource.id = this.rewriteIdsInString(entry.resource.id, true);
       }
 
       try {
+        count++;
         resultEntries.push(await this.processBatchEntry(rewritten));
       } catch (err) {
+        errors++;
         resultEntries.push(buildBundleResponse(normalizeOperationOutcome(err)));
       }
     }
 
+    this.router.emit('batch', {
+      bundleType,
+      count,
+      errors,
+      size: JSON.stringify(this.bundle).length,
+    });
+
     return {
       resourceType: 'Bundle',
-      type: (bundleType + '-response') as 'batch-response' | 'transaction-response',
+      type: `${bundleType}-response`,
       entry: resultEntries,
     };
   }
@@ -205,6 +216,9 @@ class BatchProcessor {
   private rewriteIdsInString(input: string, removeResourceType = false): string {
     const matches = /urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/.exec(input);
     if (matches) {
+      if (this.bundle.type !== 'transaction') {
+        this.router.emit('warn', 'Invalid internal reference in batch');
+      }
       const fullUrl = matches[0];
       const resource = this.ids[fullUrl];
       if (resource) {
