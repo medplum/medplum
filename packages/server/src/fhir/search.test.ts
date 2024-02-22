@@ -2450,9 +2450,7 @@ describe('FHIR Search', () => {
         });
 
         const bundle = await repo.search(
-          parseSearchRequest(
-            new URL(`https://x/Condition?subject=${getReferenceString(p)}&code:not=x&_count=1&_total=accurate`)
-          )
+          parseSearchRequest(`https://x/Condition?subject=${getReferenceString(p)}&code:not=x&_count=1&_total=accurate`)
         );
         expect(bundle.entry?.length).toEqual(1);
 
