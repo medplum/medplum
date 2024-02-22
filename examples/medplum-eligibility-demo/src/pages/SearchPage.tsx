@@ -52,6 +52,7 @@ export function SearchPage(): JSX.Element {
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideFilters={true}
         onNew={() => handlers.open()}
+        hideToolbar={search.resourceType === 'Coverage' ? false : true}
       />
       <CreateCoverageModal opened={opened} onClose={handlers.close} />
     </Document>

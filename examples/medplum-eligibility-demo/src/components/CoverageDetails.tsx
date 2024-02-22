@@ -1,4 +1,4 @@
-import { Paper, Tabs } from '@mantine/core';
+import { Paper, ScrollArea, Tabs } from '@mantine/core';
 import { getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Coverage } from '@medplum/fhirtypes';
 import { ResourceHistoryTable, ResourceTable, SearchControl } from '@medplum/react';
@@ -31,13 +31,15 @@ export function CoverageDetails({ coverage, tabs, currentTab, handleTabChange }:
   return (
     <Paper>
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
-        <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab[1]} value={tab[0].toLowerCase()}>
-              {tab[1]}
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
+        <ScrollArea type="never">
+          <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }} mb="sm">
+            {tabs.map((tab) => (
+              <Tabs.Tab key={tab[1]} value={tab[0].toLowerCase()}>
+                {tab[1]}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </ScrollArea>
         <Tabs.Panel value="details">
           <ResourceTable key={`Coverage/${coverage.id}`} value={coverage} ignoreMissingValues={true} />
         </Tabs.Panel>

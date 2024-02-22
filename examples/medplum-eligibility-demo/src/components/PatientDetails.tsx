@@ -55,7 +55,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
   };
 
   return (
-    <Document m="sm">
+    <Document m="0">
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
           {tabs.map((tab) => (

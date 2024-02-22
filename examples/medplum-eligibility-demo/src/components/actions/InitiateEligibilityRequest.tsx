@@ -1,4 +1,4 @@
-import { Button, Modal } from '@mantine/core';
+import { Button, Modal, ScrollArea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString, parseReference } from '@medplum/core';
@@ -118,7 +118,7 @@ export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequ
 
   return (
     <div>
-      <Button fullWidth onClick={toggle}>
+      <Button p="0" fullWidth onClick={toggle}>
         Initiate Eligibility Request
       </Button>
       <Modal opened={opened} onClose={close}>
