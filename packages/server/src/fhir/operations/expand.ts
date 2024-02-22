@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
-import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction } from '../sql';
+import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction, Union } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 import { parentProperty } from './codesystemimport';
 import { clamp } from './utils/parameters';
@@ -293,6 +293,7 @@ async function includeInExpansion(
   const ctx = getAuthenticatedContext();
 
   let query = new SelectQuery('Coding')
+    .column('id')
     .column('code')
     .column('display')
     .where('system', '=', codeSystem.id)
@@ -310,9 +311,6 @@ async function includeInExpansion(
             if (!coding) {
               ctx.logger.warn('Invalid parent code in ValueSet', { codeSystem: codeSystem.id, code: condition.value });
               return; // Invalid parent code, don't make DB query with incorrect filters
-            }
-            if (!filter || coding.display?.includes(filter)) {
-              expansion.push({ ...coding, id: undefined });
             }
             query = addParentCondition(condition, query, codeSystem, coding);
           }
@@ -351,14 +349,13 @@ function addParentCondition(
     property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
   }
 
+  const base = new SelectQuery('Coding').column('id').column('code').column('display').where('id', '=', parent.id);
+
   const propertyTable = query.getNextJoinAlias();
-  query.leftJoin(
+  query.innerJoin(
     'Coding_Property',
     propertyTable,
-    new Conjunction([
-      new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding')),
-      new Condition(new Column(propertyTable, 'target'), '=', parent.id),
-    ])
+    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))
   );
 
   const csPropertyTable = query.getNextJoinAlias();
@@ -370,7 +367,21 @@ function addParentCondition(
       new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
     ])
   );
-  query.where(new Column(propertyTable, 'coding'), condition.op === 'is-not-a' ? '=' : '!=', null);
 
-  return query;
+  const recursiveCTE = 'cte_descendants';
+  const recursiveTable = query.getNextJoinAlias();
+  query.innerJoin(
+    recursiveCTE,
+    recursiveTable,
+    new Condition(new Column(propertyTable, 'target'), '=', new Column(recursiveTable, 'id'))
+  );
+  const offset = query.offset_;
+  query.offset(0);
+
+  return new SelectQuery('cte_descendants')
+    .column('code')
+    .column('display')
+    .withRecursive('cte_descendants', new Union(base, query))
+    .limit(query.limit_)
+    .offset(offset);
 }
