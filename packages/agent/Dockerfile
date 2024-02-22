@@ -6,6 +6,11 @@ ARG MEDPLUM_VERSION
 ENV GIT_SHA ${GIT_SHA}
 ENV MEDPLUM_VERSION ${MEDPLUM_VERSION}
 
+RUN apt-get update && \
+    apt-get install -y iputils-ping && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN adduser -u 5678 --disabled-password --gecos "" app
 
 COPY bin/medplum-agent-${MEDPLUM_VERSION}-linux /srv/medplum-agent
