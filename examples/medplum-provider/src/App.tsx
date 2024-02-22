@@ -11,6 +11,7 @@ import { EncounterTab } from './pages/patient/EncounterTab';
 import { LabsTab } from './pages/patient/LabsTab';
 import { MedsTab } from './pages/patient/MedsTab';
 import { PatientPage } from './pages/patient/PatientPage';
+import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
 
@@ -45,7 +46,9 @@ export function App(): JSX.Element | null {
                   <Route path="meds" element={<MedsTab />} />
                   <Route path="tasks" element={<TasksTab />} />
                   <Route path="timeline" element={<TimelineTab />} />
-                  <Route path="*" element={<TimelineTab />} />
+                  <Route path=":resourceType/:id" element={<ResourcePage />} />
+                  <Route path=":resourceType" element={<PatientSearchPage />} />
+                  <Route path="" element={<TimelineTab />} />
                 </Route>
                 <Route path="/:resourceType/:id" element={<ResourcePage />} />
                 <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />

@@ -6,14 +6,22 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
 
-const tabs = ['Timeline', 'Edit', 'Encounter', 'Tasks', 'Meds', 'Labs'];
+const tabs = [
+  { id: 'timeline', url: '', label: 'Timeline' },
+  { id: 'edit', url: 'edit', label: 'Edit' },
+  { id: 'encounter', url: 'encounter', label: 'Encounter' },
+  { id: 'tasks', url: 'Task?patient=%patient.id', label: 'Tasks' },
+  { id: 'meds', url: 'MedicationRequest?patient=%patient.id', label: 'Meds' },
+  { id: 'labs', url: 'ServiceRequest?patient=%patient.id', label: 'Labs' },
+  { id: 'devices', url: 'Device?patient=%patient.id', label: 'Devices' },
+];
 
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
   const patient = usePatient();
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = window.location.pathname.split('/').pop();
-    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+    const tabId = window.location.pathname.split('/')[3] ?? '';
+    return tabId && tabs.find((t) => t.id === tabId) ? tabId : tabs[0].id;
   });
 
   if (!patient) {
@@ -26,10 +34,14 @@ export function PatientPage(): JSX.Element {
    */
   function onTabChange(newTabName: string | null): void {
     if (!newTabName) {
-      newTabName = tabs[0].toLowerCase();
+      newTabName = tabs[0].id;
     }
-    setCurrentTab(newTabName);
-    navigate(`/Patient/${patient?.id}/${newTabName}`);
+
+    const tab = tabs.find((t) => t.id === newTabName);
+    if (tab) {
+      setCurrentTab(tab.id);
+      navigate(`/Patient/${patient?.id}/${tab.url.replace('%patient.id', patient?.id as string)}`);
+    }
   }
 
   return (
@@ -44,8 +56,8 @@ export function PatientPage(): JSX.Element {
               <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
                 <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
                   {tabs.map((t) => (
-                    <Tabs.Tab key={t} value={t.toLowerCase()}>
-                      {t}
+                    <Tabs.Tab key={t.id} value={t.id}>
+                      {t.label}
                     </Tabs.Tab>
                   ))}
                 </Tabs.List>
