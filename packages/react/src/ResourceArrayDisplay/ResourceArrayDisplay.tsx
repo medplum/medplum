@@ -1,18 +1,22 @@
-import { InternalSchemaElement } from '@medplum/core';
+import { InternalSchemaElement, isEmpty } from '@medplum/core';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
 export interface ResourceArrayDisplayProps {
   readonly property: InternalSchemaElement;
+  readonly propertyType: string;
   readonly values: any[];
-  readonly arrayElement?: boolean;
   readonly ignoreMissingValues?: boolean;
   readonly link?: boolean;
 }
 
-export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element {
-  const { property, values } = props;
-  const propertyType = property.type[0].code;
-  return props.values ? (
+export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element | null {
+  const { property, propertyType, values } = props;
+
+  if (isEmpty(props.values)) {
+    return null;
+  }
+
+  return (
     <>
       {values.map((v: any, index: number) => (
         <div key={`${index}-${values.length}`}>
@@ -27,7 +31,5 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
         </div>
       ))}
     </>
-  ) : (
-    <></>
   );
 }

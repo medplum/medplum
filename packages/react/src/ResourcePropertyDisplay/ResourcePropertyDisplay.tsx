@@ -70,6 +70,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     return (
       <ResourceArrayDisplay
         property={property}
+        propertyType={propertyType}
         values={value}
         ignoreMissingValues={props.ignoreMissingValues}
         link={props.link}
