@@ -1,12 +1,5 @@
 import { badRequest, OperationOutcomeError, Operator, Operator as SearchOperator } from '@medplum/core';
-import {
-  CodeSystem,
-  Coding,
-  ValueSet,
-  ValueSetComposeInclude,
-  ValueSetComposeIncludeFilter,
-  ValueSetExpansionContains,
-} from '@medplum/fhirtypes';
+import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { sendOutcome } from '../outcomes';
@@ -312,7 +305,7 @@ async function includeInExpansion(
               ctx.logger.warn('Invalid parent code in ValueSet', { codeSystem: codeSystem.id, code: condition.value });
               return; // Invalid parent code, don't make DB query with incorrect filters
             }
-            query = addParentCondition(condition, query, codeSystem, coding);
+            query = addParentCondition(query, codeSystem, coding);
           }
           break;
         default:
@@ -329,12 +322,7 @@ async function includeInExpansion(
   }
 }
 
-function addParentCondition(
-  condition: ValueSetComposeIncludeFilter,
-  query: SelectQuery,
-  codeSystem: CodeSystem,
-  parent: Coding
-): SelectQuery {
+function addParentCondition(query: SelectQuery, codeSystem: CodeSystem, parent: Coding): SelectQuery {
   if (codeSystem.hierarchyMeaning !== 'is-a') {
     throw new OperationOutcomeError(
       badRequest(
