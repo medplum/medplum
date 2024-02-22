@@ -1,8 +1,8 @@
-import { Button, Flex, Modal, Tabs, Title } from '@mantine/core';
+import { Flex, Tabs, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
+import { showNotification } from '@mantine/notifications';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { CoverageEligibilityRequest, CoverageEligibilityResponse, Resource, ResourceType } from '@medplum/fhirtypes';
+import { CoverageEligibilityRequest, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -57,7 +57,7 @@ export function ResourcePage(): JSX.Element | null {
       const updatedResource = await medplum.updateResource(cleanResource(newResource));
       // Set the resource to re-render the page
       setResource(updatedResource);
-      notifications.show({
+      showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: `${resourceType} updated`,
@@ -66,7 +66,7 @@ export function ResourcePage(): JSX.Element | null {
       navigate(`/${resourceType}/${id}`);
       window.scrollTo(0, 0);
     } catch (err) {
-      notifications.show({
+      showNotification({
         icon: <IconCircleOff />,
         title: 'Error',
         message: normalizeErrorString(err),

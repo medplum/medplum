@@ -1,6 +1,6 @@
 import { Alert, Button, Group, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
+import { showNotification } from '@mantine/notifications';
 import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Coverage } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
@@ -26,14 +26,14 @@ export function DeleteCoverage({ coverage }: DeleteCoverageProps): JSX.Element {
     try {
       // Delete the task and navigate back to the Coverage search page
       await medplum.deleteResource('Coverage', coverageId);
-      notifications.show({
+      showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Coverage deleted',
       });
       navigate('/Coverage');
     } catch (err) {
-      notifications.show({
+      showNotification({
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',

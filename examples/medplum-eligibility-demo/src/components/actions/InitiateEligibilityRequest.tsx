@@ -1,6 +1,6 @@
 import { Button, Modal, ScrollArea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
+import { showNotification } from '@mantine/notifications';
 import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString, parseReference } from '@medplum/core';
 import {
   Coding,
@@ -100,14 +100,14 @@ export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequ
 
     try {
       await medplum.createResource(eligibilityRequest);
-      notifications.show({
+      showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Coverage Eligibility Request Created',
       });
     } catch (error) {
       console.log(normalizeErrorString(error));
-      notifications.show({
+      showNotification({
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',

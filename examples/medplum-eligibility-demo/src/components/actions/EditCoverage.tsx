@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { normalizeErrorString } from '@medplum/core';
 import { Coverage, Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
-import { notifications } from '@mantine/notifications';
+import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { cleanResource } from '../utils';
 
@@ -20,7 +20,7 @@ export function EditCoverage({ coverage, onChange }: EditCoverageProps): JSX.Ele
     try {
       // Update the coverage with the new details. We clean the resource in order to overwrite the necessary metadata
       const updatedCoverage = (await medplum.updateResource(cleanResource(newCoverage))) as Coverage;
-      notifications.show({
+      showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Coverage updated',
@@ -28,7 +28,7 @@ export function EditCoverage({ coverage, onChange }: EditCoverageProps): JSX.Ele
       toggle();
       onChange(updatedCoverage);
     } catch (err) {
-      notifications.show({
+      showNotification({
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',

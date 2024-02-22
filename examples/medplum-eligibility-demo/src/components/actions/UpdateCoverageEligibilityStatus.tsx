@@ -1,6 +1,6 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
+import { showNotification } from '@mantine/notifications';
 import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
 import {
   Coding,
@@ -48,14 +48,14 @@ export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibility
     // Update the resource on the server using a patch request. See https://www.medplum.com/docs/sdk/core.medplumclient.patchresource
     try {
       const result = await medplum.patchResource(coverageEligibility.resourceType, coverageEligibilityId, ops);
-      notifications.show({
+      showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Status updated',
       });
       props.onChange(result);
     } catch (error) {
-      notifications.show({
+      showNotification({
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',

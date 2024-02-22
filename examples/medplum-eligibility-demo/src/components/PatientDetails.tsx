@@ -1,5 +1,5 @@
 import { Tabs } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString, parseSearchDefinition } from '@medplum/core';
 import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
@@ -33,7 +33,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
     try {
       // Update the patient and navigate to its details page
       const updatedPatient = (await medplum.updateResource(cleanResource(newPatient))) as Patient;
-      notifications.show({
+      showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Patient updated',
@@ -42,7 +42,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
       navigate(`/Patient/${id}`);
       window.scrollTo(0, 0);
     } catch (error) {
-      notifications.show({
+      showNotification({
         icon: <IconCircleOff />,
         title: 'Error',
         message: normalizeErrorString(error),

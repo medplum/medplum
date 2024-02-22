@@ -1,7 +1,9 @@
 import { Modal, Text } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { getReferenceString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
+import { IconCircleCheck } from '@tabler/icons-react';
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,6 +26,13 @@ export function CreateCoverageModal({ opened, onClose }: CreateCoverageModalProp
     medplum
       .createResource(newResource)
       .then((result) => navigate(`/${getReferenceString(result)}`))
+      .then(() =>
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Coverage created',
+        })
+      )
       .catch((error) => console.error(error));
   };
 
