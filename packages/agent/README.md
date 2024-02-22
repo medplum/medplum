@@ -41,3 +41,27 @@ References:
 - [JSign](https://ebourg.github.io/jsign/)
 - [Shawl](https://github.com/mtkennerly/shawl)
 - [NSIS](https://nsis.sourceforge.io/)
+
+## Docker Image
+
+Build and run the docker image
+
+```bash
+docker build -t medplum-agent:latest \
+  --build-arg GIT_SHA=$(git log -1 --format=format:%H) \
+  --build-arg MEDPLUM_VERSION=3.0.3 .
+```
+
+```bash
+docker run --rm \
+  -e MEDPLUM_BASE_URL="" \
+  -e MEDPLUM_CLIENT_ID="" \
+  -e MEDPLUM_CLIENT_SECRET="" \
+  -e MEDPLUM_AGENT_ID="" \
+  medplum-agent:latest
+```
+
+Optionally set the `MEDPLUM_LOG_LEVEL` environment variable
+```bash
+  -e MEDPLUM_LOG_LEVEL="DEBUG"
+```
