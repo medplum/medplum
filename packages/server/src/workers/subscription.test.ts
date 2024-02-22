@@ -1,6 +1,15 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { ContentType, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
-import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
+import { ContentType, LogLevel, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
+import {
+  AccessPolicy,
+  AuditEvent,
+  Bot,
+  Observation,
+  Patient,
+  Project,
+  ProjectMembership,
+  Subscription,
+} from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { Job } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
@@ -9,6 +18,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -47,22 +57,17 @@ describe('Subscription Worker', () => {
     await initAppServices(config);
 
     // Create one simple project with no advanced features enabled
-    const testProject = await withTestContext(() =>
-      systemRepo.createResource<Project>({
-        resourceType: 'Project',
+    const { project, client } = await withTestContext(() =>
+      createTestProject({
         name: 'Test Project',
-        owner: {
-          reference: 'User/' + randomUUID(),
-        },
+        features: [],
       })
     );
 
     repo = new Repository({
       extendedMode: true,
-      projects: [testProject.id as string],
-      author: {
-        reference: 'ClientApplication/' + randomUUID(),
-      },
+      projects: [project.id as string],
+      author: createReference(client),
     });
 
     // Create another project, this one with bots enabled
@@ -1114,7 +1119,7 @@ describe('Subscription Worker', () => {
 
   test('AuditEvent has Subscription account details', () =>
     withTestContext(async () => {
-      const project = randomUUID();
+      const project = (await createTestProject()).project.id as string;
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
@@ -1166,15 +1171,15 @@ describe('Subscription Worker', () => {
       });
       expect(bundle.entry?.length).toEqual(1);
 
-      const auditEvent = bundle.entry?.[0].resource as AuditEvent;
+      const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
       expect(auditEvent.meta?.account).toBeDefined();
       expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
       expect(auditEvent.entity).toHaveLength(2);
     }));
 
-  test('Audit Event outcome from custom codes', () =>
+  test('AuditEvent outcome from custom codes', () =>
     withTestContext(async () => {
-      const project = randomUUID();
+      const project = (await createTestProject()).project.id as string;
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
@@ -1333,9 +1338,109 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
     }));
 
-  test('WebSocket Subscription', () =>
+  test('Subscription -- AccessPolicy check throws (regression in #3978, see #4003)', () =>
     withTestContext(async () => {
-      const subscription = await repo.createResource<Subscription>({
+      globalLogger.level = LogLevel.WARN;
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const url = 'https://example.com/subscription';
+
+      const accessPolicy = await repo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient', readonly: false }],
+      });
+
+      const { project, client } = await createTestProject(
+        {
+          name: 'AccessPolicy Throw Project',
+          owner: {
+            reference: 'User/' + randomUUID(),
+          },
+          features: [],
+        },
+        { accessPolicy: createReference(accessPolicy) }
+      );
+
+      const apTestRepo = new Repository({
+        extendedMode: true,
+        projects: [project.id as string],
+        author: {
+          reference: getReferenceString(client),
+        },
+      });
+
+      const subscription = await apTestRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Create the patient
+      const patient = await apTestRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
+      // Clear the queue
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      // Clear the queue
+      queue.add.mockClear();
+
+      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+
+      // Update the patient
+      const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
+
+      expect(queue.add).toHaveBeenCalled();
+      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execSubscriptionJob(job);
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: stringify(patient2),
+        })
+      );
+
+      expect(console.log).toHaveBeenCalledTimes(2);
+
+      globalLogger.level = LogLevel.NONE;
+      console.log = originalConsoleLog;
+    }));
+
+  test('WebSocket Subscription -- Enabled', () =>
+    withTestContext(async () => {
+      const wsSubProject = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'WebSocket Subs Project',
+        owner: {
+          reference: 'User/' + randomUUID(),
+        },
+        features: ['websocket-subscriptions'],
+      });
+
+      const wsSubRepo = new Repository({
+        extendedMode: true,
+        projects: [wsSubProject.id as string],
+        author: {
+          reference: 'ClientApplication/' + randomUUID(),
+        },
+      });
+
+      const subscription = await wsSubRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         status: 'active',
@@ -1365,7 +1470,7 @@ describe('Subscription Worker', () => {
       const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
-      const patient = await repo.createResource<Patient>({
+      const patient = await wsSubRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
@@ -1381,7 +1486,7 @@ describe('Subscription Worker', () => {
       queue.add.mockClear();
 
       // Update the patient
-      await repo.updateResource({ ...patient, active: true });
+      await wsSubRepo.updateResource({ ...patient, active: true });
 
       // Update should also trigger the subscription
       expect(queue.add).toHaveBeenCalled();
@@ -1390,10 +1495,82 @@ describe('Subscription Worker', () => {
       queue.add.mockClear();
 
       // Delete the patient
-      await repo.deleteResource('Patient', patient.id as string);
+      await wsSubRepo.deleteResource('Patient', patient.id as string);
 
       expect(queue.add).toHaveBeenCalled();
 
       await deferredPromise;
+    }));
+
+  test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
+    withTestContext(async () => {
+      globalLogger.level = LogLevel.WARN;
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const noWsSubProject = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'No WebSocket Subs Project',
+        owner: {
+          reference: 'User/' + randomUUID(),
+        },
+      });
+
+      const noWsSubRepo = new Repository({
+        extendedMode: true,
+        projects: [noWsSubProject.id as string],
+        author: {
+          reference: 'ClientApplication/' + randomUUID(),
+        },
+      });
+
+      const subscription = await noWsSubRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      });
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Subscribe to the topic
+      const subscriber = getRedis().duplicate();
+      await subscriber.subscribe(subscription.id as string);
+
+      let resolve: () => void;
+      let reject: (error: Error) => void;
+
+      const deferredPromise = new Promise<void>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      subscriber.on('message', () => {
+        reject(new Error('Should not have been called'));
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await noWsSubRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      // Give some time for the callback to get called (it shouldn't)
+      setTimeout(() => {
+        resolve();
+      }, 150);
+
+      await deferredPromise;
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringMatching(/WebSocket Subscriptions/));
+
+      console.log = originalConsoleLog;
+      globalLogger.level = LogLevel.NONE;
     }));
 });
