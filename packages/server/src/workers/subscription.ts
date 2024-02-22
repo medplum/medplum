@@ -336,12 +336,8 @@ function matchesChannelType(subscription: Subscription): boolean {
  * @param job - The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
-  // const ctx = getRequestContext();
-  // ctx.logger.debug(`Adding Subscription job`);
   if (queue) {
     await queue.add(jobName, job);
-    // } else {
-    //   ctx.logger.debug(`Subscription queue not initialized`);
   }
 }
 
