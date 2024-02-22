@@ -10,7 +10,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
-  parseSearchUrl,
+  parseSearchRequest,
   satisfiedAccessPolicy,
   serverError,
   stringify,
@@ -279,7 +279,7 @@ async function matchesCriteria(
     return false;
   }
 
-  const searchRequest = parseSearchUrl(new URL(subscriptionCriteria, 'https://api.medplum.com/'));
+  const searchRequest = parseSearchRequest(new URL(subscriptionCriteria, 'https://api.medplum.com/'));
   if (resource.resourceType !== searchRequest.resourceType) {
     ctx.logger.debug(
       `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`

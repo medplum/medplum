@@ -1,4 +1,4 @@
-import { Operator, badRequest, created, parseSearchDefinition } from '@medplum/core';
+import { Operator, badRequest, created, parseSearchRequest } from '@medplum/core';
 import {
   Measure,
   MeasureGroup,
@@ -177,7 +177,7 @@ async function evaluateCount(
   criteria: string,
   params: EvaluateMeasureParameters
 ): Promise<number | undefined> {
-  const searchDefinition = parseSearchDefinition(criteria);
+  const searchDefinition = parseSearchRequest(criteria);
   searchDefinition.total = 'accurate';
 
   if (!searchDefinition.filters) {

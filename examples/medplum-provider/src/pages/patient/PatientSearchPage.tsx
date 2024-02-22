@@ -1,5 +1,5 @@
 import { Paper } from '@mantine/core';
-import { DEFAULT_SEARCH_COUNT, formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { DEFAULT_SEARCH_COUNT, formatSearchQuery, parseSearchRequest, SearchRequest } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -18,7 +18,7 @@ export function PatientSearchPage(): JSX.Element {
       return;
     }
 
-    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const parsedSearch = parseSearchRequest(location.pathname + location.search);
     const populatedSearch = addSearchValues(patient, parsedSearch);
 
     if (

@@ -7,7 +7,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
-  parseSearchDefinition,
+  parseSearchRequest,
   PropertyType,
   toTypedValue,
   TypedValue,
@@ -251,7 +251,7 @@ async function followSearchLink(
     const searchParams = params.replace('{ref}', getReferenceString(resource));
 
     // Formulate the searchURL string
-    const searchRequest = parseSearchDefinition(`${searchResourceType}?${searchParams}`);
+    const searchRequest = parseSearchRequest(`${searchResourceType}?${searchParams}`);
 
     // Parse the max count from the link description, if available
     searchRequest.count = Math.min(parseCardinality(link.max), 5000);
