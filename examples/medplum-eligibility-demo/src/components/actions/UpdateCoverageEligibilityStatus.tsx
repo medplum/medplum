@@ -1,4 +1,5 @@
-import { Paper } from '@mantine/core';
+import { Button, Modal } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
 import {
@@ -13,13 +14,13 @@ import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface UpdateCoverageEligibilityStatus {
-  readonly coverageEligibility: CoverageEligibilityRequest | CoverageEligibilityResponse;
+  readonly coverageEligibility: CoverageEligibilityRequest;
   readonly onChange: (resource: Resource) => void;
-  readonly close: () => void;
 }
 
 export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibilityStatus): JSX.Element {
   const medplum = useMedplum();
+  const [opened, handlers] = useDisclosure(false);
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
     // Get the status selected from the questionnaire
@@ -29,7 +30,7 @@ export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibility
     }
 
     handleStatusUpdate(props.coverageEligibility, status);
-    props.close();
+    handlers.close();
   };
 
   const handleStatusUpdate = async (
@@ -64,9 +65,12 @@ export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibility
   };
 
   return (
-    <Paper>
-      <QuestionnaireForm questionnaire={updateStatusQuestionnaire} onSubmit={onQuestionnaireSubmit} />
-    </Paper>
+    <div>
+      <Button onClick={handlers.open}>Update Status</Button>
+      <Modal opened={opened} onClose={handlers.close}>
+        <QuestionnaireForm questionnaire={updateStatusQuestionnaire} onSubmit={onQuestionnaireSubmit} />
+      </Modal>
+    </div>
   );
 }
 

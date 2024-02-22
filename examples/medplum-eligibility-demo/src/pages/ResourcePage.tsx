@@ -82,7 +82,12 @@ export function ResourcePage(): JSX.Element | null {
     <Document key={getReferenceString(resource)}>
       <Flex gap="md" justify="space-between">
         <Title>{getDisplayString(resource)}</Title>
-        {resourceType === 'CoverageEligibilityRequest' ? <Button onClick={handlers.open}>Update Status</Button> : null}
+        {resourceType === 'CoverageEligibilityRequest' ? (
+          <UpdateCoverageEligibilityStatus
+            coverageEligibility={resource as CoverageEligibilityRequest}
+            onChange={handleUpdateStatus}
+          />
+        ) : null}
       </Flex>
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List>
@@ -102,13 +107,13 @@ export function ResourcePage(): JSX.Element | null {
           <ResourceHistoryTable resourceType={resourceType} id={id} />
         </Tabs.Panel>
       </Tabs>
-      <Modal opened={opened} onClose={handlers.close}>
+      {/* <Modal opened={opened} onClose={handlers.close}>
         <UpdateCoverageEligibilityStatus
           coverageEligibility={resource as CoverageEligibilityRequest | CoverageEligibilityResponse}
           onChange={handleUpdateStatus}
           close={handlers.close}
         />
-      </Modal>
+      </Modal> */}
     </Document>
   );
 }
