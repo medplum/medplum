@@ -18,10 +18,9 @@ import { useEffect, useState } from 'react';
 
 interface InitiateEligibilityRequestProps {
   readonly coverage: Coverage;
-  onSubmit: (coverage: Coverage) => void;
 }
 
-export function InitiateEligibilityRequest({ coverage, onSubmit }: InitiateEligibilityRequestProps): JSX.Element {
+export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequestProps): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
   const [opened, { toggle, close }] = useDisclosure(false);
@@ -56,7 +55,6 @@ export function InitiateEligibilityRequest({ coverage, onSubmit }: InitiateEligi
       throw new Error('Please make sure you have selected valid answers for all questions');
     }
     createEligibilityRequest(startDate, endDate, serviceType);
-    onSubmit(coverage);
     close();
   };
 
@@ -69,7 +67,7 @@ export function InitiateEligibilityRequest({ coverage, onSubmit }: InitiateEligi
     const eligibilityRequest: CoverageEligibilityRequest = {
       resourceType: 'CoverageEligibilityRequest',
       status: 'active',
-      purpose: ['discovery'],
+      purpose: ['benefits'],
       patient: {
         reference: getReferenceString(patient),
       },

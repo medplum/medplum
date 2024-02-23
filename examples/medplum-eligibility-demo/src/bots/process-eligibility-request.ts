@@ -12,7 +12,10 @@ import { Coding, CoverageEligibilityRequest, CoverageEligibilityResponse } from 
  * @param medplum MedplumClient
  * @param event BotEvent<CoverageEligibilityRequest>
  */
-export async function handler(medplum: MedplumClient, event: BotEvent<CoverageEligibilityRequest>): Promise<void> {
+export async function handler(
+  medplum: MedplumClient,
+  event: BotEvent<CoverageEligibilityRequest>
+): Promise<CoverageEligibilityResponse> {
   // Get the request from the input
   const request = event.input as CoverageEligibilityRequest;
   const serviceType = request.item?.[0].category?.coding?.[0];
@@ -20,10 +23,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<CoverageEl
   // Process the request. This is a dummy function that represents sending the request to a coverage clearinghouse
   const response = processRequest(request, serviceType);
 
-  // If you receive a valid response, create a `CoverageEligibilityResponse` resource
-  if (response) {
-    await medplum.createResource(response);
+  // Make sure that a response is returned
+  if (!response) {
+    throw new Error('Invalid request submitted.');
   }
+
+  // If you receive a valid response, create and return `CoverageEligibilityResponse` resource
+  return await medplum.createResource(response);
 }
 
 function processRequest(request: CoverageEligibilityRequest, serviceType?: Coding) {
@@ -54,7 +60,7 @@ function processRequest(request: CoverageEligibilityRequest, serviceType?: Codin
           {
             // For simplicity, this demo only provides coverage for X12 Service Type Code 30 - Plan Coverage and General Benefits.
             // For more details see https://www.medplum.com/docs/billing/insurance-eligibility-checks#use-cases
-            excluded: serviceType?.code === '30' ? true : false,
+            excluded: serviceType?.code === '30' ? false : true,
           },
         ],
       },
