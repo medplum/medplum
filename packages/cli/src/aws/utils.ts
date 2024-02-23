@@ -15,6 +15,8 @@ import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { normalizeErrorString } from '@medplum/core';
 import { readdirSync } from 'fs';
 import fetch from 'node-fetch';
+import * as semver from 'semver';
+import { getConfigFileName } from '../utils';
 import { checkOk, print } from './terminal';
 
 export interface MedplumStackDetails {
@@ -220,6 +222,10 @@ export async function getServerVersions(from?: string): Promise<string[]> {
   const versions = json.map((release) =>
     release.tag_name.startsWith('v') ? release.tag_name.slice(1) : release.tag_name
   );
+
+  // Sort in descending order
+  versions.sort((a, b) => semver.compare(b, a));
+
   return from ? versions.slice(0, versions.indexOf(from)) : versions;
 }
 
@@ -291,9 +297,21 @@ async function writeParameter(client: SSMClient, name: string, value: string): P
  * Prints a "config not found" message to stdout.
  * Includes helpful debugging information such as available configs.
  * @param tagName - Medplum stack tag name.
+ * @param options - Additional command line options.
  */
-export async function printConfigNotFound(tagName: string): Promise<void> {
-  console.log(`Config not found: ${tagName}`);
+export async function printConfigNotFound(tagName: string, options?: Record<string, any>): Promise<void> {
+  console.log(`Config not found: ${tagName} (${getConfigFileName(tagName, options)})`);
+
+  if (options) {
+    const entries = Object.entries(options);
+    if (entries.length > 0) {
+      console.log('Additional options:');
+      for (const [key, value] of entries) {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
+  }
+
   console.log();
 
   let files: any[] = readdirSync('.', { withFileTypes: true });

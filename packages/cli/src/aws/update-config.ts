@@ -1,23 +1,29 @@
 import { MedplumInfraConfig } from '@medplum/core';
-import { getConfigFileName, readConfig } from '../utils';
+import { readConfig, readServerConfig } from '../utils';
 import { closeTerminal, initTerminal, print, yesOrNo } from './terminal';
-import { writeParameters } from './utils';
+import { printConfigNotFound, writeParameters } from './utils';
+
+export interface UpdateConfigOptions {
+  file?: string;
+  dryrun?: boolean;
+}
 
 /**
  * The AWS "update-config" command updates AWS Parameter Store values with values from the local config file.
  * @param tag - The Medplum stack tag.
+ * @param options - Additional command line options.
  */
-export async function updateConfigCommand(tag: string): Promise<void> {
+export async function updateConfigCommand(tag: string, options: UpdateConfigOptions): Promise<void> {
   try {
     initTerminal();
 
-    const infraConfig = readConfig(tag) as MedplumInfraConfig;
+    const infraConfig = readConfig(tag, options) as MedplumInfraConfig;
     if (!infraConfig) {
-      console.log(`Configuration file ${getConfigFileName(tag)} not found`);
+      await printConfigNotFound(tag, options);
       return;
     }
 
-    const serverConfig = (readConfig(tag, true) ?? {}) as Record<string, string | number>;
+    const serverConfig = readServerConfig(tag) ?? {};
 
     checkConfigConflicts(infraConfig, serverConfig);
     mergeConfigs(infraConfig, serverConfig);
