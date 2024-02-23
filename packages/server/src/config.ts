@@ -161,7 +161,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.port = process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
   config.redis.db = 7;
-  config.redis.password = process.env['REDIS_PASSWORD_DISABLED'] ? undefined : config.redis.password;
+  config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   return config;
 }
 
