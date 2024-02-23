@@ -323,57 +323,59 @@ describe('Project clone', () => {
     const { project, repo } = await createTestProject({ withRepo: true });
     expect(project).toBeDefined();
 
-    const sourceCodeBinary = await repo.createResource<Binary>({
-      resourceType: 'Binary',
-      contentType: ContentType.JAVASCRIPT,
+    await withTestContext(async () => {
+      const sourceCodeBinary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.JAVASCRIPT,
+      });
+
+      await getBinaryStorage().writeBinary(
+        sourceCodeBinary,
+        'test.js',
+        ContentType.JAVASCRIPT,
+        Readable.from('console.log("Hello world");')
+      );
+
+      const bot = await repo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        sourceCode: {
+          url: getReferenceString(sourceCodeBinary),
+        },
+      });
+
+      const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+      expect(superAdminAccessToken).toBeDefined();
+
+      const res = await request(app)
+        .post(`/fhir/R4/Project/${project.id}/$clone`)
+        .set('Authorization', 'Bearer ' + superAdminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('X-Medplum', 'extended')
+        .send({});
+      expect(res.status).toBe(201);
+
+      const newProjectId = res.body.id;
+      expect(newProjectId).toBeDefined();
+      expect(isUUID(newProjectId)).toBe(true);
+      expect(newProjectId).not.toEqual(project.id);
+
+      const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
+      expect(newProject).toBeDefined();
+
+      const newBot = await systemRepo.searchOne<Bot>({
+        resourceType: 'Bot',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
+      });
+      expect(newBot).toBeDefined();
+      expect(newBot?.sourceCode?.url).toMatch(/Binary\/[a-z0-9-]+$/);
+      expect(newBot?.sourceCode?.url).not.toEqual(bot.sourceCode?.url);
+
+      // Get the binary content
+      const newBinary = await systemRepo.readReference<Binary>({ reference: newBot?.sourceCode?.url as string });
+      const newBinaryContent = await getBinaryStorage().readBinary(newBinary);
+      const newBinaryStr = (await streamToBuffer(newBinaryContent)).toString('utf8');
+      expect(newBinaryStr).toEqual('console.log("Hello world");');
     });
-
-    await getBinaryStorage().writeBinary(
-      sourceCodeBinary,
-      'test.js',
-      ContentType.JAVASCRIPT,
-      Readable.from('console.log("Hello world");')
-    );
-
-    const bot = await repo.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'Test Bot',
-      sourceCode: {
-        url: getReferenceString(sourceCodeBinary),
-      },
-    });
-
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
-
-    const res = await request(app)
-      .post(`/fhir/R4/Project/${project.id}/$clone`)
-      .set('Authorization', 'Bearer ' + superAdminAccessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
-      .send({});
-    expect(res.status).toBe(201);
-
-    const newProjectId = res.body.id;
-    expect(newProjectId).toBeDefined();
-    expect(isUUID(newProjectId)).toBe(true);
-    expect(newProjectId).not.toEqual(project.id);
-
-    const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
-    expect(newProject).toBeDefined();
-
-    const newBot = await systemRepo.searchOne<Bot>({
-      resourceType: 'Bot',
-      filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
-    });
-    expect(newBot).toBeDefined();
-    expect(newBot?.sourceCode?.url).toMatch(/Binary\/[a-z0-9-]+$/);
-    expect(newBot?.sourceCode?.url).not.toEqual(bot.sourceCode?.url);
-
-    // Get the binary content
-    const newBinary = await systemRepo.readReference<Binary>({ reference: newBot?.sourceCode?.url as string });
-    const newBinaryContent = await getBinaryStorage().readBinary(newBinary);
-    const newBinaryStr = (await streamToBuffer(newBinaryContent)).toString('utf8');
-    expect(newBinaryStr).toEqual('console.log("Hello world");');
   });
 });

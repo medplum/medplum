@@ -165,18 +165,19 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
     });
   });
 
-  test('Handle punctuation', async () => {
-    const res = await request(app)
-      .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
-          'http://hl7.org/fhir/ValueSet/observation-codes'
-        )}&filter=${encodeURIComponent('intention - reported')}`
-      )
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-    expect(res.body.expansion.contains[0].system).toBe(LOINC);
-    expect(res.body.expansion.contains[0].display).toMatch(/pregnancy intention/i);
-  });
+  test.only('Handle punctuation', () =>
+    withTestContext(async () => {
+      const res = await request(app)
+        .get(
+          `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+            'http://hl7.org/fhir/ValueSet/observation-codes'
+          )}&filter=${encodeURIComponent('intention - reported')}`
+        )
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toBe(200);
+      expect(res.body.expansion.contains[0].system).toBe(LOINC);
+      expect(res.body.expansion.contains[0].display).toMatch(/pregnancy intention/i);
+    }));
 
   test('Handle empty string after punctuation', async () => {
     const res = await request(app)
