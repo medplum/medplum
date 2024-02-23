@@ -36,7 +36,7 @@ describe('WebSockets Subscriptions', () => {
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
-    server = await withTestContext(() => initApp(app, config));
+    server = await initApp(app, config);
     await getRedis().flushdb();
 
     const response = await withTestContext(() =>

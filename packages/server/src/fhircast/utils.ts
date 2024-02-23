@@ -12,7 +12,7 @@ export async function getTopicForUser(userId: string): Promise<string> {
 
   const results = await getRedis().multi().set(topicKey, newTopic, 'EX', 3600, 'NX').get(topicKey).exec();
   if (!results) {
-    throw new OperationOutcomeError(serverError(new Error(`Failed to value for ${topicKey} from Redis`)));
+    throw new OperationOutcomeError(serverError(new Error(`Failed to get value for ${topicKey} from Redis`)));
   }
   const [error, result] = results?.[1] as [error: Error, result: string];
   if (error) {
