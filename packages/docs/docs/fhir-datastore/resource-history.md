@@ -40,7 +40,7 @@ The history of a resouce can also be viewed by accessing the `/_history` endpoin
 
 To access the `/_history` endpoint, make a GET request to the url of the desired resource or resource type.
 
-The Mepdlum SDK also provides the `readHistory` helper function to access the `/_history` endpoint.
+The Medplum SDK also provides the `readHistory` helper function to access the `/_history` endpoint.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
