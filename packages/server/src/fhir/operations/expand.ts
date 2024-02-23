@@ -1,4 +1,4 @@
-import { badRequest, OperationOutcomeError, Operator, Operator as SearchOperator } from '@medplum/core';
+import { allOk, badRequest, OperationOutcomeError, Operator, Operator as SearchOperator } from '@medplum/core';
 import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
@@ -7,10 +7,20 @@ import { getSystemRepo } from '../repo';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction, Union } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 import { parentProperty } from './codesystemimport';
-import { clamp } from './utils/parameters';
+import { clamp, parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { validateCode } from './codesystemvalidatecode';
 import { getDatabasePool } from '../../database';
 import { r4ProjectId } from '../../seed';
+import { getOperationDefinition } from './definitions';
+
+const operation = getOperationDefinition('ValueSet', 'expand');
+
+type ValueSetExpandParameters = {
+  url?: string;
+  filter?: string;
+  offset?: number;
+  count?: number;
+};
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -22,13 +32,15 @@ import { r4ProjectId } from '../../seed';
 // 4) Optional count for pagination (default is 10, can be 1-1000)
 
 export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
-  let url = req.query.url as string | undefined;
-  if (typeof url !== 'string') {
+  const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
+
+  let url = params.url;
+  if (!url) {
     sendOutcome(res, badRequest('Missing url'));
     return;
   }
 
-  const filter = req.query.filter;
+  const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
     sendOutcome(res, badRequest('Invalid filter'));
     return;
@@ -46,18 +58,18 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   }
 
   let offset = 0;
-  if (req.query.offset) {
-    offset = Math.max(0, parseInt(req.query.offset as string, 10));
+  if (params.offset) {
+    offset = Math.max(0, params.offset);
   }
 
   let count = 10;
-  if (req.query.count) {
-    count = clamp(parseInt(req.query.count as string, 10), 1, 1000);
+  if (params.count) {
+    count = clamp(params.count, 1, 1000);
   }
 
   if (shouldUseLegacyTable()) {
     const elements = await queryValueSetElements(valueSet, offset, count, filter);
-    res.status(200).json({
+    await sendOutputParameters(req, res, operation, allOk, {
       resourceType: 'ValueSet',
       url,
       expansion: {
@@ -67,7 +79,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     } as ValueSet);
   } else {
     valueSet = await expandValueSet(valueSet, offset, count, filter);
-    res.status(200).json(valueSet);
+    await sendOutputParameters(req, res, operation, allOk, valueSet);
   }
 });
 

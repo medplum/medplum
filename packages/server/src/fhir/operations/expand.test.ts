@@ -82,7 +82,7 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('Invalid filter');
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('filter');
   });
 
   test('Success', async () => {
