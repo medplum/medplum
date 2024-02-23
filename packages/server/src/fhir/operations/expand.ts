@@ -20,6 +20,7 @@ type ValueSetExpandParameters = {
   filter?: string;
   offset?: number;
   count?: number;
+  excludeNotForUI?: boolean;
 };
 
 // Implements FHIR "Value Set Expansion"
@@ -78,7 +79,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
       },
     } as ValueSet);
   } else {
-    valueSet = await expandValueSet(valueSet, offset, count, filter);
+    valueSet = await expandValueSet(valueSet, params);
     await sendOutputParameters(req, res, operation, allOk, valueSet);
   }
 });
@@ -182,12 +183,7 @@ function processInclude(systemExpressions: Expression[], include: ValueSetCompos
 
 const MAX_EXPANSION_SIZE = 1001;
 
-export async function expandValueSet(
-  valueSet: ValueSet,
-  offset: number,
-  count: number,
-  filter?: string
-): Promise<ValueSet> {
+export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
   const expansion = valueSet.expansion;
   if (expansion?.contains?.length && !expansion.parameter && expansion.total === expansion.contains.length) {
     // Full expansion is already available, use that
@@ -196,7 +192,7 @@ export async function expandValueSet(
 
   // Compute expansion
   const expandedSet = [] as ValueSetExpansionContains[];
-  await computeExpansion(valueSet, expandedSet, offset, count, filter);
+  await computeExpansion(valueSet, expandedSet, params);
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
       total: 1001,
@@ -207,7 +203,7 @@ export async function expandValueSet(
     valueSet.expansion = {
       total: expandedSet.length,
       timestamp: new Date().toISOString(),
-      contains: expandedSet.slice(0, count),
+      contains: expandedSet.slice(0, params.count),
     };
   }
   return valueSet;
@@ -216,13 +212,13 @@ export async function expandValueSet(
 async function computeExpansion(
   valueSet: ValueSet,
   expansion: ValueSetExpansionContains[],
-  offset: number,
-  count: number,
-  filter?: string
+  params: ValueSetExpandParameters
 ): Promise<void> {
   if (!valueSet.compose?.include.length) {
     throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
   }
+
+  const { count, filter } = params;
 
   const codeSystemCache: Record<string, CodeSystem> = Object.create(null);
   for (const include of valueSet.compose.include) {
@@ -243,10 +239,10 @@ async function computeExpansion(
         }
       }
     } else {
-      await includeInExpansion(include, expansion, codeSystem, offset, count, filter);
+      await includeInExpansion(include, expansion, codeSystem, params);
     }
 
-    if (expansion.length > count) {
+    if (expansion.length > (count ?? MAX_EXPANSION_SIZE)) {
       // Return partial expansion
       return;
     }
@@ -291,19 +287,18 @@ async function includeInExpansion(
   include: ValueSetComposeInclude,
   expansion: ValueSetExpansionContains[],
   codeSystem: CodeSystem,
-  offset: number,
-  count: number,
-  filter?: string
+  params: ValueSetExpandParameters
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
+  const { count, offset, filter } = params;
 
   let query = new SelectQuery('Coding')
     .column('id')
     .column('code')
     .column('display')
     .where('system', '=', codeSystem.id)
-    .limit(count + 1)
-    .offset(offset);
+    .limit((count ?? MAX_EXPANSION_SIZE) + 1)
+    .offset(offset ?? 0);
   if (filter) {
     query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
   }
