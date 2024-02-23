@@ -4,25 +4,28 @@ import {
   normalizeErrorString,
   OperationOutcomeError,
   PropertyType,
-  resolveId,
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
 import { OperationOutcomeIssue, Project, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getSystemRepo } from './repo';
-import { r4ProjectId } from '../seed';
 
-export async function validateReferences<T extends Resource>(resource: T): Promise<void> {
-  return new FhirReferenceValidator(resource).validate();
+export async function validateReferences<T extends Resource>(
+  resource: T,
+  allowedProjects?: Project['id'][]
+): Promise<void> {
+  return new FhirReferenceValidator(resource, allowedProjects).validate();
 }
 
 export class FhirReferenceValidator<T extends Resource> {
   private readonly issues: OperationOutcomeIssue[];
+  private readonly allowedProjects?: Project['id'][];
   private readonly root: T;
 
-  constructor(root: T) {
+  constructor(root: T, allowedProjects?: Project['id'][]) {
     this.issues = [];
+    this.allowedProjects = allowedProjects;
     this.root = root;
   }
 
@@ -88,14 +91,11 @@ export class FhirReferenceValidator<T extends Resource> {
     try {
       const systemRepo = getSystemRepo();
       const target = await systemRepo.readReference(reference);
-      const project = await systemRepo.readResource<Project>('Project', this.root.meta.project);
-      const allowedProjects = [project.id, r4ProjectId];
-      if (project.link) {
-        for (const link of project.link) {
-          allowedProjects.push(resolveId(link.project));
-        }
-      }
-      if (target.meta?.project && !allowedProjects.includes(target.meta.project)) {
+      if (
+        target.meta?.project &&
+        target.meta.project !== this.root.meta.project &&
+        !this.allowedProjects?.includes(target.meta.project)
+      ) {
         this.issues.push(createStructureIssue(path, `Invalid reference (Not found)`));
       }
     } catch (err) {

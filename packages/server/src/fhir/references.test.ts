@@ -6,7 +6,6 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo } from './repo';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -80,7 +79,6 @@ describe('Reference checks', () => {
 
   test('References to resources in linked Project', () =>
     withTestContext(async () => {
-      const systemRepo = getSystemRepo();
       const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -98,7 +96,6 @@ describe('Reference checks', () => {
       });
       project.checkReferencesOnWrite = true;
       project.link = [{ project: createReference(project2) }];
-      await systemRepo.updateResource(project);
 
       const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership2, project2, true);
       const patient2 = await repo2.createResource({
@@ -106,7 +103,7 @@ describe('Reference checks', () => {
       });
 
       // Reference available into linked Project
-      const repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      let repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
       const patient = await repo.createResource({
         resourceType: 'Patient',
         link: [{ type: 'seealso', other: createReference(patient2) }],
@@ -115,7 +112,7 @@ describe('Reference checks', () => {
 
       // Unlink Project and vaerify that access is revoked
       project.link = undefined;
-      await systemRepo.updateResource(project);
+      repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
       await expect(
         repo.createResource({
           resourceType: 'Patient',
