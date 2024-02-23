@@ -183,7 +183,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
   }
 
   // Finally we can move on to the actual parsing
-  return parseSearchImpl(resourceType as ResourceType, queryArray);
+  return parseSearchImpl(resourceType, queryArray);
 }
 
 /**
@@ -459,7 +459,7 @@ export function parseXFhirQuery(query: string, variables: Record<string, TypedVa
     }
     return stringifyTypedValue(replacement[0]);
   });
-  return parseCriteriaAsSearchRequest(query);
+  return parseSearchRequest(query);
 }
 
 /**
