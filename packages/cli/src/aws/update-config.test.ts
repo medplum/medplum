@@ -25,7 +25,7 @@ describe('update-config command', () => {
 
     await main(['node', 'index.js', 'aws', 'update-config', tag]);
 
-    expect(console.log).toHaveBeenCalledWith(`Configuration file ${getConfigFileName(tag)} not found`);
+    expect(console.log).toHaveBeenCalledWith(`Config not found: ${tag} (${getConfigFileName(tag)})`);
   });
 
   test('Infra only success', async () => {
@@ -107,7 +107,7 @@ describe('update-config command', () => {
   test('Infra and server config success', async () => {
     const tag = randomUUID();
     const infraFileName = getConfigFileName(tag);
-    const serverFileName = getConfigFileName(tag, true);
+    const serverFileName = getConfigFileName(tag, { server: true });
 
     writeFileSync(
       infraFileName,
@@ -156,7 +156,7 @@ describe('update-config command', () => {
 
     const tag = randomUUID();
     const infraFileName = getConfigFileName(tag);
-    const serverFileName = getConfigFileName(tag, true);
+    const serverFileName = getConfigFileName(tag, { server: true });
 
     writeFileSync(
       infraFileName,

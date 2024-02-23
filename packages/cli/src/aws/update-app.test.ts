@@ -344,7 +344,7 @@ describe('update-app command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
-    expect(console.log).toHaveBeenCalledWith('Config not found: not-found');
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (medplum.not-found.config.json)');
   });
 
   test('Update app stack not found', async () => {
