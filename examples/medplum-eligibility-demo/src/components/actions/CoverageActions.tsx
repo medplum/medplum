@@ -6,18 +6,17 @@ import { InitiateEligibilityRequest } from './InitiateEligibilityRequest';
 
 interface CoverageActionsProps {
   readonly coverage: Coverage;
-  readonly onChange: (updatedCoverage: Coverage) => void;
+  readonly onCoverageChange: (updatedCoverage: Coverage) => void;
+  readonly onEligibilityChange: (coverage: Coverage) => void;
 }
 
 export function CoverageActions(props: CoverageActionsProps): JSX.Element {
   return (
     <Stack>
       <Title>Coverage Actions</Title>
-      <Stack>
-        <InitiateEligibilityRequest coverage={props.coverage} />
-        <EditCoverage coverage={props.coverage} onChange={props.onChange} />
-        <DeleteCoverage coverage={props.coverage} />
-      </Stack>
+      <InitiateEligibilityRequest coverage={props.coverage} onSubmit={props.onEligibilityChange} />
+      <EditCoverage coverage={props.coverage} onChange={props.onCoverageChange} />
+      <DeleteCoverage coverage={props.coverage} />
     </Stack>
   );
 }

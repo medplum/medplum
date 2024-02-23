@@ -1,5 +1,5 @@
-import { Grid, Paper, Title } from '@mantine/core';
-import { resolveId } from '@medplum/core';
+import { Grid, Paper } from '@mantine/core';
+import { getReferenceString, Operator, resolveId, SearchRequest } from '@medplum/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
 import { Loading, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -14,6 +14,15 @@ export function CoveragePage(): JSX.Element {
   const { id } = useParams() as { id: string };
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [patient, setPatient] = useState<Patient>();
+  const [coverageKey, setCoverageKey] = useState<number>(0);
+  const [requestSearch, setRequestSearch] = useState<SearchRequest>({
+    resourceType: 'CoverageEligibilityRequest',
+    fields: ['patient', 'purpose', 'item', 'insurance'],
+  });
+  const [responseSearch, setResponseSearch] = useState<SearchRequest>({
+    resourceType: 'CoverageEligibilityResponse',
+    fields: ['patient', 'outcome', 'disposition', 'insurance'],
+  });
 
   const tabs = [
     ['Details', 'Details'],
@@ -57,8 +66,38 @@ export function CoveragePage(): JSX.Element {
     fetchLinkedPatient();
   });
 
+  useEffect(() => {
+    const updateEligibilitySearch = (coverage: Coverage) => {
+      setRequestSearch({
+        ...requestSearch,
+        filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
+      });
+
+      setResponseSearch({
+        ...responseSearch,
+        filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
+      });
+    };
+
+    if (coverage) {
+      updateEligibilitySearch(coverage);
+    }
+  }, [requestSearch, responseSearch, coverage]);
+
   const onCoverageChange = (updatedCoverage: Coverage): void => {
     setCoverage(updatedCoverage);
+    setCoverageKey((prevKey) => prevKey + 1);
+  };
+
+  const onEligibilityChange = (coverage: Coverage) => {
+    setRequestSearch({
+      ...requestSearch,
+      filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
+    });
+    setResponseSearch({
+      ...responseSearch,
+      filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(coverage.beneficiary) }],
+    });
   };
 
   // Update the current tab and navigate to its URL
@@ -77,17 +116,19 @@ export function CoveragePage(): JSX.Element {
         <Grid.Col span={4}>{patient ? <PatientSummary patient={patient} /> : <p>No linked patient</p>}</Grid.Col>
         <Grid.Col span={5}>
           <Paper p="sm">
-            <Title>Coverage Details</Title>
             <CoverageDetails
               coverage={coverage}
               tabs={tabs}
               currentTab={currentTab}
               handleTabChange={handleTabChange}
+              requestSearch={requestSearch}
+              responseSearch={responseSearch}
+              key={coverageKey}
             />
           </Paper>
         </Grid.Col>
         <Grid.Col span={3}>
-          <Actions coverage={coverage} onChange={onCoverageChange} />
+          <Actions coverage={coverage} onCoverageChange={onCoverageChange} onEligibilityChange={onEligibilityChange} />
         </Grid.Col>
       </Grid>
     </div>
@@ -96,13 +137,18 @@ export function CoveragePage(): JSX.Element {
 
 interface ActionsProps {
   readonly coverage: Coverage;
-  readonly onChange: (updatedCoverage: Coverage) => void;
+  readonly onCoverageChange: (updatedCoverage: Coverage) => void;
+  readonly onEligibilityChange: (Coverage: Coverage) => void;
 }
 
-function Actions({ coverage, onChange }: ActionsProps): JSX.Element {
+function Actions({ coverage, onCoverageChange, onEligibilityChange }: ActionsProps): JSX.Element {
   return (
     <Paper p="md">
-      <CoverageActions coverage={coverage} onChange={onChange} />
+      <CoverageActions
+        coverage={coverage}
+        onCoverageChange={onCoverageChange}
+        onEligibilityChange={onEligibilityChange}
+      />
     </Paper>
   );
 }
