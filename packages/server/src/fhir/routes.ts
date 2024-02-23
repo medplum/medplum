@@ -210,8 +210,8 @@ protectedRoutes.use(
     const ctx = getAuthenticatedContext();
     if (!internalFhirRouter) {
       internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
-      internalFhirRouter.on('warn', (msg, data) => ctx.logger.warn(msg, data));
-      internalFhirRouter.on('batch', ({ count, errors, size, bundleType }) => {
+      internalFhirRouter.addEventListener('warn', (e: any) => ctx.logger.warn(e.message));
+      internalFhirRouter.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
         recordHistogramValue('medplum.batch.entries', count, { bundleType });
         recordHistogramValue('medplum.batch.errors', errors, { bundleType });
         recordHistogramValue('medplum.batch.size', size, { bundleType });

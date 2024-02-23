@@ -1,11 +1,18 @@
-import { allOk, badRequest, created, normalizeOperationOutcome, notFound, parseSearchRequest } from '@medplum/core';
+import {
+  EventTarget,
+  allOk,
+  badRequest,
+  created,
+  normalizeOperationOutcome,
+  notFound,
+  parseSearchRequest,
+} from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Operation } from 'rfc6902';
 import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
 import { FhirRepository } from './repo';
 import { HttpMethod, Router } from './urlrouter';
-import EventEmitter from 'events';
 
 export type FhirRequest = {
   method: HttpMethod;
@@ -112,7 +119,7 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
-export class FhirRouter extends EventEmitter {
+export class FhirRouter extends EventTarget {
   readonly router = new Router<FhirRouteHandler>();
   readonly options: FhirOptions;
 

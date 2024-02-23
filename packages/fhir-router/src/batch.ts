@@ -8,6 +8,7 @@ import {
   OperationOutcomeError,
   parseSearchUrl,
   resolveId,
+  Event,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRouter } from './fhirrouter';
@@ -87,12 +88,14 @@ class BatchProcessor {
       }
     }
 
-    this.router.emit('batch', {
+    const event: BatchEvent = {
+      type: 'batch',
       bundleType,
       count,
       errors,
       size: JSON.stringify(this.bundle).length,
-    });
+    };
+    this.router.dispatchEvent(event);
 
     return {
       resourceType: 'Bundle',
@@ -217,7 +220,11 @@ class BatchProcessor {
     const matches = /urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/.exec(input);
     if (matches) {
       if (this.bundle.type !== 'transaction') {
-        this.router.emit('warn', 'Invalid internal reference in batch');
+        const event: LogEvent = {
+          type: 'warn',
+          message: 'Invalid internal reference in batch',
+        };
+        this.router.dispatchEvent(event);
       }
       const fullUrl = matches[0];
       const resource = this.ids[fullUrl];
@@ -242,4 +249,15 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): Bu
     },
     resource,
   };
+}
+
+export interface BatchEvent extends Event {
+  bundleType: Bundle['type'];
+  count: number;
+  errors: number;
+  size: number;
+}
+
+export interface LogEvent extends Event {
+  message: string;
 }
