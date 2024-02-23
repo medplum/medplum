@@ -5,7 +5,7 @@ import {
   BaseAgentRequestMessage,
   getReferenceString,
   Operator,
-  parseSearchDefinition,
+  parseSearchRequest,
 } from '@medplum/core';
 import { Agent, Device } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
@@ -150,7 +150,7 @@ async function getDevice(repo: Repository, destination: string): Promise<Device 
     }
   }
   if (destination.startsWith('Device?')) {
-    return repo.searchOne<Device>(parseSearchDefinition(destination));
+    return repo.searchOne<Device>(parseSearchRequest(destination));
   }
   if (isIPv4(destination)) {
     return { resourceType: 'Device', url: destination };

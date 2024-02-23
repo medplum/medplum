@@ -1,6 +1,6 @@
 import { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@medplum/fhirtypes';
 import { matchesSearchRequest } from './search/match';
-import { parseCriteriaAsSearchRequest } from './search/search';
+import { parseSearchRequest } from './search/search';
 
 const universalAccessPolicy: AccessPolicyResource = {
   resourceType: '*',
@@ -180,10 +180,7 @@ function matchesAccessPolicyResourcePolicy(
     // Deprecated - to be removed
     return false;
   }
-  if (
-    resourcePolicy.criteria &&
-    !matchesSearchRequest(resource, parseCriteriaAsSearchRequest(resourcePolicy.criteria))
-  ) {
+  if (resourcePolicy.criteria && !matchesSearchRequest(resource, parseSearchRequest(resourcePolicy.criteria))) {
     return false;
   }
   return true;

@@ -1,5 +1,5 @@
 import { Tabs } from '@mantine/core';
-import { formatSearchQuery, getReferenceString, Operator, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest, SearchRequest } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -14,24 +14,24 @@ export function SearchPage(): JSX.Element {
   const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
 
   const [showTabs, setShowTabs] = useState<boolean>(() => {
-    const search = parseSearchDefinition(window.location.pathname + window.location.search);
+    const search = parseSearchRequest(window.location.pathname + window.location.search);
     return shouldShowTabs(search);
   });
 
   const tabs = ['Active', 'Completed'];
   const searchQuery = window.location.search;
-  const currentSearch = parseSearchDefinition(searchQuery);
+  const currentSearch = parseSearchRequest(searchQuery);
 
   const currentTab = handleInitialTab(currentSearch);
 
   useEffect(() => {
-    const searchQuery = parseSearchDefinition(location.pathname + location.search);
+    const searchQuery = parseSearchRequest(location.pathname + location.search);
     setShowTabs(shouldShowTabs(searchQuery));
   }, [location]);
 
   useEffect(() => {
     // Parse the search definition from the url and get the correct fields for the resource type
-    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const parsedSearch = parseSearchRequest(location.pathname + location.search);
     if (!parsedSearch.resourceType) {
       navigate('/Task');
       return;

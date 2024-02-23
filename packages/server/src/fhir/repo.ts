@@ -24,7 +24,7 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
-  parseCriteriaAsSearchRequest,
+  parseSearchRequest,
   protectedResourceTypes,
   resolveId,
   satisfiedAccessPolicy,
@@ -1017,7 +1017,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
           expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
-          const searchRequest = parseCriteriaAsSearchRequest(policy.criteria);
+          const searchRequest = parseSearchRequest(policy.criteria);
           const accessPolicyExpression = buildSearchExpression(builder, searchRequest);
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);

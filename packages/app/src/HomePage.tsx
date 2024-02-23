@@ -1,6 +1,6 @@
 import { Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { formatSearchQuery, normalizeErrorString, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { formatSearchQuery, normalizeErrorString, parseSearchRequest, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -17,7 +17,7 @@ export function HomePage(): JSX.Element {
 
   useEffect(() => {
     // Parse the search from the URL
-    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
     // Fill in the search with default values
     const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());

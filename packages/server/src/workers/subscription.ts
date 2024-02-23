@@ -10,7 +10,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
-  parseSearchUrl,
+  parseSearchRequest,
   satisfiedAccessPolicy,
   serverError,
   stringify,
@@ -19,7 +19,6 @@ import { Bot, Project, ProjectMembership, Reference, Resource, Subscription } fr
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
-import { URL } from 'url';
 import { MedplumServerConfig } from '../config';
 import { getRequestContext, RequestContext, requestContextStore } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
@@ -279,7 +278,7 @@ async function matchesCriteria(
     return false;
   }
 
-  const searchRequest = parseSearchUrl(new URL(subscriptionCriteria, 'https://api.medplum.com/'));
+  const searchRequest = parseSearchRequest(subscriptionCriteria);
   if (resource.resourceType !== searchRequest.resourceType) {
     ctx.logger.debug(
       `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`

@@ -5,7 +5,7 @@ import {
   OAuthGrantType,
   OAuthTokenType,
   parseJWTPayload,
-  parseSearchDefinition,
+  parseSearchRequest,
 } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -509,7 +509,7 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(200);
 
     // Find the login
-    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
     // Revoke the login
@@ -865,7 +865,7 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeDefined();
 
     // Find the login
-    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
     // Revoke the login

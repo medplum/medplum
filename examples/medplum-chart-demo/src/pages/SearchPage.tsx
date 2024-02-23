@@ -3,7 +3,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   Filter,
   formatSearchQuery,
-  parseSearchDefinition,
+  parseSearchRequest,
   SearchRequest,
   SortRule,
 } from '@medplum/core';
@@ -20,7 +20,7 @@ export function SearchPage(): JSX.Element {
   const [search, setSearch] = useState<SearchRequest>();
 
   useEffect(() => {
-    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
     const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
 
