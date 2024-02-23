@@ -16,7 +16,7 @@ import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, getLogger } from '../context';
 import { sendEmail } from '../email/email';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { sendResponse } from '../fhir/response';
@@ -65,7 +65,8 @@ export interface ServerInviteResponse {
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
   const systemRepo = getSystemRepo();
-  const ctx = getAuthenticatedContext();
+  const logger = getLogger();
+
   if (request.email) {
     request.email = request.email.toLowerCase();
   }
@@ -86,15 +87,15 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   if (!user) {
     existingUser = false;
-    ctx.logger.info('User creation request received', { email });
+    logger.info('User creation request received', { email });
     user = await createUser(request);
-    ctx.logger.info('User created', { id: user.id, email });
+    logger.info('User created', { id: user.id, email });
     passwordResetUrl = await resetPassword(user, 'invite');
   }
 
   let profile = await searchForExistingProfile(request);
   if (!profile) {
-    ctx.logger.info('Creating profile for invite request', {
+    logger.info('Creating profile for invite request', {
       project: getReferenceString(project),
       email,
       profileType: request.resourceType,
@@ -107,7 +108,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       email
     )) as Practitioner;
 
-    ctx.logger.info('Profile  created', { profile: getReferenceString(profile) });
+    logger.info('Profile  created', { profile: getReferenceString(profile) });
   }
 
   const membershipTemplate = request.membership ?? {};

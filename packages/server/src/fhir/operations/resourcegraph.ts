@@ -21,7 +21,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { Repository } from '../repo';
 import { sendResponse } from '../response';
 
@@ -214,7 +214,7 @@ async function followCanonicalElements(
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
       });
       if (linkedResources.length > 1) {
-        getRequestContext().logger.warn('Found more than 1 resource with canonical URL', { url });
+        getLogger().warn('Found more than 1 resource with canonical URL', { url });
       }
 
       // Cache here to speed up subsequent loop iterations

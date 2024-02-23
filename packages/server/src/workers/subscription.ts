@@ -20,7 +20,7 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { MedplumServerConfig } from '../config';
-import { getRequestContext, RequestContext, requestContextStore } from '../context';
+import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -59,8 +59,8 @@ export interface SubscriptionJobData {
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
   readonly requestTime: string;
-  readonly requestId: string;
-  readonly traceId: string;
+  readonly requestId?: string;
+  readonly traceId?: string;
 }
 
 const queueName = 'SubscriptionQueue';
@@ -92,8 +92,7 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
 
   worker = new Worker<SubscriptionJobData>(
     queueName,
-    (job) =>
-      requestContextStore.run(new RequestContext(job.data.requestId, job.data.traceId), () => execSubscriptionJob(job)),
+    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -200,12 +199,13 @@ async function checkAccessPolicy(resource: Resource, project: Project, subscript
  * @param context - The background job context.
  */
 export async function addSubscriptionJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
-  const ctx = getRequestContext();
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;
   }
 
+  const ctx = tryGetRequestContext();
+  const logger = getLogger();
   const systemRepo = getSystemRepo();
   let project: Project | undefined;
   try {
@@ -222,14 +222,13 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
     return;
   }
   if (!project) {
-    ctx.logger.debug('Did not evaluate subscriptions for resource without project');
-    globalLogger.warn(`[Subscription Access Policy]: No project for resource '${getReferenceString(resource)}'`);
+    logger.warn(`[Subscription Access Policy]: No project for resource '${getReferenceString(resource)}'`);
     return;
   }
 
   const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource, project);
-  ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
+  logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
 
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
@@ -242,8 +241,8 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
-        requestId: ctx.requestId,
-        traceId: ctx.traceId,
+        requestId: ctx?.requestId,
+        traceId: ctx?.traceId,
       });
     }
   }
@@ -317,7 +316,7 @@ function matchesChannelType(subscription: Subscription): boolean {
   if (channelType === 'rest-hook') {
     const url = subscription.channel?.endpoint;
     if (!url) {
-      getRequestContext().logger.debug(`Ignore rest-hook missing URL`);
+      getLogger().debug(`Ignore rest-hook missing URL`);
       return false;
     }
 
@@ -336,12 +335,8 @@ function matchesChannelType(subscription: Subscription): boolean {
  * @param job - The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
-  const ctx = getRequestContext();
-  ctx.logger.debug(`Adding Subscription job`);
   if (queue) {
     await queue.add(jobName, job);
-  } else {
-    ctx.logger.debug(`Subscription queue not initialized`);
   }
 }
 
@@ -505,9 +500,11 @@ async function sendRestHook(
     headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
   }
   const traceId = job.data.traceId;
-  headers['x-trace-id'] = traceId;
-  if (parseTraceparent(traceId)) {
-    headers['traceparent'] = traceId;
+  if (traceId) {
+    headers['x-trace-id'] = traceId;
+    if (parseTraceparent(traceId)) {
+      headers['traceparent'] = traceId;
+    }
   }
 
   const body = interaction === 'delete' ? '{}' : stringify(resource);

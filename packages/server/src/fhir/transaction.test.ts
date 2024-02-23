@@ -1,9 +1,8 @@
 import { OperationOutcomeError, Operator } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { Repository } from './repo';
 
 describe.skip('FHIR Repo Transactions', () => {
@@ -13,15 +12,7 @@ describe.skip('FHIR Repo Transactions', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    const clientApp = 'ClientApplication/' + randomUUID();
-    const projectId = randomUUID();
-    repo = new Repository({
-      extendedMode: true,
-      project: projectId,
-      author: {
-        reference: clientApp,
-      },
-    });
+    repo = (await createTestProject({ withRepo: true })).repo;
   });
 
   afterAll(async () => {

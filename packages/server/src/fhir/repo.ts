@@ -53,7 +53,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getRequestContext } from '../context';
+import { getLogger, getRequestContext } from '../context';
 import { getDatabasePool } from '../database';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
@@ -739,7 +739,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         (resource.meta as Meta).compartment = this.getCompartments(resource);
         await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
       } catch (err) {
-        getRequestContext().logger.error('Failed to rebuild compartments for resource', {
+        getLogger().error('Failed to rebuild compartments for resource', {
           error: normalizeErrorString(err),
         });
       }
@@ -768,7 +768,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       try {
         await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
       } catch (err) {
-        getRequestContext().logger.error('Failed to reindex resource', { error: normalizeErrorString(err) });
+        getLogger().error('Failed to reindex resource', { error: normalizeErrorString(err) });
       }
     });
   }

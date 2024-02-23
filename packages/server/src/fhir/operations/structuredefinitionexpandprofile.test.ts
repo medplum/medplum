@@ -1,11 +1,11 @@
 import { ContentType, HTTP_HL7_ORG } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, ElementDefinition, StructureDefinition, StructureDefinitionSnapshot } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
-import { loadTestConfig } from '../../config';
 import { initApp, shutdownApp } from '../../app';
-import { createTestProject } from '../../test.setup';
-import { Bundle, ElementDefinition, StructureDefinition, StructureDefinitionSnapshot } from '@medplum/fhirtypes';
-import { readJson } from '@medplum/definitions';
+import { loadTestConfig } from '../../config';
+import { initTestAuth } from '../../test.setup';
 
 jest.mock('node-fetch');
 
@@ -39,8 +39,7 @@ describe('StructureDefinition $expand-profile', () => {
 
   beforeEach(async () => {
     // A new project per test since tests are dependent on SDs being within search scope or not.
-    const project = await createTestProject();
-    accessToken = project.accessToken;
+    accessToken = await initTestAuth();
   });
 
   afterAll(async () => {

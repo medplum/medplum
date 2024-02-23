@@ -7,8 +7,8 @@ import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';
+import { createTestProject, withTestContext } from '../test.setup';
 import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './download';
-import { withTestContext } from '../test.setup';
 
 jest.mock('node-fetch');
 
@@ -19,12 +19,7 @@ describe('Download Worker', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    repo = new Repository({
-      project: randomUUID(),
-      author: {
-        reference: 'ClientApplication/' + randomUUID(),
-      },
-    });
+    repo = (await createTestProject({ withRepo: true })).repo;
   });
 
   afterAll(async () => {

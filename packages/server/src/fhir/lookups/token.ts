@@ -22,7 +22,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { getRequestContext } from '../../context';
+import { getLogger } from '../../context';
 import { Column, Condition, Conjunction, Disjunction, Exists, Expression, Negation, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays, deriveIdentifierSearchParameter } from './util';
@@ -483,17 +483,15 @@ function buildWhereCondition(tableName: string, operator: FhirOperator, query: s
 }
 
 function buildValueCondition(tableName: string, operator: FhirOperator, value: string): Expression {
-  const ctx = getRequestContext();
-
   const column = new Column(tableName, 'value');
   if (operator === FhirOperator.TEXT) {
-    ctx.logger.warn('Potentially expensive token lookup query', { operator });
+    getLogger().warn('Potentially expensive token lookup query', { operator });
     return new Conjunction([
       new Condition(new Column(tableName, 'system'), '=', 'text'),
       new Condition(column, 'TSVECTOR_SIMPLE', value.trim() + ':*'),
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
-    ctx.logger.warn('Potentially expensive token lookup query', { operator });
+    getLogger().warn('Potentially expensive token lookup query', { operator });
     return new Condition(column, 'LIKE', value.trim() + '%');
   } else {
     return new Condition(column, '=', value.trim());

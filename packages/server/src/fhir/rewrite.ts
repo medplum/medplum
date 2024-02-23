@@ -1,6 +1,6 @@
 import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
-import { getRequestContext } from '../context';
+import { getLogger } from '../context';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
 
@@ -158,7 +158,7 @@ class Rewriter {
         binary = await this.repo.readResource<Binary>('Binary', id);
       }
     } catch (err: any) {
-      getRequestContext().logger.debug('Error reading binary to generate presigned URL', err);
+      getLogger().debug('Error reading binary to generate presigned URL', err);
       return `Binary/${id}`;
     }
     return getPresignedUrl(binary);

@@ -59,8 +59,11 @@ describe('Subscription Worker', () => {
     // Create one simple project with no advanced features enabled
     const { project, client } = await withTestContext(() =>
       createTestProject({
-        name: 'Test Project',
-        features: [],
+        withClient: true,
+        project: {
+          name: 'Test Project',
+          features: [],
+        },
       })
     );
 
@@ -71,7 +74,7 @@ describe('Subscription Worker', () => {
     });
 
     // Create another project, this one with bots enabled
-    const botProjectDetails = await createTestProject();
+    const botProjectDetails = await createTestProject({ withClient: true });
     botRepo = new Repository({
       extendedMode: true,
       projects: [botProjectDetails.project.id as string],
@@ -1346,21 +1349,26 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
+      // Create an access policy in different project
+      // This should trigger an error when the subscription is executed
       const accessPolicy = await repo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Patient', readonly: false }],
       });
 
-      const { project, client } = await createTestProject(
-        {
+      const { project, client } = await createTestProject({
+        withClient: true,
+        project: {
           name: 'AccessPolicy Throw Project',
           owner: {
             reference: 'User/' + randomUUID(),
           },
           features: [],
         },
-        { accessPolicy: createReference(accessPolicy) }
-      );
+        membership: {
+          accessPolicy: createReference(accessPolicy),
+        },
+      });
 
       const apTestRepo = new Repository({
         extendedMode: true,
@@ -1415,7 +1423,7 @@ describe('Subscription Worker', () => {
         })
       );
 
-      expect(console.log).toHaveBeenCalledTimes(2);
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Error occurred while checking access policy'));
 
       globalLogger.level = LogLevel.NONE;
       console.log = originalConsoleLog;
