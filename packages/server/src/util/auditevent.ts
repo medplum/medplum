@@ -11,6 +11,7 @@ import {
 import { MedplumServerConfig, getConfig } from '../config';
 import { CloudWatchLogger } from './cloudwatch';
 import { getRequestContext } from '../context';
+import { createTracingExtension } from './extensions';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -242,13 +243,7 @@ function createAuditEvent(
     outcomeDesc,
     entity,
     extension: [
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-        extension: [
-          { url: 'requestId', valueUuid: ctx.requestId },
-          { url: 'traceId', valueUuid: ctx.traceId },
-        ],
-      },
+      createTracingExtension(ctx),
     ],
   };
 

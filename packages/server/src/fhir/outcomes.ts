@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { Response } from 'express';
 import { Result, ValidationError } from 'express-validator';
 import { getRequestContext } from '../context';
+import { createTracingExtension } from '../util/extensions';
 
 export function invalidRequest(errors: Result<ValidationError>): OperationOutcome {
   return {
@@ -34,13 +35,7 @@ export function sendOutcome(res: Response, outcome: OperationOutcome): Response 
   return res.status(getStatus(outcome)).json({
     ...outcome,
     extension: [
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-        extension: [
-          { url: 'requestId', valueUuid: ctx.requestId },
-          { url: 'traceId', valueUuid: ctx.traceId },
-        ],
-      },
+      createTracingExtension(ctx),
     ],
   } as OperationOutcome);
 }

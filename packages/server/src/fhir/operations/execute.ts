@@ -42,6 +42,7 @@ import { createAuditEventEntities } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
+import { createTracingExtension } from '../../util/extensions';
 
 export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
@@ -575,13 +576,7 @@ async function createAuditEvent(
     outcome,
     outcomeDesc,
     extension: [
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-        extension: [
-          { url: 'requestId', valueUuid: ctx.requestId },
-          { url: 'traceId', valueUuid: ctx.traceId },
-        ],
-      },
+      createTracingExtension(ctx),
     ],
   };
 

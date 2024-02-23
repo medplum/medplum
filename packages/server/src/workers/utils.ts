@@ -13,6 +13,7 @@ import {
 import { getRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
+import { createTracingExtension } from '../util/extensions';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
   const systemRepo = getSystemRepo();
@@ -85,13 +86,7 @@ export async function createAuditEvent(
     outcome,
     outcomeDesc,
     extension: [
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-        extension: [
-          { url: 'requestId', valueUuid: ctx.requestId },
-          { url: 'traceId', valueUuid: ctx.traceId },
-        ],
-      },
+      createTracingExtension(ctx),
     ],
   });
 }
