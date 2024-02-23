@@ -4,7 +4,7 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { getConfig, MedplumServerConfig } from '../config';
-import { getRequestContext, tryGetRequestContext, tryRunInContext } from '../context';
+import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { globalLogger } from '../logger';
@@ -58,7 +58,7 @@ export function initDownloadWorker(config: MedplumServerConfig): void {
 
   worker = new Worker<DownloadJobData>(
     queueName,
-    (job) => tryRunInContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
+    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
     {
       ...defaultOptions,
       ...config.bullmq,

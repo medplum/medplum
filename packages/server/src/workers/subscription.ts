@@ -21,7 +21,7 @@ import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import { MedplumServerConfig } from '../config';
-import { getLogger, getRequestContext, tryGetRequestContext, tryRunInContext } from '../context';
+import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -93,7 +93,7 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
 
   worker = new Worker<SubscriptionJobData>(
     queueName,
-    (job) => tryRunInContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
     {
       ...defaultOptions,
       ...config.bullmq,

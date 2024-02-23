@@ -112,7 +112,7 @@ export function getLogger(): Logger {
   return ctx ? ctx.logger : systemLogger;
 }
 
-export function tryRunInContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {
+export function tryRunInRequestContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {
   if (requestId && traceId) {
     return requestContextStore.run(new RequestContext(requestId, traceId), fn);
   } else {
@@ -120,23 +120,19 @@ export function tryRunInContext<T>(requestId: string | undefined, traceId: strin
   }
 }
 
-const traceIdHeaderMap: {
-  [key: string]: (traceId: string) => boolean;
-} = {
-  'x-trace-id': (value) => isUUID(value),
-  traceparent: (value) => !!parseTraceparent(value),
-} as const;
-const traceIdHeaders = Object.entries(traceIdHeaderMap);
-
-const getTraceId = (req: Request): string | undefined => {
-  for (const [headerKey, isTraceId] of traceIdHeaders) {
-    const value = req.header(headerKey);
-    if (value && isTraceId(value)) {
-      return value;
-    }
+export function getTraceId(req: Request): string | undefined {
+  const xTraceId = req.header('x-trace-id');
+  if (xTraceId && isUUID(xTraceId)) {
+    return xTraceId;
   }
+
+  const traceparent = req.header('traceparent');
+  if (traceparent && parseTraceparent(traceparent)) {
+    return traceparent;
+  }
+
   return undefined;
-};
+}
 
 function requestIds(req: Request): { requestId: string; traceId: string } {
   const requestId = randomUUID();

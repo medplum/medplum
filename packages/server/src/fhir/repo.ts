@@ -786,8 +786,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
-    const resource = await this.readResourceImpl<T>(resourceType, id);
-    return this.reindexResourceImpl(resource);
+    await this.withTransaction(async () => {
+      const resource = await this.readResourceImpl<T>(resourceType, id);
+      return this.reindexResourceImpl(resource);
+    });
   }
 
   /**
