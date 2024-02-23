@@ -347,6 +347,14 @@ describe('update-app command', () => {
     expect(console.log).toHaveBeenCalledWith('Config not found: not-found (medplum.not-found.config.json)');
   });
 
+  test('Update app config custom filename not found', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
+
+    console.log = jest.fn();
+    await main(['node', 'index.js', 'aws', 'update-app', 'not-found', '--file', 'foo.json']);
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (foo.json)');
+  });
+
   test('Update app stack not found', async () => {
     // Mock the config file
     (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
