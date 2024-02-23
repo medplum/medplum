@@ -576,8 +576,11 @@ async function createAuditEvent(
     outcomeDesc,
     extension: [
       {
-        url: 'https://medplum.com/fhir/StructureDefinition/trace-id',
-        valueString: ctx.traceId,
+        url: 'https://medplum.com/fhir/StructureDefinition/tracing',
+        extension: [
+          { url: 'requestId', valueUuid: ctx.requestId },
+          { url: 'traceId', valueUuid: ctx.traceId },
+        ],
       },
     ],
   };
