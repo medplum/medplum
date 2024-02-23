@@ -1,9 +1,10 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, waitFor } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
+import { act, render, screen, waitFor } from '../test-utils/render';
 import { ResourceAvatar, ResourceAvatarProps } from './ResourceAvatar';
+import { getInitials } from './ResourceAvatar.utils';
 
 const medplum = new MockClient();
 
@@ -64,5 +65,12 @@ describe('ResourceAvatar', () => {
     await waitFor(() => screen.getByAltText('Homer Simpson'));
 
     expect(screen.getByAltText('Homer Simpson')).toBeDefined();
+  });
+
+  test('getInitials', () => {
+    expect(getInitials('Homer Simpson')).toEqual('HS');
+    expect(getInitials('Homer')).toEqual('H');
+    expect(getInitials('Homer J Simpson')).toEqual('HS');
+    expect(getInitials('')).toEqual('');
   });
 });

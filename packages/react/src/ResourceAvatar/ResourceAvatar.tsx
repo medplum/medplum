@@ -3,6 +3,7 @@ import { getDisplayString, getImageSrc } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl, useResource } from '@medplum/react-hooks';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { getInitials } from './ResourceAvatar.utils';
 
 export interface ResourceAvatarProps extends AvatarProps {
   readonly value?: Reference | Resource;
@@ -36,11 +37,4 @@ export function ResourceAvatar(props: ResourceAvatarProps): JSX.Element {
       {initials}
     </Avatar>
   );
-}
-
-function getInitials(input: string): string {
-  return input
-    .split(' ')
-    .map((s) => s[0])
-    .join('');
 }
