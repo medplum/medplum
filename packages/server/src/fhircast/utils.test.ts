@@ -3,17 +3,16 @@ import { loadTestConfig } from '../config';
 import { closeRedis, getRedis, initRedis } from '../redis';
 import { getTopicForUser } from './utils';
 
-jest.mock('ioredis');
-
 describe('FHIRcast Utils', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     initRedis(config.redis);
     expect(getRedis()).toBeDefined();
+    await getRedis().flushdb();
   });
 
-  afterAll(() => {
-    closeRedis();
+  afterAll(async () => {
+    await closeRedis();
   });
 
   describe('getTopicForUser', () => {

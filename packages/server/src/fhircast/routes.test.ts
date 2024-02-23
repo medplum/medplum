@@ -23,6 +23,7 @@ describe('FHIRCast routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    await getRedis().flushdb();
     accessToken = await initTestAuth();
   });
 

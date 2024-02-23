@@ -88,6 +88,7 @@ export interface MedplumRedisConfig {
   host?: string;
   port?: number;
   password?: string;
+  db?: number;
   tls?: Record<string, unknown>;
 }
 
@@ -159,6 +160,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
   config.database.port = process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
+  config.redis.db = 7;
   return config;
 }
 

@@ -569,7 +569,13 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
   const fhircastProps = {} as FhircastProps;
   if (login.scope?.includes('fhircast/')) {
     const userId = resolveId(login.user) as string;
-    const topic = await getTopicForUser(userId);
+    let topic: string;
+    try {
+      topic = await getTopicForUser(userId);
+    } catch (err: unknown) {
+      sendTokenError(res, (err as Error).message);
+      return;
+    }
     fhircastProps['hub.url'] = config.baseUrl + 'fhircast/STU3/'; // TODO: Figure out how to handle the split between STU2 and STU3...
     fhircastProps['hub.topic'] = topic;
   }

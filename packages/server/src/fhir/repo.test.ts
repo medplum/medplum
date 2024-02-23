@@ -33,7 +33,6 @@ import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository } from './repo';
 
 jest.mock('hibp');
-jest.mock('ioredis');
 
 describe('FHIR Repo', () => {
   const testProject: Project = {

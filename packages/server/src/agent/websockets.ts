@@ -80,7 +80,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
   socket.on('close', () => {
     heartbeat.removeEventListener('heartbeat', heartbeatHandler);
-    redisSubscriber?.disconnect();
+    redisSubscriber?.quit().catch(console.error);
     redisSubscriber = undefined;
   });
 
