@@ -8,7 +8,7 @@ export function LandingPage(): JSX.Element {
       <Stack align="center">
         <Title order={2}>Welcome!</Title>
         <Text>
-          This "Hello World" example demonstrates how to build a simple React application that fetches Patient data from
+          This Coverage Eligibility Demo shows how to build a simple React application that fetches Coverage data from
           Medplum. If you haven't already done so, <Anchor href="https://app.medplum.com/register">register</Anchor> for
           Medplum Project. After that you can sign into your project by clicking the link below.
         </Text>
