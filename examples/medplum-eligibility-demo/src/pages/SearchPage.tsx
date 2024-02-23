@@ -53,6 +53,9 @@ export function SearchPage(): JSX.Element {
         hideFilters={true}
         onNew={() => handlers.open()}
         hideToolbar={search.resourceType === 'Coverage' ? false : true}
+        onChange={(e) => {
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+        }}
       />
       <CreateCoverageModal opened={opened} onClose={handlers.close} />
     </Document>
@@ -91,8 +94,13 @@ function getDefaultFields(resourceType: string): string[] {
     case 'Patient':
       fields.push('name', 'birthdate', 'gender');
       break;
+    case 'CoverageEligibilityRequest':
+      fields.push('patient', 'purpose', 'item', 'insurance');
+      break;
+    case 'CoverageEligibilityResponse':
+      fields.push('patient', 'outcome', 'disposition', 'insurance');
     default:
-      fields.push('id');
+      fields.push('id', '_lastUpdated');
   }
 
   return fields;
