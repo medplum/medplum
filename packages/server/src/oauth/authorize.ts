@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { URL } from 'url';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { getRequestContext } from '../context';
+import { getLogger } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
 import { getClientApplication } from './utils';
@@ -187,7 +187,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
   try {
     verifyResult = await verifyJwt(idTokenHint);
   } catch (err: any) {
-    getRequestContext().logger.debug('Error verifying id_token_hint', err);
+    getLogger().debug('Error verifying id_token_hint', err);
     return undefined;
   }
 

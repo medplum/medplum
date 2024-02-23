@@ -268,7 +268,7 @@ export async function initStackCommand(): Promise<void> {
   if (await yesOrNo('Do you want to store these values in AWS Parameter Store?')) {
     await writeParameters(config.region, `/medplum/${config.name}/`, serverParams);
   } else {
-    const serverConfigFileName = getConfigFileName(config.name, true);
+    const serverConfigFileName = getConfigFileName(config.name, { server: true });
     writeConfig(serverConfigFileName, serverParams);
     print('Skipping AWS Parameter Store.');
     print(`Writing values to local config file: ${serverConfigFileName}`);

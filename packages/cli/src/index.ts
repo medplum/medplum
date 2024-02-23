@@ -2,7 +2,7 @@ import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 import { login, whoami } from './auth';
-import { aws } from './aws/index';
+import { buildAwsCommand } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { bulk } from './bulk';
 import { hl7 } from './hl7';
@@ -44,7 +44,7 @@ export async function main(argv: string[]): Promise<void> {
     index.addCommand(profile);
 
     // AWS commands
-    index.addCommand(aws);
+    index.addCommand(buildAwsCommand());
 
     // HL7 commands
     index.addCommand(hl7);

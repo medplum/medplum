@@ -239,6 +239,21 @@ export class Exists implements Expression {
   }
 }
 
+export class Union implements Expression {
+  constructor(
+    readonly left: SelectQuery,
+    readonly right: SelectQuery
+  ) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('(');
+    this.left.buildSql(sql);
+    sql.append(') UNION (');
+    this.right.buildSql(sql);
+    sql.append(')');
+  }
+}
+
 export class Join {
   constructor(
     readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
@@ -386,12 +401,19 @@ export abstract class BaseQuery {
   }
 }
 
-export class SelectQuery extends BaseQuery {
+interface CTE {
+  name: string;
+  expr: Expression;
+  recursive?: boolean;
+}
+
+export class SelectQuery extends BaseQuery implements Expression {
   readonly distinctOns: Column[];
   readonly columns: Column[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
+  with?: CTE;
   limit_: number;
   offset_: number;
   joinCount = 0;
@@ -405,6 +427,11 @@ export class SelectQuery extends BaseQuery {
     this.orderBys = [];
     this.limit_ = 0;
     this.offset_ = 0;
+  }
+
+  withRecursive(name: string, expr: Expression): this {
+    this.with = { name, expr: expr, recursive: true };
+    return this;
   }
 
   distinctOn(column: Column | string): this {
@@ -460,6 +487,16 @@ export class SelectQuery extends BaseQuery {
   buildSql(sql: SqlBuilder): void {
     if (this.explain) {
       sql.append('EXPLAIN ');
+    }
+    if (this.with) {
+      sql.append('WITH ');
+      if (this.with.recursive) {
+        sql.append('RECURSIVE ');
+      }
+      sql.appendIdentifier(this.with.name);
+      sql.append(' AS (');
+      this.with.expr.buildSql(sql);
+      sql.append(') ');
     }
     sql.append('SELECT ');
     this.buildDistinctOn(sql);

@@ -32,7 +32,7 @@ describe('Login', () => {
       await initApp(app, config);
 
       // Create a test project
-      ({ project, client } = await createTestProject());
+      ({ project, client } = await createTestProject({ withClient: true }));
 
       // Create a test user
       const { user } = await inviteUser({

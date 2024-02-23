@@ -6,7 +6,7 @@ import {
   isOk,
   normalizeOperationOutcome,
   OperationOutcomeError,
-  parseSearchUrl,
+  parseSearchRequest,
   resolveId,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
@@ -101,9 +101,9 @@ class BatchProcessor {
     const request = entry.request as BundleEntryRequest;
 
     if (entry.resource?.resourceType && request.ifNoneExist) {
-      const baseUrl = `https://example.com/${entry.resource.resourceType}`;
-      const searchUrl = new URL('?' + request.ifNoneExist, baseUrl);
-      const searchBundle = await this.repo.search(parseSearchUrl(searchUrl));
+      const searchBundle = await this.repo.search(
+        parseSearchRequest(`${entry.resource.resourceType}?${request.ifNoneExist}`)
+      );
       const entries = searchBundle.entry as BundleEntry[];
       if (entries.length > 1) {
         return buildBundleResponse(badRequest('Multiple matches'));

@@ -6,9 +6,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
-  parseSearchDefinition,
   parseSearchRequest,
-  parseSearchUrl,
   SearchRequest,
   SNOMED,
 } from '@medplum/core';
@@ -30,6 +28,7 @@ import {
   Patient,
   PlanDefinition,
   Practitioner,
+  Project,
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
@@ -44,7 +43,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
-import { Repository, getSystemRepo } from './repo';
+import { getSystemRepo, Repository } from './repo';
 
 jest.mock('hibp');
 jest.mock('ioredis');
@@ -1330,14 +1329,14 @@ describe('FHIR Search', () => {
 
         // Test singlet reference column
         let results = await repo.searchResources(
-          parseSearchDefinition(`Patient?identifier=${patientIdentifier}&organization:missing=false`)
+          parseSearchRequest(`Patient?identifier=${patientIdentifier}&organization:missing=false`)
         );
         expect(results).toHaveLength(1);
         expect(results[0]?.id).toEqual(patient.id);
 
         // Test array reference column
         results = await repo.searchResources(
-          parseSearchDefinition(`Patient?identifier=${patientIdentifier}&general-practitioner:missing=false`)
+          parseSearchRequest(`Patient?identifier=${patientIdentifier}&general-practitioner:missing=false`)
         );
         expect(results).toHaveLength(1);
         expect(results[0]?.id).toEqual(patient.id);
@@ -1671,7 +1670,7 @@ describe('FHIR Search', () => {
 
         // Search chain
         const searchResult = await repo.search(
-          parseSearchDefinition(
+          parseSearchRequest(
             `Patient?general-practitioner:Practitioner._has:CareTeam:participant:category=${categorySystem}|${code}`
           )
         );
@@ -1706,7 +1705,7 @@ describe('FHIR Search', () => {
         });
 
         const result = await repo.search(
-          parseSearchDefinition(`Patient?_has:Observation:subject:encounter:Encounter.class=${code}`)
+          parseSearchRequest(`Patient?_has:Observation:subject:encounter:Encounter.class=${code}`)
         );
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
@@ -1715,7 +1714,7 @@ describe('FHIR Search', () => {
       withTestContext(async () => {
         await expect(() =>
           repo.search(
-            parseSearchDefinition(
+            parseSearchRequest(
               `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
             )
           )
@@ -1736,7 +1735,7 @@ describe('FHIR Search', () => {
       ],
       ['Patient?_has:Observation:status=active', 'Invalid search chain: _has:Observation:status'],
     ])('Invalid chained search parameters: %s', (searchString: string, errorMsg: string) => {
-      return expect(repo.search(parseSearchDefinition(searchString))).rejects.toEqual(new Error(errorMsg));
+      return expect(repo.search(parseSearchRequest(searchString))).rejects.toEqual(new Error(errorMsg));
     });
 
     test('Include references success', () =>
@@ -2452,9 +2451,7 @@ describe('FHIR Search', () => {
         });
 
         const bundle = await repo.search(
-          parseSearchUrl(
-            new URL(`https://x/Condition?subject=${getReferenceString(p)}&code:not=x&_count=1&_total=accurate`)
-          )
+          parseSearchRequest(`https://x/Condition?subject=${getReferenceString(p)}&code:not=x&_count=1&_total=accurate`)
         );
         expect(bundle.entry?.length).toEqual(1);
 
@@ -2524,22 +2521,20 @@ describe('FHIR Search', () => {
         });
 
         // Search with system
-        const bundle1 = await repo.search(
-          parseSearchDefinition(`Condition?code=${code}&subject:identifier=mrn|123456`)
-        );
+        const bundle1 = await repo.search(parseSearchRequest(`Condition?code=${code}&subject:identifier=mrn|123456`));
         expect(bundle1.entry?.length).toEqual(1);
         expect(bundleContains(bundle1, c1)).toBeTruthy();
         expect(bundleContains(bundle1, c2)).not.toBeTruthy();
 
         // Search without system
-        const bundle2 = await repo.search(parseSearchDefinition(`Condition?code=${code}&subject:identifier=123456`));
+        const bundle2 = await repo.search(parseSearchRequest(`Condition?code=${code}&subject:identifier=123456`));
         expect(bundle2.entry?.length).toEqual(2);
         expect(bundleContains(bundle2, c1)).toBeTruthy();
         expect(bundleContains(bundle2, c2)).toBeTruthy();
 
         // Search with count
         const bundle3 = await repo.search(
-          parseSearchDefinition(`Condition?code=${code}&subject:identifier=mrn|123456&_total=accurate`)
+          parseSearchRequest(`Condition?code=${code}&subject:identifier=mrn|123456&_total=accurate`)
         );
         expect(bundle3.entry?.length).toEqual(1);
         expect(bundle3.total).toBe(1);
@@ -2575,7 +2570,7 @@ describe('FHIR Search', () => {
         // Search by "subject"
         // This will include both Tasks, because the "subject" search parameter does not care about "type"
         const bundle1 = await repo.search(
-          parseSearchDefinition(`Task?subject:identifier=mrn|${identifier}&_total=accurate`)
+          parseSearchRequest(`Task?subject:identifier=mrn|${identifier}&_total=accurate`)
         );
         expect(bundle1.total).toEqual(2);
         expect(bundle1.entry?.length).toEqual(2);
@@ -2585,7 +2580,7 @@ describe('FHIR Search', () => {
         // Search by "patient"
         // This will only include the Task with the explicit "Patient" type, because the "patient" search parameter does care about "type"
         const bundle2 = await repo.search(
-          parseSearchDefinition(`Task?patient:identifier=mrn|${identifier}&_total=accurate`)
+          parseSearchRequest(`Task?patient:identifier=mrn|${identifier}&_total=accurate`)
         );
         expect(bundle2.total).toEqual(1);
         expect(bundle2.entry?.length).toEqual(1);
@@ -3206,8 +3201,8 @@ describe('FHIR Search', () => {
 
     test('Filter by _project', () =>
       withTestContext(async () => {
-        const project1 = randomUUID();
-        const project2 = randomUUID();
+        const project1 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
+        const project2 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
@@ -3364,7 +3359,7 @@ describe('FHIR Search', () => {
 
     test('Sort by _lastUpdated', () =>
       withTestContext(async () => {
-        const project = randomUUID();
+        const project = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',

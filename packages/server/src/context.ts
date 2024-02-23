@@ -28,6 +28,8 @@ export class RequestContext {
   }
 }
 
+const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
+
 export class AuthenticatedRequestContext extends RequestContext {
   readonly repo: Repository;
   readonly project: Project;
@@ -60,7 +62,6 @@ export class AuthenticatedRequestContext extends RequestContext {
   }
 
   static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
-    const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
     return new AuthenticatedRequestContext(
       new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? ''),
       {} as unknown as Login,
@@ -73,6 +74,10 @@ export class AuthenticatedRequestContext extends RequestContext {
 }
 
 export const requestContextStore = new AsyncLocalStorage<RequestContext>();
+
+export function tryGetRequestContext(): RequestContext | undefined {
+  return requestContextStore.getStore();
+}
 
 export function getRequestContext(): RequestContext {
   const ctx = requestContextStore.getStore();
@@ -102,23 +107,32 @@ export function closeRequestContext(): void {
   }
 }
 
-const traceIdHeaderMap: {
-  [key: string]: (traceId: string) => boolean;
-} = {
-  'x-trace-id': (value) => isUUID(value),
-  traceparent: (value) => !!parseTraceparent(value),
-} as const;
-const traceIdHeaders = Object.entries(traceIdHeaderMap);
+export function getLogger(): Logger {
+  const ctx = requestContextStore.getStore();
+  return ctx ? ctx.logger : systemLogger;
+}
 
-const getTraceId = (req: Request): string | undefined => {
-  for (const [headerKey, isTraceId] of traceIdHeaders) {
-    const value = req.header(headerKey);
-    if (value && isTraceId(value)) {
-      return value;
-    }
+export function tryRunInRequestContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {
+  if (requestId && traceId) {
+    return requestContextStore.run(new RequestContext(requestId, traceId), fn);
+  } else {
+    return fn();
   }
+}
+
+export function getTraceId(req: Request): string | undefined {
+  const xTraceId = req.header('x-trace-id');
+  if (xTraceId && isUUID(xTraceId)) {
+    return xTraceId;
+  }
+
+  const traceparent = req.header('traceparent');
+  if (traceparent && parseTraceparent(traceparent)) {
+    return traceparent;
+  }
+
   return undefined;
-};
+}
 
 function requestIds(req: Request): { requestId: string; traceId: string } {
   const requestId = randomUUID();

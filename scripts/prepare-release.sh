@@ -42,6 +42,7 @@ sed -i'' -E -e "s/\"version\": \"[^\"]+\"/\"version\": \"$NEW_VERSION\"/g" packa
 
 # Set version in all examples/\*/package.json files
 find examples -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
+find packages -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
 
 # Run `npm version $version --workspaces`
 npm version "$NEW_VERSION" --workspaces

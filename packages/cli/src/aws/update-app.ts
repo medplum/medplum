@@ -10,6 +10,8 @@ import { readConfig, safeTarExtractor } from '../utils';
 import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
 
 export interface UpdateAppOptions {
+  file?: string;
+  version?: string;
   dryrun?: boolean;
 }
 
@@ -19,9 +21,9 @@ export interface UpdateAppOptions {
  * @param options - The update options.
  */
 export async function updateAppCommand(tag: string, options: UpdateAppOptions): Promise<void> {
-  const config = readConfig(tag);
+  const config = readConfig(tag, options);
   if (!config) {
-    await printConfigNotFound(tag);
+    await printConfigNotFound(tag, options);
     return;
   }
   const details = await getStackByTag(tag);
@@ -35,7 +37,8 @@ export async function updateAppCommand(tag: string, options: UpdateAppOptions): 
     return;
   }
 
-  const tmpDir = await downloadNpmPackage('@medplum/app', 'latest');
+  const version = options?.version ?? 'latest';
+  const tmpDir = await downloadNpmPackage('@medplum/app', version);
 
   // Replace variables in the app
   replaceVariables(tmpDir, {

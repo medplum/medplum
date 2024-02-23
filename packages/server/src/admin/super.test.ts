@@ -30,12 +30,9 @@ describe('Super Admin routes', () => {
     await initApp(app, config);
 
     requestContextStore.enterWith(AuthenticatedRequestContext.system());
-    ({ project, client } = await createTestProject());
+    ({ project, client } = await createTestProject({ withClient: true, superAdmin: true }));
 
     const systemRepo = getSystemRepo();
-
-    // Mark the project as a "Super Admin" project
-    await systemRepo.updateResource({ ...project, superAdmin: true });
 
     const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 

@@ -23,15 +23,15 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "*",
-    "@medplum/hl7": "*",
+    "@medplum/core": "3.0.4",
+    "@medplum/hl7": "3.0.4",
     "dcmjs-dimse": "0.1.25",
     "node-windows": "1.0.0-beta.8",
     "ws": "8.16.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "*",
-    "@medplum/mock": "*",
+    "@medplum/fhirtypes": "3.0.4",
+    "@medplum/mock": "3.0.4",
     "@types/async-eventemitter": "0.2.4",
     "@types/node-windows": "0.1.6",
     "@types/ws": "8.5.10",

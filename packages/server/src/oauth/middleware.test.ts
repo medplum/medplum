@@ -190,7 +190,7 @@ describe('Auth middleware', () => {
   });
 
   test('Basic auth with super admin client', async () => {
-    const { client } = await createTestProject({ superAdmin: true });
+    const { client } = await createTestProject({ superAdmin: true, withClient: true });
     const res = await request(app)
       .get('/fhir/R4/Project?_total=accurate')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));

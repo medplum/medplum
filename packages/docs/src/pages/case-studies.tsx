@@ -134,11 +134,11 @@ export default function CaseStudiesPage(): JSX.Element {
               youtubeUrl="https://youtu.be/sy3YKRFyPII"
             />
             <ProfileCard
-              name="Ensage Health"
-              title="Geriatrics, Value Based Care"
-              imgUrl="/img/blog/ensage.jpeg"
-              youtubeUrl="https://youtu.be/GIlmd7OMZ5g"
-              webUrl="/blog/ensage-case-study"
+              name="Flexpa"
+              title="Claims, Billing, Interop"
+              imgUrl="/img/blog/flexpa-logo.png"
+              youtubeUrl="https://youtu.be/DsdLq6DGi-0"
+              webUrl="/blog/flexpa-case-study"
             />
           </CardContainer>
         </Section>

@@ -10,7 +10,7 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { getRequestContext } from '../context';
+import { getLogger } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
 
@@ -158,7 +158,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
       const lowerBound = Number(codeRange[0]);
       const upperBound = Number(codeRange[1]);
       if (!(Number.isInteger(lowerBound) && Number.isInteger(upperBound))) {
-        getRequestContext().logger.debug(
+        getLogger().debug(
           `${lowerBound} and ${upperBound} aren't an integer, configured status codes need to be changed. Resorting to default codes`
         );
         return defaultStatusCheck(status);
@@ -169,7 +169,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
     } else {
       const codeValue = Number(code);
       if (!Number.isInteger(codeValue)) {
-        getRequestContext().logger.debug(
+        getLogger().debug(
           `${code} isn't an integer, configured status codes need to be changed. Resorting to default codes`
         );
         return defaultStatusCheck(status);

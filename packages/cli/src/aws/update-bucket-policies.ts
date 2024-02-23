@@ -4,6 +4,7 @@ import { readConfig } from '../utils';
 import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
 
 export interface UpdateBucketPoliciesOptions {
+  file?: string;
   dryrun?: boolean;
 }
 
@@ -28,9 +29,9 @@ interface PolicyStatement {
  * @param options - The update options.
  */
 export async function updateBucketPoliciesCommand(tag: string, options: UpdateBucketPoliciesOptions): Promise<void> {
-  const config = readConfig(tag);
+  const config = readConfig(tag, options);
   if (!config) {
-    await printConfigNotFound(tag);
+    await printConfigNotFound(tag, options);
     return;
   }
 

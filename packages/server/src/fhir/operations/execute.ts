@@ -33,7 +33,7 @@ import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
@@ -248,7 +248,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
       try {
         hl7Message = Hl7Message.parse(request.input);
       } catch (err) {
-        getRequestContext().logger.debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
+        getLogger().debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
       }
     }
 

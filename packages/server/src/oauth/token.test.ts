@@ -5,7 +5,7 @@ import {
   OAuthGrantType,
   OAuthTokenType,
   parseJWTPayload,
-  parseSearchDefinition,
+  parseSearchRequest,
 } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -74,7 +74,7 @@ describe('OAuth2 Token', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject());
+    ({ project, client } = await createTestProject({ withClient: true }));
 
     // Create a 2nd client with PKCE optional
     pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
@@ -280,7 +280,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token for client in super admin', async () => {
-    const { client } = await createTestProject({ superAdmin: true });
+    const { client } = await createTestProject({ superAdmin: true, withClient: true });
     const res1 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
       client_id: client.id,
@@ -298,7 +298,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token for client in "off" status', async () => {
-    const { client } = await createTestProject();
+    const { client } = await createTestProject({ withClient: true });
     await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...client, status: 'off' }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
@@ -312,7 +312,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token for client in "active" status', async () => {
-    const { client } = await createTestProject();
+    const { client } = await createTestProject({ withClient: true });
     await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...client, status: 'active' }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
@@ -509,7 +509,7 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(200);
 
     // Find the login
-    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
     // Revoke the login
@@ -865,7 +865,7 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeDefined();
 
     // Find the login
-    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
     // Revoke the login

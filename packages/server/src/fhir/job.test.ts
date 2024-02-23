@@ -24,7 +24,7 @@ describe('Job status', () => {
   });
 
   beforeEach(async () => {
-    const testProject = await createTestProject();
+    const testProject = await createTestProject({ withAccessToken: true });
     accessToken = testProject.accessToken;
     asyncJobManager = new AsyncJobExecutor(
       new Repository({

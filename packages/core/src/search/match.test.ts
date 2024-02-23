@@ -13,7 +13,7 @@ import {
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { matchesSearchRequest } from './match';
-import { Operator, SearchRequest, parseSearchDefinition } from './search';
+import { Operator, SearchRequest, parseSearchRequest } from './search';
 
 // Dimensions:
 // 1. Search parameter type
@@ -308,25 +308,25 @@ describe('Search matching', () => {
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'preliminary' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status=cancelled')
+          parseSearchRequest('DiagnosticReport?status=cancelled')
         )
       ).toBe(false);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'preliminary' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status:not=cancelled')
+          parseSearchRequest('DiagnosticReport?status:not=cancelled')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'cancelled' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status=cancelled')
+          parseSearchRequest('DiagnosticReport?status=cancelled')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'cancelled' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status:not=cancelled')
+          parseSearchRequest('DiagnosticReport?status:not=cancelled')
         )
       ).toBe(false);
 
@@ -335,25 +335,25 @@ describe('Search matching', () => {
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'ORDERED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail=VOIDED,CANCELLED')
         )
       ).toBe(false);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'ORDERED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'VOIDED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail=VOIDED,CANCELLED')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'VOIDED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
         )
       ).toBe(false);
     });

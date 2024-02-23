@@ -15,6 +15,7 @@ import {
   attachRequestContext,
   AuthenticatedRequestContext,
   closeRequestContext,
+  getLogger,
   getRequestContext,
   requestContextStore,
 } from './context';
@@ -31,7 +32,6 @@ import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
-import { globalLogger } from './logger';
 import { initKeys } from './oauth/keys';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
@@ -124,11 +124,7 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
-  try {
-    getRequestContext().logger.error('Unhandled error', err);
-  } catch {
-    globalLogger.error('Unhandled error', err);
-  }
+  getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 

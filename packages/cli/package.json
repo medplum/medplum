@@ -49,8 +49,8 @@
     "@aws-sdk/client-ssm": "3.515.0",
     "@aws-sdk/client-sts": "3.515.0",
     "@aws-sdk/types": "3.515.0",
-    "@medplum/core": "*",
-    "@medplum/hl7": "*",
+    "@medplum/core": "3.0.4",
+    "@medplum/hl7": "3.0.4",
     "aws-sdk-client-mock": "3.0.1",
     "commander": "12.0.0",
     "dotenv": "16.4.4",
@@ -59,8 +59,8 @@
     "tar": "6.2.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "*",
-    "@medplum/mock": "*",
+    "@medplum/fhirtypes": "3.0.4",
+    "@medplum/mock": "3.0.4",
     "@types/node-fetch": "2.6.11",
     "@types/tar": "6.1.11"
   },

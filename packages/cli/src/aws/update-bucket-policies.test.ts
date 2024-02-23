@@ -154,7 +154,7 @@ describe('update-bucket-policies command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
-    expect(console.log).toHaveBeenCalledWith('Config not found: not-found');
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (medplum.not-found.config.json)');
   });
 
   test('Stack not found', async () => {
