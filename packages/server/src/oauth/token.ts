@@ -573,7 +573,7 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
     try {
       topic = await getTopicForUser(userId);
     } catch (err: unknown) {
-      sendTokenError(res, (err as Error).message);
+      sendTokenError(res, normalizeErrorString(err));
       return;
     }
     fhircastProps['hub.url'] = config.baseUrl + 'fhircast/STU3/'; // TODO: Figure out how to handle the split between STU2 and STU3...
