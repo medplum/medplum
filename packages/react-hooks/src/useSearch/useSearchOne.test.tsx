@@ -1,6 +1,6 @@
 import { operationOutcomeToString } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
