@@ -6,6 +6,7 @@
   & > dt,
   & > dd {
     padding: var(--mantine-spacing-sm);
+    padding-right: 0;
     border-top: 0.1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
     margin: 0;
   }
@@ -13,6 +14,13 @@
   & > dt:first-of-type,
   & > dd:first-of-type {
     border-top: 0;
+    padding-top: 0;
+  }
+
+  & > dt:last-of-type,
+  & > dd:last-of-type {
+    border-bottom: 0;
+    padding-bottom: 0;
   }
 }
 
@@ -21,7 +29,13 @@
 
   & > dt,
   & > dd {
-    padding: 0 var(--mantine-spacing-xs) var(--mantine-spacing-xs);
+    padding: 0 0 var(--mantine-spacing-xs) var(--mantine-spacing-xs);
     border: 0;
+  }
+
+  & > dt:last-of-type,
+  & > dd:last-of-type {
+    border-bottom: 0;
+    padding-bottom: 0;
   }
 }

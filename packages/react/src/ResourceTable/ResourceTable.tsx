@@ -72,6 +72,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
 
   return (
     <BackboneElementDisplay
+      path={value.resourceType}
       value={{
         type: schemaLoaded,
         value: props.forceUseInput ? props.value : value,

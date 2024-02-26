@@ -1,15 +1,26 @@
-import { getPathDisplayName, isEmpty, tryGetDataType, TypedValue } from '@medplum/core';
+import {
+  buildElementsContext,
+  ElementsContextType,
+  getPathDisplayName,
+  isEmpty,
+  tryGetDataType,
+  TypedValue,
+} from '@medplum/core';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
-import { useMemo } from 'react';
+import { useContext, useMemo } from 'react';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
 const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
 
 export interface BackboneElementDisplayProps {
   readonly value: TypedValue;
+  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
+  readonly path: string;
   readonly compact?: boolean;
   readonly ignoreMissingValues?: boolean;
   readonly link?: boolean;
@@ -20,7 +31,21 @@ export interface BackboneElementDisplayProps {
 export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.Element | null {
   const typedValue = props.value;
   const { value, type: typeName } = typedValue;
-  const typeSchema = useMemo(() => tryGetDataType(typeName, props.profileUrl), [props.profileUrl, typeName]);
+  const parentElementsContext = useContext(ElementsContext);
+  const profileUrl = props.profileUrl ?? parentElementsContext?.profileUrl;
+  const typeSchema = useMemo(() => tryGetDataType(typeName, profileUrl), [profileUrl, typeName]);
+
+  const newElementsContext: ElementsContextType | undefined = useMemo(() => {
+    if (!typeSchema) {
+      return undefined;
+    }
+    return buildElementsContext({
+      parentContext: parentElementsContext,
+      elements: typeSchema.elements,
+      path: props.path,
+      profileUrl: typeSchema.url,
+    });
+  }, [typeSchema, props.path, parentElementsContext]);
 
   if (isEmpty(value)) {
     return null;
@@ -42,9 +67,14 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
     return <div>{value.name}</div>;
   }
 
-  return (
+  // Since this component may create a new ElementsContext, compute the effective context for use in this component
+  const elementsContext = newElementsContext ?? parentElementsContext;
+
+  return maybeWrapWithContext(
+    ElementsContext.Provider,
+    newElementsContext,
     <DescriptionList compact={props.compact}>
-      {Object.entries(typeSchema.elements).map(([key, property]) => {
+      {Object.entries(elementsContext.elements).map(([key, property]) => {
         if (EXTENSION_KEYS.has(key) && isEmpty(property.slicing?.slices)) {
           // an extension property without slices has no nested extensions
           return null;
@@ -58,11 +88,11 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
         // identifier, identifier.use, identifier.system
         // Skip nested elements, e.g. identifier.use, since they are handled by the containing element
         if (key.includes('.')) {
-          return false;
+          return null;
         }
 
-        const [propertyValue, propertyType] = getValueAndType(typedValue, key);
-        if (props.ignoreMissingValues && isEmpty(propertyValue)) {
+        const [propertyValue, propertyType] = getValueAndType(typedValue, key, elementsContext.profileUrl);
+        if ((props.ignoreMissingValues || property.max === 0) && isEmpty(propertyValue)) {
           return null;
         }
 
@@ -71,6 +101,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
             <ResourcePropertyDisplay
               property={property}
               propertyType={propertyType}
+              path={props.path + '.' + key}
               value={propertyValue}
               ignoreMissingValues={props.ignoreMissingValues}
               link={props.link}

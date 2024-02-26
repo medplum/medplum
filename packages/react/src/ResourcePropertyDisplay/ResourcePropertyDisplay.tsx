@@ -24,15 +24,25 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
+import { ExtensionDisplay } from '../ExtensionDisplay/ExtensionDisplay';
+import { ElementDefinitionType } from '@medplum/fhirtypes';
+import classes from './ResourcePropertyDisplay.module.css';
 
 export interface ResourcePropertyDisplayProps {
   readonly property?: InternalSchemaElement;
+  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
+  readonly path: string;
   readonly propertyType: string;
   readonly value: any;
   readonly arrayElement?: boolean;
   readonly maxWidth?: number;
   readonly ignoreMissingValues?: boolean;
   readonly link?: boolean;
+  readonly elementDefinitionType?: ElementDefinitionType;
+}
+
+function maybeWithLeftBorder(withLeftBorder: boolean, element: JSX.Element): JSX.Element {
+  return withLeftBorder ? <div className={classes.leftBorder}>{element}</div> : element;
 }
 
 /**
@@ -40,7 +50,7 @@ export interface ResourcePropertyDisplayProps {
  * @param props - The ResourcePropertyDisplay React props.
  * @returns The ResourcePropertyDisplay React node.
  */
-export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
+export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element | null {
   const { property, propertyType, value } = props;
 
   const isIdProperty = property?.path?.endsWith('.id');
@@ -63,12 +73,15 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     );
   }
 
-  if (property?.max && property.max > 1 && !props.arrayElement) {
+  const isArrayElement = Boolean(props.arrayElement);
+
+  if (property?.max && property.max > 1 && !isArrayElement) {
     if (propertyType === PropertyType.Attachment) {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
     }
     return (
       <ResourceArrayDisplay
+        path={props.path}
         property={property}
         propertyType={propertyType}
         values={value}
@@ -138,17 +151,31 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.UsageContext:
       return (
         <BackboneElementDisplay
+          path={props.path}
           value={{ type: propertyType, value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
+        />
+      );
+    case PropertyType.Extension:
+      return maybeWithLeftBorder(
+        isArrayElement,
+        <ExtensionDisplay
+          path={props.path}
+          value={value}
+          compact={true}
+          ignoreMissingValues={props.ignoreMissingValues}
+          elementDefinitionType={props.elementDefinitionType}
         />
       );
     default:
       if (!property) {
         throw Error(`Displaying property of type ${props.propertyType} requires element schema`);
       }
-      return (
+      return maybeWithLeftBorder(
+        isArrayElement,
         <BackboneElementDisplay
+          path={props.path}
           value={{ type: property.type[0].code, value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
