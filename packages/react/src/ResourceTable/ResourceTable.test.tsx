@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
-import { act, render, screen, waitFor } from '../test-utils/render';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act, render, screen } from '../test-utils/render';
 import { ResourceTable, ResourceTableProps } from './ResourceTable';
 
 const medplum = new MockClient();
@@ -23,7 +23,7 @@ describe('ResourceTable', () => {
       },
     });
 
-    await waitFor(() => screen.getByText('Name'));
+    expect(await screen.findByText('Name')).toBeInTheDocument();
 
     expect(screen.getByText('ID')).toBeInTheDocument();
     expect(screen.getByText('Name')).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe('ResourceTable', () => {
       },
     });
 
-    await waitFor(() => screen.getByText('Name'));
+    expect(await screen.findByText('Name')).toBeInTheDocument();
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('ResourceTable', () => {
       ignoreMissingValues: true,
     });
 
-    await waitFor(() => screen.getByText('Name'));
+    expect(await screen.findByText('Name')).toBeInTheDocument();
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.queryByText('Gender')).toBeNull();

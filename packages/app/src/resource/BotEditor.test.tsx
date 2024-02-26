@@ -6,7 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 describe('BotEditor', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -50,8 +50,8 @@ describe('BotEditor', () => {
 
   test('Bot editor', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Editor'));
-    await waitFor(() => screen.getByTestId('code-frame'));
+    expect(await screen.findByText('Editor')).toBeInTheDocument();
+    expect(await screen.findByTestId('code-frame')).toBeInTheDocument();
     expect(screen.getByText('Editor')).toBeInTheDocument();
 
     await act(async () => {
@@ -61,7 +61,7 @@ describe('BotEditor', () => {
 
   test('Save success', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Save'));
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     // Mock the code frame
     (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
@@ -81,7 +81,7 @@ describe('BotEditor', () => {
 
   test('Save error', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Save'));
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     // Mock the code frame
     (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
@@ -101,7 +101,7 @@ describe('BotEditor', () => {
 
   test('Deploy success', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Deploy'));
+    expect(await screen.findByText('Deploy')).toBeInTheDocument();
 
     // Mock the code frame
     (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
@@ -121,7 +121,7 @@ describe('BotEditor', () => {
 
   test('Deploy error', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Deploy'));
+    expect(await screen.findByText('Deploy')).toBeInTheDocument();
 
     // Mock the code frame
     (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
@@ -141,7 +141,7 @@ describe('BotEditor', () => {
 
   test('Execute success', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Execute'));
+    expect(await screen.findByText('Execute')).toBeInTheDocument();
 
     // Mock the output frame
     (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
@@ -161,7 +161,7 @@ describe('BotEditor', () => {
 
   test('Execute error', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Execute'));
+    expect(await screen.findByText('Execute')).toBeInTheDocument();
 
     // Mock the output frame
     (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
@@ -191,7 +191,7 @@ describe('BotEditor', () => {
     });
 
     await setup(`/Bot/${legacyBot.id}/editor`, medplum);
-    await waitFor(() => screen.getByText('Save'));
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     // Mock the code frame
     (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
@@ -215,7 +215,7 @@ describe('BotEditor', () => {
 
   test('HL7 input', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Execute'));
+    expect(await screen.findByText('Execute')).toBeInTheDocument();
 
     // Mock the output frame
     (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (

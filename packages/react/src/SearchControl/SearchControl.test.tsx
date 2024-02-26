@@ -3,7 +3,7 @@ import { Bundle } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
 describe('SearchControl', () => {
@@ -52,7 +52,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     expect(screen.getByText('greater than or equals', { exact: false })).toBeInTheDocument();
   });
@@ -97,11 +97,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByText('No results'));
-
-    const control = screen.getByText('No results');
-    expect(control).toBeDefined();
+    expect(await screen.findByText('No results')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
   });
 
@@ -115,11 +111,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('30 x')).toBeInTheDocument();
   });
@@ -142,11 +134,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
   });
 
@@ -167,11 +155,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByText('No results'));
-
-    const control = screen.getByText('No results');
-    expect(control).toBeDefined();
+    expect(await screen.findByText('No results')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
   });
 
@@ -185,13 +169,8 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
-
     expect(screen.getByText('chunkylover53@aol.com [home email]')).toBeInTheDocument();
     expect(screen.getByText('555-7334 [home phone]')).toBeInTheDocument();
   });
@@ -206,13 +185,8 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
-
     expect(screen.getByText('Springfield')).toBeInTheDocument();
     expect(screen.getByText('IL')).toBeInTheDocument();
   });
@@ -234,11 +208,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
   });
 
@@ -260,7 +230,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByLabelText('Next page'));
+    expect(await screen.findByLabelText('Next page')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Next page'));
@@ -286,7 +256,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByLabelText('Next page'));
+    expect(await screen.findByLabelText('Next page')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Next page'));
@@ -312,7 +282,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByLabelText('Previous page'));
+    expect(await screen.findByLabelText('Previous page')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Previous page'));
@@ -331,7 +301,7 @@ describe('SearchControl', () => {
       onNew,
     });
 
-    await waitFor(() => screen.getByText('New...'));
+    expect(await screen.findByText('New...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('New...'));
@@ -350,13 +320,13 @@ describe('SearchControl', () => {
       onExportCsv,
     });
 
-    await waitFor(() => screen.getByText('Export...'));
+    expect(await screen.findByText('Export...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Export...'));
     });
 
-    await waitFor(() => screen.getByText('Export as CSV'));
+    expect(await screen.findByText('Export as CSV')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Export as CSV'));
@@ -373,7 +343,7 @@ describe('SearchControl', () => {
       onDelete,
     });
 
-    await waitFor(() => screen.getByText('Delete...'));
+    expect(await screen.findByText('Delete...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Delete...'));
@@ -392,7 +362,7 @@ describe('SearchControl', () => {
       onBulk,
     });
 
-    await waitFor(() => screen.getByText('Bulk...'));
+    expect(await screen.findByText('Bulk...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Bulk...'));
@@ -419,13 +389,10 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    await waitFor(() => screen.getAllByTestId('search-control-row'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
-      const rows = screen.getAllByTestId('search-control-row');
-      fireEvent.click(rows[0]);
+      fireEvent.click(screen.getAllByTestId('search-control-row')[0]);
     });
 
     expect(props.onClick).toHaveBeenCalled();
@@ -450,9 +417,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    await waitFor(() => screen.getAllByTestId('search-control-row'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     // Test response to middle mouse button
     await act(async () => {
@@ -499,13 +464,13 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Fields'));
     });
 
-    await waitFor(() => screen.getByText('OK'));
+    expect(await screen.findByText('OK')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -529,13 +494,13 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Fields'));
     });
 
-    await waitFor(() => screen.getByLabelText('Close'));
+    expect(await screen.findByLabelText('Close')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Close'));
@@ -559,13 +524,13 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Filters'));
     });
 
-    await waitFor(() => screen.getByText('OK'));
+    expect(await screen.findByText('OK')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -589,13 +554,13 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Filters'));
     });
 
-    await waitFor(() => screen.getByLabelText('Close'));
+    expect(await screen.findByLabelText('Close')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Close'));
@@ -620,7 +585,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Name'));
@@ -658,11 +623,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
 
     await act(async () => {
@@ -697,11 +658,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
 
     await act(async () => {
@@ -741,11 +698,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
 
     // Click on the column header to activate the popup menu
@@ -785,11 +738,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.queryByText('Patient')).not.toBeInTheDocument();
@@ -813,11 +762,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.queryByText('no filters')).not.toBeInTheDocument();
@@ -841,7 +786,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByText('missing true'));
+    expect(await screen.findByText('missing true')).toBeInTheDocument();
 
     expect(screen.getByText('missing true')).toBeInTheDocument();
   });
@@ -865,7 +810,7 @@ describe('SearchControl', () => {
     };
 
     await setup(props);
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(onLoad).toHaveBeenCalled();
     onLoad.mockReset();
 
@@ -876,7 +821,7 @@ describe('SearchControl', () => {
       fireEvent.click(refreshButton);
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(onLoad).toHaveBeenCalled();
   });
 
@@ -906,7 +851,7 @@ describe('SearchControl', () => {
         total: 5,
         entry: [{ resource: HomerSimpson }, ...Array(4).fill({ resourceType: 'Patient' })],
       });
-      await waitFor(() => screen.getByText('Homer Simpson'));
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       const element = screen.getByTestId('count-display');
       expect(element.textContent).toBe('1-5 of 5');
     });
@@ -922,7 +867,7 @@ describe('SearchControl', () => {
         total: 40,
         entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
       });
-      await waitFor(() => screen.getByText('Homer Simpson'));
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       const element = screen.getByTestId('count-display');
       expect(element.textContent).toBe('1-20 of 40');
     });
@@ -939,7 +884,7 @@ describe('SearchControl', () => {
         total: 403091,
         entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
       });
-      await waitFor(() => screen.getByText('Homer Simpson'));
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       const element = screen.getByTestId('count-display');
       expect(element.textContent).toBe('1-20 of 403,091');
     });
@@ -962,7 +907,7 @@ describe('SearchControl', () => {
           },
         ],
       });
-      await waitFor(() => screen.getByText('Homer Simpson'));
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       expect(screen.getByTestId('count-display').textContent).toBe('200,001-200,020 of 403,091');
     });
   });

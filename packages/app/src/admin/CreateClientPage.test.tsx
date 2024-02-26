@@ -2,7 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -45,15 +45,12 @@ describe('CreateClientPage', () => {
 
   test('Renders', async () => {
     await setup('/admin/clients/new');
-    await waitFor(() => screen.getByText('Create Client'));
-    expect(screen.getByText('Create Client')).toBeInTheDocument();
+    expect(await screen.findByText('Create Client')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
     await setup('/admin/clients/new');
-    await waitFor(() => screen.getByText('Create Client'));
-
-    expect(screen.getByText('Create Client')).toBeInTheDocument();
+    expect(await screen.findByText('Create Client')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Name'), {
@@ -76,9 +73,7 @@ describe('CreateClientPage', () => {
 
   test('Submit with access policy', async () => {
     await setup('/admin/clients/new');
-    await waitFor(() => screen.getByText('Create Client'));
-
-    expect(screen.getByText('Create Client')).toBeInTheDocument();
+    expect(await screen.findByText('Create Client')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Name'), {

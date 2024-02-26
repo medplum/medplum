@@ -101,7 +101,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -137,7 +137,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -163,7 +163,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -189,7 +189,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {

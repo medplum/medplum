@@ -2,7 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -45,16 +45,12 @@ describe('InvitePage', () => {
 
   test('Renders', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('First Name *'), {
@@ -78,9 +74,7 @@ describe('InvitePage', () => {
 
   test('Submit with access policy', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('First Name *'), {
@@ -125,9 +119,7 @@ describe('InvitePage', () => {
 
   test('Invite patient', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Role'), {
@@ -153,9 +145,7 @@ describe('InvitePage', () => {
 
   test('Invite admin', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Role'), {
@@ -185,9 +175,7 @@ describe('InvitePage', () => {
 
   test('Do not send email', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('First Name *'), {
@@ -215,9 +203,7 @@ describe('InvitePage', () => {
 
   test('Show error with bad email', async () => {
     await setup('/admin/invite');
-    await waitFor(() => screen.getByText('Invite'));
-
-    expect(screen.getByText('Invite')).toBeInTheDocument();
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('First Name *'), {

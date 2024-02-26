@@ -2,7 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
-import { act, render, screen, waitFor } from './test-utils/render';
+import { act, render, screen } from './test-utils/render';
 
 const medplum = new MockClient();
 
@@ -28,25 +28,21 @@ describe('BulkAppPage', () => {
 
   test('Patient apps', async () => {
     await setup('/bulk/Patient?ids=123,456');
-    await waitFor(() => screen.getByText('Vitals'));
-    expect(screen.getByText('Vitals')).toBeInTheDocument();
+    expect(await screen.findByText('Vitals')).toBeInTheDocument();
   });
 
   test('No apps for resource type', async () => {
     await setup('/bulk/DeviceDefinition?ids=123');
-    await waitFor(() => screen.getByText('No apps for DeviceDefinition'));
-    expect(screen.getByText('No apps for DeviceDefinition')).toBeInTheDocument();
+    expect(await screen.findByText('No apps for DeviceDefinition')).toBeInTheDocument();
   });
 
   test('No query params', async () => {
     await setup('/bulk/Patient');
-    await waitFor(() => screen.getByText('Vitals'));
-    expect(screen.getByText('Vitals')).toBeInTheDocument();
+    expect(await screen.findByText('Vitals')).toBeInTheDocument();
   });
 
   test('Empty IDs', async () => {
     await setup('/bulk/Patient?ids=123,,,');
-    await waitFor(() => screen.getByText('Vitals'));
-    expect(screen.getByText('Vitals')).toBeInTheDocument();
+    expect(await screen.findByText('Vitals')).toBeInTheDocument();
   });
 });

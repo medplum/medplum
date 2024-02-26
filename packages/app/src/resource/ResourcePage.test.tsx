@@ -7,7 +7,7 @@ import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 describe('ResourcePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -42,14 +42,13 @@ describe('ResourcePage', () => {
 
   test('Not found', async () => {
     await setup('/Practitioner/not-found');
-    await waitFor(() => screen.getByText('Not found'));
+    expect(await screen.findByText('Not found')).toBeInTheDocument();
     expect(screen.getByText('Not found')).toBeInTheDocument();
   });
 
   test('Details tab renders', async () => {
     await setup('/Practitioner/123/details');
-    await waitFor(() => screen.queryAllByText('Name'));
-    expect(screen.queryAllByText('Name')[0]).toBeInTheDocument();
+    expect((await screen.findAllByText('Name'))[0]).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
   });
 
@@ -61,8 +60,7 @@ describe('ResourcePage', () => {
     });
 
     await setup(`/Practitioner/${practitioner.id}/delete`, medplum);
-    await waitFor(() => screen.getByText('Delete'));
-    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(await screen.findByText('Delete')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Delete'));
@@ -79,23 +77,17 @@ describe('ResourcePage', () => {
 
   test('History tab renders', async () => {
     await setup('/Practitioner/123/history');
-    await waitFor(() => screen.getByText('History'));
-
-    expect(screen.getByText('History')).toBeInTheDocument();
+    expect(await screen.findByText('History')).toBeInTheDocument();
   });
 
   test('Blame tab renders', async () => {
     await setup('/Practitioner/123/blame');
-    await waitFor(() => screen.getByText('Blame'));
-
-    expect(screen.getByText('Blame')).toBeInTheDocument();
+    expect(await screen.findByText('Blame')).toBeInTheDocument();
   });
 
   test('Patient timeline', async () => {
     await setup('/Patient/123/timeline');
-    await waitFor(() => screen.getByText('Timeline'));
-
-    expect(screen.getByText('Timeline')).toBeInTheDocument();
+    expect(await screen.findByText('Timeline')).toBeInTheDocument();
 
     // Expect identifiers
     expect(screen.getByText('abc')).toBeInTheDocument();
@@ -105,16 +97,12 @@ describe('ResourcePage', () => {
 
   test('Encounter timeline', async () => {
     await setup('/Encounter/123/timeline');
-    await waitFor(() => screen.getByText('Timeline'));
-
-    expect(screen.getByText('Timeline')).toBeInTheDocument();
+    expect(await screen.findByText('Timeline')).toBeInTheDocument();
   });
 
   test('Questionnaire preview', async () => {
     await setup('/Questionnaire/123/preview');
-    await waitFor(() => screen.getByText('Preview'));
-
-    expect(screen.getByText('Preview')).toBeInTheDocument();
+    expect(await screen.findByText('Preview')).toBeInTheDocument();
 
     window.alert = jest.fn();
 
@@ -134,9 +122,7 @@ describe('ResourcePage', () => {
     expect(bot.id).toBeDefined();
 
     await setup('/Questionnaire/123/bots');
-    await waitFor(() => screen.getByText('Connect to bot'));
-
-    expect(screen.getByText('Connect to bot')).toBeInTheDocument();
+    expect(await screen.findByText('Connect to bot')).toBeInTheDocument();
 
     // Select "Test Bot" in the bot input field
 
@@ -173,30 +159,22 @@ describe('ResourcePage', () => {
 
   test('Bot editor', async () => {
     await setup('/Bot/123/editor');
-    await waitFor(() => screen.getByText('Editor'));
-
-    expect(screen.getByText('Editor')).toBeInTheDocument();
+    expect(await screen.findByText('Editor')).toBeInTheDocument();
   });
 
   test('DiagnosticReport display', async () => {
     await setup('/DiagnosticReport/123/report');
-    await waitFor(() => screen.getByText('Report'));
-
-    expect(screen.getByText('Report')).toBeInTheDocument();
+    expect(await screen.findByText('Report')).toBeInTheDocument();
   });
 
   test('RequestGroup checklist', async () => {
     await setup('/RequestGroup/workflow-request-group-1/checklist');
-    await waitFor(() => screen.getByText('Checklist'));
-
-    expect(screen.getByText('Checklist')).toBeInTheDocument();
+    expect(await screen.findByText('Checklist')).toBeInTheDocument();
   });
 
   test('PlanDefinition apply', async () => {
     await setup('/PlanDefinition/workflow-plan-definition-1/apply');
-    await waitFor(() => screen.getByText('Subject'));
-
-    expect(screen.getByText('Subject')).toBeInTheDocument();
+    expect(await screen.findByText('Subject')).toBeInTheDocument();
   });
 
   test('Left click on tab', async () => {

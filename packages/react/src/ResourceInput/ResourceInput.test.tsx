@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
 
 const medplum = new MockClient();
@@ -45,7 +45,7 @@ describe('ResourceInput', () => {
         placeholder: 'Test',
       });
     });
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
@@ -119,7 +119,7 @@ describe('ResourceInput', () => {
       });
     });
 
-    await waitFor(() => screen.getByPlaceholderText('Test'));
+    expect(await screen.findByPlaceholderText('Test')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
   });
 
@@ -136,7 +136,7 @@ describe('ResourceInput', () => {
       });
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
 
     const nameSpan = screen.getByText('Homer Simpson');
@@ -163,7 +163,7 @@ describe('ResourceInput', () => {
       });
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
 
     const clearAllButton = screen.getByTitle('Clear all') as HTMLImageElement;

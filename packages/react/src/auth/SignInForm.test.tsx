@@ -328,7 +328,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => expect(screen.getByText('Choose profile')).toBeDefined());
+    expect(await screen.findByText('Choose profile')).toBeInTheDocument();
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
     expect(screen.getByText('Bob Jones')).toBeInTheDocument();
 
@@ -368,7 +368,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => expect(screen.getByText('Choose profile')).toBeDefined());
+    expect(await screen.findByText('Choose profile')).toBeInTheDocument();
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
     expect(screen.getByText('Bob Jones')).toBeInTheDocument();
 
@@ -376,7 +376,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Bob Jones'));
     });
 
-    await waitFor(() => screen.getByText('Invalid IP address'));
+    expect(await screen.findByText('Invalid IP address')).toBeInTheDocument();
 
     expect(success).toBe(false);
   });
@@ -410,7 +410,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => expect(screen.getByText('Choose scope')).toBeDefined());
+    expect(await screen.findByText('Choose scope')).toBeInTheDocument();
     expect(screen.getByText('openid')).toBeInTheDocument();
     expect(screen.getByText('profile')).toBeInTheDocument();
 
@@ -447,7 +447,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => screen.getByLabelText('Project Name', { exact: false }));
+    expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Project Name', { exact: false }), { target: { value: 'My Project' } });
@@ -483,7 +483,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => screen.getByTestId('text-field-error'));
+    expect(await screen.findByTestId('text-field-error')).toBeInTheDocument();
 
     expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
     expect(screen.getByText('Email or password is invalid')).toBeInTheDocument();
@@ -512,9 +512,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => expect(screen.getByTestId('text-field-error')).toBeInTheDocument());
-
-    expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
+    expect(await screen.findByTestId('text-field-error')).toBeInTheDocument();
     expect(screen.getByText('Email or password is invalid')).toBeInTheDocument();
   });
 
@@ -596,7 +594,7 @@ describe('SignInForm', () => {
       });
     });
 
-    await waitFor(() => screen.getByLabelText('Email', { exact: false }));
+    expect(await screen.findByLabelText('Email', { exact: false })).toBeInTheDocument();
     expect(screen.queryByText('Sign in with Google')).toBeNull();
     expect(google.accounts.id.initialize).not.toHaveBeenCalled();
     expect(google.accounts.id.renderButton).not.toHaveBeenCalled();
@@ -641,15 +639,14 @@ describe('SignInForm', () => {
       });
     });
 
-    await waitFor(() => expect(screen.getByText('Sign in with Google')).toBeInTheDocument());
+    expect(await screen.findByText('Sign in with Google')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sign in with Google'));
     });
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText('Success')).toBeInTheDocument());
-
+    expect(await screen.findByText('Success')).toBeInTheDocument();
     expect(google.accounts.id.initialize).toHaveBeenCalled();
     expect(google.accounts.id.renderButton).toHaveBeenCalled();
     expect(google.accounts.id.prompt).toHaveBeenCalled();
@@ -694,14 +691,13 @@ describe('SignInForm', () => {
       });
     });
 
-    await waitFor(() => expect(screen.getByText('Sign in with Google')).toBeInTheDocument());
+    expect(await screen.findByText('Sign in with Google')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sign in with Google'));
     });
 
-    await waitFor(() => expect(screen.getByText('User not found')).toBeInTheDocument());
-
+    expect(await screen.findByText('User not found')).toBeInTheDocument();
     expect(onSuccess).not.toHaveBeenCalled();
     expect(google.accounts.id.initialize).toHaveBeenCalled();
     expect(google.accounts.id.renderButton).toHaveBeenCalled();

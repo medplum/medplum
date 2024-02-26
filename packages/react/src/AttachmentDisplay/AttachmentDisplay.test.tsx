@@ -1,6 +1,6 @@
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, waitFor } from '../test-utils/render';
+import { act, render, screen } from '../test-utils/render';
 import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
 
 function mockFetch(url: string, options: any): Promise<any> {
@@ -52,7 +52,7 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.jpg',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-image'));
+    expect(await screen.findByTestId('attachment-image')).toBeInTheDocument();
   });
 
   test('Renders video', async () => {
@@ -62,7 +62,7 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.mp4',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-video'));
+    expect(await screen.findByTestId('attachment-video')).toBeInTheDocument();
   });
 
   test('Renders PDF', async () => {
@@ -72,7 +72,7 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.pdf',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-pdf'));
+    expect(await screen.findByTestId('attachment-pdf')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
@@ -84,7 +84,7 @@ describe('AttachmentDisplay', () => {
         title: 'test.txt',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-details'));
+    expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
     expect(screen.getByText('test.txt')).toBeInTheDocument();
   });
 
@@ -95,7 +95,7 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.txt',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-details'));
+    expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AttachmentInput, AttachmentInputProps } from './AttachmentInput';
 
 const medplum = new MockClient();
@@ -34,7 +34,7 @@ describe('AttachmentInput', () => {
       });
     });
 
-    await waitFor(() => screen.getByAltText('test.jpg'));
+    expect(await screen.findByAltText('test.jpg')).toBeInTheDocument();
   });
 
   test('Add attachment', async () => {
@@ -62,7 +62,7 @@ describe('AttachmentInput', () => {
       });
     });
 
-    await waitFor(() => screen.getByAltText('test.jpg'));
+    expect(await screen.findByAltText('test.jpg')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Remove'));

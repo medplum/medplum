@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from './test-utils/render';
+import { act, fireEvent, render, screen } from './test-utils/render';
 
 const medplum = new MockClient();
 
@@ -56,7 +56,6 @@ describe('SecurityPage', () => {
       fireEvent.click(revokeLinks[1]);
     });
 
-    await waitFor(() => screen.getByText('Login revoked'));
-    expect(screen.getByText('Login revoked')).toBeInTheDocument();
+    expect(await screen.findByText('Login revoked')).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 import { ExampleWorkflowPlanDefinition, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { PlanDefinitionBuilder, PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 
 const medplum = new MockClient();
@@ -96,7 +96,7 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByDisplayValue('Example Plan Definition'));
+    expect(await screen.findByDisplayValue('Example Plan Definition')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByDisplayValue('Example Plan Definition'), {
@@ -129,7 +129,7 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Example Action'));
+    expect(await screen.findByText('Example Action')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Example Action'));
@@ -161,13 +161,13 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Add action'));
+    expect(await screen.findByText('Add action')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    await waitFor(() => screen.getByLabelText('Title'));
+    expect(await screen.findByLabelText('Title')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Title'), {
@@ -201,13 +201,13 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Add action'));
+    expect(await screen.findByText('Add action')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    await waitFor(() => screen.getByLabelText('Title'));
+    expect(await screen.findByLabelText('Title')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Title'), {
@@ -241,13 +241,13 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Add action'));
+    expect(await screen.findByText('Add action')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    await waitFor(() => screen.getByLabelText('Title'));
+    expect(await screen.findByLabelText('Title')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Title'), {
@@ -281,13 +281,13 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Add action'));
+    expect(await screen.findByText('Add action')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    await waitFor(() => screen.getByLabelText('Title'));
+    expect(await screen.findByLabelText('Title')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Title'), {
@@ -327,7 +327,7 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Remove'));
+    expect(await screen.findByText('Remove')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Remove'));

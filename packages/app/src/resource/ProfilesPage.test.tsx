@@ -1,13 +1,13 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { loadDataType } from '@medplum/core';
 import { Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { loadDataType } from '@medplum/core';
 
 const medplum = new MockClient();
 
@@ -46,7 +46,7 @@ describe('ProfilesPage', () => {
         </MedplumProvider>
       );
     });
-    await waitFor(() => screen.getByText('Available Patient profiles'));
+    expect(await screen.findByText('Available Patient profiles')).toBeInTheDocument();
   }
 
   test('Can add a profile to an empty resource', async () => {

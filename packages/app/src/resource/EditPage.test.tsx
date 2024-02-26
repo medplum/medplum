@@ -6,7 +6,7 @@ import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -32,8 +32,7 @@ describe('EditPage', () => {
 
   test('Edit tab renders', async () => {
     await setup('/Practitioner/123/edit');
-    await waitFor(() => screen.getByText('Edit'));
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(await screen.findByText('Edit')).toBeInTheDocument();
   });
 
   test('Submit', async () => {
@@ -54,14 +53,12 @@ describe('EditPage', () => {
 
   test('Delete button on edit page', async () => {
     await setup('/Practitioner/123/edit');
-    await waitFor(() => screen.getByText('Delete'));
-    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(await screen.findByText('Delete')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    await waitFor(() => screen.getByText('Are you sure you want to delete this Practitioner?'));
-    expect(screen.getByText('Are you sure you want to delete this Practitioner?')).toBeInTheDocument();
+    expect(await screen.findByText('Are you sure you want to delete this Practitioner?')).toBeInTheDocument();
   });
 });
