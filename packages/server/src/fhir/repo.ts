@@ -937,15 +937,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param id - The resource ID.
    */
   async expungeResource(resourceType: string, id: string): Promise<void> {
-    if (!this.isSuperAdmin()) {
-      throw new OperationOutcomeError(forbidden);
-    }
-    await this.withTransaction(async (client) => {
-      await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
-      await new DeleteQuery(resourceType).where('id', '=', id).execute(client);
-      await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(client);
-      await deleteCacheEntry(resourceType, id);
-    });
+    await this.expungeResources(resourceType, [id]);
   }
 
   /**
