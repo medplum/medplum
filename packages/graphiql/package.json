@@ -30,7 +30,7 @@
     "@medplum/core": "3.0.5",
     "@medplum/fhirtypes": "3.0.5",
     "@medplum/react": "3.0.5",
-    "@types/react": "18.2.56",
+    "@types/react": "18.2.58",
     "@types/react-dom": "18.2.19",
     "graphiql": "3.1.1",
     "graphql": "16.8.1",
@@ -39,7 +39,7 @@
     "postcss-preset-mantine": "1.13.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vite": "5.1.3"
+    "vite": "5.1.4"
   },
   "engines": {
     "node": ">=18.0.0"
