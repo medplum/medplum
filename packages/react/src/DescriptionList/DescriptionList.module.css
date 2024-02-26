@@ -9,6 +9,11 @@
     border-top: 0.1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
     margin: 0;
   }
+
+  & > dt:first-of-type,
+  & > dd:first-of-type {
+    border-top: 0;
+  }
 }
 
 .compact {
