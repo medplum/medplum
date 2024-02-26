@@ -8,6 +8,7 @@ import { Request } from 'express';
 import fs from 'fs';
 import internal, { Readable } from 'stream';
 import { loadTestConfig } from '../config';
+import { streamToString } from '../test.setup';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
 describe('Storage', () => {
@@ -248,18 +249,3 @@ describe('Storage', () => {
     });
   });
 });
-
-/**
- * Reads a stream into a string.
- * See: https://stackoverflow.com/a/49428486/2051724
- * @param stream - The readable stream.
- * @returns The string contents.
- */
-export function streamToString(stream: internal.Readable): Promise<string> {
-  const chunks: Buffer[] = [];
-  return new Promise((resolve, reject) => {
-    stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    stream.on('error', (err) => reject(err));
-    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-  });
-}

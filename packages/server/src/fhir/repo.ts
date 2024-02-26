@@ -51,6 +51,7 @@ import {
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
 import { Operation, applyPatch } from 'rfc6902';
+import { Readable } from 'stream';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger, getRequestContext } from '../context';
@@ -87,6 +88,7 @@ import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchImpl } from './search';
 import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery, periodToRangeString } from './sql';
+import { getBinaryStorage } from './storage';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -521,11 +523,40 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
+    await this.handleBinaryData(result);
     await this.handleMaybeCacheOnly(result);
     await setCacheEntry(result);
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
+  }
+
+  /**
+   * Handles a Binary resource with embedded base-64 data.
+   * Writes the data to the binary storage and removes the data field from the resource.
+   * @param resource - The resource to write to the database.
+   */
+  private async handleBinaryData(resource: Resource): Promise<void> {
+    if (resource.resourceType !== 'Binary' || !resource.data) {
+      return;
+    }
+
+    // Parse result.data as a base64 string
+    const buffer = Buffer.from(resource.data, 'base64');
+
+    // Convert buffer to a Readable stream
+    const stream = new Readable({
+      read() {
+        this.push(buffer);
+        this.push(null); // Signifies the end of the stream (EOF)
+      },
+    });
+
+    // Write the stream to the binary storage
+    await getBinaryStorage().writeBinary(resource, undefined, resource.contentType, stream);
+
+    // Remove the data field from the resource
+    delete resource.data;
   }
 
   private async handleMaybeCacheOnly(result: Resource): Promise<void> {

@@ -1,11 +1,13 @@
 import { ContentType } from '@medplum/core';
+import { Binary, Bundle, DocumentReference } from '@medplum/fhirtypes';
 import express from 'express';
 import { Duplex, Readable } from 'stream';
 import request from 'supertest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { initTestAuth } from '../test.setup';
+import { initTestAuth, streamToString } from '../test.setup';
+import { getBinaryStorage } from './storage';
 
 const app = express();
 let accessToken: string;
@@ -144,6 +146,67 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.text).toEqual('Hello world 2');
+  });
+
+  test('Upload binary in batch', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:a0010b42-02ea-411c-a314-9ec144f6c2b8',
+            request: {
+              method: 'POST',
+              url: 'Binary',
+            },
+            resource: {
+              resourceType: 'Binary',
+              contentType: 'text/plain',
+              data: 'SGVsbG8gV29ybGQh',
+            },
+          },
+          {
+            request: {
+              method: 'POST',
+              url: 'DocumentReference',
+            },
+            resource: {
+              resourceType: 'DocumentReference',
+              status: 'current',
+              content: [
+                {
+                  attachment: {
+                    contentType: 'text/plain',
+                    url: 'urn:uuid:a0010b42-02ea-411c-a314-9ec144f6c2b8',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+    expect(res.status).toBe(200);
+
+    const result = res.body as Bundle;
+    expect(result).toBeDefined();
+    expect(result.entry).toHaveLength(2);
+
+    const binary = result.entry?.[0]?.resource as Binary;
+    const docref = result.entry?.[1]?.resource as DocumentReference;
+    expect(docref.content?.[0]?.attachment?.url).toContain(binary.id);
+
+    // Request the binary
+    const storage = getBinaryStorage();
+    const stream = await storage.readBinary(binary);
+    expect(stream).toBeDefined();
+
+    // Verify that the file matches the expected contents
+    const content = await streamToString(stream);
+    expect(content).toEqual('Hello World!');
   });
 });
 

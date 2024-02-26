@@ -12,6 +12,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Express } from 'express';
+import internal from 'stream';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
 import { AuthenticatedRequestContext, requestContextStore } from './context';
@@ -269,4 +270,19 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
 
 export function withTestContext<T>(fn: () => T, ctx?: { requestId?: string; traceId?: string }): T {
   return requestContextStore.run(AuthenticatedRequestContext.system(ctx), fn);
+}
+
+/**
+ * Reads a stream into a string.
+ * See: https://stackoverflow.com/a/49428486/2051724
+ * @param stream - The readable stream.
+ * @returns The string contents.
+ */
+export function streamToString(stream: internal.Readable): Promise<string> {
+  const chunks: Buffer[] = [];
+  return new Promise((resolve, reject) => {
+    stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    stream.on('error', (err) => reject(err));
+    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+  });
 }
