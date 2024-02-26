@@ -556,7 +556,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     await getBinaryStorage().writeBinary(resource, undefined, resource.contentType, stream);
 
     // Remove the data field from the resource
-    delete resource.data;
+    resource.data = undefined;
   }
 
   private async handleMaybeCacheOnly(result: Resource): Promise<void> {
