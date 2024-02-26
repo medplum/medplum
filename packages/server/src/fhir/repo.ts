@@ -940,9 +940,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', '=', id).execute(this.getDatabaseClient());
-    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(this.getDatabaseClient());
-    await deleteCacheEntry(resourceType, id);
+    await this.withTransaction(async (client) => {
+      await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+      await new DeleteQuery(resourceType).where('id', '=', id).execute(client);
+      await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(client);
+      await deleteCacheEntry(resourceType, id);
+    });
   }
 
   /**
@@ -955,9 +958,14 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
-    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
-    await deleteCacheEntries(resourceType, ids);
+    await this.withTransaction(async (client) => {
+      for (const id of ids) {
+        await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+      }
+      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
+      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
+      await deleteCacheEntries(resourceType, ids);
+    });
   }
 
   /**
