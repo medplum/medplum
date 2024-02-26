@@ -26,6 +26,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
     user: config.username,
     password: config.password,
     ssl: config.ssl,
+    idleTimeoutMillis: config.idleTimeout ?? 60_000,
   };
 
   if (serverConfig.databaseProxyEndpoint) {
