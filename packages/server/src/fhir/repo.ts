@@ -978,10 +978,16 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(this.getDatabaseClient());
-    await new DeleteQuery(resourceType + '_History')
-      .where('lastUpdated', '<=', before)
-      .execute(this.getDatabaseClient());
+    await this.withTransaction(async (client) => {
+      const ids = await new DeleteQuery(resourceType)
+        .where('lastUpdated', '<=', before)
+        .returnColumn('id')
+        .execute(client);
+      await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
+      for (const id of ids) {
+        await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+      }
+    });
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
