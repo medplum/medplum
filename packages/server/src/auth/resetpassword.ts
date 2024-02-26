@@ -5,7 +5,7 @@ import { body } from 'express-validator';
 import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
@@ -51,6 +51,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   }
 
   // Search for a user based on the defined filters
+  const systemRepo = getSystemRepo();
   const user = await systemRepo.searchOne<User>({
     resourceType: 'User',
     filters,
@@ -63,7 +64,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const url = await resetPassword(user, 'reset');
+  const url = await resetPassword(user, 'reset', req.body.redirectUri);
 
   if (req.body.sendEmail !== false) {
     await sendEmail(systemRepo, {
@@ -93,10 +94,12 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
  * Returns the URL to the password change request.
  * @param user - The user to create the password change request for.
  * @param type - The type of password change request.
+ * @param redirectUri - Optional URI for redirection to the client application.
  * @returns The URL to reset the password.
  */
-export async function resetPassword(user: User, type: 'invite' | 'reset'): Promise<string> {
+export async function resetPassword(user: User, type: 'invite' | 'reset', redirectUri?: string): Promise<string> {
   // Create the password change request
+  const systemRepo = getSystemRepo();
   const pcr = await systemRepo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
     meta: {
@@ -105,6 +108,7 @@ export async function resetPassword(user: User, type: 'invite' | 'reset'): Promi
     type,
     user: createReference(user),
     secret: generateSecret(16),
+    redirectUri,
   });
 
   // Build the reset URL

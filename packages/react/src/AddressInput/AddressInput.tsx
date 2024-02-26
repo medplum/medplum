@@ -1,6 +1,7 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Address } from '@medplum/fhirtypes';
 import { useRef, useState } from 'react';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 function getLine(address: Address, index: number): string {
   return address.line && address.line.length > index ? address.line[index] : '';
@@ -15,17 +16,17 @@ function setLine(address: Address, index: number, str: string): Address {
   return { ...address, line };
 }
 
-export interface AddressInputProps {
-  name: string;
-  defaultValue?: Address;
-  onChange?: (value: Address) => void;
-}
+export type AddressInputProps = ComplexTypeInputProps<Address>;
 
 export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState<Address>(props.defaultValue || {});
 
   const valueRef = useRef<Address>();
   valueRef.current = value;
+
+  // TODO{profiles} is it worth the complexity of subbing in an autocomplete input when
+  // a binding is defined in a profile? If so, it should go in a new wrapper around TextInput
+  // e.g. US Core Patient Profile
 
   function setValueWrapper(newValue: Address): void {
     setValue(newValue);
@@ -63,7 +64,7 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" wrap="nowrap" grow>
       <NativeSelect
         data-testid="address-use"
         defaultValue={value.use}

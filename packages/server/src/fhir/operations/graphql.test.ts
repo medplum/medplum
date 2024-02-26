@@ -38,11 +38,11 @@ describe('GraphQL', () => {
 
       const aliceRepo = new Repository({
         author: createReference(aliceRegistration.profile),
-        project: aliceRegistration.project.id as string,
+        projects: [aliceRegistration.project.id as string],
       });
 
       // Create a profile picture
-      binary = await aliceRepo.createResource<Binary>({ resourceType: 'Binary' });
+      binary = await aliceRepo.createResource<Binary>({ resourceType: 'Binary' } as Binary);
 
       // Creat a simple patient
       patient = await aliceRepo.createResource<Patient>({

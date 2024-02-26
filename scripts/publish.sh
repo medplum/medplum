@@ -12,6 +12,7 @@ PACKAGES=(
   "expo-polyfills"
   "fhir-router"
   "fhirtypes"
+  "health-gorilla"
   "hl7"
   "mock"
   "react"

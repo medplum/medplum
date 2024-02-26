@@ -311,6 +311,8 @@ export const HomerEncounter: Encounter = {
       reference: 'Practitioner/123',
     },
   },
+  status: 'finished',
+  class: { code: 'AMB', display: 'ambulatory' },
 };
 
 export const HomerCommunication: Communication = {
@@ -322,6 +324,7 @@ export const HomerCommunication: Communication = {
       reference: 'Practitioner/123',
     },
   },
+  status: 'completed',
   encounter: createReference(HomerEncounter),
   payload: [
     {
@@ -339,6 +342,7 @@ export const HomerMedia: Media = {
       reference: 'Practitioner/123',
     },
   },
+  status: 'completed',
   encounter: createReference(HomerEncounter),
   content: {
     contentType: ContentType.TEXT,
@@ -475,6 +479,7 @@ export const HomerObservation6: Observation = {
   },
   component: [
     {
+      code: { text: 'Systolic' },
       valueQuantity: {
         value: 110,
         unit: 'mmHg',
@@ -482,6 +487,7 @@ export const HomerObservation6: Observation = {
       },
     },
     {
+      code: { text: 'Diastolic' },
       valueQuantity: {
         value: 75,
         unit: 'mmHg',
@@ -504,6 +510,7 @@ export const HomerObservation7: Observation = {
   },
   component: [
     {
+      code: { text: 'Glucose' },
       valueQuantity: {
         value: 1000,
         unit: 'mg/dL',
@@ -537,6 +544,7 @@ export const HomerObservation8: Observation = {
   },
   component: [
     {
+      code: { text: 'HIV' },
       valueString: 'REACTIVE',
     },
   ],
@@ -600,6 +608,7 @@ export const HomerServiceRequest: ServiceRequest = {
     display: 'Homer Simpson',
   },
   status: 'active',
+  intent: 'order',
   orderDetail: [
     {
       text: 'ORDERED',
@@ -619,6 +628,8 @@ export const HomerDiagnosticReport: DiagnosticReport = {
       reference: 'Practitioner/123',
     },
   },
+  status: 'final',
+  code: { text: 'Test Report' },
   subject: createReference(HomerSimpson),
   basedOn: [createReference(HomerServiceRequest)],
   specimen: [createReference(HomerSimpsonSpecimen)],

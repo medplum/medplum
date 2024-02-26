@@ -10,14 +10,14 @@ import { useCallback, useState } from 'react';
 const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 
 interface ShowNotificationProps {
-  id: string;
-  title: string;
-  message: string;
-  color?: string;
-  icon?: JSX.Element | null;
-  withCloseButton?: boolean;
-  method?: 'show' | 'update';
-  loading?: boolean;
+  readonly id: string;
+  readonly title: string;
+  readonly message: string;
+  readonly color?: string;
+  readonly icon?: JSX.Element | null;
+  readonly withCloseButton?: boolean;
+  readonly method?: 'show' | 'update';
+  readonly loading?: boolean;
 }
 
 function showNotification({
@@ -129,7 +129,7 @@ export function BatchPage(): JSX.Element {
 
             <Tabs.Panel value="upload" pt="xs">
               <Dropzone onDrop={handleFiles} accept={['application/json']}>
-                <Group position="center" spacing="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
+                <Group justify="center" gap="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
                   <Dropzone.Accept>
                     <IconUpload size={50} stroke={1.5} color={theme.colors[theme.primaryColor][5]} />
                   </Dropzone.Accept>
@@ -157,11 +157,12 @@ export function BatchPage(): JSX.Element {
                 <JsonInput
                   data-testid="batch-input"
                   name="input"
+                  autosize
                   minRows={20}
                   defaultValue={DEFAULT_VALUE}
                   deserialize={JSON.parse}
                 />
-                <Group position="right" mt="xl" noWrap>
+                <Group justify="flex-end" mt="xl" wrap="nowrap">
                   <Button type="submit">Submit</Button>
                 </Group>
               </Form>
@@ -186,7 +187,7 @@ export function BatchPage(): JSX.Element {
               </Tabs.Panel>
             ))}
           </Tabs>
-          <Group position="right" mt="xl" noWrap>
+          <Group justify="flex-end" mt="xl" wrap="nowrap">
             <Button onClick={() => setOutput({})}>Start over</Button>
           </Group>
         </>

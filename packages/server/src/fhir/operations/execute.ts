@@ -21,6 +21,7 @@ import {
   Organization,
   Project,
   ProjectMembership,
+  ProjectSecret,
   Reference,
   Subscription,
 } from '@medplum/fhirtypes';
@@ -32,14 +33,14 @@ import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
-import { globalLogger } from '../../logger';
+import { getAuthenticatedContext, getLogger, buildTracingExtension } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
-import { AuditEventOutcome } from '../../util/auditevent';
+import { recordHistogramValue } from '../../otel/otel';
+import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
-import { createAuditEventEntities } from '../../workers/utils';
+import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 
 export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
@@ -54,6 +55,8 @@ export interface BotExecutionRequest {
   readonly device?: Device;
   readonly remoteAddress?: string;
   readonly forwardedFor?: string;
+  readonly requestTime?: string;
+  readonly traceId?: string;
 }
 
 export interface BotExecutionResult {
@@ -79,14 +82,26 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   // Then read the bot as system user to load extended metadata
+  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id as string);
+
+  // Find the project membership
+  // If the bot is configured to run as the user, then use the current user's membership
+  // Otherwise, use the bot's project membership
+  const project = bot.meta?.project as string;
+  let runAs: ProjectMembership | undefined;
+  if (bot.runAsUser) {
+    runAs = ctx.membership;
+  } else {
+    runAs = (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
+  }
 
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
   // If the request is HTTP GET, then the query string is the input
   const result = await executeBot({
     bot,
-    runAs: ctx.membership,
+    runAs,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
   });
@@ -147,10 +162,11 @@ async function getBotForRequest(req: Request): Promise<Bot | undefined> {
  */
 export async function executeBot(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot } = request;
-  const startTime = new Date().toISOString();
+  const startTime = request.requestTime ?? new Date().toISOString();
 
   let result: BotExecutionResult;
 
+  const execStart = process.hrtime.bigint();
   if (!(await isBotEnabled(bot))) {
     result = { success: false, logResult: 'Bots not enabled' };
   } else {
@@ -164,6 +180,10 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
       result = { success: false, logResult: 'Unsupported bot runtime' };
     }
   }
+  const executionTime = Number(process.hrtime.bigint() - execStart) / 1e9; // Report duration in seconds
+
+  const attributes = { project: bot.meta?.project, bot: bot.id, outcome: result.success ? 'success' : 'failure' };
+  recordHistogramValue('medplum.bot.execute.time', executionTime, attributes);
 
   await createAuditEvent(
     request,
@@ -181,6 +201,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
  * @returns True if the bot is enabled.
  */
 export async function isBotEnabled(bot: Bot): Promise<boolean> {
+  const systemRepo = getSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   return !!project.features?.includes('bots');
 }
@@ -227,7 +248,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
       try {
         hl7Message = Hl7Message.parse(request.input);
       } catch (err) {
-        getRequestContext().logger.debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
+        getLogger().debug(`Failed to parse HL7 message: ${normalizeErrorString(err)}`);
       }
     }
 
@@ -260,7 +281,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
  * @returns The bot execution result.
  */
 async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input, contentType } = request;
+  const { bot, runAs, input, contentType, traceId } = request;
   const config = getConfig();
   const accessToken = await getBotAccessToken(runAs);
   const secrets = await getBotSecrets(bot);
@@ -273,6 +294,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,
     secrets,
+    traceId,
   };
 
   // Build the command
@@ -363,7 +385,7 @@ function parseLambdaLog(logResult: string): string {
  * @returns The bot execution result.
  */
 async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input, contentType } = request;
+  const { bot, runAs, input, contentType, traceId } = request;
 
   const config = getConfig();
   if (!config.vmContextBotsEnabled) {
@@ -378,6 +400,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
     return { success: false, logResult: 'Executable code is not a Binary' };
   }
 
+  const systemRepo = getSystemRepo();
   const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
@@ -399,6 +422,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       input: input instanceof Hl7Message ? input.toString() : input,
       contentType,
       secrets,
+      traceId,
     },
   };
 
@@ -409,16 +433,22 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   // Wrap code in an async block for top-level await support
   const wrappedCode = `
   const exports = {};
+  const module = {exports};
 
   // Start user code
   ${code}
   // End user code
 
   (async () => {
-    const { baseUrl, accessToken, contentType, secrets } = event;
+    const { baseUrl, accessToken, contentType, secrets, traceId } = event;
     const medplum = new MedplumClient({
       baseUrl,
-      fetch,
+      fetch: function(url, options = {}) {
+        options.headers ||= {};
+        options.headers['X-Trace-Id'] = traceId;
+        options.headers['traceparent'] = traceId;
+        return fetch(url, options);
+      },
     });
     medplum.setAccessToken(accessToken);
     try {
@@ -426,7 +456,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { input, contentType, secrets });
+      let result = await exports.handler(medplum, { input, contentType, secrets, traceId });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }
@@ -462,6 +492,8 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
 }
 
 async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
+  const systemRepo = getSystemRepo();
+
   // Create the Login resource
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -484,7 +516,8 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
   return accessToken;
 }
 
-async function getBotSecrets(bot: Bot): Promise<Record<string, string>> {
+async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSecret>> {
+  const systemRepo = getSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
   return secrets;
@@ -556,14 +589,16 @@ async function createAuditEvent(
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
     outcomeDesc,
+    extension: buildTracingExtension(),
   };
 
   const destination = bot.auditEventDestination ?? ['resource'];
   if (destination.includes('resource')) {
+    const systemRepo = getSystemRepo();
     await systemRepo.createResource<AuditEvent>(auditEvent);
   }
   if (destination.includes('log')) {
-    globalLogger.logAuditEvent(auditEvent);
+    logAuditEvent(auditEvent);
   }
 }
 

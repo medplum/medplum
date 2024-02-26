@@ -121,7 +121,7 @@ export interface Encounter {
    * planned | arrived | triaged | in-progress | onleave | finished |
    * cancelled +.
    */
-  status?: 'planned' | 'arrived' | 'triaged' | 'in-progress' | 'onleave' | 'finished' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'planned' | 'arrived' | 'triaged' | 'in-progress' | 'onleave' | 'finished' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * The status history permits the encounter resource to contain the
@@ -135,7 +135,7 @@ export interface Encounter {
    * ambulatory (outpatient), inpatient, emergency, home health or others
    * due to local variations.
    */
-  class?: Coding;
+  class: Coding;
 
   /**
    * The class history permits the tracking of the encounters transitions
@@ -309,12 +309,12 @@ export interface EncounterClassHistory {
   /**
    * inpatient | outpatient | ambulatory | emergency +.
    */
-  class?: Coding;
+  class: Coding;
 
   /**
    * The time that the episode was in the specified class.
    */
-  period?: Period;
+  period: Period;
 }
 
 /**
@@ -363,7 +363,7 @@ export interface EncounterDiagnosis {
    * indication will typically be a Condition (with other resources
    * referenced in the evidence.detail), or a Procedure.
    */
-  condition?: Reference<Condition | Procedure>;
+  condition: Reference<Condition | Procedure>;
 
   /**
    * Role that this diagnosis has within the encounter (e.g. admission,
@@ -509,7 +509,7 @@ export interface EncounterLocation {
   /**
    * The location where the encounter takes place.
    */
-  location?: Reference<Location>;
+  location: Reference<Location>;
 
   /**
    * The status of the participants' presence at the specified location
@@ -634,10 +634,10 @@ export interface EncounterStatusHistory {
    * planned | arrived | triaged | in-progress | onleave | finished |
    * cancelled +.
    */
-  status?: 'planned' | 'arrived' | 'triaged' | 'in-progress' | 'onleave' | 'finished' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'planned' | 'arrived' | 'triaged' | 'in-progress' | 'onleave' | 'finished' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * The time that the episode was in the specified status.
    */
-  period?: Period;
+  period: Period;
 }

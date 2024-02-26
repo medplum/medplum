@@ -3,7 +3,7 @@
   "mainEntryPointFilePath": "<projectFolder>/dist/types/index.d.ts",
   "bundledPackages": ["@medplum/react-hooks"],
   "compiler": {
-    "tsconfigFilePath": "<projectFolder>/tsconfig.build.json",
+    "tsconfigFilePath": "<projectFolder>/tsconfig.json",
     "skipLibCheck": true
   },
   "apiReport": {

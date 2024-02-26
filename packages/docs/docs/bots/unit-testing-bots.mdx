@@ -18,7 +18,7 @@ Medplum provides the [`MockClient`](https://github.com/medplum/medplum/blob/main
 
 The first step is to set up your test framework in your Bots package. Medplum Bots will should work with any typescript/javascript test runner, and the Medplum team has tested our bots with [jest](https://jestjs.io/) and [vitest](https://vitest.dev/). Follow the instructions for your favorite framework to set up you package.
 
-Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](##query-the-results) work.
+Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](#query-the-results) work.
 
 <MedplumCodeBlock language="ts" selectBlocks="index-schema">
   {ExampleCode}
@@ -83,7 +83,7 @@ The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main
 
 #### Creating Rich Test Data in Batches
 
-Creating individual test resources can be time consuming and tedious, so the `MockClient` also offers the ability to use batch requests to set up sample data. See the [FHIR Batch Requests guide](docs/fhir-datastore/fhir-batch-requests) for more details on batch requests.
+Creating individual test resources can be time consuming and tedious, so the `MockClient` also offers the ability to use batch requests to set up sample data. See the [FHIR Batch Requests guide](/docs/fhir-datastore/fhir-batch-requests) for more details on batch requests.
 
 The `MockClient` offers the `executeBatch` helper function to easily execute batch requests and works in the same way that the standard Medplum Client does.
 
@@ -102,12 +102,12 @@ Once you have created your data, you can write your tests. The above example use
 
 #### Using the Medplum CLI
 
-If you have a dev project that already has rich data, you can use the Mepdlum CLI to easily convert this data into test data.
+If you have a dev project that already has rich data, you can use the Medplum CLI to easily convert this data into test data.
 
 The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
 <details>
-  <summary>Example: Get a patient and all encounters that reference them as a transactioin</summary>
+  <summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
   <MedplumCodeBlock language="ts" selectBlocks="cliAsTransaction">
     {ExampleCode3}
   </MedplumCodeBlock>
@@ -115,11 +115,11 @@ The Medplum CLI offers the optional `--as-transaction` flag when using the `medp
 
 This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
 
-A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resoures from already existing data.
+A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resources from already existing data.
 
 #### Cloning an Existing Projects
 
-If you want to clone an existing project into a new environment, you can use the `$clone` operation. For more details [see the Projects guide](/docs/access/projects##cloning-and-expunging-projects).
+If you want to clone an existing project into a new environment, you can use the `$clone` operation. For more details [see the Projects guide](/docs/access/projects#cloning-and-expunging-projects).
 
 ### Invoke your Bot
 
@@ -158,12 +158,12 @@ Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedi
 
 ### Using the Medplum CLI
 
-If you have a dev project that already has rich data, you can use the Mepdlum CLI to easily convert this data into test data.
+If you have a dev project that already has rich data, you can use the Medplum CLI to easily convert this data into test data.
 
 The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
 
 <details>
-<summary>Example: Get a patient and all encounters that reference them as a transactioin</summary>
+<summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
 
 ```cli
 
@@ -175,4 +175,4 @@ The Medplum CLI offers the optional `--as-transaction` flag when using the `medp
 
 This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
 
-A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resoures from already existing data.
+A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resources from already existing data.

@@ -1,6 +1,8 @@
 import {
+  allOk,
   badRequest,
   createReference,
+  getReferenceString,
   InviteRequest,
   normalizeErrorString,
   OperationOutcomeError,
@@ -14,9 +16,10 @@ import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, getLogger } from '../context';
 import { sendEmail } from '../email/email';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
+import { sendResponse } from '../fhir/response';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -40,21 +43,14 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;
   if (ctx.project.superAdmin) {
+    const systemRepo = getSystemRepo();
     inviteRequest.project = await systemRepo.readResource('Project', projectId as string);
   } else {
     inviteRequest.project = ctx.project;
   }
 
-  try {
-    const { membership } = await inviteUser(inviteRequest);
-    res.status(200).json(membership);
-  } catch (err) {
-    ctx.logger.info('Error inviting user to project', {
-      project: projectId,
-      error: normalizeErrorString(err),
-    });
-    res.status(200).json({ error: err });
-  }
+  const { membership } = await inviteUser(inviteRequest);
+  return sendResponse(req, res, allOk, membership);
 }
 
 export interface ServerInviteRequest extends InviteRequest {
@@ -68,7 +64,9 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
-  const ctx = getAuthenticatedContext();
+  const systemRepo = getSystemRepo();
+  const logger = getLogger();
+
   if (request.email) {
     request.email = request.email.toLowerCase();
   }
@@ -89,14 +87,19 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   if (!user) {
     existingUser = false;
-    ctx.logger.info('User creation request received', { email });
+    logger.info('User creation request received', { email });
     user = await createUser(request);
-    ctx.logger.info('User created', { id: user.id, email });
+    logger.info('User created', { id: user.id, email });
     passwordResetUrl = await resetPassword(user, 'invite');
   }
 
   let profile = await searchForExistingProfile(request);
   if (!profile) {
+    logger.info('Creating profile for invite request', {
+      project: getReferenceString(project),
+      email,
+      profileType: request.resourceType,
+    });
     profile = (await createProfile(
       project,
       request.resourceType,
@@ -104,6 +107,8 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       request.lastName,
       email
     )) as Practitioner;
+
+    logger.info('Profile  created', { profile: getReferenceString(profile) });
   }
 
   const membershipTemplate = request.membership ?? {};
@@ -120,14 +125,17 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     membershipTemplate.admin = request.admin;
   }
 
-  const membership = await createProjectMembership(user, project, profile, membershipTemplate);
+  const membership = await createOrUpdateProjectMembership(
+    systemRepo,
+    user,
+    project,
+    profile,
+    membershipTemplate,
+    !!request.upsert
+  );
 
   if (email && request.sendEmail !== false) {
-    try {
-      await sendInviteEmail(request, user, existingUser, passwordResetUrl);
-    } catch (err) {
-      throw new OperationOutcomeError(badRequest('Could not send email. Make sure you have AWS SES set up.'), err);
-    }
+    await sendInviteEmail(systemRepo, request, user, existingUser, passwordResetUrl);
   }
 
   return { user, profile, membership };
@@ -148,6 +156,7 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
     project = createReference(request.project);
   }
 
+  const systemRepo = getSystemRepo();
   return systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,
@@ -160,6 +169,7 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
 
 async function searchForExistingProfile(request: ServerInviteRequest): Promise<ProfileResource | undefined> {
   const { project, resourceType, membership, email } = request;
+  const systemRepo = getSystemRepo();
 
   if (membership?.profile) {
     const result = await systemRepo.readReference(membership.profile);
@@ -193,7 +203,65 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<P
   return undefined;
 }
 
+async function createOrUpdateProjectMembership(
+  systemRepo: Repository,
+  user: User,
+  project: Project,
+  profile: ProfileResource,
+  membershipTemplate: Partial<ProjectMembership>,
+  upsert: boolean
+): Promise<ProjectMembership> {
+  const existingMembership = await searchForExistingMembership(systemRepo, user, project);
+  if (existingMembership) {
+    if (!upsert) {
+      throw new OperationOutcomeError(badRequest('User is already a member of this project'));
+    }
+
+    if (existingMembership.profile?.reference !== getReferenceString(profile)) {
+      throw new OperationOutcomeError(badRequest('User is already a member of this project with a different profile'));
+    }
+
+    // Update the existing membership
+    // Be careful to preserve the critical properties: id, project, user, and profile
+    return systemRepo.updateResource<ProjectMembership>({
+      ...existingMembership,
+      ...membershipTemplate,
+      resourceType: 'ProjectMembership',
+      id: existingMembership.id,
+      project: createReference(project),
+      user: createReference(user),
+      profile: createReference(profile),
+    });
+  }
+
+  // Otherwise, create the new membership
+  return createProjectMembership(user, project, profile, membershipTemplate);
+}
+
+async function searchForExistingMembership(
+  systemRepo: Repository,
+  user: User,
+  project: Project
+): Promise<ProjectMembership | undefined> {
+  return systemRepo.searchOne<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [
+      {
+        code: 'user',
+        operator: Operator.EQUALS,
+        value: getReferenceString(user),
+      },
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: getReferenceString(project),
+      },
+    ],
+  });
+}
+
 async function sendInviteEmail(
+  systemRepo: Repository,
   request: ServerInviteRequest,
   user: User,
   existing: boolean,
@@ -229,5 +297,25 @@ async function sendInviteEmail(
       '',
     ].join('\n');
   }
-  await sendEmail(systemRepo, options);
+  try {
+    await sendEmail(systemRepo, options);
+  } catch (err) {
+    // A common error for new self-hosted Medplum servers is that SES is not configured.
+    // A long time ago, we made the mistake of establishing a convention of HTTP 200 + OperationOutcome for this case.
+    // To preserve this behavior, we throw an OperationOutcomeError with allOk ID.
+    throw new OperationOutcomeError({
+      resourceType: 'OperationOutcome',
+      id: allOk.id,
+      issue: [
+        {
+          severity: 'error',
+          code: 'exception',
+          details: {
+            text: 'Could not send email. Make sure you have AWS SES set up.',
+          },
+          diagnostics: normalizeErrorString(err),
+        },
+      ],
+    });
+  }
 }

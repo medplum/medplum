@@ -1,13 +1,15 @@
 import { Anchor } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
+import { useCachedBinaryUrl } from '@medplum/react-hooks';
 
 export interface AttachmentDisplayProps {
-  value?: Attachment;
-  maxWidth?: number;
+  readonly value?: Attachment;
+  readonly maxWidth?: number;
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | null {
-  const { contentType, url, title } = props.value ?? {};
+  const { contentType, url: uncachedUrl, title } = props.value ?? {};
+  const url = useCachedBinaryUrl(uncachedUrl);
 
   if (!url) {
     return null;

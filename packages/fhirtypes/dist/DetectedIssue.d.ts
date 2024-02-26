@@ -108,7 +108,7 @@ export interface DetectedIssue {
   /**
    * Indicates the status of the detected issue.
    */
-  status?: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * Identifies the general type of issue identified.
@@ -278,7 +278,7 @@ export interface DetectedIssueMitigation {
    * Describes the action that was taken or the observation that was made
    * that reduces/eliminates the risk associated with the identified issue.
    */
-  action?: CodeableConcept;
+  action: CodeableConcept;
 
   /**
    * Indicates when the mitigating action was documented.

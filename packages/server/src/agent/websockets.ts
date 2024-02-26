@@ -3,6 +3,7 @@ import {
   AgentMessage,
   AgentTransmitRequest,
   ContentType,
+  Hl7Message,
   getReferenceString,
   normalizeErrorString,
 } from '@medplum/core';
@@ -13,6 +14,7 @@ import { Redis } from 'ioredis';
 import ws from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
+import { heartbeat } from '../heartbeat';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis } from '../redis';
 
@@ -32,6 +34,8 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   let redisSubscriber: Redis | undefined = undefined;
 
+  const heartbeatHandler = (): void => sendMessage({ type: 'agent:heartbeat:request' });
+
   socket.on(
     'message',
     AsyncLocalStorage.bind(async (data: ws.RawData) => {
@@ -42,6 +46,14 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
           case 'connect':
           case 'agent:connect:request':
             await handleConnect(command);
+            break;
+
+          case 'agent:heartbeat:request':
+            sendMessage({ type: 'agent:heartbeat:response' });
+            break;
+
+          case 'agent:heartbeat:response':
+            // Do nothing
             break;
 
           // @ts-expect-error - Deprecated message type
@@ -67,7 +79,8 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   );
 
   socket.on('close', () => {
-    redisSubscriber?.disconnect();
+    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
+    redisSubscriber?.quit().catch(console.error);
     redisSubscriber = undefined;
   });
 
@@ -91,7 +104,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     agentId = command.agentId;
 
     const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
-    const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+    const repo = await getRepoForLogin(login, membership, project, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
@@ -101,6 +114,9 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       // When a message is received, send it to the agent
       socket.send(message, { binary: false });
     });
+
+    // Subscribe to heartbeat events
+    heartbeat.addEventListener('heartbeat', heartbeatHandler);
 
     // Send connected message
     sendMessage({ type: 'agent:connect:response' });
@@ -133,7 +149,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     }
 
     const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
-    const repo = await getRepoForLogin(login, membership, project.strictMode, true, project.checkReferencesOnWrite);
+    const repo = await getRepoForLogin(login, membership, project, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {
@@ -143,12 +159,19 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
     const bot = await repo.readReference(channel.targetReference as Reference<Bot>);
 
+    let input: any = command.body;
+    if (command.contentType === ContentType.JSON || command.contentType === ContentType.FHIR_JSON) {
+      input = JSON.parse(input);
+    } else if (command.contentType === ContentType.HL7_V2) {
+      input = Hl7Message.parse(input);
+    }
+
     const result = await executeBot({
       agent,
       bot,
       runAs: membership,
-      contentType: ContentType.HL7_V2,
-      input: command.body,
+      contentType: command.contentType,
+      input,
       remoteAddress,
       forwardedFor: command.remote,
     });
@@ -157,7 +180,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       type: 'agent:transmit:response',
       channel: command.channel,
       remote: command.remote,
-      contentType: ContentType.HL7_V2,
+      contentType: command.contentType,
       body: result.returnValue,
     });
   }

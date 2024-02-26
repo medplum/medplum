@@ -1,26 +1,63 @@
 import { Identifier } from '@medplum/fhirtypes';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import { ExtensionInput } from './ExtensionInput';
+import { act, fireEvent, render, screen } from '../test-utils/render';
+import { ExtensionInput, ExtensionInputProps } from './ExtensionInput';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
+
+const medplum = new MockClient();
+
+const defaultProps: ExtensionInputProps = {
+  name: 'a',
+  path: 'Resource.extension',
+  onChange: undefined,
+  outcome: undefined,
+  propertyType: { code: 'Extension', profile: [] },
+};
 
 describe('ExtensionInput', () => {
-  test('Renders', () => {
-    render(<ExtensionInput name="a" defaultValue={{ url: 'https://example.com' }} />);
-    expect(screen.getByTestId('extension-input')).toBeDefined();
+  async function setup(props: ExtensionInputProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <ExtensionInput {...props} />
+        </MedplumProvider>
+      );
+    });
+  }
+
+  test('Renders', async () => {
+    await setup({
+      ...defaultProps,
+      defaultValue: { url: 'https://example.com', valueBoolean: true },
+    });
+    expect(screen.getByTestId('url')).toBeInTheDocument();
+    expect(screen.getByTestId('url')).toHaveValue('https://example.com');
+    expect(screen.getByTestId('value[x]-selector')).toBeInTheDocument();
+    expect(screen.getByTestId('value[x]')).toBeInTheDocument();
+    expect(screen.getByTestId('value[x]')).toBeChecked();
   });
 
-  test('Renders undefined value', () => {
-    render(<ExtensionInput name="a" />);
-    expect(screen.getByTestId('extension-input')).toBeDefined();
+  test('Renders undefined value', async () => {
+    await setup({
+      ...defaultProps,
+    });
+    expect(screen.getByTestId('url')).toBeInTheDocument();
+    expect(screen.getByTestId('url')).toHaveValue('');
+    expect(screen.getByTestId('value[x]')).toBeInTheDocument();
+    expect(screen.getByTestId('value[x]')).toHaveValue('');
   });
 
   test('Set value', async () => {
     let lastValue: Identifier | undefined = undefined;
 
-    render(<ExtensionInput name="a" onChange={(value) => (lastValue = value)} />);
+    await setup({
+      ...defaultProps,
+      onChange: (value) => (lastValue = value),
+    });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('extension-input'), {
-        target: { value: '{"url":"https://foo.com"}' },
+      fireEvent.change(screen.getByTestId('url'), {
+        target: { value: 'https://foo.com' },
       });
     });
 

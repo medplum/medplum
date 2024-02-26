@@ -84,13 +84,13 @@ export interface AccessPolicyIpAccessRule {
    * An IP Access rule will apply a certain action to incoming traffic
    * based on the visitor IP address or IP range.
    */
-  value?: string;
+  value: string;
 
   /**
    * Access rule can perform one of the following actions: &quot;allow&quot; |
    * &quot;block&quot;.
    */
-  action?: 'allow' | 'block';
+  action: 'allow' | 'block';
 }
 
 /**
@@ -101,7 +101,7 @@ export interface AccessPolicyResource {
   /**
    * The resource type.
    */
-  resourceType?: string;
+  resourceType: string;
 
   /**
    * DEPRECATED Optional compartment restriction for the resource type.

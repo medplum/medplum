@@ -6,7 +6,7 @@ Providers often want a custom experience to help smooth workflow, productivity a
 
 The Medplum custom EHR sample base application is called `medplum-hello-world`. You can view the [source code](https://github.com/medplum/medplum-hello-world).
 
-The `medplum-hello-world` applications is intended as a sample, and the experience is truly up to the developer to determine. The application provides out of the box authentication, navigation and includes our [react component library](/docs/ui-components).
+The `medplum-hello-world` applications is intended as a sample, and the experience is truly up to the developer to determine. The application provides out of the box authentication, navigation and includes our [react component library](/docs/react).
 
 ## Customizable Pages
 

@@ -59,11 +59,11 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
         }
       }}
     >
-      <Center sx={{ flexDirection: 'column' }}>{props.children}</Center>
+      <Center style={{ flexDirection: 'column' }}>{props.children}</Center>
       <OperationOutcomeAlert issues={issues} />
       {googleClientId && (
         <>
-          <Group position="center" p="xl" style={{ height: 70 }}>
+          <Group justify="center" p="xl" style={{ height: 70 }}>
             <GoogleButton
               googleClientId={googleClientId}
               handleGoogleCredential={async (response: GoogleCredentialResponse) => {
@@ -84,7 +84,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           <Divider label="or" labelPosition="center" my="lg" />
         </>
       )}
-      <Stack spacing="xl">
+      <Stack gap="xl">
         <TextInput
           name="firstName"
           type="text"
@@ -117,20 +117,20 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           required={true}
           error={getErrorsForInput(outcome, 'password')}
         />
-        <Text color="dimmed" size="xs">
+        <Text c="dimmed" size="xs">
           By clicking submit you agree to the Medplum{' '}
           <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
           <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
         </Text>
-        <Text color="dimmed" size="xs">
+        <Text c="dimmed" size="xs">
           This site is protected by reCAPTCHA and the Google{' '}
           <Anchor href="https://policies.google.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
           <Anchor href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</Anchor> apply.
         </Text>
       </Stack>
-      <Group position="apart" mt="xl" noWrap>
+      <Group justify="space-between" mt="xl" wrap="nowrap">
         <Checkbox name="remember" label="Remember me" size="xs" />
         <Button type="submit">Create account</Button>
       </Group>

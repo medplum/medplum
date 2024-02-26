@@ -155,7 +155,9 @@ function writeInterfaceProperty(
   for (const typeScriptProperty of getTypeScriptProperties(property, path, fhirType.name)) {
     b.newLine();
     generateJavadoc(b, property.description);
-    b.append(typeScriptProperty.name + '?: ' + typeScriptProperty.typeName + ';');
+    b.append(
+      typeScriptProperty.name + (typeScriptProperty.required ? '' : '?') + ': ' + typeScriptProperty.typeName + ';'
+    );
   }
 }
 
@@ -208,11 +210,13 @@ function getTypeScriptProperties(
   property: InternalSchemaElement,
   path: string,
   typeName: string
-): { name: string; typeName: string }[] {
+): { name: string; typeName: string; required?: boolean }[] {
+  const required = property.min > 0;
+
   if ((typeName === 'BundleEntry' && path === 'resource') || (typeName === 'Reference' && path === 'resource')) {
-    return [{ name: 'resource', typeName: 'T' }];
+    return [{ name: 'resource', typeName: 'T', required }];
   } else if (typeName === 'Bundle' && path === 'entry') {
-    return [{ name: 'entry', typeName: 'BundleEntry<T>[]' }];
+    return [{ name: 'entry', typeName: 'BundleEntry<T>[]', required }];
   }
 
   const name = path.split('.').pop() as string;
@@ -231,6 +235,7 @@ function getTypeScriptProperties(
     result.push({
       name,
       typeName: getTypeScriptTypeForProperty(property, property.type?.[0] as ElementDefinitionType, path),
+      required,
     });
   }
 

@@ -394,7 +394,7 @@ export interface SubstanceSpecificationName {
   /**
    * The actual name.
    */
-  name?: string;
+  name: string;
 
   /**
    * Name type.

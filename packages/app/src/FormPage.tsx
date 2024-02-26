@@ -59,7 +59,7 @@ export function FormPage(): JSX.Element {
       .executeBatch(requestBundle)
       .then((bundle: Bundle) => {
         if (bundle.entry?.[0]?.response?.status !== '200') {
-          setError(bundle.entry?.[0]?.response as OperationOutcome);
+          setError(bundle.entry?.[0]?.response?.outcome as OperationOutcome);
         } else {
           setQuestionnaire(bundle.entry[0]?.resource as Questionnaire);
           setSubject(bundle.entry[1]?.resource as Resource);

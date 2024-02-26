@@ -8,9 +8,9 @@ import { createOrmMessage, handler } from './send-orm-message';
 dotenv.config();
 
 const CONNECTION_DETAILS = {
-  SFTP_USER: { valueString: 'user' },
-  SFTP_HOST: { valueString: '123456.transfer.us-east-1.amazonaws.com' },
-  SFTP_PRIVATE_KEY: { valueString: process.env.PRIVATE_KEY },
+  SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },
+  SFTP_HOST: { name: 'SFTP_HOST', valueString: '123456.transfer.us-east-1.amazonaws.com' },
+  SFTP_PRIVATE_KEY: { name: 'SFTP_PRIVATE_KEY', valueString: process.env.PRIVATE_KEY },
 };
 
 vi.mock('ssh2-sftp-client');

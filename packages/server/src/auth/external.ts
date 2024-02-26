@@ -13,7 +13,7 @@ import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { CodeChallengeMethod, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
@@ -130,6 +130,7 @@ async function getIdentityProvider(
   state: ExternalAuthState
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
   if (state.clientId) {
+    const systemRepo = getSystemRepo();
     const client = await systemRepo.readResource<ClientApplication>('ClientApplication', state.clientId);
     if (client.identityProvider) {
       return { idp: client.identityProvider, client };

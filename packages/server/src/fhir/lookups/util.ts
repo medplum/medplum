@@ -41,5 +41,5 @@ export function deriveIdentifierSearchParameter(inputParam: SearchParameter): Se
     base: inputParam.base,
     type: 'token',
     expression: `(${inputParam.expression}).identifier`,
-  };
+  } as SearchParameter;
 }

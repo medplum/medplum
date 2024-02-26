@@ -1,6 +1,6 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle } from '@medplum/fhirtypes';
-import { validateResourceType } from './schema';
+import { Bundle, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import { checkForNull, validateResourceType } from './schema';
 import { indexStructureDefinitionBundle } from './typeschema/types';
 
 describe('FHIR schema', () => {
@@ -27,5 +27,26 @@ describe('FHIR schema', () => {
     expect(() => validateResourceType('FakeResource')).toThrow();
     expect(() => validateResourceType('PatientCommunication')).toThrow();
     expect(() => validateResourceType('Patient_Communication')).toThrow();
+  });
+
+  test('checkForNull', () => {
+    function helper(input: unknown): void {
+      const issues = [] as OperationOutcomeIssue[];
+      checkForNull(input, '', issues);
+      if (issues.length > 0) {
+        throw new Error();
+      }
+    }
+
+    expect(() => helper(undefined)).not.toThrow();
+    expect(() => helper(null)).toThrow();
+    expect(() => helper('')).not.toThrow();
+    expect(() => helper('test')).not.toThrow();
+    expect(() => helper({ foo: 'bar' })).not.toThrow();
+    expect(() => helper({ foo: null })).toThrow();
+    expect(() => helper({ foo: { bar: null } })).toThrow();
+    expect(() => helper(['x', 'y'])).not.toThrow();
+    expect(() => helper(['x', 'y', null])).toThrow();
+    expect(() => helper(['x', 'y', undefined])).toThrow();
   });
 });

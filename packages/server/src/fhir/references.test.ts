@@ -1,11 +1,11 @@
 import { createReference, normalizeErrorString } from '@medplum/core';
-import { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { Login, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { getRepoForLogin } from './accesspolicy';
 import { withTestContext } from '../test.setup';
+import { getRepoForLogin } from './accesspolicy';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -19,15 +19,16 @@ describe('Reference checks', () => {
 
   test('Check references on write', () =>
     withTestContext(async () => {
-      const { membership } = await registerNew({
+      const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
+      project.checkReferencesOnWrite = true;
 
-      const repo = await getRepoForLogin({ resourceType: 'Login' }, membership, true, true, true);
+      const repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
 
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -74,5 +75,49 @@ describe('Reference checks', () => {
       } catch (err) {
         expect(normalizeErrorString(err)).toContain('Invalid reference');
       }
+    }));
+
+  test('References to resources in linked Project', () =>
+    withTestContext(async () => {
+      const { membership, project } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const { membership: membership2, project: project2 } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      project.checkReferencesOnWrite = true;
+      project.link = [{ project: createReference(project2) }];
+
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership2, project2, true);
+      const patient2 = await repo2.createResource({
+        resourceType: 'Patient',
+      });
+
+      // Reference available into linked Project
+      let repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      const patient = await repo.createResource({
+        resourceType: 'Patient',
+        link: [{ type: 'seealso', other: createReference(patient2) }],
+      });
+      expect(patient.link?.[0]?.other).toEqual(createReference(patient2));
+
+      // Unlink Project and vaerify that access is revoked
+      project.link = undefined;
+      repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      await expect(
+        repo.createResource({
+          resourceType: 'Patient',
+          link: [{ type: 'seealso', other: createReference(patient2) }],
+        })
+      ).rejects.toBeDefined();
     }));
 });

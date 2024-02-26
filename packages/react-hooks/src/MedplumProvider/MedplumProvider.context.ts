@@ -3,11 +3,11 @@ import { createContext, useContext } from 'react';
 
 export const reactContext = createContext(undefined as MedplumContext | undefined);
 
-export type MepdlumNavigateFunction = (path: string) => void;
+export type MedplumNavigateFunction = (path: string) => void;
 
 export interface MedplumContext {
   medplum: MedplumClient;
-  navigate: MepdlumNavigateFunction;
+  navigate: MedplumNavigateFunction;
   profile?: ProfileResource;
   loading: boolean;
 }
@@ -33,7 +33,7 @@ export function useMedplum(): MedplumClient {
  * Returns the Medplum navigate function.
  * @returns The Medplum navigate function.
  */
-export function useMedplumNavigate(): MepdlumNavigateFunction {
+export function useMedplumNavigate(): MedplumNavigateFunction {
   return useMedplumContext().navigate;
 }
 

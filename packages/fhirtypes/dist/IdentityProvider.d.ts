@@ -11,12 +11,12 @@ export interface IdentityProvider {
   /**
    * Remote URL for the external Identity Provider authorize endpoint.
    */
-  authorizeUrl?: string;
+  authorizeUrl: string;
 
   /**
    * Remote URL for the external Identity Provider token endpoint.
    */
-  tokenUrl?: string;
+  tokenUrl: string;
 
   /**
    * Client Authentication method used by Clients to authenticate to the
@@ -28,17 +28,17 @@ export interface IdentityProvider {
   /**
    * Remote URL for the external Identity Provider userinfo endpoint.
    */
-  userInfoUrl?: string;
+  userInfoUrl: string;
 
   /**
    * External Identity Provider client ID.
    */
-  clientId?: string;
+  clientId: string;
 
   /**
    * External Identity Provider client secret.
    */
-  clientSecret?: string;
+  clientSecret: string;
 
   /**
    * Optional flag to use PKCE in the token request.

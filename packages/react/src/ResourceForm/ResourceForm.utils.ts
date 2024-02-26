@@ -1,4 +1,5 @@
-import { capitalize, InternalSchemaElement } from '@medplum/core';
+import { capitalize, InternalSchemaElement, isEmpty } from '@medplum/core';
+import { StructureDefinition } from '@medplum/fhirtypes';
 
 export function setPropertyValue(
   obj: any,
@@ -18,4 +19,15 @@ export function setPropertyValue(
   }
   obj[propName] = value;
   return obj;
+}
+
+export type SupportedProfileStructureDefinition = StructureDefinition & {
+  url: NonNullable<StructureDefinition['url']>;
+  name: NonNullable<StructureDefinition['name']>;
+};
+
+export function isSupportedProfileStructureDefinition(
+  profile?: StructureDefinition
+): profile is SupportedProfileStructureDefinition {
+  return !!profile && !isEmpty(profile.url) && !isEmpty(profile.name);
 }

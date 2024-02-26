@@ -113,3 +113,36 @@ export class MemoryStorage implements Storage {
     return Array.from(this.data.keys())[index];
   }
 }
+
+/**
+ * The MockAsyncClientStorage class is a mock implementation of the ClientStorage class.
+ * This can be used for testing async initialization of the MedplumClient.
+ */
+export class MockAsyncClientStorage extends ClientStorage implements IClientStorage {
+  private initialized: boolean;
+  private initPromise: Promise<void>;
+  private initResolve: () => void = () => undefined;
+
+  constructor() {
+    super();
+    this.initialized = false;
+    this.initPromise = new Promise((resolve) => {
+      this.initResolve = resolve;
+    });
+  }
+
+  setInitialized(): void {
+    if (!this.initialized) {
+      this.initResolve();
+      this.initialized = true;
+    }
+  }
+
+  getInitPromise(): Promise<void> {
+    return this.initPromise;
+  }
+
+  get isInitialized(): boolean {
+    return this.initialized;
+  }
+}

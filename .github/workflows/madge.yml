@@ -1,0 +1,96 @@
+name: madge
+
+concurrency:
+  group: ci-madge-${{ github.ref_name == 'main' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+      - medplum/test-actions
+
+jobs:
+  madge-check:
+    name: madge
+    runs-on: ubuntu-latest
+    outputs:
+      madge_check_errs: ${{ steps.madge.outputs.madge_check_errs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-madge-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-madge-${{ env.cache-name }}-
+            ${{ runner.os }}-madge-
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - id: npm
+        name: npm ci
+        run: npm ci
+      - id: build
+        name: Build
+        run: npm run build:fast
+      - id: install
+        name: Install madge
+        run: npm install -g madge
+      - name: Run madge
+        id: madge
+        run: |
+          rm -f .failed
+          npx madge --circular packages/server/dist/index.js 2> madge-check.err > madge-check-1.err || echo 'failed' > .failed
+
+          if [ -s .failed ]; then
+            delimiter="$(openssl rand -hex 8)"
+            echo "madge_check_errs<<${delimiter}" >> "${GITHUB_OUTPUT}"
+            cat madge-check.err >> "${GITHUB_OUTPUT}"
+            cat madge-check-1.err >> "${GITHUB_OUTPUT}"
+            echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Comment on PR
+        if: steps.madge.outputs.madge_check_errs != ''
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          comment_tag: madge-check
+          message: |
+            ❌ @${{ github.actor }} `madge` reported circular dependencies in the module dependency graph!
+
+            ```js
+            ${{ steps.madge.outputs.madge_check_errs }}
+            ```
+
+            Please fix the listed circular module dependencies so that your PR can be accepted. Thank you!
+
+            <sup>[#${{github.sha}}](https://github.com/medplum/medplum/commits/${{github.sha}})</sup>
+      - name: Uncomment on PR
+        if: steps.madge.outputs.madge_check_errs == ''
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          comment_tag: madge-check
+          mode: upsert
+          create_if_not_exists: false
+          message: |
+            ✅ `madge` is no longer reporting circular module dependencies! Thank you.
+
+            <sup>[#${{github.sha}}](https://github.com/medplum/medplum/commits/${{github.sha}})</sup>
+      - name: Fail the job
+        if: steps.madge.outputs.madge_check_errs != ''
+        run: |
+          echo "❌ \"madge\" reported circular dependencies!"
+          echo ""
+          echo "Check the PR comments for more info."
+          echo ""
+          echo "https://github.com/medplum/medplum/commits/${{github.sha}}"
+
+          exit 1

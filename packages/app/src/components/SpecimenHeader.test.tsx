@@ -1,8 +1,8 @@
 import { Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { render, screen } from '../test-utils/render';
 import { SpecimenHeader } from './SpecimenHeader';
 
 const medplum = new MockClient();

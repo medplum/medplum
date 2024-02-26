@@ -109,7 +109,7 @@ export interface ImplementationGuide {
    * SHALL remain the same when the implementation guide is stored on
    * different servers.
    */
-  url?: string;
+  url: string;
 
   /**
    * The identifier that is used to identify this version of the
@@ -127,7 +127,7 @@ export interface ImplementationGuide {
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * A short, descriptive, user-friendly title for the implementation
@@ -139,7 +139,7 @@ export interface ImplementationGuide {
    * The status of this implementation guide. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this implementation guide is authored
@@ -203,7 +203,7 @@ export interface ImplementationGuide {
    * based tooling manages IG dependencies. This value must be globally
    * unique, and should be assigned with care.
    */
-  packageId?: string;
+  packageId: string;
 
   /**
    * The license that applies to this Implementation Guide, using an SPDX
@@ -260,7 +260,7 @@ export interface ImplementationGuide {
    * formal version of the specification, without the revision number, e.g.
    * [publication].[major].[minor], which is 4.0.1. for this version.
    */
-  fhirVersion?: ('0.01' | '0.05' | '0.06' | '0.11' | '0.0.80' | '0.0.81' | '0.0.82' | '0.4.0' | '0.5.0' | '1.0.0' |
+  fhirVersion: ('0.01' | '0.05' | '0.06' | '0.11' | '0.0.80' | '0.0.81' | '0.0.82' | '0.4.0' | '0.5.0' | '1.0.0' |
       '1.0.1' | '1.0.2' | '1.1.0' | '1.4.0' | '1.6.0' | '1.8.0' | '3.0.0' | '3.0.1' | '3.3.0' | '3.5.0' | '4.0.0' |
       '4.0.1')[];
 
@@ -343,7 +343,7 @@ export interface ImplementationGuideDefinition {
    * etc.) are obvious candidates for inclusion, but any kind of resource
    * can be included as an example resource.
    */
-  resource?: ImplementationGuideDefinitionResource[];
+  resource: ImplementationGuideDefinitionResource[];
 
   /**
    * A page / section in the implementation guide. The root page is the
@@ -407,7 +407,7 @@ export interface ImplementationGuideDefinitionGrouping {
    * The human-readable title to display for the package of resources when
    * rendering the implementation guide.
    */
-  name?: string;
+  name: string;
 
   /**
    * Human readable text describing the package.
@@ -470,12 +470,12 @@ export interface ImplementationGuideDefinitionPage {
    * A short title used to represent this page in navigational structures
    * such as table of contents, bread crumbs, etc.
    */
-  title?: string;
+  title: string;
 
   /**
    * A code that indicates how the page is generated.
    */
-  generation?: 'html' | 'markdown' | 'xml' | 'generated';
+  generation: 'html' | 'markdown' | 'xml' | 'generated';
 
   /**
    * Nested Pages/Sections under this page.
@@ -528,13 +528,13 @@ export interface ImplementationGuideDefinitionParameter {
    * expansion-parameter | rule-broken-links | generate-xml | generate-json
    * | generate-turtle | html-template.
    */
-  code?: 'apply' | 'path-resource' | 'path-pages' | 'path-tx-cache' | 'expansion-parameter' | 'rule-broken-links' |
+  code: 'apply' | 'path-resource' | 'path-pages' | 'path-tx-cache' | 'expansion-parameter' | 'rule-broken-links' |
       'generate-xml' | 'generate-json' | 'generate-turtle' | 'html-template';
 
   /**
    * Value for named type.
    */
-  value?: string;
+  value: string;
 }
 
 /**
@@ -583,7 +583,7 @@ export interface ImplementationGuideDefinitionResource {
   /**
    * Where this resource is found.
    */
-  reference?: Reference<Resource>;
+  reference: Reference<Resource>;
 
   /**
    * Indicates the FHIR Version(s) this artifact is intended to apply to.
@@ -670,12 +670,12 @@ export interface ImplementationGuideDefinitionTemplate {
   /**
    * Type of template specified.
    */
-  code?: string;
+  code: string;
 
   /**
    * The source location for the template.
    */
-  source?: string;
+  source: string;
 
   /**
    * The scope in which the template applies.
@@ -728,7 +728,7 @@ export interface ImplementationGuideDependsOn {
   /**
    * A canonical reference to the Implementation guide for the dependency.
    */
-  uri?: string;
+  uri: string;
 
   /**
    * The NPM package name for the Implementation Guide that this IG depends
@@ -787,12 +787,12 @@ export interface ImplementationGuideGlobal {
   /**
    * The type of resource that all instances must conform to.
    */
-  type?: ResourceType;
+  type: ResourceType;
 
   /**
    * A reference to the profile that all instances must conform to.
    */
-  profile?: string;
+  profile: string;
 }
 
 /**
@@ -848,7 +848,7 @@ export interface ImplementationGuideManifest {
    * etc.) are obvious candidates for inclusion, but any kind of resource
    * can be included as an example resource.
    */
-  resource?: ImplementationGuideManifestResource[];
+  resource: ImplementationGuideManifestResource[];
 
   /**
    * Information about a page within the IG.
@@ -911,7 +911,7 @@ export interface ImplementationGuideManifestPage {
   /**
    * Relative path to the page.
    */
-  name?: string;
+  name: string;
 
   /**
    * Label for the page intended for human display.
@@ -970,7 +970,7 @@ export interface ImplementationGuideManifestResource {
   /**
    * Where this resource is found.
    */
-  reference?: Reference<Resource>;
+  reference: Reference<Resource>;
 
   /**
    * If true or a reference, indicates the resource is an example instance.

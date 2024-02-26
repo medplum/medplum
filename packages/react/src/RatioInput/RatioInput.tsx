@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 
 export interface RatioInputProps {
-  name: string;
-  defaultValue?: Ratio;
-  onChange?: (value: Ratio) => void;
+  readonly name: string;
+  readonly defaultValue?: Ratio;
+  readonly onChange?: (value: Ratio) => void;
 }
 
 /**
@@ -26,7 +26,7 @@ export function RatioInput(props: RatioInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       <QuantityInput
         name={props.name + '-numerator'}
         defaultValue={value?.numerator}

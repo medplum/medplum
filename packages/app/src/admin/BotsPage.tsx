@@ -7,7 +7,7 @@ export function BotsPage(): JSX.Element {
     <>
       <Title>Bots</Title>
       <MemberTable resourceType="Bot" fields={['user', 'profile', 'admin', '_lastUpdated']} />
-      <Group position="right">
+      <Group justify="flex-end">
         <MedplumLink to={`/admin/bots/new`}>Create new bot</MedplumLink>
       </Group>
     </>

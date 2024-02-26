@@ -63,7 +63,7 @@ export function CreateBotPage(): JSX.Element {
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <Group position="right">
+            <Group justify="flex-end">
               <Button type="submit">Create Bot</Button>
             </Group>
           </Stack>

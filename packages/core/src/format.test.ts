@@ -1,3 +1,4 @@
+import { Observation } from '@medplum/fhirtypes';
 import { UCUM } from './constants';
 import {
   formatAddress,
@@ -391,17 +392,20 @@ test('Format Coding', () => {
 
 test('Format Observation value', () => {
   expect(formatObservationValue(undefined)).toBe('');
-  expect(formatObservationValue({})).toBe('');
-  expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' })).toBe('foo');
-  expect(formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } })).toBe('foo');
-  expect(formatObservationValue({ resourceType: 'Observation', valueQuantity: { value: 123, unit: 'mg' } })).toBe(
-    '123 mg'
-  );
+  expect(formatObservationValue({} as Observation)).toBe('');
+  expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' } as Observation)).toBe('foo');
+  expect(
+    formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } } as Observation)
+  ).toBe('foo');
+  expect(
+    formatObservationValue({ resourceType: 'Observation', valueQuantity: { value: 123, unit: 'mg' } } as Observation)
+  ).toBe('123 mg');
   expect(
     formatObservationValue({
       resourceType: 'Observation',
       component: [
         {
+          code: { text: 'foo' },
           valueQuantity: {
             value: 110,
             unit: 'mmHg',
@@ -409,6 +413,7 @@ test('Format Observation value', () => {
           },
         },
         {
+          code: { text: 'bar' },
           valueQuantity: {
             value: 75,
             unit: 'mmHg',
@@ -416,6 +421,6 @@ test('Format Observation value', () => {
           },
         },
       ],
-    })
+    } as Observation)
   ).toBe('110 mmHg / 75 mmHg');
 });

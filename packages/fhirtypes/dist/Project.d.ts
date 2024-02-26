@@ -4,6 +4,7 @@
  */
 
 import { AccessPolicy } from './AccessPolicy';
+import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 import { User } from './User';
@@ -45,6 +46,11 @@ export interface Project {
   language?: string;
 
   /**
+   * An identifier for this project.
+   */
+  identifier?: Identifier[];
+
+  /**
    * A name associated with the Project.
    */
   name?: string;
@@ -80,7 +86,7 @@ export interface Project {
   /**
    * A list of optional features that are enabled for the project.
    */
-  features?: ('bots' | 'cron' | 'email' | 'google-auth-required' | 'graphql-introspection')[];
+  features?: ('bots' | 'cron' | 'email' | 'google-auth-required' | 'graphql-introspection' | 'terminology' | 'websocket-subscriptions')[];
 
   /**
    * The default access policy for patients using open registration.
@@ -97,6 +103,22 @@ export interface Project {
    * Web application or web site that is associated with the project.
    */
   site?: ProjectSite[];
+
+  /**
+   * Linked Projects whose contents are made available to this one
+   */
+  link?: ProjectLink[];
+}
+
+/**
+ * Linked Projects whose contents are made available to this one
+ */
+export interface ProjectLink {
+
+  /**
+   * A reference to the Project to be linked into this one
+   */
+  project: Reference<Project>;
 }
 
 /**
@@ -108,7 +130,7 @@ export interface ProjectSecret {
   /**
    * The secret name.
    */
-  name?: string;
+  name: string;
 
   /**
    * The secret value.
@@ -140,7 +162,7 @@ export interface ProjectSite {
    * Friendly name that will make it easy for you to identify the site in
    * the future.
    */
-  name?: string;
+  name: string;
 
   /**
    * The list of domain names associated with the site. User authentication
@@ -149,7 +171,7 @@ export interface ProjectSite {
    * subdomain.example.com. A valid domain requires a host and must not
    * include any path, port, query or fragment.
    */
-  domain?: string[];
+  domain: string[];
 
   /**
    * The publicly visible Google Client ID for the site. This is used to

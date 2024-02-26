@@ -1,7 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { ChangePasswordPage } from './ChangePasswordPage';
+import { act, fireEvent, render, screen } from './test-utils/render';
 
 const medplum = new MockClient();
 

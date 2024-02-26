@@ -2,8 +2,6 @@ import http from 'http';
 import { shutdownApp } from './app';
 import { main } from './index';
 
-jest.mock('ioredis');
-
 jest.mock('express', () => {
   const original = jest.requireActual('express');
   const listen = jest.fn(() => ({}));

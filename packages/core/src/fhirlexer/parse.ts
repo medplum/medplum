@@ -156,7 +156,9 @@ export class Parser {
     }
     if (expectedId && this.peek()?.id !== expectedId) {
       const actual = this.peek() as Token;
-      throw Error(`Expected ${expectedId} but got "${actual.id}" at line ${actual.line} column ${actual.column}.`);
+      throw Error(
+        `Expected ${expectedId} but got "${actual.id}" (${actual.value}) at line ${actual.line} column ${actual.column}.`
+      );
     }
     if (expectedValue && this.peek()?.value !== expectedValue) {
       const actual = this.peek() as Token;

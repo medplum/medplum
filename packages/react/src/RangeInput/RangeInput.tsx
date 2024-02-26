@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 
 export interface RangeInputProps {
-  name: string;
-  defaultValue?: Range;
-  onChange?: (value: Range) => void;
+  readonly name: string;
+  readonly defaultValue?: Range;
+  readonly onChange?: (value: Range) => void;
 }
 
 /**
@@ -26,7 +26,7 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       <QuantityInput
         name={props.name + '-low'}
         defaultValue={value?.low}

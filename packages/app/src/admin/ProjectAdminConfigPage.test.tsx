@@ -12,7 +12,7 @@ function setup(): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={['/admin/config']} initialIndex={0}>
-        <MantineProvider withGlobalStyles withNormalizeCSS>
+        <MantineProvider>
           <Notifications />
           <AppRoutes />
         </MantineProvider>

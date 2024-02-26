@@ -18,6 +18,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
+import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference } from './types';
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
@@ -76,15 +77,13 @@ export function resolveId(input: Reference | Resource | undefined): string | und
  * @param reference - A reference to a FHIR resource.
  * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
  */
-export function parseReference(reference: Reference): [ResourceType, string] | undefined;
-export function parseReference(reference: undefined): undefined;
-export function parseReference(reference: Reference | undefined): [ResourceType, string] | undefined {
+export function parseReference(reference: Reference | undefined): [ResourceType, string] {
   if (reference?.reference === undefined) {
-    return undefined;
+    throw new OperationOutcomeError(validationError('Reference missing reference property.'));
   }
   const [type, id] = reference.reference.split('/');
   if (type === '' || id === '' || id === undefined) {
-    return undefined;
+    throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
   return [type as ResourceType, id];
 }
@@ -456,12 +455,35 @@ function isArrayKey(k: string): boolean {
  * @param v - Any value.
  * @returns True if the value is an empty string or an empty object.
  */
-export function isEmpty(v: any): boolean {
+export function isEmpty(v: unknown): boolean {
   if (v === null || v === undefined) {
     return true;
   }
+
   const t = typeof v;
-  return (t === 'string' && v === '') || (t === 'object' && Object.keys(v).length === 0);
+  if (t === 'string' || t === 'object') {
+    return !isPopulated(v);
+  }
+
+  return false;
+}
+
+export type CanBePopulated = { length: number } | object;
+/**
+ * Returns true if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
+ * @param arg - Any value
+ * @returns True if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
+ */
+export function isPopulated<T extends { length: number } | object>(arg: CanBePopulated | undefined | null): arg is T {
+  if (arg === null || arg === undefined) {
+    return false;
+  }
+  const t = typeof arg;
+
+  return (
+    (t === 'string' && arg !== '') ||
+    (t === 'object' && (('length' in arg && arg.length > 0) || Object.keys(arg).length > 0))
+  );
 }
 
 /**
@@ -584,7 +606,7 @@ function deepIncludesObject(value: { [key: string]: unknown }, pattern: { [key: 
  * @returns A deep clone of the input.
  */
 export function deepClone<T>(input: T): T {
-  return JSON.parse(JSON.stringify(input)) as T;
+  return input === undefined ? input : (JSON.parse(JSON.stringify(input)) as T);
 }
 
 /**
@@ -659,6 +681,24 @@ export function capitalize(word: string): string {
 
 export function isLowerCase(c: string): boolean {
   return c === c.toLowerCase() && c !== c.toUpperCase();
+}
+
+export function isComplexTypeCode(code: string): boolean {
+  return code.length > 0 && code.startsWith(code[0].toUpperCase());
+}
+
+/**
+ * Returns the difference between two paths which is often suitable to use as a key in a `Record<string, InternalSchemaElement>`
+ * @param parentPath - The parent path that will be removed from `path`.
+ * @param path - The element path that should be a child of `parentPath`.
+ * @returns - The difference between `path` and `parentPath` or `undefined` if `path` is not a child of `parentPath`.
+ */
+export function getPathDifference(parentPath: string, path: string): string | undefined {
+  const parentPathPrefix = parentPath + '.';
+  if (path.startsWith(parentPathPrefix)) {
+    return path.slice(parentPathPrefix.length);
+  }
+  return undefined;
 }
 
 /**
@@ -908,34 +948,56 @@ export const sleep = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
+/**
+ * Splits a string into an array of strings using the specified delimiter.
+ * Unlike the built-in split function, this function will split the string into a maximum of exactly n parts.
+ * Trailing empty strings are included in the result.
+ * @param str - The string to split.
+ * @param delim - The delimiter.
+ * @param n - The maximum number of parts to split the string into.
+ * @returns The resulting array of strings.
+ */
 export function splitN(str: string, delim: string, n: number): string[] {
   const result: string[] = [];
   for (let i = 0; i < n - 1; i++) {
-    let delimIndex = str.indexOf(delim);
+    const delimIndex = str.indexOf(delim);
     if (delimIndex < 0) {
-      delimIndex = str.length;
+      break;
+    } else {
+      result.push(str.slice(0, delimIndex));
+      str = str.slice(delimIndex + delim.length);
     }
-    result.push(str.slice(0, delimIndex));
-    str = str.slice(delimIndex + delim.length);
   }
-  if (str) {
-    result.push(str);
-  }
+  result.push(str);
   return result;
 }
 
-export type DeferredPromise = {
-  promise: Promise<void>;
-  resolve: () => void;
-  reject: (err: Error) => void;
-};
+/**
+ * Memoizes the result of a parameterless function
+ * @param fn - The function to be wrapped
+ * @returns The result of the first invocation of the wrapped function
+ */
+export function lazy<T>(fn: () => T): () => T {
+  let result: T;
+  let executed = false;
 
-export function createDeferredPromise(): DeferredPromise {
-  let _resolve!: () => void;
-  let _reject!: (err: Error) => void;
-  const promise = new Promise<void>((resolve, reject) => {
-    _resolve = resolve;
-    _reject = reject;
-  });
-  return { promise, resolve: _resolve, reject: _reject };
+  return function (): T {
+    if (!executed) {
+      result = fn();
+      executed = true;
+    }
+    return result;
+  };
+}
+
+export function append<T>(array: T[] | undefined, value: T): T[] {
+  if (!array) {
+    return [value];
+  }
+  array.push(value);
+  return array;
+}
+
+export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
+  return new URL(path, baseUrl).toString().replace('http://', 'ws://').replace('https://', 'wss://');
 }

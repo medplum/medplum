@@ -96,3 +96,21 @@ export function exportJsonFile(jsonString: string, fileName?: string): void {
   // Clean up the URL object
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Splits values of an array based on a predicate function
+ * @param array - Array to be partitioned
+ * @param predicate - predicate function for array elements
+ * @returns An array containing two arrays: the elements that pass the predicate and then those that fail
+ */
+export function partition<T, PassType extends T>(
+  array: T[],
+  predicate: ((item: T) => boolean) | ((item: T) => item is PassType)
+): [PassType[], T[]] {
+  const pass: PassType[] = [];
+  const fail: T[] = [];
+  for (const elem of array) {
+    (predicate(elem) ? pass : fail).push(elem);
+  }
+  return [pass, fail];
+}

@@ -1,34 +1,32 @@
 import { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useState } from 'react';
-import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
-export interface CodeableConceptInputProps {
-  binding: string | undefined;
-  name: string;
-  placeholder?: string;
-  defaultValue?: CodeableConcept;
-  onChange?: (value: CodeableConcept | undefined) => void;
+export interface CodeableConceptInputProps
+  extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange'>,
+    ComplexTypeInputProps<CodeableConcept> {
+  readonly onChange: ((value: CodeableConcept | undefined) => void) | undefined;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
-  const [value, setValue] = useState<CodeableConcept | undefined>(props.defaultValue);
+  const { defaultValue, onChange, withHelpText, ...rest } = props;
+  const [value, setValue] = useState<CodeableConcept | undefined>(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newConcept = valueSetElementToCodeableConcept(newValues);
     setValue(newConcept);
-    if (props.onChange) {
-      props.onChange(newConcept);
+    if (onChange) {
+      onChange(newConcept);
     }
   }
 
   return (
     <ValueSetAutocomplete
-      binding={props.binding}
-      name={props.name}
-      placeholder={props.placeholder}
       defaultValue={value && codeableConceptToValueSetElement(value)}
-      maxSelectedValues={1}
       onChange={handleChange}
+      withHelpText={withHelpText ?? true}
+      {...rest}
     />
   );
 }

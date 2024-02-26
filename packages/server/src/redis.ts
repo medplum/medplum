@@ -7,9 +7,9 @@ export function initRedis(config: MedplumRedisConfig): void {
   redis = new Redis(config);
 }
 
-export function closeRedis(): void {
+export async function closeRedis(): Promise<void> {
   if (redis) {
-    redis.disconnect();
+    await redis.quit();
     redis = undefined;
   }
 }

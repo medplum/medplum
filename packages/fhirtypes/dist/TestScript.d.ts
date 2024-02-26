@@ -105,7 +105,7 @@ export interface TestScript {
    * be the target of a canonical reference. It SHALL remain the same when
    * the test script is stored on different servers.
    */
-  url?: string;
+  url: string;
 
   /**
    * A formal identifier that is used to identify this test script when it
@@ -130,7 +130,7 @@ export interface TestScript {
    * be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * A short, descriptive, user-friendly title for the test script.
@@ -141,7 +141,7 @@ export interface TestScript {
    * The status of this test script. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this test script is authored for
@@ -301,12 +301,12 @@ export interface TestScriptDestination {
    * Abstract name given to a destination server in this test script.  The
    * name is provided as a number starting at 1.
    */
-  index?: number;
+  index: number;
 
   /**
    * The type of destination profile the test system supports.
    */
-  profile?: Coding;
+  profile: Coding;
 }
 
 /**
@@ -356,7 +356,7 @@ export interface TestScriptFixture {
    * during setup, therefore no create operation is required for this
    * fixture in the TestScript.setup section.
    */
-  autocreate?: boolean;
+  autocreate: boolean;
 
   /**
    * Whether or not to implicitly delete the fixture during teardown. If
@@ -364,7 +364,7 @@ export interface TestScriptFixture {
    * during teardown, therefore no delete operation is required for this
    * fixture in the TestScript.teardown section.
    */
-  autodelete?: boolean;
+  autodelete: boolean;
 
   /**
    * Reference to the resource (containing the contents of the resource
@@ -423,7 +423,7 @@ export interface TestScriptMetadata {
    * Capabilities that must exist and are assumed to function correctly on
    * the FHIR server being tested.
    */
-  capability?: TestScriptMetadataCapability[];
+  capability: TestScriptMetadataCapability[];
 }
 
 /**
@@ -471,13 +471,13 @@ export interface TestScriptMetadataCapability {
    * Whether or not the test execution will require the given capabilities
    * of the server in order for this test script to execute.
    */
-  required?: boolean;
+  required: boolean;
 
   /**
    * Whether or not the test execution will validate the given capabilities
    * of the server in order for this test script to execute.
    */
-  validated?: boolean;
+  validated: boolean;
 
   /**
    * Description of the capabilities that this test script is requiring the
@@ -506,7 +506,7 @@ export interface TestScriptMetadataCapability {
    * successfully.   If server does not meet at a minimum the referenced
    * capability statement, then all tests in this script are skipped.
    */
-  capabilities?: string;
+  capabilities: string;
 }
 
 /**
@@ -553,7 +553,7 @@ export interface TestScriptMetadataLink {
    * URL to a particular requirement or feature within the FHIR
    * specification.
    */
-  url?: string;
+  url: string;
 
   /**
    * Short description of the link.
@@ -606,12 +606,12 @@ export interface TestScriptOrigin {
    * Abstract name given to an origin server in this test script.  The name
    * is provided as a number starting at 1.
    */
-  index?: number;
+  index: number;
 
   /**
    * The type of origin profile the test system supports.
    */
-  profile?: Coding;
+  profile: Coding;
 }
 
 /**
@@ -657,7 +657,7 @@ export interface TestScriptSetup {
   /**
    * Action would contain either an operation or an assertion.
    */
-  action?: TestScriptSetupAction[];
+  action: TestScriptSetupAction[];
 }
 
 /**
@@ -880,7 +880,7 @@ export interface TestScriptSetupActionAssert {
    * Whether or not the test execution will produce a warning only on error
    * for this assert.
    */
-  warningOnly?: boolean;
+  warningOnly: boolean;
 }
 
 /**
@@ -968,7 +968,7 @@ export interface TestScriptSetupActionOperation {
    * to false when communicating with a server that does not support
    * encoded url paths.
    */
-  encodeRequestUrl?: boolean;
+  encodeRequestUrl: boolean;
 
   /**
    * The HTTP method the test engine MUST use for this operation regardless
@@ -1063,12 +1063,12 @@ export interface TestScriptSetupActionOperationRequestHeader {
   /**
    * The HTTP header field e.g. &quot;Accept&quot;.
    */
-  field?: string;
+  field: string;
 
   /**
    * The value of the header e.g. &quot;application/fhir+xml&quot;.
    */
-  value?: string;
+  value: string;
 }
 
 /**
@@ -1115,7 +1115,7 @@ export interface TestScriptTeardown {
   /**
    * The teardown action will only contain an operation.
    */
-  action?: TestScriptTeardownAction[];
+  action: TestScriptTeardownAction[];
 }
 
 /**
@@ -1161,7 +1161,7 @@ export interface TestScriptTeardownAction {
   /**
    * An operation would involve a REST request to a server.
    */
-  operation?: TestScriptSetupActionOperation;
+  operation: TestScriptSetupActionOperation;
 }
 
 /**
@@ -1219,7 +1219,7 @@ export interface TestScriptTest {
   /**
    * Action would contain either an operation or an assertion.
    */
-  action?: TestScriptTestAction[];
+  action: TestScriptTestAction[];
 }
 
 /**
@@ -1318,7 +1318,7 @@ export interface TestScriptVariable {
   /**
    * Descriptive name for this variable.
    */
-  name?: string;
+  name: string;
 
   /**
    * A default, hard-coded, or user-defined value for this variable.

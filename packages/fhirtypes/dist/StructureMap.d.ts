@@ -129,7 +129,7 @@ export interface StructureMap {
    * be the target of a canonical reference. It SHALL remain the same when
    * the structure map is stored on different servers.
    */
-  url?: string;
+  url: string;
 
   /**
    * A formal identifier that is used to identify this structure map when
@@ -154,7 +154,7 @@ export interface StructureMap {
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * A short, descriptive, user-friendly title for the structure map.
@@ -165,7 +165,7 @@ export interface StructureMap {
    * The status of this structure map. Enables tracking the life-cycle of
    * the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this structure map is authored for
@@ -244,7 +244,7 @@ export interface StructureMap {
    * Organizes the mapping into manageable chunks for human review/ease of
    * maintenance.
    */
-  group?: StructureMapGroup[];
+  group: StructureMapGroup[];
 }
 
 /**
@@ -291,7 +291,7 @@ export interface StructureMapGroup {
   /**
    * A unique name for the group for the convenience of human readers.
    */
-  name?: string;
+  name: string;
 
   /**
    * Another group that this group adds rules to.
@@ -302,7 +302,7 @@ export interface StructureMapGroup {
    * If this is the default rule set to apply for the source type or this
    * combination of types.
    */
-  typeMode?: 'none' | 'types' | 'type-and-types';
+  typeMode: 'none' | 'types' | 'type-and-types';
 
   /**
    * Additional supporting documentation that explains the purpose of the
@@ -314,12 +314,12 @@ export interface StructureMapGroup {
    * A name assigned to an instance of data. The instance must be provided
    * when the mapping is invoked.
    */
-  input?: StructureMapGroupInput[];
+  input: StructureMapGroupInput[];
 
   /**
    * Transform Rule from source to target.
    */
-  rule?: StructureMapGroupRule[];
+  rule: StructureMapGroupRule[];
 }
 
 /**
@@ -366,7 +366,7 @@ export interface StructureMapGroupInput {
   /**
    * Name for this instance of data.
    */
-  name?: string;
+  name: string;
 
   /**
    * Type for this instance of data.
@@ -376,7 +376,7 @@ export interface StructureMapGroupInput {
   /**
    * Mode for this instance of data.
    */
-  mode?: 'source' | 'target';
+  mode: 'source' | 'target';
 
   /**
    * Documentation for this instance of data.
@@ -427,12 +427,12 @@ export interface StructureMapGroupRule {
   /**
    * Name of the rule for internal references.
    */
-  name?: string;
+  name: string;
 
   /**
    * Source inputs to the mapping.
    */
-  source?: StructureMapGroupRuleSource[];
+  source: StructureMapGroupRuleSource[];
 
   /**
    * Content to create because of this mapping rule.
@@ -498,12 +498,12 @@ export interface StructureMapGroupRuleDependent {
   /**
    * Name of a rule or group to apply.
    */
-  name?: string;
+  name: string;
 
   /**
    * Variable to pass to the rule or group.
    */
-  variable?: string[];
+  variable: string[];
 }
 
 /**
@@ -549,7 +549,7 @@ export interface StructureMapGroupRuleSource {
   /**
    * Type or variable this rule applies to.
    */
-  context?: string;
+  context: string;
 
   /**
    * Specified minimum cardinality for the element. This is optional; if
@@ -1046,12 +1046,12 @@ export interface StructureMapStructure {
   /**
    * The canonical reference to the structure.
    */
-  url?: string;
+  url: string;
 
   /**
    * How the referenced structure is used in this mapping.
    */
-  mode?: 'source' | 'queried' | 'target' | 'produced';
+  mode: 'source' | 'queried' | 'target' | 'produced';
 
   /**
    * The name used for this type in the map.

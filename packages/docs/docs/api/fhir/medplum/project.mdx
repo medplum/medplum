@@ -3,6 +3,7 @@ title: Project
 sidebar_position: 0
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/medplumDefinitions/project.json';
@@ -10,10 +11,12 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Project
 
-<Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+Encapsulation of resources for a specific project or organization.
 
-## Properties
+<Tabs queryString="section">
+  <TabItem value="schema" label="Schema" default>
+
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
@@ -23,12 +26,10 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 <SearchParamsTable searchParams={definition.searchParameters} />
 
-## Inherited Properties
+## Inherited Elements
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

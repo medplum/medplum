@@ -122,7 +122,7 @@ export interface Goal {
   /**
    * The state of the goal throughout its lifecycle.
    */
-  lifecycleStatus?: 'proposed' | 'planned' | 'accepted' | 'active' | 'on-hold' | 'completed' | 'cancelled' | 'entered-in-error' | 'rejected';
+  lifecycleStatus: 'proposed' | 'planned' | 'accepted' | 'active' | 'on-hold' | 'completed' | 'cancelled' | 'entered-in-error' | 'rejected';
 
   /**
    * Describes the progression, or lack thereof, towards the goal against
@@ -146,13 +146,13 @@ export interface Goal {
    * objective of care, such as &quot;control blood pressure&quot; or &quot;negotiate an
    * obstacle course&quot; or &quot;dance with child at wedding&quot;.
    */
-  description?: CodeableConcept;
+  description: CodeableConcept;
 
   /**
    * Identifies the patient, group or organization for whom the goal is
    * being established.
    */
-  subject?: Reference<Patient | Group | Organization>;
+  subject: Reference<Patient | Group | Organization>;
 
   /**
    * The date or event after which the goal should begin being pursued.

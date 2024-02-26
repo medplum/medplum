@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, parseLogLevel } from '@medplum/core';
 import { existsSync, readFileSync } from 'fs';
 import { App } from './app';
 
@@ -7,9 +7,10 @@ interface Args {
   clientId: string;
   clientSecret: string;
   agentId: string;
+  logLevel?: string;
 }
 
-export async function main(argv: string[]): Promise<void> {
+export async function main(argv: string[]): Promise<App> {
   let args: Args;
   if (argv.length >= 6) {
     args = readCommandLineArgs(argv);
@@ -40,14 +41,16 @@ export async function main(argv: string[]): Promise<void> {
   const medplum = new MedplumClient({ baseUrl, clientId });
   await medplum.startClientLogin(clientId, clientSecret);
 
-  const app = new App(medplum, agentId);
+  const app = new App(medplum, agentId, parseLogLevel(args.logLevel ?? 'INFO'));
   await app.start();
 
   process.on('SIGINT', () => {
-    console.log('\ngracefully shutting down from SIGINT (Crtl-C)');
+    console.log('Gracefully shutting down from SIGINT (Crtl-C)');
     app.stop();
     process.exit();
   });
+
+  return app;
 }
 
 function readCommandLineArgs(argv: string[]): Args {

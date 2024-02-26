@@ -7,23 +7,23 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
-  parseSearchDefinition,
+  parseSearchRequest,
   PropertyType,
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
 import {
-  Bundle,
   GraphDefinition,
   GraphDefinitionLink,
   GraphDefinitionLinkTarget,
   Reference,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { Repository } from '../repo';
-import { sendResponse } from '../routes';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { sendResponse } from '../response';
 
 /**
  * Handles a Resource $graph request.
@@ -37,33 +37,27 @@ import { getAuthenticatedContext, getRequestContext } from '../../context';
 export async function resourceGraphHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { resourceType, id } = req.params;
-
-  if (resourceType === 'undefined' || id === 'undefined') {
-    throw new OperationOutcomeError(notFound);
-  }
-
-  const rootResource = await ctx.repo.readResource(resourceType, id);
-
   const definition = await validateQueryParameters(req);
-
   if (!definition.start || definition.start !== resourceType) {
     throw new OperationOutcomeError(badRequest('Missing or incorrect `start` type'));
   }
+
+  const rootResource = await ctx.repo.readResource(resourceType, id);
   const results = [rootResource] as Resource[];
   const resourceCache = {} as Record<string, Resource>;
   resourceCache[getReferenceString(rootResource)] = rootResource;
   if ('url' in rootResource) {
-    resourceCache[(rootResource as any).url] = rootResource;
+    resourceCache[(rootResource as { url: string }).url] = rootResource;
   }
   await followLinks(ctx.repo, rootResource, definition.link, results, resourceCache);
 
-  await sendResponse(res, allOk, {
+  await sendResponse(req, res, allOk, {
     resourceType: 'Bundle',
     entry: deduplicateResources(results).map((r) => ({
       resource: r,
     })),
     type: 'collection',
-  } as Bundle);
+  });
 }
 
 /**
@@ -207,10 +201,6 @@ async function followCanonicalElements(
   target: GraphDefinitionLinkTarget,
   resourceCache: Record<string, Resource>
 ): Promise<Resource[]> {
-  if (!target.type) {
-    return [];
-  }
-
   // Filter out Resources where we've seen the canonical URL
   const targetUrls = elements.map((elem) => elem.value as string);
 
@@ -220,11 +210,11 @@ async function followCanonicalElements(
       results.push(resourceCache[url]);
     } else {
       const linkedResources = await repo.searchResources({
-        resourceType: target.type,
+        resourceType: target.type as ResourceType,
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
       });
       if (linkedResources.length > 1) {
-        getRequestContext().logger.warn('Found more than 1 resource with canonical URL', { url });
+        getLogger().warn('Found more than 1 resource with canonical URL', { url });
       }
 
       // Cache here to speed up subsequent loop iterations
@@ -254,15 +244,17 @@ async function followSearchLink(
   const results = [] as Resource[];
   for (const target of link.target) {
     const searchResourceType = target.type;
-    validateTargetParams(target.params);
+    const params = target.params as string;
+    validateTargetParams(params);
+
     // Replace the {ref} string with a pointer to the current resource
-    const searchParams = target.params?.replace('{ref}', getReferenceString(resource));
+    const searchParams = params.replace('{ref}', getReferenceString(resource));
 
     // Formulate the searchURL string
-    const searchRequest = parseSearchDefinition(`${searchResourceType}?${searchParams}`);
+    const searchRequest = parseSearchRequest(`${searchResourceType}?${searchParams}`);
 
     // Parse the max count from the link description, if available
-    searchRequest.count = Math.max(parseCardinality(link.max), 5000);
+    searchRequest.count = Math.min(parseCardinality(link.max), 5000);
 
     // Run the search and add the results to the `results` array
     const resources = await repo.searchResources(searchRequest);
@@ -287,12 +279,11 @@ async function validateQueryParameters(req: Request): Promise<GraphDefinition> {
     throw new OperationOutcomeError(badRequest('Missing required parameter: graph'));
   }
 
-  const bundle = await ctx.repo.search({
+  const definition = await ctx.repo.searchOne<GraphDefinition>({
     resourceType: 'GraphDefinition',
     filters: [{ code: 'name', operator: Operator.EQUALS, value: graph }],
   });
 
-  const definition = bundle.entry?.[0]?.resource as GraphDefinition;
   if (!definition) {
     throw new OperationOutcomeError(notFound);
   }
@@ -300,10 +291,7 @@ async function validateQueryParameters(req: Request): Promise<GraphDefinition> {
   return definition;
 }
 
-function validateTargetParams(params: string | undefined): void {
-  if (!params) {
-    throw new OperationOutcomeError(badRequest(`Link target search params missing`));
-  }
+function validateTargetParams(params: string): void {
   if (!params.includes('{ref}')) {
     throw new OperationOutcomeError(badRequest(`Link target search params must include {ref}`));
   }

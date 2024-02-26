@@ -20,12 +20,12 @@ import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
 import {
   getAuthTokens,
-  getClient,
+  getClientApplication,
   getClientApplicationMembership,
   getExternalUserInfo,
   revokeLogin,
@@ -100,10 +100,16 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const systemRepo = getSystemRepo();
   let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   } catch (err) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
+  }
+
+  if (client.status && client.status !== 'active') {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
@@ -155,6 +161,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const searchResult = await systemRepo.search({
     resourceType: 'Login',
     filters: [
@@ -197,7 +204,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   let client: ClientApplication | undefined;
   if (clientId) {
     try {
-      client = await getClient(clientId);
+      client = await getClientApplication(clientId);
     } catch (err) {
       sendTokenError(res, 'invalid_request', 'Invalid client');
       return;
@@ -251,6 +258,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', claims.login_id);
 
   if (login.refreshSecret === undefined) {
@@ -348,6 +356,7 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const projectId = await getProjectIdByClientId(clientId, undefined);
   const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   const idp = client.identityProvider;
@@ -462,6 +471,7 @@ async function parseClientAssertion(
     return { error: 'Invalid client assertion issuer' };
   }
 
+  const systemRepo = getSystemRepo();
   const clientId = claims.iss as string;
   let client: ClientApplication;
   try {
@@ -546,6 +556,7 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
   let encounter = undefined;
 
   if (login.launch) {
+    const systemRepo = getSystemRepo();
     const launch = await systemRepo.readReference(login.launch);
     patient = resolveId(launch.patient);
     encounter = resolveId(launch.encounter);
@@ -558,7 +569,13 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
   const fhircastProps = {} as FhircastProps;
   if (login.scope?.includes('fhircast/')) {
     const userId = resolveId(login.user) as string;
-    const topic = await getTopicForUser(userId);
+    let topic: string;
+    try {
+      topic = await getTopicForUser(userId);
+    } catch (err: unknown) {
+      sendTokenError(res, normalizeErrorString(err));
+      return;
+    }
     fhircastProps['hub.url'] = config.baseUrl + 'fhircast/STU3/'; // TODO: Figure out how to handle the split between STU2 and STU3...
     fhircastProps['hub.topic'] = topic;
   }

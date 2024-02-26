@@ -8,7 +8,7 @@ import internal from 'stream';
 import tar from 'tar';
 import { FileSystemStorage } from './storage';
 
-interface MedplumConfig {
+export interface MedplumConfig {
   baseUrl?: string;
   clientId?: string;
   googleClientId?: string;
@@ -17,7 +17,7 @@ interface MedplumConfig {
   bots?: MedplumBotConfig[];
 }
 
-interface MedplumBotConfig {
+export interface MedplumBotConfig {
   readonly name: string;
   readonly id: string;
   readonly source: string;
@@ -132,8 +132,39 @@ export function readBotConfigs(botName: string): MedplumBotConfig[] {
   return botConfigs;
 }
 
-export function readConfig(tagName?: string): MedplumConfig | undefined {
-  const fileName = tagName ? `medplum.${tagName}.config.json` : 'medplum.config.json';
+/**
+ * Returns the config file name.
+ * @param tagName - Optional environment tag name.
+ * @param options - Optional command line options.
+ * @returns The config file name.
+ */
+export function getConfigFileName(tagName?: string, options?: Record<string, any>): string {
+  if (options?.file) {
+    return options.file;
+  }
+  const parts = ['medplum'];
+  if (tagName) {
+    parts.push(tagName);
+  }
+  parts.push('config');
+  if (options?.server) {
+    parts.push('server');
+  }
+  parts.push('json');
+  return parts.join('.');
+}
+
+/**
+ * Writes a config file to disk.
+ * @param configFileName - The config file name.
+ * @param config - The config file contents.
+ */
+export function writeConfig(configFileName: string, config: Record<string, any>): void {
+  writeFileSync(resolve(configFileName), JSON.stringify(config, undefined, 2), 'utf-8');
+}
+
+export function readConfig(tagName?: string, options?: { file?: string }): MedplumConfig | undefined {
+  const fileName = getConfigFileName(tagName, options);
   const content = readFileContents(fileName);
   if (!content) {
     return undefined;
@@ -141,8 +172,16 @@ export function readConfig(tagName?: string): MedplumConfig | undefined {
   return JSON.parse(content);
 }
 
+export function readServerConfig(tagName?: string): Record<string, string | number> | undefined {
+  const content = readFileContents(getConfigFileName(tagName, { server: true }));
+  if (!content) {
+    return undefined;
+  }
+  return JSON.parse(content);
+}
+
 function readFileContents(fileName: string): string {
-  const path = resolve(process.cwd(), fileName);
+  const path = resolve(fileName);
   if (!existsSync(path)) {
     return '';
   }
@@ -199,12 +238,8 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
 
 export function getUnsupportedExtension(): Extension {
   return {
-    extension: [
-      {
-        url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
-        valueCode: 'unsupported',
-      },
-    ],
+    url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+    valueCode: 'unsupported',
   };
 }
 

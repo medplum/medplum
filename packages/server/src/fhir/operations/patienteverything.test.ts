@@ -71,5 +71,25 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     expect(res4.body.entry).toHaveLength(3);
+
+    // Create another observation
+    const res5 = await request(app)
+      .post(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: LOINC, code: '12345-6' }] },
+        subject: createReference(res1.body as Patient),
+      });
+    expect(res5.status).toBe(201);
+
+    // Execute the operation with _since
+    const res6 = await request(app)
+      .get(`/fhir/R4/Patient/${res1.body.id}/$everything?_since=${res5.body.meta?.lastUpdated}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res6.status).toBe(200);
+    expect(res6.body.entry).toHaveLength(1);
   });
 });

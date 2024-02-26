@@ -10,6 +10,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew, RegisterResponse } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { inviteUser } from './invite';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -539,10 +540,10 @@ describe('Project Admin routes', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('User not found in project');
+    expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
-  test('Project admin set password by admin success', async () => {
+  test('Set password for global scoped user', async () => {
     const res = await request(app)
       .post('/admin/projects/setpassword')
       .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
@@ -552,20 +553,27 @@ describe('Project Admin routes', () => {
         password: 'new-password!@#',
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
-  test('Project User set password by admin success', async () => {
-    const testProjectUser = await addTestUser(testProjectAdmin.project, {
-      resourceType: 'AccessPolicy',
-    });
+  test('Set password for project scoped user', async () => {
+    const projectScopedUser = await withTestContext(() =>
+      inviteUser({
+        project: testProjectAdmin.project,
+        resourceType: 'Patient',
+        firstName: 'First',
+        lastName: 'Last',
+        email: `alice${randomUUID()}@example.com`,
+      })
+    );
 
     const res = await request(app)
       .post('/admin/projects/setpassword')
       .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
       .type('json')
       .send({
-        email: testProjectUser.user.email,
+        email: projectScopedUser.user.email,
         password: 'new-password!@#',
       });
 

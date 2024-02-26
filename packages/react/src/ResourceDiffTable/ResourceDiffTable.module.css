@@ -1,0 +1,23 @@
+.root {
+  border-collapse: collapse;
+  width: 100%;
+
+  & tr {
+    border-top: 0.1px solid var(--mantine-color-gray-3);
+  }
+
+  & th,
+  & td {
+    padding: var(--mantine-spacing-sm) var(--mantine-spacing-sm);
+    vertical-align: top;
+  }
+}
+
+.removed {
+  color: var(--mantine-color-red-7);
+  text-decoration: line-through;
+}
+
+.added {
+  color: var(--mantine-color-green-7);
+}

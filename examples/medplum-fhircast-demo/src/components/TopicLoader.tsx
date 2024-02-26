@@ -2,7 +2,7 @@ import { Button, Input, Stack } from '@mantine/core';
 import { useEffect, useState } from 'react';
 
 interface TopicLoaderProps {
-  onSetTopic: (topic: string | undefined) => void;
+  readonly onSetTopic: (topic: string | undefined) => void;
 }
 export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
   const [topicInput, setTopicInput] = useState<string>('');

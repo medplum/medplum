@@ -3,6 +3,7 @@ import {
   CodeableConcept,
   Coding,
   ContactPoint,
+  ElementDefinition,
   Extension,
   HumanName,
   Identifier,
@@ -12,26 +13,39 @@ import {
 } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
+  TypedValue,
+  getElementDefinitionFromElements,
   getElementDefinitionTypeName,
+  getPathDisplayName,
   getPropertyDisplayName,
   isReference,
   isResource,
   stringifyTypedValue,
-  TypedValue,
 } from './types';
 
 describe('Type Utils', () => {
+  test('getPathDisplayName', () => {
+    expect(getPathDisplayName('Patient.id')).toEqual('ID');
+    expect(getPathDisplayName('Patient.name')).toEqual('Name');
+    expect(getPathDisplayName('Patient.birthDate')).toEqual('Birth Date');
+    expect(getPathDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
+    expect(getPathDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
+    expect(getPathDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
+    expect(getPathDisplayName('Device.udiCarrier')).toEqual('UDI Carrier');
+    expect(getPathDisplayName('Patient.withASingleCharacterWord')).toEqual('With A Single Character Word');
+    expect(getPathDisplayName('Device.udiCarrier.carrierAIDC')).toEqual('Carrier AIDC');
+    expect(getPathDisplayName('Device.udiCarrier.carrierHRF')).toEqual('Carrier HRF');
+    expect(getPathDisplayName('Patient.digitAtEnd8')).toEqual('Digit At End 8');
+    expect(getPathDisplayName('Patient.8digitAtStart')).toEqual('8 Digit At Start');
+    expect(getPathDisplayName('Patient.digit8InMiddle')).toEqual('Digit 8 In Middle');
+  });
+
   test('getPropertyDisplayName', () => {
-    expect(getPropertyDisplayName('Patient.id')).toEqual('ID');
-    expect(getPropertyDisplayName('Patient.name')).toEqual('Name');
-    expect(getPropertyDisplayName('Patient.birthDate')).toEqual('Birth Date');
-    expect(getPropertyDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
-    expect(getPropertyDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
-    expect(getPropertyDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
+    expect(getPropertyDisplayName('_lastUpdated')).toEqual('Last Updated');
   });
 
   test('getElementDefinitionTypeName', () => {
-    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] })).toEqual('string');
+    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] } as ElementDefinition)).toEqual('string');
     expect(getElementDefinitionTypeName({ path: 'Patient.address', type: [{ code: 'Address' }] })).toEqual('Address');
     expect(getElementDefinitionTypeName({ path: 'Patient.contact', type: [{ code: 'BackboneElement' }] })).toEqual(
       'PatientContact'
@@ -47,10 +61,29 @@ describe('Type Utils', () => {
     expect(
       getElementDefinitionTypeName({
         path: 'Questionnaire.item.item',
-        base: { path: 'Questionnaire.item' },
+        base: { path: 'Questionnaire.item', min: 0, max: '*' },
         type: [{ code: 'Element' }],
       })
     ).toEqual('QuestionnaireItem');
+  });
+
+  test('getElementDefinitionFromElements', () => {
+    const elements = {
+      address: { path: 'Patient.address', type: [{ code: 'Address' }], description: '', min: 0, max: 1 },
+      'value[x]': { path: 'Patient.value[x]', type: [{ code: 'string' }], description: '', min: 0, max: 1 },
+    };
+
+    // should be found
+    expect(getElementDefinitionFromElements(elements, 'address')).toBeDefined();
+    expect(getElementDefinitionFromElements(elements, 'value[x]')).toBeDefined();
+    expect(getElementDefinitionFromElements(elements, 'value')).toBeDefined();
+
+    expect(getElementDefinitionFromElements(elements, 'value')).toEqual(
+      getElementDefinitionFromElements(elements, 'value[x]')
+    );
+
+    // shoudl NOT be found
+    expect(getElementDefinitionFromElements(elements, 'notreal')).toBeUndefined();
   });
 
   test('isResource', () => {

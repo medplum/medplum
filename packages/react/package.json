@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react",
-  "version": "2.1.25",
+  "version": "3.0.5",
   "description": "Medplum React Component Library",
   "keywords": [
     "medplum",
@@ -32,17 +32,22 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css"
+  ],
   "type": "module",
   "exports": {
-    "import": {
-      "types": "./dist/esm/index.d.ts",
-      "default": "./dist/esm/index.mjs"
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.cjs"
+      }
     },
-    "require": {
-      "types": "./dist/cjs/index.d.ts",
-      "default": "./dist/cjs/index.cjs"
-    }
+    "./styles.css": "./dist/esm/index.css"
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
@@ -54,61 +59,63 @@
   ],
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
+    "chromatic": "chromatic --exit-zero-on-changes --build-script-name=storybook --exit-once-uploaded",
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",
     "storybook": "storybook build",
     "test": "jest"
   },
   "devDependencies": {
-    "@emotion/react": "11.11.1",
-    "@mantine/core": "6.0.21",
-    "@mantine/hooks": "6.0.21",
-    "@mantine/notifications": "6.0.21",
-    "@medplum/core": "*",
-    "@medplum/definitions": "*",
-    "@medplum/fhirtypes": "*",
-    "@medplum/mock": "*",
-    "@medplum/react-hooks": "*",
-    "@storybook/addon-actions": "7.6.3",
-    "@storybook/addon-essentials": "7.6.3",
-    "@storybook/addon-links": "7.6.3",
-    "@storybook/addon-storysource": "7.6.3",
-    "@storybook/builder-vite": "7.6.3",
-    "@storybook/react": "7.6.3",
-    "@storybook/react-vite": "7.6.3",
-    "@tabler/icons-react": "2.42.0",
-    "@testing-library/dom": "9.3.3",
-    "@testing-library/jest-dom": "6.1.5",
-    "@testing-library/react": "14.1.2",
-    "@types/jest": "29.5.11",
-    "@types/node": "20.10.3",
-    "@types/react": "18.2.42",
-    "@types/react-dom": "18.2.17",
+    "@mantine/core": "7.5.3",
+    "@mantine/hooks": "7.5.3",
+    "@mantine/notifications": "7.5.3",
+    "@medplum/core": "3.0.5",
+    "@medplum/definitions": "3.0.5",
+    "@medplum/fhirtypes": "3.0.5",
+    "@medplum/mock": "3.0.5",
+    "@medplum/react-hooks": "3.0.5",
+    "@storybook/addon-actions": "7.6.17",
+    "@storybook/addon-essentials": "7.6.17",
+    "@storybook/addon-links": "7.6.17",
+    "@storybook/addon-storysource": "7.6.17",
+    "@storybook/builder-vite": "7.6.17",
+    "@storybook/react": "7.6.17",
+    "@storybook/react-vite": "7.6.17",
+    "@tabler/icons-react": "2.47.0",
+    "@testing-library/dom": "9.3.4",
+    "@testing-library/jest-dom": "6.4.2",
+    "@testing-library/react": "14.2.1",
+    "@testing-library/user-event": "14.5.2",
+    "@types/jest": "29.5.12",
+    "@types/node": "20.11.20",
+    "@types/react": "18.2.58",
+    "@types/react-dom": "18.2.19",
     "@vitejs/plugin-react": "4.2.1",
+    "chromatic": "10.3.1",
     "jest": "29.7.0",
     "jest-each": "29.7.0",
+    "postcss": "8.4.35",
+    "postcss-preset-mantine": "1.13.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rfc6902": "5.1.1",
     "rimraf": "5.0.5",
-    "storybook": "7.6.3",
-    "typescript": "5.3.2"
+    "sinon": "17.0.1",
+    "storybook": "7.6.17",
+    "typescript": "5.3.3",
+    "vite-plugin-turbosnap": "^1.0.3"
   },
   "peerDependencies": {
-    "@emotion/react": "^11.10.4",
-    "@mantine/core": "^6.0.0",
-    "@mantine/hooks": "^6.0.0",
-    "@mantine/notifications": "^6.0.0",
-    "@medplum/core": "*",
+    "@mantine/core": "^7.0.0",
+    "@mantine/hooks": "^7.0.0",
+    "@mantine/notifications": "^7.0.0",
+    "@medplum/core": "3.0.5",
     "react": "^17.0.2 || ^18.0.0",
     "react-dom": "^17.0.2 || ^18.0.0",
     "rfc6902": "^5.0.1"
   },
   "peerDependenciesMeta": {
-    "@emotion/react": {
-      "optional": true
-    },
     "@mantine/core": {
       "optional": true
     },

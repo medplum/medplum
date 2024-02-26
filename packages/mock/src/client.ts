@@ -1,19 +1,28 @@
 import {
   allOk,
   badRequest,
-  ClientStorage,
   ContentType,
   getStatus,
-  IClientStorage,
   indexSearchParameter,
   loadDataType,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
+  OperationOutcomeError,
   ProfileResource,
+  SubscriptionEmitter,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
-import { Binary, Resource, SearchParameter, StructureDefinition, UserConfiguration } from '@medplum/fhirtypes';
+import {
+  Agent,
+  Binary,
+  Device,
+  Reference,
+  Resource,
+  SearchParameter,
+  StructureDefinition,
+  UserConfiguration,
+} from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -23,7 +32,6 @@ import {
   DrAliceSmith,
   DrAliceSmithPreviousVersion,
   DrAliceSmithSchedule,
-  DrAliceSmithSlots,
   ExampleBot,
   ExampleClient,
   ExampleQuestionnaire,
@@ -46,6 +54,7 @@ import {
   HomerSimpson,
   HomerSimpsonPreviousVersion,
   HomerSimpsonSpecimen,
+  makeDrAliceSmithSlots,
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
@@ -64,6 +73,7 @@ import {
   ExampleWorkflowTask2,
   ExampleWorkflowTask3,
 } from './mocks/workflow';
+import { MockSubscriptionManager } from './subscription-manager';
 
 export interface MockClientOptions extends MedplumClientOptions {
   readonly debug?: boolean;
@@ -80,7 +90,9 @@ export class MockClient extends MedplumClient {
   readonly client: MockFetchClient;
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
+  private agentAvailable = true;
   private readonly profile: ReturnType<MedplumClient['getProfile']>;
+  subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
     const router = new FhirRouter();
@@ -181,6 +193,62 @@ export class MockClient extends MedplumClient {
       url: 'https://example.com/binary/123',
     };
   }
+
+  async pushToAgent(
+    agent: Agent | Reference<Agent>,
+    destination: Device | Reference<Device> | string,
+    body: any,
+    contentType?: string | undefined,
+    _waitForResponse?: boolean | undefined,
+    _options?: RequestInit | undefined
+  ): Promise<any> {
+    if (contentType === ContentType.PING) {
+      if (!this.agentAvailable) {
+        throw new OperationOutcomeError(badRequest('Timeout'));
+      }
+      if (typeof destination === 'string' && destination !== '8.8.8.8') {
+        // Exception for test case
+        if (destination !== 'abc123') {
+          console.warn('IPs other than 8.8.8.8 will always throw an error in MockClient');
+        }
+        throw new OperationOutcomeError(badRequest('Destination device not found'));
+      }
+      return `PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=115 time=10.977 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=13.037 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=23.159 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=115 time=12.725 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
+`;
+    }
+    return undefined;
+  }
+
+  setAgentAvailable(value: boolean): void {
+    this.agentAvailable = value;
+  }
+
+  getSubscriptionManager(): MockSubscriptionManager {
+    if (!this.subManager) {
+      this.subManager = new MockSubscriptionManager(this, 'wss://example.com/ws/subscriptions-r4');
+    }
+    return this.subManager;
+  }
+
+  subscribeToCriteria(criteria: string): SubscriptionEmitter {
+    return this.getSubscriptionManager().addCriteria(criteria);
+  }
+
+  unsubscribeFromCriteria(criteria: string): void {
+    this.getSubscriptionManager().removeCriteria(criteria);
+  }
+
+  getMasterSubscriptionEmitter(): SubscriptionEmitter {
+    return this.getSubscriptionManager().getMasterEmitter();
+  }
 }
 
 export class MockFetchClient {
@@ -223,7 +291,11 @@ export class MockFetchClient {
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
       headers: {
-        get: () => ContentType.FHIR_JSON,
+        get(name: string): string | undefined {
+          return {
+            'content-type': ContentType.FHIR_JSON,
+          }[name];
+        },
       } as unknown as Headers,
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
@@ -529,7 +601,7 @@ export class MockFetchClient {
       await this.repo.createResource(searchParameter as SearchParameter);
     }
 
-    DrAliceSmithSlots.forEach((slot) => this.repo.createResource(slot));
+    makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
   }
 
   private async mockFhirHandler(method: HttpMethod, url: string, options: any): Promise<Resource> {
@@ -567,31 +639,6 @@ export class MockFetchClient {
     } else {
       return result[1];
     }
-  }
-}
-
-export class MockAsyncClientStorage extends ClientStorage implements IClientStorage {
-  #initialized: boolean;
-  #initPromise: Promise<void>;
-  #initResolve: () => void = () => undefined;
-  constructor() {
-    super();
-    this.#initialized = false;
-    this.#initPromise = new Promise((resolve) => {
-      this.#initResolve = resolve;
-    });
-  }
-  setInitialized(): void {
-    if (!this.#initialized) {
-      this.#initResolve();
-      this.#initialized = true;
-    }
-  }
-  getInitPromise(): Promise<void> {
-    return this.#initPromise;
-  }
-  get isInitialized(): boolean {
-    return this.#initialized;
   }
 }
 

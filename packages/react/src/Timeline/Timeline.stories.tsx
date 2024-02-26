@@ -18,6 +18,7 @@ export const Basic = (): JSX.Element => (
         resourceType: 'Communication',
         id: '123',
         meta: { lastUpdated: '2021-01-01T12:00:00Z' },
+        status: 'completed',
       }}
     >
       <div style={{ padding: '2px 16px' }}>
@@ -30,6 +31,8 @@ export const Basic = (): JSX.Element => (
         resourceType: 'Media',
         id: '123',
         meta: { lastUpdated: '2021-01-01T12:00:00Z' },
+        status: 'completed',
+        content: { url: 'https://www.medplum.com/img/wikimedia-papercut.jpg' },
       }}
     >
       <img src="https://www.medplum.com/img/wikimedia-papercut.jpg" alt="Papercut" title="Papercut" />
@@ -40,6 +43,8 @@ export const Basic = (): JSX.Element => (
         resourceType: 'Media',
         id: '123',
         meta: { lastUpdated: '2021-01-01T12:00:00Z' },
+        status: 'completed',
+        content: { url: 'https://www.medplum.com/img/beat-boxing-mri.mp4' },
       }}
     >
       <video src="https://www.medplum.com/img/beat-boxing-mri.mp4" controls autoPlay muted></video>

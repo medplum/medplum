@@ -2,9 +2,9 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -13,7 +13,7 @@ async function setup(url: string): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <MantineProvider withGlobalStyles withNormalizeCSS>
+          <MantineProvider>
             <Notifications />
             <AppRoutes />
           </MantineProvider>
@@ -39,17 +39,16 @@ describe('SecretsPage', () => {
 
   test('Renders', async () => {
     await setup('/admin/secrets');
-    await waitFor(() => screen.getByText('Project Secrets'));
-    expect(screen.getByText('Project Secrets')).toBeInTheDocument();
+    expect(await screen.findByText('Project Secrets')).toBeInTheDocument();
   });
 
   test('Add and submit', async () => {
     await setup('/admin/secrets');
-    await waitFor(() => screen.getByTitle('Add'));
+    expect(await screen.findByTitle('Add Secret')).toBeInTheDocument();
 
     // Click the "Add" button
     await act(async () => {
-      fireEvent.click(screen.getByTitle('Add'));
+      fireEvent.click(screen.getByTitle('Add Secret'));
     });
 
     // Enter the secret name
@@ -68,6 +67,6 @@ describe('SecretsPage', () => {
     });
 
     // Wait for the toast
-    await waitFor(() => screen.getByText('Saved'));
+    expect(await screen.findByText('Saved')).toBeInTheDocument();
   });
 });

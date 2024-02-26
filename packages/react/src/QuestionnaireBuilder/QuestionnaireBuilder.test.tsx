@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
 
@@ -119,7 +119,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Handles AutoSave', async () => {
@@ -144,7 +144,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Add item'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Question 1'));
@@ -154,14 +154,14 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getAllByText('Remove')[0]);
     });
 
-    expect(onSubmit).toBeCalledTimes(2);
+    expect(onSubmit).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Add group'));
     });
 
     // Shouldn't autosave when adding a group
-    expect(onSubmit).toBeCalledTimes(2);
+    expect(onSubmit).toHaveBeenCalledTimes(2);
   });
 
   test('Sets ids', async () => {
@@ -195,7 +195,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     const result = onSubmit.mock.calls[0][0];
     expect(result.item[0].id).toBeDefined();
     expect(result.item[0].answerOption[0].id).toBeDefined();
@@ -236,7 +236,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -276,13 +276,13 @@ describe('QuestionnaireBuilder', () => {
     });
 
     // Should not submit without autosave flag
-    expect(onSubmit).not.toBeCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -330,7 +330,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -385,7 +385,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -428,7 +428,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -477,7 +477,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       title: 'Renamed',
@@ -569,7 +569,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -603,7 +603,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.mouseOver(screen.getByText('Question 1'));
     });
 
-    expect(screen.getByTestId('question1')).toHaveStyle('border: 1.5px solid #339af0;');
+    expect(screen.getByTestId('question1')).toHaveClass('hovering');
 
     await act(async () => {
       fireEvent.mouseOver(document.body);
@@ -658,7 +658,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -784,7 +784,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -842,7 +842,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -908,7 +908,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -982,7 +982,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [
@@ -1063,7 +1063,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       item: [

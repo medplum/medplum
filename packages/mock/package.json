@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "2.1.25",
+  "version": "3.0.5",
   "description": "Medplum Mock Client",
   "keywords": [
     "medplum",
@@ -48,20 +48,21 @@
   ],
   "scripts": {
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "*",
-    "@medplum/definitions": "*",
-    "@medplum/fhir-router": "*",
-    "@medplum/fhirtypes": "*",
+    "@medplum/core": "3.0.5",
+    "@medplum/definitions": "3.0.5",
+    "@medplum/fhir-router": "3.0.5",
+    "@medplum/fhirtypes": "3.0.5",
     "dataloader": "2.2.2",
+    "jest-websocket-mock": "2.5.0",
     "rfc6902": "5.1.1"
   },
   "devDependencies": {
-    "@types/pdfmake": "0.2.8"
+    "@types/pdfmake": "0.2.9"
   },
   "engines": {
     "node": ">=18.0.0"

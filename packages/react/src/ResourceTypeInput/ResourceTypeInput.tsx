@@ -3,13 +3,13 @@ import { useCallback, useState } from 'react';
 import { CodeInput } from '../CodeInput/CodeInput';
 
 export interface ResourceTypeInputProps {
-  name: string;
-  placeholder?: string;
-  defaultValue?: ResourceType;
-  targetTypes?: string[];
-  autoFocus?: boolean;
-  testId?: string;
-  onChange?: (value: ResourceType | undefined) => void;
+  readonly name: string;
+  readonly placeholder?: string;
+  readonly defaultValue?: ResourceType;
+  readonly autoFocus?: boolean;
+  readonly testId?: string;
+  readonly maxValues?: number;
+  readonly onChange?: (value: ResourceType | undefined) => void;
 }
 
 export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
@@ -34,11 +34,11 @@ export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
       onChange={setResourceTypeWrapper}
       name={props.name}
       placeholder={props.placeholder}
-      binding={'https://medplum.com/fhir/ValueSet/resource-types'}
+      binding="https://medplum.com/fhir/ValueSet/resource-types"
       creatable={false}
-      maxSelectedValues={0}
-      clearSearchOnChange={true}
+      maxValues={props.maxValues ?? 1}
       clearable={false}
+      withHelpText={false}
     />
   );
 }

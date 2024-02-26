@@ -1202,6 +1202,12 @@
       "type": "reference",
       "description": "The subject that the request group is about",
       "expression": "RequestGroup.subject"
+    },
+    {
+      "name": "priority-order",
+      "type": "number",
+      "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
+      "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
     }
   ]
 }

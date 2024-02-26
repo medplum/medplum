@@ -38,7 +38,7 @@ In the future, we hope that most of this maintenance will be 100% automatic and 
 In the "Super Admin" page, there are buttons and sections for:
 
 - Rebuild Structure Definitions
-- Rebuild Search Paramters
+- Rebuild Search Parameters
 - Rebuild Value Sets
 
 From time to time, Medplum will make changes to custom resources. The server runtime uses `StructureDefinition` and `SearchParameter` files directly from disk. However, the client requests `StructureDefinition` resources to dynamically generate client-side UI elements such as search filters, the "Details" page, and the "Edit" page. If a Medplum changes these resources, you may need to rebuild the index before you see the changes in the client.

@@ -122,7 +122,7 @@ export interface OperationDefinition {
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  name?: string;
+  name: string;
 
   /**
    * A short, descriptive, user-friendly title for the operation
@@ -134,12 +134,12 @@ export interface OperationDefinition {
    * The status of this operation definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * Whether this is an operation or a named query.
    */
-  kind?: 'operation' | 'query';
+  kind: 'operation' | 'query';
 
   /**
    * A Boolean value to indicate that this operation definition is authored
@@ -205,7 +205,7 @@ export interface OperationDefinition {
   /**
    * The name used to invoke the operation.
    */
-  code?: string;
+  code: string;
 
   /**
    * Additional information about how to use this operation or named query.
@@ -228,20 +228,20 @@ export interface OperationDefinition {
    * system level (e.g. without needing to choose a resource type for the
    * context).
    */
-  system?: boolean;
+  system: boolean;
 
   /**
    * Indicates whether this operation or named query can be invoked at the
    * resource type level for any given resource type level (e.g. without
    * needing to choose a specific resource id for the context).
    */
-  type?: boolean;
+  type: boolean;
 
   /**
    * Indicates whether this operation can be invoked on a particular
    * instance of one of the given types.
    */
-  instance?: boolean;
+  instance: boolean;
 
   /**
    * Additional validation information for the in parameters - a single
@@ -366,24 +366,24 @@ export interface OperationDefinitionParameter {
   /**
    * The name of used to identify the parameter.
    */
-  name?: string;
+  name: string;
 
   /**
    * Whether this is an input or an output parameter.
    */
-  use?: 'in' | 'out';
+  use: 'in' | 'out';
 
   /**
    * The minimum number of times this parameter SHALL appear in the request
    * or response.
    */
-  min?: number;
+  min: number;
 
   /**
    * The maximum number of times this element is permitted to appear in the
    * request or response.
    */
-  max?: string;
+  max: string;
 
   /**
    * Describes the meaning or use of this parameter.
@@ -478,13 +478,13 @@ export interface OperationDefinitionParameterBinding {
    * binding - that is, the degree to which the provided value set must be
    * adhered to in the instances.
    */
-  strength?: 'required' | 'extensible' | 'preferred' | 'example';
+  strength: 'required' | 'extensible' | 'preferred' | 'example';
 
   /**
    * Points to the value set or external definition (e.g. implicit value
    * set) that identifies the set of codes to be used.
    */
-  valueSet?: string;
+  valueSet: string;
 }
 
 /**
@@ -533,7 +533,7 @@ export interface OperationDefinitionParameterReferencedFrom {
    * pointing to the resource parameter that is expected to contain a
    * reference to this resource.
    */
-  source?: string;
+  source: string;
 
   /**
    * The id of the element in the referencing resource that is expected to

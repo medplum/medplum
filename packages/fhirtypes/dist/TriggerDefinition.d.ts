@@ -35,7 +35,7 @@ export interface TriggerDefinition {
   /**
    * The type of triggering event.
    */
-  type?: 'named-event' | 'periodic' | 'data-changed' | 'data-added' | 'data-modified' | 'data-removed' | 'data-accessed' | 'data-access-ended';
+  type: 'named-event' | 'periodic' | 'data-changed' | 'data-added' | 'data-modified' | 'data-removed' | 'data-accessed' | 'data-access-ended';
 
   /**
    * A formal name for the event. This may be an absolute URI that

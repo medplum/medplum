@@ -47,7 +47,7 @@ With everything up and running, it became pertinent to gauge the power consumpti
 
 ### UI Development
 
-Once power constraints were addressed, we used the [Medplum React components](/docs/ui-components) to assemble a mock dashboard showcasing health metrics of Artemis mission astronauts, monitoring vital signs and other crucial health parameters. We also included the spacecraft's intrinsic metrics, such as cabin temperature, pressure, oxygen levels, CO2 concentrations, and radiation readings.
+Once power constraints were addressed, we used the [Medplum React components](/docs/react) to assemble a mock dashboard showcasing health metrics of Artemis mission astronauts, monitoring vital signs and other crucial health parameters. We also included the spacecraft's intrinsic metrics, such as cabin temperature, pressure, oxygen levels, CO2 concentrations, and radiation readings.
 
 ![Medplum Space EHR](/img/blog/space-ehr-screenshot.png)
 

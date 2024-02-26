@@ -41,12 +41,13 @@ export function JsonPage(): JSX.Element | null {
         <JsonInput
           name="resource"
           data-testid="resource-json"
+          autosize
           minRows={24}
           defaultValue={stringify(resource, true)}
           formatOnBlur
           deserialize={JSON.parse}
         />
-        <Group position="right" mt="xl" noWrap>
+        <Group justify="flex-end" mt="xl" wrap="nowrap">
           <Button type="submit">OK</Button>
         </Group>
       </Form>

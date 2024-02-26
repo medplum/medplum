@@ -161,7 +161,7 @@ export interface DeviceRequest {
    * Whether the request is a proposal, plan, an original order or a reflex
    * order.
    */
-  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  intent: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates how quickly the {{title}} should be addressed with respect
@@ -188,7 +188,7 @@ export interface DeviceRequest {
   /**
    * The patient who will use the device.
    */
-  subject?: Reference<Patient | Group | Location | Device>;
+  subject: Reference<Patient | Group | Location | Device>;
 
   /**
    * An encounter that provides additional context in which this request is

@@ -1,6 +1,6 @@
 import { SearchRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { SearchFieldEditor } from './SearchFieldEditor';
 
 describe('SearchFieldEditor', () => {
@@ -40,7 +40,7 @@ describe('SearchFieldEditor', () => {
       fireEvent.click(screen.getByTestId('overlay-child'));
     });
 
-    expect(onCancel).not.toBeCalled();
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   test('Modal onClose called when overlay clicked while dropdown NOT open', async () => {
@@ -59,6 +59,6 @@ describe('SearchFieldEditor', () => {
       fireEvent.click(screen.getByTestId('overlay-child'));
     });
 
-    expect(onCancel).toBeCalled();
+    expect(onCancel).toHaveBeenCalled();
   });
 });

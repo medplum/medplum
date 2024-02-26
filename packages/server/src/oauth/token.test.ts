@@ -5,7 +5,7 @@ import {
   OAuthGrantType,
   OAuthTokenType,
   parseJWTPayload,
-  parseSearchDefinition,
+  parseSearchRequest,
 } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -18,7 +18,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret } from './keys';
 import { hashCode } from './token';
@@ -56,24 +56,25 @@ jest.mock('jose', () => {
 
 jest.mock('node-fetch');
 
-const app = express();
-const domain = randomUUID() + '.example.com';
-const email = `text@${domain}`;
-const password = randomUUID();
-const redirectUri = `https://${domain}/auth/callback`;
-let config: MedplumServerConfig;
-let project: Project;
-let client: ClientApplication;
-let pkceOptionalClient: ClientApplication;
-let externalAuthClient: ClientApplication;
-
 describe('OAuth2 Token', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  const domain = randomUUID() + '.example.com';
+  const email = `text@${domain}`;
+  const password = randomUUID();
+  const redirectUri = `https://${domain}/auth/callback`;
+  let config: MedplumServerConfig;
+  let project: Project;
+  let client: ClientApplication;
+  let pkceOptionalClient: ClientApplication;
+  let externalAuthClient: ClientApplication;
+
   beforeAll(async () => {
     config = await loadTestConfig();
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject());
+    ({ project, client } = await createTestProject({ withClient: true }));
 
     // Create a 2nd client with PKCE optional
     pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
@@ -279,7 +280,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token for client in super admin', async () => {
-    const { client } = await createTestProject({ superAdmin: true });
+    const { client } = await createTestProject({ superAdmin: true, withClient: true });
     const res1 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
       client_id: client.id,
@@ -294,6 +295,34 @@ describe('OAuth2 Token', () => {
     expect(claims.login_id).toBeDefined();
     const login = await systemRepo.readResource<Login>('Login', claims.login_id as string);
     expect(login.superAdmin).toBe(true);
+  });
+
+  test('Token for client in "off" status', async () => {
+    const { client } = await createTestProject({ withClient: true });
+    await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...client, status: 'off' }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid client');
+  });
+
+  test('Token for client in "active" status', async () => {
+    const { client } = await createTestProject({ withClient: true });
+    await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...client, status: 'active' }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
   });
 
   test('Token for authorization_code with missing code', async () => {
@@ -480,7 +509,7 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(200);
 
     // Find the login
-    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
     // Revoke the login
@@ -836,7 +865,7 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeDefined();
 
     // Find the login
-    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
     // Revoke the login
@@ -1354,7 +1383,7 @@ describe('OAuth2 Token', () => {
       client_assertion: jwt,
     });
     expect(res.status).toBe(200);
-    expect(jwtVerify).toBeCalledTimes(3);
+    expect(jwtVerify).toHaveBeenCalledTimes(3);
   });
 
   test('Client assertion multiple inner error', async () => {
@@ -1385,7 +1414,7 @@ describe('OAuth2 Token', () => {
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
-    expect(jwtVerify).toBeCalledTimes(2);
+    expect(jwtVerify).toHaveBeenCalledTimes(2);
   });
 
   test('Client assertion invalid assertion type', async () => {

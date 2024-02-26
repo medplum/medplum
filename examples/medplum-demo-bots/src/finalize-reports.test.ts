@@ -64,6 +64,7 @@ describe('Finalize Report', async () => {
     const report: DiagnosticReport = await medplum.createResource({
       resourceType: 'DiagnosticReport',
       status: 'preliminary',
+      code: { text: 'Body Mass Index' },
       result: [createReference(observation)],
     });
     // end-block create-resources
@@ -128,6 +129,7 @@ describe('Finalize Report', async () => {
     const report: DiagnosticReport = await medplum.createResource({
       resourceType: 'DiagnosticReport',
       status: 'preliminary',
+      code: { text: 'Body Mass Index' },
       result: [createReference(observation)],
     });
 
@@ -148,9 +150,9 @@ describe('Finalize Report', async () => {
     await handler(medplum, { input: updatedReport, contentType, secrets: {} });
 
     // Ensure that no modification methods were called
-    expect(updateResourceSpy).not.toBeCalled();
-    expect(createResourceSpy).not.toBeCalled();
-    expect(patchResourceSpy).not.toBeCalled();
+    expect(updateResourceSpy).not.toHaveBeenCalled();
+    expect(createResourceSpy).not.toHaveBeenCalled();
+    expect(patchResourceSpy).not.toHaveBeenCalled();
     // end-block test-idempotent
   });
 });

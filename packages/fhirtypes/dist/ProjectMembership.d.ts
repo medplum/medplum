@@ -55,7 +55,7 @@ export interface ProjectMembership {
   /**
    * Project where the memberships are available.
    */
-  project?: Reference<Project>;
+  project: Reference<Project>;
 
   /**
    * The project administrator who invited the user to the project.
@@ -65,13 +65,13 @@ export interface ProjectMembership {
   /**
    * User that is granted access to the project.
    */
-  user?: Reference<Bot | ClientApplication | User>;
+  user: Reference<Bot | ClientApplication | User>;
 
   /**
    * Reference to the resource that represents the user profile within the
    * project.
    */
-  profile?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
+  profile: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
    * A String that is an identifier for the resource as defined by the
@@ -120,7 +120,7 @@ export interface ProjectMembershipAccess {
    * The base access policy used as a template.  Variables in the template
    * access policy are replaced by the values in the parameter.
    */
-  policy?: Reference<AccessPolicy>;
+  policy: Reference<AccessPolicy>;
 
   /**
    * User options that control the display of the application.
@@ -136,7 +136,7 @@ export interface ProjectMembershipAccessParameter {
   /**
    * The unique name of the parameter.
    */
-  name?: string;
+  name: string;
 
   /**
    * Value of the parameter - must be one of a constrained set of the data

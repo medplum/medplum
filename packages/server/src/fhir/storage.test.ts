@@ -8,6 +8,7 @@ import { Request } from 'express';
 import fs from 'fs';
 import internal, { Readable } from 'stream';
 import { loadTestConfig } from '../config';
+import { streamToString } from '../test.setup';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
 describe('Storage', () => {
@@ -37,13 +38,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
 
     // Create a request
     const req = new Readable();
@@ -73,13 +74,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
     const req = new Readable();
     req.push('foo');
     req.push(null);
@@ -110,13 +111,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
     const req = new Readable();
     req.push('foo');
     req.push(null);
@@ -180,13 +181,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
 
     jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
@@ -205,13 +206,13 @@ describe('Storage', () => {
     expect(storage).toBeDefined();
 
     // Write a file
-    const binary: Binary = {
+    const binary = {
       resourceType: 'Binary',
       id: '123',
       meta: {
         versionId: '456',
       },
-    };
+    } as Binary;
     const req = new Readable();
     req.push('foo');
     req.push(null);
@@ -231,13 +232,13 @@ describe('Storage', () => {
     mockS3Client.reset();
 
     // Copy the object
-    const destinationBinary: Binary = {
+    const destinationBinary = {
       resourceType: 'Binary',
       id: '789',
       meta: {
         versionId: '012',
       },
-    };
+    } as Binary;
     await storage.copyBinary(binary, destinationBinary);
 
     expect(mockS3Client.send.callCount).toBe(1);
@@ -248,18 +249,3 @@ describe('Storage', () => {
     });
   });
 });
-
-/**
- * Reads a stream into a string.
- * See: https://stackoverflow.com/a/49428486/2051724
- * @param stream - The readable stream.
- * @returns The string contents.
- */
-export function streamToString(stream: internal.Readable): Promise<string> {
-  const chunks: Buffer[] = [];
-  return new Promise((resolve, reject) => {
-    stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    stream.on('error', (err) => reject(err));
-    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-  });
-}

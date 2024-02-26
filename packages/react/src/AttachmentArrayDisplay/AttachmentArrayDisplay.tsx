@@ -2,8 +2,8 @@ import { Attachment } from '@medplum/fhirtypes';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 
 export interface AttachmentArrayDisplayProps {
-  values?: Attachment[];
-  maxWidth?: number;
+  readonly values?: Attachment[];
+  readonly maxWidth?: number;
 }
 
 export function AttachmentArrayDisplay(props: AttachmentArrayDisplayProps): JSX.Element {

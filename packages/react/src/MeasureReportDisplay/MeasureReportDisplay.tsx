@@ -18,14 +18,7 @@ export function MeasureReportDisplay(props: MeasureReportDisplayProps): JSX.Elem
   return (
     <Box>
       {measure && <MeasureTitle measure={measure} />}
-      <SimpleGrid
-        cols={3}
-        breakpoints={[
-          { maxWidth: '48rem', cols: 2, spacing: 'md' },
-          { maxWidth: '36rem', cols: 1, spacing: 'sm' },
-        ]}
-        spacing={'md'}
-      >
+      <SimpleGrid cols={{ base: 3, sm: 1 }} spacing={{ base: 'md', sm: 'sm' }}>
         {report.group?.map((group: MeasureReportGroup, idx: number) => (
           <MeasureReportGroupDisplay key={group.id ?? idx} group={group} />
         ))}

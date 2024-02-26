@@ -29,10 +29,10 @@ export function compressElement(element: InternalSchemaElement): Partial<Interna
   return outputPropertySchema;
 }
 
-export function inflateElement(partial: Partial<InternalSchemaElement>): InternalSchemaElement {
+export function inflateElement(path: string, partial: Partial<InternalSchemaElement>): InternalSchemaElement {
   const max = partial.max && partial.max === Number.MAX_SAFE_INTEGER ? Number.POSITIVE_INFINITY : partial.max;
   return {
-    path: '',
+    path,
     description: '',
     type: partial.type ?? [],
     min: partial.min ?? 0,
@@ -42,13 +42,15 @@ export function inflateElement(partial: Partial<InternalSchemaElement>): Interna
   };
 }
 
-export function inflateBaseSchema(base: BaseSchema): Record<string, InternalTypeSchema> {
-  const output: Record<string, InternalTypeSchema> = Object.create(null);
+export type DataTypesMap = { [type: string]: InternalTypeSchema };
+
+export function inflateBaseSchema(base: BaseSchema): DataTypesMap {
+  const output: DataTypesMap = Object.create(null);
   for (const [key, schema] of Object.entries(base)) {
     output[key] = {
       name: key,
       elements: Object.fromEntries(
-        Object.entries(schema.elements).map(([property, partial]) => [property, inflateElement(partial)])
+        Object.entries(schema.elements).map(([property, partial]) => [property, inflateElement(property, partial)])
       ),
       constraints: [],
       innerTypes: [],

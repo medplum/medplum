@@ -126,7 +126,7 @@ export interface DocumentReference {
   /**
    * The status of this document reference.
    */
-  status?: 'current' | 'superseded' | 'entered-in-error';
+  status: 'current' | 'superseded' | 'entered-in-error';
 
   /**
    * The status of the underlying document.
@@ -202,7 +202,7 @@ export interface DocumentReference {
    * The document and format referenced. There may be multiple content
    * element repetitions, each with a different format.
    */
-  content?: DocumentReferenceContent[];
+  content: DocumentReferenceContent[];
 
   /**
    * The clinical context in which the document was prepared.
@@ -255,7 +255,7 @@ export interface DocumentReferenceContent {
    * The document or URL of the document along with critical metadata to
    * prove content has integrity.
    */
-  attachment?: Attachment;
+  attachment: Attachment;
 
   /**
    * An identifier of the document encoding, structure, and template that
@@ -394,10 +394,10 @@ export interface DocumentReferenceRelatesTo {
   /**
    * The type of relationship that this document has with anther document.
    */
-  code?: 'replaces' | 'transforms' | 'signs' | 'appends';
+  code: 'replaces' | 'transforms' | 'signs' | 'appends';
 
   /**
    * The target document of this relationship.
    */
-  target?: Reference<DocumentReference>;
+  target: Reference<DocumentReference>;
 }

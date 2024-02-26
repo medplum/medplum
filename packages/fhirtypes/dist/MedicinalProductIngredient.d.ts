@@ -104,7 +104,7 @@ export interface MedicinalProductIngredient {
   /**
    * Ingredient role e.g. Active ingredient, excipient.
    */
-  role?: CodeableConcept;
+  role: CodeableConcept;
 
   /**
    * If the ingredient is a known or suspected allergen.
@@ -170,12 +170,12 @@ export interface MedicinalProductIngredientSpecifiedSubstance {
   /**
    * The specified substance.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The group of specified substance, e.g. group 1 to 4.
    */
-  group?: CodeableConcept;
+  group: CodeableConcept;
 
   /**
    * Confidentiality level of the specified substance as the ingredient.
@@ -235,7 +235,7 @@ export interface MedicinalProductIngredientSpecifiedSubstanceStrength {
    * volume (or mass) of the single pharmaceutical product or manufactured
    * item.
    */
-  presentation?: Ratio;
+  presentation: Ratio;
 
   /**
    * A lower limit for the quantity of substance in the unit of
@@ -320,7 +320,7 @@ export interface MedicinalProductIngredientSpecifiedSubstanceStrengthReferenceSt
   /**
    * Strength expressed in terms of a reference substance.
    */
-  strength?: Ratio;
+  strength: Ratio;
 
   /**
    * Strength expressed in terms of a reference substance.
@@ -381,7 +381,7 @@ export interface MedicinalProductIngredientSubstance {
   /**
    * The ingredient substance.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * Quantity of the substance or specified substance present in the

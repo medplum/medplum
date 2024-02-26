@@ -13,6 +13,7 @@ export type ExternalSecret<T extends ExternalSecretPrimitive = ExternalSecretPri
   type: TypeName<T>;
 };
 export type ValueOrExternalSecret<T extends ExternalSecretPrimitive> = T | ExternalSecret<T>;
+export type StringMap = { [key: string]: string };
 
 export interface MedplumSourceInfraConfig {
   name: ValueOrExternalSecret<string>;
@@ -41,8 +42,10 @@ export interface MedplumSourceInfraConfig {
   maxAzs: ValueOrExternalSecret<number>;
   rdsInstances: ValueOrExternalSecret<number>;
   rdsInstanceType: ValueOrExternalSecret<string>;
-  rdsInstanceVersion: ValueOrExternalSecret<string>;
+  rdsInstanceVersion?: ValueOrExternalSecret<string>;
   rdsSecretsArn?: ValueOrExternalSecret<string>;
+  rdsReaderInstanceType?: ValueOrExternalSecret<string>;
+  rdsProxyEnabled?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   desiredServerCount: ValueOrExternalSecret<number>;
   serverImage: ValueOrExternalSecret<string>;
@@ -54,6 +57,7 @@ export interface MedplumSourceInfraConfig {
   clamscanLoggingBucket: ValueOrExternalSecret<string>;
   clamscanLoggingPrefix: ValueOrExternalSecret<string>;
   skipDns?: ValueOrExternalSecret<boolean>;
+  hostedZoneName?: ValueOrExternalSecret<string>;
   additionalContainers?: {
     name: ValueOrExternalSecret<string>;
     image: ValueOrExternalSecret<string>;
@@ -71,6 +75,7 @@ export interface MedplumSourceInfraConfig {
     snsTopicArn?: ValueOrExternalSecret<string>;
     snsTopicName?: ValueOrExternalSecret<string>;
   };
+  environment?: StringMap;
 }
 
 export interface MedplumInfraConfig {
@@ -102,6 +107,8 @@ export interface MedplumInfraConfig {
   rdsInstanceType: string;
   rdsInstanceVersion?: string;
   rdsSecretsArn?: string;
+  rdsReaderInstanceType?: string;
+  rdsProxyEnabled?: boolean;
   cacheNodeType?: string;
   desiredServerCount: number;
   serverImage: string;
@@ -113,6 +120,7 @@ export interface MedplumInfraConfig {
   clamscanLoggingBucket: string;
   clamscanLoggingPrefix: string;
   skipDns?: boolean;
+  hostedZoneName?: string;
   additionalContainers?: {
     name: string;
     image: string;
@@ -130,4 +138,5 @@ export interface MedplumInfraConfig {
     snsTopicArn?: string;
     snsTopicName?: string;
   };
+  environment?: StringMap;
 }

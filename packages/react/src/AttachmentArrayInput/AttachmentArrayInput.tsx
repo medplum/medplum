@@ -7,10 +7,10 @@ import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentArrayInputProps {
-  name: string;
-  defaultValue?: Attachment[];
-  arrayElement?: boolean;
-  onChange?: (value: Attachment[]) => void;
+  readonly name: string;
+  readonly defaultValue?: Attachment[];
+  readonly arrayElement?: boolean;
+  readonly onChange?: (value: Attachment[]) => void;
 }
 
 export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Element {
@@ -41,7 +41,9 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
             <td>
               <ActionIcon
                 title="Remove"
+                variant="subtle"
                 size="sm"
+                color="gray"
                 onClick={(e: MouseEvent) => {
                   killEvent(e);
                   const copy = values.slice();
@@ -63,8 +65,8 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
               }}
             >
               {(props) => (
-                <ActionIcon {...props} title="Add" size="sm" color="green">
-                  <IconCloudUpload size={16} />
+                <ActionIcon {...props} title="Add" variant="subtle" size="sm" color="green">
+                  <IconCloudUpload />
                 </ActionIcon>
               )}
             </AttachmentButton>

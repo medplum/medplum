@@ -1,144 +1,139 @@
 import { ContentType } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import express from 'express';
+import express, { Express } from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
-import { initTestAuth } from '../test.setup';
-import { cleanupHeartbeat, cleanupPromises, heartbeatTopics, waitForWebSocketsCleanup } from './websocket';
-
-const app = express();
-let config: MedplumServerConfig;
-let server: Server;
-let accessToken: string;
+import { getRedis } from '../redis';
+import { initTestAuth, withTestContext } from '../test.setup';
 
 describe('FHIRcast WebSocket', () => {
-  beforeAll(async () => {
-    config = await loadTestConfig();
-    server = await initApp(app, config);
-    accessToken = await initTestAuth({}, { admin: true });
-    await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, resolve);
-    });
-  });
-
-  afterAll(async () => {
-    await shutdownApp();
-  });
-
   describe('Basic flow', () => {
-    test('Send message to subscriber', async () => {
-      const topic = randomUUID();
-      const patient = randomUUID();
+    let app: Express;
+    let config: MedplumServerConfig;
+    let server: Server;
+    let accessToken: string;
 
-      await request(server)
-        .ws('/ws/fhircast/' + topic)
-        .expectJson((obj) => {
-          // Connection verification message
-          expect(obj['hub.topic']).toBe(topic);
-        })
-        .exec(async () => {
-          const res = await request(server)
-            .post(`/fhircast/STU3/${topic}`)
-            .set('Content-Type', ContentType.JSON)
-            .set('Authorization', 'Bearer ' + accessToken)
-            .send({
-              timestamp: new Date().toISOString(),
-              id: randomUUID(),
-              event: {
-                'hub.topic': topic,
-                'hub.event': 'Patient-open',
-                context: [
-                  {
-                    key: 'patient',
-                    resource: {
-                      resourceType: 'Patient',
-                      id: patient,
-                    },
-                  },
-                ],
-              },
-            });
-          expect(res.status).toBe(201);
-          expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
-        })
-        .expectJson((obj) => {
-          // Event message
-          expect(obj.event['hub.topic']).toBe(topic);
-          expect(obj.event['hub.event']).toBe('Patient-open');
-        })
-        .sendJson({ ok: true })
-        .close()
-        .expectClosed();
+    beforeAll(async () => {
+      app = express();
+      config = await loadTestConfig();
+      config.heartbeatEnabled = false;
+      server = await initApp(app, config);
+      await getRedis().flushdb();
+      accessToken = await initTestAuth({ membership: { admin: true } });
+      await new Promise<void>((resolve) => {
+        server.listen(0, 'localhost', 511, resolve);
+      });
     });
+
+    afterAll(async () => {
+      await shutdownApp();
+    });
+
+    test('Send message to subscriber', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const patient = randomUUID();
+
+        await request(server)
+          .ws('/ws/fhircast/' + topic)
+          .expectJson((obj) => {
+            // Connection verification message
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .exec(async () => {
+            const res = await request(server)
+              .post(`/fhircast/STU3/${topic}`)
+              .set('Content-Type', ContentType.JSON)
+              .set('Authorization', 'Bearer ' + accessToken)
+              .send({
+                timestamp: new Date().toISOString(),
+                id: randomUUID(),
+                event: {
+                  'hub.topic': topic,
+                  'hub.event': 'Patient-open',
+                  context: [
+                    {
+                      key: 'patient',
+                      resource: {
+                        resourceType: 'Patient',
+                        id: patient,
+                      },
+                    },
+                  ],
+                },
+              });
+            expect(res.status).toBe(201);
+            expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
+          })
+          .expectJson((obj) => {
+            // Event message
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('Patient-open');
+          })
+          .sendJson({ ok: true })
+          .close()
+          .expectClosed();
+      }));
   });
 
   describe('Heartbeat', () => {
-    let setTimeoutSpy: jest.SpyInstance;
-    beforeAll(() => {
-      jest.useFakeTimers();
+    let app: Express;
+    let config: MedplumServerConfig;
+    let server: Server;
+
+    beforeAll(async () => {
+      app = express();
+      config = await loadTestConfig();
+      config.heartbeatMilliseconds = 25;
+      server = await initApp(app, config);
+      await getRedis().flushdb();
+      await new Promise<void>((resolve) => {
+        server.listen(0, 'localhost', 511, resolve);
+      });
     });
 
-    afterAll(() => {
-      jest.useRealTimers();
+    afterAll(async () => {
+      await shutdownApp();
     });
 
-    beforeEach(() => {
-      setTimeoutSpy = jest.spyOn(global, 'setTimeout');
-    });
+    test('Check that we get a heartbeat', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        await request(server)
+          .ws('/ws/fhircast/' + topic)
+          .expectJson((obj) => {
+            // Connection verification message
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .expectJson((obj) => {
+            // Event message
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('heartbeat');
+          })
+          .sendJson({ ok: true })
+          .close()
+          .expectClosed();
+      }));
 
-    afterEach(() => {
-      cleanupHeartbeat();
-    });
-
-    test('Check that we get a heartbeat', async () => {
-      const topic = randomUUID();
-      await request(server)
-        .ws('/ws/fhircast/' + topic)
-        .expectJson((obj) => {
-          // Connection verification message
-          expect(obj['hub.topic']).toBe(topic);
-        })
-        .exec(() => jest.advanceTimersByTime(10001))
-        .expectJson((obj) => {
-          // Event message
-          expect(obj.event['hub.topic']).toBe(topic);
-          expect(obj.event['hub.event']).toBe('heartbeat');
-        })
-        .sendJson({ ok: true })
-        .close()
-        .expectClosed();
-
-      await waitForWebSocketsCleanup();
-    });
-
-    test('Check that timer and promises are cleaned up after no topics active', async () => {
-      const topic = randomUUID();
-      await request(server)
-        .ws('/ws/fhircast/' + topic)
-        .expectJson((obj) => {
-          // Connection verification message
-          expect(obj['hub.topic']).toBe(topic);
-        })
-        .exec(() => jest.advanceTimersByTime(10001))
-        .expectJson((obj) => {
-          // Event message
-          expect(obj.event['hub.topic']).toBe(topic);
-          expect(obj.event['hub.event']).toBe('heartbeat');
-        })
-        .sendJson({ ok: true })
-        .close()
-        .expectClosed();
-
-      await waitForWebSocketsCleanup();
-      // We check that promises are cleaned up after a WebSocket closes
-      expect(cleanupPromises.size).toBe(0);
-
-      setTimeoutSpy.mockReset();
-      jest.advanceTimersByTime(10001);
-      expect(heartbeatTopics.size).toBe(0);
-      expect(setTimeoutSpy).not.toHaveBeenCalled();
-    });
+    test('Check that timer and promises are cleaned up after no topics active', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        await request(server)
+          .ws('/ws/fhircast/' + topic)
+          .expectJson((obj) => {
+            // Connection verification message
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .expectJson((obj) => {
+            // Event message
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('heartbeat');
+          })
+          .sendJson({ ok: true })
+          .close()
+          .expectClosed();
+      }));
   });
 });

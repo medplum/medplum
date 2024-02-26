@@ -113,7 +113,7 @@ export interface Immunization {
   /**
    * Indicates the current status of the immunization event.
    */
-  status?: 'completed' | 'entered-in-error' | 'not-done';
+  status: 'completed' | 'entered-in-error' | 'not-done';
 
   /**
    * Indicates the reason the immunization event was not performed.
@@ -123,12 +123,12 @@ export interface Immunization {
   /**
    * Vaccine that was administered or was to be administered.
    */
-  vaccineCode?: CodeableConcept;
+  vaccineCode: CodeableConcept;
 
   /**
    * The patient who either received or did not receive the immunization.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The visit or admission or other contact between patient and health
@@ -379,7 +379,7 @@ export interface ImmunizationPerformer {
   /**
    * The practitioner or organization who performed the action.
    */
-  actor?: Reference<Practitioner | PractitionerRole | Organization>;
+  actor: Reference<Practitioner | PractitionerRole | Organization>;
 }
 
 /**

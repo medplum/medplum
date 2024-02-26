@@ -43,6 +43,14 @@ export interface ClientApplication {
   language?: string;
 
   /**
+   * The client application status. The status is active by default. The
+   * status can be set to error to indicate that the client application is
+   * not working properly. The status can be set to off to indicate that
+   * the client application is no longer in use.
+   */
+  status?: 'active' | 'off' | 'error';
+
+  /**
    * A name associated with the ClientApplication.
    */
   name?: string;

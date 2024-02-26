@@ -1,8 +1,8 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { RequestGroupDisplay } from './RequestGroupDisplay';
 
 const medplum = new MockClient();

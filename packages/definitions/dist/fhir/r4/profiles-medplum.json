@@ -95,6 +95,22 @@
             }]
           },
           {
+            "id" : "Project.identifier",
+            "path" : "Project.identifier",
+            "short" : "An identifier for this project",
+            "definition" : "An identifier for this project.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "Project.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "Project.name",
             "path" : "Project.name",
             "definition" : "A name associated with the Project.",
@@ -204,7 +220,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/project-feature|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/project-feature"
             }
           },
           {
@@ -381,6 +397,32 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id": "Project.link",
+            "path": "Project.link",
+            "definition": "Linked Projects whose contents are made available to this one",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.link",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.link.project",
+            "path": "Project.link.project",
+            "definition": "A reference to the Project to be linked into this one",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "Reference", "targetProfile": ["Project"]}],
+            "base": {
+              "path": "Project.link.project",
+              "min": 1,
+              "max": "1"
+            }
           }
         ]
       }
@@ -474,6 +516,26 @@
             "type" : [{
               "code" : "code"
             }]
+          },
+          {
+            "id" : "ClientApplication.status",
+            "path" : "ClientApplication.status",
+            "short" : "active | error | off",
+            "definition" : "The client application status. The status is active by default. The status can be set to error to indicate that the client application is not working properly. The status can be set to off to indicate that the client application is no longer in use.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "ClientApplication.status",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/CodeSystem/client-application-status"
+            }
           },
           {
             "id" : "ClientApplication.name",
@@ -687,6 +749,22 @@
             "type" : [{
               "code" : "code"
             }]
+          },
+          {
+            "id" : "User.identifier",
+            "path" : "User.identifier",
+            "short" : "An identifier for this user",
+            "definition" : "An identifier for this user.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "User.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
           },
           {
             "id" : "User.firstName",
@@ -4145,7 +4223,7 @@
             "path" : "Agent.channel",
             "short" : "The channel on which to report matches to the criteria",
             "definition" : "Details where to send notifications when resources are received that meet the criteria.",
-            "min" : 1,
+            "min" : 0,
             "max" : "*",
             "base" : {
               "path" : "Agent.channel",

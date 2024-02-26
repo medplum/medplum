@@ -46,7 +46,7 @@ export interface UsageContext {
    * A code that identifies the type of context being specified by this
    * usage context.
    */
-  code?: Coding;
+  code: Coding;
 
   /**
    * A value that defines the context specified in this context of use. The

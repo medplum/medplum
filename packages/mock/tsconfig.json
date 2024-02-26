@@ -1,4 +1,10 @@
 {
   "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "es2020",
+    "outDir": "dist/types",
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
   "include": ["src/**/*.ts"]
 }

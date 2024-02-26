@@ -106,7 +106,7 @@ export interface MedicinalProductPharmaceutical {
   /**
    * The administrable dose form, after necessary reconstitution.
    */
-  administrableDoseForm?: CodeableConcept;
+  administrableDoseForm: CodeableConcept;
 
   /**
    * Todo.
@@ -132,7 +132,7 @@ export interface MedicinalProductPharmaceutical {
    * The path by which the pharmaceutical product is taken into or makes
    * contact with the body.
    */
-  routeOfAdministration?: MedicinalProductPharmaceuticalRouteOfAdministration[];
+  routeOfAdministration: MedicinalProductPharmaceuticalRouteOfAdministration[];
 }
 
 /**
@@ -178,7 +178,7 @@ export interface MedicinalProductPharmaceuticalCharacteristics {
   /**
    * A coded characteristic.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The status of characteristic e.g. assigned or pending.
@@ -230,7 +230,7 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministration {
   /**
    * Coded expression for the route.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The first dose (dose quantity) administered in humans can be
@@ -315,7 +315,7 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecie
   /**
    * Coded expression for the species.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * A species specific time during which consumption of animal product is
@@ -369,12 +369,12 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecie
    * Coded expression for the type of tissue for which the withdrawal
    * period applues, e.g. meat, milk.
    */
-  tissue?: CodeableConcept;
+  tissue: CodeableConcept;
 
   /**
    * A value for the time.
    */
-  value?: Quantity;
+  value: Quantity;
 
   /**
    * Extra information about the withdrawal period.

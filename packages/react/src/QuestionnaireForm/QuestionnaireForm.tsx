@@ -12,15 +12,15 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
-import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
+import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
 export interface QuestionnaireFormProps {
-  questionnaire: Questionnaire | Reference<Questionnaire>;
-  subject?: Reference;
-  encounter?: Reference<Encounter>;
-  submitButtonText?: string;
-  onSubmit: (response: QuestionnaireResponse) => void;
+  readonly questionnaire: Questionnaire | Reference<Questionnaire>;
+  readonly subject?: Reference;
+  readonly encounter?: Reference<Encounter>;
+  readonly submitButtonText?: string;
+  readonly onSubmit: (response: QuestionnaireResponse) => void;
 }
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
@@ -52,6 +52,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
     const newResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
       item: mergedItems,
     };
 
@@ -62,7 +63,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     return isQuestionEnabled(item, response?.item ?? []);
   }
 
-  if (!schemaLoaded || !questionnaire) {
+  if (!schemaLoaded || !questionnaire || !response) {
     return null;
   }
 

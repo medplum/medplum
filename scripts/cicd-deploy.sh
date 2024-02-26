@@ -6,6 +6,9 @@
 # Inspects files changed in the most recent commit
 # and deploys the appropriate service
 
+# Echo commands
+set -x
+
 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
 echo "$COMMIT_MESSAGE"
 
@@ -77,15 +80,17 @@ fi
 # Send a slack message
 #
 
+ESCAPED_COMMIT_MESSAGE=$(echo "$COMMIT_MESSAGE" | sed 's/"/\\"/g')
+
 read -r -d '' PAYLOAD <<- EOM
 {
-  "text": "Deploying ${COMMIT_MESSAGE}",
+  "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}",
   "blocks": [
     {
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "Deploying ${COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n* Deploy server: ${DEPLOY_SERVER}"
+        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n* Deploy server: ${DEPLOY_SERVER}"
       }
     }
   ]
@@ -113,5 +118,6 @@ fi
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
+  source ./scripts/build-docker.sh
   source ./scripts/deploy-server.sh
 fi

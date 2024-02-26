@@ -1,7 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { ReactNode } from 'react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { CodingInput } from './CodingInput';
 
 const medplum = new MockClient();
@@ -34,7 +34,7 @@ describe('CodingInput', () => {
   test('Renders Coding default value', async () => {
     await setup(<CodingInput binding={binding} name="test" defaultValue={{ code: 'abc' }} />);
 
-    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.getByText('abc')).toBeDefined();
   });
 
@@ -91,6 +91,6 @@ describe('CodingInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
     // Despite an undefined binding value, the app still renders and functions
-    expect(screen.getByDisplayValue('Test Empty')).toBeDefined();
+    expect(screen.getByText('Test Empty')).toBeDefined();
   });
 });

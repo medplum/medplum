@@ -308,13 +308,13 @@ export interface LocationPosition {
    * Longitude. The value domain and the interpretation are the same as for
    * the text of the longitude element in KML (see notes below).
    */
-  longitude?: number;
+  longitude: number;
 
   /**
    * Latitude. The value domain and the interpretation are the same as for
    * the text of the latitude element in KML (see notes below).
    */
-  latitude?: number;
+  latitude: number;
 
   /**
    * Altitude. The value domain and the interpretation are the same as for

@@ -8,8 +8,8 @@ describe('DOM utils', () => {
     };
 
     killEvent(e as unknown as Event);
-    expect(e.preventDefault).toBeCalled();
-    expect(e.stopPropagation).toBeCalled();
+    expect(e.preventDefault).toHaveBeenCalled();
+    expect(e.stopPropagation).toHaveBeenCalled();
   });
 
   test('isCheckboxCell', () => {

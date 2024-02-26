@@ -21,11 +21,11 @@ import { ChangeEvent, useCallback, useState } from 'react';
 const data = ['USD', 'EUR', 'CAD', 'GBP', 'AUD'];
 
 export interface MoneyInputProps {
-  name: string;
-  label?: string;
-  placeholder?: string;
-  defaultValue?: Money;
-  onChange?: (value: Money) => void;
+  readonly name: string;
+  readonly label?: string;
+  readonly placeholder?: string;
+  readonly defaultValue?: Money;
+  readonly onChange?: (value: Money) => void;
 }
 
 export function MoneyInput(props: MoneyInputProps): JSX.Element {
@@ -81,10 +81,11 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
   return (
     <TextInput
       type="number"
+      name={props.name}
       label={props.label}
       placeholder={props.placeholder ?? 'Value'}
       defaultValue={value?.value?.toString() ?? 'USD'}
-      icon={<IconCurrencyDollar size={14} />}
+      leftSection={<IconCurrencyDollar size={14} />}
       rightSection={select}
       rightSectionWidth={92}
       onChange={handleValueChange}

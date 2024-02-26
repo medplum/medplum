@@ -293,9 +293,7 @@ describe('Config', () => {
     // Test [object, string] => throws
     test('Provided object, expected string => throws', () => {
       // @ts-expect-error rawValue must be a valid primitive, string | boolean | number
-      expect(() => normalizeFetchedValue('medplumString', { med: 'plum' }, 'string')).toThrowError(
-        OperationOutcomeError
-      );
+      expect(() => normalizeFetchedValue('medplumString', { med: 'plum' }, 'string')).toThrow(OperationOutcomeError);
     });
     // Test [string, string] => return raw
     test('Provided string, expected string => rawValue', () => {
@@ -311,7 +309,7 @@ describe('Config', () => {
     });
     // Test [invalidNumStr, number] => throws
     test('Provided non-numeric string, expected number => throws', () => {
-      expect(() => normalizeFetchedValue('medplumNumber', 'medplum', 'number')).toThrowError(OperationOutcomeError);
+      expect(() => normalizeFetchedValue('medplumNumber', 'medplum', 'number')).toThrow(OperationOutcomeError);
     });
     // Test [string, boolean] => boolean
     test('Provided string, expected boolean => parsedBoolean', () => {
@@ -322,18 +320,18 @@ describe('Config', () => {
     });
     // Test [invalidStr, boolean] => throws
     test('Provided string, expected boolean => parsedBoolean', () => {
-      expect(() => normalizeFetchedValue('medplumBool', 'TRUEE', 'boolean')).toThrowError(OperationOutcomeError);
-      expect(() => normalizeFetchedValue('medplumBool', '10', 'boolean')).toThrowError(OperationOutcomeError);
-      expect(() => normalizeFetchedValue('medplumBool', '0', 'boolean')).toThrowError(OperationOutcomeError);
+      expect(() => normalizeFetchedValue('medplumBool', 'TRUEE', 'boolean')).toThrow(OperationOutcomeError);
+      expect(() => normalizeFetchedValue('medplumBool', '10', 'boolean')).toThrow(OperationOutcomeError);
+      expect(() => normalizeFetchedValue('medplumBool', '0', 'boolean')).toThrow(OperationOutcomeError);
     });
     // Test [bool, number] => throws
     test('Provided boolean, expected number => throws', () => {
-      expect(() => normalizeFetchedValue('medplumNumber', true, 'number')).toThrowError(OperationOutcomeError);
+      expect(() => normalizeFetchedValue('medplumNumber', true, 'number')).toThrow(OperationOutcomeError);
     });
     // Test [string, invalid_type] => throws
     test('Provided string, expected {invalidType} => throws', () => {
       // @ts-expect-error Plum is not a valid expectedType
-      expect(() => normalizeFetchedValue('medplum???', 'medplum', 'plum')).toThrowError(OperationOutcomeError);
+      expect(() => normalizeFetchedValue('medplum???', 'medplum', 'plum')).toThrow(OperationOutcomeError);
     });
   });
 
@@ -440,7 +438,7 @@ describe('Config', () => {
           key: 'medplumString',
           type: 'plum',
         })
-      ).toThrowError(OperationOutcomeError);
+      ).toThrow(OperationOutcomeError);
     });
     // Test completely invalid secret
     test('Invalid ExternalSecret', () => {
@@ -449,7 +447,7 @@ describe('Config', () => {
           key: 10,
           type: true,
         })
-      ).toThrowError(OperationOutcomeError);
+      ).toThrow(OperationOutcomeError);
     });
   });
 

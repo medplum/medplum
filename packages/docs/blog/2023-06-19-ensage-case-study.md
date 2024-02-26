@@ -6,7 +6,7 @@ authors:
   title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
-tags: [interop, fhir-datastore, compliance, case-study]
+tags: [interop, fhir-datastore, compliance, case-study, geriatrics]
 ---
 
 # Ensage Case Study: Risk Management for Elderly Populations in Value-Based Care Settings

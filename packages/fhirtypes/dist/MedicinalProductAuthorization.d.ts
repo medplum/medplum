@@ -301,7 +301,7 @@ export interface MedicinalProductAuthorizationProcedure {
   /**
    * Type of procedure.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Date of procedure.

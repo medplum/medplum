@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Questionnaire } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue } from '../types';
-import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { InternalSchemaElement, indexStructureDefinitionBundle } from '../typeschema/types';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
@@ -9,7 +9,11 @@ import {
   fhirPathEquivalent,
   fhirPathIs,
   getTypedPropertyValue,
+  getTypedPropertyValueWithSchema,
+  isDateString,
+  isDateTimeString,
   toJsBoolean,
+  toPeriod,
   toTypedValue,
 } from './utils';
 
@@ -138,11 +142,18 @@ describe('FHIRPath utils', () => {
       getTypedPropertyValue(toTypedValue({ resourceType: 'Patient', identifier: [] }), 'identifier')
     ).toBeUndefined();
     expect(getTypedPropertyValue({ type: 'X', value: { x: [] } }, 'x')).toBeUndefined();
+
+    // Property path that is part of multi-type element in schema
+    expect(getTypedPropertyValue({ type: 'Extension', value: { valueBoolean: true } }, 'valueBoolean')).toEqual({
+      type: 'boolean',
+      value: true,
+    });
   });
 
   test('Bundle entries', () => {
     const bundle: Bundle = {
       resourceType: 'Bundle',
+      type: 'searchset',
       entry: [
         {
           resource: {
@@ -215,6 +226,79 @@ describe('FHIRPath utils', () => {
         linkId: '1.1',
         type: 'display',
       },
+    });
+  });
+
+  test('getTypedPropertyValueWithSchema', () => {
+    const typedValue: TypedValue = { type: 'Patient', value: { active: true } };
+    const path = 'active';
+    const goodElement: InternalSchemaElement = {
+      description: '',
+      path: 'Patient.active',
+      min: 0,
+      max: 0,
+      type: [{ code: 'boolean' }],
+    };
+    expect(getTypedPropertyValueWithSchema(typedValue, path, goodElement)).toEqual({ type: 'boolean', value: true });
+
+    const choiceOfTypeTypedValue: TypedValue = { type: 'Extension', value: { valueBoolean: true } };
+    const extensionValueX: InternalSchemaElement = {
+      description: '',
+      path: 'Extension.value[x]',
+      min: 1,
+      max: 1,
+      type: [{ code: 'boolean' }],
+    };
+    expect(getTypedPropertyValueWithSchema(choiceOfTypeTypedValue, 'value[x]', extensionValueX)).toEqual({
+      type: 'boolean',
+      value: true,
+    });
+  });
+
+  test('isDateString', () => {
+    expect(isDateString(undefined)).toBe(false);
+    expect(isDateString(null)).toBe(false);
+    expect(isDateString('')).toBe(false);
+    expect(isDateString('x')).toBe(false);
+    expect(isDateString('2020')).toBe(true);
+    expect(isDateString('2020-01')).toBe(true);
+    expect(isDateString('2020-01-01')).toBe(true);
+    expect(isDateString('2020-01-01T')).toBe(false);
+  });
+
+  test('isDateTimeString', () => {
+    expect(isDateTimeString(undefined)).toBe(false);
+    expect(isDateTimeString(null)).toBe(false);
+    expect(isDateTimeString('')).toBe(false);
+    expect(isDateTimeString('x')).toBe(false);
+    expect(isDateTimeString('2020')).toBe(true);
+    expect(isDateTimeString('2020-01')).toBe(true);
+    expect(isDateTimeString('2020-01-01')).toBe(true);
+    expect(isDateTimeString('2020-01-01T12:34:56Z')).toBe(true);
+  });
+
+  test('toPeriod', () => {
+    expect(toPeriod(undefined)).toBeUndefined();
+    expect(toPeriod(null)).toBeUndefined();
+    expect(toPeriod('')).toBeUndefined();
+    expect(toPeriod('x')).toBeUndefined();
+    expect(toPeriod({})).toBeUndefined();
+    expect(toPeriod('2020-01-01')).toMatchObject({
+      start: '2020-01-01T00:00:00.000Z',
+      end: '2020-01-01T23:59:59.999Z',
+    });
+    expect(toPeriod('2020-01-01T12:34:56.000Z')).toMatchObject({
+      start: '2020-01-01T12:34:56.000Z',
+      end: '2020-01-01T12:34:56.000Z',
+    });
+    expect(
+      toPeriod({
+        start: '2020-01-01T12:34:56.000Z',
+        end: '2020-01-01T12:34:56.999Z',
+      })
+    ).toMatchObject({
+      start: '2020-01-01T12:34:56.000Z',
+      end: '2020-01-01T12:34:56.999Z',
     });
   });
 });

@@ -7,16 +7,20 @@ import {
   getReferenceString,
   ProfileResource,
 } from '@medplum/core';
+import { Reference, User } from '@medplum/fhirtypes';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
  */
 export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, res: Response) => {
+  const systemRepo = getSystemRepo();
   const ctx = getAuthenticatedContext();
+  const user = await systemRepo.readReference(ctx.login.user as Reference<User>);
   const profile = await ctx.repo.readReference(ctx.profile);
   const userInfo: Record<string, any> = {
     sub: profile.id,
@@ -27,7 +31,7 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
     buildProfile(userInfo, profile);
   }
   if (scopes?.includes('email')) {
-    buildEmail(userInfo, profile);
+    buildEmail(userInfo, profile, user);
   }
   if (scopes?.includes('phone')) {
     buildPhone(userInfo, profile);
@@ -65,11 +69,11 @@ function buildProfile(userInfo: Record<string, any>, profile: ProfileResource): 
   userInfo.nickname = '';
 }
 
-function buildEmail(userInfo: Record<string, any>, profile: ProfileResource): void {
+function buildEmail(userInfo: Record<string, any>, profile: ProfileResource, user: User): void {
   const contactPoint = profile.telecom?.find((cp) => cp.system === 'email');
   if (contactPoint) {
     userInfo.email = contactPoint.value;
-    userInfo.email_verified = false;
+    userInfo.email_verified = !!(userInfo.email === user.email && user.emailVerified);
   }
 }
 

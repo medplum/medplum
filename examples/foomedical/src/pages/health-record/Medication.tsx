@@ -33,9 +33,9 @@ function RenewalModal({
   opened,
   setOpened,
 }: {
-  prev: MedicationRequest;
-  opened: boolean;
-  setOpened: (o: boolean) => void;
+  readonly prev: MedicationRequest;
+  readonly opened: boolean;
+  readonly setOpened: (o: boolean) => void;
 }): JSX.Element {
   const medplum = useMedplum();
   const patient = medplum.getProfile();
@@ -46,7 +46,7 @@ function RenewalModal({
       onClose={() => setOpened(false)}
       title={<Title order={3}>Request a Renewal</Title>}
     >
-      <Stack spacing="md">
+      <Stack gap="md">
         <KeyValue name="Patient" value={formatHumanName(patient?.name?.[0] as HumanName)} />
         <KeyValue name="Last Prescribed" value={formatDateTime(prev.authoredOn)} />
         <KeyValue name="Status" value={prev.status} />
@@ -67,7 +67,7 @@ function KeyValue({ name, value }: { name: string; value: string | undefined }):
       <Text size="xs" color="gray" tt="uppercase">
         {name}
       </Text>
-      <Text size="lg" weight={500}>
+      <Text size="lg" fw={500}>
         {value}
       </Text>
     </div>

@@ -71,7 +71,7 @@ export function PlanDefinitionApplyForm(props: PlanDefinitionApplyFormProps): JS
             onChange={setSubject}
           />
         </FormSection>
-        <Group position="right" mt="xl">
+        <Group justify="flex-end" mt="xl">
           <Button type="submit">Go</Button>
         </Group>
       </Stack>

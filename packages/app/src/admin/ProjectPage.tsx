@@ -19,7 +19,7 @@ export function ProjectPage(): JSX.Element {
    * Handles a tab change event.
    * @param newTabName - The new tab name.
    */
-  function onTabChange(newTabName: string): void {
+  function onTabChange(newTabName: string | null): void {
     navigate(`/admin/${newTabName}`);
   }
 
@@ -33,7 +33,7 @@ export function ProjectPage(): JSX.Element {
           </InfoBar.Entry>
         </InfoBar>
         <ScrollArea>
-          <Tabs value={currentTab.toLowerCase()} onTabChange={onTabChange}>
+          <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
             <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
               {tabs.map((t) => (
                 <Tabs.Tab key={t} value={t.toLowerCase()}>

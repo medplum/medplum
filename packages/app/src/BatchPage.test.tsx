@@ -1,8 +1,8 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, RenderResult, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BatchPage } from './BatchPage';
+import { act, fireEvent, render, RenderResult, screen } from './test-utils/render';
 
 const exampleBundle = `{
   "resourceType": "Bundle",
@@ -52,10 +52,9 @@ describe('BatchPage', () => {
       fireEvent.change(fileInput, { target: { files } });
     });
 
-    await waitFor(async () => expect(screen.getByText('Output')).toBeInTheDocument());
-    expect(screen.getByText('Output')).toBeInTheDocument();
-
+    expect(await screen.findByText('Output')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument();
+
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
     });
@@ -82,10 +81,9 @@ describe('BatchPage', () => {
       fireEvent.click(screen.getByText('Submit'));
     });
 
-    await waitFor(async () => expect(screen.getByText('Output')).toBeInTheDocument());
-    expect(screen.getByText('Output')).toBeInTheDocument();
-
+    expect(await screen.findByText('Output')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument();
+
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
     });

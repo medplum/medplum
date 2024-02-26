@@ -96,7 +96,7 @@ function ButtonGroup(props: ButtonGroupProps): JSX.Element {
   const showSubmitButton = props.activePage === props.numberOfPages - 1;
 
   return (
-    <Group position="right" mt="xl" spacing="xs">
+    <Group justify="flex-end" mt="xl" gap="xs">
       {showBackButton && <Button onClick={props.prevStep}>Back</Button>}
       {showNextButton && (
         <Button

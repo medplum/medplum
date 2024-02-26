@@ -19,6 +19,10 @@ export function getConfig(): MedplumAppConfig {
 }
 
 export function isRegisterEnabled(): boolean {
-  // Default to true
-  return config.registerEnabled !== false && config.registerEnabled !== 'false';
+  // This try/catch exists to prevent Rollup optimization from removing this function
+  try {
+    return config.registerEnabled !== false && config.registerEnabled !== 'false';
+  } catch {
+    return true;
+  }
 }

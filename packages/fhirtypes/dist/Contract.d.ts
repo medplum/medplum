@@ -408,7 +408,7 @@ export interface ContractContentDefinition {
    * application for a contract such as an insurance policy or benefits
    * under a program, e.g., workers compensation.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Detailed Precusory content type.
@@ -434,7 +434,7 @@ export interface ContractContentDefinition {
    * executable | executed | negotiable | offered | policy | rejected |
    * renewed | revoked | resolved | terminated.
    */
-  publicationStatus?: 'amended' | 'appended' | 'cancelled' | 'disputed' | 'entered-in-error' | 'executable' |
+  publicationStatus: 'amended' | 'appended' | 'cancelled' | 'disputed' | 'entered-in-error' | 'executable' |
       'executed' | 'negotiable' | 'offered' | 'policy' | 'rejected' | 'renewed' | 'revoked' | 'resolved' | 'terminated';
 
   /**
@@ -657,17 +657,17 @@ export interface ContractSigner {
   /**
    * Role of this Contract signer, e.g. notary, grantee.
    */
-  type?: Coding;
+  type: Coding;
 
   /**
    * Party which is a signator to this Contract.
    */
-  party?: Reference<Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
+  party: Reference<Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * Legally binding Contract DSIG signature contents in Base64.
    */
-  signature?: Signature[];
+  signature: Signature[];
 }
 
 /**
@@ -766,7 +766,7 @@ export interface ContractTerm {
    * The matter of concern in the context of this provision of the
    * agrement.
    */
-  offer?: ContractTermOffer;
+  offer: ContractTermOffer;
 
   /**
    * Contract Term Asset List.
@@ -835,7 +835,7 @@ export interface ContractTermAction {
    * Activity or service obligation to be done or not done, performed or
    * not performed, effectuated or not by this Contract term.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Entity of the action.
@@ -846,7 +846,7 @@ export interface ContractTermAction {
    * Reason or purpose for the action stipulated by this Contract
    * Provision.
    */
-  intent?: CodeableConcept;
+  intent: CodeableConcept;
 
   /**
    * Id [identifier??] of the clause or question text related to this
@@ -857,7 +857,7 @@ export interface ContractTermAction {
   /**
    * Current state of the term action.
    */
-  status?: CodeableConcept;
+  status: CodeableConcept;
 
   /**
    * Encounter or Episode with primary association to specified term
@@ -1005,7 +1005,7 @@ export interface ContractTermActionSubject {
   /**
    * The entity the action is performed or not performed on or for.
    */
-  reference?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
+  reference: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
 
   /**
    * Role type of agent assigned roles in this Contract.
@@ -1603,12 +1603,12 @@ export interface ContractTermOfferParty {
   /**
    * Participant in the offer.
    */
-  reference?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
+  reference: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
 
   /**
    * How the party participates in the offer.
    */
-  role?: CodeableConcept;
+  role: CodeableConcept;
 }
 
 /**
@@ -1662,7 +1662,7 @@ export interface ContractTermSecurityLabel {
    * Security label privacy tag that species the level of confidentiality
    * protection required for this term and/or term elements.
    */
-  classification?: Coding;
+  classification: Coding;
 
   /**
    * Security label privacy tag that species the applicable privacy and

@@ -117,7 +117,7 @@ export interface VerificationResult {
    * The validation status of the target (attested; validated; in process;
    * requires revalidation; validation failed; revalidation failed).
    */
-  status?: 'attested' | 'validated' | 'in-process' | 'req-revalid' | 'val-fail' | 'reval-fail';
+  status: 'attested' | 'validated' | 'in-process' | 'req-revalid' | 'val-fail' | 'reval-fail';
 
   /**
    * When the validation status was updated.
@@ -384,7 +384,7 @@ export interface VerificationResultValidator {
   /**
    * Reference to the organization validating information.
    */
-  organization?: Reference<Organization>;
+  organization: Reference<Organization>;
 
   /**
    * A digital identity certificate associated with the validator.

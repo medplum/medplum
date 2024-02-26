@@ -67,7 +67,7 @@ export interface Login {
   /**
    * The user requesting the code.
    */
-  user?: Reference<Bot | ClientApplication | User>;
+  user: Reference<Bot | ClientApplication | User>;
 
   /**
    * Reference to the project membership which includes FHIR identity
@@ -84,12 +84,12 @@ export interface Login {
    * The authentication method used to obtain the code (password or
    * google).
    */
-  authMethod?: 'client' | 'exchange' | 'execute' | 'external' | 'google' | 'password';
+  authMethod: 'client' | 'exchange' | 'execute' | 'external' | 'google' | 'password';
 
   /**
    * Time when the End-User authentication occurred.
    */
-  authTime?: string;
+  authTime: string;
 
   /**
    * The cookie value that can be used for session management.

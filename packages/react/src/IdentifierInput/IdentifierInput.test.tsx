@@ -1,16 +1,24 @@
 import { Identifier } from '@medplum/fhirtypes';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { IdentifierInput } from './IdentifierInput';
 
 describe('IdentifierInput', () => {
   test('Renders', () => {
-    render(<IdentifierInput name="a" defaultValue={{ system: 'x', value: 'y' }} />);
+    render(
+      <IdentifierInput
+        name="test"
+        path="test"
+        onChange={jest.fn()}
+        outcome={undefined}
+        defaultValue={{ system: 'x', value: 'y' }}
+      />
+    );
     expect(screen.getByDisplayValue('x')).toBeDefined();
     expect(screen.getByDisplayValue('y')).toBeDefined();
   });
 
   test('Renders undefined value', () => {
-    render(<IdentifierInput name="a" />);
+    render(<IdentifierInput name="test" path="test" onChange={jest.fn()} outcome={undefined} />);
     expect(screen.getByPlaceholderText('System')).toBeDefined();
     expect(screen.getByPlaceholderText('Value')).toBeDefined();
   });
@@ -18,7 +26,7 @@ describe('IdentifierInput', () => {
   test('Set value', async () => {
     let lastValue: Identifier | undefined = undefined;
 
-    render(<IdentifierInput name="a" onChange={(value) => (lastValue = value)} />);
+    render(<IdentifierInput name="test" path="test" outcome={undefined} onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('System'), {

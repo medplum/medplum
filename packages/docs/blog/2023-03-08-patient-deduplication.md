@@ -31,7 +31,7 @@ A sample (skeleton) deduplication bot can be found in the [Medplum Demo Bot](htt
 
 ## Maintaining Identifiers
 
-Many systems issue patient identifiers, like payors (e.g. United Healthcare), pharmacy and medication systems (e.g. Surescripts or DoseSpot) and even payment providers like Stripe. FHIR support maintaining multiple identifiers from different systems. If you maintain records with patient identifiers from different systems, this can be the basis for detecting duplicates with high accuracy.
+Many systems issue patient identifiers, like payors (e.g. United Healthcare), pharmacy and medication systems (e.g. DoseSpot) and even payment providers like Stripe. FHIR support maintaining multiple identifiers from different systems. If you maintain records with patient identifiers from different systems, this can be the basis for detecting duplicates with high accuracy.
 
 The sample deduplication bot test shows a patient with multiple identifiers for reference.
 
@@ -44,5 +44,5 @@ The stakes are high for deduplication. A false merge can cause treatment errors,
 - [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.ts) sample Bot
 - [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.test.ts) Bot tests
 - [Bot Execution via Subscription](/docs/bots/bot-basics#executing-automatically-using-a-subscription)
-- [FHIR Multiple Identifiers](/docs/fhir-basics#identifiers-naming-resources) documentation
+- [FHIR Multiple Identifiers](/docs/fhir-basics#naming-data-identifiers) documentation
 - [Patient](https://app.medplum.com/Patient) resource in Medplum App

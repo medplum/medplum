@@ -1,13 +1,13 @@
 import { AsyncJob } from '@medplum/fhirtypes';
-import { Repository, systemRepo } from '../../repo';
-import { getRequestContext } from '../../../context';
 import { AsyncLocalStorage } from 'async_hooks';
+import { getRequestContext } from '../../../context';
+import { Repository, getSystemRepo } from '../../repo';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
   private resource: AsyncJob | undefined;
   constructor(repo: Repository) {
-    this.repo = repo;
+    this.repo = repo.clone();
   }
 
   async init(url: string): Promise<AsyncJob> {
@@ -39,6 +39,7 @@ export class AsyncJobExecutor {
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
+    const systemRepo = getSystemRepo();
     try {
       await callback();
       await systemRepo.updateResource<AsyncJob>({
@@ -53,6 +54,8 @@ export class AsyncJobExecutor {
         transactionTime: new Date().toISOString(),
       });
       throw err;
+    } finally {
+      this.repo.close();
     }
   }
 

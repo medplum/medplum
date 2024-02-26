@@ -1,8 +1,8 @@
 import { createReference } from '@medplum/core';
-import { DiagnosticReport } from '@medplum/fhirtypes';
+import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
 import {
   HealthGorillaDiagnosticReport,
@@ -99,7 +99,7 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Critical high')).toHaveStyle('background:');
     expect(screen.getAllByText('final')).toHaveLength(7);
     expect(screen.getAllByText('corrected')).toHaveLength(1);
-    screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-inner'));
+    screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-label'));
   });
 
   test('Renders by reference', async () => {
@@ -209,7 +209,7 @@ describe('DiagnosticReportDisplay', () => {
 
   test('No specimen header if no specimen', async () => {
     await act(async () => {
-      setup({ value: { resourceType: 'DiagnosticReport' } });
+      setup({ value: { resourceType: 'DiagnosticReport' } as DiagnosticReport });
     });
 
     expect(screen.getByText('Diagnostic Report')).toBeInTheDocument();
@@ -220,12 +220,13 @@ describe('DiagnosticReportDisplay', () => {
     // This is a technically valid Observation resource,
     // although it doesn't really make sense.
     // It uses "Observation Grouping" to create a cycle.
-    let obs = await medplum.createResource({ resourceType: 'Observation', valueString: 'XYZ' });
-    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs)] });
+    let obs = await medplum.createResource({ resourceType: 'Observation', valueString: 'XYZ' } as Observation);
+    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs)] } as Observation);
 
     const report: DiagnosticReport = {
       resourceType: 'DiagnosticReport',
       status: 'final',
+      code: { text: 'test' },
       subject: createReference(HomerSimpson),
       result: [createReference(obs)],
     };

@@ -27,7 +27,7 @@ export function Vaccines(): JSX.Element {
               <Title order={2} fw={900}>
                 No upcoming vaccines available
               </Title>
-              <Text color="gray">
+              <Text c="gray">
                 If you think you&apos;re missing upcoming vaccines that should be here, please{' '}
                 <Anchor href="#">contact our medical team</Anchor>.
               </Text>
@@ -48,7 +48,7 @@ export function Vaccines(): JSX.Element {
 
 function VaccineList({ vaccines }: { vaccines: Immunization[] }): JSX.Element {
   return (
-    <Stack spacing={0}>
+    <Stack gap={0}>
       {vaccines.map((vaccine) => (
         <Vaccine key={vaccine.id} vaccine={vaccine} />
       ))}
@@ -62,7 +62,7 @@ function Vaccine({ vaccine }: { vaccine: Immunization }): JSX.Element {
   return (
     <InfoButton onClick={() => navigate(`./${vaccine.id}`)}>
       <div>
-        <Text c={theme.fn.primaryColor()} fw={500} mb={8}>
+        <Text c={theme.primaryColor} fw={500} mb={8}>
           {vaccine.vaccineCode?.text}
         </Text>
         <Text c="gray.6">
@@ -71,9 +71,7 @@ function Vaccine({ vaccine }: { vaccine: Immunization }): JSX.Element {
         </Text>
       </div>
       <div>
-        <Text mb={8}>
-          <StatusBadge status={vaccine.status as string} />
-        </Text>
+        <StatusBadge status={vaccine.status as string} />
         {vaccine.occurrenceDateTime && (
           <Text c="gray.6">
             <IconCalendar size={16} style={{ marginRight: 4 }} />

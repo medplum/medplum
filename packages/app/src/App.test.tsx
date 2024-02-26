@@ -5,14 +5,14 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from './App';
 
-const medplum = new MockClient();
+const navigateMock = jest.fn();
 
 async function setup(url = '/'): Promise<void> {
   await act(async () => {
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <MedplumProvider medplum={medplum} navigate={jest.fn()}>
-          <MantineProvider withGlobalStyles withNormalizeCSS>
+        <MedplumProvider medplum={new MockClient()} navigate={navigateMock}>
+          <MantineProvider>
             <App />
           </MantineProvider>
         </MedplumProvider>
@@ -96,18 +96,8 @@ describe('App', () => {
   test('Resource Type Search', async () => {
     await setup();
 
-    const comboboxes = screen.getAllByRole('combobox');
-
-    let resultInput: HTMLInputElement | undefined = undefined;
     const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
 
-    for (const combobox of comboboxes) {
-      const element = combobox.querySelector(`input[name="resourceType"]`) as HTMLInputElement;
-      if (element) {
-        resultInput = element;
-        break;
-      }
-    }
     // Enter random text
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
@@ -132,7 +122,6 @@ describe('App', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
-    expect(resultInput?.value).toBe('test-code');
+    expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 });

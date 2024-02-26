@@ -1,7 +1,7 @@
 import { createReference, getReferenceString } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -92,6 +92,7 @@ describe('ServiceRequestTimeline', () => {
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
       payload: [{ contentString: randomUUID() }],
@@ -100,7 +101,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -127,6 +128,7 @@ describe('ServiceRequestTimeline', () => {
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
       payload: [{ contentString: randomUUID() }],
@@ -135,7 +137,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -152,6 +154,7 @@ describe('ServiceRequestTimeline', () => {
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
       payload: [{ contentString: randomUUID() }],
@@ -160,7 +163,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -177,6 +180,7 @@ describe('ServiceRequestTimeline', () => {
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
       payload: [{ contentString: randomUUID() }],
@@ -185,7 +189,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {

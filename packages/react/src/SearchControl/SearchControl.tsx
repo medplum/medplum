@@ -2,7 +2,6 @@ import {
   ActionIcon,
   Button,
   Center,
-  createStyles,
   Group,
   Loader,
   Menu,
@@ -11,15 +10,8 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
-import { DEFAULT_SEARCH_COUNT, Filter, formatSearchQuery, SearchRequest } from '@medplum/core';
-import {
-  Bundle,
-  OperationOutcome,
-  Resource,
-  ResourceType,
-  SearchParameter,
-  UserConfiguration,
-} from '@medplum/fhirtypes';
+import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery, isDataTypeLoaded } from '@medplum/core';
+import { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -31,7 +23,7 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import { ChangeEvent, memo, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, MouseEvent, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
@@ -40,6 +32,7 @@ import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilter
 import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { isCheckboxCell, killEvent } from '../utils/dom';
+import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
 
@@ -73,72 +66,32 @@ export class SearchClickEvent extends Event {
 }
 
 export interface SearchControlProps {
-  search: SearchRequest;
-  userConfig?: UserConfiguration;
-  checkboxesEnabled?: boolean;
-  hideToolbar?: boolean;
-  hideFilters?: boolean;
-  onLoad?: (e: SearchLoadEvent) => void;
-  onChange?: (e: SearchChangeEvent) => void;
-  onClick?: (e: SearchClickEvent) => void;
-  onAuxClick?: (e: SearchClickEvent) => void;
-  onNew?: () => void;
-  onExport?: () => void;
-  onExportCsv?: () => void;
-  onExportTransactionBundle?: () => void;
-  onDelete?: (ids: string[]) => void;
-  onPatch?: (ids: string[]) => void;
-  onBulk?: (ids: string[]) => void;
+  readonly search: SearchRequest;
+  readonly checkboxesEnabled?: boolean;
+  readonly hideToolbar?: boolean;
+  readonly hideFilters?: boolean;
+  readonly onLoad?: (e: SearchLoadEvent) => void;
+  readonly onChange?: (e: SearchChangeEvent) => void;
+  readonly onClick?: (e: SearchClickEvent) => void;
+  readonly onAuxClick?: (e: SearchClickEvent) => void;
+  readonly onNew?: () => void;
+  readonly onExport?: () => void;
+  readonly onExportCsv?: () => void;
+  readonly onExportTransactionBundle?: () => void;
+  readonly onDelete?: (ids: string[]) => void;
+  readonly onBulk?: (ids: string[]) => void;
 }
 
 interface SearchControlState {
-  searchResponse?: Bundle;
-  selected: { [id: string]: boolean };
-  fieldEditorVisible: boolean;
-  filterEditorVisible: boolean;
-  filterDialogVisible: boolean;
-  exportDialogVisible: boolean;
-  filterDialogFilter?: Filter;
-  filterDialogSearchParam?: SearchParameter;
+  readonly searchResponse?: Bundle;
+  readonly selected: { [id: string]: boolean };
+  readonly fieldEditorVisible: boolean;
+  readonly filterEditorVisible: boolean;
+  readonly filterDialogVisible: boolean;
+  readonly exportDialogVisible: boolean;
+  readonly filterDialogFilter?: Filter;
+  readonly filterDialogSearchParam?: SearchParameter;
 }
-
-const useStyles = createStyles((theme) => ({
-  root: {
-    maxWidth: '100%',
-    overflow: 'auto',
-    textAlign: 'left',
-    marginBottom: '20px',
-  },
-
-  table: {
-    cursor: 'pointer',
-  },
-
-  tr: {
-    '&:hover': {
-      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.colors.gray[0],
-    },
-  },
-
-  th: {
-    padding: '0 !important',
-  },
-
-  control: {
-    width: '100%',
-    padding: `${theme.spacing.xs} ${theme.spacing.md}`,
-
-    '&:hover': {
-      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
-    },
-  },
-
-  icon: {
-    width: 21,
-    height: 21,
-    borderRadius: 21,
-  },
-}));
 
 /**
  * The SearchControl component represents the embeddable search table control.
@@ -148,9 +101,8 @@ const useStyles = createStyles((theme) => ({
  * @returns The SearchControl React node.
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
-  const { classes } = useStyles();
   const medplum = useMedplum();
-  const [schemaLoaded, setSchemaLoaded] = useState(false);
+  const [loadingSchema, setLoadingSchema] = useState<string>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
 
@@ -165,18 +117,12 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  const totalType = search.total ?? 'accurate';
-
   const loadResults = useCallback(
     (options?: RequestInit) => {
       setOutcome(undefined);
 
       medplum
-        .search(
-          search.resourceType as ResourceType,
-          formatSearchQuery({ ...search, total: totalType, fields: undefined }),
-          options
-        )
+        .search(search.resourceType as ResourceType, formatSearchQuery({ ...search, fields: undefined }), options)
         .then((response) => {
           setState({ ...stateRef.current, searchResponse: response });
           if (onLoad) {
@@ -188,7 +134,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setOutcome(reason);
         });
     },
-    [medplum, search, totalType, onLoad]
+    [medplum, search, onLoad]
   );
 
   const refreshResults = useCallback(() => {
@@ -288,14 +234,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   useEffect(() => {
-    setSchemaLoaded(false);
+    setLoadingSchema(props.search.resourceType);
     medplum
       .requestSchema(props.search.resourceType as ResourceType)
-      .then(() => setSchemaLoaded(true))
-      .catch(console.log);
+      .catch(console.error)
+      .finally(() => setLoadingSchema(undefined));
   }, [medplum, props.search.resourceType]);
 
-  if (!schemaLoaded) {
+  if (!isDataTypeLoaded(props.search.resourceType) || loadingSchema === props.search.resourceType) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
         <Loader />
@@ -318,32 +264,32 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   return (
     <div className={classes.root} data-testid="search-control">
       {!props.hideToolbar && (
-        <Group position="apart" mb="xl">
-          <Group spacing={2}>
+        <Group justify="space-between" mb="xl">
+          <Group gap={2}>
             <Button
-              compact
+              size="compact-md"
               variant={buttonVariant}
               color={buttonColor}
-              leftIcon={<IconColumns size={iconSize} />}
+              leftSection={<IconColumns size={iconSize} />}
               onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
             >
               Fields
             </Button>
             <Button
-              compact
+              size="compact-md"
               variant={buttonVariant}
               color={buttonColor}
-              leftIcon={<IconFilter size={iconSize} />}
+              leftSection={<IconFilter size={iconSize} />}
               onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
             >
               Filters
             </Button>
             {props.onNew && (
               <Button
-                compact
+                size="compact-md"
                 variant={buttonVariant}
                 color={buttonColor}
-                leftIcon={<IconFilePlus size={iconSize} />}
+                leftSection={<IconFilePlus size={iconSize} />}
                 onClick={props.onNew}
               >
                 New...
@@ -351,10 +297,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
             {!isMobile && isExportPassed() && (
               <Button
-                compact
+                size="compact-md"
                 variant={buttonVariant}
                 color={buttonColor}
-                leftIcon={<IconTableExport size={iconSize} />}
+                leftSection={<IconTableExport size={iconSize} />}
                 onClick={
                   props.onExport ? props.onExport : () => setState({ ...stateRef.current, exportDialogVisible: true })
                 }
@@ -364,10 +310,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
             {!isMobile && props.onDelete && (
               <Button
-                compact
+                size="compact-md"
                 variant={buttonVariant}
                 color={buttonColor}
-                leftIcon={<IconTrash size={iconSize} />}
+                leftSection={<IconTrash size={iconSize} />}
                 onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
               >
                 Delete...
@@ -375,34 +321,35 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
             {!isMobile && props.onBulk && (
               <Button
-                compact
+                size="compact-md"
                 variant={buttonVariant}
                 color={buttonColor}
-                leftIcon={<IconBoxMultiple size={iconSize} />}
+                leftSection={<IconBoxMultiple size={iconSize} />}
                 onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
               >
                 Bulk...
               </Button>
             )}
           </Group>
-          <Group spacing={2}>
+          <Group gap={2}>
             {lastResult && (
-              <Text size="xs" color="dimmed">
-                {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-                {`${totalType === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
+              <Text size="xs" c="dimmed" data-testid="count-display">
+                {getStart(search, lastResult).toLocaleString()}-{getEnd(search, lastResult).toLocaleString()}
+                {lastResult.total !== undefined &&
+                  ` of ${search.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
               </Text>
             )}
-            <ActionIcon title="Refresh" onClick={refreshResults}>
-              <IconRefresh size="1.125rem" />
+            <ActionIcon variant={buttonVariant} color={buttonColor} title="Refresh" onClick={refreshResults}>
+              <IconRefresh size={iconSize} />
             </ActionIcon>
           </Group>
         </Group>
       )}
       <Table className={classes.table}>
-        <thead>
-          <tr>
+        <Table.Thead>
+          <Table.Tr>
             {checkboxColumn && (
-              <th>
+              <Table.Th>
                 <input
                   type="checkbox"
                   value="checked"
@@ -411,17 +358,15 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   checked={isAllSelected()}
                   onChange={(e) => handleAllCheckboxClick(e)}
                 />
-              </th>
+              </Table.Th>
             )}
             {fields.map((field) => (
-              <th key={field.name}>
+              <Table.Th key={field.name}>
                 <Menu shadow="md" width={240} position="bottom-end">
                   <Menu.Target>
-                    <UnstyledButton className={classes.control}>
-                      <Group position="apart" noWrap>
-                        <Text weight={500} size="sm">
-                          {buildFieldNameString(field.name)}
-                        </Text>
+                    <UnstyledButton className={classes.control} p={2}>
+                      <Group justify="space-between" wrap="nowrap">
+                        <Text fw={500}>{buildFieldNameString(field.name)}</Text>
                         <Center className={classes.icon}>
                           <IconAdjustmentsHorizontal size={14} stroke={1.5} />
                         </Center>
@@ -444,14 +389,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     }}
                   />
                 </Menu>
-              </th>
+              </Table.Th>
             ))}
-          </tr>
+          </Table.Tr>
           {!props.hideFilters && (
-            <tr>
-              {checkboxColumn && <th />}
+            <Table.Tr>
+              {checkboxColumn && <Table.Th />}
               {fields.map((field) => (
-                <th key={field.name}>
+                <Table.Th key={field.name}>
                   {field.searchParams && (
                     <FilterDescription
                       resourceType={resourceType}
@@ -459,16 +404,16 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                       filters={props.search.filters}
                     />
                   )}
-                </th>
+                </Table.Th>
               ))}
-            </tr>
+            </Table.Tr>
           )}
-        </thead>
-        <tbody>
+        </Table.Thead>
+        <Table.Tbody>
           {resources?.map(
             (resource) =>
               resource && (
-                <tr
+                <Table.Tr
                   key={resource.id}
                   className={classes.tr}
                   data-testid="search-control-row"
@@ -476,7 +421,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   onAuxClick={(e) => handleRowClick(e, resource)}
                 >
                   {checkboxColumn && (
-                    <td>
+                    <Table.Td>
                       <input
                         type="checkbox"
                         value="checked"
@@ -485,30 +430,30 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         checked={!!state.selected[resource.id as string]}
                         onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
                       />
-                    </td>
+                    </Table.Td>
                   )}
                   {fields.map((field) => (
-                    <td key={field.name}>{renderValue(resource, field)}</td>
+                    <Table.Td key={field.name}>{renderValue(resource, field)}</Table.Td>
                   ))}
-                </tr>
+                </Table.Tr>
               )
           )}
-        </tbody>
+        </Table.Tbody>
       </Table>
       {resources?.length === 0 && (
         <Container>
           <Center style={{ height: 150 }}>
-            <Text size="xl" color="dimmed">
+            <Text size="xl" c="dimmed">
               No results
             </Text>
           </Center>
         </Container>
       )}
-      {lastResult?.total !== undefined && lastResult.total > 0 && (
+      {lastResult && (
         <Center m="md" p="md">
           <Pagination
             value={getPage(search)}
-            total={getTotalPages(search, lastResult.total)}
+            total={getTotalPages(search, lastResult)}
             onChange={(newPage) => emitSearchChange(setPage(search, newPage))}
             getControlProps={(control) => {
               switch (control) {
@@ -630,15 +575,28 @@ function getPage(search: SearchRequest): number {
   return Math.floor((search.offset ?? 0) / (search.count ?? DEFAULT_SEARCH_COUNT)) + 1;
 }
 
-function getTotalPages(search: SearchRequest, total: number): number {
+function getTotalPages(search: SearchRequest, lastResult: Bundle): number {
   const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
+  const total = getTotal(search, lastResult);
   return Math.ceil(total / pageSize);
 }
 
-function getStart(search: SearchRequest, total: number): number {
-  return Math.min(total, (search.offset ?? 0) + 1);
+function getStart(search: SearchRequest, lastResult: Bundle): number {
+  return Math.min(getTotal(search, lastResult), (search.offset ?? 0) + 1);
 }
 
-function getEnd(search: SearchRequest, total: number): number {
-  return Math.min(total, ((search.offset ?? 0) + 1) * (search.count ?? DEFAULT_SEARCH_COUNT));
+function getEnd(search: SearchRequest, lastResult: Bundle): number {
+  return getStart(search, lastResult) + (lastResult.entry?.length ?? 0) - 1;
+}
+
+function getTotal(search: SearchRequest, lastResult: Bundle): number {
+  let total = lastResult.total;
+  if (total === undefined) {
+    // If the total is not specified, then we have to estimate it
+    total =
+      (search.offset ?? 0) +
+      (lastResult.entry?.length ?? 0) +
+      (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0);
+  }
+  return total;
 }

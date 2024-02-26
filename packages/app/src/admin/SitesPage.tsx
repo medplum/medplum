@@ -56,8 +56,10 @@ export function SitesPage(): JSX.Element {
       <ResourcePropertyInput
         property={getElementDefinition('Project', 'site') as InternalSchemaElement}
         name="site"
+        path="Project.site"
         defaultValue={sites}
         onChange={setSites}
+        outcome={undefined}
       />
       <Button type="submit">Save</Button>
     </form>

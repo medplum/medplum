@@ -1,12 +1,13 @@
 import { Loader, Tabs } from '@mantine/core';
-import { capitalize, getReferenceString } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import { Fragment } from 'react';
-import { Link, Outlet, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 
 export function PatientPage(): JSX.Element {
+  const navigate = useNavigate();
   const { id } = useParams();
   const patient = useResource<Patient>({ reference: `Patient/${id}` });
   if (!patient) {
@@ -16,22 +17,14 @@ export function PatientPage(): JSX.Element {
   return (
     <Fragment key={getReferenceString(patient)}>
       <PatientHeader patient={patient} />
-      <Tabs>
+      <Tabs onChange={(t) => navigate(`./${t}`)}>
         <Tabs.List bg="white">
-          <TabLink value="overview" />
-          <TabLink value="timeline" />
-          <TabLink value="history" />
+          <Tabs.Tab value="overview">Overview</Tabs.Tab>
+          <Tabs.Tab value="timeline">Timeline</Tabs.Tab>
+          <Tabs.Tab value="history">History</Tabs.Tab>
         </Tabs.List>
       </Tabs>
       <Outlet />
     </Fragment>
-  );
-}
-
-function TabLink(props: { value: string }): JSX.Element {
-  return (
-    <Link to={props.value} style={{ textDecoration: 'none' }}>
-      <Tabs.Tab value={props.value}>{capitalize(props.value)}</Tabs.Tab>
-    </Link>
   );
 }

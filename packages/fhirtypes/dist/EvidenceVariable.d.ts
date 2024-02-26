@@ -165,7 +165,7 @@ export interface EvidenceVariable {
    * The status of this evidence variable. Enables tracking the life-cycle
    * of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the evidence variable was
@@ -288,7 +288,7 @@ export interface EvidenceVariable {
    * A characteristic that defines the members of the evidence element.
    * Multiple characteristics are applied with &quot;and&quot; semantics.
    */
-  characteristic?: EvidenceVariableCharacteristic[];
+  characteristic: EvidenceVariableCharacteristic[];
 }
 
 /**

@@ -148,7 +148,7 @@ export interface EffectEvidenceSynthesis {
    * The status of this effect evidence synthesis. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the effect evidence synthesis was
@@ -278,25 +278,25 @@ export interface EffectEvidenceSynthesis {
    * A reference to a EvidenceVariable resource that defines the population
    * for the research.
    */
-  population?: Reference<EvidenceVariable>;
+  population: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resource that defines the exposure
    * for the research.
    */
-  exposure?: Reference<EvidenceVariable>;
+  exposure: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resource that defines the comparison
    * exposure for the research.
    */
-  exposureAlternative?: Reference<EvidenceVariable>;
+  exposureAlternative: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resomece that defines the outcome
    * for the research.
    */
-  outcome?: Reference<EvidenceVariable>;
+  outcome: Reference<EvidenceVariable>;
 
   /**
    * A description of the size of the sample involved in the synthesis.
@@ -626,7 +626,7 @@ export interface EffectEvidenceSynthesisResultsByExposure {
   /**
    * Reference to a RiskEvidenceSynthesis resource.
    */
-  riskEvidenceSynthesis?: Reference<RiskEvidenceSynthesis>;
+  riskEvidenceSynthesis: Reference<RiskEvidenceSynthesis>;
 }
 
 /**

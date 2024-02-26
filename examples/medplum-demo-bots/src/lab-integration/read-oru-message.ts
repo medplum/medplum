@@ -161,9 +161,10 @@ export async function processOruMessage(
   let observations = processObxSegments(message, serviceRequest, performer);
 
   // If there's an existing report, just update it with the new values
-  const report = existingReport || {
+  const report: DiagnosticReport = existingReport ?? {
     resourceType: 'DiagnosticReport',
-    code: serviceRequest.code,
+    status: 'preliminary',
+    code: serviceRequest.code as CodeableConcept,
     subject: serviceRequest.subject,
     basedOn: [createReference(serviceRequest)],
     performer: [createReference(performer)],

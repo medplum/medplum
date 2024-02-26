@@ -127,12 +127,12 @@ export interface DeviceUseStatement {
    * state of the device used that this statement is about.  Generally this
    * will be active or completed.
    */
-  status?: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold';
+  status: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold';
 
   /**
    * The patient who used the device.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * Allows linking the DeviceUseStatement to the underlying Request, or to
@@ -169,7 +169,7 @@ export interface DeviceUseStatement {
   /**
    * The details of the device used.
    */
-  device?: Reference<Device>;
+  device: Reference<Device>;
 
   /**
    * Reason or justification for the use of the device.

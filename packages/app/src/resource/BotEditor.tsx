@@ -1,12 +1,13 @@
-import { Button, createStyles, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/core';
+import { Button, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ContentType, isUUID, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { ContentType, MedplumClient, PatchOperation, isUUID, normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
 import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sendCommand } from '../utils';
+import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
 
@@ -28,17 +29,6 @@ const DEFAULT_HL7_INPUT =
   'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
   'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
 
-const useStyles = createStyles(() => ({
-  hl7Input: {
-    fontFamily: 'monospace',
-    fontSize: '12px',
-    lineHeight: 1.55,
-    padding: '10px 12px',
-    whiteSpace: 'nowrap',
-    width: '100%',
-  },
-}));
-
 export function BotEditor(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
@@ -47,7 +37,6 @@ export function BotEditor(): JSX.Element | null {
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
   const [contentType, setContentType] = useState<string>(ContentType.FHIR_JSON);
-  const { classes } = useStyles();
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(false);
@@ -167,14 +156,14 @@ export function BotEditor(): JSX.Element | null {
             defaultValue={defaultCode}
             minHeight="528px"
           />
-          <Group position="right" spacing="xs">
-            <Button type="button" onClick={saveBot} loading={loading} leftIcon={<IconDeviceFloppy size="1rem" />}>
+          <Group justify="flex-end" gap="xs">
+            <Button type="button" onClick={saveBot} loading={loading} leftSection={<IconDeviceFloppy size="1rem" />}>
               Save
             </Button>
-            <Button type="button" onClick={deployBot} loading={loading} leftIcon={<IconCloudUpload size="1rem" />}>
+            <Button type="button" onClick={deployBot} loading={loading} leftSection={<IconCloudUpload size="1rem" />}>
               Deploy
             </Button>
-            <Button type="button" onClick={executeBot} loading={loading} leftIcon={<IconPlayerPlay size="1rem" />}>
+            <Button type="button" onClick={executeBot} loading={loading} leftSection={<IconPlayerPlay size="1rem" />}>
               Execute
             </Button>
           </Group>
@@ -190,7 +179,7 @@ export function BotEditor(): JSX.Element | null {
             onChange={(e) => setContentType(e.currentTarget.value)}
           />
           {contentType === ContentType.FHIR_JSON ? (
-            <JsonInput value={fhirInput} onChange={(newValue) => setFhirInput(newValue)} minRows={15} />
+            <JsonInput value={fhirInput} onChange={(newValue) => setFhirInput(newValue)} autosize minRows={15} />
           ) : (
             <textarea
               className={classes.hl7Input}

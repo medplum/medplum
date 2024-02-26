@@ -44,12 +44,12 @@ export interface AsyncJob {
   /**
    * The status of the request.
    */
-  status?: 'accepted' | 'active' | 'completed' | 'error';
+  status: 'accepted' | 'active' | 'completed' | 'error';
 
   /**
    * Indicates the server's time when the query is requested.
    */
-  requestTime?: string;
+  requestTime: string;
 
   /**
    * Indicates the server's time when the query is run. The response SHOULD
@@ -63,5 +63,5 @@ export interface AsyncJob {
    * The full URL of the original kick-off request. In the case of a POST
    * request, this URL will not include the request parameters.
    */
-  request?: string;
+  request: string;
 }

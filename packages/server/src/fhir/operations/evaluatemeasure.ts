@@ -1,4 +1,4 @@
-import { Operator, badRequest, created, parseSearchDefinition } from '@medplum/core';
+import { Operator, badRequest, created, parseSearchRequest } from '@medplum/core';
 import {
   Measure,
   MeasureGroup,
@@ -9,10 +9,10 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { isFhirJsonContentType, sendResponse } from '../routes';
-import { getAuthenticatedContext } from '../../context';
+import { isFhirJsonContentType, sendResponse } from '../response';
 
 interface EvaluateMeasureParameters {
   readonly periodStart: string;
@@ -50,7 +50,7 @@ export async function evaluateMeasureHandler(req: Request, res: Response): Promi
   }
 
   const measureReport = await evaluateMeasure(ctx.repo, params, measure);
-  await sendResponse(res, created, measureReport);
+  await sendResponse(req, res, created, measureReport);
 }
 
 /**
@@ -106,7 +106,7 @@ async function evaluateMeasure(
     resourceType: 'MeasureReport',
     status: 'complete',
     type: 'summary',
-    measure: measure.url,
+    measure: measure.url as string,
     date: new Date().toISOString(),
     period: {
       start: params.periodStart,
@@ -177,7 +177,7 @@ async function evaluateCount(
   criteria: string,
   params: EvaluateMeasureParameters
 ): Promise<number | undefined> {
-  const searchDefinition = parseSearchDefinition(criteria);
+  const searchDefinition = parseSearchRequest(criteria);
   searchDefinition.total = 'accurate';
 
   if (!searchDefinition.filters) {

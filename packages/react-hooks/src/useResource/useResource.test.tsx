@@ -118,8 +118,11 @@ describe('useResource', () => {
     function TestComponentWrapper(): JSX.Element {
       const [resource, setResource] = useState<ServiceRequest>({
         resourceType: 'ServiceRequest',
-        status: 'draft',
         id: '123',
+        status: 'draft',
+        intent: 'order',
+        code: { text: 'test' },
+        subject: { reference: 'Patient/123' },
       });
       return (
         <>
@@ -154,8 +157,11 @@ describe('useResource', () => {
       useResource({ reference: 'ServiceRequest/123' });
       const [resource, setResource] = useState<ServiceRequest>({
         resourceType: 'ServiceRequest',
-        status: 'draft',
         id: '123',
+        status: 'draft',
+        intent: 'order',
+        code: { text: 'test' },
+        subject: { reference: 'Patient/123' },
       });
 
       return (

@@ -6,12 +6,12 @@ import { useMedplum } from '@medplum/react-hooks';
 import { Form } from '../Form/Form';
 
 interface BookmarkDialogProps {
-  pathname: string;
-  searchParams: URLSearchParams;
-  visible: boolean;
-  onOk: () => void;
-  onCancel: () => void;
-  defaultValue?: string;
+  readonly pathname: string;
+  readonly searchParams: URLSearchParams;
+  readonly visible: boolean;
+  readonly onOk: () => void;
+  readonly onCancel: () => void;
+  readonly defaultValue?: string;
 }
 export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   const medplum = useMedplum();
@@ -49,7 +49,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
         <Stack>
           <SelectMenu config={config}></SelectMenu>
           <TextInput label="Bookmark Name" type="text" name="bookmarkname" placeholder="Bookmark Name" withAsterisk />
-          <Group position="right">
+          <Group justify="flex-end">
             <Button mt="sm" type="submit">
               OK
             </Button>
@@ -61,7 +61,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
 }
 
 interface SelectMenuProps {
-  config: UserConfiguration | undefined;
+  readonly config: UserConfiguration | undefined;
 }
 
 function SelectMenu(props: SelectMenuProps): JSX.Element {
@@ -70,14 +70,5 @@ function SelectMenu(props: SelectMenuProps): JSX.Element {
   }
   const menus = userConfigToMenu(props.config);
 
-  return (
-    <NativeSelect
-      name="menuname"
-      defaultValue={menus[0]}
-      label="Select Menu Option"
-      placeholder="Menu"
-      data={menus}
-      withAsterisk
-    />
-  );
+  return <NativeSelect name="menuname" defaultValue={menus[0]} label="Select Menu Option" data={menus} withAsterisk />;
 }

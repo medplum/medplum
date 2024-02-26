@@ -3,7 +3,6 @@ import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import fs from 'fs';
-
 import { getConfig, loadConfig } from './config';
 
 describe('Config', () => {
@@ -82,11 +81,13 @@ describe('Config', () => {
     process.env.MEDPLUM_BASE_URL = 'http://localhost:3000';
     process.env.MEDPLUM_PORT = '3000';
     process.env.MEDPLUM_DATABASE_PORT = '5432';
+    process.env.MEDPLUM_REDIS_TLS = '{}';
     const config = await loadConfig('env');
     expect(config).toBeDefined();
     expect(config.baseUrl).toEqual('http://localhost:3000');
     expect(config.port).toEqual(3000);
     expect(config.database.port).toEqual(5432);
+    expect(config.redis.tls).toEqual({});
     expect(getConfig()).toBe(config);
   });
 });

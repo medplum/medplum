@@ -162,7 +162,7 @@ export interface AllergyIntolerance {
   /**
    * The patient who has the allergy or intolerance.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The encounter when the allergy or intolerance was asserted.
@@ -296,7 +296,7 @@ export interface AllergyIntoleranceReaction {
    * Clinical symptoms and/or signs that are observed or associated with
    * the adverse reaction event.
    */
-  manifestation?: CodeableConcept[];
+  manifestation: CodeableConcept[];
 
   /**
    * Text description about the reaction as a whole, including details of

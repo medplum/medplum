@@ -89,7 +89,7 @@ export function InvitePage(): JSX.Element {
           </FormSection>
           <Checkbox name="sendEmail" label="Send email" defaultChecked={true} />
           <Checkbox name="isAdmin" label="Admin" />
-          <Group position="right">
+          <Group justify="flex-end">
             <Button type="submit">Invite</Button>
           </Group>
         </Stack>

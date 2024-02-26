@@ -32,6 +32,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   // Create an order (FHIR ServiceRequest)
   const order = await medplum.createResource<ServiceRequest>({
     resourceType: 'ServiceRequest',
+    status: 'active',
+    intent: 'order',
     subject: createReference(patient),
     code: {
       text: 'Order for a test',
@@ -42,6 +44,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   if (answers['comment']?.valueString) {
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(order)],
       subject: createReference(patient),
       payload: [

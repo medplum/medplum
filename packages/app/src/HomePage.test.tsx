@@ -2,12 +2,12 @@ import { allOk } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
 import { RESOURCE_TYPE_CREATION_PATHS, getDefaultFields } from './HomePage.utils';
+import { act, fireEvent, render, screen, waitFor } from './test-utils/render';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {
@@ -30,31 +30,22 @@ describe('HomePage', () => {
 
   test('Renders default page', async () => {
     await setup('/');
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
   test('Renders with resourceType', async () => {
     await setup('/Patient');
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
   test('Renders with resourceType and fields', async () => {
     await setup('/Patient?_fields=id,_lastUpdated,name,birthDate,gender');
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
   test('Next page button', async () => {
     await setup();
-    await waitFor(() => screen.getByLabelText('Next page'));
+    expect(await screen.findByLabelText('Next page')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Next page'));
@@ -63,7 +54,7 @@ describe('HomePage', () => {
 
   test('Prev page button', async () => {
     await setup();
-    await waitFor(() => screen.getByLabelText('Previous page'));
+    expect(await screen.findByLabelText('Previous page')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Previous page'));
@@ -72,7 +63,7 @@ describe('HomePage', () => {
 
   test('New button', async () => {
     await setup();
-    await waitFor(() => screen.getByText('New...'));
+    expect(await screen.findByText('New...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('New...'));
@@ -96,7 +87,7 @@ describe('HomePage', () => {
     expect(typeof RESOURCE_TYPE_CREATION_PATHS['Bot']).toBe('string');
 
     await setup(`/Bot`, medplum);
-    await waitFor(() => screen.getByText('New...'));
+    expect(await screen.findByText('New...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('New...'));
@@ -109,7 +100,7 @@ describe('HomePage', () => {
     window.confirm = jest.fn(() => false);
 
     await setup();
-    await waitFor(() => screen.getByText('Delete...'));
+    expect(await screen.findByText('Delete...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Delete...'));
@@ -131,9 +122,9 @@ describe('HomePage', () => {
     await setup('/Patient', medplum);
 
     // Make sure the patient is on the screen
-    await waitFor(() => screen.getByText(family));
+    expect(await screen.findByText(family)).toBeInTheDocument();
 
-    await waitFor(() => screen.getByText('Delete...'));
+    expect(await screen.findByText('Delete...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText(`Checkbox for ${patient.id}`));
@@ -156,7 +147,7 @@ describe('HomePage', () => {
     medplum.router.router.add('GET', ':resourceType/$csv', async () => [allOk]);
 
     await setup('/Patient', medplum);
-    await waitFor(() => screen.getByText('Export...'));
+    expect(await screen.findByText('Export...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Export...'));
@@ -176,7 +167,7 @@ describe('HomePage', () => {
     HTMLAnchorElement.prototype.click = jest.fn();
 
     await setup('/Patient', medplum);
-    await waitFor(() => screen.getByText('Export...'));
+    expect(await screen.findByText('Export...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Export...'));
@@ -221,7 +212,7 @@ describe('HomePage', () => {
     window.open = jest.fn();
 
     await setup('/Patient');
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Homer Simpson'));
@@ -238,7 +229,7 @@ describe('HomePage', () => {
     window.open = jest.fn();
 
     await setup('/Patient');
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Homer Simpson'), { button: 1 });

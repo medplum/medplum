@@ -30,6 +30,7 @@ packages/generator/dist/
 packages/generator/output/
 packages/graphiql/dist/
 packages/graphiql/public/
+packages/health-gorilla/dist/
 packages/hl7/dist/
 packages/mock/dist/
 packages/react/dist/
@@ -38,6 +39,9 @@ packages/server/dist/
 
 # Storybook output
 storybook-static/
+
+# Chromatic
+packages/react/build-storybook.log
 
 # Jest code coverage
 coverage/
@@ -66,3 +70,5 @@ medplum-server.tar.gz
 # All certificate files
 *.p12
 
+# Agent artifacts
+packages/agent/*agent-*-linux*

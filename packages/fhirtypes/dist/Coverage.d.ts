@@ -108,7 +108,7 @@ export interface Coverage {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The type of coverage: social program, medical plan, accident coverage
@@ -138,7 +138,7 @@ export interface Coverage {
    * The party who benefits from the insurance coverage; the patient when
    * products and/or services are provided.
    */
-  beneficiary?: Reference<Patient>;
+  beneficiary: Reference<Patient>;
 
   /**
    * A unique identifier for a dependent under the coverage.
@@ -161,7 +161,7 @@ export interface Coverage {
    * The program or plan underwriter or payor including both insurance and
    * non-insurance agreements, such as patient-pay agreements.
    */
-  payor?: Reference<Organization | Patient | RelatedPerson>[];
+  payor: Reference<Organization | Patient | RelatedPerson>[];
 
   /**
    * A suite of underwriter specific classifiers.
@@ -249,13 +249,13 @@ export interface CoverageClass {
    * or number and optional name is provided, for example may be used to
    * identify a class of coverage or employer group, Policy, Plan.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The alphanumeric string value associated with the insurer issued
    * label.
    */
-  value?: string;
+  value: string;
 
   /**
    * A short description for the class.
@@ -371,7 +371,7 @@ export interface CoverageCostToBeneficiaryException {
   /**
    * The code for the specific exception.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The timeframe during when the exception is in force.

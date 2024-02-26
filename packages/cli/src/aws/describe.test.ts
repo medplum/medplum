@@ -90,12 +90,12 @@ describe('describe command', () => {
   test('Describe command', async () => {
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'describe', 'dev']);
-    expect(console.log).toBeCalledWith('Stack ID:              123');
+    expect(console.log).toHaveBeenCalledWith('Stack ID:              123');
   });
 
   test('Describe not found', async () => {
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'describe', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found');
+    expect(console.log).toHaveBeenCalledWith('Stack not found: not-found');
   });
 });

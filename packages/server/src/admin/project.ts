@@ -3,15 +3,15 @@ import { ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
-import { getAuthenticatedContext } from '../context';
 import { setPassword } from '../auth/setpassword';
+import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
+import { getUserByEmailInProject } from '../oauth/utils';
 import { createBotHandler, createBotValidator } from './bot';
 import { createClientHandler, createClientValidator } from './client';
 import { inviteHandler, inviteValidator } from './invite';
 import { verifyProjectAdmin } from './utils';
-import { getUserByEmail, isUserInProject } from '../oauth/utils';
 
 export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateRequest);
@@ -34,25 +34,19 @@ projectAdminRouter.post(
 
     const ctx = getAuthenticatedContext();
     const projectId = ctx.project.id;
-
-    if (projectId === undefined) {
+    if (!projectId) {
       sendOutcome(res, badRequest('Project not found'));
       return;
     }
-    const user = await getUserByEmail(req.body.email, projectId);
-    if (!user?.id) {
+
+    const user = await getUserByEmailInProject(req.body.email, projectId);
+    if (!user) {
       sendOutcome(res, badRequest('User not found'));
       return;
     }
 
-    const userInProject = await isUserInProject(user.id, projectId);
-
-    if (userInProject) {
-      await setPassword(user, req.body.password as string);
-      sendOutcome(res, allOk);
-    } else {
-      sendOutcome(res, badRequest('User not found in project'));
-    }
+    await setPassword(user, req.body.password as string);
+    sendOutcome(res, allOk);
   })
 );
 

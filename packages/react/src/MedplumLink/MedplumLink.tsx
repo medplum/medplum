@@ -6,11 +6,11 @@ import { MouseEvent, MouseEventHandler, ReactNode } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface MedplumLinkProps extends TextProps {
-  to?: Resource | Reference | string;
-  suffix?: string;
-  label?: string;
-  onClick?: MouseEventHandler;
-  children: ReactNode;
+  readonly to?: Resource | Reference | string;
+  readonly suffix?: string;
+  readonly label?: string;
+  readonly onClick?: MouseEventHandler;
+  readonly children: ReactNode;
 }
 
 export function MedplumLink(props: MedplumLinkProps): JSX.Element {

@@ -5,11 +5,12 @@ import {
   BaseAgentRequestMessage,
   getReferenceString,
   Operator,
-  parseSearchDefinition,
+  parseSearchRequest,
 } from '@medplum/core';
 import { Agent, Device } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
+import { isIPv4 } from 'node:net';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
@@ -113,8 +114,8 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
 
 /**
  * Returns the Agent for the execute request.
- * If using "/Agent/:id/$execute", then the agent ID is read from the path parameter.
- * If using "/Agent/$execute?identifier=...", then the agent is searched by identifier.
+ * If using "/Agent/:id/$push", then the agent ID is read from the path parameter.
+ * If using "/Agent/$push?identifier=...", then the agent is searched by identifier.
  * Otherwise, returns undefined.
  * @param req - The HTTP request.
  * @param repo - The repository.
@@ -144,12 +145,15 @@ async function getDevice(repo: Repository, destination: string): Promise<Device 
   if (destination.startsWith('Device/')) {
     try {
       return await repo.readReference<Device>({ reference: destination });
-    } catch (err) {
+    } catch (_err) {
       return undefined;
     }
   }
   if (destination.startsWith('Device?')) {
-    return repo.searchOne<Device>(parseSearchDefinition(destination));
+    return repo.searchOne<Device>(parseSearchRequest(destination));
+  }
+  if (isIPv4(destination)) {
+    return { resourceType: 'Device', url: destination };
   }
   return undefined;
 }

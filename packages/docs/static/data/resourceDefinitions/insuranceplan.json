@@ -1477,7 +1477,7 @@
       "name": "name",
       "type": "string",
       "description": "A portion of the organization's name or alias",
-      "expression": ""
+      "expression": "name | alias"
     },
     {
       "name": "owned-by",

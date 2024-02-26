@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../test-utils/render';
 import { AddressDisplay } from './AddressDisplay';
 
 describe('AddressDisplay', () => {

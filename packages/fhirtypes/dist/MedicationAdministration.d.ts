@@ -142,7 +142,7 @@ export interface MedicationAdministration {
    * it is possible for an administration to be started but not completed
    * or it may be paused while some other process is under way.
    */
-  status?: 'in-progress' | 'not-done' | 'on-hold' | 'completed' | 'entered-in-error' | 'stopped' | 'unknown';
+  status: 'in-progress' | 'not-done' | 'on-hold' | 'completed' | 'entered-in-error' | 'stopped' | 'unknown';
 
   /**
    * A code indicating why the administration was not performed.
@@ -174,7 +174,7 @@ export interface MedicationAdministration {
   /**
    * The person or animal or group receiving the medication.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The visit, admission, or other contact between patient and health care
@@ -399,5 +399,5 @@ export interface MedicationAdministrationPerformer {
   /**
    * Indicates who or what performed the medication administration.
    */
-  actor?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson | Device>;
+  actor: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson | Device>;
 }

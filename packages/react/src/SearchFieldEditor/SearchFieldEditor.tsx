@@ -5,10 +5,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {
-  visible: boolean;
-  search: SearchRequest;
-  onOk: (search: SearchRequest) => void;
-  onCancel: () => void;
+  readonly visible: boolean;
+  readonly search: SearchRequest;
+  readonly onOk: (search: SearchRequest) => void;
+  readonly onCancel: () => void;
 }
 
 export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | null {
@@ -98,7 +98,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
     >
       <Stack>
         <MultiSelect
-          withinPortal={true}
+          // withinPortal={true}
           style={{ width: 550 }}
           placeholder="Select fields to display"
           data={allFields}
@@ -107,13 +107,13 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           onDropdownOpen={() => setIsDropdownOpen(true)}
           onDropdownClose={() => setIsDropdownOpen(false)}
           /* shows at most ~6.5 items; the extra half to provide a hint that there are more entries to scroll through */
-          maxDropdownHeight={'250px'}
-          dropdownPosition="bottom"
+          maxDropdownHeight="250px"
+          // dropdownPosition="bottom"
           clearButtonProps={{ 'aria-label': 'Clear selection' }}
           clearable
           searchable
         />
-        <Group position="right">
+        <Group justify="flex-end">
           <Button onClick={() => props.onOk(state.search)}>OK</Button>
         </Group>
       </Stack>

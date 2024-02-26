@@ -31,6 +31,7 @@ export class BackEnd extends Construct {
   botLambdaRole: iam.IRole;
   rdsSecretsArn?: string;
   rdsCluster?: rds.DatabaseCluster;
+  rdsProxy?: rds.DatabaseProxy;
   redisSubnetGroup: elasticache.CfnSubnetGroup;
   redisSecurityGroup: ec2.SecurityGroup;
   redisPassword: secretsmanager.ISecret;
@@ -52,6 +53,7 @@ export class BackEnd extends Construct {
   dnsRecord?: route53.ARecord;
   regionParameter: ssm.StringParameter;
   databaseSecretsParameter: ssm.StringParameter;
+  databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
 
@@ -92,21 +94,28 @@ export class BackEnd extends Construct {
     this.rdsSecretsArn = config.rdsSecretsArn;
     if (!this.rdsSecretsArn) {
       // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
-      const instanceProps: rds.ProvisionedClusterInstanceProps = {
-        instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
+      const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
         enablePerformanceInsights: true,
         isFromLegacyInstanceProps: true,
+      };
+
+      const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
+      const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
+        ...defaultInstanceProps,
+        instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
+      };
+
+      const writerInstanceType = config.rdsInstanceType;
+      const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
+        ...defaultInstanceProps,
+        instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
       };
 
       let readers = undefined;
       if (config.rdsInstances > 1) {
         readers = [];
-        for (let i = 0; i < config.rdsInstances - 1; i++) {
-          readers.push(
-            ClusterInstance.provisioned('Instance' + (i + 2), {
-              ...instanceProps,
-            })
-          );
+        for (let i = 1; i < config.rdsInstances; i++) {
+          readers.push(ClusterInstance.provisioned('Instance' + (i + 1), readerInstanceProps));
         }
       }
 
@@ -127,9 +136,7 @@ export class BackEnd extends Construct {
         vpcSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
-        writer: ClusterInstance.provisioned('Instance1', {
-          ...instanceProps,
-        }),
+        writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
         readers,
         backup: {
           retention: Duration.days(7),
@@ -139,6 +146,14 @@ export class BackEnd extends Construct {
       });
 
       this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
+
+      if (config.rdsProxyEnabled) {
+        this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
+          proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
+          secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
+          vpc: this.vpc,
+        });
+      }
     }
 
     // Redis
@@ -203,7 +218,14 @@ export class BackEnd extends Construct {
         // CloudWatch Logs: Create streams and put events
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+          actions: [
+            'logs:PutLogEvents',
+            'logs:CreateLogGroup',
+            'logs:CreateLogStream',
+            'logs:DescribeLogStreams',
+            'logs:DescribeLogGroups',
+            'logs:PutRetentionPolicy',
+          ],
           resources: ['arn:aws:logs:*'],
         }),
 
@@ -269,6 +291,20 @@ export class BackEnd extends Construct {
           ],
           resources: ['arn:aws:lambda:*'],
         }),
+
+        // XRay: Write to segment store
+        // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-permissions-ref.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'xray:PutTraceSegments',
+            'xray:PutTelemetryRecords',
+            'xray:GetSamplingRules',
+            'xray:GetSamplingTargets',
+            'xray:GetSamplingStatisticSummaries',
+          ],
+          resources: ['*'],
+        }),
       ],
     });
 
@@ -304,6 +340,7 @@ export class BackEnd extends Construct {
       image: this.getContainerImage(config, config.serverImage),
       command: [config.region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${config.region}:/medplum/${name}/`],
       logging: this.logDriver,
+      environment: config.environment,
     });
 
     this.serviceContainer.addPortMappings({
@@ -346,6 +383,9 @@ export class BackEnd extends Construct {
     // Add dependencies - make sure Fargate service is created after RDS and Redis
     if (this.rdsCluster) {
       this.fargateService.node.addDependency(this.rdsCluster);
+    }
+    if (this.rdsProxy) {
+      this.fargateService.node.addDependency(this.rdsProxy);
     }
     this.fargateService.node.addDependency(this.redisCluster);
 
@@ -416,15 +456,21 @@ export class BackEnd extends Construct {
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
     }
 
+    // Grant RDS Proxy access to the fargate group
+    if (this.rdsProxy) {
+      // Cannot call allowDefaultPortFrom(): this resource has no default port
+      // See: https://repost.aws/knowledge-center/rds-proxy-connection-issues
+      this.rdsProxy.connections.allowFrom(this.fargateSecurityGroup, ec2.Port.tcp(5432));
+    }
+
     // Grant Redis access to the fargate group
     this.redisSecurityGroup.addIngressRule(this.fargateSecurityGroup, ec2.Port.tcp(6379));
 
     // DNS
     if (!config.skipDns) {
       // Route 53
-      const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-        domainName: config.domainName.split('.').slice(-2).join('.'),
-      });
+      const hostedZoneName = config.hostedZoneName ?? config.domainName.split('.').slice(-2).join('.');
+      const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: hostedZoneName });
 
       // Route53 alias record for the load balancer
       this.dnsRecord = new route53.ARecord(this, 'LoadBalancerAliasRecord', {
@@ -448,6 +494,15 @@ export class BackEnd extends Construct {
       description: 'Database secrets ARN',
       stringValue: this.rdsSecretsArn,
     });
+
+    if (this.rdsProxy) {
+      this.databaseProxyEndpointParameter = new ssm.StringParameter(this, 'DatabaseProxyEndpointParameter', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/databaseProxyEndpoint`,
+        description: 'Database proxy endpoint',
+        stringValue: this.rdsProxy?.endpoint as string,
+      });
+    }
 
     this.redisSecretsParameter = new ssm.StringParameter(this, 'RedisSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,

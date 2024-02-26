@@ -119,13 +119,13 @@ export interface CatalogEntry {
   /**
    * Whether the entry represents an orderable item.
    */
-  orderable?: boolean;
+  orderable: boolean;
 
   /**
    * The item in a catalog or definition.
    */
-  referencedItem?: Reference<Medication | Device | Organization | Practitioner | PractitionerRole | HealthcareService
-      | ActivityDefinition | PlanDefinition | SpecimenDefinition | ObservationDefinition | Binary>;
+  referencedItem: Reference<Medication | Device | Organization | Practitioner | PractitionerRole | HealthcareService |
+      ActivityDefinition | PlanDefinition | SpecimenDefinition | ObservationDefinition | Binary>;
 
   /**
    * Used in supporting related concepts, e.g. NDC to RxNorm.
@@ -221,10 +221,10 @@ export interface CatalogEntryRelatedEntry {
    * The type of relation to the related item: child, parent,
    * packageContent, containerPackage, usedIn, uses, requires, etc.
    */
-  relationtype?: 'triggers' | 'is-replaced-by';
+  relationtype: 'triggers' | 'is-replaced-by';
 
   /**
    * The reference to the related item.
    */
-  item?: Reference<CatalogEntry>;
+  item: Reference<CatalogEntry>;
 }

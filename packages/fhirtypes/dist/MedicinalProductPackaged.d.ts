@@ -146,7 +146,7 @@ export interface MedicinalProductPackaged {
    * A packaging item, as a contained for medicine, possibly with other
    * packaging items within.
    */
-  packageItem?: MedicinalProductPackagedPackageItem[];
+  packageItem: MedicinalProductPackagedPackageItem[];
 }
 
 /**
@@ -192,7 +192,7 @@ export interface MedicinalProductPackagedBatchIdentifier {
   /**
    * A number appearing on the outer packaging of a specific batch.
    */
-  outerPackaging?: Identifier;
+  outerPackaging: Identifier;
 
   /**
    * A number appearing on the immediate packaging (and not the outer
@@ -250,13 +250,13 @@ export interface MedicinalProductPackagedPackageItem {
   /**
    * The physical type of the container of the medicine.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The quantity of this package in the medicinal product, at the current
    * level of packaging. The outermost is always 1.
    */
-  quantity?: Quantity;
+  quantity: Quantity;
 
   /**
    * Material type of the package item.

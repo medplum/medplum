@@ -3,7 +3,7 @@ import { Attachment, Group, Patient, Reference, ResourceType, ServiceRequest } f
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface ServiceRequestTimelineProps {
-  serviceRequest: ServiceRequest | Reference<ServiceRequest>;
+  readonly serviceRequest: ServiceRequest | Reference<ServiceRequest>;
 }
 
 export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.Element {

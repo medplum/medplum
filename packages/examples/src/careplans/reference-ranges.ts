@@ -289,6 +289,7 @@ const jane: Patient = {
 
 const janeTestosterone: Observation = {
   resourceType: 'Observation',
+  status: 'final',
   code: {
     coding: [
       {

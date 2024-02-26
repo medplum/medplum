@@ -13,6 +13,7 @@ export default {
 function createMeasure(title: string, url: string, subtitle?: string): Measure {
   return {
     resourceType: 'Measure',
+    status: 'active',
     url,
     title,
     subtitle,
@@ -46,7 +47,10 @@ export const Basic = (): JSX.Element => {
         measureReport={{
           resourceType: 'MeasureReport',
           id: 'basic-example',
-          measure: measure?.url,
+          measure: measure?.url as string,
+          status: 'complete',
+          type: 'individual',
+          period: { start: '2021-01-01', end: '2021-12-31' },
           group: [
             {
               id: 'group-1',
@@ -93,7 +97,10 @@ export const Multiple = (): JSX.Element => {
         measureReport={{
           resourceType: 'MeasureReport',
           id: 'basic-example',
-          measure: measure?.url,
+          measure: measure?.url as string,
+          status: 'complete',
+          type: 'individual',
+          period: { start: '2021-01-01', end: '2021-12-31' },
           group: [
             {
               id: 'group-1',
@@ -147,7 +154,10 @@ export const WithPopulation = (): JSX.Element => {
         measureReport={{
           resourceType: 'MeasureReport',
           id: 'basic-example',
-          measure: measure?.url,
+          measure: measure?.url as string,
+          status: 'complete',
+          type: 'individual',
+          period: { start: '2021-01-01', end: '2021-12-31' },
           group: [
             {
               id: 'group-1',

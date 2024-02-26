@@ -16,14 +16,15 @@ import {
   ParametersParameter,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { sendResponse } from '../../routes';
+import { getLogger } from '../../../context';
 import { sendOutcome } from '../../outcomes';
+import { sendResponse } from '../../response';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
     // Convert the parameters to input
     const parameters = (input as Parameters).parameter ?? [];
-    return Object.fromEntries(parameters.map((p) => [p.name, p.valueString]));
+    return Object.fromEntries(parameters.map((p) => [p.name, p.valueString])) as T;
   } else {
     return input as T;
   }
@@ -37,58 +38,77 @@ export function parseParameters<T>(input: T | Parameters): T {
  * @returns A dictionary of parameter names to values.
  */
 export function parseInputParameters<T>(operation: OperationDefinition, req: Request): T {
-  const parsed = Object.create(null);
   if (!operation.parameter) {
-    return parsed;
+    return {} as any;
   }
 
-  const input = req.body;
-  const inputParameters = input.resourceType === 'Parameters' ? (input as Parameters) : undefined;
-  if (inputParameters) {
-    validateResource(inputParameters);
-  }
-  for (const param of operation.parameter.filter((p) => p.use === 'in')) {
-    const paramName = param.name as string;
-    const min = param.min ?? 0;
-    const max = parseInt(param.max ?? '1', 10);
-    let value: any;
-    if (inputParameters) {
-      // FHIR spec-compliant case: Parameters resource e.g.
-      // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
-      const inParam = inputParameters.parameter?.filter((p) => p.name === param.name);
-      value = inParam?.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
-    } else {
-      // Fallback case: Plain JSON Object e.g.
-      // { message: 'Hello!' }
-      value = input[paramName];
+  // If the request is a GET request, use the query parameters
+  // Otherwise, use the body
+  const input = req.method === 'GET' ? req.query : req.body;
+
+  const inputParameters = operation.parameter.filter((p) => p.use === 'in');
+  if (input.resourceType === 'Parameters') {
+    if (!input.parameter) {
+      return {} as any;
     }
+    validateResource(input as Parameters);
+    return parseParams(inputParameters, input.parameter) as any;
+  } else {
+    return Object.fromEntries(
+      inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name as string])])
+    ) as any;
+  }
+}
 
-    // Check parameter cardinality (min and max)
-    if (Array.isArray(value)) {
-      if (value.length < min || value.length > max) {
-        throw new OperationOutcomeError(
-          badRequest(
-            `Expected ${min === max ? max : min + '..' + max} value${
-              min > 1 ? 's' : ''
-            } for input parameter ${paramName}, but ${value.length} provided`
-          )
-        );
-      }
-    } else if (min > 0 && isEmpty(value)) {
+function validateInputParam(param: OperationDefinitionParameter, value: any): any {
+  // Check parameter cardinality (min and max)
+  const min = param.min ?? 0;
+  const max = parseInt(param.max ?? '1', 10);
+  if (Array.isArray(value)) {
+    if (value.length < min || value.length > max) {
       throw new OperationOutcomeError(
-        badRequest(`Expected ${min > 1 ? 'at least' + min + ' values for' : 'required'} input parameter '${paramName}'`)
+        badRequest(
+          `Expected ${min === max ? max : min + '..' + max} value(s) for input parameter ${param.name}, but ${
+            value.length
+          } provided`
+        )
       );
     }
+  } else if (min > 0 && isEmpty(value)) {
+    throw new OperationOutcomeError(
+      badRequest(`Expected at least ${min} value(s) for required input parameter '${param.name}'`)
+    );
+  }
 
-    parsed[paramName] = Array.isArray(value) && max === 1 ? value[0] : value;
+  return Array.isArray(value) && max === 1 ? value[0] : value;
+}
+
+function parseParams(
+  params: OperationDefinitionParameter[],
+  inputParameters: ParametersParameter[]
+): Record<string, any> {
+  const parsed: Record<string, any> = Object.create(null);
+  for (const param of params) {
+    // FHIR spec-compliant case: Parameters resource e.g.
+    // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
+    const inParams = inputParameters.filter((p) => p.name === param.name);
+    let value: any;
+    if (param.part?.length) {
+      value = inParams.map((input) => parseParams(param.part as [], input.part ?? []));
+    } else {
+      value = inParams?.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
+    }
+
+    parsed[param.name as string] = validateInputParam(param, value);
   }
 
   return parsed;
 }
 
 export async function sendOutputParameters(
-  operation: OperationDefinition,
+  req: Request,
   res: Response,
+  operation: OperationDefinition,
   outcome: OperationOutcome,
   output: any
 ): Promise<void> {
@@ -102,7 +122,7 @@ export async function sendOutputParameters(
       );
     } else {
       // Send Resource as output directly, instead of using Parameters format
-      await sendResponse(res, outcome, output);
+      await sendResponse(req, res, outcome, output);
     }
     return;
   }
@@ -137,29 +157,62 @@ export async function sendOutputParameters(
       continue;
     }
 
-    response.parameter?.push(
-      ...(Array.isArray(value) ? value.map((v) => makeParameter(param, v)) : [makeParameter(param, value)])
-    );
+    if (Array.isArray(value)) {
+      for (const val of value.map((v) => makeParameter(param, v))) {
+        if (val) {
+          response.parameter.push(val);
+        }
+      }
+    } else {
+      const val = makeParameter(param, value);
+      if (val) {
+        response.parameter.push(val);
+      }
+    }
   }
 
   try {
     validateResource(response);
     res.status(getStatus(outcome)).json(response);
   } catch (err: any) {
+    getLogger().error('Malformed operation output Parameters', { error: err.toString() });
     sendOutcome(res, serverError(err));
   }
 }
 
-function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter {
+function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter | undefined {
   if (param.part) {
     const parts: ParametersParameter[] = [];
     for (const part of param.part) {
       const nestedValue = value[part.name ?? ''];
       if (nestedValue !== undefined) {
-        parts.push(makeParameter(part, nestedValue));
+        const nestedParam = makeParameter(part, nestedValue);
+        if (nestedParam) {
+          parts.push(nestedParam);
+        }
       }
     }
     return { name: param.name, part: parts };
   }
-  return { name: param.name, ['value' + capitalize(param.type as string)]: value };
+  const type =
+    param.type && param.type !== 'Element'
+      ? [param.type]
+      : param.extension
+          ?.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type')
+          ?.map((e) => e.valueUri as string);
+  if (type?.length === 1) {
+    return { name: param.name, ['value' + capitalize(type[0] as string)]: value };
+  } else if (typeof value.type === 'string' && value.value && type?.length) {
+    // Handle TypedValue
+    for (const t of type) {
+      if (value.type === t) {
+        return { name: param.name, ['value' + capitalize(t)]: value.value };
+      }
+    }
+  }
+  return undefined;
+}
+
+export function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
 }

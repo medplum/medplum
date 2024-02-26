@@ -127,7 +127,7 @@ The table below contains SNOMED code for the common roles used in digital health
 | Quality Assurance          | 56542007 ([Medical record administrator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=56542007&edition=MAIN/2023-04-30&release=&languages=en)) | 15-1253 (Software Quality Assurance Analysts and Testers) |
 | Assistant                  | 449161006 ([Physician assistant](https://browser.ihtsdotools.org/?perspective=full&conceptId1=449161006&edition=MAIN/2023-03-31&release=&languages=en))        | 29-1071 (Physician Assistants)                            |
 
-Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basics#codeable-concepts-standarding-data) using both SNOMED and SOC systems.
+Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basics#standardizing-data-codeable-concepts) using both SNOMED and SOC systems.
 
 ```ts
 {

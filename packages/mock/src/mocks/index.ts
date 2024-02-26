@@ -6,3 +6,4 @@ export * from './simpsons';
 export * from './subscription';
 export * from './valueset';
 export * from './workflow';
+export * from './uscore';

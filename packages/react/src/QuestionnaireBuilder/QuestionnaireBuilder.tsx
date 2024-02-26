@@ -1,15 +1,4 @@
-import {
-  Anchor,
-  Box,
-  Button,
-  createStyles,
-  Group,
-  NativeSelect,
-  Space,
-  Textarea,
-  TextInput,
-  Title,
-} from '@mantine/core';
+import { Anchor, Box, Button, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { getElementDefinition, isResource as isResourceType } from '@medplum/core';
 import {
   Extension,
@@ -21,6 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
+import cx from 'clsx';
 import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
@@ -34,85 +24,12 @@ import {
   QuestionnaireItemType,
   setQuestionnaireItemReferenceTargetTypes,
 } from '../utils/questionnaire';
-
-const useStyles = createStyles((theme) => ({
-  section: {
-    position: 'relative',
-    margin: '4px 4px 8px 0',
-    padding: '6px 12px 16px 6px',
-    border: `1.5px solid ${theme.colors.gray[1]}`,
-    borderRadius: theme.radius.sm,
-    transition: 'all 0.1s',
-  },
-
-  hovering: {
-    border: `1.5px solid ${theme.colors.blue[5]}`,
-  },
-
-  editing: {
-    border: `1.5px solid ${theme.colors.gray[1]}`,
-    borderLeft: `4px solid ${theme.colors.blue[5]}`,
-  },
-
-  questionBody: {
-    maxWidth: 600,
-  },
-
-  topActions: {
-    position: 'absolute',
-    right: 32,
-    top: 1,
-    padding: 4,
-    color: theme.colors.gray[5],
-    fontSize: theme.fontSizes.xs,
-  },
-
-  bottomActions: {
-    position: 'absolute',
-    right: 4,
-    bottom: 0,
-    fontSize: theme.fontSizes.xs,
-
-    '& a': {
-      marginLeft: 8,
-    },
-  },
-
-  movementActions: {
-    position: 'absolute',
-    right: 8,
-    top: 0,
-    paddingTop: 8,
-    fontSize: theme.fontSizes.xs,
-
-    '& a': {
-      marginLeft: 8,
-    },
-  },
-
-  movementIcons: {
-    color: theme.colors.gray[5],
-  },
-
-  columnAlignment: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-
-  linkIdInput: {
-    width: 100,
-    marginBottom: 4,
-  },
-
-  typeSelect: {
-    width: 100,
-  },
-}));
+import classes from './QuestionnaireBuilder.module.css';
 
 export interface QuestionnaireBuilderProps {
-  questionnaire: Questionnaire | Reference<Questionnaire>;
-  onSubmit: (result: Questionnaire) => void;
-  autoSave?: boolean;
+  readonly questionnaire: Partial<Questionnaire> | Reference<Questionnaire>;
+  readonly onSubmit: (result: Questionnaire) => void;
+  readonly autoSave?: boolean;
 }
 
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Element | null {
@@ -139,7 +56,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
   }, [medplum]);
 
   useEffect(() => {
-    setValue(ensureQuestionnaireKeys(defaultValue ?? { resourceType: 'Questionnaire' }));
+    setValue(ensureQuestionnaireKeys(defaultValue ?? { resourceType: 'Questionnaire', status: 'active' }));
     document.addEventListener('mouseover', handleDocumentMouseOver);
     document.addEventListener('click', handleDocumentClick);
     return () => {
@@ -177,22 +94,21 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
 }
 
 interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
-  item: T;
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  isFirst?: boolean;
-  isLast?: boolean;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (item: T, disableSubmit?: boolean) => void;
-  onRemove?: () => void;
-  onRepeatable?: (item: QuestionnaireItem) => void;
+  readonly item: T;
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly isFirst?: boolean;
+  readonly isLast?: boolean;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (item: T, disableSubmit?: boolean) => void;
+  readonly onRemove?: () => void;
+  readonly onRepeatable?: (item: QuestionnaireItem) => void;
   onMoveUp?(): void;
   onMoveDown?(): void;
 }
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
-  const { classes, cx } = useStyles();
   const resource = props.item as Questionnaire;
   const item = props.item as QuestionnaireItem;
   const isResource = isResourceType(props.item);
@@ -301,7 +217,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           <>
             {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
-            {!isContainer && <QuestionnaireFormItem item={item} index={0} onChange={() => undefined} response={{}} />}
+            {!isContainer && (
+              <QuestionnaireFormItem
+                item={item}
+                index={0}
+                onChange={() => undefined}
+                response={{ linkId: item.linkId }}
+              />
+            )}
           </>
         )}
       </div>
@@ -475,8 +398,8 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
 }
 
 interface AnswerBuilderProps {
-  item: QuestionnaireItem;
-  onChange: (item: QuestionnaireItem) => void;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
@@ -532,10 +455,10 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
 }
 
 interface AnswerOptionsInputProps {
-  options: QuestionnaireItemAnswerOption[];
-  property: any;
-  item: QuestionnaireItem;
-  onChange: (item: QuestionnaireItem) => void;
+  readonly options: QuestionnaireItemAnswerOption[];
+  readonly property: any;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
@@ -561,6 +484,7 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
               <ResourcePropertyInput
                 key={option.id}
                 name="value[x]"
+                path="Questionnaire.answerOption.value[x]"
                 property={props.property}
                 defaultPropertyType={propertyType}
                 defaultValue={propertyValue}
@@ -573,6 +497,7 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
                     answerOption: newOptions,
                   });
                 }}
+                outcome={undefined}
               />
             </div>
 
@@ -598,8 +523,8 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
 }
 
 interface ReferenceTypeProps {
-  item: QuestionnaireItem;
-  onChange: (updatedItem: QuestionnaireItem) => void;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (updatedItem: QuestionnaireItem) => void;
 }
 
 function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
@@ -613,7 +538,7 @@ function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {
               name="resourceType"
               placeholder="Resource Type"
               defaultValue={targetType}
-              onChange={(newValue: ResourceType | undefined) => {
+              onChange={(newValue) => {
                 props.onChange(
                   setQuestionnaireItemReferenceTargetTypes(
                     props.item,

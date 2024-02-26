@@ -4,6 +4,23 @@
   "type": "collection",
   "entry": [
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the project",
+        "code": "identifier",
+        "base": ["Project"],
+        "type": "token",
+        "expression": "Project.identifier"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-name",
       "resource": {
         "resourceType": "SearchParameter",
@@ -210,6 +227,23 @@
         "base": ["JsonWebKey"],
         "type": "token",
         "expression": "JsonWebKey.active"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/User-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "User-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/User-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the user",
+        "code": "identifier",
+        "base": ["User"],
+        "type": "token",
+        "expression": "User.identifier"
       }
     },
     {
@@ -564,7 +598,7 @@
         "id": "priority-order",
         "url": "https://medplum.com/fhir/SearchParameter/priority-order",
         "version": "4.0.1",
-        "name": "status",
+        "name": "priority-order",
         "status": "draft",
         "publisher": "Medplum",
         "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
@@ -572,6 +606,40 @@
         "base": ["CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
         "type": "number",
         "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/CareTeam-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "CareTeam-name",
+        "url": "https://medplum.com/fhir/SearchParameter/CareTeam-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the care team",
+        "code": "name",
+        "base": ["CareTeam"],
+        "type": "string",
+        "expression": "CareTeam.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Group-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Group-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Group-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the group",
+        "code": "name",
+        "base": ["Group"],
+        "type": "string",
+        "expression": "Group.name"
       }
     }
   ]

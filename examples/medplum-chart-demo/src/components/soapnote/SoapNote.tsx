@@ -52,7 +52,7 @@ export function SoapNote(): JSX.Element {
         <QuestionnaireForm questionnaire={questionnaire} onSubmit={!submitted ? handleSubmit : console.log} />
 
         {submitted ? (
-          <Flex justify={'flex-end'} mt={8}>
+          <Flex justify="flex-end" mt={8}>
             <Text mr={8}>Submitted</Text>
             <IconCircleCheck color="#79d290" size={24} />
           </Flex>

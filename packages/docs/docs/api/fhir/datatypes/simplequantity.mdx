@@ -3,6 +3,7 @@ title: SimpleQuantity
 sidebar_position: 40
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/simplequantity.json';
@@ -13,16 +14,14 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 A fixed quantity (no comparator)
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

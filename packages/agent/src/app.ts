@@ -1,68 +1,141 @@
 import {
+  AgentError,
   AgentMessage,
   AgentTransmitRequest,
+  AgentTransmitResponse,
   ContentType,
   Hl7Message,
+  LogLevel,
+  Logger,
   MedplumClient,
   normalizeErrorString,
 } from '@medplum/core';
-import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
+import { Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { EventLogger } from 'node-windows';
+import { exec as _exec } from 'node:child_process';
+import { isIPv4, isIPv6 } from 'node:net';
+import { promisify } from 'node:util';
+import { platform } from 'os';
 import WebSocket from 'ws';
 import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 
+const exec = promisify(_exec);
+
 export class App {
   static instance: App;
-  readonly log: EventLogger;
-  readonly webSocket: WebSocket;
+  readonly log: Logger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
-  live = false;
+  healthcheckPeriod = 10 * 1000;
+  private healthcheckTimer?: NodeJS.Timeout;
+  private reconnectTimer?: NodeJS.Timeout;
+  private webSocket?: WebSocket;
+  private webSocketWorker?: Promise<void>;
+  private live = false;
+  private shutdown = false;
 
   constructor(
     readonly medplum: MedplumClient,
-    readonly agentId: string
+    readonly agentId: string,
+    readonly logLevel: LogLevel
   ) {
     App.instance = this;
+    this.log = new Logger((msg) => console.log(msg), undefined, logLevel);
+  }
 
-    this.log = {
-      info: console.log,
-      warn: console.warn,
-      error: console.error,
-    } as EventLogger;
+  async start(): Promise<void> {
+    this.log.info('Medplum service starting...');
 
-    const webSocketUrl = new URL(medplum.getBaseUrl());
+    this.startWebSocket();
+
+    await this.startListeners();
+
+    this.medplum.addEventListener('change', () => {
+      if (!this.webSocket) {
+        this.connectWebSocket();
+      } else {
+        this.startWebSocketWorker();
+      }
+    });
+
+    this.log.info('Medplum service started successfully');
+  }
+
+  private startWebSocket(): void {
+    this.connectWebSocket();
+    this.healthcheckTimer = setInterval(() => this.healthcheck(), this.healthcheckPeriod);
+  }
+
+  private async healthcheck(): Promise<void> {
+    if (!this.webSocket && !this.reconnectTimer) {
+      this.log.warn('WebSocket not connected');
+      this.connectWebSocket();
+      return;
+    }
+
+    if (this.webSocket && this.live) {
+      await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
+    }
+  }
+
+  private connectWebSocket(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+
+    const webSocketUrl = new URL(this.medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     webSocketUrl.pathname = '/ws/agent';
     this.log.info(`Connecting to WebSocket: ${webSocketUrl.href}`);
 
     this.webSocket = new WebSocket(webSocketUrl);
     this.webSocket.binaryType = 'nodebuffer';
-    this.webSocket.addEventListener('error', (err) => this.log.error(err.message));
-    this.webSocket.addEventListener('open', () => {
-      this.sendToWebSocket({
+
+    this.webSocket.addEventListener('error', (err) => {
+      if (!this.shutdown) {
+        this.log.error(normalizeErrorString(err.error));
+      }
+    });
+
+    this.webSocket.addEventListener('open', async () => {
+      await this.sendToWebSocket({
         type: 'agent:connect:request',
-        accessToken: medplum.getAccessToken() as string,
-        agentId,
+        accessToken: this.medplum.getAccessToken() as string,
+        agentId: this.agentId,
       });
     });
 
-    this.webSocket.addEventListener('message', (e) => {
+    this.webSocket.addEventListener('close', () => {
+      if (!this.shutdown) {
+        this.webSocket = undefined;
+        this.live = false;
+        this.log.info('WebSocket closed');
+        this.reconnectTimer = setTimeout(() => this.connectWebSocket(), 1000);
+      }
+    });
+
+    this.webSocket.addEventListener('message', async (e) => {
       try {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
-        this.log.info(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
+        this.log.debug(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
         const command = JSON.parse(str) as AgentMessage;
         switch (command.type) {
           // @ts-expect-error - Deprecated message type
           case 'connected':
           case 'agent:connect:response':
             this.live = true;
-            this.trySendToWebSocket();
+            this.startWebSocketWorker();
+            break;
+          case 'agent:heartbeat:request':
+            await this.sendToWebSocket({ type: 'agent:heartbeat:response' });
+            break;
+          case 'agent:heartbeat:response':
+            // Do nothing
             break;
           // @ts-expect-error - Deprecated message type
           case 'transmit':
@@ -72,7 +145,14 @@ export class App {
           // @ts-expect-error - Deprecated message type
           case 'push':
           case 'agent:transmit:request':
-            this.pushMessage(command);
+            if (command.contentType === ContentType.PING) {
+              await this.tryPingIp(command);
+            } else {
+              this.pushMessage(command);
+            }
+            break;
+          case 'agent:error':
+            this.log.error(command.body);
             break;
           default:
             this.log.error(`Unknown message type: ${command.type}`);
@@ -83,12 +163,10 @@ export class App {
     });
   }
 
-  async start(): Promise<void> {
-    this.log.info('Medplum service starting...');
-
+  private async startListeners(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
 
-    for (const definition of agent.channel as AgentChannel[]) {
+    for (const definition of agent.channel ?? []) {
       const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
       let channel: Channel | undefined = undefined;
 
@@ -107,19 +185,35 @@ export class App {
         this.channels.set(definition.name as string, channel);
       }
     }
-
-    this.log.info('Medplum service started successfully');
   }
 
   stop(): void {
     this.log.info('Medplum service stopping...');
+    this.shutdown = true;
+
+    if (this.healthcheckTimer) {
+      clearInterval(this.healthcheckTimer);
+      this.healthcheckTimer = undefined;
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+
     this.channels.forEach((channel) => channel.stop());
+
+    if (this.webSocket) {
+      this.webSocket.close();
+      this.webSocket = undefined;
+    }
+
     this.log.info('Medplum service stopped successfully');
   }
 
   addToWebSocketQueue(message: AgentMessage): void {
     this.webSocketQueue.push(message);
-    this.trySendToWebSocket();
+    this.startWebSocketWorker();
   }
 
   addToHl7Queue(message: AgentMessage): void {
@@ -127,15 +221,36 @@ export class App {
     this.trySendToHl7Connection();
   }
 
-  private trySendToWebSocket(): void {
+  private startWebSocketWorker(): void {
+    if (this.webSocketWorker) {
+      // Websocket worker is already running
+      return;
+    }
+
+    // Start the worker
+    this.webSocketWorker = this.trySendToWebSocket()
+      .then(() => {
+        this.webSocketWorker = undefined;
+      })
+      .catch((err) => console.log('WebSocket worker error', err));
+  }
+
+  private async trySendToWebSocket(): Promise<void> {
     if (this.live) {
       while (this.webSocketQueue.length > 0) {
         const msg = this.webSocketQueue.shift();
         if (msg) {
-          this.sendToWebSocket(msg);
+          try {
+            await this.sendToWebSocket(msg);
+          } catch (err) {
+            this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+            this.webSocketQueue.unshift(msg);
+            throw err;
+          }
         }
       }
     }
+    this.webSocketWorker = undefined;
   }
 
   private trySendToHl7Connection(): void {
@@ -150,7 +265,55 @@ export class App {
     }
   }
 
-  private sendToWebSocket(message: AgentMessage): void {
+  private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
+    try {
+      if (message.body && message.body !== 'PING') {
+        const warnMsg = 'Message body present but unused. Body should be empty for a ping request.';
+        this.log.warn(warnMsg);
+      }
+      if (!isIPv4(message.remote)) {
+        let errMsg = `Attempted to ping invalid IP: ${message.remote}`;
+        if (isIPv6(message.remote)) {
+          errMsg = `Attempted to ping an IPv6 address: ${message.remote}\n\nIPv6 is currently unsupported.`;
+        }
+        this.log.error(errMsg);
+        throw new Error(errMsg);
+      }
+      // This covers Windows, Linux, and Mac
+      const { stderr, stdout } = await exec(
+        platform() === 'win32' ? `ping ${message.remote}` : `ping -c 4 ${message.remote}`
+      );
+      if (stderr) {
+        throw new Error(`Received on stderr:\n\n${stderr}`);
+      }
+      this.log.info(`Ping result for ${message.remote}:\n\n${stdout}`);
+      this.addToWebSocketQueue({
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        contentType: ContentType.PING,
+        remote: message.remote,
+        callback: message.callback,
+        body: stdout,
+      } satisfies AgentTransmitResponse);
+    } catch (err) {
+      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_IP_GIVEN'}: ${normalizeErrorString(err)}`);
+      this.addToWebSocketQueue({
+        type: 'agent:error',
+        body: (err as Error).message,
+      } satisfies AgentError);
+    }
+  }
+
+  private async sendToWebSocket(message: AgentMessage): Promise<void> {
+    if (!this.webSocket) {
+      throw new Error('WebSocket not connected');
+    }
+    if ('accessToken' in message) {
+      // Use the latest access token
+      // This can be necessary if the message was queued before the access token was refreshed
+      await this.medplum.refreshIfExpired();
+      message.accessToken = this.medplum.getAccessToken() as string;
+    }
     this.webSocket.send(JSON.stringify(message));
   }
 

@@ -11,6 +11,7 @@ export const TestProject: Project = {
 export const TestProjectMembersihp: ProjectMembership = {
   resourceType: 'ProjectMembership',
   id: '456',
+  user: { reference: 'User/123' },
   project: createReference(TestProject),
   profile: createReference(DrAliceSmith),
 };

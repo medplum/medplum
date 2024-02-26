@@ -16,4 +16,5 @@ export const ContentType = {
   SVG: 'image/svg+xml',
   TEXT: 'text/plain',
   TYPESCRIPT: 'text/typescript',
+  PING: 'x-application/ping',
 } as const;

@@ -1,12 +1,12 @@
 import { useMantineTheme } from '@mantine/core';
 
 export interface LogoProps {
-  width: number;
+  readonly width: number;
 }
 
 export function Logo(props: LogoProps): JSX.Element {
   const theme = useMantineTheme();
-  const color = theme.fn.primaryColor();
+  const color = theme.primaryColor;
   const width = props.width;
   const height = Math.round((180 / 1050) * width);
   return (

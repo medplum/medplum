@@ -2,11 +2,11 @@ import { InternalSchemaElement } from '@medplum/core';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
 export interface ResourceArrayDisplayProps {
-  property: InternalSchemaElement;
-  values: any[];
-  arrayElement?: boolean;
-  ignoreMissingValues?: boolean;
-  link?: boolean;
+  readonly property: InternalSchemaElement;
+  readonly values: any[];
+  readonly arrayElement?: boolean;
+  readonly ignoreMissingValues?: boolean;
+  readonly link?: boolean;
 }
 
 export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element {

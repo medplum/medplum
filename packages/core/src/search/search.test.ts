@@ -1,14 +1,77 @@
-import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
-import { formatSearchQuery, Operator, parseSearchDefinition, parseXFhirQuery, SearchRequest } from './search';
-import { indexSearchParameterBundle } from '../types';
 import { readJson } from '@medplum/definitions';
+import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
+import {
+  Operator,
+  SearchRequest,
+  formatSearchQuery,
+  parseSearchDefinition,
+  parseSearchRequest,
+  parseSearchUrl,
+  parseXFhirQuery,
+} from './search';
 
 describe('Search Utils', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+  });
+
+  test('parseSearchRequest', () => {
+    expect(() => parseSearchRequest(null as unknown as string)).toThrow('Invalid search URL');
+    expect(() => parseSearchRequest(undefined as unknown as string)).toThrow('Invalid search URL');
+    expect(() => parseSearchRequest('')).toThrow('Invalid search URL');
+
+    expect(parseSearchRequest('Patient')).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest('Patient?name=alice')).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient?_fields=id,name,birthDate')).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+
+    expect(parseSearchRequest('Patient')).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest('Patient', { name: 'alice' })).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient', { name: ['alice'] })).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient', { _fields: 'id,name,birthDate' })).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+
+    expect(parseSearchRequest(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+  });
+
+  test('parseSearchUrl', () => {
+    expect(() => parseSearchUrl(null as unknown as URL)).toThrow('Invalid search URL');
+    expect(() => parseSearchUrl(undefined as unknown as URL)).toThrow('Invalid search URL');
+
+    expect(parseSearchUrl(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchUrl(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchUrl(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
   });
 
   test('Parse Patient search', () => {
@@ -351,7 +414,7 @@ describe('Search Utils', () => {
       name: [{ given: ['Jan', 'Wyatt'], family: 'Smith' }, { text: 'Green Lantern' }],
       generalPractitioner: [{ reference: 'Practitioner/98765' }],
     };
-    const actual = parseXFhirQuery(query, { patient: { type: 'Patient', value: patient } });
+    const actual = parseXFhirQuery(query, { '%patient': { type: 'Patient', value: patient } });
     expect(actual).toEqual(expected);
   });
 });

@@ -49,3 +49,12 @@ function App(): JSX.Element {
   );
 }
 ```
+
+### Usage with `Expo Router`
+When using `MedplumClient` with `Expo Router`, you will likely need to disable the polyfill for `window.location`; `Expo Router` provides a polyfill that better interoperates with the package than the Medplum-provided one. See: https://expo.github.io/router/docs/lab/runtime-location#native
+
+To disable the Medplum `window.location` polyfill, simply pass the following config to `polyfillMedplumWebAPIs`:
+
+```ts
+polyfillMedplumWebAPIs({ location: false });
+```

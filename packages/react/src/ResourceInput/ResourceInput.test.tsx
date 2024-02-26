@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
 
 const medplum = new MockClient();
@@ -45,7 +45,7 @@ describe('ResourceInput', () => {
         placeholder: 'Test',
       });
     });
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
@@ -119,7 +119,60 @@ describe('ResourceInput', () => {
       });
     });
 
-    await waitFor(() => screen.getByPlaceholderText('Test'));
+    expect(await screen.findByPlaceholderText('Test')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
+  });
+
+  test('Clear button calls onChange', async () => {
+    const onChange = jest.fn();
+
+    await act(async () => {
+      setup({
+        resourceType: 'Patient',
+        name: 'foo',
+        defaultValue: { reference: 'Patient/123' },
+        placeholder: 'Test',
+        onChange,
+      });
+    });
+
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    const nameSpan = screen.getByText('Homer Simpson');
+    const clearButton = nameSpan.parentElement?.childNodes[1] as HTMLImageElement;
+    expect(clearButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(clearButton);
+    });
+
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  test('Clear all button calls onChange', async () => {
+    const onChange = jest.fn();
+
+    await act(async () => {
+      setup({
+        resourceType: 'Patient',
+        name: 'foo',
+        defaultValue: { reference: 'Patient/123' },
+        placeholder: 'Test',
+        onChange,
+      });
+    });
+
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    const clearAllButton = screen.getByTitle('Clear all') as HTMLImageElement;
+    expect(clearAllButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(clearAllButton);
+    });
+
+    expect(onChange).toHaveBeenCalledWith(undefined);
   });
 });

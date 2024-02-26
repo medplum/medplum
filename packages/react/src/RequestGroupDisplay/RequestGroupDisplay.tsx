@@ -8,9 +8,9 @@ import { ResourceName } from '../ResourceName/ResourceName';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 
 export interface RequestGroupDisplayProps {
-  value?: RequestGroup | Reference<RequestGroup>;
-  onStart: (task: Task, input: Reference) => void;
-  onEdit: (task: Task, input: Reference, output: Reference) => void;
+  readonly value?: RequestGroup | Reference<RequestGroup>;
+  readonly onStart: (task: Task, input: Reference) => void;
+  readonly onEdit: (task: Task, input: Reference, output: Reference) => void;
 }
 
 export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Element | null {
@@ -42,7 +42,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
               {task?.status === 'completed' ? <IconCheckbox /> : <IconSquare color="gray" />}
             </Grid.Col>
             <Grid.Col span={9} p="xs">
-              <Text weight={500}>{action.title}</Text>
+              <Text fw={500}>{action.title}</Text>
               {action.description && <div>{action.description}</div>}
               <div>
                 Last edited by&nbsp;

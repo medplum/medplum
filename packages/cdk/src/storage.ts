@@ -90,8 +90,7 @@ export class Storage extends Construct {
         },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
-            contentSecurityPolicy:
-              "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *.medplum.com;",
+            contentSecurityPolicy: "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *;",
             override: true,
           },
           contentTypeOptions: { override: true },
@@ -158,9 +157,8 @@ export class Storage extends Construct {
 
       // DNS
       if (!config.skipDns) {
-        const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-          domainName: config.domainName.split('.').slice(-2).join('.'),
-        });
+        const hostedZoneName = config.hostedZoneName ?? config.domainName.split('.').slice(-2).join('.');
+        const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: hostedZoneName });
 
         // Route53 alias record for the CloudFront distribution
         this.dnsRecord = new route53.ARecord(this, 'StorageAliasRecord', {

@@ -47,6 +47,8 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
   const { setEmail, onRegister, handleAuthResponse, children, disableEmailAuth, ...baseLoginRequest } = props;
   const medplum = useMedplum();
   const googleClientId = !props.disableGoogleAuth && getGoogleClientId(props.googleClientId);
+  const [outcome, setOutcome] = useState<OperationOutcome>();
+  const issues = getIssuesForExpression(outcome, undefined);
 
   const isExternalAuth = useCallback(
     async (authMethod: any): Promise<boolean> => {
@@ -78,12 +80,16 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   const handleGoogleCredential = useCallback(
     async (response: GoogleCredentialResponse) => {
-      const authResponse = await medplum.startGoogleLogin({
-        ...baseLoginRequest,
-        googleCredential: response.credential,
-      } as GoogleLoginRequest);
-      if (!(await isExternalAuth(authResponse))) {
-        handleAuthResponse(authResponse);
+      try {
+        const authResponse = await medplum.startGoogleLogin({
+          ...baseLoginRequest,
+          googleCredential: response.credential,
+        } as GoogleLoginRequest);
+        if (!(await isExternalAuth(authResponse))) {
+          handleAuthResponse(authResponse);
+        }
+      } catch (err) {
+        setOutcome(normalizeOperationOutcome(err));
       }
     },
     [medplum, baseLoginRequest, isExternalAuth, handleAuthResponse]
@@ -91,10 +97,11 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   return (
     <Form style={{ maxWidth: 400 }} onSubmit={handleSubmit}>
-      <Center sx={{ flexDirection: 'column' }}>{children}</Center>
+      <Center style={{ flexDirection: 'column' }}>{children}</Center>
+      <OperationOutcomeAlert issues={issues} />
       {googleClientId && (
         <>
-          <Group position="center" p="xl" style={{ height: 70 }}>
+          <Group justify="center" p="xl" style={{ height: 70 }}>
             <GoogleButton googleClientId={googleClientId} handleGoogleCredential={handleGoogleCredential} />
           </Group>
           {!disableEmailAuth && <Divider label="or" labelPosition="center" my="lg" />}
@@ -108,9 +115,10 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           placeholder="name@domain.com"
           required={true}
           autoFocus={true}
+          error={getErrorsForInput(outcome, 'email')}
         />
       )}
-      <Group position="apart" mt="xl" spacing={0} noWrap>
+      <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         <div>
           {onRegister && (
             <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
@@ -153,9 +161,9 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
 
   return (
     <Form style={{ maxWidth: 400 }} onSubmit={handleSubmit}>
-      <Center sx={{ flexDirection: 'column' }}>{children}</Center>
+      <Center style={{ flexDirection: 'column' }}>{children}</Center>
       <OperationOutcomeAlert issues={issues} />
-      <Stack spacing="xl">
+      <Stack gap="xl">
         <PasswordInput
           name="password"
           label="Password"
@@ -165,13 +173,13 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           error={getErrorsForInput(outcome, 'password')}
         />
       </Stack>
-      <Group position="apart" mt="xl" spacing={0} noWrap>
+      <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         {onForgotPassword && (
-          <Anchor component="button" type="button" color="dimmed" onClick={onForgotPassword} size="xs">
+          <Anchor component="button" type="button" c="dimmed" onClick={onForgotPassword} size="xs">
             Forgot password
           </Anchor>
         )}
-        <Checkbox id="remember" name="remember" label="Remember me" size="xs" sx={{ lineHeight: 1 }} />
+        <Checkbox id="remember" name="remember" label="Remember me" size="xs" style={{ lineHeight: 1 }} />
         <Button type="submit">Sign in</Button>
       </Group>
     </Form>

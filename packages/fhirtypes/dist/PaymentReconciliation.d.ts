@@ -107,7 +107,7 @@ export interface PaymentReconciliation {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The period of time for which payments have been gathered into this
@@ -118,7 +118,7 @@ export interface PaymentReconciliation {
   /**
    * The date when the resource was created.
    */
-  created?: string;
+  created: string;
 
   /**
    * The party who generated the payment.
@@ -150,12 +150,12 @@ export interface PaymentReconciliation {
   /**
    * The date of payment as indicated on the financial instrument.
    */
-  paymentDate?: string;
+  paymentDate: string;
 
   /**
    * Total payment amount as indicated on the financial instrument.
    */
-  paymentAmount?: Money;
+  paymentAmount: Money;
 
   /**
    * Issuer's unique identifier for the payment instrument.
@@ -236,7 +236,7 @@ export interface PaymentReconciliationDetail {
   /**
    * Code to indicate the nature of the payment.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A resource, such as a Claim, the evaluation of which could lead to

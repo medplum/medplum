@@ -160,7 +160,7 @@ export interface Library {
    * The status of this library. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this library is authored for testing
@@ -173,7 +173,7 @@ export interface Library {
    * Identifies the type of library such as a Logic Library, Model
    * Definition, Asset Collection, or Module Definition.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * A code or group definition that describes the intended subject of the

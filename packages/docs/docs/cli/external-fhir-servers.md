@@ -17,7 +17,7 @@ When building an application, you many need to query or write data to an externa
 
 To enable these scenarios, you will need a `clientId` or `clientSecret` to access the system you want to connect to. Please note that different systems have different levels of functionality, and so the commands in the CLI are not guaranteed to work.
 
-The examples below use the [CLI optional flags](/docs/cli#optional-flags).
+The examples below use the [CLI optional flags](/docs/cli#optional-flags-for-medplum-commands).
 
 ## Setting up your credentials
 
@@ -243,6 +243,6 @@ The Medplum CLI uses Medplum [TypescriptSDK](/docs/sdk) to power the functionali
 ## Related Resources
 
 - [Epic FHIR Test Environment](https://fhir.epic.com/Developer/Apps)
-- [eCLinicalworks FHIR documentation](https://fhir.eclinicalworks.com/ecwopendev/documentation#)
+- [eClinicalworks FHIR documentation](https://fhir.eclinicalworks.com/ecwopendev/documentation#)
 - [Cerner FHIR Documentation](https://fhir.cerner.com/millennium/r4/#open-sandbox)
 - [Health Gorilla FHIR Documentation](https://developer.healthgorilla.com/docs/oauth20)

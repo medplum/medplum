@@ -124,7 +124,7 @@ export interface ParametersParameter {
   /**
    * The name of the parameter (reference to the operation definition).
    */
-  name?: string;
+  name: string;
 
   /**
    * If the parameter is a data type.

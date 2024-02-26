@@ -47,6 +47,7 @@ describe('Set Password', () => {
         lastName: 'Washington',
         email,
         password: 'password!@#',
+        scope: 'openid profile email',
       })
     );
     expect(res).toBeDefined();
@@ -58,6 +59,13 @@ describe('Set Password', () => {
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+
+    const userInfoRes1 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${res.accessToken}`);
+    expect(userInfoRes1.status).toBe(200);
+    expect(userInfoRes1.body).toMatchObject({
+      email,
+      email_verified: false,
+    });
 
     const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
     const parsed = await simpleParser(args.Content.Raw.Data);
@@ -89,6 +97,13 @@ describe('Set Password', () => {
       password: 'bad-guys-trying-to-reuse-code',
     });
     expect(res5.status).toBe(400);
+
+    const userInfoRes2 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${res.accessToken}`);
+    expect(userInfoRes2.status).toBe(200);
+    expect(userInfoRes2.body).toMatchObject({
+      email,
+      email_verified: true,
+    });
   });
 
   test('Wrong secret', async () => {

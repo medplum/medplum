@@ -272,6 +272,7 @@ const response: QuestionnaireResponse =
   {
     resourceType: 'QuestionnaireResponse',
     id: 'homer-simpson-conditional-response',
+    status: 'completed',
     questionnaire: 'http://example.org/Questionnaires/conditional-questionnaire',
     subject: {
       reference: 'Patient/homer-simpson',

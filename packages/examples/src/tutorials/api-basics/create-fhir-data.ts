@@ -63,6 +63,8 @@ console.log('Created Patient', patient.id);
 // start-block create-service-request
 const serviceRequestData: ServiceRequest = {
   resourceType: 'ServiceRequest',
+  status: 'active',
+  intent: 'order',
   subject: createReference(patient), // link this ServiceRequest to the Patient
   code: {
     coding: [

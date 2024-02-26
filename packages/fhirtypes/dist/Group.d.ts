@@ -121,14 +121,14 @@ export interface Group {
    * Identifies the broad classification of the kind of resources the group
    * includes.
    */
-  type?: 'person' | 'animal' | 'practitioner' | 'device' | 'medication' | 'substance';
+  type: 'person' | 'animal' | 'practitioner' | 'device' | 'medication' | 'substance';
 
   /**
    * If true, indicates that the resource refers to a specific group of
    * real individuals.  If false, the group defines a set of intended
    * individuals.
    */
-  actual?: boolean;
+  actual: boolean;
 
   /**
    * Provides a specific type of resource the group includes; e.g. &quot;cow&quot;,
@@ -210,7 +210,7 @@ export interface GroupCharacteristic {
   /**
    * A code that identifies the kind of trait being asserted.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The value of the trait that holds (or does not hold - see 'exclude')
@@ -246,7 +246,7 @@ export interface GroupCharacteristic {
    * If true, indicates the characteristic is one that is NOT held by
    * members of the group.
    */
-  exclude?: boolean;
+  exclude: boolean;
 
   /**
    * The period over which the characteristic is tested; e.g. the patient
@@ -300,7 +300,7 @@ export interface GroupMember {
    * consistent with Group.type. If the entity is another group, then the
    * type must be the same.
    */
-  entity?: Reference<Patient | Practitioner | PractitionerRole | Device | Medication | Substance | Group>;
+  entity: Reference<Patient | Practitioner | PractitionerRole | Device | Medication | Substance | Group>;
 
   /**
    * The period that the member was in the group, if known.

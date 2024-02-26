@@ -1,0 +1,39 @@
+.task {
+  background-color: var(--mantine-color-white);
+  cursor: pointer;
+  &:hover {
+    background-color: var(--mantine-color-gray-0);
+  }
+  & td {
+    white-space: nowrap;
+  }
+}
+
+/* ...Object.fromEntries(
+  ['gray', 'blue', 'green', 'yellow', 'orange', 'red'].map((c) => [
+    c;
+    {
+      color: theme.colors[c][8];
+      background-color: theme.colors[c][0];
+      &:hover {
+        background-color: theme.colors[c][1];
+      }
+    }
+  ])
+); */
+
+.blinking {
+  color: var(--mantine-color-red-8);
+  background-color: var(--mantine-color-red-0);
+  font-weight: 700;
+  &:hover {
+    background-color: var(--mantine-color-red-2);
+  }
+  & td:not(:last-child) {
+    /* animation: keyframes({50% {opacity: 0) 1s linear infinite; */
+  }
+}
+
+.actions {
+  text-align: right;
+}

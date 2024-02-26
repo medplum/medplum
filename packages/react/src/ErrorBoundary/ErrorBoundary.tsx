@@ -4,11 +4,12 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { Component, ErrorInfo, ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 export interface ErrorBoundaryState {
-  error?: any;
+  readonly error?: Error;
+  readonly lastLocation: string;
 }
 
 /**
@@ -16,15 +17,37 @@ export interface ErrorBoundaryState {
  * See: https://reactjs.org/docs/error-boundaries.html
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState;
+  readonly state: ErrorBoundaryState;
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = {};
+    this.state = { lastLocation: window.location.toString() };
   }
 
-  static getDerivedStateFromError(error: any): ErrorBoundaryState {
-    return { error };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { error, lastLocation: window.location.toString() };
+  }
+
+  componentDidUpdate(_prevProps: ErrorBoundaryProps, _prevState: ErrorBoundaryState): void {
+    if (window.location.toString() !== this.state.lastLocation) {
+      this.setState({
+        lastLocation: window.location.toString(),
+        error: undefined,
+      });
+    }
+  }
+
+  shouldComponentUpdate(nextProps: ErrorBoundaryProps, nextState: ErrorBoundaryState): boolean {
+    if (this.props.children !== nextProps.children) {
+      return true;
+    }
+    if (nextState.error && !this.state.error) {
+      return true;
+    }
+    if (this.state.lastLocation !== window.location.toString()) {
+      return true;
+    }
+    return false;
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {

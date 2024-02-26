@@ -14,12 +14,12 @@ describe('Workers', () => {
   test('Init and close', async () => {
     const config = await loadTestConfig();
     initRedis(config.redis);
-    await initDatabase(config.database);
+    await initDatabase(config);
     await seedDatabase();
     initBinaryStorage('file:binary');
     initWorkers(config);
     await closeWorkers();
     await closeDatabase();
-    closeRedis();
+    await closeRedis();
   });
 });

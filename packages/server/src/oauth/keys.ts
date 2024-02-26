@@ -14,7 +14,7 @@ import {
   SignJWT,
 } from 'jose';
 import { MedplumServerConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
 export interface MedplumBaseClaims extends JWTPayload {
@@ -101,6 +101,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     throw new Error('Missing issuer');
   }
 
+  const systemRepo = getSystemRepo();
   const searchResult = await systemRepo.searchResources<JsonWebKey>({
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],
@@ -191,10 +192,14 @@ export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
 /**
  * Generates an access token JWT.
  * @param claims - The access token claims.
+ * @param additionalClaims - Any additional custom claims. Optional.
  * @returns A well-formed JWT that can be used as an access token.
  */
-export function generateAccessToken(claims: MedplumAccessTokenClaims): Promise<string> {
-  return generateJwt('1h', claims);
+export function generateAccessToken(
+  claims: MedplumAccessTokenClaims,
+  additionalClaims?: Record<string, string | number>
+): Promise<string> {
+  return generateJwt('1h', additionalClaims ? { ...claims, ...additionalClaims } : claims);
 }
 
 /**

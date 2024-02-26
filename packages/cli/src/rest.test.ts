@@ -48,7 +48,7 @@ describe('CLI rest', () => {
   test('Delete command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'delete', `Patient/${patient.id}`]);
-    expect(console.log).toBeCalledWith(expect.stringMatching('OK'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('OK'));
     try {
       await medplum.readReference(createReference(patient));
       throw new Error('Expected error');
@@ -61,30 +61,30 @@ describe('CLI rest', () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'get', `Patient/${patient.id}`]);
 
-    expect(console.log).toBeCalledWith(expect.stringMatching(patient.id as string));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(patient.id as string));
   });
 
   test('Get not found', async () => {
     await main(['node', 'index.js', 'get', `Patient/${randomUUID()}`]);
-    expect(console.error).toBeCalledWith(expect.stringMatching('Error: Not found'));
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching('Error: Not found'));
   });
 
   test('Get admin urls', async () => {
     await main(['node', 'index.js', 'get', 'admin/projects/123']);
-    expect(console.log).toBeCalledWith(expect.stringMatching('Project 123'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Project 123'));
   });
 
   test('Get command with as-transaction flag', async () => {
     Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'get', '--as-transaction', `Patient?_count=2`]);
-    expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('urn:uuid'));
   });
 
   test('Get command with fhir-url flag', async () => {
     await main(['node', 'index.js', 'get', `Patient`, '--fhir-url', 'fhirulrtest']);
 
-    expect(createMedplumClient).toBeCalledWith(
+    expect(createMedplumClient).toHaveBeenCalledWith(
       expect.objectContaining({
         fhirUrlPath: 'fhirulrtest',
       })
@@ -94,7 +94,7 @@ describe('CLI rest', () => {
   test('Get command with fhir-url-path flag', async () => {
     await main(['node', 'index.js', 'get', `Patient`, '--fhir-url-path', 'fhirpathtest']);
 
-    expect(createMedplumClient).toBeCalledWith(
+    expect(createMedplumClient).toHaveBeenCalledWith(
       expect.objectContaining({
         fhirUrlPath: 'fhirpathtest',
       })
@@ -105,12 +105,12 @@ describe('CLI rest', () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
 
     await main(['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
-    expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown option '--bad-flag'`));
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining(`error: unknown option '--bad-flag'`));
   });
 
   test('Post command', async () => {
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
-    expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Patient'));
   });
 
   test('Basic Auth profile request', async () => {
@@ -127,26 +127,26 @@ describe('CLI rest', () => {
     storage.setObject('options', obj);
 
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }', '-p', profileName]);
-    expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Patient'));
 
     await main(['node', 'index.js', 'get', 'Patient', '-p', profileName]);
-    expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Patient'));
   });
 
   test('Post command with empty body', async () => {
     await main(['node', 'index.js', 'post', 'Patient', '']);
-    expect(console.error).toBeCalledWith(expect.stringMatching(`Error: Cannot read properties of undefined`));
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching(`Error: Cannot read properties of undefined`));
   });
 
   test('Post command with invalid json', async () => {
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType" }']);
-    expect(console.error).toBeCalledWith(expect.stringMatching(`Error:`));
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching(`Error:`));
   });
 
   test('Put command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'put', `Patient/${patient.id}`, JSON.stringify({ ...patient, gender: 'male' })]);
-    expect(console.log).toBeCalledWith(expect.stringMatching('male'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('male'));
   });
 
   test('Patch command', async () => {
@@ -158,6 +158,6 @@ describe('CLI rest', () => {
       `Patient/${patient.id}`,
       '[{"op":"add","path":"/active","value":[true]}]',
     ]);
-    expect(console.log).toBeCalledWith(expect.stringMatching('active'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('active'));
   });
 });

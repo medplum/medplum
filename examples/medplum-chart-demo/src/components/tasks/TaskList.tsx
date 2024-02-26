@@ -24,15 +24,15 @@ const focusIcons: Record<string, JSX.Element> = {
 };
 
 export interface TaskCellProps {
-  task: Task;
-  resource: Resource;
+  readonly task: Task;
+  readonly resource: Resource;
 }
 
 interface TaskItemProps {
-  task: Task;
-  resource: Resource;
-  profile?: Reference;
-  children?: ReactNode;
+  readonly task: Task;
+  readonly resource: Resource;
+  readonly profile?: Reference;
+  readonly children?: ReactNode;
 }
 
 export function TaskList(): JSX.Element | null {
@@ -119,7 +119,7 @@ function TaskItem(props: TaskItemProps): JSX.Element {
   const dateTime = resource.meta?.lastUpdated;
   return (
     <>
-      <Group position="apart" spacing={8} my="sm" align="flex-start">
+      <Group justify="space-between" gap={8} my="sm" align="flex-start">
         <Box mt={3}>{focusIcons[resource.resourceType]}</Box>
         <Box style={{ flex: 1 }}>
           <Flex justify="space-between">

@@ -2,9 +2,15 @@ import { readJson } from '@medplum/definitions';
 import {
   Account,
   Appointment,
+  AppointmentParticipant,
   Binary,
   Bundle,
+  CodeSystem,
   Condition,
+  DiagnosticReport,
+  ElementDefinition,
+  Encounter,
+  Extension,
   HumanName,
   ImplementationGuide,
   Media,
@@ -15,6 +21,7 @@ import {
   QuestionnaireItem,
   Resource,
   StructureDefinition,
+  StructureDefinitionSnapshot,
   SubstanceProtein,
   ValueSet,
 } from '@medplum/fhirtypes';
@@ -23,19 +30,27 @@ import { resolve } from 'path';
 import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
-import { createReference } from '../utils';
+import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle } from './types';
 import { validateResource } from './validation';
 
 describe('FHIR resource validation', () => {
+  let typesBundle: Bundle;
+  let resourcesBundle: Bundle;
+  let medplumBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+
+    typesBundle = readJson('fhir/r4/profiles-types.json') as Bundle;
+    resourcesBundle = readJson('fhir/r4/profiles-resources.json') as Bundle;
+    medplumBundle = readJson('fhir/r4/profiles-medplum.json') as Bundle;
+
+    indexStructureDefinitionBundle(typesBundle);
+    indexStructureDefinitionBundle(resourcesBundle);
+    indexStructureDefinitionBundle(medplumBundle);
 
     observationProfile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
@@ -445,14 +460,9 @@ describe('FHIR resource validation', () => {
   });
 
   test('StructureDefinition', () => {
-    expect(() => {
-      const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-      validateResource(structureDefinition);
-    }).not.toThrow();
-    expect(() => {
-      const structureDefinition = readJson('fhir/r4/profiles-medplum.json') as Bundle;
-      validateResource(structureDefinition);
-    }).not.toThrow();
+    expect(() => validateResource(typesBundle)).not.toThrow();
+    expect(() => validateResource(resourcesBundle)).not.toThrow();
+    expect(() => validateResource(medplumBundle)).not.toThrow();
   });
 
   test('Profile with restriction on base type field', () => {
@@ -737,14 +747,6 @@ describe('FHIR resource validation', () => {
     };
     expect(() => validateResource(observation, bodyWeightProfile as StructureDefinition)).not.toThrow();
   });
-});
-
-describe('Legacy tests for parity checking', () => {
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-  });
 
   test('validateResource', () => {
     expect(() => validateResource(null as unknown as Resource)).toThrow();
@@ -775,7 +777,7 @@ describe('Legacy tests for parity checking', () => {
 
   test('Required properties', () => {
     try {
-      validateResource({ resourceType: 'DiagnosticReport' });
+      validateResource({ resourceType: 'DiagnosticReport' } as unknown as DiagnosticReport);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -918,12 +920,10 @@ describe('Legacy tests for parity checking', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
 
     binary.data = 123 as unknown as string;
-    expect(() => validateResource(binary)).toThrowError(
-      'Invalid JSON type: expected string, but got number (Binary.data)'
-    );
+    expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got number (Binary.data)');
 
     binary.data = '===';
-    expect(() => validateResource(binary)).toThrowError('Invalid base64Binary format');
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
 
     binary.data = 'aGVsbG8=';
     expect(() => validateResource(binary)).not.toThrow();
@@ -933,7 +933,7 @@ describe('Legacy tests for parity checking', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
     patient.active = 123 as unknown as boolean;
-    expect(() => validateResource(patient)).toThrowError(
+    expect(() => validateResource(patient)).toThrow(
       'Invalid JSON type: expected boolean, but got number (Patient.active)'
     );
 
@@ -948,12 +948,12 @@ describe('Legacy tests for parity checking', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
     patient.birthDate = 123 as unknown as string;
-    expect(() => validateResource(patient)).toThrowError(
+    expect(() => validateResource(patient)).toThrow(
       'Invalid JSON type: expected string, but got number (Patient.birthDate)'
     );
 
     patient.birthDate = 'x';
-    expect(() => validateResource(patient)).toThrowError('Invalid date format');
+    expect(() => validateResource(patient)).toThrow('Invalid date format');
 
     patient.birthDate = '2000-01-01';
     expect(() => validateResource(patient)).not.toThrow();
@@ -963,12 +963,12 @@ describe('Legacy tests for parity checking', () => {
     const condition: Condition = { resourceType: 'Condition', subject: { reference: 'Patient/1' } };
 
     condition.recordedDate = 123 as unknown as string;
-    expect(() => validateResource(condition)).toThrowError(
+    expect(() => validateResource(condition)).toThrow(
       'Invalid JSON type: expected string, but got number (Condition.recordedDate)'
     );
 
     condition.recordedDate = 'x';
-    expect(() => validateResource(condition)).toThrowError('Invalid dateTime format');
+    expect(() => validateResource(condition)).toThrow('Invalid dateTime format');
 
     condition.recordedDate = '2022-02-02';
     expect(() => validateResource(condition)).not.toThrow();
@@ -984,36 +984,36 @@ describe('Legacy tests for parity checking', () => {
     const media: Media = { resourceType: 'Media', status: 'completed', content: { title: 'x' } };
 
     media.duration = 'x' as unknown as number;
-    expect(() => validateResource(media)).toThrowError(
+    expect(() => validateResource(media)).toThrow(
       'Invalid JSON type: expected number, but got string (Media.duration)'
     );
 
     media.duration = NaN;
-    expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
+    expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = Infinity;
-    expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
+    expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = 123.5;
     expect(() => validateResource(media)).not.toThrow();
   });
 
   test('id', () => {
-    const ig: ImplementationGuide = {
+    const ig = {
       resourceType: 'ImplementationGuide',
       name: 'x',
       status: 'active',
       fhirVersion: ['4.0.1'],
       url: 'https://example.com',
-    };
+    } as ImplementationGuide;
 
     ig.packageId = 123 as unknown as string;
-    expect(() => validateResource(ig)).toThrowError(
+    expect(() => validateResource(ig)).toThrow(
       'Invalid JSON type: expected string, but got number (ImplementationGuide.packageId)'
     );
 
     ig.packageId = '$';
-    expect(() => validateResource(ig)).toThrowError('Invalid id format');
+    expect(() => validateResource(ig)).toThrow('Invalid id format');
 
     ig.packageId = 'foo';
     expect(() => validateResource(ig)).not.toThrow();
@@ -1023,15 +1023,15 @@ describe('Legacy tests for parity checking', () => {
     const obs: Observation = { resourceType: 'Observation', status: 'final', code: { text: 'x' } };
 
     obs.issued = 123 as unknown as string;
-    expect(() => validateResource(obs)).toThrowError(
+    expect(() => validateResource(obs)).toThrow(
       'Invalid JSON type: expected string, but got number (Observation.issued)'
     );
 
     obs.issued = 'x';
-    expect(() => validateResource(obs)).toThrowError('Invalid instant format');
+    expect(() => validateResource(obs)).toThrow('Invalid instant format');
 
     obs.issued = '2022-02-02';
-    expect(() => validateResource(obs)).toThrowError('Invalid instant format');
+    expect(() => validateResource(obs)).toThrow('Invalid instant format');
 
     obs.issued = '2022-02-02T12:00:00-04:00';
     expect(() => validateResource(obs)).not.toThrow();
@@ -1044,20 +1044,18 @@ describe('Legacy tests for parity checking', () => {
     const sp: SubstanceProtein = { resourceType: 'SubstanceProtein' };
 
     sp.numberOfSubunits = 'x' as unknown as number;
-    expect(() => validateResource(sp)).toThrowError(
+    expect(() => validateResource(sp)).toThrow(
       'Invalid JSON type: expected number, but got string (SubstanceProtein.numberOfSubunits)'
     );
 
     sp.numberOfSubunits = NaN;
-    expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = Infinity;
-    expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 123.5;
-    expect(() => validateResource(sp)).toThrowError(
-      'Expected number to be an integer (SubstanceProtein.numberOfSubunits)'
-    );
+    expect(() => validateResource(sp)).toThrow('Expected number to be an integer (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 10;
     expect(() => validateResource(sp)).not.toThrow();
@@ -1067,12 +1065,10 @@ describe('Legacy tests for parity checking', () => {
     const acct: Account = { resourceType: 'Account', status: 'active' };
 
     acct.name = 123 as unknown as string;
-    expect(() => validateResource(acct)).toThrowError(
-      'Invalid JSON type: expected string, but got number (Account.name)'
-    );
+    expect(() => validateResource(acct)).toThrow('Invalid JSON type: expected string, but got number (Account.name)');
 
     acct.name = '    ';
-    expect(() => validateResource(acct)).toThrowError('String must contain non-whitespace content (Account.name)');
+    expect(() => validateResource(acct)).toThrow('String must contain non-whitespace content (Account.name)');
 
     acct.name = 'test';
     expect(() => validateResource(acct)).not.toThrow();
@@ -1084,28 +1080,30 @@ describe('Legacy tests for parity checking', () => {
     const appt: Appointment = {
       resourceType: 'Appointment',
       status: 'booked',
+      start: '2022-02-02T12:00:00Z',
+      end: '2022-02-02T12:30:00Z',
       participant: [{ status: 'accepted', actor: patientReference }],
     };
 
     appt.minutesDuration = 'x' as unknown as number;
-    expect(() => validateResource(appt)).toThrowError(
+    expect(() => validateResource(appt)).toThrow(
       'Invalid JSON type: expected number, but got string (Appointment.minutesDuration)'
     );
 
     appt.minutesDuration = NaN;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = Infinity;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = 123.5;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be an integer (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.minutesDuration)');
 
     appt.minutesDuration = -1;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
 
     appt.minutesDuration = 0;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
 
     appt.minutesDuration = 10;
     expect(() => validateResource(appt)).not.toThrow();
@@ -1117,25 +1115,27 @@ describe('Legacy tests for parity checking', () => {
     const appt: Appointment = {
       resourceType: 'Appointment',
       status: 'booked',
+      start: '2022-02-02T12:00:00Z',
+      end: '2022-02-02T12:30:00Z',
       participant: [{ status: 'accepted', actor: patientReference }],
     };
 
     appt.priority = 'x' as unknown as number;
-    expect(() => validateResource(appt)).toThrowError(
+    expect(() => validateResource(appt)).toThrow(
       'Invalid JSON type: expected number, but got string (Appointment.priority)'
     );
 
     appt.priority = NaN;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = Infinity;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = 123.5;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be an integer (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.priority)');
 
     appt.priority = -1;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be non-negative (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be non-negative (Appointment.priority)');
 
     appt.priority = 0;
     expect(() => validateResource(appt)).not.toThrow();
@@ -1149,25 +1149,22 @@ describe('Legacy tests for parity checking', () => {
       validateResource({
         resourceType: 'Appointment',
         status: 'booked',
-        participant: [{ type: [{ text: 'x' }] }], // "status" is required
+        participant: [{ type: [{ text: 'x' }] } as AppointmentParticipant], // "status" is required
       });
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue).toHaveLength(1);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing required property');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment.participant.status');
-    }
-  });
+      expect(outcome.issue).toHaveLength(2);
 
-  test('StructureDefinition', () => {
-    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-    try {
-      validateResource(structureDefinition);
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      console.log(JSON.stringify(outcome, null, 2).substring(0, 1000));
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual(
+        'Constraint app-3 not met: Only proposed or cancelled appointments can be missing start/end dates'
+      );
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment');
+
+      expect(outcome.issue?.[1]?.severity).toEqual('error');
+      expect(outcome.issue?.[1]?.details?.text).toEqual('Missing required property');
+      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Appointment.participant.status');
     }
   });
 
@@ -1240,6 +1237,111 @@ describe('Legacy tests for parity checking', () => {
     expect(() =>
       validateResource({ resourceType: 'Patient', name: { family: 'foo' } as unknown as HumanName[] })
     ).toThrow('Expected array of values for property (Patient.name)');
+  });
+
+  test('Primitive and extension', () => {
+    const resource: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      concept: [
+        {
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/codesystem-concept-comments',
+              _valueString: {
+                extension: [
+                  {
+                    extension: [
+                      {
+                        url: 'lang',
+                        valueCode: 'nl',
+                      },
+                      {
+                        url: 'content',
+                        valueString: 'Zo spoedig mogelijk',
+                      },
+                    ],
+                    url: 'http://hl7.org/fhir/StructureDefinition/translation',
+                  },
+                ],
+              },
+            } as unknown as Extension,
+          ],
+          code: 'A',
+          display: 'ASAP',
+          designation: [
+            {
+              language: 'nl',
+              use: {
+                system: 'http://terminology.hl7.org/CodeSystem/designation-usage',
+                code: 'display',
+              },
+              value: 'ZSM',
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(() => validateResource(resource)).not.toThrow();
+  });
+
+  test('where identifier exists', () => {
+    const original = resourcesBundle.entry?.find((e) => e.resource?.id === 'Encounter')
+      ?.resource as StructureDefinition;
+
+    expect(original).toBeDefined();
+
+    const profile = deepClone(original);
+
+    const rootElement = (profile.snapshot as StructureDefinitionSnapshot).element?.find(
+      (e) => e.id === 'Encounter'
+    ) as ElementDefinition;
+    rootElement.constraint = [
+      {
+        key: 'where-identifier-exists',
+        expression: "identifier.where(system='http://example.com' and value='123').exists()",
+        severity: 'error',
+        human: 'Identifier must exist',
+      },
+    ];
+
+    const identifierElement = (profile.snapshot as StructureDefinitionSnapshot).element?.find(
+      (e) => e.id === 'Encounter.identifier'
+    ) as ElementDefinition;
+    identifierElement.min = 1;
+    identifierElement.constraint = [
+      {
+        key: 'where-identifier-exists',
+        expression: "where(system='http://example.com' and value='123').exists()",
+        severity: 'error',
+        human: 'Identifier must exist',
+      },
+    ];
+
+    const e1: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+    };
+    expect(() => validateResource(e1, profile)).toThrow();
+
+    const e2: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '123' }],
+    };
+    expect(() => validateResource(e2, profile)).not.toThrow();
+
+    const e3: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '456' }],
+    };
+    expect(() => validateResource(e3, profile)).toThrow();
   });
 });
 

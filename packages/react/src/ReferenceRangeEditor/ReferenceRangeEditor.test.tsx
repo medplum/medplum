@@ -2,10 +2,10 @@ import { deepClone } from '@medplum/core';
 import { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';
 
 const medplum = new MockClient();
@@ -32,7 +32,7 @@ describe('ReferenceRangeEditor', () => {
     await setup({
       definition: {
         resourceType: 'ObservationDefinition',
-      },
+      } as ObservationDefinition,
       onSubmit: jest.fn(),
     });
     const checkAddButton = screen.getByTitle('Add Group');
@@ -49,7 +49,7 @@ describe('ReferenceRangeEditor', () => {
     await setup({
       definition: {
         resourceType: 'ObservationDefinition',
-      },
+      } as ObservationDefinition,
       onSubmit,
     });
 
@@ -72,7 +72,7 @@ describe('ReferenceRangeEditor', () => {
     await setup({
       definition: {
         resourceType: 'ObservationDefinition',
-      },
+      } as ObservationDefinition,
       onSubmit,
     });
 
@@ -105,7 +105,7 @@ describe('ReferenceRangeEditor', () => {
     await setup({
       definition: {
         resourceType: 'ObservationDefinition',
-      },
+      } as ObservationDefinition,
       onSubmit,
     });
 

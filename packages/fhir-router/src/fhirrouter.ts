@@ -1,4 +1,12 @@
-import { allOk, badRequest, created, normalizeOperationOutcome, notFound, parseSearchRequest } from '@medplum/core';
+import {
+  EventTarget,
+  allOk,
+  badRequest,
+  created,
+  normalizeOperationOutcome,
+  notFound,
+  parseSearchRequest,
+} from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Operation } from 'rfc6902';
 import { processBatch } from './batch';
@@ -111,11 +119,12 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
-export class FhirRouter {
+export class FhirRouter extends EventTarget {
   readonly router = new Router<FhirRouteHandler>();
   readonly options: FhirOptions;
 
   constructor(options = {}) {
+    super();
     this.options = options;
 
     this.router.add('POST', '', batch);

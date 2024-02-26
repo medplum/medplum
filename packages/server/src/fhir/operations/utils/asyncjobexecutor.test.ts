@@ -1,13 +1,14 @@
 import express from 'express';
-import { systemRepo } from '../../repo';
-import { AsyncJobExecutor } from './asyncjobexecutor';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config';
 import { withTestContext } from '../../../test.setup';
-
-const app = express();
+import { getSystemRepo } from '../../repo';
+import { AsyncJobExecutor } from './asyncjobexecutor';
 
 describe('AsyncJobExecutor', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -38,7 +39,7 @@ describe('AsyncJobExecutor', () => {
       });
 
       expect(resource.status).toBe('accepted');
-      expect(callback).toBeCalled();
+      expect(callback).toHaveBeenCalled();
     }));
 
   test('start with error', () =>
@@ -55,7 +56,7 @@ describe('AsyncJobExecutor', () => {
         expect((err as Error).message).toBe('AsyncJob missing');
       }
 
-      expect(callback).not.toBeCalled();
+      expect(callback).not.toHaveBeenCalled();
     }));
 
   test('run', () =>
@@ -70,7 +71,7 @@ describe('AsyncJobExecutor', () => {
       });
 
       expect(resource.status).toBe('accepted');
-      expect(callback).toBeCalled();
+      expect(callback).toHaveBeenCalled();
     }));
 
   test('run with error', async () => {
@@ -86,7 +87,7 @@ describe('AsyncJobExecutor', () => {
       expect((err as Error).message).toBe('AsyncJob missing');
     }
 
-    expect(callback).not.toBeCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 
   test('getContentLocation', () =>
@@ -114,6 +115,6 @@ describe('AsyncJobExecutor', () => {
       expect((err as Error).message).toBe('AsyncJob missing');
     }
 
-    expect(callback).not.toBeCalled();
+    expect(callback).not.toHaveBeenCalled();
   });
 });

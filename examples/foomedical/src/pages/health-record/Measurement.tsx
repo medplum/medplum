@@ -95,7 +95,7 @@ export function Measurement(): JSX.Element | null {
 
   return (
     <Document>
-      <Group position="apart" mb="xl">
+      <Group justify="space-between" mb="xl">
         <Title order={1}>{title}</Title>
         <Button onClick={() => setModalOpen(true)}>Add Measurement</Button>
       </Group>
@@ -107,31 +107,31 @@ export function Measurement(): JSX.Element | null {
       </Box>
       {observations?.length && (
         <Table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Your Value</th>
-            </tr>
-          </thead>
-          <tbody>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Date</Table.Th>
+              <Table.Th>Your Value</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {observations.map((obs) => (
-              <tr key={obs.id}>
-                <td>{formatDateTime(obs.effectiveDateTime as string)}</td>
-                <td>{formatObservationValue(obs)}</td>
-              </tr>
+              <Table.Tr key={obs.id}>
+                <Table.Td>{formatDateTime(obs.effectiveDateTime as string)}</Table.Td>
+                <Table.Td>{formatObservationValue(obs)}</Table.Td>
+              </Table.Tr>
             ))}
-          </tbody>
+          </Table.Tbody>
         </Table>
       )}
       <Modal size="lg" opened={modalOpen} onClose={() => setModalOpen(false)} title={title}>
         <Form onSubmit={addObservation}>
-          <Stack spacing="md">
-            <Group grow noWrap>
+          <Stack gap="md">
+            <Group grow wrap="nowrap">
               {chartDatasets.map((component) => (
                 <NumberInput key={component.label} label={component.label} name={component.label} />
               ))}
             </Group>
-            <Group position="right">
+            <Group justify="flex-end">
               <Button type="submit">Add</Button>
             </Group>
           </Stack>

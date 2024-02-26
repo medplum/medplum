@@ -6,16 +6,26 @@ import {
   ProfileResource,
   resolveId,
 } from '@medplum/core';
-import { ContactPoint, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import {
+  Attachment,
+  ContactPoint,
+  Login,
+  OperationOutcome,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
+import { createHash } from 'node:crypto';
 import { getConfig } from '../config';
-import { getRequestContext } from '../context';
-import { systemRepo } from '../fhir/repo';
-import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { getClient, getMembershipsForLogin } from '../oauth/utils';
+import { getLogger } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
+import { getSystemRepo } from '../fhir/repo';
+import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
   project: Project,
@@ -24,12 +34,16 @@ export async function createProfile(
   lastName: string,
   email: string | undefined
 ): Promise<ProfileResource> {
-  const ctx = getRequestContext();
-  ctx.logger.info('Creating profile', { resourceType, firstName, lastName });
+  const logger = getLogger();
+  logger.info('Creating profile', { resourceType, firstName, lastName });
   let telecom: ContactPoint[] | undefined = undefined;
+  let photo: Attachment[] | undefined = undefined;
   if (email) {
     telecom = [{ system: 'email', use: 'work', value: email }];
+    photo = [{ url: getGravatar(email), contentType: 'image/png', title: 'profile.png' }];
   }
+
+  const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<ProfileResource>({
     resourceType,
     meta: {
@@ -42,8 +56,9 @@ export async function createProfile(
       },
     ],
     telecom,
-  });
-  ctx.logger.info('Created profile', { id: result.id });
+    photo,
+  } as ProfileResource);
+  logger.info('Created profile', { id: result.id });
   return result;
 }
 
@@ -53,8 +68,10 @@ export async function createProjectMembership(
   profile: ProfileResource,
   details?: Partial<ProjectMembership>
 ): Promise<ProjectMembership> {
-  const ctx = getRequestContext();
-  ctx.logger.info('Creating project membership', { name: project.name });
+  const logger = getLogger();
+  logger.info('Creating project membership', { name: project.name });
+
+  const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<ProjectMembership>({
     ...details,
     resourceType: 'ProjectMembership',
@@ -62,7 +79,7 @@ export async function createProjectMembership(
     user: createReference(user),
     profile: createReference(profile),
   });
-  ctx.logger.info('Created project memberships', { id: result.id });
+  logger.info('Created project memberships', { id: result.id });
   return result;
 }
 
@@ -74,6 +91,7 @@ export async function createProjectMembership(
  * @param login - The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
+  const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   if (user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
     res.json({ login: login.id, mfaRequired: true });
@@ -162,7 +180,7 @@ export async function getProjectIdByClientId(
 ): Promise<string | undefined> {
   // For OAuth2 flow, check the clientId
   if (clientId) {
-    const client = await getClient(clientId);
+    const client = await getClientApplication(clientId);
     const clientProjectId = client.meta?.project as string;
     if (projectId !== undefined && projectId !== clientProjectId) {
       throw new OperationOutcomeError(badRequest('Invalid projectId'));
@@ -199,6 +217,7 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 
@@ -252,4 +271,14 @@ export function validateRecaptcha(projectValidation?: (p: Project) => OperationO
     }
     next();
   };
+}
+
+/**
+ * Returns the Gravatar URL for the given email address.
+ * @param email - The email address.
+ * @returns The Gravatar URL.
+ */
+function getGravatar(email: string): string {
+  const hash = createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
+  return `https://gravatar.com/avatar/${hash}?s=256&r=pg&d=retro`;
 }

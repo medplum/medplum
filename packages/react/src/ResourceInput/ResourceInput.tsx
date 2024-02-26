@@ -1,5 +1,5 @@
 import { Group, Text } from '@mantine/core';
-import { getDisplayString, getReferenceString } from '@medplum/core';
+import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { forwardRef, useCallback, useState } from 'react';
@@ -28,6 +28,7 @@ const NAME_RESOURCE_TYPES = [
   'ActivityDefinition',
   'Bot',
   'CapabilityStatement',
+  'CareTeam',
   'ClientApplication',
   'CodeSystem',
   'CompartmentDefinition',
@@ -39,6 +40,7 @@ const NAME_RESOURCE_TYPES = [
   'EvidenceVariable',
   'ExampleScenario',
   'GraphDefinition',
+  'Group',
   'HealthcareService',
   'ImplementationGuide',
   'InsurancePlan',
@@ -99,7 +101,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     async (input: string, signal: AbortSignal): Promise<T[]> => {
       const searchCode = getSearchParamForResourceType(resourceType);
       const searchParams = new URLSearchParams({
-        [searchCode]: input,
+        [searchCode]: input ?? '',
         _count: '10',
         ...searchCriteria,
       });
@@ -119,7 +121,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     [onChange]
   );
 
-  if (props.defaultValue && !outcome && !defaultValue) {
+  if (isPopulated(props.defaultValue) && !outcome && !defaultValue) {
     // If a default value was specified, but the default resource is not loaded yet,
     // then return null to avoid rendering the input until the default resource is loaded.
     // The Mantine <MultiSelect> component does not reliably handle changes to defaultValue.
@@ -133,8 +135,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       itemComponent={ItemComponent}
       defaultValue={defaultValue}
       placeholder={props.placeholder}
-      maxSelectedValues={1}
-      toKey={getReferenceString}
+      maxValues={1}
       toOption={toOption}
       loadOptions={loadValues}
       onChange={handleChange}
@@ -143,21 +144,23 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, any>(({ label, resource, ...others }: any, ref) => {
-  return (
-    <div ref={ref} {...others}>
-      <Group noWrap>
-        <ResourceAvatar value={resource} />
-        <div>
-          <Text>{label}</Text>
-          <Text size="xs" color="dimmed">
-            {(resource as Patient).birthDate}
-          </Text>
-        </div>
-      </Group>
-    </div>
-  );
-});
+const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
+  ({ label, resource, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
+    return (
+      <div ref={ref} {...others}>
+        <Group wrap="nowrap">
+          <ResourceAvatar value={resource} />
+          <div>
+            <Text>{label}</Text>
+            <Text size="xs" c="dimmed">
+              {(resource as Patient).birthDate}
+            </Text>
+          </div>
+        </Group>
+      </div>
+    );
+  }
+);
 
 /**
  * Returns the search parameter to use for the given resource type.

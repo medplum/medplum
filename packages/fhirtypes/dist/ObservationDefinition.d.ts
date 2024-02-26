@@ -113,7 +113,7 @@ export interface ObservationDefinition {
    * Describes what will be observed. Sometimes this is called the
    * observation &quot;name&quot;.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * A unique identifier assigned to this ObservationDefinition artifact.

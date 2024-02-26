@@ -3,24 +3,24 @@ import { UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
+  OperationOutcomeError,
   createConstraintIssue,
   createProcessingIssue,
   createStructureIssue,
-  OperationOutcomeError,
   validationError,
 } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
-import { crawlResource, getNestedProperty, ResourceVisitor } from './crawler';
+import { ResourceVisitor, crawlResource, getNestedProperty } from './crawler';
 import {
   Constraint,
-  getDataType,
   InternalSchemaElement,
   InternalTypeSchema,
-  parseStructureDefinition,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
+  getDataType,
+  parseStructureDefinition,
 } from './types';
 
 /*
@@ -59,13 +59,13 @@ export const fhirTypeToJsType = {
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-const validationRegexes: Record<string, RegExp> = {
+export const validationRegexes: Record<string, RegExp> = {
   base64Binary: /^([A-Za-z\d+/]{4})*([A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/,
   canonical: /^\S*$/,
   code: /^[^\s]+( [^\s]+)*$/,
   date: /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1]))?)?$/,
   dateTime:
-    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
+    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3])(:[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
   id: /^[A-Za-z0-9\-.]{1,64}$/,
   instant:
     /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00))$/,
@@ -82,7 +82,12 @@ const validationRegexes: Record<string, RegExp> = {
 /**
  * List of constraint keys that aren't to be checked in an expression.
  */
-const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
+const skippedConstraintKeys: Record<string, boolean> = {
+  'ele-1': true,
+  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'org-1': true, // The organization SHALL at least have a name or an identifier, and possibly more than one (back compat)
+  'sdf-19': true, // FHIR Specification models only use FHIR defined types
+};
 
 export function validateResource(resource: Resource, profile?: StructureDefinition): void {
   new ResourceValidator(resource.resourceType, resource, profile).validate();
@@ -97,7 +102,7 @@ class ResourceValidator implements ResourceVisitor {
   constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
     this.issues = [];
     this.rootResource = rootResource;
-    this.currentResource = [];
+    this.currentResource = [rootResource];
     if (!profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -110,6 +115,9 @@ class ResourceValidator implements ResourceVisitor {
     if (!resourceType) {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
+
+    // Check root constraints
+    this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
 
     checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
 
@@ -173,7 +181,7 @@ class ResourceValidator implements ResourceVisitor {
       if (values.length < element.min || values.length > element.max) {
         this.issues.push(
           createStructureIssue(
-            path,
+            element.path,
             `Invalid number of values: expected ${element.min}..${
               Number.isFinite(element.max) ? element.max : '*'
             }, but found ${values.length}`
@@ -195,6 +203,7 @@ class ResourceValidator implements ResourceVisitor {
           sliceCounts[sliceName] += 1;
         }
       }
+
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
     }
   }
@@ -209,7 +218,8 @@ class ResourceValidator implements ResourceVisitor {
         this.issues.push(createStructureIssue(path, 'Missing required property'));
       }
       return false;
-    } else if (isEmpty(value)) {
+    }
+    if (isEmpty(value)) {
       this.issues.push(createStructureIssue(path, 'Invalid empty value'));
       return false;
     }
@@ -268,7 +278,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private constraintsCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+  private constraintsCheck(value: TypedValue, field: InternalTypeSchema | InternalSchemaElement, path: string): void {
     const constraints = field.constraints;
     if (!constraints) {
       return;
@@ -287,10 +297,10 @@ class ResourceValidator implements ResourceVisitor {
   private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
     try {
       const evalValues = evalFhirPathTyped(constraint.expression, [value], {
-        context: value,
-        resource: toTypedValue(this.currentResource[this.currentResource.length - 1]),
-        rootResource: toTypedValue(this.rootResource),
-        ucum: toTypedValue(UCUM),
+        '%context': value,
+        '%resource': toTypedValue(this.currentResource[this.currentResource.length - 1]),
+        '%rootResource': toTypedValue(this.rootResource),
+        '%ucum': toTypedValue(UCUM),
       });
 
       return evalValues.length === 1 && evalValues[0].value === true;
@@ -312,7 +322,7 @@ class ResourceValidator implements ResourceVisitor {
         return;
       }
       const expectedType = fhirTypeToJsType[type as keyof typeof fhirTypeToJsType];
-      // rome-ignore lint/suspicious/useValidTypeof: expected value ensured to be one of: 'string' | 'boolean' | 'number'
+      // biome-ignore lint/suspicious/useValidTypeof: expected value ensured to be one of: 'string' | 'boolean' | 'number'
       if (typeof value !== expectedType) {
         if (value !== null) {
           this.issues.push(
@@ -346,7 +356,7 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   private validateNumber(n: number, type: string, path: string): void {
-    if (isNaN(n) || !isFinite(n)) {
+    if (Number.isNaN(n) || !Number.isFinite(n)) {
       this.issues.push(createStructureIssue(path, 'Invalid numeric value'));
     } else if (isIntegerType(type) && !Number.isInteger(n)) {
       this.issues.push(createStructureIssue(path, 'Expected number to be an integer'));
@@ -413,38 +423,42 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
 function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: InternalSchemaElement): boolean {
   if (element.pattern && !deepIncludes(value, element.pattern)) {
     return false;
-  } else if (element.fixed && !deepEquals(value, element.fixed)) {
+  }
+  if (element.fixed && !deepEquals(value, element.fixed)) {
     return false;
   }
   return true;
 }
 
-function matchDiscriminant(
+export function matchDiscriminant(
   value: TypedValue | TypedValue[] | undefined,
   discriminator: SliceDiscriminator,
-  slice: SliceDefinition
+  slice: SliceDefinition,
+  elements?: Record<string, InternalSchemaElement>
 ): boolean {
   if (Array.isArray(value)) {
     // Only single values can match
     return false;
   }
-  const sliceElement = slice.elements[discriminator.path];
+
+  const sliceElement: InternalSchemaElement = (elements ?? slice.elements)[discriminator.path];
+
   const sliceType = slice.type;
   switch (discriminator.type) {
     case 'value':
     case 'pattern':
       if (!value || !sliceElement) {
         return false;
-      } else if (matchesSpecifiedValue(value, sliceElement)) {
+      }
+      if (matchesSpecifiedValue(value, sliceElement)) {
         return true;
       }
       break;
     case 'type':
       if (!value || !sliceType?.length) {
         return false;
-      } else {
-        return sliceType.some((t) => t.code === value.type);
       }
+      return sliceType.some((t) => t.code === value.type);
     // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
   }
   // Default to no match
@@ -457,11 +471,8 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
   }
   for (const slice of slicingRules.slices) {
     if (
-      slicingRules.discriminator.every(
-        (discriminator) =>
-          arrayify(getNestedProperty(value, discriminator.path))?.some((v) =>
-            matchDiscriminant(v, discriminator, slice)
-          )
+      slicingRules.discriminator.every((discriminator) =>
+        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
       )
     ) {
       return slice.name;

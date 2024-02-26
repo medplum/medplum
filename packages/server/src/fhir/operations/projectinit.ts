@@ -1,3 +1,4 @@
+import { ProfileResource, badRequest, createReference, created } from '@medplum/core';
 import {
   ClientApplication,
   OperationDefinition,
@@ -6,17 +7,16 @@ import {
   Reference,
   User,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
-import { systemRepo } from '../repo';
-import { ProfileResource, badRequest, createReference, created } from '@medplum/core';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { Request, Response } from 'express';
-import { sendOutcome } from '../outcomes';
-import { createClient } from '../../admin/client';
-import { createProfile, createProjectMembership } from '../../auth/utils';
-import { getUserByEmailWithoutProject } from '../../oauth/utils';
-import { createUser } from '../../auth/newuser';
 import { randomUUID } from 'crypto';
+import { Request, Response } from 'express';
+import { createClient } from '../../admin/client';
+import { createUser } from '../../auth/newuser';
+import { createProfile, createProjectMembership } from '../../auth/utils';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { getUserByEmailWithoutProject } from '../../oauth/utils';
+import { sendOutcome } from '../outcomes';
+import { getSystemRepo } from '../repo';
+import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 
 const projectInitOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -98,6 +98,8 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   } else {
     ownerRef = login.user as Reference;
   }
+
+  const systemRepo = getSystemRepo();
   const owner = await systemRepo.readReference(ownerRef);
 
   if (owner.resourceType !== 'User') {
@@ -109,7 +111,7 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   }
 
   const { project } = await createProject(params.name, owner);
-  await sendOutputParameters(projectInitOperation, res, created, project);
+  await sendOutputParameters(req, res, projectInitOperation, created, project);
 }
 
 /**
@@ -128,6 +130,7 @@ export async function createProject(
   client: ClientApplication;
 }> {
   const ctx = getRequestContext();
+  const systemRepo = getSystemRepo();
 
   ctx.logger.info('Project creation request received', { name: projectName });
   const project = await systemRepo.createResource<Project>({

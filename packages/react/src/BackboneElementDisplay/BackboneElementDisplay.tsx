@@ -1,14 +1,14 @@
-import { getPropertyDisplayName, tryGetDataType, TypedValue } from '@medplum/core';
+import { getPathDisplayName, tryGetDataType, TypedValue } from '@medplum/core';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 
 export interface BackboneElementDisplayProps {
-  value: TypedValue;
-  compact?: boolean;
-  ignoreMissingValues?: boolean;
-  link?: boolean;
+  readonly value: TypedValue;
+  readonly compact?: boolean;
+  readonly ignoreMissingValues?: boolean;
+  readonly link?: boolean;
 }
 
 export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.Element | null {
@@ -54,7 +54,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
           return null;
         }
         return (
-          <DescriptionListEntry key={key} term={getPropertyDisplayName(key)}>
+          <DescriptionListEntry key={key} term={getPathDisplayName(key)}>
             <ResourcePropertyDisplay
               property={property}
               propertyType={propertyType}

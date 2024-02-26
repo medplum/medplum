@@ -149,7 +149,7 @@ export interface Observation {
   /**
    * The status of the result value.
    */
-  status?: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * A code that classifies the general type of observation being made.
@@ -160,7 +160,7 @@ export interface Observation {
    * Describes what was observed. Sometimes this is called the observation
    * &quot;name&quot;.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The patient, or group of patients, location, or device this
@@ -423,7 +423,7 @@ export interface ObservationComponent {
    * Describes what was observed. Sometimes this is called the observation
    * &quot;code&quot;.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The information determined as a result of making the observation, if

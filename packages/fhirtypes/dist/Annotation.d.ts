@@ -50,5 +50,5 @@ export interface Annotation {
   /**
    * The text of the annotation in markdown format.
    */
-  text?: string;
+  text: string;
 }

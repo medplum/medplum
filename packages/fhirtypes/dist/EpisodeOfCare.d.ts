@@ -114,7 +114,7 @@ export interface EpisodeOfCare {
   /**
    * planned | waitlist | active | onhold | finished | cancelled.
    */
-  status?: 'planned' | 'waitlist' | 'active' | 'onhold' | 'finished' | 'cancelled' | 'entered-in-error';
+  status: 'planned' | 'waitlist' | 'active' | 'onhold' | 'finished' | 'cancelled' | 'entered-in-error';
 
   /**
    * The history of statuses that the EpisodeOfCare has been through
@@ -136,7 +136,7 @@ export interface EpisodeOfCare {
   /**
    * The patient who is the focus of this episode of care.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The organization that has assumed the specific responsibilities for
@@ -219,7 +219,7 @@ export interface EpisodeOfCareDiagnosis {
    * A list of conditions/problems/diagnoses that this episode of care is
    * intended to be providing care for.
    */
-  condition?: Reference<Condition>;
+  condition: Reference<Condition>;
 
   /**
    * Role that this diagnosis has within the episode of care (e.g.
@@ -277,10 +277,10 @@ export interface EpisodeOfCareStatusHistory {
   /**
    * planned | waitlist | active | onhold | finished | cancelled.
    */
-  status?: 'planned' | 'waitlist' | 'active' | 'onhold' | 'finished' | 'cancelled' | 'entered-in-error';
+  status: 'planned' | 'waitlist' | 'active' | 'onhold' | 'finished' | 'cancelled' | 'entered-in-error';
 
   /**
    * The period during this EpisodeOfCare that the specific status applied.
    */
-  period?: Period;
+  period: Period;
 }

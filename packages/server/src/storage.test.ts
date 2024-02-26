@@ -7,8 +7,8 @@ import { resolve } from 'path';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from './app';
-import { loadTestConfig, MedplumServerConfig } from './config';
-import { systemRepo } from './fhir/repo';
+import { MedplumServerConfig, loadTestConfig } from './config';
+import { getSystemRepo } from './fhir/repo';
 import { getBinaryStorage } from './fhir/storage';
 import { withTestContext } from './test.setup';
 
@@ -21,12 +21,14 @@ describe('Storage Routes', () => {
     config = await loadTestConfig();
     await initApp(app, config);
 
-    binary = await withTestContext(() =>
-      systemRepo.createResource<Binary>({
+    binary = await withTestContext(async () => {
+      const systemRepo = getSystemRepo();
+      const result = await systemRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: ContentType.TEXT,
-      })
-    );
+      });
+      return result;
+    });
 
     const req = new Readable();
     req.push('hello world');
@@ -55,12 +57,14 @@ describe('Storage Routes', () => {
   });
 
   test('File not found', async () => {
-    const resource = await withTestContext(() =>
-      systemRepo.createResource<Binary>({
+    const resource = await withTestContext(async () => {
+      const systemRepo = getSystemRepo();
+      const result = await systemRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: ContentType.TEXT,
-      })
-    );
+      });
+      return result;
+    });
 
     const req = new Readable();
     req.push('hello world');

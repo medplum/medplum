@@ -1,13 +1,13 @@
 import {
+  TypedValue,
   deepClone,
   evalFhirPathTyped,
   formatCoding,
   getExtension,
-  getTypedPropertyValue,
-  TypedValue,
   getReferenceString,
-  stringify,
+  getTypedPropertyValue,
   splitN,
+  stringify,
 } from '@medplum/core';
 import {
   Encounter,
@@ -131,8 +131,8 @@ function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: Typ
     // All other operators should be unmodified
     const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
     const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
-      actualAnswer,
-      expectedAnswer,
+      '%actualAnswer': actualAnswer,
+      '%expectedAnswer': expectedAnswer,
     });
     return value;
   }
@@ -268,6 +268,7 @@ export function buildInitialResponse(questionnaire: Questionnaire): Questionnair
     resourceType: 'QuestionnaireResponse',
     questionnaire: getReferenceString(questionnaire),
     item: buildInitialResponseItems(questionnaire.item),
+    status: 'in-progress',
   };
 
   return response;

@@ -12,7 +12,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
 import { getPatientCompartmentParams, getPatientResourceTypes, getPatients } from './patient';
-import { systemRepo } from './repo';
+import { getSystemRepo } from './repo';
 
 describe('FHIR Patient utils', () => {
   beforeAll(async () => {
@@ -60,6 +60,8 @@ describe('FHIR Patient utils', () => {
     expect(
       getPatients({
         resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'abc' },
         subject: 'bad',
       } as Observation)
     ).toEqual([]);
@@ -86,6 +88,9 @@ describe('FHIR Patient utils', () => {
     expect(
       getPatients({
         resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        code: { text: 'abc' },
         subject: { reference: 'Patient/123' },
       })
     ).toMatchObject([{ reference: 'Patient/123' }]);
@@ -93,6 +98,8 @@ describe('FHIR Patient utils', () => {
     expect(
       getPatients({
         resourceType: 'DiagnosticReport',
+        status: 'final',
+        code: { text: 'abc' },
         subject: { reference: 'Patient/123' },
       })
     ).toMatchObject([{ reference: 'Patient/123' }]);
@@ -108,6 +115,7 @@ describe('FHIR Patient utils', () => {
   test('Multiple patients', () => {
     const communication: Communication = {
       resourceType: 'Communication',
+      status: 'completed',
       subject: { reference: 'Patient/123' },
       sender: { reference: 'Patient/456' },
       recipient: [{ reference: 'Patient/789' }],
@@ -122,6 +130,7 @@ describe('FHIR Patient utils', () => {
   test('Duplicate patients', () => {
     const communication: Communication = {
       resourceType: 'Communication',
+      status: 'completed',
       subject: { reference: 'Patient/123' },
       sender: { reference: 'Patient/123' },
       recipient: [{ reference: 'Patient/789' }],
@@ -132,6 +141,8 @@ describe('FHIR Patient utils', () => {
   test('Follow search params', () => {
     const carePlan: CarePlan = {
       resourceType: 'CarePlan',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/123' },
     };
 
@@ -144,6 +155,7 @@ describe('FHIR Patient utils', () => {
       // and that resource has a reference to a patient,
       // but the patient reference is an external patient ID,
       // we should silently ignore the patient reference
+      const systemRepo = getSystemRepo();
       const eob = await systemRepo.createResource<ExplanationOfBenefit>({
         resourceType: 'ExplanationOfBenefit',
         status: 'active',

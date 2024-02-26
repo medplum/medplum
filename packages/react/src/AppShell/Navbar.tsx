@@ -1,85 +1,34 @@
-import { Button, createStyles, Navbar as MantineNavbar, ScrollArea, Space, Text } from '@mantine/core';
+import { Button, AppShell as MantineAppShell, ScrollArea, Space, Text } from '@mantine/core';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
+import cx from 'clsx';
 import { Fragment, MouseEventHandler, ReactNode, SyntheticEvent, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
-
-const useStyles = createStyles((theme) => {
-  return {
-    menuTitle: {
-      margin: '20px 0 4px 6px',
-      fontSize: '9px',
-      fontWeight: 'normal',
-      textTransform: 'uppercase',
-      letterSpacing: '2px',
-    },
-
-    link: {
-      ...theme.fn.focusStyles(),
-      display: 'flex',
-      alignItems: 'center',
-      textDecoration: 'none',
-      fontSize: theme.fontSizes.sm,
-      color: theme.colorScheme === 'dark' ? theme.colors.dark[1] : theme.colors.gray[7],
-      padding: `8px 12px`,
-      borderRadius: theme.radius.sm,
-      fontWeight: 500,
-
-      '&:hover': {
-        backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
-        color: theme.colorScheme === 'dark' ? theme.white : theme.black,
-        textDecoration: 'none',
-
-        [`& svg`]: {
-          color: theme.colorScheme === 'dark' ? theme.white : theme.black,
-        },
-      },
-
-      '& svg': {
-        color: theme.colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6],
-        marginRight: theme.spacing.sm,
-        strokeWidth: 1.5,
-        width: 18,
-        height: 18,
-      },
-    },
-
-    linkActive: {
-      '&, &:hover': {
-        backgroundColor: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).background,
-        color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
-        [`& svg`]: {
-          color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
-        },
-      },
-    },
-  };
-});
+import classes from './Navbar.module.css';
 
 export interface NavbarLink {
-  icon?: JSX.Element;
-  label?: string;
-  href: string;
+  readonly icon?: JSX.Element;
+  readonly label?: string;
+  readonly href: string;
 }
 
 export interface NavbarMenu {
-  title?: string;
-  links?: NavbarLink[];
+  readonly title?: string;
+  readonly links?: NavbarLink[];
 }
 
 export interface NavbarProps {
-  pathname?: string;
-  searchParams?: URLSearchParams;
-  menus?: NavbarMenu[];
-  closeNavbar: () => void;
-  displayAddBookmark?: boolean;
-  resourceTypeSearchDisabled?: boolean;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
+  readonly menus?: NavbarMenu[];
+  readonly closeNavbar: () => void;
+  readonly displayAddBookmark?: boolean;
+  readonly resourceTypeSearchDisabled?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
-  const { classes } = useStyles();
   const navigate = useMedplumNavigate();
   const activeLink = getActiveLink(props.pathname, props.searchParams, props.menus);
   const [bookmarkDialogVisible, setBookmarkDialogVisible] = useState(false);
@@ -101,19 +50,20 @@ export function Navbar(props: NavbarProps): JSX.Element {
 
   return (
     <>
-      <MantineNavbar width={{ sm: 250 }} p="xs">
-        <ScrollArea>
+      <MantineAppShell.Navbar>
+        <ScrollArea p="xs">
           {!props.resourceTypeSearchDisabled && (
-            <MantineNavbar.Section mb="sm">
+            <MantineAppShell.Section mb="sm">
               <ResourceTypeInput
                 key={window.location.pathname}
                 name="resourceType"
                 placeholder="Resource Type"
+                maxValues={0}
                 onChange={(newValue) => navigateResourceType(newValue)}
               />
-            </MantineNavbar.Section>
+            </MantineAppShell.Section>
           )}
-          <MantineNavbar.Section grow>
+          <MantineAppShell.Section grow>
             {props.menus?.map((menu) => (
               <Fragment key={`menu-${menu.title}`}>
                 <Text className={classes.menuTitle}>{menu.title}</Text>
@@ -135,15 +85,15 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 variant="subtle"
                 size="xs"
                 mt="xl"
-                leftIcon={<IconPlus size="0.75rem" />}
+                leftSection={<IconPlus size="0.75rem" />}
                 onClick={() => setBookmarkDialogVisible(true)}
               >
                 Add Bookmark
               </Button>
             )}
-          </MantineNavbar.Section>
+          </MantineAppShell.Section>
         </ScrollArea>
-      </MantineNavbar>
+      </MantineAppShell.Navbar>
       {props.pathname && props.searchParams && (
         <BookmarkDialog
           pathname={props.pathname}
@@ -158,14 +108,13 @@ export function Navbar(props: NavbarProps): JSX.Element {
 }
 
 interface NavbarLinkProps {
-  to: string;
-  active: boolean;
-  onClick: MouseEventHandler;
-  children: ReactNode;
+  readonly to: string;
+  readonly active: boolean;
+  readonly onClick: MouseEventHandler;
+  readonly children: ReactNode;
 }
 
 function NavbarLink(props: NavbarLinkProps): JSX.Element {
-  const { classes, cx } = useStyles();
   return (
     <MedplumLink
       onClick={props.onClick}
@@ -178,8 +127,8 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
 }
 
 interface NavLinkIconProps {
-  to: string;
-  icon?: JSX.Element;
+  readonly to: string;
+  readonly icon?: JSX.Element;
 }
 
 function NavLinkIcon(props: NavLinkIconProps): JSX.Element {

@@ -1,6 +1,5 @@
-import { allOk, ContentType, getStatus, isCreated, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
+import { allOk, ContentType, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
@@ -10,6 +9,10 @@ import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { agentPushHandler } from './operations/agentpush';
+import { codeSystemImportHandler } from './operations/codesystemimport';
+import { codeSystemLookupHandler } from './operations/codesystemlookup';
+import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
+import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
@@ -17,17 +20,18 @@ import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
+import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
+import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
-import { rewriteAttachments, RewriteMode } from './rewrite';
-import { getFullUrl } from './search';
+import { isFhirJsonContentType, sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { projectInitHandler } from './operations/projectinit';
-import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
+import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
+import { recordHistogramValue } from '../otel/otel';
 
 export const fhirRouter = Router();
 
@@ -101,6 +105,15 @@ protectedRoutes.post('/ConceptMap/:id/([$]|%24)translate', asyncWrap(conceptMapT
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
+// CodeSystem $import operation
+protectedRoutes.post('/CodeSystem/([$]|%24)import', asyncWrap(codeSystemImportHandler));
+
+// CodeSystem $lookup operation
+protectedRoutes.post('/CodeSystem/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
+
+// CodeSystem $validate-code operation
+protectedRoutes.post('/CodeSystem/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
+
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
@@ -149,6 +162,12 @@ protectedRoutes.get('/Patient/:id/([$]|%24)everything', asyncWrap(patientEveryth
 // $expunge operation
 protectedRoutes.post('/:resourceType/:id/([$]|%24)expunge', asyncWrap(expungeHandler));
 
+// $get-ws-binding-token operation
+protectedRoutes.get('/Subscription/:id/([$]|%24)get-ws-binding-token', asyncWrap(getWsBindingTokenHandler));
+
+// StructureDefinition $expand-profile operation
+protectedRoutes.get('/StructureDefinition/([$]|%24)expand-profile', asyncWrap(structureDefinitionExpandProfileHandler));
+
 // Validate create resource
 protectedRoutes.post(
   '/:resourceType/([$])validate',
@@ -191,6 +210,16 @@ protectedRoutes.use(
     const ctx = getAuthenticatedContext();
     if (!internalFhirRouter) {
       internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+      internalFhirRouter.addEventListener('warn', (e: any) => ctx.logger.warn(e.message));
+      internalFhirRouter.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
+        recordHistogramValue('medplum.batch.entries', count, { bundleType });
+        recordHistogramValue('medplum.batch.errors', errors, { bundleType });
+        recordHistogramValue('medplum.batch.size', size, { bundleType });
+
+        if (errors > 0 && bundleType === 'transaction') {
+          ctx.logger.warn('Error processing transaction Bundle', { count, errors, size });
+        }
+      });
     }
     const request: FhirRequest = {
       method: req.method as HttpMethod,
@@ -207,25 +236,7 @@ protectedRoutes.use(
       }
       sendOutcome(res, result[0]);
     } else {
-      await sendResponse(res, result[0], result[1]);
+      await sendResponse(req, res, result[0], result[1]);
     }
   })
 );
-
-export function isFhirJsonContentType(req: Request): boolean {
-  return !!(req.is(ContentType.JSON) || req.is(ContentType.FHIR_JSON));
-}
-
-export async function sendResponse(res: Response, outcome: OperationOutcome, body: Resource): Promise<void> {
-  const ctx = getAuthenticatedContext();
-  if (body.meta?.versionId) {
-    res.set('ETag', `W/"${body.meta.versionId}"`);
-  }
-  if (body.meta?.lastUpdated) {
-    res.set('Last-Modified', new Date(body.meta.lastUpdated).toUTCString());
-  }
-  if (isCreated(outcome)) {
-    res.set('Location', getFullUrl(body.resourceType, body.id as string));
-  }
-  res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body));
-}

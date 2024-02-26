@@ -6,6 +6,7 @@ const CREATED_ID = 'created';
 const GONE_ID = 'gone';
 const NOT_MODIFIED_ID = 'not-modified';
 const NOT_FOUND_ID = 'not-found';
+const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
 const FORBIDDEN_ID = 'forbidden';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
@@ -156,6 +157,22 @@ export function badRequest(details: string, expression?: string): OperationOutco
   };
 }
 
+export function conflict(details: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: CONFLICT_ID,
+    issue: [
+      {
+        severity: 'error',
+        code: 'conflict',
+        details: {
+          text: details,
+        },
+      },
+    ],
+  };
+}
+
 export function validationError(details: string): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
@@ -229,6 +246,8 @@ export function getStatus(outcome: OperationOutcome): number {
       return 403;
     case NOT_FOUND_ID:
       return 404;
+    case CONFLICT_ID:
+      return 409;
     case GONE_ID:
       return 410;
     case TOO_MANY_REQUESTS_ID:

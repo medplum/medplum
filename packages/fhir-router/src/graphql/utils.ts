@@ -40,12 +40,14 @@ export const typeCache: Record<string, GraphQLScalarType | undefined> = {
   integer: GraphQLFloat,
   markdown: GraphQLString,
   number: GraphQLFloat,
+  oid: GraphQLString,
   positiveInt: GraphQLFloat,
   string: GraphQLString,
   time: GraphQLString,
   unsignedInt: GraphQLFloat,
   uri: GraphQLString,
   url: GraphQLString,
+  uuid: GraphQLString,
   xhtml: GraphQLString,
   'http://hl7.org/fhirpath/System.Boolean': GraphQLBoolean,
   'http://hl7.org/fhirpath/System.Date': GraphQLString,
@@ -177,11 +179,10 @@ export function getDepth(path: readonly (string | number)[]): number {
  * @returns True if the field is requested in the GraphQL query.
  */
 export function isFieldRequested(info: GraphQLResolveInfo, fieldName: string): boolean {
-  return info.fieldNodes.some(
-    (fieldNode) =>
-      fieldNode.selectionSet?.selections.some((selection) => {
-        return selection.kind === Kind.FIELD && selection.name.value === fieldName;
-      })
+  return info.fieldNodes.some((fieldNode) =>
+    fieldNode.selectionSet?.selections.some((selection) => {
+      return selection.kind === Kind.FIELD && selection.name.value === fieldName;
+    })
   );
 }
 

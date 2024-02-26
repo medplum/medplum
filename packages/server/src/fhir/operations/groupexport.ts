@@ -2,11 +2,11 @@ import { accepted } from '@medplum/core';
 import { Group, Patient, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 /**
  * Handles a Group export request.
@@ -64,7 +64,7 @@ export async function groupExportResources(
           await exporter.writeResource(resource);
         }
       } catch (err) {
-        getRequestContext().logger.warn('Unable to read patient for group export', {
+        getLogger().warn('Unable to read patient for group export', {
           reference: member.entity.reference,
         });
       }

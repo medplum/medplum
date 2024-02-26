@@ -6,6 +6,7 @@ describe('Blame', () => {
   test('blame oldest to newest', () => {
     const history: Bundle = {
       resourceType: 'Bundle',
+      type: 'history',
       entry: [
         {
           resource: {
@@ -61,6 +62,7 @@ describe('Blame', () => {
   test('blame newest to oldest', () => {
     const history: Bundle = {
       resourceType: 'Bundle',
+      type: 'history',
       entry: [
         {
           resource: {
@@ -116,6 +118,7 @@ describe('Blame', () => {
   test('Handle deleted resource', () => {
     const history: Bundle = {
       resourceType: 'Bundle',
+      type: 'history',
       entry: [
         {
           resource: {
@@ -131,6 +134,7 @@ describe('Blame', () => {
         },
         {
           response: {
+            status: '410',
             outcome: gone,
           },
         },

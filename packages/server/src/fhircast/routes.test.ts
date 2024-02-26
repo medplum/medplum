@@ -23,6 +23,7 @@ describe('FHIRCast routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    await getRedis().flushdb();
     accessToken = await initTestAuth();
   });
 
@@ -168,7 +169,10 @@ describe('FHIRCast routes', () => {
     let contextRes;
 
     const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-open', [
-      { key: 'report', resource: { id: 'def-456', resourceType: 'DiagnosticReport' } },
+      {
+        key: 'report',
+        resource: { id: 'def-456', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+      },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ]);
     const publishRes = await request(app)
@@ -200,7 +204,10 @@ describe('FHIRCast routes', () => {
     let afterContextRes;
 
     const context = [
-      { key: 'report', resource: { id: 'def-456', resourceType: 'DiagnosticReport' } },
+      {
+        key: 'report',
+        resource: { id: 'def-456', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+      },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-open'>[];
 
@@ -208,7 +215,7 @@ describe('FHIRCast routes', () => {
     payload.event['context.versionId'] = generateId();
 
     // Setup the key as if we have already opened this resource
-    await getRedis().set('::fhircast::my-topic::latest::', JSON.stringify(payload));
+    await getRedis().set('medplum:fhircast:topic:my-topic:latest', JSON.stringify(payload));
 
     beforeContextRes = await request(app)
       .get(`${STU2_BASE_ROUTE}my-topic`)
@@ -248,8 +255,11 @@ describe('FHIRCast routes', () => {
 
   test('Check for `context.versionId` on `DiagnosticReport-open`', async () => {
     const context = [
-      { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
-      { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy' } },
+      {
+        key: 'report',
+        resource: { id: 'abc-123', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+      },
+      { key: 'study', resource: { id: 'def-456', resourceType: 'ImagingStudy', status: 'available', subject: {} } },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-open'>[];
 
@@ -262,7 +272,7 @@ describe('FHIRCast routes', () => {
       .send(payload);
     expect(publishRes.status).toBe(201);
 
-    const latestEventStr = (await getRedis().get('::fhircast::my-topic::latest::')) as string;
+    const latestEventStr = (await getRedis().get('medplum:fhircast:topic:my-topic:latest')) as string;
     expect(latestEventStr).toBeTruthy();
     const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-open'>;
     expect(latestEvent).toMatchObject({
@@ -273,8 +283,11 @@ describe('FHIRCast routes', () => {
 
   test('`DiagnosticReport-update`: `context.priorVersionId` matches prior `context.versionId`', async () => {
     const context = [
-      { key: 'report', resource: { id: 'abc-123', resourceType: 'DiagnosticReport' } },
-      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle' } },
+      {
+        key: 'report',
+        resource: { id: 'abc-123', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+      },
+      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'searchset' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
 
     const versionId = randomUUID();
@@ -287,7 +300,7 @@ describe('FHIRCast routes', () => {
       .send(payload);
     expect(publishRes.status).toBe(201);
 
-    const latestEventStr = (await getRedis().get('::fhircast::my-topic::latest::')) as string;
+    const latestEventStr = (await getRedis().get('medplum:fhircast:topic:my-topic:latest')) as string;
     expect(latestEventStr).toBeTruthy();
     const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-update'>;
     expect(latestEvent).toMatchObject({

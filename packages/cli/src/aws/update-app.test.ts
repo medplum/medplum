@@ -209,7 +209,7 @@ describe('update-app command', () => {
 
     expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
     expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
-    expect(console.log).toBeCalledWith('Done');
+    expect(console.log).toHaveBeenCalledWith('Done');
     expect(s3Mock.calls()).toHaveLength(1);
     expect(cloudFrontMock.calls()).toHaveLength(1);
   });
@@ -277,7 +277,7 @@ describe('update-app command', () => {
 
     expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
     expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
-    expect(console.log).toBeCalledWith('Done');
+    expect(console.log).toHaveBeenCalledWith('Done');
     expect(s3Mock.calls()).toHaveLength(0);
     expect(cloudFrontMock.calls()).toHaveLength(0);
   });
@@ -336,7 +336,7 @@ describe('update-app command', () => {
 
     await main(['node', 'index.js', 'aws', 'update-app', 'dev']);
 
-    expect(console.log).toBeCalledWith('Done');
+    expect(console.log).toHaveBeenCalledWith('Done');
   });
 
   test('Update app config not found', async () => {
@@ -344,7 +344,15 @@ describe('update-app command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
-    expect(console.log).toBeCalledWith('Config not found');
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (medplum.not-found.config.json)');
+  });
+
+  test('Update app config custom filename not found', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
+
+    console.log = jest.fn();
+    await main(['node', 'index.js', 'aws', 'update-app', 'not-found', '--file', 'foo.json']);
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (foo.json)');
   });
 
   test('Update app stack not found', async () => {
@@ -354,7 +362,7 @@ describe('update-app command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found');
+    expect(console.log).toHaveBeenCalledWith('Stack not found: not-found');
   });
 
   test('Update app stack incomplete', async () => {
@@ -364,6 +372,6 @@ describe('update-app command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-app', 'incomplete']);
-    expect(console.log).toBeCalledWith('App bucket not found');
+    expect(console.log).toHaveBeenCalledWith('App bucket not found');
   });
 });

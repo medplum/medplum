@@ -9,6 +9,7 @@ export const ExampleAccessPolicy: AccessPolicy = {
 export const ExampleStatusValueSet: ValueSet = {
   resourceType: 'ValueSet',
   id: 'example-statuses',
+  status: 'active',
   compose: {
     include: [
       {

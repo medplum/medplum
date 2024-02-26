@@ -40,7 +40,7 @@ The target resource for every link in the chain must be unambiguous. If a search
 
 Just like the example above, the below example searches for all [`Observation`](/docs/api/fhir/resources/observation) resources linked to a [`Patient`](/docs/api/fhir/resources/patient) with a name of 'homer', this time using the syntax `subject:Patient.name=homer`. The way to read this is "search for all [`Observation`](/docs/api/fhir/resources/observation) resources whose `subject` parameter is of type [`Patient`](/docs/api/fhir/resources/patient) and has a name 'homer'".
 
-In the above example, the `patient` parameter can only search for [`Patient`](/docs/api/fhir/resources/patient) resources, so it was not necessary to explicityly state which resource type we were searching for.
+In the above example, the `patient` parameter can only search for [`Patient`](/docs/api/fhir/resources/patient) resources, so it was not necessary to explicitly state which resource type we were searching for.
 
 The general syntax for a forward chained search is `<reference searchParam>:<referenced resource type>.<referenced resource searchParam>=<value>`.
 

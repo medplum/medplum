@@ -142,7 +142,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?encounter:missing=false&_inc
 // end-block searchFilteredEncountersCurl
 */
 
-const communicationThread: Communication[] = [
+const communicationThread: Partial<Communication>[] = [
   // start-block communicationGroupedThread
   {
     resourceType: 'Communication',
@@ -173,6 +173,7 @@ const communicationThread: Communication[] = [
         resource: {
           resourceType: 'Communication',
           id: 'example-parent-communication',
+          status: 'completed',
         },
       },
     ],
@@ -197,6 +198,7 @@ const communicationThread: Communication[] = [
         resource: {
           resourceType: 'Communication',
           id: 'example-parent-communication',
+          status: 'completed',
         },
       },
     ],
@@ -205,6 +207,7 @@ const communicationThread: Communication[] = [
         resource: {
           resourceType: 'Communication',
           id: 'example-message-1',
+          status: 'completed',
         },
       },
     ],
@@ -229,6 +232,7 @@ const communicationThread: Communication[] = [
         resource: {
           resourceType: 'Communication',
           id: 'example-parent-communication',
+          status: 'completed',
         },
       },
     ],
@@ -237,6 +241,7 @@ const communicationThread: Communication[] = [
         resource: {
           resourceType: 'Communication',
           id: 'example-message-2',
+          status: 'completed',
         },
       },
     ],
@@ -251,6 +256,7 @@ const categoryExampleCommunications: Communication =
   {
     resourceType: 'Communication',
     id: 'example-communication',
+    status: 'completed',
     category: [
       {
         text: 'Doctor',

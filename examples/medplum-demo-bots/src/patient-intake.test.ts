@@ -9,6 +9,7 @@ test('Success', async () => {
   const medplum = new MockClient();
   const input: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
+    status: 'completed',
     item: [
       { linkId: 'firstName', answer: [{ valueString: 'John' }] },
       { linkId: 'lastName', answer: [{ valueString: 'Smith' }] },
@@ -24,6 +25,7 @@ test('Missing first name', async () => {
   console.log = vi.fn();
   const input: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
+    status: 'completed',
     item: [
       { linkId: 'firstName', answer: [{ valueString: '' }] },
       { linkId: 'lastName', answer: [{ valueString: 'Smith' }] },
@@ -31,7 +33,7 @@ test('Missing first name', async () => {
   };
   const result = await handler(medplum, { input, contentType, secrets: {} });
   expect(result).toBe(false);
-  expect(console.log).toBeCalledWith('Missing first name');
+  expect(console.log).toHaveBeenCalledWith('Missing first name');
 });
 
 test('Missing last name', async () => {
@@ -39,6 +41,7 @@ test('Missing last name', async () => {
   console.log = vi.fn();
   const input: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
+    status: 'completed',
     item: [
       { linkId: 'firstName', answer: [{ valueString: 'John' }] },
       { linkId: 'lastName', answer: [{ valueString: '' }] },
@@ -46,5 +49,5 @@ test('Missing last name', async () => {
   };
   const result = await handler(medplum, { input, contentType, secrets: {} });
   expect(result).toBe(false);
-  expect(console.log).toBeCalledWith('Missing last name');
+  expect(console.log).toHaveBeenCalledWith('Missing last name');
 });

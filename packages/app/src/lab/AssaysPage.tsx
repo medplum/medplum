@@ -12,7 +12,7 @@ export function AssaysPage(): JSX.Element {
   }
 
   return (
-    <Table withBorder withColumnBorders>
+    <Table withTableBorder withRowBorders withColumnBorders>
       <thead>
         <tr>
           <th>Category</th>
@@ -48,7 +48,7 @@ export function AssaysPage(): JSX.Element {
 }
 
 interface IntervalsDisplayProps {
-  ranges: ObservationDefinitionQualifiedInterval[] | undefined;
+  readonly ranges: ObservationDefinitionQualifiedInterval[] | undefined;
 }
 
 function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {

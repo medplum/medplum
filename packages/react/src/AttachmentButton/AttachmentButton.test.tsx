@@ -2,8 +2,8 @@ import { Button } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { ReactNode } from 'react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AttachmentButton } from './AttachmentButton';
 
 const medplum = new MockClient();

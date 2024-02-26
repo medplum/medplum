@@ -1,9 +1,10 @@
 import { StackResource } from '@aws-sdk/client-cloudformation';
 import { GetBucketPolicyCommand, PutBucketPolicyCommand } from '@aws-sdk/client-s3';
 import { readConfig } from '../utils';
-import { createInvalidation, getStackByTag, s3Client } from './utils';
+import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
 
 export interface UpdateBucketPoliciesOptions {
+  file?: string;
   dryrun?: boolean;
 }
 
@@ -28,15 +29,15 @@ interface PolicyStatement {
  * @param options - The update options.
  */
 export async function updateBucketPoliciesCommand(tag: string, options: UpdateBucketPoliciesOptions): Promise<void> {
-  const config = readConfig(tag);
+  const config = readConfig(tag, options);
   if (!config) {
-    console.log('Config not found');
+    await printConfigNotFound(tag, options);
     return;
   }
 
   const details = await getStackByTag(tag);
   if (!details) {
-    console.log('Stack not found');
+    await printStackNotFound(tag);
     return;
   }
 

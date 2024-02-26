@@ -11,7 +11,7 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 
 export interface TimelineProps {
-  children?: ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function Timeline(props: TimelineProps): JSX.Element {
@@ -19,11 +19,11 @@ export function Timeline(props: TimelineProps): JSX.Element {
 }
 
 export interface TimelineItemProps extends PanelProps {
-  resource: Resource;
-  profile?: Reference;
-  dateTime?: string;
-  padding?: boolean;
-  popupMenuItems?: ReactNode;
+  readonly resource: Resource;
+  readonly profile?: Reference;
+  readonly dateTime?: string;
+  readonly padding?: boolean;
+  readonly popupMenuItems?: ReactNode;
 }
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
@@ -33,20 +33,20 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
 
   return (
     <Panel data-testid="timeline-item" fill={true} {...others}>
-      <Group position="apart" spacing={8} mx="xs" my="sm">
+      <Group justify="space-between" gap={8} mx="xs" my="sm">
         <ResourceAvatar value={author} link={true} size="md" />
         <div style={{ flex: 1 }}>
           <Text size="sm">
-            <ResourceName color="dark" weight={500} value={author} link={true} />
+            <ResourceName c="dark" fw={500} value={author} link={true} />
           </Text>
           <Text size="xs">
-            <MedplumLink color="dimmed" to={props.resource}>
+            <MedplumLink c="dimmed" to={props.resource}>
               {formatDateTime(dateTime)}
             </MedplumLink>
-            <Text component="span" color="dimmed" mx={8}>
+            <Text component="span" c="dimmed" mx={8}>
               &middot;
             </Text>
-            <MedplumLink color="dimmed" to={props.resource}>
+            <MedplumLink c="dimmed" to={props.resource}>
               {props.resource.resourceType}
             </MedplumLink>
           </Text>
@@ -54,7 +54,12 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         {popupMenuItems && (
           <Menu position="bottom-end" shadow="md" width={200}>
             <Menu.Target>
-              <ActionIcon radius="xl" aria-label={`Actions for ${getReferenceString(props.resource)}`}>
+              <ActionIcon
+                color="gray"
+                variant="subtle"
+                radius="xl"
+                aria-label={`Actions for ${getReferenceString(props.resource)}`}
+              >
                 <IconDots />
               </ActionIcon>
             </Menu.Target>

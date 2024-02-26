@@ -1,12 +1,10 @@
-import { Anchor, Text, Title } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { ClientApplication, Patient, Reference, ResourceType, SmartAppLaunch } from '@medplum/fhirtypes';
-import { Document, Loading, MedplumLink, useMedplum, useResource, useSearchResources } from '@medplum/react';
+import { Text, Title } from '@mantine/core';
+import { createReference, getReferenceString } from '@medplum/core';
+import { Encounter, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
+import { Document, Loading, MedplumLink, SmartAppLaunchLink, useResource, useSearchResources } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 
 export function AppsPage(): JSX.Element | null {
-  const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const resource = useResource({ reference: resourceType + '/' + id });
   const [questionnaires, questionnairesLoading] = useSearchResources('Questionnaire', 'subject-type=' + resourceType);
@@ -29,36 +27,14 @@ export function AppsPage(): JSX.Element | null {
     );
   }
 
-  function launchApp(clientApplication: ClientApplication): void {
-    if (!resource) {
-      return;
-    }
+  let patient: Reference<Patient> | undefined = undefined;
+  let encounter: Reference<Encounter> | undefined = undefined;
 
-    const smartAppLaunch: SmartAppLaunch = {
-      resourceType: 'SmartAppLaunch',
-    };
-
-    switch (resource.resourceType) {
-      case 'Patient':
-        smartAppLaunch.patient = createReference(resource);
-        break;
-      case 'Encounter':
-        smartAppLaunch.patient = resource.subject as Reference<Patient>;
-        smartAppLaunch.encounter = createReference(resource);
-        break;
-      default:
-        break;
-    }
-
-    medplum
-      .createResource(smartAppLaunch)
-      .then((result) => {
-        const url = new URL(clientApplication.launchUri as string);
-        url.searchParams.set('iss', medplum.getBaseUrl() + 'fhir/R4');
-        url.searchParams.set('launch', result.id as string);
-        window.location.assign(url.toString());
-      })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  if (resource.resourceType === 'Patient') {
+    patient = createReference(resource);
+  } else if (resource.resourceType === 'Encounter') {
+    patient = resource.subject as Reference<Patient>;
+    encounter = createReference(resource);
   }
 
   return (
@@ -76,7 +52,9 @@ export function AppsPage(): JSX.Element | null {
       {smartApps?.map((clientApplication) => (
         <div key={clientApplication.id}>
           <Title order={3}>
-            <Anchor onClick={() => launchApp(clientApplication)}>{clientApplication.name}</Anchor>
+            <SmartAppLaunchLink client={clientApplication} patient={patient} encounter={encounter}>
+              {clientApplication.name}
+            </SmartAppLaunchLink>
           </Title>
           <Text>{clientApplication.description}</Text>
         </div>

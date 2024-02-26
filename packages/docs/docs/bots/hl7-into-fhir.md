@@ -93,7 +93,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 ```
 
-Functionally, the code above will create a new patient with the `mrnNumber` provided, assuming that patient isn't aready in this system.
+Functionally, the code above will create a new patient with the `mrnNumber` provided, assuming that patient isn't already in this system.
 
 ### Testing your Bot
 
@@ -111,7 +111,7 @@ PV1|1|N||||||||||||||||||||||||||||||||||||||||||||||||||||
 PV2||||||||||||||||||||||N|||||||||||||||||||||||||||'
 ```
 
-If all goes well, you should see the following HL7 acknowldgement message in the console.
+If all goes well, you should see the following HL7 acknowledgement message in the console.
 
 ```bash
 MSH|^~\\&|CL|PDMT|Primary||2022-05-10T16:19:50.244Z||ACK|1652199590244|P|2.5.1\rMSA|AA|203598|OK

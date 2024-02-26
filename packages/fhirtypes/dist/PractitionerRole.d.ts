@@ -292,7 +292,7 @@ export interface PractitionerRoleNotAvailable {
    * The reason that can be presented to the user as to why this time is
    * not available.
    */
-  description?: string;
+  description: string;
 
   /**
    * Service is not available (seasonally or for a public holiday) from

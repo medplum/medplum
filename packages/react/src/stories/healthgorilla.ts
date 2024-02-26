@@ -166,6 +166,7 @@ export const HealthGorillaDiagnosticReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
   id: 'hg-report-1',
   status: 'final',
+  code: { text: 'Example Panel' },
   category: [
     {
       coding: [

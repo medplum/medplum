@@ -34,6 +34,8 @@ function escapeMdx(fileName, text) {
     // In Docusaurus, the index.mdx file is used as the landing page for the folder.
     // Relative links are relative to the parent, not the index.mdx file.
     text = text.replaceAll('](./index)', '](../)').replaceAll('](./', '](./sdk/');
+  } else {
+    text = text.replaceAll('[Home](./index)', '[Home](./)');
   }
 
   const specialChars = ['{', '}'];

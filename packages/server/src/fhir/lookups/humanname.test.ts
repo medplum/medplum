@@ -4,9 +4,11 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { bundleContains, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 
 describe('HumanName Lookup Table', () => {
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);

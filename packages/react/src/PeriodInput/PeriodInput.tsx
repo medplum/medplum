@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 
 export interface PeriodInputProps {
-  name: string;
-  defaultValue?: Period;
-  onChange?: (value: Period) => void;
+  readonly name: string;
+  readonly defaultValue?: Period;
+  readonly onChange?: (value: Period) => void;
 }
 
 export function PeriodInput(props: PeriodInputProps): JSX.Element {
@@ -20,7 +20,7 @@ export function PeriodInput(props: PeriodInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       <DateTimeInput
         name={props.name + '.start'}
         placeholder="Start"

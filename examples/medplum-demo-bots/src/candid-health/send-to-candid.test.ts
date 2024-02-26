@@ -444,7 +444,10 @@ describe('Candid Health Tests', () => {
     await handler(medplum, {
       input: encounter,
       contentType: 'application/fhir+json',
-      secrets: { CANDID_API_KEY: { valueString: '123' }, CANDID_API_SECRET: { valueString: 'ABC' } },
+      secrets: {
+        CANDID_API_KEY: { name: 'CANDID_API_KEY', valueString: '123' },
+        CANDID_API_SECRET: { name: 'CANDID_API_SECRET', valueString: 'ABC' },
+      },
     });
 
     const body = JSON.parse(vi.mocked(fetch).mock?.lastCall?.[1]?.body?.toString() || '{}');

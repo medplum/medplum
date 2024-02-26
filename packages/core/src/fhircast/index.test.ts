@@ -262,7 +262,11 @@ describe('createFhircastMessagePayload', () => {
     expect(
       createFhircastMessagePayload('abc-123', 'syncerror', {
         key: 'operationoutcome',
-        resource: { resourceType: 'OperationOutcome', id: 'patient-123' },
+        resource: {
+          resourceType: 'OperationOutcome',
+          id: 'patient-123',
+          issue: [{ severity: 'error', code: 'processing' }],
+        },
       })
     ).toEqual<FhircastMessagePayload<'syncerror'>>({
       id: expect.any(String),
@@ -282,7 +286,7 @@ describe('createFhircastMessagePayload', () => {
           createFhircastMessageContext<'ImagingStudy-open'>('study', 'ImagingStudy', 'imagingstudy-123'),
         ]
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
   });
 
   test('Invalid event name', () => {
@@ -296,7 +300,7 @@ describe('createFhircastMessagePayload', () => {
           createFhircastMessageContext<'ImagingStudy-open'>('study', 'ImagingStudy', 'imagingstudy-123'),
         ]
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
   });
 
   test('Invalid context', () => {
@@ -307,7 +311,7 @@ describe('createFhircastMessagePayload', () => {
         'ImagingStudy-open',
         { key: 'study', resource: { id: 'imagingstudy-123', resourceType: 'ImagingStudy' } }
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -315,7 +319,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must be an object
         42
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -323,7 +327,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must be of type FhircastEventContext | FhircastEventContext[]
         { id: 'imagingstudy-123' }
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -331,7 +335,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, resource must have an ID
         { key: 'patient', resource: { resourceType: 'Patient' } }
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -339,7 +343,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid resource, resourceType required
         { key: 'patient', resource: { id: 'patient-123' } }
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -347,7 +351,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid resourceType, must be a FHIRcast-related resource
         { key: 'patient', resource: { resourceType: 'Observation', id: 'observation-123' } }
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -355,7 +359,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must have a valid resource AND a key
         { resource: { resourceType: 'Patient', id: 'patient-123' } }
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -363,7 +367,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must have a valid resource AND a key
         { key: 'subject', resource: { resourceType: 'Patient', id: 'patient-123' } }
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
         'abc-123',
@@ -371,15 +375,31 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid context, must have a valid resource AND a key
         { key: 'imagingstudy', resource: { resourceType: 'ImagingStudy', id: 'patient-123' } }
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       // Should throw because keys must be unique
       createFhircastMessagePayload('abc-123', 'ImagingStudy-open', [
         { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
-        { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456' } },
-        { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-789' } },
+        {
+          key: 'study',
+          resource: {
+            resourceType: 'ImagingStudy',
+            id: 'imagingstudy-456',
+            status: 'available',
+            subject: { reference: 'Patient/patient-123' },
+          },
+        },
+        {
+          key: 'study',
+          resource: {
+            resourceType: 'ImagingStudy',
+            id: 'imagingstudy-789',
+            status: 'available',
+            subject: { reference: 'Patient/patient-123' },
+          },
+        },
       ])
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       // Should throw because Patient-open has an optional 2nd context of `Encounter`
       createFhircastMessagePayload('abc-123', 'Patient-open', [
@@ -387,36 +407,48 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error 'study' is not a valid key on 'Patient-open' event
         { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456' } },
       ])
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload('abc-123', 'Patient-open', [
         // @ts-expect-error Key 'patient' expects a 'Patient' resource
         { key: 'patient', resource: { resourceType: 'Bundle', id: 'patient-123' } },
       ])
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload('abc-123', 'Patient-open', [
         { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
         // @ts-expect-error Need a key
         { resource: { resourceType: 'Encounter', id: 'encounter-456' } },
       ])
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload('abc-123', 'Patient-open', [
         { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
         // @ts-expect-error Resource should be an object
         { key: 'encounter', resource: 42 },
       ])
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
   });
 
   test('Valid `DiagnosticReport-open` event w/ multiple studies', () => {
     const payload = createFhircastMessagePayload('abc-123', 'DiagnosticReport-open', [
-      { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-789' } },
+      {
+        key: 'report',
+        resource: { resourceType: 'DiagnosticReport', id: 'report-789', status: 'final', code: { text: 'test' } },
+      },
       { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
-      { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-123' } },
-      { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456' } },
-      { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-789' } },
+      {
+        key: 'study',
+        resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-123', status: 'available', subject: {} },
+      },
+      {
+        key: 'study',
+        resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-456', status: 'available', subject: {} },
+      },
+      {
+        key: 'study',
+        resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-789', status: 'available', subject: {} },
+      },
     ]);
     expect(payload).toEqual<FhircastMessagePayload<'DiagnosticReport-open'>>({
       id: expect.any(String),
@@ -429,18 +461,33 @@ describe('createFhircastMessagePayload', () => {
   test('Invalid `DiagnosticReport-open` event w/ multiple reports', () => {
     expect(() =>
       createFhircastMessagePayload('abc-123', 'DiagnosticReport-open', [
-        { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-789' } },
-        { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-789' } },
+        {
+          key: 'report',
+          resource: { resourceType: 'DiagnosticReport', id: 'report-789', status: 'final', code: { text: 'test' } },
+        },
+        {
+          key: 'report',
+          resource: { resourceType: 'DiagnosticReport', id: 'report-789', status: 'final', code: { text: 'test' } },
+        },
         { key: 'patient', resource: { resourceType: 'Patient', id: 'patient-123' } },
-        { key: 'study', resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-123' } },
+        {
+          key: 'study',
+          resource: { resourceType: 'ImagingStudy', id: 'imagingstudy-123', status: 'available', subject: {} },
+        },
       ])
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
   });
 
   test('Valid `DiagnosticReport-select` event', () => {
     const messagePayload = createFhircastMessagePayload('abc-123', 'DiagnosticReport-select', [
-      { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
-      { key: 'select', resources: [{ resourceType: 'Observation', id: 'observation-123' }] },
+      {
+        key: 'report',
+        resource: { resourceType: 'DiagnosticReport', id: 'report-123', status: 'final', code: { text: 'test' } },
+      },
+      {
+        key: 'select',
+        resources: [{ resourceType: 'Observation', id: 'observation-123', status: 'final', code: { text: 'test' } }],
+      },
     ]);
 
     expect(messagePayload).toBeDefined();
@@ -456,11 +503,14 @@ describe('createFhircastMessagePayload', () => {
   test('Using single resource context for multi-resource context', () => {
     expect(() =>
       createFhircastMessagePayload('abc-123', 'DiagnosticReport-select', [
-        { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+        {
+          key: 'report',
+          resource: { resourceType: 'DiagnosticReport', id: 'report-123', status: 'final', code: { text: 'test' } },
+        },
         // @ts-expect-error Should have an array of resources at 'resources'
         { key: 'select', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
       ])
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
   });
 
   test('Valid `DiagnosticReport-update` event', () => {
@@ -468,8 +518,11 @@ describe('createFhircastMessagePayload', () => {
       'abc-123',
       'DiagnosticReport-update',
       [
-        { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
-        { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
+        {
+          key: 'report',
+          resource: { resourceType: 'DiagnosticReport', id: 'report-123', status: 'final', code: { text: 'test' } },
+        },
+        { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123', type: 'searchset' } },
       ],
       generateId()
     );
@@ -500,7 +553,7 @@ describe('createFhircastMessagePayload', () => {
           { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
         ]
       )
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
   });
 });
 
@@ -625,7 +678,7 @@ describe('FhircastConnection', () => {
           events: ['Patient-open'],
           endpoint: 'ws://localhost:1234',
         })
-    ).toThrowError(OperationOutcomeError);
+    ).toThrow(OperationOutcomeError);
   });
 });
 
@@ -647,6 +700,6 @@ describe('assertContextVersionOptional', () => {
   });
   test('Version optional: false', () => {
     expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toEqual(true);
-    expect(() => assertContextVersionOptional('DiagnosticReport-update')).toThrowError(OperationOutcomeError);
+    expect(() => assertContextVersionOptional('DiagnosticReport-update')).toThrow(OperationOutcomeError);
   });
 });

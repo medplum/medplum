@@ -7,6 +7,7 @@ const instructions: MedicationRequest =
   // start-block dispenseInstructions
   {
     resourceType: 'MedicationRequest',
+    status: 'active',
     intent: 'order',
     subject: {
       reference: 'Patient/homer-simpson',
@@ -58,6 +59,7 @@ const dosageInstruction: MedicationRequest =
   // start-block dosageInstructions
   {
     resourceType: 'MedicationRequest',
+    status: 'active',
     intent: 'order',
     subject: {
       reference: 'Patient/homer-simpson',
@@ -121,7 +123,7 @@ const dosageInstruction: MedicationRequest =
   };
 // end-block dosageInstructions
 
-const prescription: MedicationRequest =
+const prescription: Partial<MedicationRequest> =
   // start-block prescriptionRequest
   {
     resourceType: 'MedicationRequest',
@@ -139,7 +141,7 @@ const prescription: MedicationRequest =
   };
 // end-block prescriptionRequest
 
-const medicalOrder: MedicationRequest =
+const medicalOrder: Partial<MedicationRequest> =
   // start-block orderRequest
   {
     resourceType: 'MedicationRequest',

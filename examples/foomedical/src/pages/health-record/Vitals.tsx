@@ -12,22 +12,22 @@ export function Vitals(): JSX.Element {
     <Document>
       <Title>Vitals</Title>
       <Table>
-        <thead>
-          <tr>
-            <th>Measurement</th>
-            <th>Your Value</th>
-            <th>Last Updated</th>
-          </tr>
-        </thead>
-        <tbody>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Measurement</Table.Th>
+            <Table.Th>Your Value</Table.Th>
+            <Table.Th>Last Updated</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {observations.map((obs) => (
-            <tr key={obs.id}>
-              <td>{obs.code?.coding?.[0]?.display}</td>
-              <td>{formatObservationValue(obs)}</td>
-              <td>{formatDate(obs.meta?.lastUpdated)}</td>
-            </tr>
+            <Table.Tr key={obs.id}>
+              <Table.Td>{obs.code?.coding?.[0]?.display}</Table.Td>
+              <Table.Td>{formatObservationValue(obs)}</Table.Td>
+              <Table.Td>{formatDate(obs.meta?.lastUpdated)}</Table.Td>
+            </Table.Tr>
           ))}
-        </tbody>
+        </Table.Tbody>
       </Table>
     </Document>
   );

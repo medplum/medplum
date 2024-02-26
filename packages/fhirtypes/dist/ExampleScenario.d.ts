@@ -134,7 +134,7 @@ export interface ExampleScenario {
    * The status of this example scenario. Enables tracking the life-cycle
    * of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this example scenario is authored for
@@ -257,12 +257,12 @@ export interface ExampleScenarioActor {
   /**
    * ID or acronym of actor.
    */
-  actorId?: string;
+  actorId: string;
 
   /**
    * The type of actor - person or system.
    */
-  type?: 'person' | 'entity';
+  type: 'person' | 'entity';
 
   /**
    * The name of the actor as shown in the page.
@@ -318,12 +318,12 @@ export interface ExampleScenarioInstance {
   /**
    * The id of the resource for referencing.
    */
-  resourceId?: string;
+  resourceId: string;
 
   /**
    * The type of the resource.
    */
-  resourceType?: ResourceType;
+  resourceType: ResourceType;
 
   /**
    * A short name for the resource instance.
@@ -391,7 +391,7 @@ export interface ExampleScenarioInstanceContainedInstance {
   /**
    * Each resource contained in the instance.
    */
-  resourceId?: string;
+  resourceId: string;
 
   /**
    * A specific version of a resource contained in the instance.
@@ -442,12 +442,12 @@ export interface ExampleScenarioInstanceVersion {
   /**
    * The identifier of a specific version of a resource.
    */
-  versionId?: string;
+  versionId: string;
 
   /**
    * The description of the resource version.
    */
-  description?: string;
+  description: string;
 }
 
 /**
@@ -493,7 +493,7 @@ export interface ExampleScenarioProcess {
   /**
    * The diagram title of the group of operations.
    */
-  title?: string;
+  title: string;
 
   /**
    * A longer description of the group of operations.
@@ -623,7 +623,7 @@ export interface ExampleScenarioProcessStepAlternative {
    * The label to display for the alternative that gives a sense of the
    * circumstance in which the alternative should be invoked.
    */
-  title?: string;
+  title: string;
 
   /**
    * A human-readable description of the alternative explaining when the
@@ -680,7 +680,7 @@ export interface ExampleScenarioProcessStepOperation {
   /**
    * The sequential number of the interaction, e.g. 1.2.5.
    */
-  number?: string;
+  number: string;
 
   /**
    * The type of operation - CRUD.

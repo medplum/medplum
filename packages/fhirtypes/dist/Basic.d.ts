@@ -110,7 +110,7 @@ export interface Basic {
    * Identifies the 'type' of resource - equivalent to the resource name
    * for other resources.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * Identifies the patient, practitioner, device or any other resource

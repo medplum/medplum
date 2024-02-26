@@ -14,7 +14,7 @@ describe('CSV Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ strictMode: false });
+    accessToken = await initTestAuth({ project: { strictMode: false } });
   });
 
   afterAll(async () => {

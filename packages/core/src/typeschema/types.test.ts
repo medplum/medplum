@@ -9,8 +9,11 @@ import {
   SlicingRules,
   getDataType,
   indexStructureDefinitionBundle,
+  isProfileLoaded,
   parseStructureDefinition,
   subsetResource,
+  tryGetDataType,
+  tryGetProfile,
 } from './types';
 import { LOINC } from '../constants';
 
@@ -69,6 +72,7 @@ describe('FHIR resource and data type representations', () => {
       slices: [
         {
           name: 'VSCat',
+          path: 'Observation.category',
           elements: {
             'coding.code': expect.objectContaining({
               fixed: {
@@ -99,6 +103,7 @@ describe('FHIR resource and data type representations', () => {
       slices: [
         {
           name: 'systolic',
+          path: 'Observation.component',
           elements: {
             code: expect.objectContaining({
               pattern: {
@@ -119,6 +124,7 @@ describe('FHIR resource and data type representations', () => {
         },
         {
           name: 'diastolic',
+          path: 'Observation.component',
           elements: {
             code: expect.objectContaining({
               pattern: {
@@ -178,6 +184,10 @@ describe('FHIR resource and data type representations', () => {
       'subject',
       'value',
     ]);
+
+    // http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type
+    // 'http://hl7.org/fhirpath/System.String' transformed into 'id'
+    expect(profile.elements['id'].type[0].code).toEqual('id');
   });
 
   test('Nested BackboneElement parsing', () => {
@@ -333,5 +343,25 @@ describe('FHIR resource and data type representations', () => {
     const structureMapGroupRuleType = getDataType('StructureMapGroupRule');
     expect(structureMapGroupRuleType).toBeDefined();
     expect(structureMapGroupRuleType.elements['rule']).toBeDefined();
+  });
+
+  test('Indexing structure definitions related to a profile', () => {
+    const profileUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure';
+    const profileName = 'USCoreBloodPressureProfile';
+
+    expect(isProfileLoaded(profileUrl)).toBe(false);
+    expect(tryGetProfile(profileUrl)).toBeUndefined();
+    expect(tryGetDataType(profileName)).toBeUndefined();
+    expect(tryGetDataType(profileName, profileUrl)).toBeUndefined();
+
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8'));
+    expect(sd.url).toEqual(profileUrl);
+    expect(sd.name).toEqual(profileName);
+    indexStructureDefinitionBundle([sd], profileUrl);
+
+    expect(isProfileLoaded(profileUrl)).toBe(true);
+    expect(tryGetProfile(profileUrl)).toBeDefined();
+    expect(tryGetDataType(profileName)).toBeUndefined(); // expect undefined since profileUrl argument not provided
+    expect(tryGetDataType(profileName, profileUrl)).toBeDefined();
   });
 });
