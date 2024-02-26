@@ -44,6 +44,7 @@
     "glob": "^10.3.10",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.9",
+    "rimraf": "5.0.5",
     "ssh2-sftp-client": "10.0.3",
     "stripe": "14.18.0",
     "typescript": "5.3.3",
