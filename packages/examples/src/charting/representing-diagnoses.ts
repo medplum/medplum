@@ -10,9 +10,9 @@ const sampleCondition: Condition =
     code: {
       coding: [
         {
-          system: 'http://snomed.info/sct',
-          code: '1179374007',
-          display: 'Kaposi sarcoma (morphologic abnormality)',
+          system: 'http://hl7.org/fhir/sid/icd-10',
+          code: 'C46.50',
+          display: "Kaposi's sarcoma of unspecified lung",
         },
       ],
     },
@@ -48,23 +48,12 @@ const sampleCondition: Condition =
     severity: {
       coding: [
         {
-          system: 'http://hl7.org/fhir/ValueSet/condition-severity',
+          system: 'http://snomed.info/sct',
           code: '24484000',
           display: 'Severe',
         },
       ],
     },
-    bodySite: [
-      {
-        coding: [
-          {
-            system: 'http://snomed.info/sct',
-            code: '3341006',
-            display: 'Right lung',
-          },
-        ],
-      },
-    ],
     onsetString: '2023-11-11',
     stage: [
       {
@@ -101,13 +90,13 @@ const sampleValueSet: ValueSet =
   {
     resourceType: 'ValueSet',
     status: 'active',
-    url: 'https://example.org/conditions-valueset',
+    url: 'http://hl7.org/fhir/sid/icd-10',
     name: 'example-conditions',
     title: 'Example Conditions',
     compose: {
       include: [
         {
-          system: 'https://example.org/conditions-valueset',
+          system: 'http://hl7.org/fhir/sid/icd-10',
           concept: [
             {
               code: 'D63.1',
