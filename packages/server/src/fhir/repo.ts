@@ -511,7 +511,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resultMeta.compartment = this.getCompartments(result);
 
     if (this.context.checkReferencesOnWrite) {
-      await validateReferences(result);
+      await validateReferences(result, this.context.projects);
     }
 
     if (this.isNotModified(existing, result)) {

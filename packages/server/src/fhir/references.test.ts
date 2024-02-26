@@ -76,4 +76,48 @@ describe('Reference checks', () => {
         expect(normalizeErrorString(err)).toContain('Invalid reference');
       }
     }));
+
+  test('References to resources in linked Project', () =>
+    withTestContext(async () => {
+      const { membership, project } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const { membership: membership2, project: project2 } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      project.checkReferencesOnWrite = true;
+      project.link = [{ project: createReference(project2) }];
+
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership2, project2, true);
+      const patient2 = await repo2.createResource({
+        resourceType: 'Patient',
+      });
+
+      // Reference available into linked Project
+      let repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      const patient = await repo.createResource({
+        resourceType: 'Patient',
+        link: [{ type: 'seealso', other: createReference(patient2) }],
+      });
+      expect(patient.link?.[0]?.other).toEqual(createReference(patient2));
+
+      // Unlink Project and vaerify that access is revoked
+      project.link = undefined;
+      repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      await expect(
+        repo.createResource({
+          resourceType: 'Patient',
+          link: [{ type: 'seealso', other: createReference(patient2) }],
+        })
+      ).rejects.toBeDefined();
+    }));
 });
