@@ -18,11 +18,14 @@ import {
   Specimen,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import * as dotenv from 'dotenv';
 import { ReadStream } from 'ssh2';
 import { default as SftpClient } from 'ssh2-sftp-client';
 import { Readable } from 'stream';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler, processOruMessage } from './read-oru-message';
+
+dotenv.config();
 
 const CONNECTION_DETAILS = {
   SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },
