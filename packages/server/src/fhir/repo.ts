@@ -976,7 +976,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .returnColumn('id')
         .execute(client);
       await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
-      for (const id of ids) {
+      for (const { id } of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
       }
     });
