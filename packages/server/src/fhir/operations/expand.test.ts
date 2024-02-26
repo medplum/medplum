@@ -540,5 +540,23 @@ describe('Updated implementation', () => {
     expect(
       expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode')
     ).toHaveLength(110);
+    const abstractCode = expansion.contains?.find((c) => c.code === '_PersonalRelationshipRoleType');
+    expect(abstractCode).toBeDefined();
+  });
+
+  test('Filter out abstract codes', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=200&excludeNotForUI=true`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(
+      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode')
+    ).toHaveLength(109);
+    const abstractCode = expansion.contains?.find((c) => c.code === '_PersonalRelationshipRoleType');
+    expect(abstractCode).toBeUndefined();
   });
 });

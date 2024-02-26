@@ -1,4 +1,4 @@
-import { CodeSystem, CodeSystemConcept, Coding, Resource } from '@medplum/fhirtypes';
+import { CodeSystem, CodeSystemConcept, CodeSystemConceptProperty, Coding, Resource } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { DeleteQuery } from '../sql';
@@ -31,7 +31,7 @@ export class CodingTable extends LookupTable<Coding> {
       await this.deleteValuesForResource(client, resource);
 
       const elements = this.getCodeSystemElements(resource);
-      await importCodeSystem(client, resource as CodeSystem, elements.concepts, elements.properties);
+      await importCodeSystem(client, resource, elements.concepts, elements.properties);
     }
   }
 
@@ -85,16 +85,34 @@ export class CodingTable extends LookupTable<Coding> {
   ): void {
     const { code, display } = concept;
     result.concepts = append(result.concepts, { code, display });
+
+    if (concept.property) {
+      for (const prop of concept.property) {
+        result.properties = append(result.properties, { code, property: prop.code, value: getPropertyValue(prop) });
+      }
+    }
+
     if (concept.concept) {
       for (const child of concept.concept) {
         this.addCodeSystemConcepts(codeSystem, child, result);
         result.properties = append(result.properties, {
-          code: child.code as string,
+          code: child.code,
           property:
             codeSystem.property?.find((p) => p.uri === parentProperty)?.code ?? codeSystem.hierarchyMeaning ?? 'parent',
-          value: code as string,
+          value: code,
         });
       }
     }
   }
+}
+
+function getPropertyValue(prop: CodeSystemConceptProperty): string {
+  if (prop.valueBoolean !== undefined) {
+    return prop.valueBoolean ? 'true' : 'false';
+  } else if (prop.valueCode) {
+    return prop.valueCode;
+  } else if (prop.valueString) {
+    return prop.valueString;
+  }
+  return '';
 }

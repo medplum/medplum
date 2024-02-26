@@ -1,5 +1,5 @@
 import { allOk, badRequest, OperationOutcomeError, Operator, Operator as SearchOperator } from '@medplum/core';
-import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { CodeSystem, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { sendOutcome } from '../outcomes';
@@ -307,12 +307,7 @@ async function includeInExpansion(
       switch (condition.op) {
         case 'is-a':
           {
-            const coding = await validateCode(codeSystem, condition.value);
-            if (!coding) {
-              ctx.logger.warn('Invalid parent code in ValueSet', { codeSystem: codeSystem.id, code: condition.value });
-              return; // Invalid parent code, don't make DB query with incorrect filters
-            }
-            query = addParentCondition(query, codeSystem, coding);
+            query = addParentCondition(query, codeSystem, condition.value);
           }
           break;
         default:
@@ -322,6 +317,10 @@ async function includeInExpansion(
     }
   }
 
+  if (params.excludeNotForUI) {
+    query = addAbstractFilter(query, codeSystem);
+  }
+
   const results = await query.execute(ctx.repo.getDatabaseClient());
   const system = codeSystem.url;
   for (const { code, display } of results) {
@@ -329,7 +328,7 @@ async function includeInExpansion(
   }
 }
 
-function addParentCondition(query: SelectQuery, codeSystem: CodeSystem, parent: Coding): SelectQuery {
+function addParentCondition(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
   if (codeSystem.hierarchyMeaning !== 'is-a') {
     throw new OperationOutcomeError(
       badRequest(
@@ -344,7 +343,12 @@ function addParentCondition(query: SelectQuery, codeSystem: CodeSystem, parent: 
     property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
   }
 
-  const base = new SelectQuery('Coding').column('id').column('code').column('display').where('id', '=', parent.id);
+  const base = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('display')
+    .where('system', '=', codeSystem.id)
+    .where('code', '=', parentCode);
 
   const propertyTable = query.getNextJoinAlias();
   query.innerJoin(
@@ -379,4 +383,35 @@ function addParentCondition(query: SelectQuery, codeSystem: CodeSystem, parent: 
     .withRecursive('cte_descendants', new Union(base, query))
     .limit(query.limit_)
     .offset(offset);
+}
+
+export const abstractProperty = 'http://hl7.org/fhir/concept-properties#notSelectable';
+
+function addAbstractFilter(query: SelectQuery, codeSystem: CodeSystem): SelectQuery {
+  const property = codeSystem.property?.find((p) => p.uri === abstractProperty);
+  if (!property) {
+    return query;
+  }
+
+  const propertyTable = query.getNextJoinAlias();
+  query.leftJoin(
+    'Coding_Property',
+    propertyTable,
+    new Conjunction([
+      new Condition(new Column(query.tableName, 'id'), '=', new Column(propertyTable, 'coding')),
+      new Condition(new Column(propertyTable, 'value'), '=', 'true'),
+    ])
+  );
+
+  const csPropertyTable = query.getNextJoinAlias();
+  query.leftJoin(
+    'CodeSystem_Property',
+    csPropertyTable,
+    new Conjunction([
+      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+    ])
+  );
+  query.where(new Column(csPropertyTable, 'id'), '=', null);
+  return query;
 }
