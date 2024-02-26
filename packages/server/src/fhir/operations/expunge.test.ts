@@ -50,6 +50,7 @@ describe('Expunge', () => {
     // Expect the patient to be in the "Patient" and "Patient_History" tables
     expect(await existsInDatabase('Patient', patient.id)).toBe(true);
     expect(await existsInDatabase('Patient_History', patient.id)).toBe(true);
+    expect(await existsInLookupTable('HumanName', patient.id)).toBe(true);
 
     // Expunge the resource
     const res = await request(app)
@@ -63,6 +64,8 @@ describe('Expunge', () => {
     // Expect the patient to be removed from both tables
     expect(await existsInDatabase('Patient', patient.id)).toBe(false);
     expect(await existsInDatabase('Patient_History', patient.id)).toBe(false);
+    // Also expect lookup table to be cleaned up
+    expect(await existsInLookupTable('HumanName', patient.id)).toBe(false);
   });
 
   test('Expunge project compartment', async () => {
@@ -186,5 +189,10 @@ async function existsInCache(resourceType: string, id: string | undefined): Prom
 
 async function existsInDatabase(tableName: string, id: string | undefined): Promise<boolean> {
   const rows = await new SelectQuery(tableName).column('id').where('id', '=', id).execute(getDatabasePool());
+  return rows.length > 0;
+}
+
+async function existsInLookupTable(tableName: string, id: string | undefined): Promise<boolean> {
+  const rows = await new SelectQuery(tableName).column('id').where('resourceId', '=', id).execute(getDatabasePool());
   return rows.length > 0;
 }

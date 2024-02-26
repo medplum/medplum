@@ -937,12 +937,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param id - The resource ID.
    */
   async expungeResource(resourceType: string, id: string): Promise<void> {
-    if (!this.isSuperAdmin()) {
-      throw new OperationOutcomeError(forbidden);
-    }
-    await new DeleteQuery(resourceType).where('id', '=', id).execute(this.getDatabaseClient());
-    await new DeleteQuery(resourceType + '_History').where('id', '=', id).execute(this.getDatabaseClient());
-    await deleteCacheEntry(resourceType, id);
+    await this.expungeResources(resourceType, [id]);
   }
 
   /**
@@ -955,9 +950,14 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
-    await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
-    await deleteCacheEntries(resourceType, ids);
+    await this.withTransaction(async (client) => {
+      for (const id of ids) {
+        await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+      }
+      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
+      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
+      await deleteCacheEntries(resourceType, ids);
+    });
   }
 
   /**
@@ -970,10 +970,16 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(this.getDatabaseClient());
-    await new DeleteQuery(resourceType + '_History')
-      .where('lastUpdated', '<=', before)
-      .execute(this.getDatabaseClient());
+    await this.withTransaction(async (client) => {
+      const ids = await new DeleteQuery(resourceType)
+        .where('lastUpdated', '<=', before)
+        .returnColumn('id')
+        .execute(client);
+      await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
+      for (const { id } of ids) {
+        await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+      }
+    });
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
