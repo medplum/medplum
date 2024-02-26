@@ -1,11 +1,11 @@
 import { HTTP_HL7_ORG, createReference, deepClone, loadDataType } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 import { Observation, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
-import { act, fireEvent, render, screen, waitFor, within } from '../test-utils/render';
+import { act, fireEvent, render, screen, within } from '../test-utils/render';
 import { ResourceForm, ResourceFormProps } from './ResourceForm';
-import { readJson } from '@medplum/definitions';
 
 const medplum = new MockClient();
 
@@ -55,7 +55,7 @@ describe('ResourceForm', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Resource Type'));
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     const control = screen.getByText('Resource Type');
     expect(control).toBeDefined();
@@ -71,7 +71,7 @@ describe('ResourceForm', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Resource Type'));
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     const control = screen.getByText('Resource Type');
     expect(control).toBeDefined();
@@ -87,7 +87,7 @@ describe('ResourceForm', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Resource Type'));
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -106,7 +106,7 @@ describe('ResourceForm', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Resource Type'));
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     const control = screen.getByText('Resource Type');
     expect(control).toBeDefined();
@@ -120,7 +120,7 @@ describe('ResourceForm', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Resource Type'));
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     const control = screen.getByText('Resource Type');
     expect(control).toBeDefined();
@@ -142,7 +142,7 @@ describe('ResourceForm', () => {
       onSubmit,
     });
 
-    await waitFor(() => screen.getByText('Resource Type'));
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     // Change the value[x] from Quantity to string
     // and set a value
@@ -201,7 +201,7 @@ describe('ResourceForm', () => {
 
     await setup({ defaultValue: { resourceType: 'Specimen' }, onSubmit });
 
-    await waitFor(() => screen.getByText('Resource Type'));
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('collected[x]'), { target: { value: localString } });
@@ -224,7 +224,7 @@ describe('ResourceForm', () => {
 
     await setup({ defaultValue: { resourceType: 'Patient' }, onSubmit });
 
-    await waitFor(() => screen.getByText('Resource Type'));
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Active'));
@@ -332,13 +332,13 @@ describe('ResourceForm', () => {
       fireEvent.change(ombCategoryInput, { target: { value: 'custom-omb-category-value' } });
     });
 
-    await waitFor(() => screen.getByText('+ Create custom-omb-category-value'));
+    expect(await screen.findByText('+ Create custom-omb-category-value')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('+ Create custom-omb-category-value'));
     });
 
-    await waitFor(() => screen.getByText('custom-omb-category-value'));
+    expect(await screen.findByText('custom-omb-category-value')).toBeInTheDocument();
 
     await act(async () => {
       const textInput = within(within(raceExtension).getByTestId('slice-text')).getByTestId('value[x]');

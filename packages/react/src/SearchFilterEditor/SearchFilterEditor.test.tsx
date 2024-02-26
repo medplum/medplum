@@ -387,9 +387,7 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('6'));
-    });
+    expect(await screen.findByText('6')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));

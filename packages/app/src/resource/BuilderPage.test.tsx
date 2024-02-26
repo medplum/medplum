@@ -6,7 +6,7 @@ import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -40,7 +40,7 @@ describe('BuilderPage', () => {
     } as PlanDefinition);
 
     await setup(`/PlanDefinition/${planDefinition.id}/builder`);
-    await waitFor(() => screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -55,7 +55,7 @@ describe('BuilderPage', () => {
     } as Questionnaire);
 
     await setup(`/Questionnaire/${questionnaire.id}/builder`);
-    await waitFor(() => screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save' }));

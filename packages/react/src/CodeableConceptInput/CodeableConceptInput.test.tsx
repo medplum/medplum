@@ -1,7 +1,7 @@
 import { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { CodeableConceptInput, CodeableConceptInputProps } from './CodeableConceptInput';
 
 const medplum = new MockClient();
@@ -93,13 +93,13 @@ describe('CodeableConceptInput', () => {
       fireEvent.change(input, { target: { value: 'XYZ' } });
     });
 
-    await waitFor(() => screen.getByText('+ Create XYZ'));
+    expect(await screen.findByText('+ Create XYZ')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('+ Create XYZ'));
     });
 
-    await waitFor(() => screen.getByText('XYZ'));
+    expect(await screen.findByText('XYZ')).toBeInTheDocument();
 
     expect(currValue).toMatchObject({
       coding: [
@@ -134,6 +134,6 @@ describe('CodeableConceptInput', () => {
       fireEvent.change(input, { target: { value: 'XYZ' } });
     });
 
-    await waitFor(() => screen.getByText('+ Create XYZ'));
+    expect(await screen.findByText('+ Create XYZ')).toBeInTheDocument();
   });
 });

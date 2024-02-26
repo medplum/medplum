@@ -3,7 +3,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
-import { act, render, screen, waitFor } from '../test-utils/render';
+import { act, render, screen } from '../test-utils/render';
 import { ResourceHeader } from './ResourceHeader';
 
 const medplum = new MockClient();
@@ -92,9 +92,7 @@ describe('ResourceHeader', () => {
       reference: 'Organization/123',
     });
 
-    await waitFor(() => screen.getByText('Test Organization'));
-
-    expect(screen.getByText('Test Organization')).toBeInTheDocument();
+    expect(await screen.findByText('Test Organization')).toBeInTheDocument();
   });
 
   test('Handles null identifier', async () => {

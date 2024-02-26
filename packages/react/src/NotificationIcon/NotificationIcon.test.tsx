@@ -3,7 +3,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { IconMail } from '@tabler/icons-react';
 import 'jest-websocket-mock';
-import { act, render, screen, waitFor } from '../test-utils/render';
+import { act, render, screen } from '../test-utils/render';
 import { NotificationIcon } from './NotificationIcon';
 
 describe('NotificationIcon()', () => {
@@ -51,9 +51,7 @@ describe('NotificationIcon()', () => {
     });
 
     // Wait for the indicator to change
-    await waitFor(() => screen.getByText('1'));
-
     // After emitting a message, the count should be 1, and the indicator should be shown
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(await screen.findByText('1')).toBeInTheDocument();
   });
 });

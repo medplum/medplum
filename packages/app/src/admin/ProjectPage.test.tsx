@@ -2,7 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -34,19 +34,17 @@ describe('ProjectPage', () => {
 
   test('Renders', async () => {
     await setup('/admin/details');
-    await waitFor(() => screen.queryAllByText('Project 123'));
-    expect(screen.queryAllByText('Project 123')).toHaveLength(2);
+    expect(await screen.findAllByText('Project 123')).toHaveLength(2);
   });
 
   test('Backwards compat', async () => {
     await setup('/admin/project');
-    await waitFor(() => screen.queryAllByText('Project 123'));
-    expect(screen.queryAllByText('Project 123')).toHaveLength(2);
+    expect(await screen.findAllByText('Project 123')).toHaveLength(2);
   });
 
   test('Tab change', async () => {
     await setup('/admin/details');
-    await waitFor(() => screen.getByText('Users'));
+    expect(await screen.findByText('Users')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Users'));
@@ -57,25 +55,21 @@ describe('ProjectPage', () => {
 
   test('Users page', async () => {
     await setup('/admin/users');
-    await waitFor(() => screen.getByText('Invite new user'));
-    expect(screen.getByText('Invite new user')).toBeInTheDocument();
+    expect(await screen.findByText('Invite new user')).toBeInTheDocument();
   });
 
   test('Patients page', async () => {
     await setup('/admin/patients');
-    await waitFor(() => screen.getByText('Invite new patient'));
-    expect(screen.getByText('Invite new patient')).toBeInTheDocument();
+    expect(await screen.findByText('Invite new patient')).toBeInTheDocument();
   });
 
   test('Clients page', async () => {
     await setup('/admin/clients');
-    await waitFor(() => screen.getByText('Create new client'));
-    expect(screen.getByText('Create new client')).toBeInTheDocument();
+    expect(await screen.findByText('Create new client')).toBeInTheDocument();
   });
 
   test('Bots page', async () => {
     await setup('/admin/bots');
-    await waitFor(() => screen.getByText('Create new bot'));
-    expect(screen.getByText('Create new bot')).toBeInTheDocument();
+    expect(await screen.findByText('Create new bot')).toBeInTheDocument();
   });
 });

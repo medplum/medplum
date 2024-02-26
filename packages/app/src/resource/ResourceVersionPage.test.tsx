@@ -2,7 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -31,7 +31,7 @@ describe('ResourceVersionPage', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Resource not found'));
+      expect(await screen.findByText('Resource not found')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Resource not found')).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('ResourceVersionPage', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Version not found'));
+      expect(await screen.findByText('Version not found')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Version not found')).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe('ResourceVersionPage', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Diff'));
+      expect(await screen.findByText('Diff')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Diff')).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe('ResourceVersionPage', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Diff'));
+      expect(await screen.findByText('Diff')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Diff')).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('ResourceVersionPage', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Raw'));
+      expect(await screen.findByText('Raw')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Raw')).toBeInTheDocument();
@@ -91,7 +91,7 @@ describe('ResourceVersionPage', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Diff'));
+      expect(await screen.findByText('Diff')).toBeInTheDocument();
     });
 
     await act(async () => {

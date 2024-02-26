@@ -3,7 +3,7 @@ import { ExampleUserConfiguration, HomerServiceRequest, MockClient } from '@medp
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 medplum.getUserConfiguration = () => ExampleUserConfiguration;
@@ -25,7 +25,7 @@ describe('QuickStatus', () => {
     await setup(`/${getReferenceString(HomerServiceRequest)}`);
 
     // Wait for the page to load
-    await waitFor(() => screen.getByDisplayValue('ORDERED'));
+    expect(await screen.findByDisplayValue('ORDERED')).toBeInTheDocument();
 
     // Expect the status selector to be visible
     expect(screen.getByDisplayValue('ORDERED')).toBeInTheDocument();

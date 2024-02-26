@@ -36,7 +36,7 @@ describe('useSearch hooks', () => {
 
   test('Happy path', async () => {
     await setup(<TestComponent />);
-    await waitFor(() => screen.getByText('All OK'));
+    expect(await screen.findByText('All OK')).toBeInTheDocument();
 
     const el = screen.getByTestId('resources');
     expect(el).toBeInTheDocument();

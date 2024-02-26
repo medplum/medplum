@@ -6,7 +6,7 @@ import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 describe('AppsPage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -30,16 +30,12 @@ describe('AppsPage', () => {
 
   test('No apps found', async () => {
     await setup('/Bot/123/apps');
-    await waitFor(() => screen.getByText('No apps found.', { exact: false }));
-
-    expect(screen.getByText('No apps found.', { exact: false })).toBeInTheDocument();
+    expect(await screen.findByText('No apps found.', { exact: false })).toBeInTheDocument();
   });
 
   test('Patient apps', async () => {
     await setup('/Patient/123/apps');
-    await waitFor(() => screen.getByText('Apps'));
-
-    expect(screen.getByText('Apps')).toBeInTheDocument();
+    expect(await screen.findByText('Apps')).toBeInTheDocument();
     expect(screen.getByText('Vitals')).toBeInTheDocument();
   });
 
@@ -53,8 +49,7 @@ describe('AppsPage', () => {
     });
 
     await setup('/Patient/123/apps');
-    await waitFor(() => screen.getByText('Apps'));
-
+    expect(await screen.findByText('Apps')).toBeInTheDocument();
     expect(screen.getByText('Inferno Client')).toBeInTheDocument();
     expect(screen.getByText('Client application used for Inferno ONC compliance testing')).toBeInTheDocument();
 
@@ -75,8 +70,7 @@ describe('AppsPage', () => {
     });
 
     await setup('/Encounter/123/apps');
-    await waitFor(() => screen.getByText('Apps'));
-
+    expect(await screen.findByText('Apps')).toBeInTheDocument();
     expect(screen.getByText('Inferno Client')).toBeInTheDocument();
     expect(screen.getByText('Client application used for Inferno ONC compliance testing')).toBeInTheDocument();
 
@@ -100,8 +94,7 @@ describe('AppsPage', () => {
     });
 
     await setup('/Patient/123/apps', medplum);
-    await waitFor(() => screen.getByText('Apps'));
-
+    expect(await screen.findByText('Apps')).toBeInTheDocument();
     expect(screen.getByText('Apps')).toBeInTheDocument();
     expect(screen.getByText('Vitals')).toBeInTheDocument();
   });

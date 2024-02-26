@@ -2,7 +2,7 @@ import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
-import { act, render, screen, waitFor } from '../test-utils/render';
+import { act, render, screen } from '../test-utils/render';
 import { ResourceAvatar, ResourceAvatarProps } from './ResourceAvatar';
 import { getInitials } from './ResourceAvatar.utils';
 
@@ -41,9 +41,7 @@ describe('ResourceAvatar', () => {
       value: HomerSimpson,
     });
 
-    await waitFor(() => screen.getByAltText('Homer Simpson'));
-
-    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
+    expect(await screen.findByAltText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Avatar renders resource directly as link', async () => {
@@ -52,9 +50,7 @@ describe('ResourceAvatar', () => {
       link: true,
     });
 
-    await waitFor(() => screen.getByAltText('Homer Simpson'));
-
-    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
+    expect(await screen.findByAltText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Avatar renders after loading the resource', async () => {
@@ -62,9 +58,7 @@ describe('ResourceAvatar', () => {
       value: createReference(HomerSimpson),
     });
 
-    await waitFor(() => screen.getByAltText('Homer Simpson'));
-
-    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
+    expect(await screen.findByAltText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('getInitials', () => {
