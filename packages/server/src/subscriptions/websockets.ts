@@ -25,7 +25,7 @@ export interface BindWithTokenMsg extends BaseSubscriptionClientMsg {
 export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
   const redis = getRedis();
   const subscriptionIds = [] as string[];
-  let redisSubscriber: Redis;
+  let redisSubscriber: Redis | undefined;
   let onDisconnect: (() => Promise<void>) | undefined;
   let heartbeatHandler: (() => void) | undefined;
 
@@ -52,7 +52,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
       });
 
       onDisconnect = async (): Promise<void> => {
-        redisSubscriber.disconnect();
+        await redisSubscriber?.quit();
         const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
         if (!cacheEntryStr) {
           globalLogger.error('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect.');
@@ -103,7 +103,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     }
   });
 
-  socket.on('close', async () => {
+  socket.on('close', () => {
     if (onDisconnect) {
       onDisconnect().catch(console.error);
     }

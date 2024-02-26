@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'async_hooks';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';
 import http, { IncomingMessage } from 'http';
@@ -36,7 +37,7 @@ export function initWebSockets(server: http.Server): void {
     // Add a default error handler to the socket
     // If we don't do this, then errors will be thrown and crash the server
     socket.on('error', (err) => {
-      globalLogger.error('WebSocket connection error', err);
+      globalLogger.error('WebSocket connection error', { error: err });
     });
 
     const path = getWebSocketPath(request.url as string);
@@ -84,12 +85,15 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
     socket.send(message, { binary: false });
   });
 
-  socket.on('message', async (data: ws.RawData) => {
-    await getRedis().publish(channel, data as Buffer);
-  });
+  socket.on(
+    'message',
+    AsyncLocalStorage.bind(async (data: ws.RawData) => {
+      await getRedis().publish(channel, data as Buffer);
+    })
+  );
 
-  socket.on('close', async () => {
-    redisSubscriber.disconnect();
+  socket.on('close', () => {
+    redisSubscriber.quit().catch(console.error);
   });
 }
 

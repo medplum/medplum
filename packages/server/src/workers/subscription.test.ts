@@ -25,7 +25,6 @@ import { AuditEventOutcome } from '../util/auditevent';
 import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
 
 jest.mock('node-fetch');
-jest.mock('ioredis');
 
 describe('Subscription Worker', () => {
   const systemRepo = getSystemRepo();
@@ -1508,6 +1507,7 @@ describe('Subscription Worker', () => {
       expect(queue.add).toHaveBeenCalled();
 
       await deferredPromise;
+      await subscriber.quit();
     }));
 
   test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
@@ -1576,6 +1576,7 @@ describe('Subscription Worker', () => {
       }, 150);
 
       await deferredPromise;
+      await subscriber.quit();
       expect(console.log).toHaveBeenLastCalledWith(expect.stringMatching(/WebSocket Subscriptions/));
 
       console.log = originalConsoleLog;

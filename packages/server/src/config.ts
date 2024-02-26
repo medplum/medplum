@@ -88,6 +88,8 @@ export interface MedplumRedisConfig {
   host?: string;
   port?: number;
   password?: string;
+  /** The logical database to use for Redis. See: https://redis.io/commands/select/. Default is `0`. */
+  db?: number;
   tls?: Record<string, unknown>;
 }
 
@@ -159,6 +161,8 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
   config.database.port = process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
+  config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
+  config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   return config;
 }
 

@@ -22,7 +22,6 @@ import { withTestContext } from '../test.setup';
 import { execSubscriptionJob, getSubscriptionQueue } from '../workers/subscription';
 
 jest.mock('hibp');
-jest.mock('ioredis');
 
 describe('WebSockets Subscriptions', () => {
   let app: Express;
@@ -38,6 +37,7 @@ describe('WebSockets Subscriptions', () => {
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
     server = await initApp(app, config);
+    await getRedis().flushdb();
 
     const response = await withTestContext(() =>
       registerNew({
@@ -113,7 +113,6 @@ describe('WebSockets Subscriptions', () => {
       let version2: Patient;
       await request(server)
         .ws('/ws/subscriptions-r4')
-        .set('Authorization', 'Bearer ' + accessToken)
         .sendJson({ type: 'bind-with-token', payload: { token } })
         // Add a new patient for this project
         .exec(async () => {
@@ -229,7 +228,6 @@ describe('WebSockets Subscriptions', () => {
 
       await request(server)
         .ws('/ws/subscriptions-r4')
-        .set('Authorization', 'Bearer ' + accessToken)
         .sendJson({ type: 'bind-with-token', payload: { token: accessToken } }) // We accidentally reused access token instead of token for sub
         // Add a new patient for this project
         .exec(async () => {
@@ -285,6 +283,7 @@ describe('Subscription Heartbeat', () => {
     config = await loadTestConfig();
     config.heartbeatMilliseconds = 25;
     server = await initApp(app, config);
+    await getRedis().flushdb();
 
     const response = await withTestContext(() =>
       registerNew({
@@ -344,7 +343,6 @@ describe('Subscription Heartbeat', () => {
 
       await request(server)
         .ws('/ws/subscriptions-r4')
-        .set('Authorization', 'Bearer ' + accessToken)
         .sendJson({ type: 'bind-with-token', payload: { token: body.parameter?.[0]?.valueString as string } })
         .expectJson((msg) => {
           if (!msg.entry?.[0]) {
@@ -374,7 +372,6 @@ describe('Subscription Heartbeat', () => {
     withTestContext(async () => {
       await request(server)
         .ws('/ws/subscriptions-r4')
-        .set('Authorization', 'Bearer ' + accessToken)
         .exec(async (ws) => {
           await new Promise<void>((resolve, reject) => {
             ws.addEventListener('message', () => {

@@ -46,7 +46,6 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import { getSystemRepo, Repository } from './repo';
 
 jest.mock('hibp');
-jest.mock('ioredis');
 
 describe('FHIR Search', () => {
   describe('project-scoped Repository', () => {

@@ -208,7 +208,7 @@ export async function shutdownApp(): Promise<void> {
   await closeDatabase();
   cleanupHeartbeat();
   await closeWebSockets();
-  closeRedis();
+  await closeRedis();
   closeRateLimiter();
 
   if (server) {

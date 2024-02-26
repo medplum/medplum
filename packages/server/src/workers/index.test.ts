@@ -20,6 +20,6 @@ describe('Workers', () => {
     initWorkers(config);
     await closeWorkers();
     await closeDatabase();
-    closeRedis();
+    await closeRedis();
   });
 });
