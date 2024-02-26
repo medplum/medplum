@@ -47,6 +47,8 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
   const { setEmail, onRegister, handleAuthResponse, children, disableEmailAuth, ...baseLoginRequest } = props;
   const medplum = useMedplum();
   const googleClientId = !props.disableGoogleAuth && getGoogleClientId(props.googleClientId);
+  const [outcome, setOutcome] = useState<OperationOutcome>();
+  const issues = getIssuesForExpression(outcome, undefined);
 
   const isExternalAuth = useCallback(
     async (authMethod: any): Promise<boolean> => {
@@ -78,12 +80,16 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   const handleGoogleCredential = useCallback(
     async (response: GoogleCredentialResponse) => {
-      const authResponse = await medplum.startGoogleLogin({
-        ...baseLoginRequest,
-        googleCredential: response.credential,
-      } as GoogleLoginRequest);
-      if (!(await isExternalAuth(authResponse))) {
-        handleAuthResponse(authResponse);
+      try {
+        const authResponse = await medplum.startGoogleLogin({
+          ...baseLoginRequest,
+          googleCredential: response.credential,
+        } as GoogleLoginRequest);
+        if (!(await isExternalAuth(authResponse))) {
+          handleAuthResponse(authResponse);
+        }
+      } catch (err) {
+        setOutcome(normalizeOperationOutcome(err));
       }
     },
     [medplum, baseLoginRequest, isExternalAuth, handleAuthResponse]
@@ -92,6 +98,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
   return (
     <Form style={{ maxWidth: 400 }} onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
+      <OperationOutcomeAlert issues={issues} />
       {googleClientId && (
         <>
           <Group justify="center" p="xl" style={{ height: 70 }}>
@@ -108,6 +115,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           placeholder="name@domain.com"
           required={true}
           autoFocus={true}
+          error={getErrorsForInput(outcome, 'email')}
         />
       )}
       <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">

@@ -1,10 +1,10 @@
 import { Title } from '@mantine/core';
 import { allOk, badRequest, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
-import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SignInForm, SignInFormProps } from './SignInForm';
 
 function mockFetch(url: string, options: any): Promise<any> {
@@ -78,11 +78,17 @@ function mockFetch(url: string, options: any): Promise<any> {
       };
     }
   } else if (options.method === 'POST' && url.endsWith('auth/google')) {
-    status = 200;
-    result = {
-      login: '1',
-      code: '1',
-    };
+    const { googleClientId } = JSON.parse(options.body);
+    if (googleClientId === 'user-not-found') {
+      status = 400;
+      result = badRequest('User not found');
+    } else {
+      status = 200;
+      result = {
+        login: '1',
+        code: '1',
+      };
+    }
   } else if (options.method === 'POST' && url.endsWith('auth/newproject')) {
     status = 200;
     result = {
@@ -644,6 +650,59 @@ describe('SignInForm', () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByText('Success')).toBeInTheDocument());
 
+    expect(google.accounts.id.initialize).toHaveBeenCalled();
+    expect(google.accounts.id.renderButton).toHaveBeenCalled();
+    expect(google.accounts.id.prompt).toHaveBeenCalled();
+  });
+
+  test('Google user not found', async () => {
+    const clientId = 'user-not-found';
+    let callback: ((response: GoogleCredentialResponse) => void) | undefined = undefined;
+
+    const google = {
+      accounts: {
+        id: {
+          initialize: jest.fn((args: any) => {
+            callback = args.callback;
+          }),
+          renderButton: jest.fn((parent: HTMLElement) => {
+            const button = document.createElement('div');
+            button.innerHTML = 'Sign in with Google';
+            button.addEventListener('click', () => google.accounts.id.prompt());
+            parent.appendChild(button);
+          }),
+          prompt: jest.fn(() => {
+            if (callback) {
+              callback({
+                clientId,
+                credential: '123123123',
+              });
+            }
+          }),
+        },
+      },
+    };
+
+    (window as any).google = google;
+
+    const onSuccess = jest.fn();
+
+    await act(async () => {
+      await setup({
+        onSuccess,
+        googleClientId: clientId,
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText('Sign in with Google')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in with Google'));
+    });
+
+    await waitFor(() => expect(screen.getByText('User not found')).toBeInTheDocument());
+
+    expect(onSuccess).not.toHaveBeenCalled();
     expect(google.accounts.id.initialize).toHaveBeenCalled();
     expect(google.accounts.id.renderButton).toHaveBeenCalled();
     expect(google.accounts.id.prompt).toHaveBeenCalled();
