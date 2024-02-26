@@ -15,7 +15,7 @@ import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
-const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
+const IGNORED_PROPERTIES = new Set(DEFAULT_IGNORED_PROPERTIES.filter((prop) => !EXTENSION_KEYS.has(prop)));
 
 export interface BackboneElementDisplayProps {
   readonly value: TypedValue;

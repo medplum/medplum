@@ -31,7 +31,7 @@ import classes from './ResourcePropertyDisplay.module.css';
 export interface ResourcePropertyDisplayProps {
   readonly property?: InternalSchemaElement;
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
-  readonly path: string;
+  readonly path?: string;
   readonly propertyType: string;
   readonly value: any;
   readonly arrayElement?: boolean;
@@ -149,6 +149,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <>{formatTiming(value)}</>;
     case PropertyType.Dosage:
     case PropertyType.UsageContext:
+      if (!props.path) {
+        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+      }
       return (
         <BackboneElementDisplay
           path={props.path}
@@ -158,6 +161,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
         />
       );
     case PropertyType.Extension:
+      if (!props.path) {
+        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+      }
       return maybeWithLeftBorder(
         isArrayElement,
         <ExtensionDisplay
@@ -171,6 +177,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     default:
       if (!property) {
         throw Error(`Displaying property of type ${props.propertyType} requires element schema`);
+      }
+      if (!props.path) {
+        throw Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return maybeWithLeftBorder(
         isArrayElement,

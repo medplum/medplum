@@ -1,4 +1,4 @@
-import { InternalSchemaElement, SliceDefinitionWithTypes, isEmpty } from '@medplum/core';
+import { InternalSchemaElement, SliceDefinitionWithTypes } from '@medplum/core';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { useState, useContext, useEffect } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -9,7 +9,7 @@ import { Stack } from '@mantine/core';
 
 export interface ResourceArrayDisplayProps {
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
-  readonly path: string;
+  readonly path?: string;
   readonly property: InternalSchemaElement;
   readonly propertyType: string;
   readonly values: any[];
@@ -18,7 +18,8 @@ export interface ResourceArrayDisplayProps {
 }
 
 export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element | null {
-  const { property, propertyType, values } = props;
+  const { property, propertyType } = props;
+  const [values] = useState<any[]>(() => (Array.isArray(props.values) ? props.values : []));
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
   const [slices, setSlices] = useState<SliceDefinitionWithTypes[]>([]);
@@ -46,10 +47,6 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
     return <div>Loading...</div>;
   }
 
-  if (isEmpty(props.values)) {
-    return null;
-  }
-
   const nonSliceIndex = slices.length;
   const nonSliceValues = slicedValues[nonSliceIndex];
   const showNonSliceValues = property.type[0]?.code !== 'Extension';
@@ -57,6 +54,9 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
   return (
     <Stack gap="sm">
       {slices.map((slice, sliceIndex) => {
+        if (!props.path) {
+          throw Error(`Displaying a resource property with slices of type ${props.propertyType} requires path`);
+        }
         return (
           <SliceDisplay
             path={props.path}

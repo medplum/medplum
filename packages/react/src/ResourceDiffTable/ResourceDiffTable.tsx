@@ -41,7 +41,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
     const typedRevised = [toTypedValue(revised)];
     const result = [];
 
-    // First, we filter and conslidate the patch operations
+    // First, we filter and consolidate the patch operations
     // We can do this because we do not use the "value" field in the patch operations
     // Remove patch operations on meta elements such as "meta.lastUpdated" and "meta.versionId"
     // Consolidate patch operations on arrays
@@ -57,6 +57,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
       result.push({
         key: `op-${op.op}-${op.path}`,
         name: `${capitalize(op.op)} ${fhirPath}`,
+        path: property?.path ?? original.resourceType + '.' + fhirPath,
         property: property,
         originalValue: touchUpValue(property, originalValue),
         revisedValue: touchUpValue(property, revisedValue),
@@ -86,6 +87,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
             <Table.Td className={classes.removed}>
               {row.originalValue && (
                 <ResourcePropertyDisplay
+                  path={row.path}
                   property={row.property}
                   propertyType={row.originalValue.type}
                   value={row.originalValue.value}
@@ -96,6 +98,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
             <Table.Td className={classes.added}>
               {row.revisedValue && (
                 <ResourcePropertyDisplay
+                  path={row.path}
                   property={row.property}
                   propertyType={row.revisedValue.type}
                   value={row.revisedValue.value}
