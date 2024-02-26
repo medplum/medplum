@@ -5,7 +5,6 @@ import {
   MedplumClient,
   Operator,
   allOk,
-  arrayify,
   badRequest,
   createReference,
   getIdentifier,
@@ -590,7 +589,7 @@ async function createAuditEvent(
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
     outcomeDesc,
-    extension: arrayify(buildTracingExtension()),
+    extension: buildTracingExtension(),
   };
 
   const destination = bot.auditEventDestination ?? ['resource'];

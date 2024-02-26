@@ -1,12 +1,4 @@
-import {
-  arrayify,
-  createReference,
-  evalFhirPathTyped,
-  getExtension,
-  isResource,
-  Operator,
-  toTypedValue,
-} from '@medplum/core';
+import { createReference, evalFhirPathTyped, getExtension, isResource, Operator, toTypedValue } from '@medplum/core';
 import {
   AuditEvent,
   AuditEventEntity,
@@ -18,7 +10,7 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { getLogger, buildTracingExtension } from '../context';
+import { buildTracingExtension, getLogger } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
 
@@ -91,7 +83,7 @@ export async function createAuditEvent(
     entity: createAuditEventEntities(resource, subscription, bot),
     outcome,
     outcomeDesc,
-    extension: arrayify(buildTracingExtension()),
+    extension: buildTracingExtension(),
   });
 }
 

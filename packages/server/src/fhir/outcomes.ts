@@ -1,4 +1,4 @@
-import { arrayify, getStatus, isAccepted } from '@medplum/core';
+import { getStatus, isAccepted } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Response } from 'express';
@@ -32,6 +32,6 @@ export function sendOutcome(res: Response, outcome: OperationOutcome): Response 
   }
   return res.status(getStatus(outcome)).json({
     ...outcome,
-    extension: arrayify(buildTracingExtension()),
+    extension: buildTracingExtension(),
   } as OperationOutcome);
 }

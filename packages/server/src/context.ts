@@ -134,8 +134,13 @@ export function getTraceId(req: Request): string | undefined {
   return undefined;
 }
 
-export function buildTracingExtension(): Extension | undefined {
-  const ctx = getRequestContext();
+export function buildTracingExtension(): Extension[] | undefined {
+  const ctx = tryGetRequestContext();
+
+  if (ctx === undefined) {
+    return undefined;
+  }
+
   const subExtensions: Extension[] = [];
   if (ctx.requestId) {
     subExtensions.push({ url: 'requestId', valueId: ctx.requestId });
@@ -149,10 +154,12 @@ export function buildTracingExtension(): Extension | undefined {
     return undefined;
   }
 
-  return {
-    url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-    extension: subExtensions,
-  };
+  return [
+    {
+      url: 'https://medplum.com/fhir/StructureDefinition/tracing',
+      extension: subExtensions,
+    },
+  ];
 }
 
 function requestIds(req: Request): { requestId: string; traceId: string } {

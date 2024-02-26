@@ -1,4 +1,4 @@
-import { arrayify, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import {
   AuditEvent,
   AuditEventAgentNetwork,
@@ -240,7 +240,7 @@ function createAuditEvent(
     outcome,
     outcomeDesc,
     entity,
-    extension: arrayify(buildTracingExtension()),
+    extension: buildTracingExtension(),
   };
 
   return auditEvent;
