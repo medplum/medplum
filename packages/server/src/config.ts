@@ -82,7 +82,7 @@ export interface MedplumDatabaseConfig {
   username?: string;
   password?: string;
   ssl?: MedplumDatabaseSslConfig;
-  idleTimeout?: number;
+  queryTimeout?: number;
 }
 
 export interface MedplumRedisConfig {

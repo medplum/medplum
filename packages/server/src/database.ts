@@ -26,7 +26,6 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-    idleTimeoutMillis: config.idleTimeout ?? 60_000,
   };
 
   if (serverConfig.databaseProxyEndpoint) {
@@ -39,6 +38,12 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);
+  });
+
+  pool.on('connect', (client) => {
+    client.query(`SET statement_timeout = $1`, [config.queryTimeout ?? '60s']).catch((err) => {
+      globalLogger.warn('Failed to set query timeout', err);
+    });
   });
 
   let client: PoolClient | undefined;
