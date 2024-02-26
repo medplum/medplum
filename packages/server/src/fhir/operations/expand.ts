@@ -306,9 +306,7 @@ async function includeInExpansion(
     for (const condition of include.filter) {
       switch (condition.op) {
         case 'is-a':
-          {
-            query = addParentCondition(query, codeSystem, condition.value);
-          }
+          query = addParentCondition(query, codeSystem, condition.value);
           break;
         default:
           ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
