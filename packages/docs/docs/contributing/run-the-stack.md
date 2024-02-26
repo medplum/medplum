@@ -146,7 +146,7 @@ If everything is working, you should see the following in your browser:
 
 :::warning Troubleshooting
 
-If you get an error such as `error: role "admin@example.com" does not exist` or `password authentication failed for user "medplum"` this usually means you have another instance of Postgres running. Closing the other instance should resolve this issue.
+If you get an error such as `error: role "medplum" does not exist` or `password authentication failed for user "medplum"` this usually means you have another instance of Postgres running. Closing the other instance should resolve this issue.
 
 :::
 
