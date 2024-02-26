@@ -64,7 +64,8 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
             key={slice.name}
             property={property}
             value={slicedValues[sliceIndex]}
-            testId={`slice-${slice.name}`}
+            ignoreMissingValues={props.ignoreMissingValues}
+            link={props.link}
           />
         );
       })}

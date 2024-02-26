@@ -47,7 +47,7 @@ export function SliceDisplay(props: SliceDisplayProps): JSX.Element {
       {props.value.map((value, valueIndex) => {
         return (
           <ResourcePropertyDisplay
-            key={`${valueIndex}-${value.length}`}
+            key={`${valueIndex}-${props.value.length}`}
             property={property}
             path={props.path}
             arrayElement={true}

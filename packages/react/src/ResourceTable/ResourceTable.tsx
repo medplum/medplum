@@ -22,6 +22,9 @@ export interface ResourceTableProps {
    * and not use the latest version.
    */
   readonly forceUseInput?: boolean;
+
+  /** (optional) URL of the resource profile used to display the form. */
+  readonly profileUrl?: string;
 }
 
 export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
@@ -34,7 +37,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
   if (isPopulated(profileUrls)) {
     console.log(`Resource has ${profileUrls.length} profiles`);
   }
-  const profileUrl: string | undefined = profileUrls?.[0];
+  const profileUrl: string | undefined = props.profileUrl ?? profileUrls?.[0];
 
   useEffect(() => {
     if (!value) {
