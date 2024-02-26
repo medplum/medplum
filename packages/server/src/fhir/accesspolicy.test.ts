@@ -79,26 +79,27 @@ describe('AccessPolicy', () => {
       }
     }));
 
-  test('Access policy restricting search', async () => {
-    // Empty access policy effectively blocks all reads and writes
-    const accessPolicy: AccessPolicy = {
-      resourceType: 'AccessPolicy',
-    };
+  test('Access policy restricting search', () =>
+    withTestContext(async () => {
+      // Empty access policy effectively blocks all reads and writes
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+      };
 
-    const repo2 = new Repository({
-      author: {
-        reference: 'Practitioner/123',
-      },
-      accessPolicy,
-    });
+      const repo2 = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
 
-    try {
-      await repo2.search({ resourceType: 'Patient' });
-      fail('Expected error');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
-    }
-  });
+      try {
+        await repo2.search({ resourceType: 'Patient' });
+        fail('Expected error');
+      } catch (err) {
+        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+      }
+    }));
 
   test('Access policy restricting write', () =>
     withTestContext(async () => {

@@ -1,5 +1,5 @@
 import { LogLevel, Logger, ProfileResource, isUUID } from '@medplum/core';
-import { Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
@@ -132,6 +132,34 @@ export function getTraceId(req: Request): string | undefined {
   }
 
   return undefined;
+}
+
+export function buildTracingExtension(): Extension[] | undefined {
+  const ctx = tryGetRequestContext();
+
+  if (ctx === undefined) {
+    return undefined;
+  }
+
+  const subExtensions: Extension[] = [];
+  if (ctx.requestId) {
+    subExtensions.push({ url: 'requestId', valueId: ctx.requestId });
+  }
+
+  if (ctx.traceId) {
+    subExtensions.push({ url: 'traceId', valueId: ctx.traceId });
+  }
+
+  if (subExtensions.length === 0) {
+    return undefined;
+  }
+
+  return [
+    {
+      url: 'https://medplum.com/fhir/StructureDefinition/tracing',
+      extension: subExtensions,
+    },
+  ];
 }
 
 function requestIds(req: Request): { requestId: string; traceId: string } {

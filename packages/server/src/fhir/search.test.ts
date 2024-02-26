@@ -106,15 +106,16 @@ describe('FHIR Search', () => {
       });
     });
 
-    test('Search count=0', async () => {
-      const result1 = await repo.search({
-        resourceType: 'Patient',
-        count: 0,
-      });
-      expect(result1.entry).toBeUndefined();
-      expect(result1.link).toBeDefined();
-      expect(result1.link?.length).toBe(1);
-    });
+    test('Search count=0', async () =>
+      withTestContext(async () => {
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          count: 0,
+        });
+        expect(result1.entry).toBeUndefined();
+        expect(result1.link).toBeDefined();
+        expect(result1.link?.length).toBe(1);
+      }));
 
     test('Search _summary', () =>
       withTestContext(async () => {
@@ -538,103 +539,113 @@ describe('FHIR Search', () => {
         expect(bundle.entry?.[0]?.resource?.id).toEqual(response1.id);
       }));
 
-    test('Search for token in array', async () => {
-      const bundle = await repo.search({
-        resourceType: 'SearchParameter',
-        filters: [
-          {
-            code: 'base',
-            operator: Operator.EQUALS,
-            value: 'Patient',
-          },
-        ],
-        count: 100,
-      });
+    test('Search for token in array', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'SearchParameter',
+          filters: [
+            {
+              code: 'base',
+              operator: Operator.EQUALS,
+              value: 'Patient',
+            },
+          ],
+          count: 100,
+        });
 
-      expect(bundle.entry?.find((e) => (e.resource as SearchParameter).code === 'name')).toBeDefined();
-      expect(bundle.entry?.find((e) => (e.resource as SearchParameter).code === 'email')).toBeDefined();
-    });
+        expect(bundle.entry?.find((e) => (e.resource as SearchParameter).code === 'name')).toBeDefined();
+        expect(bundle.entry?.find((e) => (e.resource as SearchParameter).code === 'email')).toBeDefined();
+      }));
 
-    test('Search sort by Patient.id', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: '_id' }],
-      });
+    test('Search sort by Patient.id', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: '_id' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
-    test('Search sort by Patient.meta.lastUpdated', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: '_lastUpdated' }],
-      });
+    test('Search sort by Patient.meta.lastUpdated', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: '_lastUpdated' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
-    test('Search sort by Patient.identifier', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: 'identifier' }],
-      });
+    test('Search sort by Patient.identifier', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: 'identifier' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
-    test('Search sort by Patient.name', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: 'name' }],
-      });
+    test('Search sort by Patient.name', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: 'name' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
-    test('Search sort by Patient.given', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: 'given' }],
-      });
+    test('Search sort by Patient.given', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: 'given' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
-    test('Search sort by Patient.address', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: 'address' }],
-      });
+    test('Search sort by Patient.address', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: 'address' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
-    test('Search sort by Patient.telecom', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: 'telecom' }],
-      });
+    test('Search sort by Patient.telecom', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: 'telecom' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
-    test('Search sort by Patient.email', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: 'email' }],
-      });
+    test('Search sort by Patient.email', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: 'email' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
-    test('Search sort by Patient.birthDate', async () => {
-      const bundle = await repo.search({
-        resourceType: 'Patient',
-        sortRules: [{ code: 'birthdate' }],
-      });
+    test('Search sort by Patient.birthDate', async () =>
+      withTestContext(async () => {
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          sortRules: [{ code: 'birthdate' }],
+        });
 
-      expect(bundle).toBeDefined();
-    });
+        expect(bundle).toBeDefined();
+      }));
 
     test('Filter and sort on same search parameter', () =>
       withTestContext(async () => {
@@ -748,38 +759,39 @@ describe('FHIR Search', () => {
         expect(searchResult2.entry?.length).toEqual(0);
       }));
 
-    test('String filter', async () => {
-      const bundle1 = await repo.search<StructureDefinition>({
-        resourceType: 'StructureDefinition',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Questionnaire',
-          },
-        ],
-        sortRules: [
-          {
-            code: 'name',
-            descending: false,
-          },
-        ],
-      });
-      expect(bundle1.entry?.map((e) => e.resource?.name)).toEqual(['Questionnaire', 'QuestionnaireResponse']);
+    test('String filter', async () =>
+      withTestContext(async () => {
+        const bundle1 = await repo.search<StructureDefinition>({
+          resourceType: 'StructureDefinition',
+          filters: [
+            {
+              code: 'name',
+              operator: Operator.EQUALS,
+              value: 'Questionnaire',
+            },
+          ],
+          sortRules: [
+            {
+              code: 'name',
+              descending: false,
+            },
+          ],
+        });
+        expect(bundle1.entry?.map((e) => e.resource?.name)).toEqual(['Questionnaire', 'QuestionnaireResponse']);
 
-      const bundle2 = await repo.search({
-        resourceType: 'StructureDefinition',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EXACT,
-            value: 'Questionnaire',
-          },
-        ],
-      });
-      expect(bundle2.entry?.length).toEqual(1);
-      expect((bundle2.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
-    });
+        const bundle2 = await repo.search({
+          resourceType: 'StructureDefinition',
+          filters: [
+            {
+              code: 'name',
+              operator: Operator.EXACT,
+              value: 'Questionnaire',
+            },
+          ],
+        });
+        expect(bundle2.entry?.length).toEqual(1);
+        expect((bundle2.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
+      }));
 
     test('Filter by _id', () =>
       withTestContext(async () => {
@@ -825,50 +837,53 @@ describe('FHIR Search', () => {
         expect(searchResult2.entry?.length).toEqual(0);
       }));
 
-    test('Empty _id', async () => {
-      const searchResult1 = await repo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: '_id',
-            operator: Operator.EQUALS,
-            value: '',
-          },
-        ],
-      });
+    test('Empty _id', async () =>
+      withTestContext(async () => {
+        const searchResult1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: '_id',
+              operator: Operator.EQUALS,
+              value: '',
+            },
+          ],
+        });
 
-      expect(searchResult1.entry?.length).toEqual(0);
-    });
+        expect(searchResult1.entry?.length).toEqual(0);
+      }));
 
-    test('Non UUID _id', async () => {
-      const searchResult1 = await repo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: '_id',
-            operator: Operator.EQUALS,
-            value: 'x',
-          },
-        ],
-      });
+    test('Non UUID _id', async () =>
+      withTestContext(async () => {
+        const searchResult1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: '_id',
+              operator: Operator.EQUALS,
+              value: 'x',
+            },
+          ],
+        });
 
-      expect(searchResult1.entry?.length).toEqual(0);
-    });
+        expect(searchResult1.entry?.length).toEqual(0);
+      }));
 
-    test('Non UUID _compartment', async () => {
-      const searchResult1 = await repo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: '_compartment',
-            operator: Operator.EQUALS,
-            value: 'x',
-          },
-        ],
-      });
+    test('Non UUID _compartment', async () =>
+      withTestContext(async () => {
+        const searchResult1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: '_compartment',
+              operator: Operator.EQUALS,
+              value: 'x',
+            },
+          ],
+        });
 
-      expect(searchResult1.entry?.length).toEqual(0);
-    });
+        expect(searchResult1.entry?.length).toEqual(0);
+      }));
 
     test('Reference string _compartment', () =>
       withTestContext(async () => {
@@ -889,23 +904,24 @@ describe('FHIR Search', () => {
         expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toEqual(true);
       }));
 
-    test('Handle malformed _lastUpdated', async () => {
-      try {
-        await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            {
-              code: '_lastUpdated',
-              operator: Operator.GREATER_THAN,
-              value: 'xyz',
-            },
-          ],
-        });
-        fail('Expected error');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Invalid date value: xyz');
-      }
-    });
+    test('Handle malformed _lastUpdated', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              {
+                code: '_lastUpdated',
+                operator: Operator.GREATER_THAN,
+                value: 'xyz',
+              },
+            ],
+          });
+          fail('Expected error');
+        } catch (err) {
+          expect(normalizeErrorString(err)).toEqual('Invalid date value: xyz');
+        }
+      }));
 
     test('Filter by Coding', () =>
       withTestContext(async () => {
@@ -1561,23 +1577,24 @@ describe('FHIR Search', () => {
         expect(searchResult.entry).toHaveLength(2);
       }));
 
-    test('Error on invalid search parameter', async () => {
-      try {
-        await repo.search({
-          resourceType: 'ServiceRequest',
-          filters: [
-            {
-              code: 'basedOn', // should be "based-on"
-              operator: Operator.EQUALS,
-              value: 'ServiceRequest/123',
-            },
-          ],
-        });
-      } catch (err) {
-        const outcome = (err as OperationOutcomeError).outcome;
-        expect(outcome.issue?.[0]?.details?.text).toEqual('Unknown search parameter: basedOn');
-      }
-    });
+    test('Error on invalid search parameter', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search({
+            resourceType: 'ServiceRequest',
+            filters: [
+              {
+                code: 'basedOn', // should be "based-on"
+                operator: Operator.EQUALS,
+                value: 'ServiceRequest/123',
+              },
+            ],
+          });
+        } catch (err) {
+          const outcome = (err as OperationOutcomeError).outcome;
+          expect(outcome.issue?.[0]?.details?.text).toEqual('Unknown search parameter: basedOn');
+        }
+      }));
 
     test('Patient search without resource type', () =>
       withTestContext(async () => {
@@ -1734,7 +1751,9 @@ describe('FHIR Search', () => {
       ],
       ['Patient?_has:Observation:status=active', 'Invalid search chain: _has:Observation:status'],
     ])('Invalid chained search parameters: %s', (searchString: string, errorMsg: string) => {
-      return expect(repo.search(parseSearchRequest(searchString))).rejects.toEqual(new Error(errorMsg));
+      return withTestContext(async () =>
+        expect(repo.search(parseSearchRequest(searchString))).rejects.toEqual(new Error(errorMsg))
+      );
     });
 
     test('Include references success', () =>
@@ -1827,22 +1846,23 @@ describe('FHIR Search', () => {
         expect(bundleContains(bundle, activity2)).toBeTruthy();
       }));
 
-    test('Include references invalid search param', async () => {
-      try {
-        await repo.search({
-          resourceType: 'ServiceRequest',
-          include: [
-            {
-              resourceType: 'ServiceRequest',
-              searchParam: 'xyz',
-            },
-          ],
-        });
-      } catch (err) {
-        const outcome = (err as OperationOutcomeError).outcome;
-        expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid include parameter: ServiceRequest:xyz');
-      }
-    });
+    test('Include references invalid search param', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search({
+            resourceType: 'ServiceRequest',
+            include: [
+              {
+                resourceType: 'ServiceRequest',
+                searchParam: 'xyz',
+              },
+            ],
+          });
+        } catch (err) {
+          const outcome = (err as OperationOutcomeError).outcome;
+          expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid include parameter: ServiceRequest:xyz');
+        }
+      }));
 
     test('Reverse include Provenance', () =>
       withTestContext(async () => {
@@ -2883,21 +2903,22 @@ describe('FHIR Search', () => {
         expect(bundleContains(bundle, task1)).not.toBeTruthy();
       }));
 
-    test('Get estimated count with filter on human name', async () => {
-      const result = await repo.search({
-        resourceType: 'Patient',
-        total: 'estimate',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'John',
-          },
-        ],
-      });
-      expect(result.total).toBeDefined();
-      expect(typeof result.total).toBe('number');
-    });
+    test('Get estimated count with filter on human name', async () =>
+      withTestContext(async () => {
+        const result = await repo.search({
+          resourceType: 'Patient',
+          total: 'estimate',
+          filters: [
+            {
+              code: 'name',
+              operator: Operator.EQUALS,
+              value: 'John',
+            },
+          ],
+        });
+        expect(result.total).toBeDefined();
+        expect(typeof result.total).toBe('number');
+      }));
 
     test('Organization by name', () =>
       withTestContext(async () => {
@@ -3048,17 +3069,18 @@ describe('FHIR Search', () => {
         expect(bundleContains(result, p2)).toBe(true);
       }));
 
-    test('Sort by unknown search parameter', async () => {
-      try {
-        await repo.search({
-          resourceType: 'Patient',
-          sortRules: [{ code: 'xyz' }],
-        });
-      } catch (err) {
-        const outcome = normalizeOperationOutcome(err);
-        expect(outcome.issue?.[0]?.details?.text).toBe('Unknown search parameter: xyz');
-      }
-    });
+    test('Sort by unknown search parameter', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search({
+            resourceType: 'Patient',
+            sortRules: [{ code: 'xyz' }],
+          });
+        } catch (err) {
+          const outcome = normalizeOperationOutcome(err);
+          expect(outcome.issue?.[0]?.details?.text).toBe('Unknown search parameter: xyz');
+        }
+      }));
 
     test('Date range search', () =>
       withTestContext(async () => {

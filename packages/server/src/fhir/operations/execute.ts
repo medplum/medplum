@@ -33,7 +33,7 @@ import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getAuthenticatedContext, getLogger, buildTracingExtension } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
@@ -589,6 +589,7 @@ async function createAuditEvent(
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
     outcomeDesc,
+    extension: buildTracingExtension(),
   };
 
   const destination = bot.auditEventDestination ?? ['resource'];

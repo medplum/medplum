@@ -241,19 +241,21 @@ describe('FHIR Repo', () => {
   test('Create Patient with custom ID', async () => {
     const { repo } = await createTestProject({ withRepo: true });
 
-    // Try to "update" a resource, which does not exist.
-    // Some FHIR systems allow users to set ID's.
-    // We do not.
-    try {
-      await repo.updateResource<Patient>({
-        resourceType: 'Patient',
-        id: randomUUID(),
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      });
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
-    }
+    await withTestContext(async () => {
+      // Try to "update" a resource, which does not exist.
+      // Some FHIR systems allow users to set ID's.
+      // We do not.
+      try {
+        await repo.updateResource<Patient>({
+          resourceType: 'Patient',
+          id: randomUUID(),
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+      } catch (err) {
+        const outcome = (err as OperationOutcomeError).outcome;
+        expect(outcome.id).toEqual('not-found');
+      }
+    });
   });
 
   test('Create Patient with no author', () =>

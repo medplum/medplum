@@ -268,8 +268,9 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
   throw new Error('Async Job did not complete');
 }
 
+const DEFAULT_TEST_CONTEXT = { requestId: 'test-request-id', traceId: 'test-trace-id' };
 export function withTestContext<T>(fn: () => T, ctx?: { requestId?: string; traceId?: string }): T {
-  return requestContextStore.run(AuthenticatedRequestContext.system(ctx), fn);
+  return requestContextStore.run(AuthenticatedRequestContext.system(ctx ?? DEFAULT_TEST_CONTEXT), fn);
 }
 
 /**

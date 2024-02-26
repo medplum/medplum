@@ -10,6 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { MedplumServerConfig, getConfig } from '../config';
 import { CloudWatchLogger } from './cloudwatch';
+import { buildTracingExtension } from '../context';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -239,6 +240,7 @@ function createAuditEvent(
     outcome,
     outcomeDesc,
     entity,
+    extension: buildTracingExtension(),
   };
 
   return auditEvent;

@@ -10,7 +10,7 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { getLogger } from '../context';
+import { buildTracingExtension, getLogger } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
 
@@ -83,6 +83,7 @@ export async function createAuditEvent(
     entity: createAuditEventEntities(resource, subscription, bot),
     outcome,
     outcomeDesc,
+    extension: buildTracingExtension(),
   });
 }
 
