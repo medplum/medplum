@@ -57,6 +57,12 @@ describe('Search Utils', () => {
       resourceType: 'Patient',
       fields: ['id', 'name', 'birthDate'],
     });
+
+    // Ignores _ query parameter in query string
+    expect(parseSearchRequest(`Patient?name=Alice&_=${new Date().getTime()}`)).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Alice' }],
+    });
   });
 
   test('parseSearchUrl', () => {
