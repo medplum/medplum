@@ -165,7 +165,7 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
     });
   });
 
-  test.only('Handle punctuation', () =>
+  test('Handle punctuation', () =>
     withTestContext(async () => {
       const res = await request(app)
         .get(
