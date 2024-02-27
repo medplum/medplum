@@ -5,17 +5,9 @@
 
   & > dt,
   & > dd {
-    padding: var(--mantine-spacing-sm) 0;
+    padding: var(--mantine-spacing-sm);
     border-top: 0.1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
     margin: 0;
-  }
-
-  & > dt {
-    padding-right: var(--mantine-spacing-sm);
-  }
-
-  & > dd {
-    padding-left: var(--mantine-spacing-sm);
   }
 
   & > dt:first-of-type,
@@ -35,8 +27,7 @@
 
   & > dt,
   & > dd {
-    padding-top: 0;
-    padding-bottom: var(--mantine-spacing-xs);
+    padding: 0 0 var(--mantine-spacing-xs);
     border-top: 0;
   }
 
