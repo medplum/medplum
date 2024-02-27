@@ -413,7 +413,7 @@ export function isResource(value: unknown): value is Resource {
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
 export function isReference(value: unknown): value is Reference & { reference: string } {
-  return !!(value && typeof value === 'object' && 'reference' in value);
+  return !!(value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string');
 }
 
 /**
