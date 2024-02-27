@@ -96,16 +96,32 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
           return null;
         }
 
+        if (props.path.endsWith('.extension') && (key === 'url' || key === 'id')) {
+          return null;
+        }
+
+        // Array values provide their own DescriptionListEntry wrapper(s)
+        const isArrayProperty = property.max > 1 || property.isArray;
+        const resourcePropertyDisplay = (
+          <ResourcePropertyDisplay
+            key={key}
+            property={property}
+            propertyType={propertyType}
+            path={props.path + '.' + key}
+            value={propertyValue}
+            ignoreMissingValues={props.ignoreMissingValues}
+            includeArrayDescriptionListEntry={isArrayProperty}
+            link={props.link}
+          />
+        );
+
+        if (isArrayProperty) {
+          return resourcePropertyDisplay;
+        }
+
         return (
           <DescriptionListEntry key={key} term={getPathDisplayName(key)}>
-            <ResourcePropertyDisplay
-              property={property}
-              propertyType={propertyType}
-              path={props.path + '.' + key}
-              value={propertyValue}
-              ignoreMissingValues={props.ignoreMissingValues}
-              link={props.link}
-            />
+            {resourcePropertyDisplay}
           </DescriptionListEntry>
         );
       })}

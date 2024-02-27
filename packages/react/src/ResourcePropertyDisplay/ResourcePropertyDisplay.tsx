@@ -26,7 +26,6 @@ import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
 import { ExtensionDisplay } from '../ExtensionDisplay/ExtensionDisplay';
 import { ElementDefinitionType } from '@medplum/fhirtypes';
-import classes from './ResourcePropertyDisplay.module.css';
 
 export interface ResourcePropertyDisplayProps {
   readonly property?: InternalSchemaElement;
@@ -39,10 +38,8 @@ export interface ResourcePropertyDisplayProps {
   readonly ignoreMissingValues?: boolean;
   readonly link?: boolean;
   readonly elementDefinitionType?: ElementDefinitionType;
-}
-
-function maybeWithLeftBorder(withLeftBorder: boolean, element: JSX.Element): JSX.Element {
-  return withLeftBorder ? <div className={classes.leftBorder}>{element}</div> : element;
+  /** (Optional) If true and `property` is an array, a DescriptionListEntry wraps the output  */
+  readonly includeArrayDescriptionListEntry?: boolean;
 }
 
 /**
@@ -85,6 +82,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
         property={property}
         propertyType={propertyType}
         values={value}
+        includeDescriptionListEntry={props.includeArrayDescriptionListEntry}
         ignoreMissingValues={props.ignoreMissingValues}
         link={props.link}
       />
@@ -164,8 +162,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       if (!props.path) {
         throw Error(`Displaying property of type ${props.propertyType} requires path`);
       }
-      return maybeWithLeftBorder(
-        isArrayElement,
+      return (
         <ExtensionDisplay
           path={props.path}
           value={value}
@@ -181,8 +178,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       if (!props.path) {
         throw Error(`Displaying property of type ${props.propertyType} requires path`);
       }
-      return maybeWithLeftBorder(
-        isArrayElement,
+      return (
         <BackboneElementDisplay
           path={props.path}
           value={{ type: property.type[0].code, value }}

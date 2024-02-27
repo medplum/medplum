@@ -1,8 +1,11 @@
 import { InternalTypeSchema, getDataType, isPopulated, isProfileLoaded, tryGetProfile } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useContext } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
 import { ElementDefinitionType } from '@medplum/fhirtypes';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 
 export type ExtensionDisplayProps = {
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
@@ -20,6 +23,7 @@ export function ExtensionDisplay(props: ExtensionDisplayProps): JSX.Element | nu
   const { elementDefinitionType } = props;
 
   const medplum = useMedplum();
+  const ctx = useContext(ElementsContext);
   const [typeSchema, setTypeSchema] = useState<InternalTypeSchema>(getDataType('Extension'));
   const profileUrl: string | undefined = useMemo(() => {
     if (!isPopulated(elementDefinitionType?.profile)) {
@@ -51,6 +55,17 @@ export function ExtensionDisplay(props: ExtensionDisplayProps): JSX.Element | nu
 
   if (profileUrl && (loadingProfile || !isProfileLoaded(profileUrl))) {
     return <div>Loading...</div>;
+  }
+
+  const valueElement = typeSchema.elements['value[x]'];
+  const extensionHasValue = valueElement?.max !== 0;
+  if (extensionHasValue) {
+    const [propertyValue, propertyType] = getValueAndType(
+      { type: 'Extension', value: props.value },
+      'value[x]',
+      profileUrl ?? ctx.profileUrl
+    );
+    return <ResourcePropertyDisplay propertyType={propertyType} value={propertyValue} />;
   }
 
   return (

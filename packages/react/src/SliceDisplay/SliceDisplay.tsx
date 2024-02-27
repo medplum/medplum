@@ -17,7 +17,6 @@ export interface SliceDisplayProps {
   readonly value: any[];
   readonly ignoreMissingValues?: boolean;
   readonly link?: boolean;
-  readonly testId?: string;
 }
 
 export function SliceDisplay(props: SliceDisplayProps): JSX.Element {
@@ -46,17 +45,18 @@ export function SliceDisplay(props: SliceDisplayProps): JSX.Element {
     <>
       {props.value.map((value, valueIndex) => {
         return (
-          <ResourcePropertyDisplay
-            key={`${valueIndex}-${props.value.length}`}
-            property={property}
-            path={props.path}
-            arrayElement={true}
-            elementDefinitionType={slice.type[0]}
-            propertyType={slice.type[0].code}
-            value={value}
-            ignoreMissingValues={props.ignoreMissingValues}
-            link={props.link}
-          />
+          <div key={`${valueIndex}-${props.value.length}`}>
+            <ResourcePropertyDisplay
+              property={property}
+              path={props.path}
+              arrayElement={true}
+              elementDefinitionType={slice.type[0]}
+              propertyType={slice.type[0].code}
+              value={value}
+              ignoreMissingValues={props.ignoreMissingValues}
+              link={props.link}
+            />
+          </div>
         );
       })}
     </>
