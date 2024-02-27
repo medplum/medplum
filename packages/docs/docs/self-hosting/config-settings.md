@@ -192,9 +192,19 @@ Example `DatabaseSecrets` value:
   "engine": "postgres",
   "port": 5432,
   "host": "my-cluster.us-east-1.rds.amazonaws.com",
-  "username": "clusteradmin"
+  "username": "clusteradmin",
+  "queryTimeout": "60s"
 }
 ```
+
+:::note Query Timeout
+The `queryTimeout` parameter controls how long the database will allow a query to run before terminating it. If this
+parameter is set too high, expensive queries will be allowed to run on the DB, potentially even after the associated
+request has returned a server timeout error. If set too low, some queries may start to fail if they hit the
+new timeout.
+
+To disable the timeout, set it to `0`.
+:::
 
 Example `RedisSecrets` value:
 
