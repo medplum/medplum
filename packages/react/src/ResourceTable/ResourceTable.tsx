@@ -2,7 +2,7 @@ import { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
-import { isPopulated, tryGetProfile } from '@medplum/core';
+import { tryGetProfile } from '@medplum/core';
 
 export interface ResourceTableProps {
   /**
@@ -28,16 +28,10 @@ export interface ResourceTableProps {
 }
 
 export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
+  const { profileUrl } = props;
   const medplum = useMedplum();
   const value = useResource(props.value);
   const [schemaLoaded, setSchemaLoaded] = useState<string>();
-  // TODO{mattlong} - This is a hack to get the profile URL from the resource;
-  // There should be a UI to select a profile from the resource instead similar to the profile tabs in ResourceForm
-  const profileUrls = value?.meta?.profile;
-  if (isPopulated(profileUrls)) {
-    console.log(`Resource has ${profileUrls.length} profiles`);
-  }
-  const profileUrl: string | undefined = props.profileUrl ?? profileUrls?.[0];
 
   useEffect(() => {
     if (!value) {
