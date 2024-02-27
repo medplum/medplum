@@ -12,6 +12,7 @@ import {
 import { Request, Response } from 'express';
 import { withTestContext } from '../../../test.setup';
 import { parseInputParameters, parseParameters, sendOutputParameters } from './parameters';
+import { parse } from 'qs';
 
 describe('FHIR Parameters parsing', () => {
   test('Read Parameters', () => {
@@ -52,6 +53,8 @@ const opDef: OperationDefinition = {
   parameter: [
     { name: 'singleIn', use: 'in', min: 0, max: '1', type: 'string' },
     { name: 'requiredIn', use: 'in', min: 1, max: '1', type: 'boolean' },
+    { name: 'numeric', use: 'in', min: 0, max: '1', type: 'integer' },
+    { name: 'fractional', use: 'in', min: 0, max: '1', type: 'decimal' },
     { name: 'multiIn', use: 'in', min: 0, max: '*', type: 'Reference' },
     {
       name: 'partsIn',
@@ -226,6 +229,27 @@ describe('Operation Input Parameters parsing', () => {
     ],
   ])('Throws error on invalid Parameters: %j', (parameters, errorMsg) => {
     const req: Request = { body: parameters } as unknown as Request;
+    expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
+  });
+
+  test('Parses query string parameters as correct type', () => {
+    const req: Request = {
+      method: 'GET',
+      query: parse('requiredIn=true&numeric=100&fractional=3.14159'),
+    } as unknown as Request;
+    expect(parseInputParameters(opDef, req)).toEqual({ requiredIn: true, numeric: 100, fractional: 3.14159 });
+  });
+
+  test.each<[string, string]>([
+    [
+      'requiredIn=true&multiIn={"reference":"Patient/foo"}',
+      'Complex parameter multiIn (Reference) cannot be passed via query string',
+    ],
+    ['requiredIn=false&numeric=wrong', `Invalid value 'wrong' provided for integer parameter`],
+    ['requiredIn=false&fractional=wrong', `Invalid value 'wrong' provided for decimal parameter`],
+    ['requiredIn=1', `Invalid value '1' provided for boolean parameter`],
+  ])('Throws on invalid query string parameters: %s', (query, errorMsg) => {
+    const req: Request = { method: 'GET', query: parse(query) } as unknown as Request;
     expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
   });
 });

@@ -41,12 +41,12 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
   if (!operation.parameter) {
     return {} as any;
   }
+  const inputParameters = operation.parameter.filter((p) => p.use === 'in');
 
   // If the request is a GET request, use the query parameters
   // Otherwise, use the body
-  const input = req.method === 'GET' ? req.query : req.body;
+  const input = req.method === 'GET' ? parseQueryString(req.query, inputParameters) : req.body;
 
-  const inputParameters = operation.parameter.filter((p) => p.use === 'in');
   if (input.resourceType === 'Parameters') {
     if (!input.parameter) {
       return {} as any;
@@ -58,6 +58,58 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
       inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name as string])])
     ) as any;
   }
+}
+
+function parseQueryString(
+  query: Record<string, any>,
+  inputParams: OperationDefinitionParameter[]
+): Record<string, any> {
+  const parsed = Object.create(null);
+  for (const param of inputParams) {
+    const value = query[param.name];
+    if (!value) {
+      continue;
+    }
+    if (param.part || param.type?.match(/^[A-Z]/)) {
+      // Query parameters cannot contain complex types
+      throw new OperationOutcomeError(
+        badRequest(`Complex parameter ${param.name} (${param.type}) cannot be passed via query string`)
+      );
+    }
+
+    switch (param.type) {
+      case 'integer':
+      case 'positiveInt':
+      case 'unsignedInt': {
+        const n = parseInt(value, 10);
+        if (isNaN(n)) {
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+        }
+        parsed[param.name] = n;
+        break;
+      }
+      case 'decimal': {
+        const n = parseFloat(value);
+        if (isNaN(n)) {
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+        }
+        parsed[param.name] = n;
+        break;
+      }
+      case 'boolean':
+        if (value === 'true') {
+          parsed[param.name] = true;
+        } else if (value === 'false') {
+          parsed[param.name] = false;
+        } else {
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+        }
+        break;
+      default:
+        parsed[param.name] = value;
+    }
+  }
+  return parsed;
 }
 
 function validateInputParam(param: OperationDefinitionParameter, value: any): any {
