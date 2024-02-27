@@ -170,9 +170,9 @@ Only administrators can invite users, and can do so on the [Invite](https://app.
 3. Create a ProjectMembership that links User, ProfileResource and access policy
 4. (Optional) send an email invite user
 
-:::caution Note
+:::danger Note
 
-Do not delete Patient, Practitioner or RelatedPerson resources that belong to ProjectMemberships. This will cause the login to be non-functional. Do not edit or change the ProjectMembership resources directly.
+Do not delete [`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner) or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that belong to [`ProjectMemberships`](/docs/api/fhir/medplum/projectmembership). This will cause the login to be non-functional. Do not edit or change the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources directly. If you do delete one of these resources, you will need to register a new project.
 
 :::
 
