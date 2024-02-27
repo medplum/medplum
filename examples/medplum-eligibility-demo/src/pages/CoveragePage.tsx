@@ -1,5 +1,5 @@
 import { Grid, Paper } from '@mantine/core';
-import { getReferenceString, Operator, resolveId, SearchRequest } from '@medplum/core';
+import { getReferenceString, normalizeErrorString, Operator, resolveId, SearchRequest } from '@medplum/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
 import { Loading, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -37,6 +37,7 @@ export function CoveragePage(): JSX.Element {
         setCoverage(coverageData);
       } catch (err) {
         console.error(err);
+        throw new Error(normalizeErrorString(err));
       }
     };
 
@@ -49,6 +50,7 @@ export function CoveragePage(): JSX.Element {
           setPatient(patientData);
         } catch (err) {
           console.error(err);
+          throw new Error(normalizeErrorString(err));
         }
       }
     };

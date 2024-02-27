@@ -17,6 +17,10 @@ This example app demonstrates the following:
 - Editing a [`Coverage`](/docs/api/fhir/resources/coverage) resource.
 - Deleting a [`Coverage`](/docs/api/fhir/resources/coverage) resource.
 
+In addition, the demo provides an example [`Bot`](/docs/api/fhir/medplum/bot) that mimics the workflow of an insurance eligibility check. It takes a [`CoverageEligibilityRequest`](/docs/api/fhir/resources/coverageeligibilityrequest) and returns a dummy [`CoverageEligibilityResponse`](/docs/api/fhir/resources/coverageeligibilityresponse).
+
+![Eligibility Demo Screenshot](medplum-eligibility-demo-screenshot.png)
+
 ### Code Organization
 
 This repo is organized into two main directories: `src` and `data`.

@@ -55,12 +55,38 @@ function processRequest(request: CoverageEligibilityRequest, serviceType?: Codin
     insurer: request.insurer,
     insurance: [
       {
+        inforce: true,
         coverage,
         item: [
           {
             // For simplicity, this demo only provides coverage for X12 Service Type Code 30 - Plan Coverage and General Benefits.
             // For more details see https://www.medplum.com/docs/billing/insurance-eligibility-checks#use-cases
             excluded: serviceType?.code === '30' ? false : true,
+            benefit: [
+              {
+                type: {
+                  coding: [
+                    {
+                      code: 'room',
+                    },
+                  ],
+                },
+                allowedString: 'shared',
+              },
+              {
+                type: {
+                  coding: [
+                    {
+                      code: 'benefit',
+                    },
+                  ],
+                },
+                allowedMoney: {
+                  value: 600,
+                  currency: 'USD',
+                },
+              },
+            ],
           },
         ],
       },
