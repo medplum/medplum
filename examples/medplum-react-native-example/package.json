@@ -19,9 +19,10 @@
     ]
   },
   "dependencies": {
-    "@expo/webpack-config": "19.0.1",
+    "@expo/metro-runtime": "3.1.3",
     "@medplum/core": "3.0.5",
     "@medplum/expo-polyfills": "3.0.5",
+    "@medplum/fhirtypes": "3.0.5",
     "@medplum/react-hooks": "3.0.5",
     "expo": "50.0.7",
     "expo-status-bar": "1.11.1",

@@ -136,7 +136,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
   }
 
   // Parse the input into path and search parameters
-  let pathname: string = '';
+  let pathname = '';
   let searchParams: URLSearchParams | undefined = undefined;
   if (typeof url === 'string') {
     if (url.includes('?')) {
@@ -233,8 +233,8 @@ function parseSearchImpl<T extends Resource = Resource>(
 }
 
 function parseKeyValue(searchRequest: SearchRequest, key: string, value: string): void {
-  let code;
-  let modifier;
+  let code: string;
+  let modifier: string;
 
   const colonIndex = key.indexOf(':');
   if (colonIndex >= 0) {
@@ -243,6 +243,12 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
   } else {
     code = key;
     modifier = '';
+  }
+
+  // Ignore the '_' parameter
+  // This is added by React Native when `no-cache` strategy is used to bust the cache presumably
+  if (code === '_') {
+    return;
   }
 
   if (code === '_has' || key.includes('.')) {
@@ -320,7 +326,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
 
 function parseSortRule(searchRequest: SearchRequest, value: string): void {
   for (const field of value.split(',')) {
-    let code;
+    let code: string;
     let descending = false;
     if (field.startsWith('-')) {
       code = field.substring(1);

@@ -3,12 +3,13 @@ import { GestureResponderEvent, Pressable, StyleSheet, Text } from 'react-native
 interface CustomButtonProps {
   readonly onPress: ((event: GestureResponderEvent) => void) | undefined;
   readonly title: string;
+  readonly style?: Record<string, string | boolean | number>;
 }
 
 export default function CustomButton(props: CustomButtonProps): JSX.Element {
-  const { onPress, title = 'Save' } = props;
+  const { onPress, title = 'Save', style } = props;
   return (
-    <Pressable style={styles.button} onPress={onPress}>
+    <Pressable style={{ ...styles.button, ...style }} onPress={onPress}>
       <Text style={styles.text}>{title}</Text>
     </Pressable>
   );
