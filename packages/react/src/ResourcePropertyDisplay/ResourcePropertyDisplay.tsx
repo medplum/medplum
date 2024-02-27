@@ -37,8 +37,9 @@ export interface ResourcePropertyDisplayProps {
   readonly maxWidth?: number;
   readonly ignoreMissingValues?: boolean;
   readonly link?: boolean;
+  /** (Optional) The `ElemendDefinitionType` to display the property against. Used when displaying extensions.  */
   readonly elementDefinitionType?: ElementDefinitionType;
-  /** (Optional) If true and `property` is an array, a DescriptionListEntry wraps the output  */
+  /** (Optional) If true and `property` is an array, output is wrapped with a DescriptionListEntry */
   readonly includeArrayDescriptionListEntry?: boolean;
 }
 
@@ -74,7 +75,15 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
 
   if (property?.max && property.max > 1 && !isArrayElement) {
     if (propertyType === PropertyType.Attachment) {
-      return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
+      return (
+        <AttachmentArrayDisplay
+          values={value}
+          maxWidth={props.maxWidth}
+          includeDescriptionListEntry={props.includeArrayDescriptionListEntry}
+          property={property}
+          path={props.path}
+        />
+      );
     }
     return (
       <ResourceArrayDisplay

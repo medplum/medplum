@@ -1,4 +1,4 @@
-import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
+import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName, isPopulated } from '@medplum/core';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { useState, useContext, useEffect } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -68,12 +68,11 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
 
     if (props.includeDescriptionListEntry) {
       // Since arrays are responsible for rendering their own DescriptionListEntry, we must find the key
-      const key: string | undefined = Object.entries(ctx.elements).find(([_key, elem]) => elem === props.property)?.[0];
-      if (key === undefined) {
-        throw new Error('Could not find props.property within ElementsContext');
+      if (!isPopulated(props.path)) {
+        throw new Error('props.path is required when includeDescriptionListEntry is true');
       }
-      const nonSliceTerm = getPathDisplayName(key);
-      nonSliceContent = <DescriptionListEntry term={nonSliceTerm}>{nonSliceElements}</DescriptionListEntry>;
+      const key = props.path.split('.').pop() as string;
+      nonSliceContent = <DescriptionListEntry term={getPathDisplayName(key)}>{nonSliceElements}</DescriptionListEntry>;
     } else {
       nonSliceContent = <>{nonSliceElements}</>;
     }
