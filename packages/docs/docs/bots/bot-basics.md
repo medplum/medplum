@@ -215,6 +215,12 @@ Change "Criteria" field to `Patient`
 
 ![Subscription Criteria](/img/app/bots/subscription_criteria.png)
 
+:::warning Subscriptions on `AuditEvents`
+
+The criteria of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir/resources/auditevent) resource. When a subscription is triggered it creates an [`AuditEvent`](/docs/api/fhir/resources/auditevent), so using it as criteria would create a notification spiral.
+
+:::
+
 Next, we specify action should be taken when the subscription is triggered, using the "Channel" field.
 
 Because, Bots can be are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
