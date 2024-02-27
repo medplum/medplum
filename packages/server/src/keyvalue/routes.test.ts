@@ -5,6 +5,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { AuthenticatedRequestContext, requestContextStore } from '../context';
+import { MAX_ITEMS } from './store';
 
 describe('Key Value Routes', () => {
   const app = express();
@@ -108,5 +109,21 @@ describe('Key Value Routes', () => {
       .type('text/plain')
       .send('a'.repeat(10000));
     expect(res1.status).toBe(400);
+  });
+
+  test('Max items', async () => {
+    for (let i = 0; i <= MAX_ITEMS; i++) {
+      const res1 = await request(app)
+        .put(`/keyvalue/v1/my-key-${i}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .type('text/plain')
+        .send(`my-value-${i}`);
+
+      if (i < MAX_ITEMS) {
+        expect(res1.status).toBe(204);
+      } else {
+        expect(res1.status).toBe(400);
+      }
+    }
   });
 });
