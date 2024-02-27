@@ -70,29 +70,39 @@ function parseQueryString(
     if (!value) {
       continue;
     }
-    if (param.type?.match(/^[A-Z]/)) {
+    if (param.part || param.type?.match(/^[A-Z]/)) {
       // Query parameters cannot contain complex types
       throw new OperationOutcomeError(
-        badRequest(`Complex parameters (${value} - ${param.type}) cannot be passed via query string`)
+        badRequest(`Complex parameter ${param.name} (${param.type}) cannot be passed via query string`)
       );
     }
 
     switch (param.type) {
       case 'integer':
       case 'positiveInt':
-      case 'unsignedInt':
-        parsed[param.name] = parseInt(value, 10);
+      case 'unsignedInt': {
+        const n = parseInt(value, 10);
+        if (isNaN(n)) {
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+        }
+        parsed[param.name] = n;
         break;
-      case 'decimal':
-        parsed[param.name] = parseFloat(value);
+      }
+      case 'decimal': {
+        const n = parseFloat(value);
+        if (isNaN(n)) {
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+        }
+        parsed[param.name] = n;
         break;
+      }
       case 'boolean':
         if (value === 'true') {
           parsed[param.name] = true;
         } else if (value === 'false') {
           parsed[param.name] = false;
         } else {
-          throw new OperationOutcomeError(badRequest(`Invalid boolean value for parameter ${param.name}`));
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
         }
         break;
       default:
