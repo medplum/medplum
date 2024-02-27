@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "clean": "rimraf dist",
-    "build:bots": "npm run clean && npm run lint && tsc",
-    "lint": "eslint src/",
-    "dev": "vite",
     "build": "npm run clean && tsc && vite build",
+    "build:bots": "npm run clean && npm run lint && tsc",
+    "clean": "rimraf dist",
+    "dev": "vite",
+    "lint": "eslint src/",
     "preview": "vite preview"
   },
   "prettier": {
