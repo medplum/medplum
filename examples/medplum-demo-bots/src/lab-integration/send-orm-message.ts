@@ -15,33 +15,51 @@ import Client from 'ssh2-sftp-client';
 const FACILITY_CODE = '52054';
 
 /**
- * This Bot demonstrates how to receive a lab order and convert it into a ServiceRequest
+ * This Bot demonstrates how to send a lab order to an SFTP server in the form of HL7v2 ORM messages
  *
  * See: https://hl7-definition.caristix.com/v2/HL7v2.3/TriggerEvents/ORM_O01
  *
  * @param medplum - The Medplum Client object
  * @param event - The BotEvent object
- * @returns the newly created ServiceRequest resoruce
+ * @returns The data returned by the `list` command
  */
-export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<ServiceRequest> {
-  const client = new Client();
+export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
+  const host = event.secrets['SFTP_HOST'].valueString;
+  const user = event.secrets['SFTP_USER'].valueString;
+  const key = event.secrets['SFTP_PRIVATE_KEY'].valueString;
 
-  // Subscription criteria is QuestionnaireResponse
-  const { serviceRequest, specimen, patient } = await readExistingResources(event.input, medplum);
+  try {
+    const client = new Client();
 
-  if (!serviceRequest || !specimen || !patient) {
-    throw new Error('Could not find ServiceRequest, Specimen, or Patient');
-  }
+    await client.connect({
+      host: host,
+      username: user,
+      privateKey: key,
+      retries: 5,
+      retry_factor: 2,
+      retry_minTimeout: 1000,
+    });
 
-  const orderId = getIdentifier(serviceRequest, 'http://example.com/orderId');
-  if (!orderId) {
-    throw new Error('Could not find ID for order: ' + getReferenceString(serviceRequest));
-  }
+    // Subscription criteria is QuestionnaireResponse
+    const { serviceRequest, specimen, patient } = await readExistingResources(event.input, medplum);
 
-  const orderMessage = createOrmMessage(serviceRequest, patient, specimen);
-  if (orderMessage) {
-    console.log('[ORM Message] Writing Message', `${orderId}.orm`, orderMessage?.toString());
-    await writeHL7ToSftp(client, orderMessage, `./in/${orderId}.orm`);
+    if (!serviceRequest || !specimen || !patient) {
+      throw new Error('Could not find ServiceRequest, Specimen, or Patient');
+    }
+
+    const orderId = getIdentifier(serviceRequest, 'http://example.com/orderId');
+    if (!orderId) {
+      throw new Error('Could not find ID for order: ' + getReferenceString(serviceRequest));
+    }
+
+    const orderMessage = createOrmMessage(serviceRequest, patient, specimen);
+    if (orderMessage) {
+      console.log('[ORM Message] Writing Message', `${orderId}.orm`, orderMessage?.toString());
+      await writeHL7ToSftp(client, orderMessage, `./in/${orderId}.orm`);
+    }
+  } catch (error: any) {
+    console.error(error.message);
+    throw error;
   }
 }
 
