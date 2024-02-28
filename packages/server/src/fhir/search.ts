@@ -111,18 +111,26 @@ export async function searchImpl<T extends Resource>(
   };
 }
 
+/**
+ * Validates that the resource type(s) are valid and that the user has permission to read them.
+ * @param repo - The user's repository.
+ * @param searchRequest - The incoming search request.
+ */
 function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequest): void {
-  if (searchRequest.resourceType) {
-    validateSearchResourceType(repo, searchRequest.resourceType);
-  }
-
   if (searchRequest.types) {
     for (const resourceType of searchRequest.types) {
       validateSearchResourceType(repo, resourceType);
     }
+  } else {
+    validateSearchResourceType(repo, searchRequest.resourceType);
   }
 }
 
+/**
+ * Validates that the resource type is valid and that the user has permission to read it.
+ * @param repo - The user's repository.
+ * @param resourceType - The resource type to validate.
+ */
 function validateSearchResourceType(repo: Repository, resourceType: ResourceType): void {
   validateResourceType(resourceType);
 
