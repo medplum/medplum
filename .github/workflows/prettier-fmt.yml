@@ -54,41 +54,13 @@ jobs:
             cat prettier-fmt1.err >> "${GITHUB_OUTPUT}"
             echo "${delimiter}" >> "${GITHUB_OUTPUT}"
           fi
-      - name: Comment on PR
-        if: steps.fmt.outputs.prettier_fmt_errs != ''
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          comment_tag: prettier-fmt
-          message: |
-            ❌ @${{ github.actor }} `prettier` reported errors
-
-            ```js
-            ${{ steps.fmt.outputs.prettier_fmt_errs }}
-            ```
-
-            To one-off fix this manually, run:
-            ```sh
-            npm run prettier
-            ```
-
-            You might need to run `npm install` locally and configure your text editor to [auto-format on save](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode).
-
-            <sup>[#${{github.sha}}](https://github.com/medplum/medplum/commits/${{github.sha}})</sup>
-      - name: Uncomment on PR
-        if: steps.fmt.outputs.prettier_fmt_errs == ''
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          comment_tag: prettier-fmt
-          mode: upsert
-          create_if_not_exists: false
-          message: |
-            ✅ `prettier` errors have been resolved. Thank you.
-
-            <sup>[#${{github.sha}}](https://github.com/medplum/medplum/commits/${{github.sha}})</sup>
       - name: Fail the job
         if: steps.fmt.outputs.prettier_fmt_errs != ''
         run: |
           echo "❌ \"prettier\" reported errors"
+          echo ""
+          echo "${{ steps.fmt.outputs.prettier_fmt_errs }}"
+          echo ""
           echo ""
           echo "To one-off fix this manually, run:"
           echo ""
