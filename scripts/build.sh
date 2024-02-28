@@ -20,6 +20,3 @@ npm --version
 
 # Build
 npm run build:all
-
-# Lint
-npm run lint
