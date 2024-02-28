@@ -9,7 +9,7 @@ import { clamp, parseInputParameters, sendOutputParameters } from './utils/param
 import { validateCode } from './codesystemvalidatecode';
 import { getDatabasePool } from '../../database';
 import { getOperationDefinition } from './definitions';
-import { abstractProperty, addPropertyFilter, findTerminologyResource, parentProperty } from './utils/terminology';
+import { abstractProperty, addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
 
@@ -258,7 +258,7 @@ async function includeInExpansion(
     for (const condition of include.filter) {
       switch (condition.op) {
         case 'is-a':
-          query = addParentCondition(query, codeSystem, condition.value);
+          query = addDescendants(query, codeSystem, condition.value);
           break;
         default:
           ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
@@ -278,20 +278,8 @@ async function includeInExpansion(
   }
 }
 
-function addParentCondition(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
-  if (codeSystem.hierarchyMeaning !== 'is-a') {
-    throw new OperationOutcomeError(
-      badRequest(
-        `Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`,
-        'ValueSet.compose.include.filter'
-      )
-    );
-  }
-  let property = codeSystem.property?.find((p) => p.uri === parentProperty);
-  if (!property) {
-    // Implicit parent property for hierarchical CodeSystems
-    property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
-  }
+function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
+  const property = getParentProperty(codeSystem);
 
   const base = new SelectQuery('Coding')
     .column('id')

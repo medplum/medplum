@@ -1,7 +1,7 @@
 import { OperationOutcomeError, Operator, badRequest } from '@medplum/core';
 import { getAuthenticatedContext } from '../../../context';
 import { r4ProjectId } from '../../../seed';
-import { CodeSystem, ConceptMap, ValueSet } from '@medplum/fhirtypes';
+import { CodeSystem, CodeSystemConceptProperty, ConceptMap, ValueSet } from '@medplum/fhirtypes';
 import { SelectQuery, Conjunction, Condition, Column } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
@@ -68,4 +68,18 @@ export function addPropertyFilter(query: SelectQuery, property: string, value: s
   );
   query.where(new Column(csPropertyTable, 'id'), isEqual ? '!=' : '=', null);
   return query;
+}
+
+export function getParentProperty(codeSystem: CodeSystem): CodeSystemConceptProperty {
+  if (codeSystem.hierarchyMeaning !== 'is-a') {
+    throw new OperationOutcomeError(
+      badRequest(`Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`)
+    );
+  }
+  let property = codeSystem.property?.find((p) => p.uri === parentProperty);
+  if (!property) {
+    // Implicit parent property for hierarchical CodeSystems
+    property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
+  }
+  return property;
 }

@@ -12,9 +12,9 @@ import {
 } from '@medplum/fhirtypes';
 import { sendOutcome } from '../outcomes';
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
-import { addPropertyFilter, findTerminologyResource } from './utils/terminology';
+import { addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
 import { validateCode } from './codesystemvalidatecode';
-import { Column, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, SelectQuery, Union } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 
 const operation = getOperationDefinition('ValueSet', 'validate-code');
@@ -109,12 +109,19 @@ async function satisfies(
 ): Promise<boolean> {
   const ctx = getAuthenticatedContext();
   let query = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('display')
     .where(new Column('Coding', 'system'), '=', codeSystem.id)
     .where(new Column('Coding', 'code'), '=', coding.code);
 
   switch (filter.op) {
     case '=':
       query = addPropertyFilter(query, filter.property, filter.value, true);
+      break;
+    case 'is-a':
+      // Recursively find parents until one matches
+      query = findAncestor(query, codeSystem, filter.value);
       break;
     default:
       ctx.logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
@@ -123,4 +130,48 @@ async function satisfies(
 
   const results = await query.execute(ctx.repo.getDatabaseClient());
   return results.length > 0;
+}
+
+function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestorCode: string): SelectQuery {
+  const property = getParentProperty(codeSystem);
+
+  const query = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('display')
+    .where('system', '=', codeSystem.id);
+  const propertyTable = query.getNextJoinAlias();
+  query.innerJoin(
+    'Coding_Property',
+    propertyTable,
+    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target'))
+  );
+
+  const csPropertyTable = query.getNextJoinAlias();
+  query.innerJoin(
+    'CodeSystem_Property',
+    csPropertyTable,
+    new Conjunction([
+      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+    ])
+  );
+
+  const recursiveCTE = 'cte_ancestors';
+  const recursiveTable = query.getNextJoinAlias();
+  query.innerJoin(
+    recursiveCTE,
+    recursiveTable,
+    new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id'))
+  );
+  const offset = query.offset_;
+  query.offset(0);
+
+  return new SelectQuery(recursiveCTE)
+    .column('code')
+    .column('display')
+    .withRecursive(recursiveCTE, new Union(base, query))
+    .where('code', '=', ancestorCode)
+    .limit(query.limit_)
+    .offset(offset);
 }
