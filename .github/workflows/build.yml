@@ -20,6 +20,136 @@ jobs:
     strategy:
       matrix:
         node-version: [18, 20]
+    env:
+      NODE_VERSION: ${{ matrix.node-version }}
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+      - name: Build Project
+        run: ./scripts/build.sh
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+      - name: Danger
+        run: npx danger ci
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  eslint:
+    name: Run eslint
+    runs-on: ubuntu-latest
+    needs: [build]
+    env:
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    outputs:
+      eslint_errs: ${{ steps.fmt.outputs.eslint_errs }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - id: install
+        name: Install eslint
+        run: npm ci --maxsockets 1
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+      - id: build
+        name: Build
+        run: npm run build
+      - name: Run eslint
+        id: fmt
+        run: |
+          rm -f .failed
+          NODE_OPTIONS='--max-old-space-size=8192' npm run lint 2> eslint.err > eslint1.err || echo 'failed' > .failed 
+
+          if [ -s .failed ]; then
+            delimiter="$(openssl rand -hex 8)"
+            echo "eslint_errs<<${delimiter}" >> "${GITHUB_OUTPUT}"
+            cat eslint.err >> "${GITHUB_OUTPUT}"
+            cat eslint1.err >> "${GITHUB_OUTPUT}"
+            echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Fail the job
+        if: steps.fmt.outputs.eslint_errs != ''
+        run: |
+          echo "❌ \"eslint\" reported errors"
+          echo ""
+          echo "${{ steps.fmt.outputs.eslint_errs }}"
+          echo ""
+          echo ""
+          echo "To one-off fix this manually, run:"
+          echo ""
+          echo "npm run lint"
+          echo ""
+          echo ""
+          echo "You might need to run \"npm install\" locally and configure your text editor to run ESLint in your editor."
+          echo "See: https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint"
+          echo ""
+          echo "https://github.com/medplum/medplum/commits/${{github.sha}}"
+
+          exit 1
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    strategy:
+      matrix:
+        node-version: [18, 20]
         pg-version: [12, 14]
     env:
       NODE_VERSION: ${{ matrix.node-version }}
@@ -78,14 +208,6 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
-      - name: Build Project
-        run: ./scripts/build.sh
-        env:
-          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
-          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
-          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
-          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
-          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
       - name: Test
         run: ./scripts/test.sh
         env:
@@ -98,7 +220,50 @@ jobs:
         with:
           name: medplum-code-coverage
           path: coverage/lcov.info
-      - name: Danger
-        run: npx danger ci
+
+  build-docs:
+    name: Build the docs
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      NODE_VERSION: 20
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v4
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+      - name: Build Project
+        run: ./scripts/build-docs.sh
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
