@@ -58,7 +58,7 @@ export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Res
     found = valueSet.expansion.contains?.find((e) => codings.some((c) => e.system === c.system && e.code === c.code));
   } else if (valueSet.compose) {
     for (const include of valueSet.compose.include) {
-      found = findIncludedCode(include, ...codings);
+      found = await findIncludedCode(include, ...codings);
       if (found) {
         break;
       }
@@ -76,10 +76,7 @@ export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Res
   });
 });
 
-async function findIncludedCode(
-  include: ValueSetComposeInclude,
-  ...codings: Coding[]
-): Promise<{ coding: Coding; codeSystem: CodeSystem } | undefined> {
+async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Coding[]): Promise<Coding | undefined> {
   if (!include.system) {
     throw new OperationOutcomeError(
       badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
@@ -129,16 +126,12 @@ async function satisfies(
   return results.length > 0;
 }
 
-async function checkCoding(
-  coding: Coding | undefined,
-  codeSystem?: CodeSystem
-): Promise<{ coding: Coding; codeSystem: CodeSystem } | undefined> {
+async function checkCoding(coding: Coding | undefined, codeSystem?: CodeSystem): Promise<Coding | undefined> {
   if (!coding) {
     return undefined;
   }
   if (!codeSystem) {
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', coding.system as string);
   }
-  coding = (await validateCode(codeSystem, coding.code as string)) ?? coding;
-  return { coding, codeSystem };
+  return (await validateCode(codeSystem, coding.code as string)) ?? coding;
 }

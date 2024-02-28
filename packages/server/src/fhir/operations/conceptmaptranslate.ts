@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { findTerminologyResource } from './expand';
+import { findTerminologyResource } from './utils/terminology';
 
 const operation = getOperationDefinition('ConceptMap', 'translate');
 
