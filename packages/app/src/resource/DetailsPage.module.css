@@ -1,0 +1,16 @@
+.selectProfileBtn {
+  line-height: 1;
+  font-size: var(--mantine-font-size-xs);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--mantine-radius-xl);
+  padding: 0.25rem 0.625rem;
+  padding-right: 0.5rem;
+  gap: 0.25rem;
+}
+
+.chevron {
+  width: 0.875rem;
+  height: 0.875rem;
+}
