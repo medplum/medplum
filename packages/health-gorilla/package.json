@@ -1,6 +1,6 @@
 {
   "name": "@medplum/health-gorilla",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "description": "Medplum Health Gorilla SDK",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -39,11 +39,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "3.0.5",
-    "@medplum/fhirtypes": "3.0.5"
+    "@medplum/core": "3.0.6",
+    "@medplum/fhirtypes": "3.0.6"
   },
   "devDependencies": {
-    "@medplum/mock": "3.0.5"
+    "@medplum/mock": "3.0.6"
   },
   "engines": {
     "node": ">=18.0.0"
