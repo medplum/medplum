@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# CI/CD build script
+# CI/CD docs build script
 
 # Fail on error
 set -e
@@ -19,4 +19,4 @@ npm --version
 [ ! -d "node_modules" ] && npm ci --maxsockets 1
 
 # Build
-npm run build
+npm run build:all

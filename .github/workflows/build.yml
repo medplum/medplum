@@ -61,10 +61,6 @@ jobs:
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
-      - name: Danger
-        run: npx danger ci
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   eslint:
     name: Run eslint
@@ -220,3 +216,57 @@ jobs:
         with:
           name: medplum-code-coverage
           path: coverage/lcov.info
+
+  build-docs:
+    name: Build the docs
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    env:
+      NODE_VERSION: ${{ matrix.node-version }}
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+      - name: Build Project
+        run: ./scripts/build-docs.sh
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+      - name: Danger
+        run: npx danger ci
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
