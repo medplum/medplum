@@ -396,14 +396,14 @@ describe('ConceptMap $translate', () => {
           { name: 'coding', valueCoding: { system, code } },
         ],
       });
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(400);
 
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
         {
           details: {
-            text: `Not found`,
+            text: expect.stringMatching(/^ConceptMap .* not found$/),
           },
         },
       ],

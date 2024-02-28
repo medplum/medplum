@@ -1,17 +1,16 @@
-import { allOk, badRequest, OperationOutcomeError, Operator, Operator as SearchOperator } from '@medplum/core';
+import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { CodeSystem, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { sendOutcome } from '../outcomes';
-import { getSystemRepo } from '../repo';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction, Union } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 import { parentProperty } from './codesystemimport';
 import { clamp, parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { validateCode } from './codesystemvalidatecode';
 import { getDatabasePool } from '../../database';
-import { r4ProjectId } from '../../seed';
 import { getOperationDefinition } from './definitions';
+import { abstractProperty, findTerminologyResource } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
 
@@ -52,11 +51,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     url = url.substring(0, pipeIndex);
   }
 
-  let valueSet = await getValueSetByUrl(url);
-  if (!valueSet) {
-    sendOutcome(res, badRequest('ValueSet not found'));
-    return;
-  }
+  let valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
 
   let offset = 0;
   if (params.offset) {
@@ -145,14 +140,6 @@ function filterToTsvectorQuery(filter: string | undefined): string | undefined {
     .join(' & ');
 }
 
-function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
-  const systemRepo = getSystemRepo();
-  return systemRepo.searchOne<ValueSet>({
-    resourceType: 'ValueSet',
-    filters: [{ code: 'url', operator: SearchOperator.EQUALS, value: url }],
-  });
-}
-
 function buildValueSetSystems(valueSet: ValueSet): Expression[] {
   const result: Expression[] = [];
   if (valueSet.compose?.include) {
@@ -228,7 +215,7 @@ async function computeExpansion(
       );
     }
 
-    const codeSystem = codeSystemCache[include.system] ?? (await findCodeSystem(include.system));
+    const codeSystem = codeSystemCache[include.system] ?? (await findTerminologyResource('CodeSystem', include.system));
     codeSystemCache[include.system] = codeSystem;
     if (include.concept) {
       const concepts = await Promise.all(include.concept.flatMap((c) => validateCode(codeSystem, c.code)));
@@ -246,40 +233,6 @@ async function computeExpansion(
       // Return partial expansion
       return;
     }
-  }
-}
-
-export async function findCodeSystem(url: string): Promise<CodeSystem> {
-  const { repo, logger } = getAuthenticatedContext();
-  const codeSystems = await repo.searchResources<CodeSystem>({
-    resourceType: 'CodeSystem',
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
-    sortRules: [
-      // Select highest version (by lexical sort -- no version is assumed to be "current")
-      { code: 'version', descending: true },
-      // Break ties by selecting more recently-updated resource (lexically -- no date is assumed to be current)
-      { code: 'date', descending: true },
-    ],
-  });
-
-  if (!codeSystems.length) {
-    throw new OperationOutcomeError(badRequest(`Code system ${url} not found`, 'ValueSet.compose.include.system'));
-  } else if (codeSystems.length === 1) {
-    return codeSystems[0];
-  } else {
-    codeSystems.sort((a: CodeSystem, b: CodeSystem) => {
-      // Select the non-base FHIR versions of resources before the base FHIR ones
-      // This is kind of a kludge, but is required to break ties because some CodeSystems (including SNOMED)
-      // don't have a version and the base spec version doesn't include a date (and so is always considered current)
-      if (a.meta?.project === r4ProjectId) {
-        return 1;
-      } else if (b.meta?.project === r4ProjectId) {
-        return -1;
-      }
-      return 0;
-    });
-    logger.warn('Possibly ambiguous CodeSystem', { url, codeSystems: codeSystems.map((cs) => cs.id) });
-    return codeSystems[0];
   }
 }
 
@@ -382,8 +335,6 @@ function addParentCondition(query: SelectQuery, codeSystem: CodeSystem, parentCo
     .limit(query.limit_)
     .offset(offset);
 }
-
-export const abstractProperty = 'http://hl7.org/fhir/concept-properties#notSelectable';
 
 function addAbstractFilter(query: SelectQuery, codeSystem: CodeSystem): SelectQuery {
   const property = codeSystem.property?.find((p) => p.uri === abstractProperty);

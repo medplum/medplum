@@ -13,11 +13,9 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { initTestAuth, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
 
 describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }])('Expand with %j', (projectProps) => {
   const app = express();
-  const systemRepo = getSystemRepo();
   let accessToken: string;
 
   beforeAll(async () => {
@@ -43,18 +41,22 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://example.com/ValueSet/123')}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('ValueSet not found');
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toMatch(/^ValueSet .*not found$/);
   });
 
   test('No logical definition', async () => {
     const url = 'https://example.com/ValueSet/' + randomUUID();
-    await withTestContext(() =>
-      systemRepo.createResource({
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
         resourceType: 'ValueSet',
         status: 'active',
         url,
-      })
-    );
+      });
+    expect(res1.status).toEqual(201);
+
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
@@ -424,7 +426,7 @@ describe('Updated implementation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(400);
     expect(res2.body.issue[0].details.text).toEqual(
-      'Code system http://example.com/the-codesystem-does-not-exist not found'
+      'CodeSystem http://example.com/the-codesystem-does-not-exist not found'
     );
   });
 
