@@ -240,17 +240,20 @@ export class Exists implements Expression {
 }
 
 export class Union implements Expression {
-  constructor(
-    readonly left: SelectQuery,
-    readonly right: SelectQuery
-  ) {}
+  readonly queries: SelectQuery[];
+  constructor(...queries: SelectQuery[]) {
+    this.queries = queries;
+  }
 
   buildSql(sql: SqlBuilder): void {
-    sql.append('(');
-    this.left.buildSql(sql);
-    sql.append(') UNION (');
-    this.right.buildSql(sql);
-    sql.append(')');
+    for (let i = 0; i < this.queries.length; i++) {
+      if (i > 0) {
+        sql.append(' UNION ');
+      }
+      sql.append('(');
+      this.queries[i].buildSql(sql);
+      sql.append(')');
+    }
   }
 }
 
@@ -408,6 +411,7 @@ interface CTE {
 }
 
 export class SelectQuery extends BaseQuery implements Expression {
+  readonly innerQuery?: SelectQuery | Union;
   readonly distinctOns: Column[];
   readonly columns: Column[];
   readonly joins: Join[];
@@ -418,8 +422,9 @@ export class SelectQuery extends BaseQuery implements Expression {
   offset_: number;
   joinCount = 0;
 
-  constructor(tableName: string) {
+  constructor(tableName: string, innerQuery?: SelectQuery | Union) {
     super(tableName);
+    this.innerQuery = innerQuery;
     this.distinctOns = [];
     this.columns = [];
     this.joins = [];
@@ -581,6 +586,13 @@ export class SelectQuery extends BaseQuery implements Expression {
 
   private buildFrom(sql: SqlBuilder): void {
     sql.append(' FROM ');
+
+    if (this.innerQuery) {
+      sql.append('(');
+      this.innerQuery.buildSql(sql);
+      sql.append(') AS ');
+    }
+
     sql.appendIdentifier(this.tableName);
 
     for (const join of this.joins) {

@@ -188,4 +188,21 @@ describe('FHIR Router', () => {
     expect(res).toMatchObject(allOk);
     expect(bundle).toBeDefined();
   });
+
+  test('Search multiple types', async () => {
+    const [res, bundle] = await router.handleRequest(
+      {
+        method: 'GET',
+        pathname: '/',
+        body: {},
+        params: {},
+        query: {
+          _type: 'Patient,Observation',
+        },
+      },
+      repo
+    );
+    expect(res).toMatchObject(allOk);
+    expect(bundle).toBeDefined();
+  });
 });

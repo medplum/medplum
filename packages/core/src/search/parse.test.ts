@@ -674,4 +674,11 @@ describe('Search parser', () => {
       pretty: false,
     });
   });
+
+  test('_type', () => {
+    expect(parseSearchRequest('Patient', { _type: 'Patient,Observation' })).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      types: ['Patient', 'Observation'],
+    });
+  });
 });
