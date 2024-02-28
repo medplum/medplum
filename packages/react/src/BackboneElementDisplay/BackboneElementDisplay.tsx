@@ -14,8 +14,8 @@ import { useContext, useMemo } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
-const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
-const IGNORED_PROPERTIES = new Set(DEFAULT_IGNORED_PROPERTIES.filter((prop) => !EXTENSION_KEYS.has(prop)));
+const EXTENSION_KEYS = ['extension', 'modifierExtension'];
+const IGNORED_PROPERTIES = DEFAULT_IGNORED_PROPERTIES.filter((prop) => !EXTENSION_KEYS.includes(prop));
 
 export interface BackboneElementDisplayProps {
   readonly value: TypedValue;
@@ -75,10 +75,10 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
     newElementsContext,
     <DescriptionList compact={props.compact}>
       {Object.entries(elementsContext.elements).map(([key, property]) => {
-        if (EXTENSION_KEYS.has(key) && isEmpty(property.slicing?.slices)) {
+        if (EXTENSION_KEYS.includes(key) && isEmpty(property.slicing?.slices)) {
           // an extension property without slices has no nested extensions
           return null;
-        } else if (IGNORED_PROPERTIES.has(key)) {
+        } else if (IGNORED_PROPERTIES.includes(key)) {
           return null;
         } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
           return null;
