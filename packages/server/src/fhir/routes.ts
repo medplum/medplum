@@ -210,14 +210,16 @@ protectedRoutes.use(
     const ctx = getAuthenticatedContext();
     if (!internalFhirRouter) {
       internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
-      internalFhirRouter.addEventListener('warn', (e: any) => ctx.logger.warn(e.message));
+      internalFhirRouter.addEventListener('warn', (e: any) =>
+        ctx.logger.warn(e.message, { ...e.data, project: ctx.project.id })
+      );
       internalFhirRouter.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
         recordHistogramValue('medplum.batch.entries', count, { bundleType });
         recordHistogramValue('medplum.batch.errors', errors, { bundleType });
         recordHistogramValue('medplum.batch.size', size, { bundleType });
 
         if (errors > 0 && bundleType === 'transaction') {
-          ctx.logger.warn('Error processing transaction Bundle', { count, errors, size });
+          ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: ctx.project.id });
         }
       });
     }
