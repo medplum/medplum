@@ -5,12 +5,11 @@ import { asyncWrap } from '../../async';
 import { sendOutcome } from '../outcomes';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction, Union } from '../sql';
 import { getAuthenticatedContext } from '../../context';
-import { parentProperty } from './codesystemimport';
 import { clamp, parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { validateCode } from './codesystemvalidatecode';
 import { getDatabasePool } from '../../database';
 import { getOperationDefinition } from './definitions';
-import { abstractProperty, findTerminologyResource } from './utils/terminology';
+import { abstractProperty, addPropertyFilter, findTerminologyResource, parentProperty } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
 
@@ -341,26 +340,5 @@ function addAbstractFilter(query: SelectQuery, codeSystem: CodeSystem): SelectQu
   if (!property) {
     return query;
   }
-
-  const propertyTable = query.getNextJoinAlias();
-  query.leftJoin(
-    'Coding_Property',
-    propertyTable,
-    new Conjunction([
-      new Condition(new Column(query.tableName, 'id'), '=', new Column(propertyTable, 'coding')),
-      new Condition(new Column(propertyTable, 'value'), '=', 'true'),
-    ])
-  );
-
-  const csPropertyTable = query.getNextJoinAlias();
-  query.leftJoin(
-    'CodeSystem_Property',
-    csPropertyTable,
-    new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-    ])
-  );
-  query.where(new Column(csPropertyTable, 'id'), '=', null);
-  return query;
+  return addPropertyFilter(query, property.code, 'true', true);
 }

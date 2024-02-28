@@ -6,7 +6,7 @@ import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { findTerminologyResource } from './expand';
+import { findTerminologyResource } from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'lookup');
 
