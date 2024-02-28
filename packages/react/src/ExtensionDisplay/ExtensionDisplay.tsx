@@ -1,16 +1,22 @@
-import { InternalTypeSchema, getDataType, isPopulated, isProfileLoaded, tryGetProfile } from '@medplum/core';
+import {
+  ElementType,
+  InternalTypeSchema,
+  getDataType,
+  isPopulated,
+  isProfileLoaded,
+  tryGetProfile,
+} from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState, useMemo, useEffect, useContext } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
-import { ElementDefinitionType } from '@medplum/fhirtypes';
-import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 
 export type ExtensionDisplayProps = {
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
   readonly path: string;
-  readonly elementDefinitionType?: ElementDefinitionType;
+  readonly elementDefinitionType?: ElementType;
   readonly value: any;
   readonly ignoreMissingValues?: boolean;
   readonly link?: boolean;
