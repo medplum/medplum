@@ -1150,7 +1150,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
       });
     } else {
-      promise = this.request<T>('GET', url, options);
+      options.method = 'GET';
+      promise = this.request<T>(url, options);
     }
 
     const readablePromise = new ReadablePromise(promise);
@@ -1178,7 +1179,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.setRequestContentType(options, contentType);
     }
     this.invalidateUrl(url);
-    return this.request('POST', url, options);
+    options.method = 'POST';
+    return this.request(url, options);
   }
 
   /**
@@ -1201,7 +1203,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.setRequestContentType(options, contentType);
     }
     this.invalidateUrl(url);
-    return this.request('PUT', url, options);
+    options.method = 'PUT';
+    return this.request(url, options);
   }
 
   /**
@@ -1221,7 +1224,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.setRequestBody(options, operations);
     this.setRequestContentType(options, ContentType.JSON_PATCH);
     this.invalidateUrl(url);
-    return this.request('PATCH', url, options);
+    options.method = 'PATCH';
+    return this.request(url, options);
   }
 
   /**
@@ -1236,10 +1240,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
-  delete(url: URL | string, options?: MedplumRequestOptions): Promise<any> {
+  delete(url: URL | string, options: MedplumRequestOptions = {}): Promise<any> {
     url = url.toString();
     this.invalidateUrl(url);
-    return this.request('DELETE', url, options);
+    options.method = 'DELETE';
+    return this.request(url, options);
   }
 
   /**
@@ -3244,7 +3249,22 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const headers = options.headers as Record<string, string>;
     headers['Prefer'] = 'respond-async';
 
-    return this.request('POST', url, options);
+    options.method = 'POST';
+    return this.request(url, options);
+  }
+
+  /**
+   * Wraps `fetch` execution with token refresh and retry logic.
+   * @param url - The URL to request
+   * @param options - Optional fetch options
+   * @returns The response
+   */
+  async wrappedFetch(url: string, options: RequestInit): Promise<Response> {
+    await this.refreshIfExpired();
+
+    this.addFetchOptionsDefaults(options);
+
+    return this.fetchWithRetry(url, options);
   }
 
   /**
@@ -3342,28 +3362,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Makes an HTTP request.
-   * @param method - The HTTP method (GET, POST, etc).
    * @param url - The target URL.
    * @param options - Optional fetch request init options.
    * @param state - Optional request state.
    * @returns The JSON content body if available.
    */
-  private async request<T>(
-    method: string,
-    url: string,
-    options: MedplumRequestOptions = {},
-    state: RequestState = {}
-  ): Promise<T> {
-    await this.refreshIfExpired();
-
-    options.method = method;
-    this.addFetchOptionsDefaults(options);
-
-    const response = await this.fetchWithRetry(url, options);
+  private async request<T>(url: string, options: MedplumRequestOptions = {}, state: RequestState = {}): Promise<T> {
+    const response = await this.wrappedFetch(url, options);
 
     if (response.status === 401) {
       // Refresh and try again
-      return this.handleUnauthenticated(method, url, options);
+      return this.handleUnauthenticated(url, options);
     }
 
     if (response.status === 204 || response.status === 304) {
@@ -3389,7 +3398,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     ) {
       const contentLocation = await tryGetContentLocation(response, body);
       if (contentLocation) {
-        return this.request('GET', contentLocation, { ...options, body: undefined });
+        // Follow redirect
+        return this.request(contentLocation, { ...options, method: 'GET', body: undefined });
       }
     }
 
@@ -3565,7 +3575,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       await sleep(retryDelay);
       state.pollCount++;
     }
-    return this.request('GET', statusUrl, statusOptions, state);
+    return this.request(statusUrl, { ...options, method: 'GET' }, state);
   }
 
   /**
@@ -3589,7 +3599,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (entries.length === 1) {
       const entry = entries[0];
       try {
-        entry.resolve(await this.request(entry.method, concatUrls(this.fhirBaseUrl, entry.url), entry.options));
+        entry.options.method = entry.method;
+        entry.resolve(await this.request(concatUrls(this.fhirBaseUrl, entry.url), entry.options));
       } catch (err) {
         entry.reject(new OperationOutcomeError(normalizeOperationOutcome(err)));
       }
@@ -3710,14 +3721,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Handles an unauthenticated response from the server.
    * First, tries to refresh the access token and retry the request.
    * Otherwise, calls unauthenticated callbacks and rejects.
-   * @param method - The HTTP method of the original request.
    * @param url - The URL of the original request.
    * @param options - Optional fetch request init options.
    * @returns The result of the retry.
    */
-  private handleUnauthenticated(method: string, url: string, options: MedplumRequestOptions): Promise<any> {
+  private handleUnauthenticated(url: string, options: MedplumRequestOptions): Promise<any> {
     if (this.refresh()) {
-      return this.request(method, url, options);
+      return this.request(url, options);
     }
     this.clear();
     if (this.onUnauthenticated) {
