@@ -340,5 +340,5 @@ function addAbstractFilter(query: SelectQuery, codeSystem: CodeSystem): SelectQu
   if (!property) {
     return query;
   }
-  return addPropertyFilter(query, property.code, 'true', true);
+  return addPropertyFilter(query, property.code, 'true', false);
 }

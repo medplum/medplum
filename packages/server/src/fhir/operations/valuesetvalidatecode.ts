@@ -89,14 +89,13 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
   }
 
   if (include.concept) {
-    const found = codings.find((c) => include.concept?.some((i) => i.code === c.code));
-    return checkCoding(found);
+    return codings.find((c) => include.concept?.some((i) => i.code === c.code));
   } else if (include.filter) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', include.system);
     for (const coding of codings) {
       const filterResults = await Promise.all(include.filter.map((filter) => satisfies(coding, filter, codeSystem)));
       if (filterResults.every((r) => r)) {
-        return checkCoding(coding, codeSystem);
+        return coding;
       }
     }
   }
@@ -124,14 +123,4 @@ async function satisfies(
 
   const results = await query.execute(ctx.repo.getDatabaseClient());
   return results.length > 0;
-}
-
-async function checkCoding(coding: Coding | undefined, codeSystem?: CodeSystem): Promise<Coding | undefined> {
-  if (!coding) {
-    return undefined;
-  }
-  if (!codeSystem) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', coding.system as string);
-  }
-  return (await validateCode(codeSystem, coding.code as string)) ?? coding;
 }

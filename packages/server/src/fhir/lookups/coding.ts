@@ -3,7 +3,8 @@ import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { DeleteQuery } from '../sql';
 import { append } from '@medplum/core';
-import { ImportedProperty, importCodeSystem, parentProperty } from '../operations/codesystemimport';
+import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
+import { parentProperty } from '../operations/utils/terminology';
 
 /**
  * The CodingTable class is used to index and search Coding values associated with a CodeSystem.
