@@ -84,7 +84,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
         if (!props.path) {
           throw Error(`Displaying a resource property with slices of type ${props.propertyType} requires path`);
         }
-        const sliceDisplay = (
+        let sliceDisplay = (
           <SliceDisplay
             key={slice.name}
             path={props.path}
@@ -97,7 +97,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
         );
 
         if (props.includeDescriptionListEntry) {
-          return (
+          sliceDisplay = (
             <DescriptionListEntry key={slice.name} term={getPathDisplayName(slice.name)}>
               {sliceDisplay}
             </DescriptionListEntry>
