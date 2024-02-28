@@ -8,6 +8,7 @@ import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { BullMQInstrumentation } from '@jenniferplusplus/opentelemetry-instrumentation-bullmq';
 
 // This file includes OpenTelemetry instrumentation.
 // Note that this file is related but separate from the OpenTelemetry helpers in otel.ts.
@@ -46,7 +47,7 @@ export function initOpenTelemetry(): void {
     traceExporter = new OTLPTraceExporter({ url: OTLP_TRACES_ENDPOINT });
   }
 
-  const instrumentations = [getNodeAutoInstrumentations()];
+  const instrumentations = [getNodeAutoInstrumentations(), new BullMQInstrumentation()];
 
   sdk = new NodeSDK({
     resource,
