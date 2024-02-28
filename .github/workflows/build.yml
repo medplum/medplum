@@ -61,6 +61,10 @@ jobs:
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+      - name: Danger
+        run: npx danger ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   eslint:
     name: Run eslint
@@ -213,7 +217,3 @@ jobs:
         with:
           name: medplum-code-coverage
           path: coverage/lcov.info
-      - name: Danger
-        run: npx danger ci
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
