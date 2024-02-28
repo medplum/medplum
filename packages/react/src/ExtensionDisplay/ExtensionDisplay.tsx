@@ -21,8 +21,6 @@ export type ExtensionDisplayProps = {
   readonly ignoreMissingValues?: boolean;
   readonly link?: boolean;
   readonly compact?: boolean;
-  /** (optional) Profile URL of the structure definition represented by the backbone element */
-  readonly profileUrl?: string;
 };
 
 export function ExtensionDisplay(props: ExtensionDisplayProps): JSX.Element | null {

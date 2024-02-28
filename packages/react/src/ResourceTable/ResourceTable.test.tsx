@@ -59,7 +59,7 @@ describe('ResourceTable', () => {
     expect(screen.queryByText('Gender')).toBeNull();
   });
 
-  test.only('US Core Patient profile', async () => {
+  test('US Core Patient profile', async () => {
     const USCoreStructureDefinitions = readJson(
       'fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json'
     ) as StructureDefinition[];
