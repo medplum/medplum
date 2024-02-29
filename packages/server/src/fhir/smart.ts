@@ -133,30 +133,26 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
  * @param scope - The OAuth scope string.
  * @returns Updated access policy with the OAuth scope applied.
  */
-export function applySmartScopes(
-  accessPolicy: AccessPolicy | undefined,
-  scope: string | undefined
-): AccessPolicy | undefined {
+export function applySmartScopes(accessPolicy: AccessPolicy, scope: string | undefined): AccessPolicy {
   const smartScopes = parseSmartScopes(scope);
   if (smartScopes.length === 0) {
     // No SMART scopes, so no changes to the access policy
     return accessPolicy;
   }
 
-  if (accessPolicy) {
-    // Build an access policy that is the intersection of the existing access policy and the SMART scopes
-    return intersectSmartScopes(accessPolicy, smartScopes);
-  }
-
-  // Otherwise, generate an AccessPolicy from scratch
-  return generateSmartScopesPolicy(smartScopes);
+  // Build an access policy that is the intersection of the existing access policy and the SMART scopes
+  return intersectSmartScopes(accessPolicy, smartScopes);
 }
 
 function intersectSmartScopes(accessPolicy: AccessPolicy, smartScope: SmartScope[]): AccessPolicy {
   const result = deepClone(accessPolicy);
 
   // Build list of AccessPolicy entries
-  const accessPolicyEntries = result.resource as AccessPolicyResource[];
+  const accessPolicyEntries = result.resource;
+  if (!accessPolicyEntries) {
+    // If none specified, generate an AccessPolicy from scratch
+    return generateSmartScopesPolicy(smartScope);
+  }
 
   // Sort both by resource type
   accessPolicyEntries.sort((a, b) => (a.resourceType as string).localeCompare(b.resourceType as string));
