@@ -1,6 +1,6 @@
 import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName, isPopulated } from '@medplum/core';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useMemo } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { prepareSlices, assignValuesIntoSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';
 import { useMedplum } from '@medplum/react-hooks';
@@ -20,8 +20,8 @@ export interface ResourceArrayDisplayProps {
 
 export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element | null {
   const { property, propertyType } = props;
-  const [values] = useState<any[]>(() => (Array.isArray(props.values) ? props.values : []));
   const medplum = useMedplum();
+  const values = useMemo<any[]>(() => (Array.isArray(props.values) ? props.values : []), [props.values]);
   const [loading, setLoading] = useState(true);
   const [slices, setSlices] = useState<SliceDefinitionWithTypes[]>([]);
   const [slicedValues, setSlicedValues] = useState<any[][]>(() => [values]);
