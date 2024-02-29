@@ -198,6 +198,9 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - id: install
+        name: Install deps
+        run: npm ci --maxsockets 1
       - name: Setup TurboRepo
         # Conditionally setup turborepo
         # In the past, turborepo would silently ignore empty environment variables
