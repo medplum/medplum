@@ -35,7 +35,6 @@ export function SliceDisplay(props: SliceDisplayProps): JSX.Element {
         profileUrl: slice.typeSchema?.url,
       });
     }
-    console.assert(false, 'Expected sliceElements to always be populated', props.path);
     return undefined;
   }, [parentContext, props.path, slice.typeSchema?.url, sliceElements]);
 
