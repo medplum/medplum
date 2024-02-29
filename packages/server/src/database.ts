@@ -41,7 +41,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
   });
 
   pool.on('connect', (client) => {
-    client.query(`SET statement_timeout = $1`, [config.queryTimeout ?? '60s']).catch((err) => {
+    client.query(`SET statement_timeout TO ${config.queryTimeout ?? 60000}`).catch((err) => {
       globalLogger.warn('Failed to set query timeout', err);
     });
   });
