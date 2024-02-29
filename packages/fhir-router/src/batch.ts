@@ -260,4 +260,5 @@ export interface BatchEvent extends Event {
 
 export interface LogEvent extends Event {
   message: string;
+  data?: Record<string, any>;
 }
