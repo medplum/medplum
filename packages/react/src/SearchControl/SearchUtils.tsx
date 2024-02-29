@@ -548,6 +548,7 @@ function renderPropertyValue(resource: Resource, elementDefinition: InternalSche
 
   return (
     <ResourcePropertyDisplay
+      path={elementDefinition.path}
       property={elementDefinition}
       propertyType={propertyType}
       value={value}

@@ -42,6 +42,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
       .then((slices) => {
         setSlices(slices);
         const slicedValues = assignValuesIntoSlices(defaultValue, slices, property.slicing, ctx.profileUrl);
+        addPlaceholderValues(slicedValues, slices);
         setSlicedValues(slicedValues);
         setLoading(false);
       })
@@ -49,7 +50,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
         console.error(reason);
         setLoading(false);
       });
-  }, [medplum, property, defaultValue, ctx.profileUrl, setSlicedValues, props.path]);
+  }, [medplum, property, defaultValue, ctx.profileUrl, setSlicedValues]);
 
   function setValuesWrapper(newValues: any[], sliceIndex: number): void {
     const newSlicedValues = [...slicedValues];
@@ -138,4 +139,15 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
       )}
     </Stack>
   );
+}
+
+function addPlaceholderValues(slicedValues: any[][], slices: SliceDefinitionWithTypes[]): void {
+  for (let sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
+    const slice = slices[sliceIndex];
+    const sliceValues = slicedValues[sliceIndex];
+
+    while (sliceValues.length < slice.min) {
+      sliceValues.push(undefined);
+    }
+  }
 }

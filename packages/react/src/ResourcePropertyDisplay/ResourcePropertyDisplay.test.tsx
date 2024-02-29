@@ -19,7 +19,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { render, screen } from '../test-utils/render';
+import { act, render, screen } from '../test-utils/render';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const medplum = new MockClient();
@@ -32,13 +32,16 @@ const baseProperty: Omit<InternalSchemaElement, 'type'> = {
   constraints: [],
   path: '',
 };
+
 describe('ResourcePropertyDisplay', () => {
-  function setup(children: ReactNode): void {
-    render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
+  async function setup(children: ReactNode): Promise<void> {
+    await act(async () => {
+      render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
+    });
   }
 
-  test('Renders null value', () => {
-    setup(
+  test('Renders null value', async () => {
+    await await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
@@ -47,8 +50,8 @@ describe('ResourcePropertyDisplay', () => {
     );
   });
 
-  test('Renders boolean true', () => {
-    setup(
+  test('Renders boolean true', async () => {
+    await await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
@@ -59,8 +62,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.queryByText('false')).toBeNull();
   });
 
-  test('Renders boolean false', () => {
-    setup(
+  test('Renders boolean false', async () => {
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
@@ -71,8 +74,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.queryByText('true')).toBeNull();
   });
 
-  test('Renders boolean undefined', () => {
-    setup(
+  test('Renders boolean undefined', async () => {
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
@@ -83,8 +86,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.queryByText('false')).toBeNull();
   });
 
-  test('Renders string', () => {
-    setup(
+  test('Renders string', async () => {
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
@@ -94,8 +97,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('hello')).toBeInTheDocument();
   });
 
-  test('Renders string with newline', () => {
-    setup(
+  test('Renders string with newline', async () => {
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
@@ -109,8 +112,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(numberOfLines).not.toBe(1);
   });
 
-  test('Renders canonical', () => {
-    setup(
+  test('Renders canonical', async () => {
+    await setup(
       <MemoryRouter>
         <ResourcePropertyDisplay propertyType={PropertyType.canonical} value="Patient/123" />
       </MemoryRouter>
@@ -121,8 +124,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(el).toBeInstanceOf(HTMLAnchorElement);
   });
 
-  test('Renders url', () => {
-    setup(
+  test('Renders url', async () => {
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'url' }] }}
         propertyType={PropertyType.url}
@@ -132,8 +135,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('https://example.com')).toBeInTheDocument();
   });
 
-  test('Renders uri', () => {
-    setup(
+  test('Renders uri', async () => {
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'uri' }] }}
         propertyType={PropertyType.uri}
@@ -143,8 +146,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('https://example.com')).toBeInTheDocument();
   });
 
-  test('Renders string array', () => {
-    setup(
+  test('Renders string array', async () => {
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'string' }], max: Number.POSITIVE_INFINITY }}
         propertyType={PropertyType.string}
@@ -155,8 +158,8 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('world')).toBeInTheDocument();
   });
 
-  test('Renders markdown', () => {
-    setup(
+  test('Renders markdown', async () => {
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'markdown' }] }}
         propertyType={PropertyType.markdown}
@@ -166,12 +169,12 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('hello')).toBeInTheDocument();
   });
 
-  test('Renders Address', () => {
+  test('Renders Address', async () => {
     const value: Address = {
       city: 'London',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Address' }] }}
         propertyType={PropertyType.Address}
@@ -182,12 +185,12 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('London')).toBeInTheDocument();
   });
 
-  test('Renders Annotation', () => {
+  test('Renders Annotation', async () => {
     const value: Annotation = {
       text: 'hello',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Annotation' }] }}
         propertyType={PropertyType.Annotation}
@@ -198,14 +201,14 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('hello')).toBeInTheDocument();
   });
 
-  test('Renders Attachment', () => {
+  test('Renders Attachment', async () => {
     const value: Attachment = {
       contentType: 'text/plain',
       url: 'https://example.com/file.txt',
       title: 'file.txt',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Attachment' }] }}
         propertyType={PropertyType.Attachment}
@@ -216,7 +219,7 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('file.txt')).toBeInTheDocument();
   });
 
-  test('Renders Attachment array', () => {
+  test('Renders Attachment array', async () => {
     const value: Attachment[] = [
       {
         contentType: 'text/plain',
@@ -230,7 +233,7 @@ describe('ResourcePropertyDisplay', () => {
       },
     ];
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Attachment' }], max: Number.POSITIVE_INFINITY }}
         propertyType={PropertyType.Attachment}
@@ -241,12 +244,12 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('file2.txt')).toBeInTheDocument();
   });
 
-  test('Renders CodeableConcept', () => {
+  test('Renders CodeableConcept', async () => {
     const value: CodeableConcept = {
       text: 'foo',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'CodeableConcept' }] }}
         propertyType={PropertyType.CodeableConcept}
@@ -257,13 +260,13 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('foo')).toBeInTheDocument();
   });
 
-  test('Renders Coding', () => {
+  test('Renders Coding', async () => {
     const value: Coding = {
       display: 'Test Coding',
       code: 'test-coding',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Coding' }] }}
         propertyType={PropertyType.Coding}
@@ -274,13 +277,13 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('Test Coding')).toBeInTheDocument();
   });
 
-  test('Renders ContactPoint', () => {
+  test('Renders ContactPoint', async () => {
     const value: ContactPoint = {
       system: 'email',
       value: 'foo@example.com',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'ContactPoint' }] }}
         propertyType={PropertyType.ContactPoint}
@@ -291,12 +294,12 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('foo@example.com [email]')).toBeInTheDocument();
   });
 
-  test('Renders HumanName', () => {
+  test('Renders HumanName', async () => {
     const value: HumanName = {
       family: 'Smith',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'HumanName' }] }}
         propertyType={PropertyType.HumanName}
@@ -307,13 +310,13 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('Smith')).toBeInTheDocument();
   });
 
-  test('Renders Identifier', () => {
+  test('Renders Identifier', async () => {
     const value: Identifier = {
       system: 'xyz',
       value: 'xyz123',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Identifier' }] }}
         propertyType={PropertyType.Identifier}
@@ -324,13 +327,13 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('xyz: xyz123')).toBeInTheDocument();
   });
 
-  test('Renders Period', () => {
+  test('Renders Period', async () => {
     const value: Period = {
       start: '2021-06-01T12:00:00Z',
       end: '2021-06-30T12:00:00Z',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Period' }] }}
         propertyType={PropertyType.Period}
@@ -341,13 +344,13 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('2021', { exact: false })).toBeInTheDocument();
   });
 
-  test('Renders Quantity', () => {
+  test('Renders Quantity', async () => {
     const value: Quantity = {
       value: 1,
       unit: 'mg',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Quantity' }] }}
         propertyType={PropertyType.Quantity}
@@ -358,13 +361,13 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('1 mg')).toBeInTheDocument();
   });
 
-  test('Renders Range', () => {
+  test('Renders Range', async () => {
     const value: Range = {
       low: { value: 5, unit: 'mg' },
       high: { value: 10, unit: 'mg' },
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Range' }] }}
         propertyType={PropertyType.Range}
@@ -375,13 +378,13 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('5 - 10 mg')).toBeInTheDocument();
   });
 
-  test('Renders Ratio', () => {
+  test('Renders Ratio', async () => {
     const value: Ratio = {
       numerator: { value: 5, unit: 'mg' },
       denominator: { value: 10, unit: 'ml' },
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'Ratio' }] }}
         propertyType={PropertyType.Ratio}
@@ -392,13 +395,13 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('5 mg / 10 ml')).toBeInTheDocument();
   });
 
-  test('Renders Reference', () => {
+  test('Renders Reference', async () => {
     const value: Reference = {
       reference: 'Patient/123',
       display: 'John Smith',
     };
 
-    setup(
+    await setup(
       <MemoryRouter>
         <ResourcePropertyDisplay
           property={{ ...baseProperty, type: [{ code: 'Reference' }] }}
@@ -411,14 +414,15 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText(value.display as string)).toBeInTheDocument();
   });
 
-  test('Renders BackboneElement', () => {
+  test('Renders BackboneElement', async () => {
     const value: SubscriptionChannel = {
       type: 'rest-hook',
       endpoint: 'https://example.com/hook',
     };
 
-    setup(
+    await setup(
       <ResourcePropertyDisplay
+        path="Subscription.channel"
         property={{ ...baseProperty, path: 'Subscription.channel', type: [{ code: 'SubscriptionChannel' }] }}
         propertyType={PropertyType.BackboneElement}
         value={value}
@@ -428,11 +432,11 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText(value.endpoint as string)).toBeInTheDocument();
   });
 
-  test('Handles unknown property', () => {
+  test('Handles unknown property', async () => {
     console.error = jest.fn();
-    expect(() => setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)).toThrow(
-      new Error('Displaying property of type BackboneElement requires element schema')
-    );
+    await expect(
+      setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)
+    ).rejects.toThrow('Displaying property of type BackboneElement requires element schema');
     expect(console.error).toHaveBeenCalled();
   });
 });

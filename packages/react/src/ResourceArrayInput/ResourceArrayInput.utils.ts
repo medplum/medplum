@@ -36,16 +36,6 @@ export function assignValuesIntoSlices(
     slicedValues[sliceIndex].push(value);
   }
 
-  // add placeholder empty values for required slices
-  for (let sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
-    const slice = slices[sliceIndex];
-    const sliceValues = slicedValues[sliceIndex];
-
-    while (sliceValues.length < slice.min) {
-      sliceValues.push(undefined);
-    }
-  }
-
   return slicedValues;
 }
 

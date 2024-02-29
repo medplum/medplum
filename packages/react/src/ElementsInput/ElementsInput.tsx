@@ -10,8 +10,8 @@ import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourceProperty
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { ElementsContext } from './ElementsInput.utils';
 
-const EXTENSION_KEYS = new Set(['extension', 'modifierExtension']);
-const IGNORED_PROPERTIES = new Set(['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.has(prop)));
+const EXTENSION_KEYS = ['extension', 'modifierExtension'];
+const IGNORED_PROPERTIES = ['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.includes(prop));
 
 export interface ElementsInputProps {
   readonly type: string;
@@ -61,7 +61,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
         );
 
         // no FormSection wrapper for extensions
-        if (props.type === 'Extension' || EXTENSION_KEYS.has(key)) {
+        if (props.type === 'Extension' || EXTENSION_KEYS.includes(key)) {
           return resourcePropertyInput;
         }
 
@@ -113,10 +113,10 @@ function getElementsToRender(inputElements: Record<string, InternalSchemaElement
       return false;
     }
 
-    if (EXTENSION_KEYS.has(key) && !isPopulated(element.slicing?.slices)) {
+    if (EXTENSION_KEYS.includes(key) && !isPopulated(element.slicing?.slices)) {
       // an extension property without slices has no nested extensions
       return false;
-    } else if (IGNORED_PROPERTIES.has(key)) {
+    } else if (IGNORED_PROPERTIES.includes(key)) {
       return false;
     } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && element.path.split('.').length === 2) {
       return false;

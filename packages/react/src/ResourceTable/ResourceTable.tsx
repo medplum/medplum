@@ -2,6 +2,7 @@ import { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
+import { tryGetProfile } from '@medplum/core';
 
 export interface ResourceTableProps {
   /**
@@ -21,21 +22,46 @@ export interface ResourceTableProps {
    * and not use the latest version.
    */
   readonly forceUseInput?: boolean;
+
+  /** (optional) URL of the resource profile used to display the form. */
+  readonly profileUrl?: string;
 }
 
 export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
+  const { profileUrl } = props;
   const medplum = useMedplum();
   const value = useResource(props.value);
-  const [schemaLoaded, setSchemaLoaded] = useState(false);
+  const [schemaLoaded, setSchemaLoaded] = useState<string>();
 
   useEffect(() => {
-    if (value) {
-      medplum
-        .requestSchema(value.resourceType)
-        .then(() => setSchemaLoaded(true))
-        .catch(console.log);
+    if (!value) {
+      return;
     }
-  }, [medplum, value]);
+
+    if (profileUrl) {
+      medplum
+        .requestProfileSchema(profileUrl, { expandProfile: true })
+        .then(() => {
+          const profile = tryGetProfile(profileUrl);
+          if (profile) {
+            setSchemaLoaded(profile.name);
+          } else {
+            console.error(`Schema not found for ${profileUrl}`);
+          }
+        })
+        .catch((reason) => {
+          console.error('Error in requestProfileSchema', reason);
+        });
+    } else {
+      const schemaName = value.resourceType;
+      medplum
+        .requestSchema(schemaName)
+        .then(() => {
+          setSchemaLoaded(schemaName);
+        })
+        .catch(console.error);
+    }
+  }, [medplum, profileUrl, value]);
 
   if (!schemaLoaded || !value) {
     return null;
@@ -43,10 +69,12 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
 
   return (
     <BackboneElementDisplay
+      path={value.resourceType}
       value={{
-        type: value.resourceType,
+        type: schemaLoaded,
         value: props.forceUseInput ? props.value : value,
       }}
+      profileUrl={profileUrl}
       ignoreMissingValues={props.ignoreMissingValues}
     />
   );

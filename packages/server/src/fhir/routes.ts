@@ -166,7 +166,10 @@ protectedRoutes.post('/:resourceType/:id/([$]|%24)expunge', asyncWrap(expungeHan
 protectedRoutes.get('/Subscription/:id/([$]|%24)get-ws-binding-token', asyncWrap(getWsBindingTokenHandler));
 
 // StructureDefinition $expand-profile operation
-protectedRoutes.get('/StructureDefinition/([$]|%24)expand-profile', asyncWrap(structureDefinitionExpandProfileHandler));
+protectedRoutes.post(
+  '/StructureDefinition/([$]|%24)expand-profile',
+  asyncWrap(structureDefinitionExpandProfileHandler)
+);
 
 // Validate create resource
 protectedRoutes.post(

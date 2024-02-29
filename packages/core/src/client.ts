@@ -1691,7 +1691,7 @@ export class MedplumClient extends EventTarget {
         if (options?.expandProfile) {
           const url = this.fhirUrl('StructureDefinition', '$expand-profile');
           url.search = new URLSearchParams({ url: profileUrl }).toString();
-          const sdBundle = await this.get<Bundle<StructureDefinition>>(url.toString());
+          const sdBundle = (await this.post(url.toString(), {})) as Bundle<StructureDefinition>;
           return bundleToResourceArray(sdBundle).map((sd) => {
             loadDataType(sd, sd.url);
             return sd.url;

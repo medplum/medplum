@@ -13,10 +13,11 @@ import {
  * This function returns the value and the type.
  * @param context - The base context (usually a FHIR resource).
  * @param path - The property path.
+ * @param profileUrl - The property path.
  * @returns The value of the property and the property type.
  */
-export function getValueAndType(context: TypedValue, path: string): [any, string] {
-  const typedResult = getTypedPropertyValue(context, path);
+export function getValueAndType(context: TypedValue, path: string, profileUrl?: string): [any, string] {
+  const typedResult = getTypedPropertyValue(context, path, { profileUrl });
   if (!typedResult) {
     return [undefined, 'undefined'];
   }
