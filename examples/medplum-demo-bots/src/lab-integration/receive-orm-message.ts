@@ -1,18 +1,32 @@
 import {
   BotEvent,
-  getIdentifier,
-  getReferenceString,
-  Hl7Context,
   Hl7Field,
   Hl7Message,
   Hl7Segment,
   MedplumClient,
+  createReference,
+  getIdentifier,
+  parseHl7DateTime,
+  setIdentifier,
 } from '@medplum/core';
-import { HumanName, Patient, QuestionnaireResponse, Reference, ServiceRequest, Specimen } from '@medplum/fhirtypes';
+import {
+  Annotation,
+  CodeableConcept,
+  ContactPoint,
+  Encounter,
+  HumanName,
+  Patient,
+  Practitioner,
+  Resource,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
 
-import Client from 'ssh2-sftp-client';
-
-const FACILITY_CODE = '52054';
+export const FACILITY_URL = 'https://lab.acme.org';
+export const FACILITY_ORDER_ID = new URL('orderId', FACILITY_URL).toString();
+export const FACILITY_PATIENT_ID = new URL('patientId', FACILITY_URL).toString();
+export const FACILITY_PRACTITIONER_ID = new URL('patientId', FACILITY_URL).toString();
+export const FACILITY_ORDER_CODE_SYSTEM = new URL('orderCode', FACILITY_URL).toString();
+export const FACILITY_TIME_ZONE_OFFSET = '-0500';
 
 /**
  * This Bot demonstrates how to send a lab order to an SFTP server in the form of HL7v2 ORM messages
@@ -23,217 +37,330 @@ const FACILITY_CODE = '52054';
  * @param event - The BotEvent object
  * @returns The data returned by the `list` command
  */
-export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
-  const host = event.secrets['SFTP_HOST'].valueString;
-  const user = event.secrets['SFTP_USER'].valueString;
-  const key = event.secrets['SFTP_PRIVATE_KEY'].valueString;
+export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
+  const message = event.input;
 
-  try {
-    const client = new Client();
+  // Create the patient if there is no identifier collision
+  // You can substitute this with more complex de-duplication logic
+  let patient = parsePatient(message);
+  patient = await createWithoutDuplicate(medplum, patient, FACILITY_PATIENT_ID);
 
-    await client.connect({
-      host: host,
-      username: user,
-      privateKey: key,
-      retries: 5,
-      retry_factor: 2,
-      retry_minTimeout: 1000,
+  // Create all the referenced Practitioners if there is no identifier collision
+  // You can substitute this with more complex de-duplication logic
+  let practitioners = parseAllPractitioners(message);
+  practitioners = await Promise.all(
+    practitioners.map((practitioner) => createWithoutDuplicate(medplum, practitioner, FACILITY_PRACTITIONER_ID))
+  );
+
+  // Parse out the PV1 segment related to the encounter
+  const encounter = await medplum.createResource(parseEncounter(message, patient, practitioners));
+
+  const serviceRequests = parseServiceRequests(message, patient, practitioners, encounter);
+  // Create the ServiceRequest resources
+  await Promise.all(
+    serviceRequests.map((serviceRequest) => createWithoutDuplicate(medplum, serviceRequest, FACILITY_ORDER_ID))
+  );
+
+  return message.buildAck();
+}
+
+/**
+ * Reference: https://build.fhir.org/ig/HL7/v2-to-fhir/ConceptMap-segment-pid-to-patient.html
+ * @param message - HLv2 message
+ * @returns a FHIR patient resource
+ */
+function parsePatient(message: Hl7Message): Patient {
+  const pids = message.getAllSegments('PID');
+  if (pids.length !== 1) {
+    throw new Error(`Got ${pids.length} PID Segments`);
+  }
+
+  const pid = pids[0];
+
+  const patient: Patient = {
+    resourceType: 'Patient',
+    identifier: [],
+    name: [parseHl7Name(pid.getField(5))], // PID-5: Patient Name
+    birthDate: parseHl7DateTime(pid.getField(7).toString())?.split('T')?.[0], // PID-7: Date of Birth
+    gender: parseHl7Gender(pid.getField(8).toString()), // PID-8: Administrative Sex
+    telecom: [
+      { system: 'phone', use: 'home', value: pid.getComponent(13, 1) } as ContactPoint, // PID-13: Home Phone
+      { system: 'phone', use: 'work', value: pid.getComponent(14, 1) } as ContactPoint, // PID-14: Business Phone
+    ].filter((telecom) => !!telecom.value?.length),
+  };
+
+  const patientId = pid.getField(2); // PID-2: Patient ID
+  if (!patientId) {
+    console.warn('Missing Patient Id');
+  } else {
+    setIdentifier(patient, FACILITY_PATIENT_ID, patientId.toString());
+  }
+
+  const ssn = pid.getComponent(19, 1); // PID-19: Social Security Number
+  if (ssn.length > 0) {
+    patient.identifier?.push({
+      type: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+            code: 'SS',
+          },
+        ],
+      },
+      system: 'http://hl7.org/fhir/sid/us-ssn',
+      value: ssn,
     });
-
-    // Subscription criteria is QuestionnaireResponse
-    const { serviceRequest, specimen, patient } = await readExistingResources(event.input, medplum);
-
-    if (!serviceRequest || !specimen || !patient) {
-      throw new Error('Could not find ServiceRequest, Specimen, or Patient');
-    }
-
-    const orderId = getIdentifier(serviceRequest, 'http://example.com/orderId');
-    if (!orderId) {
-      throw new Error('Could not find ID for order: ' + getReferenceString(serviceRequest));
-    }
-
-    const orderMessage = createOrmMessage(serviceRequest, patient, specimen);
-    if (orderMessage) {
-      console.log('[ORM Message] Writing Message', `${orderId}.orm`, orderMessage?.toString());
-      await writeHL7ToSftp(client, orderMessage, `./in/${orderId}.orm`);
-    }
-  } catch (error: any) {
-    console.error(error.message);
-    throw error;
   }
+
+  return patient;
 }
 
-export function createOrmMessage(
-  serviceRequest: ServiceRequest,
+/**
+ * Parses an HL7v2 PV1 (patient visit) segment into a FHIR `Encounter` resource
+ * @param message - HL7v2 message
+ * @param patient - The FHIR `Patient` resource, parsed from the PID segment
+ * @param practitioners - An array of all `Practitioners` referenced in this message
+ * @returns a FHIR `Encounter` resource
+ */
+function parseEncounter(message: Hl7Message, patient: Patient, practitioners: Practitioner[]): Encounter {
+  const segment = message.getSegment('PV1');
+  const practitionerId = segment?.getComponent(7, 1);
+  const practitioner = practitioners.find(
+    (practitioner) => getIdentifier(practitioner, FACILITY_PRACTITIONER_ID) === practitionerId
+  );
+
+  return {
+    resourceType: 'Encounter',
+    status: 'finished',
+    class: {
+      system: '	http://terminology.hl7.org/ValueSet/v3-ActEncounterCode',
+      code: 'AMB',
+    },
+    subject: createReference(patient),
+    participant: practitioner && [{ individual: createReference(practitioner) }],
+    period: {
+      start: parseHl7DateTime(segment?.getComponent(44, 1), { tzOffset: FACILITY_TIME_ZONE_OFFSET }),
+      end: parseHl7DateTime(segment?.getComponent(45, 1), { tzOffset: FACILITY_TIME_ZONE_OFFSET }),
+    },
+  };
+}
+
+/**
+ * Extracts all Practitioner references from the PV1, ORC, and OBR segments of the message
+ * @param message - HL7v2 message
+ * @returns an array Practitioners referenced in the message
+ */
+function parseAllPractitioners(message: Hl7Message): Practitioner[] {
+  const practitioners: Record<string, Practitioner> = {};
+  const fields = [
+    ...message.getAllSegments('PV1').map((segment) => segment.getField(8)),
+    ...message.getAllSegments('ORC').map((segment) => segment.getField(12)),
+    ...message.getAllSegments('OBR').map((segment) => segment.getField(16)),
+  ];
+  for (const field of fields) {
+    const practitioner = parsePractitioner(field);
+    const identifier = getIdentifier(practitioner, FACILITY_PRACTITIONER_ID);
+    if (identifier) {
+      practitioners[identifier] = practitioner;
+    }
+  }
+
+  return Object.values(practitioners);
+}
+
+/**
+ * Converts an HL7v2 XCN type field to a FHIR `Practitioner` resource
+ * @param field - the HL7v2 field
+ * @returns a FHIR `Practitioner` resource
+ */
+function parsePractitioner(field: Hl7Field): Practitioner {
+  const identifier = field.getComponent(1);
+  const name = parseHl7Name(field, 1);
+  return {
+    resourceType: 'Practitioner',
+    name: [name],
+    identifier: [
+      {
+        system: FACILITY_PRACTITIONER_ID,
+        value: identifier,
+      },
+    ],
+  };
+}
+
+/**
+ * Parse all OBR segments into individual `ServiceRequest` resources
+ * @param message - HL7v2 message
+ * @param patient - The FHIR `Patient` resource, parsed from from the PID segment
+ * @param practitioners - All of the FHIR `Practitioner`resources referenced in this message
+ * @param encounter - The FHIR `Patient` resource, parsed from from the PV1 segment
+ * @returns an array of FHIR `ServiceRequests` specified in this order
+ */
+function parseServiceRequests(
+  message: Hl7Message,
   patient: Patient,
-  specimen: Specimen
-): Hl7Message | undefined {
-  if (!patient.birthDate) {
-    throw new Error('Patient missing birth date: ' + getReferenceString(patient));
+  practitioners: Practitioner[],
+  encounter: Encounter
+): ServiceRequest[] {
+  // Create a Service Request for each OBR segment
+  const requestSegments = collectSegmentGroupsByType(message, 'OBR');
+  return requestSegments.map((segment) => parseObrSegment(segment, patient, practitioners, encounter));
+}
+/**
+ * Parse all lines within a specific OBR segment into a FHIR `ServiceRequest` resource, including notes and ordering
+ * physician
+ * @param segments - The HLv2 segments that are part of this OBR
+ * @param patient - The FHIR `Patient` resource, parsed from from the PID segment
+ * @param practitioners - All of the FHIR `Practitioner`resources referenced in this message
+ * @param encounter - The FHIR `Patient` resource, parsed from from the PV1 segment
+ * @returns a FHIR `ServiceRequest` resource related to this order
+ */
+function parseObrSegment(
+  segments: Hl7Segment[],
+  patient: Patient,
+  practitioners: Practitioner[],
+  encounter: Encounter
+): ServiceRequest {
+  const obr = segments.find((s) => s.getComponent(0, 1) === 'OBR');
+  if (!obr) {
+    throw new Error('Could not find OBR segment');
   }
-
-  const orderId = getIdentifier(serviceRequest, 'http://example.com/orderId');
-  if (!orderId) {
-    throw new Error('missing order id');
-  }
-
-  let collectedDateString = '';
-  if (specimen?.collection?.collectedDateTime) {
-    collectedDateString = formatDate(new Date(specimen.collection.collectedDateTime));
-  } else if (serviceRequest?.meta?.lastUpdated) {
-    collectedDateString = formatDate(new Date(serviceRequest.meta.lastUpdated));
-  }
-
-  const segments: Hl7Segment[] = [];
-  // Set the delimiter character for the HL7 message
-  const context = new Hl7Context('\n');
-
-  // Message Header
-  // Note: This may differ between HL7v2 versions
-  // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/MSH
-  segments.push(
-    new Hl7Segment([
-      'MSH', // MSH
-      '^~\\&', // Separators
-      '', // Sending App
-      FACILITY_CODE, // Sending Facility
-      '', // Receiving Application
-      'ACME_LAB', // Receiving Facility
-      formatDate(new Date()), // Date & Time
-      '', // Security ST
-      'ORM^O01', // Message Type
-      '', // Message Control ID
-      'P', // Production/Test
-      '2.3', // Version Id
-      ...Array(7).fill(''),
-    ])
+  const notes = segments.filter((s) => s.getComponent(0, 1) === 'NTE').map(parseHl7Note);
+  const orderingProviderId = obr.getComponent(16, 1);
+  const orderingProvider = practitioners.find(
+    (practitioner) => getIdentifier(practitioner, FACILITY_PRACTITIONER_ID) === orderingProviderId
   );
 
-  // PID Segment
-  // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/PID
-  segments.push(
-    new Hl7Segment([
-      'PID', // PID
-      '1', // Section id
-      orderId, // Patient ID (External ID)
-      orderId, // Patient ID (Internal ID)
-      '', // Alternate Patient Id
-      formatName(patient.name?.[0]), // Patient Name
-      '', // Mother Maiden Name (N/A)
-      formatDate(new Date(patient.birthDate), false), //Date of Birth
-      mapGender(patient.gender), // Sex
-      '', // Patient Alias (N/A)
-      '', // Race (N/A)
-      '', // Patient Address
-      ...Array(8).fill(''), // Unused fields
-    ])
+  const serviceRequest: ServiceRequest = {
+    resourceType: 'ServiceRequest',
+    intent: 'order',
+    status: 'active',
+    subject: createReference(patient),
+    encounter: createReference(encounter),
+    requisition: { system: FACILITY_ORDER_ID, value: obr.getComponent(2, 1) },
+    code: parseHl7CodeableConcept(obr.getField(4)),
+    note: notes.length ? notes : undefined,
+    requester: orderingProvider && createReference(orderingProvider),
+    reasonCode: segments
+      .filter((s) => s.getComponent(0, 1) === 'DG1')
+      .map((segment) => parseHl7CodeableConcept(segment.getField(3)))
+      .filter((e): e is CodeableConcept => !!e),
+  };
+  return serviceRequest;
+}
+
+/**
+ * Checks for an existing resource based on identifier. Creates a new resource if there is no existing resource
+ * @param medplum - the MedplumClient
+ * @param resource - resource to create
+ * @param identifierSystem - system string used to identify duplicates
+ * @returns new or existing resource
+ */
+async function createWithoutDuplicate<T extends Resource>(
+  medplum: MedplumClient,
+  resource: T,
+  identifierSystem: string
+): Promise<T> {
+  return medplum.createResourceIfNoneExist(
+    resource,
+    `identifier=${identifierSystem}|${getIdentifier(resource, identifierSystem)}`
   );
-
-  // Common Order (ORC) segment
-  // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/ORC
-  segments.push(
-    new Hl7Segment([
-      'ORC', // ORC
-      'NW', // Order Control
-      orderId, // Placer Order number
-      '', // Filler order number TODO: What is this?
-      '', // Placer order number
-      'R', // Order Status
-      '', // Response Flag
-      '', // Quantity/Timing,
-      '', // Parent,
-      formatDate(new Date()), // Date / time of transaction
-      '', // Entered by
-      '', // Verified by
-      '', // Ordering Provider
-      FACILITY_CODE, // Enterer's Location,
-      ...new Array(6).fill(''),
-    ])
-  );
-
-  // OBR- Observation Request
-  // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/OBR
-  segments.push(
-    new Hl7Segment([
-      'OBR', // OBR
-      '1', // Set ID
-      orderId, // Placer Order Number TODO: What is this?
-      '', // Filler Order number
-      '8167^PANEL B FULL^^PANEL B FULL', // Universal order id
-      '', // Priority,
-      formatDate(new Date()), // Requested date/time
-      collectedDateString, // Collection time
-      ...new Array(19).fill(''), // unused fields
-      '^^^^^R',
-      ...new Array(6).fill(''),
-    ])
-  );
-
-  return new Hl7Message(segments, context);
 }
 
-/* Medplum I/O */
+/**
+ * Some
+ * @param message - HL7v2 Message
+ * @param type - The segment group type
+ * @returns An array of segment groups, where ech group
+ */
+function collectSegmentGroupsByType(message: Hl7Message, type: string): Hl7Segment[][] {
+  const result: Hl7Segment[][] = [];
+  const segments = message.segments;
+  let start = undefined;
 
-async function readExistingResources(
-  response: QuestionnaireResponse,
-  medplum: MedplumClient
-): Promise<{
-  serviceRequest: ServiceRequest | undefined;
-  specimen: Specimen | undefined;
-  patient: Patient | undefined;
-}> {
-  const serviceRequest = await medplum.readReference(response.subject as Reference<ServiceRequest>);
-  const specimen = await medplum.readReference(serviceRequest.specimen?.[0] as Reference<Specimen>);
-  const patient = await medplum.readReference(serviceRequest.subject as Reference<Patient>);
-
-  return { serviceRequest, specimen, patient };
-}
-
-/* SFTP I/O */
-
-async function writeHL7ToSftp(client: Client, message: Hl7Message, dstPath: string): Promise<void> {
-  try {
-    console.log('Writing');
-    console.log(message.toString().replaceAll('\r', '\n'));
-    await client.put(Buffer.from(message.toString()), dstPath);
-  } catch (error) {
-    throw new Error(`Error writing to SFTP: ${error}`);
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    if (segment.getComponent(0, 1) === type) {
+      if (start !== undefined) {
+        result.push(segments.slice(start, i));
+      }
+      start = i;
+    }
   }
+  if (start !== undefined) {
+    result.push(segments.slice(start));
+  }
+  return result;
 }
 
-/* Helper Functions */
+/* HL7v2 Parsing Utilities */
+function parseHl7CodeableConcept(field: Hl7Field): CodeableConcept | undefined {
+  if (!field.getComponent(1)) {
+    return undefined;
+  }
+  return {
+    coding: [
+      {
+        code: field.getComponent(1),
+        display: field.getComponent(2),
+        system: translateCodeSystem(field.getComponent(3)),
+      },
+    ],
+  };
+}
 
-function formatDate(date: Date | undefined, includeTime = true): string {
-  if (!date) {
-    return '';
+/**
+ * @param noteSegment - an HL7v2 NTE segment
+ * @returns a FHIR `Annotation`
+ */
+function parseHl7Note(noteSegment: Hl7Segment): Annotation {
+  return {
+    text: noteSegment.getComponent(3, 1),
+  };
+}
+
+function translateCodeSystem(system: string): string | undefined {
+  switch (system.toUpperCase()) {
+    case 'I9':
+      return 'http://hl7.org/fhir/sid/icd-9-cm';
+    case 'L':
+      return FACILITY_ORDER_CODE_SYSTEM;
+  }
+  return undefined;
+}
+
+// Reference: https://build.fhir.org/ig/HL7/v2-to-fhir/ConceptMap-datatype-xpn-to-humanname.html
+function parseHl7Name(field: Hl7Field, indexOffset = 0): HumanName {
+  const name: HumanName = {
+    family: field.getComponent(indexOffset + 1),
+    given: [field.getComponent(indexOffset + 2)],
+  };
+
+  const middleName = field.getComponent(indexOffset + 3);
+  if (middleName !== '') {
+    name.given?.push(middleName);
   }
 
-  let [dateString, timeString] = date.toISOString().split('T');
-  dateString = dateString.replaceAll('-', '');
-  timeString = timeString.replaceAll(':', '').substring(0, 4);
-
-  return includeTime ? dateString + timeString : dateString;
-}
-
-function formatName(name: HumanName | undefined): string {
-  if (!name?.family || !name?.given?.[0]) {
-    throw new Error('Could not find name for patient');
-  }
-  const components = [name.family, name.given?.[0]];
-  const middleInitial = name.given?.[1]?.charAt(0);
-  if (middleInitial) {
-    components.push(middleInitial);
+  const suffix = field.getComponent(indexOffset + 4);
+  if (suffix !== '') {
+    name.suffix = [suffix];
   }
 
-  return new Hl7Field([components]).toString();
+  const prefix = field.getComponent(indexOffset + 5);
+  if (prefix !== '') {
+    name.prefix = [prefix];
+  }
+
+  return name;
 }
 
-function mapGender(gender: Patient['gender'] | undefined): string {
+function parseHl7Gender(gender: string): Patient['gender'] {
   switch (gender?.toLowerCase().at(0)) {
     case 'm':
+      return 'male';
     case 'f':
-      return gender.charAt(0).toUpperCase();
+      return 'female';
     default:
-      return 'U';
+      return 'unknown';
   }
 }
