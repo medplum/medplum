@@ -36,6 +36,7 @@ export class App {
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
+  private pingUtilAvailable: boolean | undefined = undefined;
 
   constructor(
     readonly medplum: MedplumClient,
@@ -265,8 +266,41 @@ export class App {
     }
   }
 
+  // This covers Windows, Linux, and Mac
+  // Regarding `reqTimeout` - this is timeout per request... max time to wait before exiting if not received a request
+  private getPingCommand(ip: string, count = 4, deadline = 3600): string {
+    return platform() === 'win32'
+      ? `ping /n ${count} /w ${Math.ceil(deadline / count)} ${ip}`
+      : `ping -c ${count} ${platform() === 'darwin' ? '-t' : '-w'} ${deadline} ${ip}`;
+  }
+
+  private async isPingUtilAvailable(): Promise<boolean> {
+    let pingUtilAvailable = this.pingUtilAvailable;
+    if (pingUtilAvailable === undefined) {
+      return new Promise((resolve) => {
+        exec(this.getPingCommand('localhost', 1, 800))
+          .then(() => {
+            pingUtilAvailable = true;
+            resolve(true);
+          })
+          .catch((err) => {
+            this.log.error(normalizeErrorString(err));
+            pingUtilAvailable = false;
+            resolve(false);
+          })
+          .finally(() => {
+            this.pingUtilAvailable = pingUtilAvailable;
+          });
+      });
+    }
+    return Promise.resolve(pingUtilAvailable);
+  }
+
   private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
     try {
+      if (!(await this.isPingUtilAvailable())) {
+        throw new Error('Ping utility not available. Make sure your environment has the `ping` command available.');
+      }
       if (message.body && message.body !== 'PING') {
         const warnMsg = 'Message body present but unused. Body should be empty for a ping request.';
         this.log.warn(warnMsg);
@@ -279,10 +313,17 @@ export class App {
         this.log.error(errMsg);
         throw new Error(errMsg);
       }
-      // This covers Windows, Linux, and Mac
-      const { stderr, stdout } = await exec(
-        platform() === 'win32' ? `ping ${message.remote}` : `ping -c 4 ${message.remote}`
-      );
+
+      let stderr: string;
+      let stdout: string;
+      try {
+        const { stderr: _stderr, stdout: _stdout } = await exec(this.getPingCommand(message.remote));
+        stdout = _stdout;
+        stderr = _stderr;
+      } catch (err: unknown) {
+        throw new Error(`Unable to ping ${message.remote}. Error: ${normalizeErrorString(err)}`);
+      }
+
       if (stderr) {
         throw new Error(`Received on stderr:\n\n${stderr}`);
       }
@@ -300,7 +341,7 @@ export class App {
       this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_IP_GIVEN'}: ${normalizeErrorString(err)}`);
       this.addToWebSocketQueue({
         type: 'agent:error',
-        body: (err as Error).message,
+        body: normalizeErrorString(err),
       } satisfies AgentError);
     }
   }
@@ -327,7 +368,7 @@ export class App {
     const address = new URL(message.remote);
     const client = new Hl7Client({
       host: address.hostname,
-      port: parseInt(address.port, 10),
+      port: Number.parseInt(address.port, 10),
     });
 
     client

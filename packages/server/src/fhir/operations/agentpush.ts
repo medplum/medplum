@@ -90,6 +90,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   await redisSubscriber.subscribe(message.callback);
   redisSubscriber.on('message', (_channel: string, message: string) => {
     const response = JSON.parse(message);
+    console.log(message);
     res.status(200).type(response.contentType).send(response.body);
     cleanup();
   });
