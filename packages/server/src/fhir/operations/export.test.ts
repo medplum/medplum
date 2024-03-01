@@ -23,10 +23,7 @@ describe('Export', () => {
   });
 
   test('Success', async () => {
-    const { project } = await createTestProject();
-    expect(project).toBeDefined();
-
-    const accessToken = await initTestAuth();
+    const accessToken = await initTestAuth({ membership: { admin: true } });
     expect(accessToken).toBeDefined();
 
     const res1 = await request(app)
@@ -99,7 +96,7 @@ describe('Export', () => {
   });
 
   test('System Export Accepted with GET', async () => {
-    const accessToken = await initTestAuth();
+    const accessToken = await initTestAuth({ membership: { admin: true } });
 
     // Start the export
     const initRes = await request(app)
@@ -114,7 +111,7 @@ describe('Export', () => {
   });
 
   test('Patient Export Accepted with GET', async () => {
-    const accessToken = await initTestAuth();
+    const accessToken = await initTestAuth({ membership: { admin: true } });
 
     // Start the export
     const initRes = await request(app)
@@ -129,7 +126,7 @@ describe('Export', () => {
   });
 
   test('exportResourceType iterating through paginated search results', async () => {
-    const { project } = await createTestProject();
+    const { project } = await createTestProject({ membership: { admin: true } });
     expect(project).toBeDefined();
     const exporter = new BulkExporter(systemRepo, undefined);
     const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
