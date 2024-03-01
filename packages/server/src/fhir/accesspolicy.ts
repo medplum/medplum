@@ -64,11 +64,7 @@ export async function getAccessPolicyForLogin(
   login: Login,
   membership: ProjectMembership
 ): Promise<AccessPolicy | undefined> {
-  let accessPolicy: AccessPolicy | undefined = undefined;
-
-  if (membership.access || membership.accessPolicy) {
-    accessPolicy = await buildAccessPolicy(membership);
-  }
+  let accessPolicy = await buildAccessPolicy(membership);
 
   if (login.scope) {
     // If the login specifies SMART scopes,
@@ -115,6 +111,12 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     if (replaced.ipAccessRule) {
       ipAccessRules = ipAccessRules.concat(replaced.ipAccessRule);
     }
+  }
+
+  if (!membership.access && !membership.accessPolicy) {
+    // Preserve legacy behavior of null access policy
+    // TODO: This should be removed in future release when access policies are required
+    resourcePolicies.push({ resourceType: '*' });
   }
 
   addDefaultResourceTypes(resourcePolicies);
@@ -187,16 +189,11 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
 function applyProjectAdminAccessPolicy(
   login: Login,
   membership: ProjectMembership,
-  accessPolicy: AccessPolicy | undefined
-): AccessPolicy | undefined {
+  accessPolicy: AccessPolicy
+): AccessPolicy {
   if (login.superAdmin) {
     // If the user is a super admin, then do not apply any additional access policy rules.
     return accessPolicy;
-  }
-
-  if (!membership.admin && !accessPolicy) {
-    // Not a project admin and no access policy, so return default access.
-    return undefined;
   }
 
   if (accessPolicy) {

@@ -1,4 +1,4 @@
-import { createReference, getReferenceString, ProfileResource, sleep } from '@medplum/core';
+import { createReference, getReferenceString, sleep } from '@medplum/core';
 import {
   AccessPolicy,
   AsyncJob,
@@ -8,15 +8,14 @@ import {
   Project,
   ProjectMembership,
   Resource,
-  User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Express } from 'express';
 import internal from 'stream';
 import request from 'supertest';
-import { inviteUser } from './admin/invite';
+import { ServerInviteResponse, inviteUser } from './admin/invite';
 import { AuthenticatedRequestContext, requestContextStore } from './context';
-import { getSystemRepo, Repository } from './fhir/repo';
+import { Repository, getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 
@@ -160,7 +159,7 @@ export async function initTestAuth(options?: TestProjectOptions): Promise<string
 export async function addTestUser(
   project: Project,
   accessPolicy?: AccessPolicy
-): Promise<{ user: User; profile: ProfileResource; accessToken: string }> {
+): Promise<ServerInviteResponse & { accessToken: string }> {
   requestContextStore.enterWith(AuthenticatedRequestContext.system());
   if (accessPolicy) {
     const systemRepo = getSystemRepo();
@@ -172,7 +171,7 @@ export async function addTestUser(
 
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
-  const { user, profile } = await inviteUser({
+  const inviteResponse = await inviteUser({
     project,
     email,
     password,
@@ -184,6 +183,8 @@ export async function addTestUser(
       accessPolicy: accessPolicy && createReference(accessPolicy),
     },
   });
+
+  const { user, profile } = inviteResponse;
 
   const login = await tryLogin({
     authMethod: 'password',
@@ -201,7 +202,7 @@ export async function addTestUser(
     profile: getReferenceString(profile),
   });
 
-  return { user, profile, accessToken };
+  return { ...inviteResponse, accessToken };
 }
 
 /**
