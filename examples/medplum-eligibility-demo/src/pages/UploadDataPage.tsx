@@ -1,54 +1,63 @@
 import { Button } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, MedplumClient } from '@medplum/core';
-import { Bundle, BundleEntry, Resource, ValueSet } from '@medplum/fhirtypes';
+import { capitalize, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { Bundle } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
-import { IconCircleCheck } from '@tabler/icons-react';
-import { useParams } from 'react-router-dom';
-import x12ServiceTypeCodes from '../../data/core/x12-service-type-codes.json';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import coreData from '../../data/core/core-data.json';
+import exampleData from '../../data/example/example-data.json';
 
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
   const { dataType } = useParams();
+  const navigate = useNavigate();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
-  const data = x12ServiceTypeCodes as ValueSet;
-
-  const dataBundle = createBundle([data]);
+  const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
 
   const handleDataUpload = () => {
-    console.log(dataBundle);
+    setButtonDisabled(true);
+    let uploadFunction: (medlum: MedplumClient) => Promise<void>;
+    if (dataType === 'core') {
+      uploadFunction = uploadCoreData;
+    } else {
+      uploadFunction = uploadExampleData;
+    }
+
+    uploadFunction(medplum)
+      .then(() => navigate('/'))
+      .catch((error) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(error),
+        });
+      });
   };
 
   return (
     <Document>
-      <Button onClick={handleDataUpload}>{`Upload ${dataTypeDisplay} Data`}</Button>
+      <Button disabled={buttonDisabled} onClick={handleDataUpload}>{`Upload ${dataTypeDisplay} Data`}</Button>
     </Document>
   );
 }
 
-async function uploadData(medplum: MedplumClient, data: Bundle) {
-  await medplum.executeBatch(data);
+async function uploadCoreData(medplum: MedplumClient): Promise<void> {
+  await medplum.executeBatch(coreData as Bundle);
   showNotification({
     icon: <IconCircleCheck />,
     title: 'Success',
-    message: 'Data uploaded',
+    message: 'Core data uploaded',
   });
 }
 
-function createBundle(data: Resource[]): Bundle {
-  const entries = data.map((resource) => {
-    const entry: BundleEntry = {
-      request: { method: 'POST', url: resource.resourceType },
-      resource,
-    };
-    return entry;
+async function uploadExampleData(medplum: MedplumClient): Promise<void> {
+  await medplum.executeBatch(exampleData as Bundle);
+  showNotification({
+    icon: <IconCircleCheck />,
+    title: 'Success',
+    message: 'Example data uploaded',
   });
-
-  const bundle: Bundle = {
-    resourceType: 'Bundle',
-    type: 'batch',
-    entry: entries,
-  };
-
-  return bundle;
 }
