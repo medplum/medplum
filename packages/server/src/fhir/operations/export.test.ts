@@ -23,10 +23,7 @@ describe('Export', () => {
   });
 
   test('Success', async () => {
-    const { project } = await createTestProject();
-    expect(project).toBeDefined();
-
-    const accessToken = await initTestAuth();
+    const accessToken = await initTestAuth({ membership: { admin: true } });
     expect(accessToken).toBeDefined();
 
     const res1 = await request(app)
