@@ -1,5 +1,5 @@
 import { ContentType } from '@medplum/core';
-import { Parameters, ValueSet } from '@medplum/fhirtypes';
+import { Parameters, ParametersParameter, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -73,17 +73,31 @@ describe('ValueSet validate-code', () => {
     expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('ward');
   });
 
-  test('Filter included code succeeds', async () => {
+  test.each<ParametersParameter[]>([
+    [
+      { name: 'system', valueUri: system },
+      { name: 'code', valueCode: 'ITWINBRO' },
+    ],
+    [{ name: 'coding', valueCoding: { system, code: 'ITWINBRO' } }],
+    [
+      {
+        name: 'codeableConcept',
+        valueCodeableConcept: {
+          coding: [
+            { system, code: 'VET' },
+            { system, code: 'ITWINBRO' },
+          ],
+        },
+      },
+    ],
+  ])('Filter included code succeeds', async (...params: ParametersParameter[]) => {
     const res2 = await request(app)
       .post(`/fhir/R4/ValueSet/$validate-code`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
-        parameter: [
-          { name: 'url', valueUri: valueSet.url },
-          { name: 'coding', valueCoding: { system, code: 'ITWINBRO' } },
-        ],
+        parameter: [{ name: 'url', valueUri: valueSet.url }, ...params],
       } as Parameters);
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toEqual('Parameters');
@@ -108,5 +122,60 @@ describe('ValueSet validate-code', () => {
     expect(res2.body.resourceType).toEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
+  });
+
+  test('Returns negative result on display mismatch', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: valueSet.url },
+          { name: 'coding', valueCoding: { system, code: 'AUNT' } },
+          { name: 'display', valueString: 'ant' },
+        ],
+      } as Parameters);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('aunt');
+  });
+
+  test('Returns negative result when no coding matches', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: valueSet.url },
+          { name: 'coding', valueCoding: { system: 'http://example.com/other', code: 'foo' } },
+        ],
+      } as Parameters);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
+    expect(output.parameter?.find((p) => p.name === 'display')).toBeUndefined();
+  });
+
+  test('Returns error when no coding specified', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: valueSet.url },
+          { name: 'code', valueCode: 'RETIREE' },
+        ],
+      } as Parameters);
+    expect(res2.status).toBe(400);
+    expect(res2.body.resourceType).toEqual('OperationOutcome');
   });
 });
