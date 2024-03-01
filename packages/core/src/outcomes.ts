@@ -8,6 +8,7 @@ const NOT_MODIFIED_ID = 'not-modified';
 const NOT_FOUND_ID = 'not-found';
 const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
+const PRECONDITION_FAILED_ID = 'precondition-failed';
 const FORBIDDEN_ID = 'forbidden';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 const ACCEPTED_ID = 'accepted';
@@ -105,6 +106,20 @@ export const gone: OperationOutcome = {
       code: 'deleted',
       details: {
         text: 'Gone',
+      },
+    },
+  ],
+};
+
+export const preconditionFailed: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: PRECONDITION_FAILED_ID,
+  issue: [
+    {
+      severity: 'error',
+      code: 'lock-error',
+      details: {
+        text: 'Precondition Failed',
       },
     },
   ],
@@ -250,6 +265,8 @@ export function getStatus(outcome: OperationOutcome): number {
       return 409;
     case GONE_ID:
       return 410;
+    case PRECONDITION_FAILED_ID:
+      return 412;
     case TOO_MANY_REQUESTS_ID:
       return 429;
     default:
