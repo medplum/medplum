@@ -4,9 +4,9 @@ import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { sendOutcome } from '../outcomes';
 import { allOk, badRequest } from '@medplum/core';
-import { findTerminologyResource, getParentProperty } from './utils/terminology';
+import { findAncestor, findTerminologyResource } from './utils/terminology';
 import { CodeSystem } from '@medplum/fhirtypes';
-import { Column, Condition, Conjunction, SelectQuery, Union } from '../sql';
+import { Column, SelectQuery } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 
 const operation = getOperationDefinition('CodeSystem', 'subsumes');
@@ -62,45 +62,4 @@ export async function isSubsumed(baseCode: string, ancestorCode: string, codeSys
   const query = findAncestor(base, codeSystem, ancestorCode);
   const results = await query.execute(ctx.repo.getDatabaseClient());
   return results.length > 0;
-}
-
-export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestorCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
-  const query = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where('system', '=', codeSystem.id);
-  const propertyTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'Coding_Property',
-    propertyTable,
-    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target'))
-  );
-
-  const csPropertyTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'CodeSystem_Property',
-    csPropertyTable,
-    new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-    ])
-  );
-
-  const recursiveCTE = 'cte_ancestors';
-  const recursiveTable = query.getNextJoinAlias();
-  query.innerJoin(
-    recursiveCTE,
-    recursiveTable,
-    new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id'))
-  );
-
-  return new SelectQuery(recursiveCTE)
-    .column('code')
-    .column('display')
-    .withRecursive(recursiveCTE, new Union(base, query))
-    .where('code', '=', ancestorCode)
-    .limit(1);
 }

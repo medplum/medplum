@@ -2,7 +2,7 @@ import { OperationOutcomeError, Operator, badRequest } from '@medplum/core';
 import { getAuthenticatedContext } from '../../../context';
 import { r4ProjectId } from '../../../seed';
 import { CodeSystem, CodeSystemConceptProperty, ConceptMap, ValueSet } from '@medplum/fhirtypes';
-import { SelectQuery, Conjunction, Condition, Column } from '../../sql';
+import { SelectQuery, Conjunction, Condition, Column, Union } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
@@ -68,6 +68,47 @@ export function addPropertyFilter(query: SelectQuery, property: string, value: s
   );
   query.where(new Column(csPropertyTable, 'id'), isEqual ? '!=' : '=', null);
   return query;
+}
+
+export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestorCode: string): SelectQuery {
+  const property = getParentProperty(codeSystem);
+
+  const query = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('display')
+    .where('system', '=', codeSystem.id);
+  const propertyTable = query.getNextJoinAlias();
+  query.innerJoin(
+    'Coding_Property',
+    propertyTable,
+    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target'))
+  );
+
+  const csPropertyTable = query.getNextJoinAlias();
+  query.innerJoin(
+    'CodeSystem_Property',
+    csPropertyTable,
+    new Conjunction([
+      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+    ])
+  );
+
+  const recursiveCTE = 'cte_ancestors';
+  const recursiveTable = query.getNextJoinAlias();
+  query.innerJoin(
+    recursiveCTE,
+    recursiveTable,
+    new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id'))
+  );
+
+  return new SelectQuery(recursiveCTE)
+    .column('code')
+    .column('display')
+    .withRecursive(recursiveCTE, new Union(base, query))
+    .where('code', '=', ancestorCode)
+    .limit(1);
 }
 
 export function getParentProperty(codeSystem: CodeSystem): CodeSystemConceptProperty {

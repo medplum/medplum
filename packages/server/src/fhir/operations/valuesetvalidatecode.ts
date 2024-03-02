@@ -12,11 +12,10 @@ import {
 } from '@medplum/fhirtypes';
 import { sendOutcome } from '../outcomes';
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
-import { addPropertyFilter, findTerminologyResource } from './utils/terminology';
+import { addPropertyFilter, findAncestor, findTerminologyResource } from './utils/terminology';
 import { validateCode } from './codesystemvalidatecode';
 import { Column, SelectQuery } from '../sql';
 import { getAuthenticatedContext } from '../../context';
-import { findAncestor } from './subsumes';
 
 const operation = getOperationDefinition('ValueSet', 'validate-code');
 
