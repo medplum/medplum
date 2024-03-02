@@ -73,7 +73,7 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
     for (const expression of expressions) {
       const values = tryEvalFhirPath(expression, resource);
       if (values.length > 0) {
-        row.push(tryCsvExcape(values[0]));
+        row.push(tryCsvEscape(values[0]));
       } else {
         row.push('');
       }
@@ -99,7 +99,7 @@ function tryEvalFhirPath(expression: string, resource: Resource): unknown[] {
   }
 }
 
-function tryCsvExcape(input: unknown): string {
+function tryCsvEscape(input: unknown): string {
   try {
     return csvEscape(input);
   } catch (err) {
@@ -160,5 +160,9 @@ function csvEscape(input: unknown): string {
 }
 
 function csvEscapeString(input: string): string {
-  return '"' + input.replace(/"/g, '""') + '"';
+  let result = input.trim().replace(/"/g, '""');
+  if (result.startsWith('=')) {
+    result = "'" + result;
+  }
+  return `"${result}"`;
 }
