@@ -99,4 +99,20 @@ describe('CodeSystem subsumes', () => {
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('not-subsumed');
   });
+
+  test('Returns error on incomplete input', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/CodeSystem/$subsumes`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: system },
+          { name: 'codeA', valueCode: 'SIB' },
+        ],
+      } as Parameters);
+    expect(res2.status).toBe(400);
+    expect(res2.body.resourceType).toEqual('OperationOutcome');
+  });
 });
