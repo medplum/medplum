@@ -164,14 +164,11 @@ function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestorCode: s
     recursiveTable,
     new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id'))
   );
-  const offset = query.offset_;
-  query.offset(0);
 
   return new SelectQuery(recursiveCTE)
     .column('code')
     .column('display')
     .withRecursive(recursiveCTE, new Union(base, query))
     .where('code', '=', ancestorCode)
-    .limit(query.limit_)
-    .offset(offset);
+    .limit(1);
 }
