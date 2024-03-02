@@ -52,7 +52,16 @@ export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Res
     return;
   }
 
-  const valueSet = await findTerminologyResource<ValueSet>('ValueSet', params.url);
+  const found = await validateCodingInValueSet(codings, params.url);
+
+  await sendOutputParameters(req, res, operation, allOk, {
+    result: Boolean(found) && (!params.display || found?.display === params.display),
+    display: found?.display,
+  });
+});
+
+export async function validateCodingInValueSet(codings: Coding[], valueSetUrl: string): Promise<Coding | undefined> {
+  const valueSet = await findTerminologyResource<ValueSet>('ValueSet', valueSetUrl);
   let found: Coding | undefined;
   if (valueSet.expansion && !valueSet.expansion.parameter) {
     found = valueSet.expansion.contains?.find((e) => codings.some((c) => e.system === c.system && e.code === c.code));
@@ -67,14 +76,10 @@ export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Res
 
   if (found) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', found.system as string);
-    found = (await validateCode(codeSystem, found.code as string)) ?? found;
+    return (await validateCode(codeSystem, found.code as string)) ?? found;
   }
-
-  await sendOutputParameters(req, res, operation, allOk, {
-    result: Boolean(found) && (!params.display || found?.display === params.display),
-    display: found?.display,
-  });
-});
+  return undefined;
+}
 
 async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Coding[]): Promise<Coding | undefined> {
   if (!include.system) {

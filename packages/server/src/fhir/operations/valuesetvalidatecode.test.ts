@@ -90,7 +90,7 @@ describe('ValueSet validate-code', () => {
         },
       },
     ],
-  ])('Filter included code succeeds', async (...params: ParametersParameter[]) => {
+  ])('Filter included code succeeds: %j', async (...params: ParametersParameter[]) => {
     const res2 = await request(app)
       .post(`/fhir/R4/ValueSet/$validate-code`)
       .set('Authorization', 'Bearer ' + accessToken)
