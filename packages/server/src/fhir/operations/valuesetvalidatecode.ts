@@ -12,10 +12,11 @@ import {
 } from '@medplum/fhirtypes';
 import { sendOutcome } from '../outcomes';
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
-import { addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
+import { addPropertyFilter, findTerminologyResource } from './utils/terminology';
 import { validateCode } from './codesystemvalidatecode';
-import { Column, Condition, Conjunction, SelectQuery, Union } from '../sql';
+import { Column, SelectQuery } from '../sql';
 import { getAuthenticatedContext } from '../../context';
+import { findAncestor } from './subsumes';
 
 const operation = getOperationDefinition('ValueSet', 'validate-code');
 
@@ -30,7 +31,7 @@ type ValueSetValidateCodeParameters = {
 };
 
 // Implements FHIR "Value Set Validation"
-// http://hl7.org/fhir/R4B/valueset-operation-validate-code.html
+// http://hl7.org/fhir/R4/valueset-operation-validate-code.html
 
 export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Response) => {
   const params = parseInputParameters<ValueSetValidateCodeParameters>(operation, req);
@@ -135,45 +136,4 @@ async function satisfies(
 
   const results = await query.execute(ctx.repo.getDatabaseClient());
   return results.length > 0;
-}
-
-function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestorCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
-  const query = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where('system', '=', codeSystem.id);
-  const propertyTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'Coding_Property',
-    propertyTable,
-    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target'))
-  );
-
-  const csPropertyTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'CodeSystem_Property',
-    csPropertyTable,
-    new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-    ])
-  );
-
-  const recursiveCTE = 'cte_ancestors';
-  const recursiveTable = query.getNextJoinAlias();
-  query.innerJoin(
-    recursiveCTE,
-    recursiveTable,
-    new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id'))
-  );
-
-  return new SelectQuery(recursiveCTE)
-    .column('code')
-    .column('display')
-    .withRecursive(recursiveCTE, new Union(base, query))
-    .where('code', '=', ancestorCode)
-    .limit(1);
 }
