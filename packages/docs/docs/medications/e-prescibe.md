@@ -2,7 +2,9 @@
 
 Medplum allows enabling e-prescribe(eRx) functionality.
 
-e-Prescribe functionality is only available as part of [Medplum EHR](/solutions/medplum-ehr) and for provider organizations (not for software partners or resellers).
+::: warning
+Medplum's e-prescribe functionality is exclusively available to providers directly engaged in patient care as part of [Medplum EHR](/solutions/medplum-ehr) . Applications that embed or resell this functionality are strictly prohibited.
+:::
 
 Visit our [DoseSpot integrations page](/docs/integration/dosespot) to learn more about our DoseSpot integration.
 

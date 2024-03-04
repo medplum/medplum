@@ -8,7 +8,9 @@ This collaboration enables healthcare professionals to seamlessly place medicati
 - Drug-drug interactions
 - Patient coverage benefits checks
 
-e-Prescribe functionality is only available for provider organizations and not for software partners or resellers.
+::: warning
+Medplum's e-prescribe functionality is exclusively available to providers directly engaged in patient care as part of [Medplum EHR](/solutions/medplum-ehr) . Applications that embed or resell this functionality are strictly prohibited.
+:::
 
 ## DoseSpot FAQ
 
