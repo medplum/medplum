@@ -1,12 +1,14 @@
 # DoseSpot
 
-Medplum has partnered with [DoseSpot](https://www.dosespot.com/), a leader in e-prescription (eRx) technology, to offer prescription ordering services through the Medplum platform.
+Medplum has partnered with [DoseSpot](https://www.dosespot.com/), a leader in e-prescription (eRx) technology, to offer prescription ordering services for the [Medplum EHR](/docs/solutions/medplum-ehr).
 
 This collaboration enables healthcare professionals to seamlessly place medication orders using DoseSpot's eRx interface, which Medplum integrates through an embedded iFrame. This approach ensures a secure, safe, and efficient, experience for clinicians, and offers functionality such as:
 
 - Clinician identity proofing
 - Drug-drug interactions
 - Patient coverage benefits checks
+
+e-Prescribe functionality is only available for provider organizations and not for software partners or resellers.
 
 ## DoseSpot FAQ
 

@@ -1,8 +1,8 @@
 # E-Prescribe (eRx)
 
-Medplum's flexible architecture allows for integration with any e-prescribe(eRx) provider through the use of [Bots](/docs/bots), offering customizable e-prescription solutions.
+Medplum allows enabling e-prescribe(eRx) functionality.
 
-To provide an integrated prescribing experience out of the box, Medplum offers DoseSpot as its default, first-party eRx provider . While DoseSpot serves as our default solution, [Medplum Bots](/docs/bots) can be used to integrate other prescribing solutions.
+e-Prescribe functionality is only available as part of [Medplum EHR](/docs/solutions/medplum-ehr) and for provider organizations (not for software partners or resellers).
 
 Visit our [DoseSpot integrations page](/docs/integration/dosespot) to learn more about our DoseSpot integration.
 
