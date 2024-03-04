@@ -34,6 +34,7 @@ In general, HIPAA compliance is a must for EHRs, SOC2 Type 2 audit is recommende
 
 ## Case Studies
 
+- [Develo Pediatric EHR](/blog/develo-case-study)
 - [Text Pediatricians in 15 Minutes - Summer Health Case Study](/blog/summer-case-study)
 - [Value Based Care and Elderly Populations - Ensage Case Study](/blog/ensage-case-study)
 
