@@ -51,7 +51,7 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
     if (!input.parameter) {
       return {} as any;
     }
-    validateResource(input as Parameters);
+    validateResource(input as Parameters, { logger: getLogger() });
     return parseParams(inputParameters, input.parameter) as any;
   } else {
     return Object.fromEntries(
@@ -224,7 +224,7 @@ export async function sendOutputParameters(
   }
 
   try {
-    validateResource(response);
+    validateResource(response, { logger: getLogger() });
     res.status(getStatus(outcome)).json(response);
   } catch (err: any) {
     getLogger().error('Malformed operation output Parameters', { error: err.toString() });

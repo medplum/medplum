@@ -2,9 +2,11 @@ import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/f
 import { UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
+import { Logger } from '../logger';
 import {
   OperationOutcomeError,
   createConstraintIssue,
+  createOperationOutcomeIssue,
   createProcessingIssue,
   createStructureIssue,
   validationError,
@@ -89,24 +91,31 @@ const skippedConstraintKeys: Record<string, boolean> = {
   'sdf-19': true, // FHIR Specification models only use FHIR defined types
 };
 
-export function validateResource(resource: Resource, profile?: StructureDefinition): void {
-  new ResourceValidator(resource.resourceType, resource, profile).validate();
+export interface ValidatorOptions {
+  profile?: StructureDefinition;
+  logger?: Logger;
+}
+
+export function validateResource(resource: Resource, options?: ValidatorOptions): void {
+  new ResourceValidator(resource.resourceType, resource, options).validate();
 }
 
 class ResourceValidator implements ResourceVisitor {
+  private readonly options?: ValidatorOptions;
   private issues: OperationOutcomeIssue[];
   private rootResource: Resource;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 
-  constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
+  constructor(resourceType: string, rootResource: Resource, options?: ValidatorOptions) {
     this.issues = [];
     this.rootResource = rootResource;
     this.currentResource = [rootResource];
-    if (!profile) {
+    this.options = options;
+    if (!options?.profile) {
       this.schema = getDataType(resourceType);
     } else {
-      this.schema = parseStructureDefinition(profile);
+      this.schema = parseStructureDefinition(options.profile);
     }
   }
 
@@ -124,8 +133,19 @@ class ResourceValidator implements ResourceVisitor {
     crawlResource(this.rootResource, this, this.schema);
 
     const issues = this.issues;
-    this.issues = []; // Reset issues to allow re-using the validator for other resources
-    if (issues.length > 0) {
+
+    let foundError = false;
+    for (const issue of issues) {
+      if (issue.severity === 'error') {
+        foundError = true;
+      }
+      if (issue.severity === 'warning' && this.options?.logger) {
+        const project = this.rootResource.meta?.project;
+        this.options.logger.warn(`Validator warning: ${issue.details?.text}`, { project, issue });
+      }
+    }
+
+    if (foundError) {
       throw new OperationOutcomeError({
         resourceType: 'OperationOutcome',
         issue: issues,
@@ -264,15 +284,30 @@ class ResourceValidator implements ResourceVisitor {
     if (!object) {
       return;
     }
+    const choiceOfTypeElements: Record<string, boolean> = {};
     for (const key of Object.keys(object)) {
       if (key === 'resourceType') {
         continue; // Skip special resource type discriminator property in JSON
       }
-      if (
-        !(key in properties) &&
-        !(key.startsWith('_') && key.slice(1) in properties) &&
-        !isChoiceOfType(parent, key, properties)
-      ) {
+      const choiceOfTypeElementName = isChoiceOfType(parent, key, properties);
+      if (choiceOfTypeElementName) {
+        if (choiceOfTypeElements[choiceOfTypeElementName]) {
+          // Found a duplicate choice of type property
+          // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
+          // Warnings are logged, but do not cause validation to fail
+          this.issues.push(
+            createOperationOutcomeIssue(
+              'warning',
+              'structure',
+              `Duplicate choice of type property "${choiceOfTypeElementName}"`,
+              choiceOfTypeElementName
+            )
+          );
+        }
+        choiceOfTypeElements[choiceOfTypeElementName] = true;
+        continue;
+      }
+      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties)) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
     }
@@ -376,11 +411,19 @@ function isIntegerType(propertyType: string): boolean {
   );
 }
 
+/**
+ * Returns the choice-of-type element name if the key is a choice of type property.
+ * Returns undefined if the key is not a choice of type property.
+ * @param typedValue - The value to check.
+ * @param key - The object key to check. This is different than the element name, which could contain "[x]".
+ * @param propertyDefinitions - The property definitions for the object..
+ * @returns The element name if a choice of type property is present, otherwise undefined.
+ */
 function isChoiceOfType(
   typedValue: TypedValue,
   key: string,
   propertyDefinitions: Record<string, InternalSchemaElement>
-): boolean {
+): string | undefined {
   if (key.startsWith('_')) {
     key = key.slice(1);
   }
@@ -388,12 +431,13 @@ function isChoiceOfType(
   let testProperty = '';
   for (const part of parts) {
     testProperty += part;
-    if (propertyDefinitions[testProperty + '[x]']) {
+    const elementName = testProperty + '[x]';
+    if (propertyDefinitions[elementName]) {
       const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
-      return !!typedPropertyValue;
+      return typedPropertyValue ? elementName : undefined;
     }
   }
-  return false;
+  return undefined;
 }
 
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {

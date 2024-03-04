@@ -3,7 +3,7 @@ import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, getLogger } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
@@ -179,7 +179,7 @@ protectedRoutes.post(
       res.status(400).send('Unsupported content type');
       return;
     }
-    validateResource(req.body);
+    validateResource(req.body, { logger: getLogger() });
     sendOutcome(res, allOk);
   })
 );

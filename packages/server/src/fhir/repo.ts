@@ -575,9 +575,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   private async validateResource(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
+      const logger = getLogger();
       const start = process.hrtime.bigint();
       const profileUrls = resource.meta?.profile;
-      validateResource(resource);
+      validateResource(resource, { logger });
       if (profileUrls) {
         await this.validateProfiles(resource, profileUrls);
       }
@@ -585,8 +586,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       const elapsedTime = Number(process.hrtime.bigint() - start);
       const MILLISECONDS = 1e6; // Conversion factor from ns to ms
       if (elapsedTime > 10 * MILLISECONDS) {
-        const ctx = getRequestContext();
-        ctx.logger.debug('High validator latency', {
+        logger.debug('High validator latency', {
           resourceType: resource.resourceType,
           id: resource.id,
           time: elapsedTime / MILLISECONDS,
@@ -598,22 +598,22 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   private async validateProfiles(resource: Resource, profileUrls: string[]): Promise<void> {
+    const logger = getLogger();
     for (const url of profileUrls) {
       const loadStart = process.hrtime.bigint();
       const profile = await this.loadProfile(url);
       const loadTime = Number(process.hrtime.bigint() - loadStart);
-      const ctx = getRequestContext();
       if (!profile) {
-        ctx.logger.warn('Unknown profile referenced', {
+        logger.warn('Unknown profile referenced', {
           resource: `${resource.resourceType}/${resource.id}`,
           url,
         });
         continue;
       }
       const validateStart = process.hrtime.bigint();
-      validateResource(resource, profile);
+      validateResource(resource, { logger, profile });
       const validateTime = Number(process.hrtime.bigint() - validateStart);
-      ctx.logger.debug('Profile loaded', {
+      logger.debug('Profile loaded', {
         url,
         loadTime,
         validateTime,
