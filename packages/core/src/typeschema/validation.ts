@@ -2,6 +2,7 @@ import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/f
 import { UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
+import { Logger } from '../logger';
 import {
   OperationOutcomeError,
   createConstraintIssue,
@@ -23,7 +24,6 @@ import {
   getDataType,
   parseStructureDefinition,
 } from './types';
-import { Logger } from '../logger';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -140,7 +140,8 @@ class ResourceValidator implements ResourceVisitor {
         foundError = true;
       }
       if (issue.severity === 'warning' && this.options?.logger) {
-        this.options.logger.warn(`Validator warning: ${issue.details?.text}`, { issue });
+        const project = this.rootResource.meta?.project;
+        this.options.logger.warn(`Validator warning: ${issue.details?.text}`, { project, issue });
       }
     }
 
