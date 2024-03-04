@@ -49,7 +49,7 @@
   "devDependencies": {
     "@medplum/core": "3.0.7",
     "@types/base-64": "1.0.2",
-    "@types/react": "18.2.58",
+    "@types/react": "18.2.61",
     "@types/text-encoding": "0.0.39",
     "esbuild": "0.20.1",
     "esbuild-node-externals": "1.13.0",
