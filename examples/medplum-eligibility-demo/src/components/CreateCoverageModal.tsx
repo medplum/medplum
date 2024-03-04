@@ -4,8 +4,7 @@ import { getReferenceString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface CreateCoverageModalProps {
   readonly opened: boolean;
@@ -21,7 +20,7 @@ export function CreateCoverageModal({ opened, onClose }: CreateCoverageModalProp
   // Create a blank resource so you can add any details you would like.
   const defaultResource = { resourceType } as Resource;
 
-  const handleSubmit = (newResource: Resource) => {
+  const handleSubmit = (newResource: Resource): void => {
     // Create the Coverage and navigate to its details page
     medplum
       .createResource(newResource)

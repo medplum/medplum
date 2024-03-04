@@ -29,14 +29,14 @@ export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibility
       throw new Error('Please select a valid status');
     }
 
-    handleStatusUpdate(props.coverageEligibility, status);
+    handleStatusUpdate(props.coverageEligibility, status).catch((error) => console.error(error));
     handlers.close();
   };
 
   const handleStatusUpdate = async (
     coverageEligibility: CoverageEligibilityRequest | CoverageEligibilityResponse,
     status: Coding
-  ) => {
+  ): Promise<void> => {
     const coverageEligibilityId = coverageEligibility.id as string;
 
     // We use a patch operation here to avoid race conditions. This ensures that if multiple users try to add a note simultaneously, only one will be successful.

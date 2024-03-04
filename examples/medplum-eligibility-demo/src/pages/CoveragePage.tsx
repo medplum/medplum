@@ -1,5 +1,5 @@
 import { Grid, Paper } from '@mantine/core';
-import { getReferenceString, normalizeErrorString, Operator, resolveId, SearchRequest } from '@medplum/core';
+import { normalizeErrorString, resolveId } from '@medplum/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
 import { Loading, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -55,8 +55,8 @@ export function CoveragePage(): JSX.Element {
       }
     };
 
-    fetchCoverage();
-    fetchLinkedPatient();
+    fetchCoverage().catch((error) => console.error(error));
+    fetchLinkedPatient().catch((error) => console.error(error));
   });
 
   const onCoverageChange = (updatedCoverage: Coverage): void => {

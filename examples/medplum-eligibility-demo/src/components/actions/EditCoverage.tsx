@@ -16,7 +16,7 @@ export function EditCoverage({ coverage, onChange }: EditCoverageProps): JSX.Ele
   const medplum = useMedplum();
   const [opened, { toggle, close }] = useDisclosure(false);
 
-  const handleSubmit = async (newCoverage: Resource) => {
+  const handleSubmit = async (newCoverage: Resource): Promise<void> => {
     try {
       // Update the coverage with the new details. We clean the resource in order to overwrite the necessary metadata
       const updatedCoverage = (await medplum.updateResource(cleanResource(newCoverage))) as Coverage;

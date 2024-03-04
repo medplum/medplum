@@ -9,8 +9,9 @@ import { Coding, CoverageEligibilityRequest, CoverageEligibilityResponse } from 
  * NOTE: This Bot only illustrates the relevant workflow. To implement the process, you will need to choose a coverage clearinghouse
  * to work with and modify the code to query that clearinghouse.
  *
- * @param medplum MedplumClient
- * @param event BotEvent<CoverageEligibilityRequest>
+ * @param medplum - MedplumClient
+ * @param event -  BotEvent<CoverageEligibilityRequest>
+ * @returns Promise<CoverageEligibilityResponse>
  */
 export async function handler(
   medplum: MedplumClient,
@@ -29,10 +30,13 @@ export async function handler(
   }
 
   // If you receive a valid response, create and return `CoverageEligibilityResponse` resource
-  return await medplum.createResource(response);
+  return medplum.createResource(response);
 }
 
-function processRequest(request: CoverageEligibilityRequest, serviceType?: Coding) {
+function processRequest(
+  request: CoverageEligibilityRequest,
+  serviceType?: Coding
+): CoverageEligibilityResponse | undefined {
   const coverage = request.insurance?.[0].coverage;
 
   // Make sure that the request has a linked coverage resource.
@@ -61,7 +65,7 @@ function processRequest(request: CoverageEligibilityRequest, serviceType?: Codin
           {
             // For simplicity, this demo only provides coverage for X12 Service Type Code 30 - Plan Coverage and General Benefits.
             // For more details see https://www.medplum.com/docs/billing/insurance-eligibility-checks#use-cases
-            excluded: serviceType?.code === '30' ? false : true,
+            excluded: serviceType?.code !== '30',
             benefit: [
               {
                 type: {

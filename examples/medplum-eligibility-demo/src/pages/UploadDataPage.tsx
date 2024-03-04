@@ -16,7 +16,7 @@ export function UploadDataPage(): JSX.Element {
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
   const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
 
-  const handleDataUpload = () => {
+  const handleDataUpload = (): void => {
     setButtonDisabled(true);
     let uploadFunction: (medlum: MedplumClient) => Promise<void>;
     if (dataType === 'core') {

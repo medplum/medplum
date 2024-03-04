@@ -1,4 +1,4 @@
-import { Button, Modal, ScrollArea } from '@mantine/core';
+import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString, parseReference } from '@medplum/core';
@@ -42,7 +42,7 @@ export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequ
       setInsurer(insurerData);
     };
 
-    fetchEligibilityDetails();
+    fetchEligibilityDetails().catch((error) => console.error(error));
   });
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
@@ -54,11 +54,11 @@ export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequ
     if (!startDate || !endDate || !serviceType) {
       throw new Error('Please make sure you have selected valid answers for all questions');
     }
-    createEligibilityRequest(startDate, endDate, serviceType);
+    createEligibilityRequest(startDate, endDate, serviceType).catch((error) => console.error(error));
     close();
   };
 
-  const createEligibilityRequest = async (start: string, end: string, serviceType: Coding) => {
+  const createEligibilityRequest = async (start: string, end: string, serviceType: Coding): Promise<void> => {
     if (!patient || !insurer) {
       throw new Error('Invalid data');
     }

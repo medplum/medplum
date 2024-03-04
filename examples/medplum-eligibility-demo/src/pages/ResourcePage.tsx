@@ -1,5 +1,4 @@
 import { Flex, Tabs, Title } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { CoverageEligibilityRequest, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -20,7 +19,6 @@ export function ResourcePage(): JSX.Element | null {
   const navigate = useNavigate();
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
-  const [opened, handlers] = useDisclosure(false);
 
   const tabs = ['Details', 'Edit', 'History'];
 
@@ -40,10 +38,10 @@ export function ResourcePage(): JSX.Element | null {
       }
     };
 
-    fetchResource();
+    fetchResource().catch((error) => console.error(error));
   }, [medplum, resourceType, id]);
 
-  const handleUpdateStatus = (updatedCoverageEligibility: Resource) => {
+  const handleUpdateStatus = (updatedCoverageEligibility: Resource): void => {
     setResource(updatedCoverageEligibility);
   };
 
@@ -107,13 +105,6 @@ export function ResourcePage(): JSX.Element | null {
           <ResourceHistoryTable resourceType={resourceType} id={id} />
         </Tabs.Panel>
       </Tabs>
-      {/* <Modal opened={opened} onClose={handlers.close}>
-        <UpdateCoverageEligibilityStatus
-          coverageEligibility={resource as CoverageEligibilityRequest | CoverageEligibilityResponse}
-          onChange={handleUpdateStatus}
-          close={handlers.close}
-        />
-      </Modal> */}
     </Document>
   );
 }

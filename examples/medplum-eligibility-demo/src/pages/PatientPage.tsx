@@ -25,7 +25,7 @@ export function PatientPage(): JSX.Element {
       }
     };
 
-    fetchPatient();
+    fetchPatient().catch((error) => console.error(error));
   });
 
   const onPatientChange = (updatedPatient: Patient): void => {

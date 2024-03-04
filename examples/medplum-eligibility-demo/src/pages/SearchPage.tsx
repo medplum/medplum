@@ -52,7 +52,7 @@ export function SearchPage(): JSX.Element {
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideFilters={true}
         onNew={() => handlers.open()}
-        hideToolbar={search.resourceType === 'Coverage' ? false : true}
+        hideToolbar={search.resourceType === 'Coverage'}
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
@@ -99,6 +99,7 @@ function getDefaultFields(resourceType: string): string[] {
       break;
     case 'CoverageEligibilityResponse':
       fields.push('patient', 'outcome', 'disposition', 'insurance');
+      break;
     default:
       fields.push('id', '_lastUpdated');
   }

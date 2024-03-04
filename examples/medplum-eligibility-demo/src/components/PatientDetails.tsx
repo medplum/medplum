@@ -4,8 +4,7 @@ import { getReferenceString, normalizeErrorString, parseSearchDefinition } from 
 import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useParams } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { cleanResource } from './utils';
 
 interface PatientDetailsProps {
@@ -29,7 +28,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
   const coverageSearchRequest = parseSearchDefinition(coverageSearchQuery);
   coverageSearchRequest.fields = ['payor', 'relationship', 'period'];
 
-  const handlePatientEdit = async (newPatient: Resource) => {
+  const handlePatientEdit = async (newPatient: Resource): Promise<void> => {
     try {
       // Update the patient and navigate to its details page
       const updatedPatient = (await medplum.updateResource(cleanResource(newPatient))) as Patient;
