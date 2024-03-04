@@ -28,6 +28,8 @@
     "@medplum/eslint-config": "3.0.3",
     "@medplum/fhirtypes": "3.0.3",
     "@medplum/react": "3.0.3",
+    "@medplum/definitions": "3.0.7",
+    "@medplum/mock": "3.0.7",
     "@tabler/icons-react": "2.46.0",
     "@types/node": "20.11.16",
     "@types/react": "18.2.51",
