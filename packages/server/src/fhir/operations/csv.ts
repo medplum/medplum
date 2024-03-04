@@ -73,7 +73,7 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
     for (const expression of expressions) {
       const values = tryEvalFhirPath(expression, resource);
       if (values.length > 0) {
-        row.push(tryCsvExcape(values[0]));
+        row.push(tryCsvEscape(values[0]));
       } else {
         row.push('');
       }
@@ -99,7 +99,7 @@ function tryEvalFhirPath(expression: string, resource: Resource): unknown[] {
   }
 }
 
-function tryCsvExcape(input: unknown): string {
+function tryCsvEscape(input: unknown): string {
   try {
     return csvEscape(input);
   } catch (err) {
@@ -159,6 +159,14 @@ function csvEscape(input: unknown): string {
   return '';
 }
 
+// CSV Injection, also known as Formula Injection, occurs when websites embed untrusted input inside CSV files.
+// See: https://owasp.org/www-community/attacks/CSV_Injection
+const CSV_INJECTION_CHARS = ['=', '+', '-', '@'];
+
 function csvEscapeString(input: string): string {
-  return '"' + input.replace(/"/g, '""') + '"';
+  let result = input.trim().replace(/"/g, '""');
+  if (result.length > 0 && CSV_INJECTION_CHARS.includes(result[0])) {
+    result = "'" + result;
+  }
+  return `"${result}"`;
 }
