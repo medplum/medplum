@@ -46,7 +46,6 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
         profileUrl: slice.typeSchema?.url,
       });
     }
-    console.assert(false, 'Expected sliceElements to always be populated', props.path);
     return undefined;
   }, [parentElementsContextValue, props.path, slice.typeSchema?.url, sliceElements]);
 
