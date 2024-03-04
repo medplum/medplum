@@ -25,7 +25,7 @@
     "@medplum/definitions": "3.0.7",
     "@medplum/fhirtypes": "3.0.7",
     "@types/json-schema": "7.0.15",
-    "@types/pg": "8.11.1",
+    "@types/pg": "8.11.2",
     "@types/unzipper": "0.10.9",
     "fast-xml-parser": "4.3.5",
     "fhirpath": "3.10.1",
