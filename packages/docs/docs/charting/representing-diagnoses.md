@@ -3,18 +3,29 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Representing Diagnoses
 
-Representing diagnoses accurately is crucial for all healthcare systems. There are generally two types of diagnoses: encounter diagnoses and problem list items. To capture these, along with other patient problems and concerns, FHIR provides the [`Condition`](/docs/api/fhir/resources/condition) resource.
+Representing diagnoses accurately is crucial for all healthcare systems. There are generally two types of diagnoses:
+
+- Encounter Diagnoses
+- Problem List Items
+
+To capture these, along with other patient problems and concerns, FHIR provides the [`Condition`](/docs/api/fhir/resources/condition) resource. Some applications of the [`Condition`](/docs/api/fhir/resources/condition) resource include:
+
+- Social Determinants of Health (SDOH)
+- Chronic Conditions
+- Substance Use/Abuse
+- Mental/Cognitive Impairment
+- Physical Disability/Impairment
 
 ## Ongoing Medical Conditions
 
-The [`Condition`](/docs/api/fhir/resources/condition) resource provides a detailed record of any ongoing conditions, problems, or symptoms that a [`Patient`](/docs/api/fhir/resources/patient) may have, as well as metadata to provide context about the condition. It acts as a proxy for a diagnosis.
+The [`Condition`](/docs/api/fhir/resources/condition) resource provides a detailed record of any ongoing conditions or problems that a [`Patient`](/docs/api/fhir/resources/patient) may have, as well as metadata to provide context about the condition. This context includes the type, onset/resolution date, severity, progression, and verification status of the [`Condition`](/docs/api/fhir/resources/condition).
 
 It is important to note that a [`Condition`](/docs/api/fhir/resources/condition) resource represents an _instance_ of a diagnosis. For example, if a patient has a condition, then recovers from it, and then it recurs, the recurrence would be a separate [`Condition`](/docs/api/fhir/resources/condition). The fact that it is a recurrence can be noted using the `clinicalStatus` field.
 
 | **Element**          | **Description**                                                                                                                                                                                             | **Code System**                                                                                       | **Example**                                               |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `code`               | A code identifying what the condition or problem is.                                                                                                                                                        | [ICD-10](https://www.cms.gov/medicare/coding-billing/icd-10-codes), [SNOMED](https://www.snomed.org/) | C46.50 - Kaposi's sarcoma of unspecified lung             |
-| `category`           | A category assigned to the condition.                                                                                                                                                                       | [Condition Category Codes](https://build.fhir.org/valueset-condition-category.html)                   | `problem-list-item` or `encounter-diagnosis`              |
+| `category`           | A category assigned to the condition. [See below.](#types-of-diagnoses)                                                                                                                                     | [Condition Category Codes](https://build.fhir.org/valueset-condition-category.html)                   | `problem-list-item` or `encounter-diagnosis`              |
 | `clinicalStatus`     | The current clinical status of the condition. i.e., whether it is recurring, active, etc.                                                                                                                   | [Condition Clinical Status Codes](https://build.fhir.org/valueset-condition-clinical.html)            | active                                                    |
 | `verificationStatus` | The verification of the condition. For example, could indicate if a patient has claimed they have a condition that has not yet been verified by a physician.                                                | [Condition Verification Status Codes](https://build.fhir.org/valueset-condition-ver-status.html)      | provisional                                               |
 | `severity`           | A subjective measure of the severity of the condition.                                                                                                                                                      | [Condition/Diagnosis Severity Codes](https://build.fhir.org/valueset-condition-severity.html)         | Severe                                                    |
@@ -52,8 +63,8 @@ Additionally, the [`Condition`](/docs/api/fhir/resources/condition) resource can
 
 As mentioned earlier, the [`Condition`](/docs/api/fhir/resources/condition) resource can be used to represent two types of diagnoses:
 
-1. Encounter diagnoses
-2. Problem list items
+1. Encounter Diagnoses
+2. Problem List Items
 
 ### Encounter Diagnosis
 
@@ -65,15 +76,15 @@ The [US Core implementation of encounter diagnoses](https://hl7.org/fhir/us/core
 
 ### Problem List Item
 
-A problem list is a long-term set of issues that need to be represented across visits so that doctors can effectively treat patients. Each issue on the list is represented by a [`Condition`](/docs/api/fhir/resources/condition) with a `category` code of `problem-list-item`.
+To provide clinicians with an accurate [`Patient`](/docs/api/fhir/resources/patient) history across visits, most EHRs provide a 'problem list' of the [`Patient's`](/docs/api/fhir/resources/patient) active conditions. Each issue on the list is represented by a [`Condition`](/docs/api/fhir/resources/condition) with a `category` code of `problem-list-item`.
 
-[`Condition`](/docs/api/fhir/resources/condition) resources should be promoted from an encounter diagnosis to a problem list item. These promotions should always be an explicit action taken by a [`Practitioner`](/docs/api/fhir/resources/practitioner) and they should always create a new [`Condition`](/docs/api/fhir/resources/condition) resource to ensure clean record-keeping.
+When implementing a problem list in your system, it is a best practice to keep separate [`Condition`](/docs/api/fhir/resources/condition) resources for Encounter Diagnoses and Problem List Items. This allows for easy tracking of the [`Condition`](/docs/api/fhir/resources/condition) as it changes over time using the Problem List version, while also having a record of the original diagnosis in the Encounter Diagnosis version.
 
-By creating a new resource, you can easily track the [`Condition`](/docs/api/fhir/resources/condition) as it changes over time using the `problem-list-item` version, while also having a record of the original diagnosis in the `encounter-diagnosis` version.
+Clinicians should exercise judgement on when to add something to the problem list, and most systems require them to take an explicit action to promote an Encounter Diagnosis to a Problem List Item.
 
 ## Symptoms vs. Conditions
 
-Recording symptoms and differentiating them from long-term problems can be difficult in FHIR, so it is important to clarify when an [`Observation`](/docs/api/fhir/resources/observation) and a [`Condition`](/docs/api/fhir/resources/condition) should be used. At a high level, an [`Observation`](/docs/api/fhir/resources/observation) represents a a point-in-time measurement and a [`Condition`](/docs/api/fhir/resources/condition) represents an ongoing problem or diagnosis.
+Recording symptoms and differentiating them from long-term problems can be difficult in FHIR, so it is important to clarify when an [`Observation`](/docs/api/fhir/resources/observation) and a [`Condition`](/docs/api/fhir/resources/condition) should be used. At a high level, an [`Observation`](/docs/api/fhir/resources/observation) represents a a _point-in-time_ measurement and a [`Condition`](/docs/api/fhir/resources/condition) represents an _ongoing_ problem or diagnosis.
 
 The [`Observation`](/docs/api/fhir/resources/observation) resource should be used for symptoms that can be resolved without long-term management. Additionally, an [`Observation`](/docs/api/fhir/resources/observation) often contributes to the establishment of a [`Condition`](/docs/api/fhir/resources/condition). For example, there may be an [`Observation`](/docs/api/fhir/resources/observation) of high blood pressure that leads to a [`Condition`](/docs/api/fhir/resources/condition) to track and manage that high blood pressure. For more details on the [`Observation`](/docs/api/fhir/resources/observation) resource, see the [Capturing Vital Signs docs](/docs/charting/capturing-vital-signs).
 
