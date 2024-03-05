@@ -20,6 +20,7 @@ export interface SearchRequest<T extends Resource = Resource> {
   summary?: 'true' | 'text' | 'data';
   format?: string;
   pretty?: boolean;
+  types?: T['resourceType'][];
 }
 
 export interface Filter {
@@ -303,6 +304,10 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     case '_fields':
     case '_elements':
       searchRequest.fields = value.split(',');
+      break;
+
+    case '_type':
+      searchRequest.types = value.split(',') as Resource['resourceType'][];
       break;
 
     case '_format':

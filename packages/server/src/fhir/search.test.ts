@@ -3206,6 +3206,26 @@ describe('FHIR Search', () => {
         expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-15T12:00:00.000Z')).toBe(false);
         expect(await searchByPeriod(Operator.ENDS_BEFORE, '2020-01-15T12:00:01.000Z')).toBe(true);
       }));
+
+    test('Multiple resource types with _type', async () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const obs = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'test' },
+          subject: createReference(patient),
+        });
+
+        const bundle = await repo.search({
+          resourceType: 'Patient',
+          types: ['Patient', 'Observation'],
+          filters: [{ code: '_compartment', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+        });
+        expect(bundle.entry?.length).toBe(2);
+        expect(bundleContains(bundle, patient)).toBeTruthy();
+        expect(bundleContains(bundle, obs)).toBeTruthy();
+      }));
   });
 
   describe('systemRepo', () => {

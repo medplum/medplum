@@ -1055,7 +1055,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
-          const accessPolicyExpression = buildSearchExpression(builder, searchRequest);
+          const accessPolicyExpression = buildSearchExpression(builder, searchRequest.resourceType, searchRequest);
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);
           }

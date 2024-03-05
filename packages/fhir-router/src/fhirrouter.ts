@@ -48,6 +48,17 @@ async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirRespo
   return [allOk, bundle];
 }
 
+// Search multiple types
+async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  const query = req.query as Record<string, string[] | string | undefined>;
+  const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, query);
+  if (!searchRequest.types || searchRequest.types.length === 0) {
+    return [badRequest('No types specified')];
+  }
+  const bundle = await repo.search(searchRequest);
+  return [allOk, bundle];
+}
+
 // Search by POST
 async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
@@ -127,6 +138,7 @@ export class FhirRouter extends EventTarget {
     super();
     this.options = options;
 
+    this.router.add('GET', '', searchMultipleTypes);
     this.router.add('POST', '', batch);
     this.router.add('GET', ':resourceType', search);
     this.router.add('POST', ':resourceType/_search', searchByPost);

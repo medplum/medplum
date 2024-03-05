@@ -57,6 +57,7 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
+  Union,
 } from './sql';
 
 /**
@@ -79,12 +80,7 @@ export async function searchImpl<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>
 ): Promise<Bundle<T>> {
-  const resourceType = searchRequest.resourceType;
-  validateResourceType(resourceType);
-
-  if (!repo.canReadResourceType(resourceType)) {
-    throw new OperationOutcomeError(forbidden);
-  }
+  validateSearchResourceTypes(repo, searchRequest);
 
   // Ensure that "count" is set.
   // Count is an optional field.  From this point on, it is safe to assume it is a number.
@@ -116,6 +112,34 @@ export async function searchImpl<T extends Resource>(
 }
 
 /**
+ * Validates that the resource type(s) are valid and that the user has permission to read them.
+ * @param repo - The user's repository.
+ * @param searchRequest - The incoming search request.
+ */
+function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequest): void {
+  if (searchRequest.types) {
+    for (const resourceType of searchRequest.types) {
+      validateSearchResourceType(repo, resourceType);
+    }
+  } else {
+    validateSearchResourceType(repo, searchRequest.resourceType);
+  }
+}
+
+/**
+ * Validates that the resource type is valid and that the user has permission to read it.
+ * @param repo - The user's repository.
+ * @param resourceType - The resource type to validate.
+ */
+function validateSearchResourceType(repo: Repository, resourceType: ResourceType): void {
+  validateResourceType(resourceType);
+
+  if (!repo.canReadResourceType(resourceType)) {
+    throw new OperationOutcomeError(forbidden);
+  }
+}
+
+/**
  * Returns the bundle entries for a search request.
  * @param repo - The repository.
  * @param searchRequest - The search request.
@@ -125,15 +149,9 @@ async function getSearchEntries<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
-  const resourceType = searchRequest.resourceType;
-  const builder = new SelectQuery(resourceType)
-    .column({ tableName: resourceType, columnName: 'id' })
-    .column({ tableName: resourceType, columnName: 'content' });
+  const builder = getBaseSelectQuery(repo, searchRequest);
 
   addSortRules(builder, searchRequest);
-  repo.addDeletedFilter(builder);
-  repo.addSecurityFilters(builder, resourceType);
-  addSearchFilters(builder, searchRequest);
 
   const count = searchRequest.count as number;
   builder.limit(count + 1); // Request one extra to test if there are more results
@@ -145,7 +163,7 @@ async function getSearchEntries<T extends Resource>(
   const entries = resources.map(
     (resource) =>
       ({
-        fullUrl: getFullUrl(resourceType, resource.id as string),
+        fullUrl: getFullUrl(resource.resourceType, resource.id as string),
         resource,
       }) as BundleEntry
   );
@@ -166,6 +184,41 @@ async function getSearchEntries<T extends Resource>(
     rowCount,
     hasMore: rows.length > count,
   };
+}
+
+function getBaseSelectQuery(repo: Repository, searchRequest: SearchRequest, addColumns = true): SelectQuery {
+  let builder: SelectQuery;
+  if (searchRequest.types) {
+    const queries: SelectQuery[] = [];
+    for (const resourceType of searchRequest.types) {
+      queries.push(getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, addColumns));
+    }
+    builder = new SelectQuery('combined', new Union(...queries));
+    if (addColumns) {
+      builder.column('id').column('content');
+    }
+  } else {
+    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, addColumns);
+  }
+  return builder;
+}
+
+function getBaseSelectQueryForResourceType(
+  repo: Repository,
+  resourceType: ResourceType,
+  searchRequest: SearchRequest,
+  addColumns = true
+): SelectQuery {
+  const builder = new SelectQuery(resourceType);
+  if (addColumns) {
+    builder
+      .column({ tableName: resourceType, columnName: 'id' })
+      .column({ tableName: resourceType, columnName: 'content' });
+  }
+  repo.addDeletedFilter(builder);
+  repo.addSecurityFilters(builder, resourceType);
+  addSearchFilters(builder, resourceType, searchRequest);
+  return builder;
 }
 
 function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
@@ -416,10 +469,7 @@ async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = new SelectQuery(searchRequest.resourceType);
-  repo.addDeletedFilter(builder);
-  repo.addSecurityFilters(builder, searchRequest.resourceType);
-  addSearchFilters(builder, searchRequest);
+  const builder = getBaseSelectQuery(repo, searchRequest, false);
 
   if (builder.joins.length > 0) {
     builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
@@ -445,11 +495,7 @@ async function getEstimateCount(
   searchRequest: SearchRequest,
   rowCount: number | undefined
 ): Promise<number> {
-  const resourceType = searchRequest.resourceType;
-  const builder = new SelectQuery(resourceType).column('id');
-  repo.addDeletedFilter(builder);
-  repo.addSecurityFilters(builder, searchRequest.resourceType);
-  addSearchFilters(builder, searchRequest);
+  const builder = getBaseSelectQuery(repo, searchRequest);
   builder.explain = true;
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
@@ -474,16 +520,21 @@ async function getEstimateCount(
 /**
  * Adds all search filters as "WHERE" clauses to the query builder.
  * @param selectQuery - The select query builder.
+ * @param resourceType - The type of resources requested.
  * @param searchRequest - The search request.
  */
-function addSearchFilters(selectQuery: SelectQuery, searchRequest: SearchRequest): void {
-  const expr = buildSearchExpression(selectQuery, searchRequest);
+function addSearchFilters(selectQuery: SelectQuery, resourceType: ResourceType, searchRequest: SearchRequest): void {
+  const expr = buildSearchExpression(selectQuery, resourceType, searchRequest);
   if (expr) {
     selectQuery.predicate.expressions.push(expr);
   }
 }
 
-export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: SearchRequest): Expression | undefined {
+export function buildSearchExpression(
+  selectQuery: SelectQuery,
+  resourceType: ResourceType,
+  searchRequest: SearchRequest
+): Expression | undefined {
   const expressions: Expression[] = [];
   if (searchRequest.filters) {
     for (const filter of searchRequest.filters) {
@@ -493,12 +544,7 @@ export function buildSearchExpression(selectQuery: SelectQuery, searchRequest: S
         continue;
       }
 
-      const expr = buildSearchFilterExpression(
-        selectQuery,
-        searchRequest.resourceType,
-        searchRequest.resourceType,
-        filter
-      );
+      const expr = buildSearchFilterExpression(selectQuery, resourceType, resourceType, filter);
       if (expr) {
         expressions.push(expr);
       }
