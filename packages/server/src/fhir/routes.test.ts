@@ -356,6 +356,38 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Update resource with precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"' + patient.meta?.versionId + '"')
+      .send({ ...patient, active: true });
+    expect(res2.status).toBe(200);
+  });
+
+  test('Update resource with failed precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"bad-id"')
+      .send({ ...patient, active: true });
+    expect(res2.status).toBe(412);
+  });
+
   test('Delete resource', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
