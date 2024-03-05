@@ -17,27 +17,29 @@ This example app demonstrates the following:
 The Patient Chart has 3 distinct panels
 
 1. Clinical Chart
-  The left panel shows the patient history and their status. Notable information in the clinical chart includes the following Resources:
-    - Patient Information
-    - Upcoming Appointments
-    - Documented Visits 
-    - List of Allergies
-    - List of Problems
-    - Medication Requests
-    - Smoking Status
-    - Vitals 
+   The left panel shows the patient history and their status. Notable information in the clinical chart includes the following Resources:
+
+   - Patient Information
+   - Upcoming Appointments
+   - Documented Visits
+   - List of Allergies
+   - List of Problems
+   - Medication Requests
+   - Smoking Status
+   - Vitals
 
 2. Tasks
-  The center panel shows list of the Task resource with a different focus resource. See our [Tasks Guide](https://www.medplum.com/docs/careplans/tasks) for more details.
-    - Each focus is interactive to either review or fill out
-    - This example project demonstrates interactions of the following resources:
-      - Questionnaire
-      - QuestionnaireResponse
-      - DiagnosticReport 
-      - CarePlan
+   The center panel shows list of the Task resource with a different focus resource. See our [Tasks Guide](https://www.medplum.com/docs/careplans/tasks) for more details.
+
+   - Each focus is interactive to either review or fill out
+   - This example project demonstrates interactions of the following resources:
+     - Questionnaire
+     - QuestionnaireResponse
+     - DiagnosticReport
+     - CarePlan
 
 3. SOAP Note
-  The right most panel documents an enounter with the patient through a questionnaire. Filling out and submitting the questionnaire automatically creates a task, with the response as the focus to be reviewed.
+   The right most panel documents an enounter with the patient through a questionnaire. Filling out and submitting the questionnaire automatically creates a task, with the response as the focus to be reviewed.
 
 ### Getting Started
 

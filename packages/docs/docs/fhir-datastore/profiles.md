@@ -30,18 +30,18 @@ server. This helps ensure data quality by preventing data that does not match th
 
 ## Creating Profiles
 
-The schema for each FHIR resource type is defined by a [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource. By default, Medplum ships with [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) for each FHIR base resource type and for Medplum defined resource types. The source data for these [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) can be found the [@medplum/definitions](https://github.com/medplum/medplum/tree/main/packages/definitions) package. 
+The schema for each FHIR resource type is defined by a [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource. By default, Medplum ships with [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) for each FHIR base resource type and for Medplum defined resource types. The source data for these [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) can be found the [@medplum/definitions](https://github.com/medplum/medplum/tree/main/packages/definitions) package.
 
-FHIR profiles are also stored as [`StructureDefinÏition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project. 
+FHIR profiles are also stored as [`StructureDefinÏition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project.
 
-Authoring profiles from scratch can be complicated and time consuming. Many organizations publish **implementation guides** with collections for FHIR profiles, tailored to specific healthcare domains. 
+Authoring profiles from scratch can be complicated and time consuming. Many organizations publish **implementation guides** with collections for FHIR profiles, tailored to specific healthcare domains.
 
-For example: 
+For example:
 
-* [US Core](http://hl7.org/fhir/us/core/index.html): Establishing the “floor” of standards to promote interoperability throughout the US healthcare system.
-* [PDex Payer Networks](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/):  Health insurers' insurance plans, their associated networks, and the organizations and providers that participate in these networks.
-* [US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/):  Health insurers' drug formulary information for patients/consumers.
-* [Dental Data Exchange](http://hl7.org/fhir/us/dental-data-exchange/): Standards for bi-directional information exchange  dental providers.
+- [US Core](http://hl7.org/fhir/us/core/index.html): Establishing the “floor” of standards to promote interoperability throughout the US healthcare system.
+- [PDex Payer Networks](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/): Health insurers' insurance plans, their associated networks, and the organizations and providers that participate in these networks.
+- [US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/): Health insurers' drug formulary information for patients/consumers.
+- [Dental Data Exchange](http://hl7.org/fhir/us/dental-data-exchange/): Standards for bi-directional information exchange dental providers.
 
 ## Profile adoption
 
@@ -122,7 +122,7 @@ plan to use.
 
 ## Searching by Profile
 
-You can use the `_profile` search parameter to retrieve all resources of a given type that conform to a certain FHIR profile. 
+You can use the `_profile` search parameter to retrieve all resources of a given type that conform to a certain FHIR profile.
 
 Refer to the [Advanced Search Parameters](/docs/search/advanced-search-parameters#_profile) guide for more information.
 

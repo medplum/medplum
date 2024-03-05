@@ -19,6 +19,7 @@ npm install @medplum/expo-polyfills
 ## Overview
 
 There are currently two major components to this package:
+
 1. The polyfills for getting `MedplumClient` working without errors in `React Native`. See: [`polyfillMedplumWebAPIs`]
 2. The `ExpoClientStorage` class, which enables `MedplumClient` to persist what is normally stored in `LocalStorage` on the web client into a secure storage on a mobile device. Under the hood it uses [Expo's `SecureStore`](https://docs.expo.dev/versions/latest/sdk/securestore/), but abstracts away the complexity of its asynchronous APIs, since the `Storage` interface is normally synchronous in nature.
 
@@ -51,6 +52,7 @@ function App(): JSX.Element {
 ```
 
 ### Usage with `Expo Router`
+
 When using `MedplumClient` with `Expo Router`, you will likely need to disable the polyfill for `window.location`; `Expo Router` provides a polyfill that better interoperates with the package than the Medplum-provided one. See: https://expo.github.io/router/docs/lab/runtime-location#native
 
 To disable the Medplum `window.location` polyfill, simply pass the following config to `polyfillMedplumWebAPIs`:

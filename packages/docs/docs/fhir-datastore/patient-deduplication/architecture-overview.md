@@ -16,7 +16,6 @@ While deduplication pipelines can take many forms, there are three primary opera
 2. [**Matching:**](/docs/fhir-datastore/patient-deduplication/matching) For each patient record, find all other records that are potential matches.
 3. [**Merging:**](/docs/fhir-datastore/patient-deduplication/merging) Merge all the information into a single record to serve as the source of truth.
 
-
 ## Key Decisions
 
 There are many different ways to implement this pipeline, but there are a few key decisions that you will need to make when choosing an architecture:

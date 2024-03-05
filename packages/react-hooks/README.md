@@ -70,16 +70,13 @@ interface MedplumContext {
 ```
 
 ### Using `loading` to know when `MedplumClient` initialization is done
+
 You can use the `loading` property from `useMedplumContext()` to know when `MedplumClient` has finished initialization successfully. `loading` is updated asynchronously so it will usually start as `false` and change to `true` once the client has finished its initialization.
 
 ```tsx
 function MyComponent(): JSX.Element {
   const { loading } = useMedplumContext();
-  return loading ? (
-    <Spinner />
-  ) : (
-    <div>Loaded!</div>
-  );
+  return loading ? <Spinner /> : <div>Loaded!</div>;
 }
 ```
 

@@ -27,12 +27,12 @@ The first step is to configure a [Medplum Client Application](https://app.medplu
 
 Next your application will need to make an `HTTPS GET` request to the Medplum Server's [`/oauth2/authorize`](/docs/api/oauth/authorize) endpoint with the following URL parameters:
 
-| Parameter                                                          | Value                                                                                                                                                                                                     |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parameter                                                           | Value                                                                                                                                                                                                     |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`client_id`](/docs/api/oauth/authorize#client_id-required)         | The ID of your new Client Application                                                                                                                                                                     |
 | [`redirect_uri`](/docs/api/oauth/authorize#redirect_uri-required)   | **Must match exactly** to the uri registered in the Medplum App (including trailing slashes, punctuation, etc.), as detailed in the [OAuth2 Spec](https://www.rfc-editor.org/rfc/rfc6749#section-3.1.2.3) |
 | [`response_type`](/docs/api/oauth/authorize#response_type-required) | Fixed value: `code`                                                                                                                                                                                       |
-| [`scope`](/docs/api/oauth/authorize#scope-required)                | Fixed value: `openid`                                                                                                                                                                                     |
+| [`scope`](/docs/api/oauth/authorize#scope-required)                 | Fixed value: `openid`                                                                                                                                                                                     |
 
 See the [`oauth/authorize` API documentation](/docs/api/oauth/authorize) for more details about the possible request parameters.
 

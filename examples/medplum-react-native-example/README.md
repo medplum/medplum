@@ -24,7 +24,7 @@ This app includes a very basic sign-in form that only supports email and passwor
 First, we setup `MedplumClient` which is the Medplum API client:
 
 ```js
-import { getDisplayString, MedplumClient } from "@medplum/core";
+import { getDisplayString, MedplumClient } from '@medplum/core';
 
 const medplum = new MedplumClient();
 ```
@@ -36,8 +36,8 @@ const medplum = new MedplumClient();
 Next, we define a very simple email and password login form:
 
 ```jsx
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
 
 // ...
 
@@ -94,7 +94,7 @@ function handleAuthResponse(response) {
     // In a real app, you would present a list of memberships to the user
     // For this example, just use the first membership
     medplum
-      .post("auth/profile", {
+      .post('auth/profile', {
         login: response.login,
         profile: response.memberships[0].id,
       })

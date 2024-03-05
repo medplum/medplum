@@ -62,6 +62,7 @@ docker run --rm \
 ```
 
 Optionally set the `MEDPLUM_LOG_LEVEL` environment variable
+
 ```bash
   -e MEDPLUM_LOG_LEVEL="DEBUG"
 ```
