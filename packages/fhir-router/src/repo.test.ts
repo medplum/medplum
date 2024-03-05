@@ -7,7 +7,17 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import {
+  AuditEvent,
+  Bundle,
+  Condition,
+  Observation,
+  Patient,
+  Practitioner,
+  ProjectMembership,
+  ResourceType,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 
@@ -17,7 +27,9 @@ describe('MemoryRepository', () => {
   beforeAll(async () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
   });
 
   test('Create resource', async () => {
@@ -99,6 +111,108 @@ describe('MemoryRepository', () => {
 
     const emptyResource = await repo.searchOne<Patient>(parseSearchRequest('Patient?family=' + randomUUID()));
     expect(emptyResource).toBeUndefined();
+  });
+
+  test('search via chain', async () => {
+    const practitioner = await repo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      telecom: [
+        {
+          system: 'email',
+          value: 'john@asktia.com',
+        },
+      ],
+    });
+
+    const projectMembership = await repo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      profile: {
+        reference: `Practitioner/${practitioner.id}`,
+      },
+    });
+    const existingMembership = await repo.searchOne(
+      parseSearchDefinition('ProjectMembership?profile:Practitioner.email=john@asktia.com')
+    );
+    expect(existingMembership?.id).toEqual(projectMembership.id);
+  });
+
+  test('search via chain (reverse)', async () => {
+    const practitioner = await repo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      telecom: [
+        {
+          system: 'email',
+          value: 'john@asktia.com',
+        },
+      ],
+    });
+
+    await repo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      profile: {
+        reference: `Practitioner/${practitioner.id}`,
+      },
+    });
+
+    const result = await repo.searchOne(
+      parseSearchDefinition(`Practitioner?_has:ProjectMembership:profile:profile=Practitioner/${practitioner.id}`)
+    );
+
+    expect(result?.id).toEqual(practitioner.id);
+  });
+
+  test('search via chain (reverse, chained', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    const observation = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: {
+        reference: `Patient/${patient.id}`,
+      },
+    });
+
+    await repo.createResource<AuditEvent>({
+      resourceType: 'AuditEvent',
+      entity: [{ what: { reference: `Observation/${observation.id}` } }],
+      action: 'C',
+    });
+
+    const result = await repo.searchOne(
+      parseSearchDefinition('Patient?_has:Observation:patient:_has:AuditEvent:entity:action=C')
+    );
+    expect(result?.id).toEqual(patient.id);
+  });
+
+  test.todo('two independent chains')
+  
+  test('two independent reverse chains', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: { reference: `Patient/${patient.id}`},
+      code: {
+        coding: [{  code: '123' }]
+      }
+    })
+
+    await repo.createResource<Condition>({
+      resourceType: 'Condition',
+      subject: { reference: `Patient/${patient.id}`},
+      code: {
+        coding: [{ code: '456' }]
+      }
+    })
+
+    const result = await repo.searchOne(
+      parseSearchDefinition('Patient?_has:Observation:patient:code=123&_has:Condition:patient:code=456')
+    );
+
+    expect(result?.id).toEqual(patient.id)
   });
 
   test('Sort unknown search parameter', async () => {

@@ -1,5 +1,8 @@
 import {
+  ChainedSearchLink,
+  Filter,
   OperationOutcomeError,
+  Operator,
   SearchRequest,
   SortRule,
   badRequest,
@@ -7,11 +10,13 @@ import {
   evalFhirPath,
   generateId,
   globalSchema,
+  looksLikeChain,
   matchesSearchRequest,
   normalizeOperationOutcome,
   notFound,
+  parseChainedParameter,
 } from '@medplum/core';
-import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
 
 /**
@@ -330,11 +335,30 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     const { resourceType } = searchRequest;
     const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
+
+    // For now, to enable chained searches, we re-consitute two search requests:
+    // 1. to handle the non-chained
+    // 2. another to handle the chained, resolving resources as required.
+    const chainFilters: Filter[] = [];
+    const normalFilters: Filter[] = [];
+
+    if (searchRequest.filters) {
+      for (const filter of searchRequest.filters) {
+        if (looksLikeChain(filter.code)) {
+          chainFilters.push(filter);
+        } else {
+          normalFilters.push(filter);
+        }
+      }
+    }
+
     for (const resource of resources.values()) {
-      if (matchesSearchRequest(resource, searchRequest)) {
+      const matchesChain = await this.matchesChain(resource, { ...searchRequest, filters: chainFilters });
+      if (matchesChain && matchesSearchRequest(resource, { ...searchRequest, filters: normalFilters })) {
         result.push(resource);
       }
     }
+
     let entry = result.map((resource) => ({ resource: deepClone(resource) })) as BundleEntry<T>[];
     if (searchRequest.sortRules) {
       for (const sortRule of searchRequest.sortRules) {
@@ -353,6 +377,71 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
       entry,
       total: result.length,
     };
+  }
+
+  private async matchesChain<T extends Resource>(resource: T, searchRequest: SearchRequest<T>): Promise<boolean> {
+    for (const chainFilter of searchRequest.filters ?? []) {
+      const chain = parseChainedParameter(searchRequest.resourceType, chainFilter.code, chainFilter.value);
+      let toVisit: Resource[] = [resource];
+      for (const link of chain.chain) {
+        let nextToVisit: Resource[] = [];
+        while (toVisit.length) {
+          const currentResource = toVisit.pop() as Resource;
+          const linkedResources = await this.resolveChainLink(currentResource, link);
+          nextToVisit = nextToVisit.concat(linkedResources);
+        }
+
+        toVisit = nextToVisit;
+      }
+
+      if (!toVisit.length) {
+        return false
+      }
+    }
+    return true
+  }
+
+  private async resolveChainLink<T extends Resource>(resource: T, link: ChainedSearchLink): Promise<Resource[]> {
+    const matchingResources: Resource[] = [];
+    if (link.reverse) {
+      const referencedResources = this.resources.get(link.resourceType) ?? new Map<string, Resource>();
+      const filters: Filter[] = [
+        {
+          code: link.details.columnName,
+          operator: Operator.EQUALS,
+          value: `${resource.resourceType}/${resource.id}`,
+        },
+      ];
+      if (link.filter) {
+        filters.push(link.filter);
+      }
+      const reverseLinkSearch: SearchRequest = {
+        resourceType: link.resourceType as ResourceType,
+        filters,
+      };
+      for (const referencedResource of referencedResources.values()) {
+        if (matchesSearchRequest(referencedResource, reverseLinkSearch)) {
+          matchingResources.push(referencedResource);
+        }
+      }
+    } else {
+      //TODO: hacky -- is there a more type safe way to access this?
+      //TODO: is usage of column safe / accurate here? seems like a server concept, but is defined in core
+      const reference = resource[link.details.columnName as keyof T] as Reference;
+      const referencedResource = await this.readReference(reference);
+      if (referencedResource?.resourceType === link.resourceType) {
+        if (
+          matchesSearchRequest(referencedResource, {
+            resourceType: referencedResource.resourceType,
+            filters: link.filter ? [link.filter] : [],
+          })
+        ) {
+          matchingResources.push(referencedResource);
+        }
+      }
+    }
+
+    return matchingResources;
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
