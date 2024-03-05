@@ -6,7 +6,7 @@ import { requireSuperAdmin } from '../../admin/super';
 import { sendOutcome } from '../outcomes';
 import { InsertQuery, SelectQuery } from '../sql';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { findCodeSystem } from './expand';
+import { findTerminologyResource, parentProperty } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -62,7 +62,7 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
-  const codeSystem = await findCodeSystem(params.system);
+  const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
 
   try {
     await ctx.repo.withTransaction(async (db) => {
@@ -147,9 +147,6 @@ async function processProperties(
     await query.execute(db);
   }
 }
-
-export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
-export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
 
 async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolClient): Promise<[number, boolean]> {
   let prop = codeSystem.property?.find((p) => p.code === code);

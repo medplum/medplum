@@ -32,6 +32,8 @@ import { isFhirJsonContentType, sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { recordHistogramValue } from '../otel/otel';
+import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
+import { codeSystemSubsumesOperation } from './operations/subsumes';
 
 export const fhirRouter = Router();
 
@@ -113,6 +115,12 @@ protectedRoutes.post('/CodeSystem/([$]|%24)lookup', asyncWrap(codeSystemLookupHa
 
 // CodeSystem $validate-code operation
 protectedRoutes.post('/CodeSystem/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
+
+// CodeSystem $subsumes operation
+protectedRoutes.post('/CodeSystem/([$]|%24)subsumes', codeSystemSubsumesOperation);
+
+// CodeSystem $validate-code operation
+protectedRoutes.post('/ValueSet/([$]|%24)validate-code', valueSetValidateOperation);
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));

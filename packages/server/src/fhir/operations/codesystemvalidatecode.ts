@@ -6,7 +6,7 @@ import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { findCodeSystem } from './expand';
+import { findTerminologyResource } from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'validate-code');
 
@@ -38,7 +38,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
     return;
   }
 
-  const codeSystem = await findCodeSystem(coding.system as string);
+  const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', coding.system as string);
   const result = await validateCode(codeSystem, coding.code as string);
 
   const output: Record<string, any> = Object.create(null);
