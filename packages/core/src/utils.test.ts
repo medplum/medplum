@@ -449,6 +449,15 @@ describe('Core Utils', () => {
     });
   });
 
+  test('Get extension undefined value', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+      extension: [{ url: 'http://example.com' }],
+    };
+    expect(getExtensionValue(resource, 'http://example.com')).toBeUndefined();
+    expect(getExtensionValue(resource, 'http://example.com', 'key1')).toBeUndefined();
+  });
+
   test('Get extension string value', () => {
     const resource: Patient = {
       resourceType: 'Patient',

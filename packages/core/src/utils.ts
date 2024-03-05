@@ -388,20 +388,12 @@ export function setIdentifier(resource: Resource & { identifier?: Identifier[] }
  * @returns The extension value if found; undefined otherwise.
  */
 export function getExtensionValue(resource: any, ...urls: string[]): string | undefined {
-  // Let curr be the current resource or extension. Extensions can be nested.
-  let curr: any = resource;
-
-  // For each of the urls, try to find a matching nested extension.
-  for (let i = 0; i < urls.length && curr; i++) {
-    curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
-  }
-
-  if (!curr) {
+  const extension = getExtension(resource, ...urls);
+  if (!extension) {
     return undefined;
   }
 
-  const typedValue = getTypedPropertyValue({ type: 'Extension', value: curr }, 'value[x]');
-
+  const typedValue = getTypedPropertyValue({ type: 'Extension', value: extension }, 'value[x]');
   if (!typedValue) {
     return undefined;
   }
