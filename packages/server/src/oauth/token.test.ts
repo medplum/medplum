@@ -440,14 +440,10 @@ describe('OAuth2 Token', () => {
       });
     expect(res.status).toBe(200);
 
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        client_id: pkceOptionalClient.id as string,
-        code: res.body.code,
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+    });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
