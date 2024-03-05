@@ -209,6 +209,8 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
       sendTokenError(res, 'invalid_request', 'Invalid client');
       return;
     }
+  } else if (login.client) {
+    client = await systemRepo.readReference(login.client);
   }
 
   if (clientSecret) {
