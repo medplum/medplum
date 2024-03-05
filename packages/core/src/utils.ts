@@ -17,6 +17,7 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
+import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference } from './types';
@@ -395,7 +396,17 @@ export function getExtensionValue(resource: any, ...urls: string[]): string | un
     curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
   }
 
-  return curr?.valueString as string | undefined;
+  if (!curr) {
+    return undefined;
+  }
+
+  const typedValue = getTypedPropertyValue({ type: 'Extension', value: curr }, 'value[x]');
+
+  if (!typedValue) {
+    return undefined;
+  }
+
+  return Array.isArray(typedValue) ? typedValue[0].value : typedValue.value;
 }
 
 /**
