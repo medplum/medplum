@@ -1,5 +1,5 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { UCUM } from '../constants';
+import { HTTP_HL7_ORG, UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import { Logger } from '../logger';
@@ -11,7 +11,7 @@ import {
   createStructureIssue,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, isReference } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 import { ResourceVisitor, crawlResource, getNestedProperty } from './crawler';
 import {
@@ -212,11 +212,13 @@ class ResourceValidator implements ResourceVisitor {
       if (!matchesSpecifiedValue(value, element)) {
         this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
       }
+
       const sliceCounts: Record<string, number> | undefined = element.slicing
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
       for (const value of values) {
         this.constraintsCheck(value, element, path);
+        this.referenceTypeCheck(value, element, path);
         this.checkPropertyValue(value, path);
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
@@ -327,6 +329,64 @@ class ResourceValidator implements ResourceVisitor {
         }
       }
     }
+  }
+
+  private referenceTypeCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+    if (value.type !== 'Reference') {
+      return;
+    }
+
+    const reference = value.value;
+    if (!isReference(reference)) {
+      // Silently ignore unrecognized reference types
+      return;
+    }
+
+    const referenceResourceType = reference.reference.split('/')[0];
+    if (!referenceResourceType) {
+      // Silently ignore empty references - that will get picked up by constraint validation
+      return;
+    }
+
+    const targetProfiles = field.type.find((t) => t.code === 'Reference')?.targetProfile;
+    if (!targetProfiles) {
+      // No required target profiles
+      return;
+    }
+
+    const hl7BaseUrl = HTTP_HL7_ORG + '/fhir/StructureDefinition/';
+    const hl7ResourceTypeUrl = hl7BaseUrl + referenceResourceType;
+
+    const medplumBaseUrl = 'https://medplum.com/fhir/StructureDefinition/';
+    const medplumResourceTypeUrl = medplumBaseUrl + referenceResourceType;
+
+    for (const targetProfile of targetProfiles) {
+      if (targetProfile === hl7ResourceTypeUrl || targetProfile === medplumResourceTypeUrl) {
+        // Found a matching profile
+        return;
+      }
+
+      if (!targetProfile.startsWith(hl7BaseUrl) && !targetProfile.startsWith(medplumBaseUrl)) {
+        // This is an unrecognized target profile string
+        // For example, it could be US-Core or a custom profile definition
+        // Example: http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
+        // And therefore we cannot validate
+        return;
+      }
+    }
+
+    // All of the target profiles were recognized formats
+    // and we did not find a match
+    // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
+    // Warnings are logged, but do not cause validation to fail
+    this.issues.push(
+      createOperationOutcomeIssue(
+        'warning',
+        'structure',
+        `Invalid reference for "${path}", got "${referenceResourceType}", expected "${targetProfiles.join('", "')}"`,
+        path
+      )
+    );
   }
 
   private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {

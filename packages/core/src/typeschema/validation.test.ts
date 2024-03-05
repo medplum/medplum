@@ -9,6 +9,7 @@ import {
   CodeSystem,
   Condition,
   DiagnosticReport,
+  DocumentReference,
   ElementDefinition,
   Encounter,
   Extension,
@@ -1381,6 +1382,27 @@ describe('FHIR resource validation', () => {
     // We need to first log and track this, and notify customers of breaking changes
     expect(() => validateResource(carePlan, { logger })).not.toThrow();
     expect(write).toHaveBeenCalledWith(expect.stringContaining('Validator warning: Duplicate choice of type property'));
+  });
+
+  test('Reference type check', () => {
+    const docRef: DocumentReference = {
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [{ attachment: { data: 'aGVsbG8gd29ybGQ=' } }],
+
+      // Note that "relatesTo.target" must be a Reference to a DocumentReference
+      // This reference to a Patient is invalid
+      relatesTo: [{ code: 'appends', target: { reference: 'Patient/123' } }],
+    };
+
+    const write = jest.fn();
+    const logger = new Logger(write);
+
+    // TODO: Change this check from warning to error
+    // Duplicate entries for choice-of-type property is currently a warning
+    // We need to first log and track this, and notify customers of breaking changes
+    expect(() => validateResource(docRef, { logger })).not.toThrow();
+    expect(write).toHaveBeenCalledWith(expect.stringContaining('Validator warning: Invalid reference for'));
   });
 });
 
