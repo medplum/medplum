@@ -2533,7 +2533,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   isLoading(): boolean {
-    return !!this.profilePromise;
+    return !this.isInitialized || !!this.profilePromise;
   }
 
   /**
