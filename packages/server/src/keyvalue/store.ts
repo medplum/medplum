@@ -73,8 +73,9 @@ function validateKey(key: string): string {
 }
 
 /**
- * Returns the Redis cache key for the given project and key.
- * Validates the key string is an alphanumeric string from 1-255 characters.
+ * Returns the Redis cache key for the user's project membership.
+ * The Redis cache key points to a Redis "hash" type: https://redis.io/docs/data-types/hashes/
+ * All of the user's key/value pairs are entries in that hash object.
  * @param ctx - The request context.
  * @returns The Redis cache key.
  */
