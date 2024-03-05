@@ -7,6 +7,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  preconditionFailed,
 } from '@medplum/core';
 import {
   BundleEntry,
@@ -31,7 +32,6 @@ import { getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository } from './repo';
-import { preconditionFailed } from '@medplum/core';
 
 jest.mock('hibp');
 
@@ -442,7 +442,7 @@ describe('FHIR Repo', () => {
 
       (patient as Patient).name = [{ family: 'TestUpdated' }];
 
-      let versionId = `${patient.meta?.versionId}`;
+      const versionId = patient.meta?.versionId;
       await systemRepo.updateResource<Patient>(patient, versionId);
       expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
     }));

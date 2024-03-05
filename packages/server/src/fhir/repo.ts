@@ -487,10 +487,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
-      if (versionId) {
-        if (existing.meta?.versionId !== versionId) {
-          throw new OperationOutcomeError(preconditionFailed);
-        }
+      if (versionId && existing.meta?.versionId !== versionId) {
+        throw new OperationOutcomeError(preconditionFailed);
       }
     }
 

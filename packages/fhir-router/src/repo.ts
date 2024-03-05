@@ -258,10 +258,8 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
   updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T> {
     const result = deepClone(resource);
-    if (versionId) {
-      if (result.meta?.versionId !== versionId) {
-        throw new OperationOutcomeError(preconditionFailed);
-      }
+    if (versionId && result.meta?.versionId !== versionId) {
+      throw new OperationOutcomeError(preconditionFailed);
     }
     if (result.meta) {
       if (result.meta.versionId) {
