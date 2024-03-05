@@ -573,12 +573,25 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  private async validateResource(resource: Resource): Promise<void> {
+  /**
+   * Validates a resource against the current project configuration.
+   * If strict mode is enabled (default), validates against base StructureDefinition and all profiles.
+   * If strict mode is disabled, validates against the legacy JSONSchema validator.
+   * Throws on validation errors.
+   * Returns silently on success.
+   * @param resource - The candidate resource to validate.
+   */
+  async validateResource(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
       const logger = getLogger();
       const start = process.hrtime.bigint();
+
+      const issues = validateResource(resource);
+      for (const issue of issues) {
+        logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0], issue });
+      }
+
       const profileUrls = resource.meta?.profile;
-      validateResource(resource, { logger });
       if (profileUrls) {
         await this.validateProfiles(resource, profileUrls);
       }
@@ -611,7 +624,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         continue;
       }
       const validateStart = process.hrtime.bigint();
-      validateResource(resource, { logger, profile });
+      validateResource(resource, { profile });
       const validateTime = Number(process.hrtime.bigint() - validateStart);
       logger.debug('Profile loaded', {
         url,

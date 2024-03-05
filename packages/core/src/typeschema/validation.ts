@@ -1,8 +1,7 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { UCUM } from '../constants';
+import { HTTP_HL7_ORG, UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
-import { Logger } from '../logger';
 import {
   OperationOutcomeError,
   createConstraintIssue,
@@ -11,7 +10,7 @@ import {
   createStructureIssue,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, isReference } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 import { ResourceVisitor, crawlResource, getNestedProperty } from './crawler';
 import {
@@ -93,15 +92,13 @@ const skippedConstraintKeys: Record<string, boolean> = {
 
 export interface ValidatorOptions {
   profile?: StructureDefinition;
-  logger?: Logger;
 }
 
-export function validateResource(resource: Resource, options?: ValidatorOptions): void {
-  new ResourceValidator(resource.resourceType, resource, options).validate();
+export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
+  return new ResourceValidator(resource.resourceType, resource, options).validate();
 }
 
 class ResourceValidator implements ResourceVisitor {
-  private readonly options?: ValidatorOptions;
   private issues: OperationOutcomeIssue[];
   private rootResource: Resource;
   private currentResource: Resource[];
@@ -111,7 +108,6 @@ class ResourceValidator implements ResourceVisitor {
     this.issues = [];
     this.rootResource = rootResource;
     this.currentResource = [rootResource];
-    this.options = options;
     if (!options?.profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -119,7 +115,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  validate(): void {
+  validate(): OperationOutcomeIssue[] {
     const resourceType = this.rootResource.resourceType;
     if (!resourceType) {
       throw new OperationOutcomeError(validationError('Missing resource type'));
@@ -139,10 +135,6 @@ class ResourceValidator implements ResourceVisitor {
       if (issue.severity === 'error') {
         foundError = true;
       }
-      if (issue.severity === 'warning' && this.options?.logger) {
-        const project = this.rootResource.meta?.project;
-        this.options.logger.warn(`Validator warning: ${issue.details?.text}`, { project, issue });
-      }
     }
 
     if (foundError) {
@@ -151,6 +143,8 @@ class ResourceValidator implements ResourceVisitor {
         issue: issues,
       });
     }
+
+    return issues;
   }
 
   onExitObject(path: string, obj: TypedValue, schema: InternalTypeSchema): void {
@@ -212,11 +206,13 @@ class ResourceValidator implements ResourceVisitor {
       if (!matchesSpecifiedValue(value, element)) {
         this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
       }
+
       const sliceCounts: Record<string, number> | undefined = element.slicing
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
       for (const value of values) {
         this.constraintsCheck(value, element, path);
+        this.referenceTypeCheck(value, element, path);
         this.checkPropertyValue(value, path);
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
@@ -327,6 +323,64 @@ class ResourceValidator implements ResourceVisitor {
         }
       }
     }
+  }
+
+  private referenceTypeCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+    if (value.type !== 'Reference') {
+      return;
+    }
+
+    const reference = value.value;
+    if (!isReference(reference)) {
+      // Silently ignore unrecognized reference types
+      return;
+    }
+
+    const referenceResourceType = reference.reference.split('/')[0];
+    if (!referenceResourceType) {
+      // Silently ignore empty references - that will get picked up by constraint validation
+      return;
+    }
+
+    const targetProfiles = field.type.find((t) => t.code === 'Reference')?.targetProfile;
+    if (!targetProfiles) {
+      // No required target profiles
+      return;
+    }
+
+    const hl7BaseUrl = HTTP_HL7_ORG + '/fhir/StructureDefinition/';
+    const hl7ResourceTypeUrl = hl7BaseUrl + referenceResourceType;
+
+    const medplumBaseUrl = 'https://medplum.com/fhir/StructureDefinition/';
+    const medplumResourceTypeUrl = medplumBaseUrl + referenceResourceType;
+
+    for (const targetProfile of targetProfiles) {
+      if (targetProfile === hl7ResourceTypeUrl || targetProfile === medplumResourceTypeUrl) {
+        // Found a matching profile
+        return;
+      }
+
+      if (!targetProfile.startsWith(hl7BaseUrl) && !targetProfile.startsWith(medplumBaseUrl)) {
+        // This is an unrecognized target profile string
+        // For example, it could be US-Core or a custom profile definition
+        // Example: http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
+        // And therefore we cannot validate
+        return;
+      }
+    }
+
+    // All of the target profiles were recognized formats
+    // and we did not find a match
+    // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
+    // Warnings are logged, but do not cause validation to fail
+    this.issues.push(
+      createOperationOutcomeIssue(
+        'warning',
+        'structure',
+        `Invalid reference for "${path}", got "${referenceResourceType}", expected "${targetProfiles.join('", "')}"`,
+        path
+      )
+    );
   }
 
   private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
