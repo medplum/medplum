@@ -54,6 +54,7 @@ export function mockFetchResponse(status: number, body: any, headers?: Record<st
     headers: headersMap,
     blob: streamReader,
     json: streamReader,
+    text: streamReader,
   } as unknown as Response;
 }
 

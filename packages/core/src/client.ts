@@ -79,6 +79,7 @@ import {
   resolveId,
   sleep,
 } from './utils';
+import { MedplumKeyValueClient } from './keyvalue';
 
 export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
@@ -689,6 +690,7 @@ export class MedplumClient extends EventTarget {
   private basicAuth?: string;
   private initPromise: Promise<void>;
   private initComplete = true;
+  private keyValueClient?: MedplumKeyValueClient;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -2710,6 +2712,17 @@ export class MedplumClient extends EventTarget {
     headers['Prefer'] = 'respond-async';
 
     return this.request('POST', url, options);
+  }
+
+  /**
+   * Returns the key value client.
+   * @returns The key value client.
+   */
+  get keyValue(): MedplumKeyValueClient {
+    if (!this.keyValueClient) {
+      this.keyValueClient = new MedplumKeyValueClient(this);
+    }
+    return this.keyValueClient;
   }
 
   //
