@@ -5,6 +5,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   notFound,
+  preconditionFailed,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, OperationOutcome, SearchParameter } from '@medplum/fhirtypes';
@@ -170,6 +171,24 @@ describe('FHIR Router', () => {
       repo
     );
     expect(res).toMatchObject(badRequest('Incorrect ID'));
+  });
+
+  test('Update incorrect precondition', async () => {
+    const [res] = await router.handleRequest(
+      {
+        method: 'PUT',
+        pathname: '/Patient/123',
+        body: {
+          resourceType: 'Patient',
+          id: '123',
+        },
+        params: {},
+        query: {},
+        headers: { 'if-match': 'W/"test"' },
+      },
+      repo
+    );
+    expect(res).toMatchObject(preconditionFailed);
   });
 
   test('Search by post', async () => {

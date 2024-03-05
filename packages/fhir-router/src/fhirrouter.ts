@@ -13,6 +13,7 @@ import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
 import { FhirRepository } from './repo';
 import { HttpMethod, Router } from './urlrouter';
+import { IncomingHttpHeaders } from 'http';
 
 export type FhirRequest = {
   method: HttpMethod;
@@ -20,6 +21,7 @@ export type FhirRequest = {
   body: any;
   params: Record<string, string>;
   query: Record<string, string>;
+  headers?: IncomingHttpHeaders;
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
@@ -100,7 +102,13 @@ async function updateResource(req: FhirRequest, repo: FhirRepository): Promise<F
   if (resource.id !== id) {
     return [badRequest('Incorrect ID')];
   }
-  const result = await repo.updateResource(resource);
+
+  let if_match = req.headers?.['if-match'];
+  let versionId: string | undefined;
+  if (if_match) {
+    versionId = if_match.slice(3, if_match.length - 1);
+  }
+  const result = await repo.updateResource(resource, versionId);
   return [allOk, result];
 }
 
