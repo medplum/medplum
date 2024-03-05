@@ -260,6 +260,9 @@ async function includeInExpansion(
         case 'is-a':
           query = addDescendants(query, codeSystem, condition.value);
           break;
+        case '=':
+          query = addPropertyFilter(query, condition.property, condition.value, true);
+          break;
         default:
           ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
           return; // Unknown filter type, don't make DB query with incorrect filters
