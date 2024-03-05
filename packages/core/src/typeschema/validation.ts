@@ -2,7 +2,6 @@ import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/f
 import { HTTP_HL7_ORG, UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
-import { Logger } from '../logger';
 import {
   OperationOutcomeError,
   createConstraintIssue,
@@ -93,15 +92,13 @@ const skippedConstraintKeys: Record<string, boolean> = {
 
 export interface ValidatorOptions {
   profile?: StructureDefinition;
-  logger?: Logger;
 }
 
-export function validateResource(resource: Resource, options?: ValidatorOptions): void {
-  new ResourceValidator(resource.resourceType, resource, options).validate();
+export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
+  return new ResourceValidator(resource.resourceType, resource, options).validate();
 }
 
 class ResourceValidator implements ResourceVisitor {
-  private readonly options?: ValidatorOptions;
   private issues: OperationOutcomeIssue[];
   private rootResource: Resource;
   private currentResource: Resource[];
@@ -111,7 +108,6 @@ class ResourceValidator implements ResourceVisitor {
     this.issues = [];
     this.rootResource = rootResource;
     this.currentResource = [rootResource];
-    this.options = options;
     if (!options?.profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -119,7 +115,7 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  validate(): void {
+  validate(): OperationOutcomeIssue[] {
     const resourceType = this.rootResource.resourceType;
     if (!resourceType) {
       throw new OperationOutcomeError(validationError('Missing resource type'));
@@ -139,10 +135,6 @@ class ResourceValidator implements ResourceVisitor {
       if (issue.severity === 'error') {
         foundError = true;
       }
-      if (issue.severity === 'warning' && this.options?.logger) {
-        const project = this.rootResource.meta?.project;
-        this.options.logger.warn(`Validator warning: ${issue.details?.text}`, { project, issue });
-      }
     }
 
     if (foundError) {
@@ -151,6 +143,8 @@ class ResourceValidator implements ResourceVisitor {
         issue: issues,
       });
     }
+
+    return issues;
   }
 
   onExitObject(path: string, obj: TypedValue, schema: InternalTypeSchema): void {

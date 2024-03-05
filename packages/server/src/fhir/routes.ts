@@ -1,10 +1,11 @@
-import { allOk, ContentType, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
+import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { getAuthenticatedContext, getLogger } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
+import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
@@ -27,13 +28,12 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
+import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
+import { codeSystemSubsumesOperation } from './operations/subsumes';
+import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { isFhirJsonContentType, sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
-import { recordHistogramValue } from '../otel/otel';
-import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
-import { codeSystemSubsumesOperation } from './operations/subsumes';
 
 export const fhirRouter = Router();
 
@@ -187,7 +187,8 @@ protectedRoutes.post(
       res.status(400).send('Unsupported content type');
       return;
     }
-    validateResource(req.body, { logger: getLogger() });
+    const ctx = getAuthenticatedContext();
+    await ctx.repo.validateResource(req.body);
     sendOutcome(res, allOk);
   })
 );

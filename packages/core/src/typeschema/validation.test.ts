@@ -35,7 +35,6 @@ import { OperationOutcomeError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle } from './types';
 import { validateResource } from './validation';
-import { Logger } from '../logger';
 
 describe('FHIR resource validation', () => {
   let typesBundle: Bundle;
@@ -1374,14 +1373,13 @@ describe('FHIR resource validation', () => {
       ],
     };
 
-    const write = jest.fn();
-    const logger = new Logger(write);
-
     // TODO: Change this check from warning to error
     // Duplicate entries for choice-of-type property is currently a warning
     // We need to first log and track this, and notify customers of breaking changes
-    expect(() => validateResource(carePlan, { logger })).not.toThrow();
-    expect(write).toHaveBeenCalledWith(expect.stringContaining('Validator warning: Duplicate choice of type property'));
+    const issues = validateResource(carePlan);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain('Duplicate choice of type property');
   });
 
   test('Reference type check', () => {
@@ -1395,14 +1393,13 @@ describe('FHIR resource validation', () => {
       relatesTo: [{ code: 'appends', target: { reference: 'Patient/123' } }],
     };
 
-    const write = jest.fn();
-    const logger = new Logger(write);
-
     // TODO: Change this check from warning to error
     // Duplicate entries for choice-of-type property is currently a warning
     // We need to first log and track this, and notify customers of breaking changes
-    expect(() => validateResource(docRef, { logger })).not.toThrow();
-    expect(write).toHaveBeenCalledWith(expect.stringContaining('Validator warning: Invalid reference for'));
+    const issues = validateResource(docRef);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain('Invalid reference for');
   });
 });
 
