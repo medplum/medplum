@@ -75,8 +75,8 @@ $('login').addEventListener('click', async () =>
       projectId: MEDPLUM_PROJECT_ID,
       clientId: MEDPLUM_CLIENT_ID,
       redirectUri: WEB_APP_REDIRECT_URI,
-    }
-  )
+    },
+  ),
 );
 
 // The userinfo button handler
