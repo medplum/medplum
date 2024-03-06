@@ -5,7 +5,7 @@
     "lib": ["esnext"],
     "paths": {
       "*": ["./src/@types/*"]
-    },
+    }
   },
   "include": ["src/**/*.ts"]
 }

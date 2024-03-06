@@ -1,0 +1,26 @@
+name: autofix.ci
+
+concurrency:
+  group: ci-autofix-${{ github.ref_name == 'main' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - medplum/test-actions
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci --maxsockets 1
+      - run: npm run prettier
+
+      - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
