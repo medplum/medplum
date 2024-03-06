@@ -5,10 +5,16 @@ import { isIPv4 } from 'node:net';
 import { Repository } from '../repo';
 
 /**
- * Returns the Agent for the execute request.
+ * Returns the Agent for a request.
+ *
+ * All Agent operations support lookup by ID or identifier.
+ *
+ * For example:
+ *
  * If using "/Agent/:id/$push", then the agent ID is read from the path parameter.
  * If using "/Agent/$push?identifier=...", then the agent is searched by identifier.
  * Otherwise, returns undefined.
+ *
  * @param req - The HTTP request.
  * @param repo - The repository.
  * @returns The agent, or undefined if not found.

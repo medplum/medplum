@@ -31,10 +31,10 @@ const operation: OperationDefinition = {
 };
 
 /**
- * Handles HTTP requests for the Agent $push operation.
+ * Handles HTTP requests for the Agent $status operation.
  * First reads the agent and makes sure it is valid and the user has access to it.
- * Then pushes the message to the agent channel.
- * Returns the outcome of the agent execution.
+ * Then tries to get the agent status from Redis.
+ * Returns the agent status details as a Parameters resource.
  */
 export const agentStatusHandler = asyncWrap(async (req: Request, res: Response) => {
   const { repo } = getAuthenticatedContext();
