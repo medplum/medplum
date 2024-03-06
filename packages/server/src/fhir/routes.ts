@@ -241,6 +241,7 @@ protectedRoutes.use(
       params: req.params,
       query: req.query as Record<string, string>,
       body: req.body,
+      headers: req.headers,
     };
 
     const result = await internalFhirRouter.handleRequest(request, ctx.repo);

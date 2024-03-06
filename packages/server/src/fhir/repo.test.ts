@@ -7,6 +7,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  preconditionFailed,
 } from '@medplum/core';
 import {
   BundleEntry,
@@ -429,6 +430,35 @@ describe('FHIR Repo', () => {
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Missing id'));
+      }
+    }));
+
+  test('Update resource with matching versionId', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      (patient as Patient).name = [{ family: 'TestUpdated' }];
+
+      const versionId = patient.meta?.versionId;
+      await systemRepo.updateResource<Patient>(patient, versionId);
+      expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
+    }));
+
+  test('Update resource with different versionId', () =>
+    withTestContext(async () => {
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      try {
+        await systemRepo.updateResource<Patient>(patient1, 'bad-id');
+        fail('Should have thrown');
+      } catch (err) {
+        expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
       }
     }));
 

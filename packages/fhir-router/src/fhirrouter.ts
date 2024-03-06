@@ -8,6 +8,7 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { IncomingHttpHeaders } from 'http';
 import { Operation } from 'rfc6902';
 import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
@@ -20,6 +21,7 @@ export type FhirRequest = {
   body: any;
   params: Record<string, string>;
   query: Record<string, string>;
+  headers?: IncomingHttpHeaders;
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
@@ -111,7 +113,7 @@ async function updateResource(req: FhirRequest, repo: FhirRepository): Promise<F
   if (resource.id !== id) {
     return [badRequest('Incorrect ID')];
   }
-  const result = await repo.updateResource(resource);
+  const result = await repo.updateResource(resource, parseIfMatchHeader(req.headers?.['if-match']));
   return [allOk, result];
 }
 
@@ -165,4 +167,12 @@ export class FhirRouter extends EventTarget {
       return [normalizeOperationOutcome(err)];
     }
   }
+}
+
+function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
+  if (!ifMatch) {
+    return undefined;
+  }
+  const match = /"([^"]+)"/.exec(ifMatch);
+  return match ? match[1] : undefined;
 }

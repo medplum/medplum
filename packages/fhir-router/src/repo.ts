@@ -10,6 +10,7 @@ import {
   matchesSearchRequest,
   normalizeOperationOutcome,
   notFound,
+  preconditionFailed,
 } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
@@ -89,7 +90,7 @@ export interface FhirRepository<TClient = unknown> {
    * @param resource - The FHIR resource to update.
    * @returns The updated resource.
    */
-  updateResource<T extends Resource>(resource: T): Promise<T>;
+  updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T>;
 
   /**
    * Deletes a FHIR resource.
@@ -255,8 +256,11 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return deepClone(result);
   }
 
-  updateResource<T extends Resource>(resource: T): Promise<T> {
+  updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T> {
     const result = deepClone(resource);
+    if (versionId && result.meta?.versionId !== versionId) {
+      throw new OperationOutcomeError(preconditionFailed);
+    }
     if (result.meta) {
       if (result.meta.versionId) {
         delete result.meta.versionId;

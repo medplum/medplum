@@ -25,6 +25,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   parseSearchRequest,
+  preconditionFailed,
   protectedResourceTypes,
   resolveId,
   satisfiedAccessPolicy,
@@ -451,9 +452,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  async updateResource<T extends Resource>(resource: T): Promise<T> {
+  async updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T> {
     try {
-      const result = await this.updateResourceImpl(resource, false);
+      const result = await this.updateResourceImpl(resource, false, versionId);
       this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
@@ -462,7 +463,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
+  private async updateResourceImpl<T extends Resource>(resource: T, create: boolean, versionId?: string): Promise<T> {
     const { resourceType, id } = resource;
     if (!id) {
       throw new OperationOutcomeError(badRequest('Missing id'));
@@ -485,6 +486,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       if (!this.canWriteToResource(existing)) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
+      }
+      if (versionId && existing.meta?.versionId !== versionId) {
+        throw new OperationOutcomeError(preconditionFailed);
       }
     }
 

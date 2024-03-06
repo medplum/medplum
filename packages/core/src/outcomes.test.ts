@@ -19,6 +19,7 @@ import {
   notFound,
   notModified,
   operationOutcomeToString,
+  preconditionFailed,
   tooManyRequests,
   unauthorized,
 } from './outcomes';
@@ -87,6 +88,7 @@ describe('Outcomes', () => {
     expect(getStatus(notFound)).toBe(404);
     expect(getStatus(conflict('bad'))).toBe(409);
     expect(getStatus(gone)).toBe(410);
+    expect(getStatus(preconditionFailed)).toBe(412);
     expect(getStatus(tooManyRequests)).toBe(429);
     expect(getStatus(badRequest('bad'))).toBe(400);
   });
