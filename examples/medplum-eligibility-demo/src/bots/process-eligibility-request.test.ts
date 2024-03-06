@@ -61,7 +61,7 @@ describe('Process Eligibility Request', async () => {
     expect(response?.insurance?.[0].item?.[0].excluded).toEqual(true);
   });
 
-  test('Non-eligibel request', async () => {
+  test('Non-eligible request', async () => {
     const medplum = new MockClient();
     await medplum.executeBatch(otherEligibilityCheck);
 
