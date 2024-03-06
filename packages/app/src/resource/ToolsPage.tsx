@@ -1,6 +1,6 @@
 import { ActionIcon, Button, Divider, Table, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ContentType, formatDateTime } from '@medplum/core';
+import { ContentType, formatDateTime, normalizeErrorString } from '@medplum/core';
 import { Agent, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconRouter } from '@tabler/icons-react';
@@ -25,12 +25,8 @@ export function ToolsPage(): JSX.Element | null {
         setStatus(result.parameter?.find((p) => p.name === 'status')?.valueCode);
         setLastUpdated(result.parameter?.find((p) => p.name === 'lastUpdated')?.valueInstant);
       })
-      .catch((err) => {
-        showNotification({ color: 'red', title: 'Error', message: err.message, autoClose: false });
-      })
-      .finally(() => {
-        setLoadingStatus(false);
-      });
+      .catch((err) => showError(normalizeErrorString(err)))
+      .finally(() => setLoadingStatus(false));
   }, [medplum, id]);
 
   const handlePing = useCallback(
@@ -42,18 +38,9 @@ export function ToolsPage(): JSX.Element | null {
       setPinging(true);
       medplum
         .pushToAgent(reference, ip, 'PING', ContentType.PING, true)
-        .then((pingResult: string) => {
-          setLastPing(pingResult);
-          setPinging(false);
-        })
-        .catch((err: unknown) => {
-          setPinging(false);
-          if ((err as Error).message === 'Destination device not found') {
-            showError('Destination device not found');
-          } else if ((err as Error).message === 'Timeout') {
-            showError('Operation timed out. Agent may be unreachable');
-          }
-        });
+        .then((pingResult: string) => setLastPing(pingResult))
+        .catch((err: unknown) => showError(normalizeErrorString(err)))
+        .finally(() => setPinging(false));
     },
     [medplum, reference]
   );
@@ -109,7 +96,7 @@ export function ToolsPage(): JSX.Element | null {
           name="ip"
           placeholder="IP Address"
           rightSection={
-            <ActionIcon size={24} radius="xl" variant="filled" type="submit">
+            <ActionIcon size={24} radius="xl" variant="filled" type="submit" aria-label="Ping">
               <IconRouter style={{ width: '1rem', height: '1rem' }} stroke={1.5} />
             </ActionIcon>
           }

@@ -1,5 +1,5 @@
 import { Notifications } from '@mantine/notifications';
-import { getReferenceString } from '@medplum/core';
+import { allOk, getReferenceString } from '@medplum/core';
 import { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -8,6 +8,10 @@ import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
+medplum.router.router.add('GET', 'Agent/:id/$status', async () => [
+  allOk,
+  { resourceType: 'Parameters', parameter: [{ name: 'status', valueCode: 'disconnected' }] },
+]);
 
 describe('ToolsPage', () => {
   let agent: Agent;
@@ -30,6 +34,20 @@ describe('ToolsPage', () => {
     } as Agent);
   });
 
+  test('Get status', async () => {
+    await act(async () => {
+      setup(`/${getReferenceString(agent)}/tools`);
+    });
+
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Get Status'));
+    });
+
+    await expect(screen.findByText('disconnected', { exact: false })).resolves.toBeInTheDocument();
+  });
+
   test('Renders last ping', async () => {
     // load agent page
     await act(async () => {
@@ -43,12 +61,11 @@ describe('ToolsPage', () => {
       fireEvent.click(toolsTab);
     });
 
-    expect(screen.getByText(agent.name)).toBeInTheDocument();
-    expect(screen.getByLabelText('IP')).toBeInTheDocument();
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('IP'), { target: { value: '8.8.8.8' } });
-      fireEvent.click(screen.getByText('Ping'));
+      fireEvent.change(screen.getByPlaceholderText('IP Address'), { target: { value: '8.8.8.8' } });
+      fireEvent.click(screen.getByLabelText('Ping'));
     });
 
     await expect(screen.findByText('statistics', { exact: false })).resolves.toBeInTheDocument();
@@ -60,15 +77,14 @@ describe('ToolsPage', () => {
       setup(`/${getReferenceString(agent)}/tools`);
     });
 
-    expect(screen.getByText(agent.name)).toBeInTheDocument();
-    expect(screen.getByLabelText('IP')).toBeInTheDocument();
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('IP'), { target: { value: 'abc123' } });
-      fireEvent.click(screen.getByText('Ping'));
+      fireEvent.change(screen.getByPlaceholderText('IP Address'), { target: { value: 'abc123' } });
+      fireEvent.click(screen.getByLabelText('Ping'));
     });
 
-    await expect(screen.findByText('Invalid IP entered')).resolves.toBeInTheDocument();
+    await expect(screen.findByText('Destination device not found')).resolves.toBeInTheDocument();
   });
 
   test('Displays error notification whenever agent unreachable', async () => {
@@ -79,17 +95,14 @@ describe('ToolsPage', () => {
       setup(`/${getReferenceString(agent)}/tools`);
     });
 
-    expect(screen.getByText(agent.name)).toBeInTheDocument();
-    expect(screen.getByLabelText('IP')).toBeInTheDocument();
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('IP'), { target: { value: '8.8.8.8' } });
-      fireEvent.click(screen.getByText('Ping'));
+      fireEvent.change(screen.getByPlaceholderText('IP Address'), { target: { value: '8.8.8.8' } });
+      fireEvent.click(screen.getByLabelText('Ping'));
     });
 
-    await expect(
-      screen.findByText('"$push" operation timed out. Agent may be unreachable')
-    ).resolves.toBeInTheDocument();
+    await expect(screen.findByText('Timeout')).resolves.toBeInTheDocument();
 
     medplum.setAgentAvailable(true);
   });
