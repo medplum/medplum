@@ -1,21 +1,12 @@
-import {
-  AgentTransmitRequest,
-  allOk,
-  badRequest,
-  BaseAgentRequestMessage,
-  getReferenceString,
-  Operator,
-  parseSearchRequest,
-} from '@medplum/core';
-import { Agent, Device } from '@medplum/fhirtypes';
+import { AgentTransmitRequest, allOk, badRequest, BaseAgentRequestMessage, getReferenceString } from '@medplum/core';
+import { Agent } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
-import { isIPv4 } from 'node:net';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
-import { Repository } from '../repo';
+import { getAgentForRequest, getDevice } from './agentutils';
 import { parseParameters } from './utils/parameters';
 
 export interface AgentPushParameters {
@@ -111,52 +102,6 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // 1. The agent will respond with a message on the channel
   // 2. The timer will expire and the request will timeout
 });
-
-/**
- * Returns the Agent for the execute request.
- * If using "/Agent/:id/$push", then the agent ID is read from the path parameter.
- * If using "/Agent/$push?identifier=...", then the agent is searched by identifier.
- * Otherwise, returns undefined.
- * @param req - The HTTP request.
- * @param repo - The repository.
- * @returns The agent, or undefined if not found.
- */
-async function getAgentForRequest(req: Request, repo: Repository): Promise<Agent | undefined> {
-  // Prefer to search by ID from path parameter
-  const { id } = req.params;
-  if (id) {
-    return repo.readResource<Agent>('Agent', id);
-  }
-
-  // Otherwise, search by identifier
-  const { identifier } = req.query;
-  if (identifier && typeof identifier === 'string') {
-    return repo.searchOne<Agent>({
-      resourceType: 'Agent',
-      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
-    });
-  }
-
-  // If no agent ID or identifier, return undefined
-  return undefined;
-}
-
-async function getDevice(repo: Repository, destination: string): Promise<Device | undefined> {
-  if (destination.startsWith('Device/')) {
-    try {
-      return await repo.readReference<Device>({ reference: destination });
-    } catch (_err) {
-      return undefined;
-    }
-  }
-  if (destination.startsWith('Device?')) {
-    return repo.searchOne<Device>(parseSearchRequest(destination));
-  }
-  if (isIPv4(destination)) {
-    return { resourceType: 'Device', url: destination };
-  }
-  return undefined;
-}
 
 async function publishMessage(agent: Agent, message: BaseAgentRequestMessage): Promise<number> {
   return getRedis().publish(getReferenceString(agent), JSON.stringify(message));

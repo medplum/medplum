@@ -98,7 +98,6 @@ export function AppRoutes(): JSX.Element {
           <Route path="json" element={<JsonCreatePage />} />
           <Route path="profiles" element={<FormCreatePage />} />
         </Route>
-        <Route path="/Agent/:id/tools" element={<ToolsPage />} />
         <Route path="/:resourceType/:id" element={<ResourcePage />}>
           <Route index element={<TimelinePage />} />
           <Route path="apply" element={<ApplyPage />} />
@@ -120,6 +119,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="ranges" element={<ReferenceRangesPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
+          <Route path="tools" element={<ToolsPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />

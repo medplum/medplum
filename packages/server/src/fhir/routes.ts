@@ -34,6 +34,7 @@ import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { isFhirJsonContentType, sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { agentStatusHandler } from './operations/agentstatus';
 
 export const fhirRouter = Router();
 
@@ -124,6 +125,10 @@ protectedRoutes.post('/ValueSet/([$]|%24)validate-code', valueSetValidateOperati
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
+
+// Agent $status operation
+protectedRoutes.get('/Agent/([$]|%24)status', agentStatusHandler);
+protectedRoutes.get('/Agent/:id/([$]|%24)status', agentStatusHandler);
 
 // Agent $push operation
 protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);

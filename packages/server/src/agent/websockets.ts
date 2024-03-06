@@ -18,6 +18,8 @@ import { heartbeat } from '../heartbeat';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis } from '../redis';
 
+const STATUS_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
+
 /**
  * Handles a new WebSocket connection to the agent service.
  * The agent service executes a bot and returns the result.
@@ -53,7 +55,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
             break;
 
           case 'agent:heartbeat:response':
-            // Do nothing
+            await updateStatus('connected');
             break;
 
           // @ts-expect-error - Deprecated message type
@@ -78,11 +80,16 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     })
   );
 
-  socket.on('close', () => {
-    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
-    redisSubscriber?.quit().catch(console.error);
-    redisSubscriber = undefined;
-  });
+  socket.on(
+    'close',
+    AsyncLocalStorage.bind(async () => {
+      await updateStatus('disconnected');
+      heartbeat.removeEventListener('heartbeat', heartbeatHandler);
+      redisSubscriber?.quit().catch(console.error);
+      redisSubscriber = undefined;
+      agentId = undefined;
+    })
+  );
 
   /**
    * Handles a connect command.
@@ -120,6 +127,9 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
     // Send connected message
     sendMessage({ type: 'agent:connect:response' });
+
+    // Update the agent status in Redis
+    await updateStatus('connected');
   }
 
   /**
@@ -191,5 +201,26 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
   function sendError(body: string): void {
     sendMessage({ type: 'agent:error', body });
+  }
+
+  /**
+   * Updates the agent status in Redis.
+   * This is used by the Agent "$status" operation to monitor agent status.
+   * See packages/server/src/fhir/operations/agentstatus.ts for more details.
+   * @param status - The new status.
+   */
+  async function updateStatus(status: string): Promise<void> {
+    if (!agentId) {
+      // Not connected
+    }
+    await getRedis().set(
+      `medplum:agent:${agentId}:status`,
+      JSON.stringify({
+        status,
+        lastUpdated: new Date().toISOString(),
+      }),
+      'EX',
+      STATUS_EX_SECONDS
+    );
   }
 }
