@@ -23,7 +23,11 @@ export interface AgentPushParameters {
   contentType: string;
   destination: string;
   waitForResponse?: boolean;
+  waitTimeout?: number;
 }
+
+const DEFAULT_WAIT_TIMEOUT = 10000;
+const MAX_WAIT_TIMEOUT = 60000;
 
 /**
  * Handles HTTP requests for the Agent $push operation.
@@ -54,6 +58,12 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
 
   if (!params.destination) {
     sendOutcome(res, badRequest('Missing destination parameter'));
+    return;
+  }
+
+  const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
+  if (waitTimeout < 0 || waitTimeout > MAX_WAIT_TIMEOUT) {
+    sendOutcome(res, badRequest('Invalid waitTimeout parameter'));
     return;
   }
 
@@ -97,7 +107,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   const timer = setTimeout(() => {
     cleanup();
     sendOutcome(res, badRequest('Timeout'));
-  }, 5000);
+  }, waitTimeout);
 
   function cleanup(): void {
     redisSubscriber.disconnect();
