@@ -178,4 +178,23 @@ describe('ValueSet validate-code', () => {
     expect(res2.status).toBe(400);
     expect(res2.body.resourceType).toEqual('OperationOutcome');
   });
+
+  test('Validates code when only example CodeSystem is present', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: 'http://hl7.org/fhir/ValueSet/observation-codes' },
+          { name: 'coding', valueCoding: { system: 'http://loinc.org', code: '10727-6' } },
+        ],
+      } as Parameters);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+    expect(output.parameter?.find((p) => p.name === 'display')).toBeUndefined();
+  });
 });
