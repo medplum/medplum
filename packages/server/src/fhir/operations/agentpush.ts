@@ -63,7 +63,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
 
   const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
   if (waitTimeout < 0 || waitTimeout > MAX_WAIT_TIMEOUT) {
-    sendOutcome(res, badRequest('Invalid waitTimeout parameter'));
+    sendOutcome(res, badRequest('Invalid wait timeout'));
     return;
   }
 

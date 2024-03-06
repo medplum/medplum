@@ -233,4 +233,19 @@ describe('Agent Push', () => {
     expect(res2.status).toBe(400);
     expect(res2.body.issue[0].details.text).toEqual('Destination device missing url');
   });
+
+  test('Invalid wait timeout', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: getReferenceString(device),
+        waitTimeout: 60 * 60 * 1000,
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Invalid wait timeout');
+  });
 });
