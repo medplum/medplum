@@ -1,17 +1,12 @@
 import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ProfileResource, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Bundle, Communication, Practitioner, Reference } from '@medplum/fhirtypes';
-import { DrAliceSmith } from '@medplum/mock';
-import { Form, useMedplum, useSubscription } from '@medplum/react';
+import { ProfileResource, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { Bundle, Communication } from '@medplum/fhirtypes';
+import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import classes from './Chat.module.css';
-
-const DR_ALICE_SMITH: Reference<Practitioner> = {
-  reference: getReferenceString(DrAliceSmith),
-  display: 'Dr. Alice Smith',
-};
+import { Form } from '../Form/Form';
+import classes from './ChatBox.module.css';
 
 function parseSentTime(communication: Communication): string {
   const sentTime = new Date(communication.sent ?? 0);
@@ -43,10 +38,18 @@ function upsertCommunications(
   setCommunications(newCommunications);
 }
 
-export function Chat(): JSX.Element | null {
+export interface ChatBoxProps {
+  title: string;
+  communications: Communication[];
+  setCommunications: (communications: Communication[]) => void;
+  query: string;
+  sendMessage: (content: string) => void;
+}
+
+export function ChatBox(props: ChatBoxProps): JSX.Element | null {
+  const { title, communications, setCommunications, query, sendMessage } = props;
   const medplum = useMedplum();
   const [open, setOpen] = useState(false);
-  const [communications, setCommunications] = useState<Communication[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
@@ -56,23 +59,34 @@ export function Chat(): JSX.Element | null {
     [profile, medplum]
   );
 
-  useSubscription(
-    `Communication?sender=${profileRefStr},${DR_ALICE_SMITH.reference}&recipient=${DR_ALICE_SMITH.reference},${profileRefStr}`,
-    (bundle: Bundle) => {
-      const communication = bundle.entry?.[1]?.resource as Communication;
-      upsertCommunications(communicationsRef.current, [communication], setCommunications);
-      if (!(communication.received && communication.status === 'completed')) {
-        medplum
-          .updateResource<Communication>({
-            ...communication,
-            received: communication.received ?? new Date().toISOString(), // Mark as received if needed
-            status: 'completed', // Mark as read
-            // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
-            // for more info about recommended `Communication` lifecycle
-          })
-          .catch(console.error);
-      }
+  useSubscription(`Communication?${query}`, (bundle: Bundle) => {
+    const communication = bundle.entry?.[1]?.resource as Communication;
+    upsertCommunications(communicationsRef.current, [communication], setCommunications);
+    if (!(communication.received && communication.status === 'completed')) {
+      medplum
+        .updateResource<Communication>({
+          ...communication,
+          received: communication.received ?? new Date().toISOString(), // Mark as received if needed
+          status: 'completed', // Mark as read
+          // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
+          // for more info about recommended `Communication` lifecycle
+        })
+        .catch(console.error);
     }
+  });
+
+  const sendMessageInternal = useCallback(
+    (formData: Record<string, string>) => {
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+
+      const message = formData.message;
+      sendMessage(message);
+
+      scrollToBottomRef.current = true;
+    },
+    [sendMessage]
   );
 
   // Disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
@@ -91,38 +105,11 @@ export function Chat(): JSX.Element | null {
   const scrollToBottomRef = useRef<boolean>(false);
 
   const searchMessages = useCallback(async (): Promise<void> => {
-    const searchResult = await medplum.searchResources(
-      'Communication',
-      {
-        _sort: '-_lastUpdated',
-        sender: `${profileRefStr},${DR_ALICE_SMITH.reference}`,
-        recipient: `${profileRefStr},${DR_ALICE_SMITH.reference}`,
-      },
-      { cache: 'no-cache' }
-    );
+    const searchParams = new URLSearchParams(query);
+    searchParams.append('_sort', '-sent');
+    const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
     upsertCommunications(communicationsRef.current, searchResult, setCommunications);
-  }, [medplum, profileRefStr]);
-
-  const sendMessage = useCallback(
-    async (formData: Record<string, string>) => {
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
-      const message = formData.message;
-      const communication = await medplum.createResource<Communication>({
-        resourceType: 'Communication',
-        status: 'in-progress',
-        // subject: createReference(resource),
-        sender: createReference(profile as ProfileResource),
-        recipient: [DR_ALICE_SMITH],
-        sent: new Date().toISOString(),
-        payload: [{ contentString: message }],
-      });
-      setCommunications([...communications, communication]);
-      scrollToBottomRef.current = true;
-    },
-    [medplum, profile, communications]
-  );
+  }, [medplum, setCommunications, query]);
 
   useEffect(() => {
     searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
@@ -144,6 +131,7 @@ export function Chat(): JSX.Element | null {
     }
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: using communications[i] seems to break things here. probably Biome assumes that communications might be mutable
   const myLastCommunicationId = useMemo<string>(() => {
     let i = communications.length;
 
@@ -166,7 +154,7 @@ export function Chat(): JSX.Element | null {
       <>
         <div className={classes.chatContainer}>
           <Paper className={classes.chatPaper} shadow="xl" p={0} radius="md" withBorder>
-            <div className={classes.chatTitle}>Chat with {DR_ALICE_SMITH.display}</div>
+            <div className={classes.chatTitle}>{title}</div>
             <div className={classes.chatBody}>
               <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
                 {communications.map((c, i) => {
@@ -197,7 +185,7 @@ export function Chat(): JSX.Element | null {
               </ScrollArea>
             </div>
             <div className={classes.chatInputContainer}>
-              <Form onSubmit={sendMessage}>
+              <Form onSubmit={sendMessageInternal}>
                 <TextInput
                   ref={inputRef}
                   name="message"

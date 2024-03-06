@@ -17,6 +17,8 @@ export * from './AttachmentInput/AttachmentInput';
 export * from './BackboneElementDisplay/BackboneElementDisplay';
 export * from './BackboneElementInput/BackboneElementInput';
 export * from './CalendarInput/CalendarInput';
+export * from './Chat/Chat';
+export * from './ChatBox/ChatBox';
 export * from './CheckboxFormSection/CheckboxFormSection';
 export * from './CodeInput/CodeInput';
 export * from './CodeableConceptDisplay/CodeableConceptDisplay';

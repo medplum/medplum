@@ -1,15 +1,15 @@
 import { Button, Group, Title } from '@mantine/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import { Communication, Practitioner, Reference } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
-import { Document, Loading, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useMemo } from 'react';
-import { Chat } from '../components/Chat';
+import { Chat, Document, Loading, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
+import { useEffect, useMemo, useState } from 'react';
 
 const DR_ALICE_SMITH: Reference<Practitioner> = {
   reference: getReferenceString(DrAliceSmith),
   display: 'Dr. Alice Smith',
 };
+const DR_ALICE_REF_STR = getReferenceString(DR_ALICE_SMITH);
 
 /**
  * Home page that greets the user and displays a list of patients.
@@ -22,10 +22,39 @@ export function HomePage(): JSX.Element {
   // https://www.medplum.com/docs/tutorials/register
   const profile = useMedplumProfile() as Practitioner;
   const medplum = useMedplum();
+  const [thread, setThread] = useState<Communication>();
 
-  const profileRef = useMemo(() => createReference(profile), [profile]);
+  const profileRef = useMemo(() => createReference(profile as ProfileResource), [profile]);
+  const profileRefStr = useMemo(() => getReferenceString(profile), [profile]);
+  const threadRef = useMemo(() => (thread ? createReference(thread) : undefined), [thread]);
 
-  if (!profile) {
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+    medplum
+      .searchOne('Communication', { 'part-of:missing': true, recipient: [profileRefStr, DR_ALICE_REF_STR] })
+      .then((thread) => {
+        if (!thread) {
+          medplum
+            .createResource<Communication>({
+              resourceType: 'Communication',
+              topic: { text: 'Demo Thread' },
+              recipient: [profileRef, DR_ALICE_SMITH],
+              status: 'in-progress',
+            })
+            .then((thread) => {
+              setThread(thread);
+            })
+            .catch(console.error);
+        } else {
+          setThread(thread);
+        }
+      })
+      .catch(console.error);
+  }, [medplum, profile, profileRef, profileRefStr]);
+
+  if (!(profile && threadRef)) {
     return <Loading />;
   }
 
@@ -37,6 +66,7 @@ export function HomePage(): JSX.Element {
       recipient: [profileRef],
       payload: [{ contentString: 'Can you come in tomorrow for a follow-up?' }],
       sent: new Date().toISOString(),
+      partOf: [threadRef as Reference<Communication>],
     });
   }
 
@@ -48,7 +78,7 @@ export function HomePage(): JSX.Element {
       <Group justify="center" pt="xl">
         <Button onClick={() => createIncomingMessage().catch(console.error)}>Create Incoming Message</Button>
       </Group>
-      <Chat />
+      {thread && <Chat title={`Chat with ${DR_ALICE_SMITH.display}`} thread={thread} />}
     </Document>
   );
 }
