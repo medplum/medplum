@@ -58,6 +58,8 @@ const statusToColor: Record<string, DefaultMantineColor> = {
   asap: 'red',
   stat: 'red',
   'not-done': 'red',
+  connected: 'green',
+  disconnected: 'red',
 };
 
 export interface StatusBadgeProps {
