@@ -11,7 +11,7 @@ import {
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { writeFileSync } from 'fs';
+import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client } from 'pg';
 import { FileBuilder } from './filebuilder';
@@ -68,7 +68,11 @@ export async function main(): Promise<void> {
   const targetDefinition = buildTargetDefinition();
   const b = new FileBuilder();
   writeMigrations(b, startDefinition, targetDefinition);
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/schema/v56.ts'), b.toString(), 'utf8');
+  writeFileSync(
+    resolve(__dirname, `../../server/src/migrations/schema/v${getNextSchemaVersion()}.ts`),
+    b.toString(),
+    'utf8'
+  );
 }
 
 async function buildStartDefinition(): Promise<SchemaDefinition> {
@@ -523,4 +527,13 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
 
 if (process.argv[1].endsWith('migrate.ts')) {
   main().catch(console.error);
+}
+
+function getNextSchemaVersion(): number {
+  const [lastSchemaVersion] = readdirSync(resolve(__dirname, '../../server/src/migrations/schema'))
+    .filter((filename) => /v\d+\.ts/.test(filename))
+    .map((filename) => parseInt(filename.replace('v', '').replace('.ts', ''), 10))
+    .sort((a, b) => b - a);
+
+  return lastSchemaVersion + 1;
 }
