@@ -1512,7 +1512,7 @@ describe('Subscription Worker', () => {
 
   test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
     withTestContext(async () => {
-      globalLogger.level = LogLevel.WARN;
+      globalLogger.level = LogLevel.DEBUG;
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 

@@ -222,7 +222,6 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
     return;
   }
   if (!project) {
-    logger.warn(`[Subscription Access Policy]: No project for resource '${getReferenceString(resource)}'`);
     return;
   }
 
@@ -375,7 +374,7 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
         subscriptions.push(resource);
       }
     } else {
-      globalLogger.warn(
+      globalLogger.debug(
         `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
       );
     }
