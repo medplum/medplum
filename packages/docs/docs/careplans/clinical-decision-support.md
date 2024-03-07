@@ -6,9 +6,9 @@ sidebar_position: 6
 
 # Clinical Decision Support
 
-Clinical Decision support in the context of EHR has many potential applications and use cases. Medplum enables building and delivering many unique and custom clinical decision support tools. This guide focuses on the regulated ONC Criteria for Clinical Decision support which is criteria (a)(9) and the HTI criteria on predictive CDS.
+Medplum enables building and delivering custom clinical decision support tools for a variety of applications. This guide focuses on the regulated ONC Criteria for Clinical Decision support which is criteria (a)(9) of the HTI criteria on predictive CDS.
 
-The guide will walk through the three major categories of Clinical Decision Support (CDS), as defined by the regulations and how to enable said CDS on Medplum.
+The guide will walk through the three major categories of Clinical Decision Support (CDS), as defined by the regulations, and how to enable said CDS on Medplum.
 
 :::warning
 Medplum is not currently certified for (a)(9) but is pursuing certification. Contact us at info@medplum.com for details.
@@ -18,15 +18,15 @@ Medplum is not currently certified for (a)(9) but is pursuing certification. Con
 
 Predictive clinical decision support technology is "intended to support decision-making based on algorithms or models that derive relationships from training or example data and then are used to produce an output or outputs related to, but not limited to, prediction, classification, recommendation, evaluation, or analysis.”
 
-Large language model based clinical decision support tools, as well as tools that use algorithms for risk assessment or triage fall in the predictive clinical decision support category.
+Large language model-based clinical decision support tools, as well as tools that use algorithms for risk assessment or triage, fall in the predictive clinical decision support category.
 
-Medplum enables [many implementations](/case-studies) with predictive clinical decision support. Per the HTI final ruling, the predictive clinical decision support systems will become regulated in December 2024. Any system certified to g10, b2, f1 or e1 will be required to provide **Insight Reports** as part of maintaining their certification.
+Medplum enables [many implementations](/case-studies) with predictive clinical decision support. Per the HTI final ruling, predictive clinical decision support systems will become regulated in December 2024. Any system certified to g10, b2, f1 or e1 will be required to provide **Insight Reports** as part of maintaining their certification.
 
-The following sections are best practices for preparing for a predictive clinical decision support certification.
+The following sections describe best practices to prepare for a predictive clinical decision support certification.
 
 ### Training Data
 
-Demonstrating which training data was used to train an algorithm, and keeping a record of the versioning on said data is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/auth/user-management-guide#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
+Demonstrating which training data was used to train an algorithm (and keeping a record of the versioning of said data) is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/auth/user-management-guide#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
 
 ### Code Systems
 
@@ -34,17 +34,21 @@ It is recommended that data is tagged with UMLS code systems, including [LOINC](
 
 ### Insights Reporting
 
-Electronic health records that support predictive clinical decision support will be required to report on the usage of their product. Prepare the following basic statistics as part of certification: the number of times the decision support was used, how many unique clinicians used it, the number of times it was updated and any complaints received.
+Electronic health records that support predictive clinical decision support will be required to report on the usage of their product. Prepare the following basic statistics as part of certification: 
+- Number of times the decision support was used
+- Number of unique clinicians who used it
+- Number of times it was updated
+- Number of complaints received
 
 ## Linked Referential
 
-Linked referential clinical decision support are hyperlinks that link to reference material that is specific to the clinical context of a specific patient or population. The ONC criteria that define this standard are 170.205(a)(3,4) and relate to the retrieving context-aware knowledge using the HL7 Infobutton.
+Linked referential clinical decision support are hyperlinks that link to reference material that is specific to the clinical context of a specific patient or population. The ONC criteria that define this standard are 170.205(a)(3,4) and relate to the retrieval of context-aware knowledge using the HL7 Infobutton.
 
 :::warning
-Medplum is not certified for (a)(3,4) but serves as a basis for those who wish to implement. The Clinical Profile and [Diagnostic Report](https://storybook.medplum.com/?path=/story/medplum-diagnosticreportdisplay--simple) react components serve as common launch points for Infobutton implementations.
+Medplum is not certified for (a)(3,4) but serves as a basis for those who wish to implement. The Clinical Profile and [Diagnostic Report](https://storybook.medplum.com/?path=/story/medplum-diagnosticreportdisplay--simple) React components serve as common launch points for Infobutton implementations.
 :::
 
-To support the linked referential clinical decision support the system should be capable of retrieving information based on one or more of the following data elements. The Clinical Profile react component highlights the data elements.
+To support the linked referential clinical decision support the system should be capable of retrieving information based on one or more of the following data elements. The Clinical Profile React component highlights the data elements.
 
 - Demographic information
 - Problems list (Conditions in FHIR)
