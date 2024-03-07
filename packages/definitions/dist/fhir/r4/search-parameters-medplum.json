@@ -641,6 +641,23 @@
         "type": "string",
         "expression": "Group.name"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Communication-topic",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Communication-topic",
+        "url": "https://medplum.com/fhir/SearchParameter/Communication-topic",
+        "version": "4.0.1",
+        "name": "topic",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Description of the purpose/content",
+        "code": "topic",
+        "base": ["Communication"],
+        "type": "token",
+        "expression": "Communication.topic"
+      }
     }
   ]
 }
