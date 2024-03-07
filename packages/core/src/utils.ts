@@ -19,7 +19,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { getTypedPropertyValue } from './fhirpath/utils';
-import { formatCodeableConcept, formatCoding, formatHumanName } from './format';
+import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference } from './types';
 
@@ -139,12 +139,6 @@ export function getDisplayString(resource: Resource): string {
     let code = resource.code;
     if (Array.isArray(code)) {
       code = code[0];
-    }
-    if (isString(code)) {
-      return code;
-    }
-    if (isCoding(code)) {
-      return formatCoding(code);
     }
     if (isCodeableConcept(code)) {
       return formatCodeableConcept(code);
