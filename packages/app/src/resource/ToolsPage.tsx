@@ -96,7 +96,7 @@ export function ToolsPage(): JSX.Element | null {
           name="ip"
           placeholder="IP Address"
           rightSection={
-            <ActionIcon size={24} radius="xl" variant="filled" type="submit" aria-label="Ping">
+            <ActionIcon size={24} radius="xl" variant="filled" type="submit" aria-label="Ping" loading={pinging}>
               <IconRouter style={{ width: '1rem', height: '1rem' }} stroke={1.5} />
             </ActionIcon>
           }
@@ -104,7 +104,9 @@ export function ToolsPage(): JSX.Element | null {
       </Form>
       {!pinging && lastPing && (
         <>
-          <Title order={5}>Last Ping</Title>
+          <Title order={5} mt="sm" mb={0}>
+            Last Ping
+          </Title>
           <pre>{lastPing}</pre>
         </>
       )}

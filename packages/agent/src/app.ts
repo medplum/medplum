@@ -286,14 +286,15 @@ export class App {
       if (stderr) {
         throw new Error(`Received on stderr:\n\n${stderr}`);
       }
-      this.log.info(`Ping result for ${message.remote}:\n\n${stdout}`);
+      const result = stdout.trim();
+      this.log.info(`Ping result for ${message.remote}:\n\n${result}`);
       this.addToWebSocketQueue({
         type: 'agent:transmit:response',
         channel: message.channel,
         contentType: ContentType.PING,
         remote: message.remote,
         callback: message.callback,
-        body: stdout,
+        body: result,
       } satisfies AgentTransmitResponse);
     } catch (err) {
       this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_IP_GIVEN'}: ${normalizeErrorString(err)}`);
