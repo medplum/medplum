@@ -1,13 +1,11 @@
-import { Anchor, Badge, Box, Button, Group, Modal, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
+import { Anchor, Box, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference } from '@medplum/core';
-import { AllergyIntolerance, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
+import { AllergyIntolerance, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
-import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
-import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
-import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
+import { AllergyDialog } from './AllergyDialog';
+import { ConceptBadge } from './ConceptBadge';
 
 export interface AllergiesProps {
   readonly patient: Patient;
@@ -20,26 +18,21 @@ export function Allergies(props: AllergiesProps): JSX.Element {
   const { patient, encounter } = props;
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>(props.allergies);
   const [opened, { open, close }] = useDisclosure(false);
-  const [code, setCode] = useState<CodeableConcept>();
+  const [editAllergy, setEditAllergy] = useState<AllergyIntolerance>();
 
   const handleSubmit = useCallback(
-    (formData: Record<string, string>) => {
-      medplum
-        .createResource<AllergyIntolerance>({
-          resourceType: 'AllergyIntolerance',
-          patient: createReference(patient),
-          encounter: encounter ? createReference(encounter) : undefined,
-          code,
-          onsetDateTime: formData.onset ? formData.onset : undefined,
-          reaction: formData.reaction ? [{ manifestation: [{ text: formData.reaction }] }] : undefined,
-        })
-        .then((newAllergy) => {
-          setAllergies([...allergies, newAllergy]);
-          close();
-        })
-        .catch(console.error);
+    async (allergy: AllergyIntolerance) => {
+      if (allergy.id) {
+        const updatedAllergy = await medplum.updateResource(allergy);
+        setAllergies(allergies.map((a) => (a.id === updatedAllergy.id ? updatedAllergy : a)));
+      } else {
+        const newAllergy = await medplum.createResource(allergy);
+        setAllergies([...allergies, newAllergy]);
+      }
+      setEditAllergy(undefined);
+      close();
     },
-    [medplum, patient, encounter, allergies, close, code]
+    [medplum, allergies, close]
   );
 
   return (
@@ -61,33 +54,21 @@ export function Allergies(props: AllergiesProps): JSX.Element {
       {allergies.length > 0 ? (
         <Box>
           {allergies.map((allergy) => (
-            <Badge key={allergy.id} variant="light" maw="100%">
-              <CodeableConceptDisplay value={allergy.code} />
-            </Badge>
+            <ConceptBadge
+              key={allergy.id}
+              resource={allergy}
+              onEdit={(a) => {
+                setEditAllergy(a as AllergyIntolerance);
+                open();
+              }}
+            />
           ))}
         </Box>
       ) : (
         <Text>(none)</Text>
       )}
-      <Modal opened={opened} onClose={close} title="Add Allergy">
-        <Form onSubmit={handleSubmit}>
-          <Stack>
-            <CodeableConceptInput
-              name="allergy"
-              path="AllergyIntolerance.code"
-              data-autofocus={true}
-              binding="http://hl7.org/fhir/us/core/ValueSet/us-core-allergy-substance"
-              onChange={(allergy) => setCode(allergy)}
-              outcome={undefined}
-            />
-            <TextInput name="reaction" label="Reaction" />
-            <NativeSelect name="status" label="Status" data={['active']} />
-            <TextInput name="onset" label="Onset" type="date" />
-            <Group justify="flex-end" gap={4} mt="md">
-              <Button type="submit">Save</Button>
-            </Group>
-          </Stack>
-        </Form>
+      <Modal opened={opened} onClose={close} title={editAllergy ? 'Edit Allergy' : 'Add Allergy'}>
+        <AllergyDialog patient={patient} encounter={encounter} allergy={editAllergy} onSubmit={handleSubmit} />
       </Modal>
     </>
   );

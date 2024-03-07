@@ -59,7 +59,7 @@ describe('PatientSummary - Allergies', () => {
       fireEvent.click(screen.getByText('+ Add'));
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
 
     // Enter random text
     await act(async () => {

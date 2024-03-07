@@ -60,8 +60,24 @@ describe('PatientSummary - ProblemList', () => {
     });
 
     // Enter problem "Dizziness"
+    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Problem *'), { target: { value: 'Dizziness' } });
+      fireEvent.change(input, { target: { value: 'Dizziness' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
     // Enter Dx Date
