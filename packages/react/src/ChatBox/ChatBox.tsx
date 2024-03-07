@@ -80,10 +80,7 @@ export function ChatBox(props: ChatBoxProps): JSX.Element | null {
       if (inputRef.current) {
         inputRef.current.value = '';
       }
-
-      const message = formData.message;
-      sendMessage(message);
-
+      sendMessage(formData.message);
       scrollToBottomRef.current = true;
     },
     [sendMessage]

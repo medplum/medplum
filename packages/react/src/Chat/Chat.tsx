@@ -1,4 +1,4 @@
-import { ProfileResource, createReference } from '@medplum/core';
+import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import { useCallback, useMemo, useState } from 'react';
@@ -20,13 +20,13 @@ export function Chat(props: ChatProps): JSX.Element | null {
 
   const sendMessage = useCallback(
     (message: string) => {
+      const profileRefStr = getReferenceString(profileRef);
       medplum
         .createResource<Communication>({
           resourceType: 'Communication',
           status: 'in-progress',
-          // subject: createReference(resource),
           sender: profileRef,
-          recipient: [],
+          recipient: thread.recipient?.filter((ref) => getReferenceString(ref) !== profileRefStr) ?? [],
           sent: new Date().toISOString(),
           payload: [{ contentString: message }],
           partOf: [threadRef],
@@ -34,7 +34,7 @@ export function Chat(props: ChatProps): JSX.Element | null {
         .then((communication) => setCommunications([...communications, communication]))
         .catch(console.error);
     },
-    [medplum, profileRef, threadRef, communications]
+    [medplum, profileRef, thread, threadRef, communications]
   );
 
   if (!profile) {
