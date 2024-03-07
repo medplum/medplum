@@ -349,13 +349,18 @@ class ResourceValidator implements ResourceVisitor {
     }
 
     const hl7BaseUrl = HTTP_HL7_ORG + '/fhir/StructureDefinition/';
+    const hl7AllResourcesUrl = hl7BaseUrl + 'Resource';
     const hl7ResourceTypeUrl = hl7BaseUrl + referenceResourceType;
 
     const medplumBaseUrl = 'https://medplum.com/fhir/StructureDefinition/';
     const medplumResourceTypeUrl = medplumBaseUrl + referenceResourceType;
 
     for (const targetProfile of targetProfiles) {
-      if (targetProfile === hl7ResourceTypeUrl || targetProfile === medplumResourceTypeUrl) {
+      if (
+        targetProfile === hl7AllResourcesUrl ||
+        targetProfile === hl7ResourceTypeUrl ||
+        targetProfile === medplumResourceTypeUrl
+      ) {
         // Found a matching profile
         return;
       }

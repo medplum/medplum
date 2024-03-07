@@ -222,7 +222,6 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
     return;
   }
   if (!project) {
-    logger.warn(`[Subscription Access Policy]: No project for resource '${getReferenceString(resource)}'`);
     return;
   }
 
