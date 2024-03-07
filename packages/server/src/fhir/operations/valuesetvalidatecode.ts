@@ -76,7 +76,7 @@ export async function validateCodingInValueSet(codings: Coding[], valueSetUrl: s
 
   if (found) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', found.system as string);
-    return (await validateCode(codeSystem, found.code as string)) ?? found;
+    return codeSystem.content !== 'example' ? validateCode(codeSystem, found.code as string) : found;
   }
   return undefined;
 }
@@ -94,16 +94,19 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
   }
 
   if (include.concept) {
-    return codings.find((c) => include.concept?.some((i) => i.code === c.code));
+    return candidates.find((c) => include.concept?.some((i) => i.code === c.code));
   } else if (include.filter) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', include.system);
-    for (const coding of codings) {
+    for (const coding of candidates) {
       const filterResults = await Promise.all(include.filter.map((filter) => satisfies(coding, filter, codeSystem)));
       if (filterResults.every((r) => r)) {
         return coding;
       }
     }
+  } else {
+    return candidates[0]; // Default pass when any code from system is acceptable
   }
+
   return undefined;
 }
 
