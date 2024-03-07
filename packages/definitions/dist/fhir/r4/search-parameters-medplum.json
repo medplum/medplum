@@ -655,7 +655,7 @@
         "description": "Description of the purpose/content",
         "code": "topic",
         "base": ["Communication"],
-        "type": "string",
+        "type": "token",
         "expression": "Communication.topic"
       }
     }
