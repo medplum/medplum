@@ -1,12 +1,12 @@
-import { allOk, ContentType } from '@medplum/core';
+import { ContentType } from '@medplum/core';
 import { Agent, Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { initTestAuth } from '../../test.setup';
 import { getRedis } from '../../redis';
+import { initTestAuth } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
