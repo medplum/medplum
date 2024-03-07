@@ -2,7 +2,7 @@ import { Button, Group, Title } from '@mantine/core';
 import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import { Communication, Practitioner, Reference } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
-import { Chat, Document, Loading, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
+import { Document, Loading, ResourceName, ThreadChat, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useMemo, useState } from 'react';
 
 const DR_ALICE_SMITH: Reference<Practitioner> = {
@@ -78,7 +78,7 @@ export function HomePage(): JSX.Element {
       <Group justify="center" pt="xl">
         <Button onClick={() => createIncomingMessage().catch(console.error)}>Create Incoming Message</Button>
       </Group>
-      {thread && <Chat title={`Chat with ${DR_ALICE_SMITH.display}`} thread={thread} />}
+      {thread && <ThreadChat title={`Chat with ${DR_ALICE_SMITH.display}`} thread={thread} />}
     </Document>
   );
 }

@@ -2,14 +2,14 @@ import { ProfileResource, createReference, getReferenceString } from '@medplum/c
 import { Communication } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import { useCallback, useMemo, useState } from 'react';
-import { ChatBox } from '../ChatBox/ChatBox';
+import { BaseChat } from '../BaseChat/BaseChat';
 
-export interface ChatProps {
+export interface ThreadChatProps {
   title: string;
   thread: Communication;
 }
 
-export function Chat(props: ChatProps): JSX.Element | null {
+export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
   const { title, thread } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
@@ -42,7 +42,7 @@ export function Chat(props: ChatProps): JSX.Element | null {
   }
 
   return (
-    <ChatBox
+    <BaseChat
       title={title}
       communications={communications}
       setCommunications={setCommunications}

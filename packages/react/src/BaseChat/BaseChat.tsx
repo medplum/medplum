@@ -6,7 +6,7 @@ import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import classes from './ChatBox.module.css';
+import classes from './BaseChat.module.css';
 
 function parseSentTime(communication: Communication): string {
   const sentTime = new Date(communication.sent ?? 0);
@@ -38,7 +38,7 @@ function upsertCommunications(
   setCommunications(newCommunications);
 }
 
-export interface ChatBoxProps {
+export interface BaseChatProps {
   title: string;
   communications: Communication[];
   setCommunications: (communications: Communication[]) => void;
@@ -46,7 +46,7 @@ export interface ChatBoxProps {
   sendMessage: (content: string) => void;
 }
 
-export function ChatBox(props: ChatBoxProps): JSX.Element | null {
+export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const { title, communications, setCommunications, query, sendMessage } = props;
   const medplum = useMedplum();
   const [open, setOpen] = useState(false);
