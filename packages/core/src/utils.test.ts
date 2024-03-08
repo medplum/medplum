@@ -156,6 +156,31 @@ describe('Core Utils', () => {
     expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
     expect(getDisplayString({ resourceType: 'User', email: 'foo@example.com' } as User)).toEqual('foo@example.com');
     expect(getDisplayString({ resourceType: 'User', id: '123' } as User)).toEqual('User/123');
+    expect(getDisplayString({ resourceType: 'Bot', id: '123', code: 'console.log()' })).toEqual('Bot/123');
+    expect(
+      getDisplayString({
+        resourceType: 'AllergyIntolerance',
+        patient: { reference: 'Patient/123' },
+        code: { text: 'Peanut' },
+      })
+    ).toEqual('Peanut');
+    expect(
+      getDisplayString({
+        resourceType: 'AllergyIntolerance',
+        patient: { reference: 'Patient/123' },
+        code: { coding: [{ code: 'Peanut' }] },
+      })
+    ).toEqual('Peanut');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationRequest',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/123' },
+        medicationCodeableConcept: { text: 'foo' },
+      })
+    ).toEqual('foo');
+    expect(getDisplayString({ resourceType: 'PractitionerRole', code: [{ text: 'foo' }] })).toEqual('foo');
   });
 
   const EMPTY = [true, false];
