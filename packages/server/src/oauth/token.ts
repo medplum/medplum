@@ -20,10 +20,12 @@ import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
+import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
 import {
+  checkIpAccessRules,
   getAuthTokens,
   getClientApplication,
   getClientApplicationMembership,
@@ -137,7 +139,17 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     granted: true,
     superAdmin: project.superAdmin,
     scope,
+    remoteAddress: req.ip,
+    userAgent: req.get('User-Agent'),
   });
+
+  try {
+    const accessPolicy = await getAccessPolicyForLogin(login, membership);
+    await checkIpAccessRules(login, accessPolicy);
+  } catch (err) {
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err));
+    return;
+  }
 
   await sendTokenResponse(res, login, membership);
 }
