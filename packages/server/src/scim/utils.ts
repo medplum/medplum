@@ -1,4 +1,11 @@
-import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import {
+  badRequest,
+  forbidden,
+  getReferenceString,
+  OperationOutcomeError,
+  Operator,
+  SearchRequest,
+} from '@medplum/core';
 import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config';
@@ -11,11 +18,14 @@ import { ScimListResponse, ScimUser } from './types';
  * See SCIM 3.4.2 - Query Resources
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.4.2
  * @param project - The project.
+ * @param params - The search parameters.
  * @returns List of SCIM users in the project.
  */
-export async function searchScimUsers(project: Project): Promise<ScimListResponse<ScimUser>> {
-  const systemRepo = getSystemRepo();
-  const memberships = await systemRepo.searchResources<ProjectMembership>({
+export async function searchScimUsers(
+  project: Project,
+  params: Record<string, string>
+): Promise<ScimListResponse<ScimUser>> {
+  const searchRequest = {
     resourceType: 'ProjectMembership',
     count: 1000,
     filters: [
@@ -24,8 +34,26 @@ export async function searchScimUsers(project: Project): Promise<ScimListRespons
         operator: Operator.EQUALS,
         value: getReferenceString(project),
       },
+      {
+        code: 'profile-type',
+        operator: Operator.EQUALS,
+        value: 'Patient,Practitioner,RelatedPerson',
+      },
     ],
-  });
+  } satisfies SearchRequest<ProjectMembership>;
+
+  if (params.filter) {
+    if (params.filter.startsWith('userName eq ')) {
+      searchRequest.filters.push({
+        code: 'user-name',
+        operator: Operator.EQUALS,
+        value: params.filter.substring(12, params.filter.length - 1),
+      });
+    }
+  }
+
+  const systemRepo = getSystemRepo();
+  const memberships = await systemRepo.searchResources<ProjectMembership>(searchRequest);
 
   const users = await systemRepo.readReferences(memberships.map((m) => m.user as Reference<User>));
   const result = [];
@@ -73,6 +101,7 @@ export async function createScimUser(
     membership: {
       accessPolicy,
       invitedBy,
+      userName: scimUser.userName,
     },
   });
 
@@ -160,12 +189,13 @@ export async function deleteScimUser(project: Project, id: string): Promise<void
  * @param scimUser - The SCIM user definition.
  * @returns The FHIR profile resource type if found; otherwise, undefined.
  */
-export function getScimUserResourceType(scimUser: ScimUser): 'Patient' | 'Practitioner' | 'RelatedPerson' | undefined {
+export function getScimUserResourceType(scimUser: ScimUser): 'Patient' | 'Practitioner' | 'RelatedPerson' {
   const resourceType = scimUser.userType;
   if (resourceType === 'Patient' || resourceType === 'Practitioner' || resourceType === 'RelatedPerson') {
     return resourceType;
   }
-  return undefined;
+  // Default to "Practitioner"
+  return 'Practitioner';
 }
 
 /**
@@ -187,13 +217,14 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
       location: config.baseUrl + 'scim/2.0/Users/' + membership.id,
     },
     userType: resourceType,
-    userName: id,
+    userName: membership.userName || id,
     externalId: membership.externalId || user.externalId,
     name: {
       givenName: user.firstName,
       familyName: user.lastName,
     },
     emails: [{ value: user.email }],
+    active: true,
   };
 }
 
@@ -206,6 +237,8 @@ export function convertToScimListResponse<T>(Resources: T[]): ScimListResponse<T
   return {
     schemas: ['urn:ietf:params:scim:api:messages:2.0:ListResponse'],
     totalResults: Resources.length,
+    itemsPerPage: Resources.length,
+    startIndex: 1,
     Resources,
   };
 }
