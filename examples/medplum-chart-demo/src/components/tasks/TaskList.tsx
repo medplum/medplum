@@ -174,7 +174,7 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
     } else if (props.resource.resourceType === 'QuestionnaireResponse') {
       fetchQuestionnaireTitle().catch(console.error);
     } else {
-      setTitle(<>{props.task.code}</>);
+      setTitle(<CodeableConceptDisplay value={props.task.code} />);
     }
   }, [props.resource, props.task, medplum]);
 
