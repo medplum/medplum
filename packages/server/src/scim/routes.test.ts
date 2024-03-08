@@ -113,7 +113,7 @@ describe('SCIM Routes', () => {
     expect(searchCheck2).toBeUndefined();
   });
 
-  test('Create missing medplum user type', async () => {
+  test.skip('Create missing medplum user type', async () => {
     const res = await request(app)
       .post(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken)

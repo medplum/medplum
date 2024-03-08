@@ -96,6 +96,7 @@ export interface ScimUser {
   name?: ScimName;
   phoneNumbers?: ScimPhoneNumber[];
   emails?: ScimEmail[];
+  active?: boolean;
 }
 
 /**
@@ -109,5 +110,7 @@ export interface ScimUser {
 export interface ScimListResponse<T> {
   schemas?: string[];
   totalResults?: number;
+  itemsPerPage?: number;
+  startIndex?: number;
   Resources: T[];
 }
