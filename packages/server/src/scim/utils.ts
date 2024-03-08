@@ -42,12 +42,14 @@ export async function searchScimUsers(
     ],
   } satisfies SearchRequest<ProjectMembership>;
 
-  if (params.filter) {
-    if (params.filter.startsWith('userName eq ')) {
+  const filter = params.filter;
+  if (filter && typeof filter === 'string') {
+    const match = filter.match(/^userName eq "([^"]+)"$/);
+    if (match) {
       searchRequest.filters.push({
         code: 'user-name',
         operator: Operator.EQUALS,
-        value: params.filter.substring(12, params.filter.length - 1),
+        value: match[1],
       });
     }
   }
