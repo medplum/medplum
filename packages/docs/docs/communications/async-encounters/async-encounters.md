@@ -18,7 +18,7 @@ Alternatively, if your care setting has more of a rolling interaction model (e.g
 
 ## Representing Sessions in FHIR
 
-Each session should be represented by an [`Encounter`](/docs/api/fhir/resources/encounter) resource. All of the messages that are part of this session should be represented as a thread of [`Communication`](/docs/api/fhir/resources/communication) resources. The thread should be linked to the session using the `Communication.encounter` element of _only_ the thread header. For more details on modeling threads, see the [Organizing Communications docs](/docs/communications.organizing-communications#building-and-structuring-threads).
+Each session should be represented by an [`Encounter`](/docs/api/fhir/resources/encounter) resource. All of the messages that are part of this session should be represented as a thread of [`Communication`](/docs/api/fhir/resources/communication) resources. The thread should be linked to the session using the `Communication.encounter` element of _only_ the thread header. For more details on modeling threads, see the [Organizing Communications docs](/docs/communications/organizing-communications#building-and-structuring-threads).
 
 ![Async Encounters](./async-encounters1.svg)
 
