@@ -159,6 +159,7 @@ export function getTypedPropertyValueWithSchema(
   // In the case of [x] choice-of-type, the type must be resolved to a single type.
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
+      resultValue = resultValue.slice();
       for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
         resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
       }
