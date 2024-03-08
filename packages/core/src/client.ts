@@ -3653,7 +3653,7 @@ function ensureTrailingSlash(url: string): string {
  * @param url - The URL to concat. Can be relative or absolute.
  * @returns The concatenated URL.
  */
-function concatUrls(baseUrl: string, url: string): string {
+export function concatUrls(baseUrl: string, url: string): string {
   return new URL(url, baseUrl).toString();
 }
 

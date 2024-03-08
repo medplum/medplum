@@ -1,4 +1,4 @@
-import { ContentType, getStatus, isCreated } from '@medplum/core';
+import { ContentType, concatUrls, getStatus, isCreated } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
@@ -10,7 +10,7 @@ export function isFhirJsonContentType(req: Request): boolean {
 }
 
 export function getFullUrl(resourceType: string, id: string): string {
-  return `${getConfig().baseUrl}fhir/R4/${resourceType}/${id}`;
+  return concatUrls(getConfig().baseUrl, `/fhir/R4/${resourceType}/${id}`);
 }
 
 export async function sendResponse(
