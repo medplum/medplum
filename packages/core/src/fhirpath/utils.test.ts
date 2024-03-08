@@ -255,6 +255,26 @@ describe('FHIRPath utils', () => {
     });
   });
 
+  test('getTypedPropertyValueWithSchema with primitive extensions', () => {
+    const humanName = {
+      given: ['John', 'Johnny'],
+      _given: [{ extension: [{ url: 'http://example.com', valueBoolean: true }] }],
+    };
+    const given: InternalSchemaElement = {
+      description: '',
+      path: 'HumanName.given',
+      min: 0,
+      max: 2,
+      isArray: true,
+      type: [{ code: 'string' }],
+    };
+    getTypedPropertyValueWithSchema({ type: 'HumanName', value: humanName }, 'given', given);
+    expect(humanName.given).toEqual(expect.arrayContaining(['John', 'Johnny']));
+    // with primitive extensions, array values can be changed into a `String` type which has a typeof 'object'
+    // ensure the original input array values is not mutated as such
+    expect(humanName.given.every((g) => typeof g === 'string')).toBe(true);
+  });
+
   test('isDateString', () => {
     expect(isDateString(undefined)).toBe(false);
     expect(isDateString(null)).toBe(false);
