@@ -159,6 +159,8 @@ export function getTypedPropertyValueWithSchema(
   // In the case of [x] choice-of-type, the type must be resolved to a single type.
   if (primitiveExtension) {
     if (Array.isArray(resultValue)) {
+      // Slice to avoid mutating the array in the input value
+      resultValue = resultValue.slice();
       for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
         resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
       }
@@ -546,6 +548,13 @@ function assignPrimitiveExtension(target: any, primitiveExtension: any): any {
   return target;
 }
 
+/**
+ * For primitive string, number, boolean, the return value will be the corresponding
+ * `String`, `Number`, or `Boolean` version of the type.
+ * @param target - The value to have `source` properties assigned to.
+ * @param source - An object to be assigned to `target`.
+ * @returns The `target` value with the properties of `source` assigned to it.
+ */
 function safeAssign(target: any, source: any): any {
   delete source.__proto__; //eslint-disable-line no-proto
   delete source.constructor;
