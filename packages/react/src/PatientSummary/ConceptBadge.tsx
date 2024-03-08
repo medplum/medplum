@@ -18,6 +18,7 @@ export function ConceptBadge(props: ConceptBadgeProps): JSX.Element {
   if (onEdit) {
     rightSection = (
       <IconEdit
+        aria-label={`Edit ${getDisplayString(resource)}`}
         size={12}
         onClick={(e) => {
           killEvent(e);

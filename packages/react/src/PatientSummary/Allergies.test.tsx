@@ -1,3 +1,5 @@
+import { createReference } from '@medplum/core';
+import { AllergyIntolerance } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactNode } from 'react';
@@ -57,6 +59,50 @@ describe('PatientSummary - Allergies', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('+ Add'));
+    });
+
+    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(screen.getByText('Test Display')).toBeDefined();
+
+    // Click "Save" button
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+  });
+
+  test('Edit allergy', async () => {
+    const allergy: AllergyIntolerance = {
+      resourceType: 'AllergyIntolerance',
+      id: 'peanut',
+      patient: createReference(HomerSimpson),
+      code: { text: 'Peanut' },
+    };
+
+    await setup(<Allergies patient={HomerSimpson} allergies={[allergy]} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Edit Peanut'));
     });
 
     const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
