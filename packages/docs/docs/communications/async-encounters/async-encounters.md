@@ -20,7 +20,25 @@ Alternatively, if your care setting has more of a rolling interaction model (e.g
 
 Each session should be represented by an [`Encounter`](/docs/api/fhir/resources/encounter) resource. All of the messages that are part of this session should be represented as a thread of [`Communication`](/docs/api/fhir/resources/communication) resources. The thread should be linked to the session using the `Communication.encounter` element of _only_ the thread header. For more details on modeling threads, see the [Organizing Communications docs](/docs/communications/organizing-communications#building-and-structuring-threads).
 
-![Async Encounters](./async-encounters1.svg)
+```mermaid
+
+flowchart TD
+    A(Encounter)
+
+    subgraph Thread Header
+        B(Communication)
+    end
+
+    subgraph Messages
+        C(Communication)
+        D(Communication)
+    end
+
+    C --> |Communication.partOf| B
+    D --> |Communication.partOf| B
+    B --> |Communication.encounter| A
+
+```
 
 You should record the participating physicians using the `Encounter.participant` element. You can also record any family members who are part of the session here (see our [Family Relationships guide](/docs/fhir-datastore/family-relationships) ).
 
@@ -52,6 +70,33 @@ To properly represent your asynchronous encounter, you should:
 
 The thread of [`Communication`](/docs/api/fhir/resources/communication) resources should still be linked to the "session" encounter, but the clinical details for each patient will live on the medical encounters. You can add an additional value the `Encounter.type` element to tag encounters as either "sessions" or "medical encounters."
 
-![Async Encounters](./async-encounters2.svg)
+```mermaid
+
+flowchart TD
+    subgraph Session
+       A(Encounter)
+    end
+
+    subgraph Medical Encounter
+        B(Encounter)
+        C(Encounter)
+    end
+
+    subgraph Thread Header
+        D(Communication)
+    end
+
+    subgraph Messages
+        E(Communication)
+        F(Communication)
+    end
+
+    E --> |Communication.partOf| D
+    F --> |Communication.partOf| D
+    D --> |Communication.encounter| A
+    B --> |Encounter.partOf| A
+    C --> |Encounter.partOf| A
+
+```
 
 While creating an [`Encounter`](/docs/api/fhir/resources/encounter) hierarchy like this is a bit more work up front, it promotes good data hygiene. A well documented encounter, with the correct practitioner, diagnosis codes, service type _per patient_ is critical to [billing](/docs/billing), and it is important for patient analytics use cases, such as computing quality of care metrics.
