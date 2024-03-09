@@ -1,6 +1,7 @@
 import {
   allOk,
   badRequest,
+  conflict,
   createReference,
   getReferenceString,
   InviteRequest,
@@ -214,11 +215,11 @@ async function createOrUpdateProjectMembership(
   const existingMembership = await searchForExistingMembership(systemRepo, user, project);
   if (existingMembership) {
     if (!upsert) {
-      throw new OperationOutcomeError(badRequest('User is already a member of this project'));
+      throw new OperationOutcomeError(conflict('User is already a member of this project'));
     }
 
     if (existingMembership.profile?.reference !== getReferenceString(profile)) {
-      throw new OperationOutcomeError(badRequest('User is already a member of this project with a different profile'));
+      throw new OperationOutcomeError(conflict('User is already a member of this project with a different profile'));
     }
 
     // Update the existing membership

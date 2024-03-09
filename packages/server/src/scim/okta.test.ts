@@ -70,7 +70,7 @@ describe('Okta SCIM Tests', () => {
 
     const isvUserId = res1.body.Resources[0].id;
 
-    // #2	Required Test: Get Users/{{id}}
+    // #2 Required Test: Get Users/{{id}}
 
     const res2 = await request(app)
       .get(`/scim/v2/Users/${isvUserId}`)
@@ -84,7 +84,7 @@ describe('Okta SCIM Tests', () => {
     expect(res2.body.emails[0].value).toBeDefined();
     expect(res2.body.id).toBe(isvUserId);
 
-    // #3	Required Test: Test invalid User by username
+    // #3 Required Test: Test invalid User by username
 
     const res3 = await request(app)
       .get('/scim/v2/Users?filter=' + encodeURIComponent('userName eq "abcdefgh@atko.com"'))
@@ -102,7 +102,7 @@ describe('Okta SCIM Tests', () => {
     expect(res4.body.detail).toBe('Not found');
     expect(res4.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:Error');
 
-    // #5	Required Test: Test invalid User by username
+    // #5 Required Test: Test invalid User by username
 
     const res5 = await request(app)
       .get('/scim/v2/Users?filter=' + encodeURIComponent('userName eq "Runscope258Fuhpfuwaw309@atko.com"'))
@@ -111,7 +111,7 @@ describe('Okta SCIM Tests', () => {
     expect(res5.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:ListResponse');
     expect(res5.body.totalResults).toBe(0);
 
-    // #6	Required Test: Create Okta user with realisitic value
+    // #6 Required Test: Create Okta user with realisitic value
 
     const res6 = await request(app)
       .post(`/scim/v2/Users`)
@@ -136,7 +136,7 @@ describe('Okta SCIM Tests', () => {
     const idUserOne = res6.body.id;
     const randomUserEmail = res6.body.emails[0].value;
 
-    // #7	Required Test: Verify that user was created
+    // #7 Required Test: Verify that user was created
 
     const res7 = await request(app)
       .get(`/scim/v2/Users/${idUserOne}`)
@@ -146,5 +146,32 @@ describe('Okta SCIM Tests', () => {
     expect(res7.body.name.familyName).toBe('Fuhpfuwaw309');
     expect(res7.body.name.givenName).toBe('Runscope258');
     expect(res7.body.emails[0].value).toBe(randomUserEmail);
+
+    // #8 Required Test: Expect failure when recreating user with same values
+
+    const res8 = await request(app)
+      .post(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+        userName: 'Runscope258Fuhpfuwaw309@atko.com',
+        name: { givenName: 'Runscope258', familyName: 'Fuhpfuwaw309' },
+        emails: [{ primary: true, value: 'Runscope258Fuhpfuwaw309@atko.com', type: 'work' }],
+        displayName: 'Runscope258 Fuhpfuwaw309',
+        active: true,
+      });
+    expect(res8.status).toBe(409);
+    expect(res8.body.detail).toBe('User is already a member of this project');
+    expect(res8.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:Error');
+
+    // #9 Required Test: Username Case Sensitivity Check
+
+    const res9 = await request(app)
+      .get('/scim/v2/Users?filter=' + encodeURIComponent('userName eq "RUNSCOPE258FUHPFUWAW309@ATKO.COM"'))
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res9.status).toBe(200);
+    expect(res9.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:ListResponse');
+    expect(res9.body.totalResults).toBe(1);
   });
 });
