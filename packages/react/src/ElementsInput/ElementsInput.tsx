@@ -1,5 +1,5 @@
 import { Stack } from '@mantine/core';
-import { InternalSchemaElement, TypedValue, getPathDisplayName, isPopulated } from '@medplum/core';
+import { TypedValue, getPathDisplayName } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
@@ -7,11 +7,7 @@ import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
-import { ElementsContext } from './ElementsInput.utils';
-
-const EXTENSION_KEYS = ['extension', 'modifierExtension'];
-const IGNORED_PROPERTIES = ['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.includes(prop));
+import { EXTENSION_KEYS, ElementsContext, getElementsToRender } from './ElementsInput.utils';
 
 export interface ElementsInputProps {
   readonly type: string;
@@ -98,39 +94,3 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
   );
 }
 
-function getElementsToRender(inputElements: Record<string, InternalSchemaElement>): [string, InternalSchemaElement][] {
-  const result = Object.entries(inputElements).filter(([key, element]) => {
-    if (!isPopulated(element.type)) {
-      return false;
-    }
-
-    if (element.max === 0) {
-      return false;
-    }
-
-    // toLowerCase to handle Extension.url as well as Extension.extension.url, etc.
-    if (element.path.toLowerCase().endsWith('extension.url') && element.fixed) {
-      return false;
-    }
-
-    if (EXTENSION_KEYS.includes(key) && !isPopulated(element.slicing?.slices)) {
-      // an extension property without slices has no nested extensions
-      return false;
-    } else if (IGNORED_PROPERTIES.includes(key)) {
-      return false;
-    } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && element.path.split('.').length === 2) {
-      return false;
-    }
-
-    // Profiles can include nested elements in addition to their containing element, e.g.:
-    // identifier, identifier.use, identifier.system
-    // Skip nested elements, e.g. identifier.use, since they are handled by the containing element
-    if (key.includes('.')) {
-      return false;
-    }
-
-    return true;
-  });
-
-  return result;
-}
