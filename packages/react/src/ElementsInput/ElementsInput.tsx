@@ -93,4 +93,3 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
     </Stack>
   );
 }
-

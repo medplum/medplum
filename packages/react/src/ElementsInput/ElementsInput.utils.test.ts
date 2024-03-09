@@ -1,14 +1,14 @@
-import { getElementsToRender } from "./ElementsInput.utils";
+import { getElementsToRender } from './ElementsInput.utils';
 
 describe('ElementsInput.utils', () => {
   test('getElementsToRender', () => {
     const result = getElementsToRender({
       base: {
-        description: "baseElement",
+        description: 'baseElement',
         max: 10,
         min: 1,
-        path: "testPath",
-        type: [{ code: "testCode", profile: ['testProfile'], targetProfile: ['testTargetProfile'] }],
+        path: 'testPath',
+        type: [{ code: 'testCode', profile: ['testProfile'], targetProfile: ['testTargetProfile'] }],
       },
       maxZero: {
         description: 'maxZeroElement',
@@ -30,7 +30,13 @@ describe('ElementsInput.utils', () => {
         min: 1,
         path: 'pathExtension.extension.url',
         fixed: { type: 'fixedType', value: 'fixedValue' },
-        type: [{ code: 'pathExtensionCode', profile: ['pathExtensionProfile'], targetProfile: ['pathExtensionTargetProfile'] }],
+        type: [
+          {
+            code: 'pathExtensionCode',
+            profile: ['pathExtensionProfile'],
+            targetProfile: ['pathExtensionTargetProfile'],
+          },
+        ],
       },
       extension: {
         description: 'extensionElement',
@@ -60,11 +66,11 @@ describe('ElementsInput.utils', () => {
         min: 1,
         path: 'nested.key',
         type: [{ code: 'nestedCode', profile: ['nestedProfile'], targetProfile: ['nestedTargetProfile'] }],
-      }
+      },
     });
 
     expect(result[0][0]).toBe('base');
     expect(result[0][1].description).toBe('baseElement');
     expect(result.length).toBe(1);
-  })
+  });
 });

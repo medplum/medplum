@@ -12,7 +12,9 @@ export const ElementsContext = React.createContext<ElementsContextType>({
 ElementsContext.displayName = 'ElementsContext';
 
 export const EXTENSION_KEYS = ['extension', 'modifierExtension'];
-export const IGNORED_PROPERTIES = ['id', ...DEFAULT_IGNORED_PROPERTIES].filter((prop) => !EXTENSION_KEYS.includes(prop));
+export const IGNORED_PROPERTIES = ['id', ...DEFAULT_IGNORED_PROPERTIES].filter(
+  (prop) => !EXTENSION_KEYS.includes(prop)
+);
 
 export function getElementsToRender(
   inputElements: Record<string, InternalSchemaElement>
