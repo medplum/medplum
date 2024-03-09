@@ -685,7 +685,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
       });
-    expect(res3.status).toBe(400);
+    expect(res3.status).toBe(409);
     expect(normalizeErrorString(res3.body)).toEqual('User is already a member of this project');
 
     // Invite Bob third time with "upsert = true" - should succeed
@@ -715,7 +715,7 @@ describe('Admin Invite', () => {
         upsert: true,
         membership: { profile: createReference(profile) },
       });
-    expect(res5.status).toBe(400);
+    expect(res5.status).toBe(409);
     expect(normalizeErrorString(res5.body)).toEqual(
       'User is already a member of this project with a different profile'
     );
