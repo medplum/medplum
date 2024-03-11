@@ -27,7 +27,7 @@ tags:
 
 # Products
 
-At Medplum, our goal is to help you build a healthcare application quickly, easily and compliantly. Medplum infrastructure is [open source](https://github.com/medplum/medplum) and enables the features seen below. We have sample applications [Foo Medical](https://foomedical.com/) and [Provider Application](https://provider.foomedical.com/) that can give you a sense of the experiences that can be built on the Medplum platform.
+At Medplum, our goal is to help you build a healthcare application quickly, easily and compliantly. Medplum infrastructure is [open source](https://github.com/medplum/medplum) and enables the features seen below. We have sample patient portal [Foo Medical](https://foomedical.com/) and [Provider Application](https://provider.medplum.com/) that can give you a sense of the experiences that can be built on the Medplum platform.
 
 ## ↔ Integration and Interoperability Engine {#integration}
 
