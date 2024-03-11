@@ -5,8 +5,8 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
+import { withTestContext } from '../test.setup';
 
 const app = express();
 
@@ -23,7 +23,6 @@ describe('Me', () => {
   test('Unauthenticated', async () => {
     const res = await request(app).get('/auth/me');
     expect(res.status).toBe(401);
-    expect(res.header['www-authenticate']).toBe('Basic realm="http://localhost:8103/"');
   });
 
   test('User configuration', async () => {

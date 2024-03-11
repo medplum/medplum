@@ -237,10 +237,6 @@ export function isAccepted(outcome: OperationOutcome): boolean {
   return outcome.id === ACCEPTED_ID;
 }
 
-export function isUnauthorized(outcome: OperationOutcome): boolean {
-  return outcome.id === UNAUTHORIZED_ID;
-}
-
 export function isNotFound(outcome: OperationOutcome): boolean {
   return outcome.id === NOT_FOUND_ID;
 }
