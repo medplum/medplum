@@ -183,7 +183,7 @@ class DefaultValueVisitor implements SchemaVisitor {
       // remove empty items from arrays
       if (Array.isArray(elementValue)) {
         for (let i = elementValue.length - 1; i >= 0; i--) {
-          const value = elementValue[i];
+          const value: any = elementValue[i];
           if (!isPopulated(value)) {
             elementValue.splice(i, 1);
           }

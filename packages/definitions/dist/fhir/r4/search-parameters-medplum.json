@@ -161,6 +161,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-user-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-user-name",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-user-name",
+        "version": "4.0.1",
+        "name": "user-name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The SCIM userName of the user",
+        "code": "user-name",
+        "base": ["ProjectMembership"],
+        "type": "string",
+        "expression": "ProjectMembership.userName"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-external-id",
       "resource": {
         "resourceType": "SearchParameter",

@@ -74,18 +74,30 @@ export interface ProjectMembership {
   profile: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
-   * A String that is an identifier for the resource as defined by the
-   * provisioning client.  The &quot;externalId&quot; may simplify identification of
-   * a resource between the provisioning client and the service provider by
-   * allowing the client to use a filter to locate the resource with an
-   * identifier from the provisioning domain, obviating the need to store a
-   * local mapping between the provisioning domain's identifier of the
-   * resource and the identifier used by the service provider.  Each
-   * resource MAY include a non-empty &quot;externalId&quot; value.  The value of the
-   * &quot;externalId&quot; attribute is always issued by the provisioning client and
-   * MUST NOT be specified by the service provider.  The service provider
-   * MUST always interpret the externalId as scoped to the provisioning
-   * domain.
+   * SCIM userName. A service provider's unique identifier for the user,
+   * typically used by the user to directly authenticate to the service
+   * provider. Often displayed to the user as their unique identifier
+   * within the system (as opposed to &quot;id&quot; or &quot;externalId&quot;, which are
+   * generally opaque and not user-friendly identifiers).  Each User MUST
+   * include a non-empty userName value.  This identifier MUST be unique
+   * across the service provider's entire set of Users.  This attribute is
+   * REQUIRED and is case insensitive.
+   */
+  userName?: string;
+
+  /**
+   * SCIM externalId. A String that is an identifier for the resource as
+   * defined by the provisioning client.  The &quot;externalId&quot; may simplify
+   * identification of a resource between the provisioning client and the
+   * service provider by allowing the client to use a filter to locate the
+   * resource with an identifier from the provisioning domain, obviating
+   * the need to store a local mapping between the provisioning domain's
+   * identifier of the resource and the identifier used by the service
+   * provider.  Each resource MAY include a non-empty &quot;externalId&quot; value.
+   * The value of the &quot;externalId&quot; attribute is always issued by the
+   * provisioning client and MUST NOT be specified by the service provider.
+   * The service provider MUST always interpret the externalId as scoped
+   * to the provisioning domain.
    */
   externalId?: string;
 

@@ -427,7 +427,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
  * @param login - The candidate login.
  * @param accessPolicy - The access policy for the login.
  */
-async function checkIpAccessRules(login: Login, accessPolicy: AccessPolicy | undefined): Promise<void> {
+export async function checkIpAccessRules(login: Login, accessPolicy: AccessPolicy | undefined): Promise<void> {
   if (!login.remoteAddress || !accessPolicy?.ipAccessRule) {
     return;
   }

@@ -1,13 +1,11 @@
-import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
+import { Anchor, Box, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference } from '@medplum/core';
-import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
-import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
-import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
-import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
+import { ConceptBadge } from './ConceptBadge';
+import { MedicationDialog } from './MedicationDialog';
 
 export interface MedicationsProps {
   readonly patient: Patient;
@@ -18,28 +16,23 @@ export interface MedicationsProps {
 export function Medications(props: MedicationsProps): JSX.Element {
   const medplum = useMedplum();
   const [medicationRequests, setMedicationRequests] = useState<MedicationRequest[]>(props.medicationRequests);
+  const [editMedication, setEditMedication] = useState<MedicationRequest>();
   const [opened, { open, close }] = useDisclosure(false);
-  const [code, setCode] = useState<CodeableConcept>();
 
   const handleSubmit = useCallback(
-    (formData: Record<string, string>) => {
-      const status = formData.status as 'active' | 'stopped';
-      medplum
-        .createResource<MedicationRequest>({
-          resourceType: 'MedicationRequest',
-          status,
-          intent: 'order',
-          encounter: props.encounter ? createReference(props.encounter) : undefined,
-          medicationCodeableConcept: code,
-          subject: createReference(props.patient),
-        })
-        .then((newRequest) => {
-          setMedicationRequests([newRequest, ...medicationRequests]);
-          close();
-        })
-        .catch(console.error);
+    async (medication: MedicationRequest) => {
+      if (medication.id) {
+        const updatedMedication = await medplum.updateResource(medication);
+        setMedicationRequests(medicationRequests.map((m) => (m.id === updatedMedication.id ? updatedMedication : m)));
+      } else {
+        const newMedication = await medplum.createResource(medication);
+        setMedicationRequests([newMedication, ...medicationRequests]);
+      }
+
+      setEditMedication(undefined);
+      close();
     },
-    [medplum, props.patient, props.encounter, medicationRequests, close, code]
+    [medplum, medicationRequests, close]
   );
 
   return (
@@ -61,40 +54,26 @@ export function Medications(props: MedicationsProps): JSX.Element {
       {medicationRequests.length > 0 ? (
         <Box>
           {medicationRequests.map((request) => (
-            <Badge
-              mt={4}
+            <ConceptBadge
               key={request.id}
-              variant="light"
-              maw="50%"
-              color={request.status === 'active' ? 'blue' : 'gray'}
-            >
-              <CodeableConceptDisplay value={request.medicationCodeableConcept} />
-            </Badge>
+              resource={request}
+              onEdit={(mr) => {
+                setEditMedication(mr as MedicationRequest);
+                open();
+              }}
+            />
           ))}
         </Box>
       ) : (
         <Text>(none)</Text>
       )}
-      <Modal opened={opened} onClose={close} title="Add Medication Request">
-        <Form onSubmit={handleSubmit}>
-          <Stack h={275}>
-            <CodeableConceptInput
-              name="request"
-              path="MedicationRequest.medication[x]"
-              data-autofocus={true}
-              binding="https://app.medplum.com/ValueSet/16d6f7b7-7eeb-4d0e-a83b-83be082aa10b"
-              onChange={(request) => setCode(request)}
-              outcome={undefined}
-            />
-            <Radio.Group mt={32} name="status" label="Request Status" required>
-              <Radio key="active" value="active" label="active" my="xs" />
-              <Radio key="stopped" value="stopped" label="stopped" my="xs" />
-            </Radio.Group>
-            <Group justify="flex-end" gap={4} mt="md">
-              <Button type="submit">Save</Button>
-            </Group>
-          </Stack>
-        </Form>
+      <Modal opened={opened} onClose={close} title={editMedication ? 'Edit Medication' : 'Add Medication'}>
+        <MedicationDialog
+          patient={props.patient}
+          encounter={props.encounter}
+          medication={editMedication}
+          onSubmit={handleSubmit}
+        />
       </Modal>
     </>
   );

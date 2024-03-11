@@ -6,6 +6,7 @@ import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
 
 export interface DateTimeInputProps {
   readonly name?: string;
+  readonly label?: string;
   readonly placeholder?: string;
   readonly defaultValue?: string;
   readonly autoFocus?: boolean;
@@ -27,6 +28,7 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
     <TextInput
       id={props.name}
       name={props.name}
+      label={props.label}
       data-autofocus={props.autoFocus}
       data-testid={props.name}
       placeholder={props.placeholder}
