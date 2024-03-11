@@ -154,7 +154,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   );
   app.use(
     json({
-      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH],
+      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH, ContentType.SCIM_JSON],
       limit: config.maxJsonSize,
     })
   );

@@ -63,7 +63,11 @@ export function getSearchParameterDetails(resourceType: string, searchParam: Sea
 }
 
 function setSearchParameterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
-  const typeSchema = globalSchema.types[resourceType];
+  let typeSchema = globalSchema.types[resourceType];
+  if (!typeSchema) {
+    typeSchema = {};
+    globalSchema.types[resourceType] = typeSchema;
+  }
   if (!typeSchema.searchParamsDetails) {
     typeSchema.searchParamsDetails = {};
   }
