@@ -1,5 +1,13 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconCalendar, IconHammer, IconMessage, IconPencil, IconTimeDuration0, IconTimeDuration15, IconUser } from '@tabler/icons-react';
+import {
+  IconCalendar,
+  IconHammer,
+  IconMessage,
+  IconPencil,
+  IconTimeDuration0,
+  IconTimeDuration15,
+  IconUser,
+} from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
@@ -34,18 +42,31 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'To Dos',
-          links: [{ icon: <IconHammer />, label: 'Tasks', href: '/Task' },{ icon: <IconMessage />, label: 'Messages', href: '/Communication' }],
+          links: [
+            { icon: <IconHammer />, label: 'Tasks', href: '/Task' },
+            { icon: <IconMessage />, label: 'Messages', href: '/Communication' },
+          ],
         },
         {
           title: 'Scheduling',
-          links: [{ icon: <IconTimeDuration0 />, label: 'New Appointment', href: '/Appointment/new' },
-          { icon: <IconTimeDuration15 />, label: 'Appointment Requests', href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=proposed' },
-          { icon: <IconCalendar />, label: 'Upcoming Appointments', href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=booked' }],
+          links: [
+            { icon: <IconTimeDuration0 />, label: 'New Appointment', href: '/Appointment/new' },
+            {
+              icon: <IconTimeDuration15 />,
+              label: 'Appointment Requests',
+              href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=proposed',
+            },
+            {
+              icon: <IconCalendar />,
+              label: 'Upcoming Appointments',
+              href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=booked',
+            },
+          ],
         },
         {
           title: 'Onboarding',
           links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
-        }
+        },
       ]}
     >
       <ErrorBoundary>
