@@ -1,7 +1,7 @@
-import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput } from '@mantine/core';
+import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { ProfileResource, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Bundle, Communication } from '@medplum/fhirtypes';
+import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -44,12 +44,14 @@ export interface BaseChatProps {
   setCommunications: (communications: Communication[]) => void;
   query: string;
   sendMessage: (content: string) => void;
+  onIncomingMessage?: (message: Communication) => void;
+  open?: boolean;
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
-  const { title, communications, setCommunications, query, sendMessage } = props;
+  const { title, communications, setCommunications, query, sendMessage, open, onIncomingMessage } = props;
   const medplum = useMedplum();
-  const [open, setOpen] = useState(false);
+  const [opened, setOpened] = useState(open ?? false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
@@ -59,19 +61,16 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     [profile, medplum]
   );
 
+  useEffect(() => {
+    setOpened((prevVal) => open ?? prevVal);
+  }, [open]);
+
   useSubscription(`Communication?${query}`, (bundle: Bundle) => {
     const communication = bundle.entry?.[1]?.resource as Communication;
     upsertCommunications(communicationsRef.current, [communication], setCommunications);
-    if (!(communication.received && communication.status === 'completed')) {
-      medplum
-        .updateResource<Communication>({
-          ...communication,
-          received: communication.received ?? new Date().toISOString(), // Mark as received if needed
-          status: 'completed', // Mark as read
-          // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
-          // for more info about recommended `Communication` lifecycle
-        })
-        .catch(console.error);
+    // Call `onIncomingMessage` when we are not the sender of a chat message that came in
+    if (onIncomingMessage && getReferenceString(communication.sender as Reference) !== profileRefStr) {
+      onIncomingMessage(communication);
     }
   });
 
@@ -121,14 +120,13 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   useEffect(() => {
     if (scrollToBottomRef.current) {
-      if (scrollAreaRef.current) {
+      if (scrollAreaRef.current?.scrollTo) {
         scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        scrollToBottomRef.current = false;
       }
-      scrollToBottomRef.current = false;
     }
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: using communications[i] seems to break things here. probably Biome assumes that communications might be mutable
   const myLastCommunicationId = useMemo<string>(() => {
     let i = communications.length;
 
@@ -146,12 +144,14 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     return null;
   }
 
-  if (open) {
+  if (opened) {
     return (
       <>
         <div className={classes.chatContainer}>
           <Paper className={classes.chatPaper} shadow="xl" p={0} radius="md" withBorder>
-            <div className={classes.chatTitle}>{title}</div>
+            <Title order={2} className={classes.chatTitle}>
+              {title}
+            </Title>
             <div className={classes.chatBody}>
               <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
                 {communications.map((c, i) => {
@@ -190,7 +190,14 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                   radius="xl"
                   rightSectionWidth={42}
                   rightSection={
-                    <ActionIcon type="submit" size="1.5rem" radius="xl" color="blue" variant="filled">
+                    <ActionIcon
+                      type="submit"
+                      size="1.5rem"
+                      radius="xl"
+                      color="blue"
+                      variant="filled"
+                      aria-label="Send message"
+                    >
                       <IconArrowRight size="1rem" stroke={1.5} />
                     </ActionIcon>
                   }
@@ -206,7 +213,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
             size="lg"
             radius="xl"
             variant="outline"
-            onClick={() => setOpen(false)}
+            onClick={() => setOpened(false)}
+            aria-label="Close chat"
           >
             <IconChevronDown size="1.625rem" />
           </ActionIcon>
@@ -224,9 +232,10 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         radius="xl"
         variant="outline"
         onClick={() => {
-          setOpen(true);
+          setOpened(true);
           scrollToBottomRef.current = true;
         }}
+        aria-label="Open chat"
       >
         <IconMessage size="1.625rem" />
       </ActionIcon>
