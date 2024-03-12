@@ -1,3 +1,4 @@
+import { Questionnaire } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm } from '@medplum/react';
 
 /**
