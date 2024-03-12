@@ -3,7 +3,7 @@ import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getDatabasePool } from '../../database';
 import { sendOutcome } from '../outcomes';
-import { Column, Condition, SelectQuery } from '../sql';
+import { SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { findTerminologyResource } from './utils/terminology';
@@ -12,6 +12,7 @@ const operation = getOperationDefinition('CodeSystem', 'validate-code');
 
 type CodeSystemValidateCodeParameters = {
   url?: string;
+  version?: string;
   code?: string;
   coding?: Coding;
 };
@@ -38,7 +39,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
     return;
   }
 
-  const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', coding.system as string);
+  const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', coding.system as string, params.version);
   const result = await validateCode(codeSystem, coding.code as string);
 
   const output: Record<string, any> = Object.create(null);
@@ -52,18 +53,11 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
 }
 
 export async function validateCode(codeSystem: CodeSystem, code: string): Promise<Coding | undefined> {
-  const query = new SelectQuery('Coding');
-  const codeSystemTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'CodeSystem',
-    codeSystemTable,
-    new Condition(new Column('Coding', 'system'), '=', new Column(codeSystemTable, 'id'))
-  );
-  query
+  const query = new SelectQuery('Coding')
     .column('id')
     .column('display')
-    .where(new Column(codeSystemTable, 'id'), '=', codeSystem.id)
-    .where('code', '=', code);
+    .where('code', '=', code)
+    .where('system', '=', codeSystem.id);
 
   const db = getDatabasePool();
   const result = await query.execute(db);

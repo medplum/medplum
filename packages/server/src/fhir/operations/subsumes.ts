@@ -13,6 +13,7 @@ const operation = getOperationDefinition('CodeSystem', 'subsumes');
 
 type CodeSystemSubsumesParameters = {
   system?: string;
+  version?: string;
   codeA?: string;
   codeB?: string;
 };
@@ -27,15 +28,18 @@ export const codeSystemSubsumesOperation = asyncWrap(async (req: Request, res: R
     sendOutcome(res, badRequest('Must specify system, codeA, and codeB parameters'));
     return;
   }
-  const outcome = await testSubsumption(params.codeA, params.codeB, params.system);
+  const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, params.version);
+  const outcome = await testSubsumption(params.codeA, params.codeB, codeSystem);
   await sendOutputParameters(req, res, operation, allOk, { outcome });
 });
 
 export type SubsumptionOutcome = 'equivalent' | 'subsumes' | 'subsumed-by' | 'not-subsumed';
 
-export async function testSubsumption(left: string, right: string, system: string): Promise<SubsumptionOutcome> {
-  const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', system);
-
+export async function testSubsumption(
+  left: string,
+  right: string,
+  codeSystem: CodeSystem
+): Promise<SubsumptionOutcome> {
   const subsumedBy = await isSubsumed(left, right, codeSystem);
   const subsumes = await isSubsumed(right, left, codeSystem);
 

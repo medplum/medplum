@@ -149,4 +149,40 @@ describe('CodeSystem validate-code', () => {
       issue: [{ severity: 'error', code: 'invalid', details: { text: `CodeSystem ${codeSystem.url} not found` } }],
     });
   });
+
+  test('Lookup using specific CodeSystem version', async () => {
+    const updatedCodeSystem: CodeSystem = {
+      ...testCodeSystem,
+      content: 'complete',
+      version: '3.1.4',
+      concept: [{ code: '5', display: 'Neologism' }],
+    };
+    const res = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(updatedCodeSystem);
+    expect(res.status).toEqual(201);
+    const codeSystem = res.body as CodeSystem;
+
+    const res2 = await request(app)
+      .post('/fhir/R4/CodeSystem/$validate-code')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'coding', valueCoding: { system: codeSystem.url, code: '5' } },
+          { name: 'version', valueString: '3.1.4' },
+        ],
+      } as Parameters);
+    expect(res2.status).toEqual(200);
+    expect(res2.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'result', valueBoolean: true },
+        { name: 'display', valueString: 'Neologism' },
+      ],
+    });
+  });
 });

@@ -12,12 +12,17 @@ export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 
 export async function findTerminologyResource<T extends TerminologyResource>(
   resourceType: T['resourceType'],
-  url: string
+  url: string,
+  version?: string
 ): Promise<T> {
   const { repo } = getAuthenticatedContext();
+  const filters = [{ code: 'url', operator: Operator.EQUALS, value: url }];
+  if (version) {
+    filters.push({ code: 'version', operator: Operator.EQUALS, value: version });
+  }
   const resources = await repo.searchResources<T>({
     resourceType,
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
+    filters,
     sortRules: [
       // Select highest version (by lexical sort -- no version is assumed to be "current")
       { code: 'version', descending: true },
