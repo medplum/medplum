@@ -20,7 +20,7 @@ export function HomePage(): JSX.Element {
   return (
     <Document>
       <Title>
-        Welcome <ResourceName value={profile} link />
+        <ResourceName value={profile} link />
       </Title>
       <SearchControl
         search={{ resourceType: 'Patient', fields: ['name', 'birthdate', 'gender'] }}
