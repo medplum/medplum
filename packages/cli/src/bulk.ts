@@ -30,7 +30,7 @@ bulkExportCommand
   .action(async (options) => {
     const { exportLevel, types, since, targetDirectory } = options;
     const medplum = await createMedplumClient(options);
-    const response = await medplum.bulkExport(exportLevel, types, since);
+    const response = await medplum.bulkExport(exportLevel, types, since, { pollStatusOnAccepted: true });
 
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
