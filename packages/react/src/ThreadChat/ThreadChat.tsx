@@ -5,8 +5,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
 
 export interface ThreadChatProps {
-  title: string;
-  thread: Communication;
+  readonly title: string;
+  readonly thread: Communication;
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {

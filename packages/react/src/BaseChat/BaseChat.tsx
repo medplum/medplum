@@ -39,13 +39,13 @@ function upsertCommunications(
 }
 
 export interface BaseChatProps {
-  title: string;
-  communications: Communication[];
-  setCommunications: (communications: Communication[]) => void;
-  query: string;
-  sendMessage: (content: string) => void;
-  onIncomingMessage?: (message: Communication) => void;
-  open?: boolean;
+  readonly title: string;
+  readonly communications: Communication[];
+  readonly setCommunications: (communications: Communication[]) => void;
+  readonly query: string;
+  readonly sendMessage: (content: string) => void;
+  readonly onIncomingMessage?: (message: Communication) => void;
+  readonly open?: boolean;
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
@@ -244,8 +244,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 }
 
 interface ChatBubbleProps {
-  communication: Communication;
-  showDelivered?: boolean;
+  readonly communication: Communication;
+  readonly showDelivered?: boolean;
 }
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
