@@ -55,6 +55,7 @@ import {
 } from './fhircast';
 import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload, tryGetJwtExpiration } from './jwt';
+import { MedplumKeyValueClient } from './keyvalue';
 import {
   OperationOutcomeError,
   badRequest,
@@ -79,7 +80,6 @@ import {
   resolveId,
   sleep,
 } from './utils';
-import { MedplumKeyValueClient } from './keyvalue';
 
 export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
@@ -2835,7 +2835,7 @@ export class MedplumClient extends EventTarget {
     }
 
     const preferMode = (options.headers as Record<string, string> | undefined)?.['Prefer'];
-    if (response.status === 202 && preferMode === 'respond-async') {
+    if (response.status === 202 && preferMode === 'respond-async' && redirectMode === 'follow') {
       const contentLocation = await tryGetContentLocation(response, obj);
       const statusUrl = contentLocation ?? state.statusUrl;
       if (statusUrl) {
@@ -2923,7 +2923,13 @@ export class MedplumClient extends EventTarget {
       await sleep(retryDelay);
       state.pollCount++;
     }
-    return this.request('GET', statusUrl, options, state);
+
+    return this.request(
+      'GET',
+      statusUrl,
+      { ...options, body: undefined, headers: { ...options.headers, Prefer: '' } },
+      state
+    );
   }
 
   /**
