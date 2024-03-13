@@ -7,7 +7,7 @@
 
 .images {
   width: 4000px;
-  animation: bannermove 5s linear infinite;
+  animation: bannermove 30s linear infinite;
   display: flex;
   align-items: center;
   justify-content: center;
