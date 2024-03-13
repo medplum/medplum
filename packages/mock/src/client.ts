@@ -92,7 +92,7 @@ export class MockClient extends MedplumClient {
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
   private agentAvailable = true;
-  private readonly profile: ReturnType<MedplumClient['getProfile']>;
+  private profile: ReturnType<MedplumClient['getProfile']>;
   subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
@@ -156,6 +156,10 @@ export class MockClient extends MedplumClient {
 
   setActiveLoginOverride(activeLoginOverride: LoginState): void {
     this.activeLoginOverride = activeLoginOverride;
+  }
+
+  setProfile(profile: ProfileResource | undefined): void {
+    this.profile = profile;
   }
 
   getActiveLogin(): LoginState | undefined {

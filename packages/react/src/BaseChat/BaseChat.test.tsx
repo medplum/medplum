@@ -87,10 +87,10 @@ async function createCommunicationSubBundle(medplum: MockClient, communication?:
 }
 
 describe('BaseChat', () => {
-  let medplum: MockClient;
+  let defaultMedplum: MockClient;
 
   beforeAll(() => {
-    medplum = new MockClient({ profile: HomerSimpson });
+    defaultMedplum = new MockClient({ profile: HomerSimpson });
   });
 
   afterEach(() => {
@@ -102,11 +102,14 @@ describe('BaseChat', () => {
     return <BaseChat {...props} communications={communications} setCommunications={setCommunications} />;
   }
 
-  async function setup(props: TestComponentProps): Promise<{ rerender: (props: TestComponentProps) => Promise<void> }> {
+  async function setup(
+    props: TestComponentProps,
+    medplum?: MockClient
+  ): Promise<{ rerender: (props: TestComponentProps) => Promise<void> }> {
     const { rerender: _rerender } = await act(async () =>
       render(<TestComponent {...props} />, ({ children }) => (
         <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+          <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
         </MemoryRouter>
       ))
     );
@@ -116,6 +119,19 @@ describe('BaseChat', () => {
       },
     };
   }
+
+  test('Render nothing when no profile', async () => {
+    const baseProps = { title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
+
+    const medplum = new MockClient({ profile: null });
+    const { rerender } = await setup(baseProps, medplum);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+
+    medplum.setProfile(DrAliceSmith);
+    await rerender(baseProps);
+    expect(screen.getByRole('button', { name: 'Open chat' })).toBeInTheDocument();
+  });
 
   test('Setting `open` to `true`', async () => {
     const baseProps = { title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
@@ -135,8 +151,6 @@ describe('BaseChat', () => {
     const { rerender } = await setup({ ...baseProps, open: false });
     const openChatButton = screen.getByRole('button');
     expect(openChatButton).toBeInTheDocument();
-
-    screen.logTestingPlaygroundURL();
 
     await rerender({ ...baseProps, open: true });
     expect(openChatButton).not.toBeInTheDocument();
@@ -181,7 +195,7 @@ describe('BaseChat', () => {
     expect(screen.getByRole('heading', { name: /test chat/i })).toBeInTheDocument();
     expect(screen.queryByText('Hello, Medplum!')).not.toBeInTheDocument();
 
-    const subBundle = await createCommunicationSubBundle(medplum);
+    const subBundle = await createCommunicationSubBundle(defaultMedplum);
     act(() => {
       _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
     });
@@ -230,12 +244,12 @@ describe('BaseChat', () => {
       open: true,
     });
 
-    const incomingMessage = await createCommunication(medplum, {
+    const incomingMessage = await createCommunication(defaultMedplum, {
       sender: drAliceReference,
       recipient: [homerReference],
       payload: [{ contentString: 'Homer, are you there?' }],
     });
-    const subBundle = await createCommunicationSubBundle(medplum, incomingMessage);
+    const subBundle = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
 
     act(() => {
       _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
@@ -256,10 +270,10 @@ describe('BaseChat', () => {
       open: true,
     });
 
-    const outgoingMessage = await createCommunication(medplum, {
+    const outgoingMessage = await createCommunication(defaultMedplum, {
       payload: [{ contentString: "Sorry, I'm not home! Come back later!" }],
     });
-    const subBundle = await createCommunicationSubBundle(medplum, outgoingMessage);
+    const subBundle = await createCommunicationSubBundle(defaultMedplum, outgoingMessage);
 
     act(() => {
       _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
