@@ -2460,7 +2460,7 @@ describe('Client', () => {
 
     test('System Level', async () => {
       const medplum = new MedplumClient({ fetch });
-      const response = await medplum.bulkExport();
+      const response = await medplum.bulkExport(undefined, undefined, undefined, { pollStatusOnAccepted: true });
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/$export'),
         expect.objectContaining({
@@ -2478,7 +2478,10 @@ describe('Client', () => {
 
     test('with optional params type, since, options', async () => {
       const medplum = new MedplumClient({ fetch });
-      const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
+      const response = await medplum.bulkExport(undefined, 'Observation', 'testdate', {
+        headers: { test: 'test' },
+        pollStatusOnAccepted: true,
+      });
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
         expect.any(Object)
@@ -2491,7 +2494,9 @@ describe('Client', () => {
     test('Group of Patients', async () => {
       const medplum = new MedplumClient({ fetch });
       const groupId = randomUUID();
-      const response = await medplum.bulkExport(`Group/${groupId}`);
+      const response = await medplum.bulkExport(`Group/${groupId}`, undefined, undefined, {
+        pollStatusOnAccepted: true,
+      });
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`/Group/${groupId}/$export`), expect.any(Object));
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toHaveBeenCalledTimes(3);
@@ -2500,8 +2505,8 @@ describe('Client', () => {
 
     test('All Patient', async () => {
       const medplum = new MedplumClient({ fetch });
-      const response = await medplum.bulkExport(`Patient`);
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`/Patient/$export`), expect.any(Object));
+      const response = await medplum.bulkExport('Patient', undefined, undefined, { pollStatusOnAccepted: true });
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/Patient/$export'), expect.any(Object));
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toHaveBeenCalledTimes(3);
       expect(response.output?.length).toBe(1);
@@ -2608,7 +2613,10 @@ describe('Client', () => {
 
       const medplum = new MedplumClient({ fetch: mockFetch });
       await medplum.startClientLogin(clientId, clientSecret);
-      const result = await medplum.bulkExport();
+      const result = await medplum.bulkExport(undefined, undefined, undefined, {
+        pollStatusOnAccepted: true,
+        followRedirectOnCreated: true,
+      });
       expect(result).toMatchObject({ resourceType: 'Bundle' });
     });
   });
@@ -2718,7 +2726,12 @@ describe('Client', () => {
       fetch.mockImplementationOnce(async () => mockFetchResponse(201, { resourceType: 'Patient' }));
 
       const client = new MedplumClient({ fetch });
-      const response = await client.startAsyncRequest('/test', { method: 'POST', body: '{}' });
+      const response = await client.startAsyncRequest('/test', {
+        method: 'POST',
+        body: '{}',
+        pollStatusOnAccepted: true,
+        followRedirectOnCreated: true,
+      });
       expect(fetch).toHaveBeenCalledTimes(4);
       expect((response as any).resourceType).toEqual('Patient');
     });

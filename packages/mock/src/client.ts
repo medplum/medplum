@@ -8,6 +8,7 @@ import {
   LoginState,
   MedplumClient,
   MedplumClientOptions,
+  MedplumRequestOptions,
   OperationOutcomeError,
   ProfileResource,
   SubscriptionEmitter,
@@ -200,7 +201,7 @@ export class MockClient extends MedplumClient {
     body: any,
     contentType?: string | undefined,
     _waitForResponse?: boolean | undefined,
-    _options?: RequestInit | undefined
+    _options?: MedplumRequestOptions | undefined
   ): Promise<any> {
     if (contentType === ContentType.PING) {
       if (!this.agentAvailable) {
