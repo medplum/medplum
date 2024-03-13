@@ -1,12 +1,13 @@
 import express from 'express';
 import { loadTestConfig } from '../../config';
 import { initApp, shutdownApp } from '../../app';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, withTestContext } from '../../test.setup';
 import request from 'supertest';
 import { ContentType, createReference, isUUID } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { createUser } from '../../auth/newuser';
-import { Project } from '@medplum/fhirtypes';
+import { Practitioner, Project } from '@medplum/fhirtypes';
+import { getSystemRepo } from '../repo';
 
 const app = express();
 
@@ -79,7 +80,7 @@ describe('Project $init', () => {
         parameter: [
           {
             name: 'owner',
-            valueString: createReference(owner).reference,
+            valueReference: createReference(owner),
           },
         ],
       });
@@ -89,6 +90,10 @@ describe('Project $init', () => {
   test('Requires owner to be User', async () => {
     const superAdminClientToken = await initTestAuth({ superAdmin: true });
     expect(superAdminClientToken).toBeDefined();
+
+    const doc = await withTestContext(() =>
+      getSystemRepo().createResource<Practitioner>({ resourceType: 'Practitioner' })
+    );
 
     const projectName = 'Test Init Project ' + randomUUID();
     const res = await request(app)
@@ -102,6 +107,10 @@ describe('Project $init', () => {
           {
             name: 'name',
             valueString: projectName,
+          },
+          {
+            name: 'owner',
+            valueReference: createReference(doc),
           },
         ],
       });
@@ -135,7 +144,7 @@ describe('Project $init', () => {
           },
           {
             name: 'owner',
-            valueString: createReference(owner).reference,
+            valueReference: createReference(owner),
           },
         ],
       });
@@ -205,5 +214,29 @@ describe('Project $init', () => {
         ],
       });
     expect(res.status).toBe(201);
+  });
+
+  test('Defaults to no owner if unspecified', async () => {
+    const accessToken = await initTestAuth();
+    expect(accessToken).toBeDefined();
+
+    const projectName = 'Test Init Project ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+    const project = res.body as Project;
+    expect(project.owner).toBeUndefined();
   });
 });

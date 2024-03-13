@@ -1,5 +1,5 @@
 import { badRequest, createReference } from '@medplum/core';
-import { Login, Reference, User } from '@medplum/fhirtypes';
+import { Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { createProject } from '../fhir/operations/projectinit';
@@ -40,7 +40,7 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   // Set the membership on the login
   const updatedLogin = await systemRepo.updateResource<Login>({
     ...login,
-    membership: createReference(membership),
+    membership: createReference(membership as ProjectMembership),
   });
 
   res.status(200).json({
