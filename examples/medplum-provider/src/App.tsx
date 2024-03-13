@@ -1,8 +1,18 @@
-import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import { ProfileResource, getReferenceString } from '@medplum/core';
+import {
+  AppShell,
+  ErrorBoundary,
+  Loading,
+  Logo,
+  NotificationIcon,
+  useMedplum,
+  useMedplumNavigate,
+  useMedplumProfile,
+} from '@medplum/react';
 import {
   IconCalendar,
-  IconHammer,
-  IconMessage,
+  IconClipboardCheck,
+  IconMail,
   IconPencil,
   IconTimeDuration0,
   IconTimeDuration15,
@@ -10,7 +20,9 @@ import {
 } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { CreateResourcePage } from './pages/CreateResourcePage';
 import { HomePage } from './pages/HomePage';
+import { OnboardingPage } from './pages/OnboardingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
@@ -22,11 +34,11 @@ import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
-import { OnboardingPage } from './pages/OnboardingPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const navigate = useMedplumNavigate();
 
   if (medplum.isLoading()) {
     return null;
@@ -39,13 +51,6 @@ export function App(): JSX.Element | null {
         {
           title: 'Charts',
           links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
-        },
-        {
-          title: 'To Dos',
-          links: [
-            { icon: <IconHammer />, label: 'Tasks', href: '/Task' },
-            { icon: <IconMessage />, label: 'Messages', href: '/Communication' },
-          ],
         },
         {
           title: 'Scheduling',
@@ -68,6 +73,37 @@ export function App(): JSX.Element | null {
           links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
         },
       ]}
+      resourceTypeSearchDisabled={true}
+      notifications={
+        profile && (
+          <>
+            <NotificationIcon
+              label="Mail"
+              resourceType="Communication"
+              countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
+              subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
+              iconComponent={<IconMail />}
+              onClick={() =>
+                navigate(
+                  `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`
+                )
+              }
+            />
+            <NotificationIcon
+              label="Tasks"
+              resourceType="Task"
+              countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
+              subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
+              iconComponent={<IconClipboardCheck />}
+              onClick={() =>
+                navigate(
+                  `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
+                )
+              }
+            />
+          </>
+        )
+      }
     >
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
@@ -87,6 +123,7 @@ export function App(): JSX.Element | null {
                   <Route path="" element={<TimelineTab />} />
                 </Route>
                 <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/:resourceType/new" element={<CreateResourcePage />} />
                 <Route path="/:resourceType/:id" element={<ResourcePage />} />
                 <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
                 <Route path="/:resourceType" element={<SearchPage />} />
