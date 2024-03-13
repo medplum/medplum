@@ -2866,12 +2866,10 @@ export class MedplumClient extends EventTarget {
     ) {
       const contentLocation = await tryGetContentLocation(response, obj);
       if (contentLocation) {
-        // Follow redirect
         return this.request('GET', contentLocation, { ...options, body: undefined });
       }
     }
 
-    // const preferMode = (options.headers as Record<string, string> | undefined)?.['Prefer'];
     if (response.status === 202 && options.pollStatusOnAccepted) {
       const contentLocation = await tryGetContentLocation(response, obj);
       const statusUrl = contentLocation ?? state.statusUrl;
@@ -2951,7 +2949,12 @@ export class MedplumClient extends EventTarget {
   private async pollStatus<T>(statusUrl: string, options: MedplumRequestOptions, state: RequestState): Promise<T> {
     if (state.pollCount === undefined) {
       // First request - try request immediately
+      options.method = 'GET';
+      options.body = undefined;
       options.redirect = 'follow';
+      if (options.headers && typeof options.headers === 'object' && 'Prefer' in options.headers) {
+        delete options.headers.Prefer;
+      }
       state.statusUrl = statusUrl;
       state.pollCount = 1;
     } else {
