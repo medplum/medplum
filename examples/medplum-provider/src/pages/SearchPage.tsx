@@ -3,11 +3,12 @@ import {
   DEFAULT_SEARCH_COUNT,
   Filter,
   formatSearchQuery,
+  isReference,
   parseSearchRequest,
   SearchRequest,
   SortRule,
 } from '@medplum/core';
-import { UserConfiguration } from '@medplum/fhirtypes';
+import { Patient, Reference, Resource, UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -44,8 +45,8 @@ export function SearchPage(): JSX.Element {
       <MemoizedSearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
-        onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
+        onClick={(e) => navigate(getResourceUrl(e.resource))}
+        onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
@@ -101,4 +102,21 @@ function getLastSearch(resourceType: string): SearchRequest | undefined {
 function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem('defaultResourceType', search.resourceType);
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
+}
+
+function getResourceUrl<T extends Resource>(resource: T): string {
+  const patientFields = ['patient', 'subject', 'sender'] as (keyof T)[];
+  for (const key of patientFields) {
+    if (key in resource) {
+      const value = resource[key];
+      if (isPatientReference(value)) {
+        return `/${value.reference}/${resource.resourceType}/${resource.id}`;
+      }
+    }
+  }
+  return `/${resource.resourceType}/${resource.id}`;
+}
+
+function isPatientReference(input: unknown): input is Reference<Patient> & { reference: string } {
+  return isReference(input) && input.reference.startsWith('Patient/');
 }
