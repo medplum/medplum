@@ -2947,13 +2947,12 @@ export class MedplumClient extends EventTarget {
   }
 
   private async pollStatus<T>(statusUrl: string, options: MedplumRequestOptions, state: RequestState): Promise<T> {
+    const statusOptions: MedplumRequestOptions = { ...options, method: 'GET', body: undefined, redirect: 'follow' };
     if (state.pollCount === undefined) {
       // First request - try request immediately
-      options.method = 'GET';
-      options.body = undefined;
-      options.redirect = 'follow';
       if (options.headers && typeof options.headers === 'object' && 'Prefer' in options.headers) {
-        delete options.headers.Prefer;
+        statusOptions.headers = { ...options.headers };
+        delete statusOptions.headers.Prefer;
       }
       state.statusUrl = statusUrl;
       state.pollCount = 1;
@@ -2963,7 +2962,7 @@ export class MedplumClient extends EventTarget {
       await sleep(retryDelay);
       state.pollCount++;
     }
-    return this.request('GET', statusUrl, options, state);
+    return this.request('GET', statusUrl, statusOptions, state);
   }
 
   /**
