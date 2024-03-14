@@ -91,6 +91,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                   max={slice.max}
                   binding={slice.binding}
                   path={props.path}
+                  arrayIndex={valueIndex}
                 />
               </div>
               {values.length > slice.min && (
