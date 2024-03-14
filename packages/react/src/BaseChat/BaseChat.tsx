@@ -99,7 +99,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   communicationsRef.current = communications;
   const prevCommunicationsRef = useRef<Communication[]>(communications);
 
-  const scrollToBottomRef = useRef<boolean>(false);
+  const scrollToBottomRef = useRef<boolean>(true);
 
   const searchMessages = useCallback(async (): Promise<void> => {
     const searchParams = new URLSearchParams(query);
