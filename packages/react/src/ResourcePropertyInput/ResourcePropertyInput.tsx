@@ -47,6 +47,7 @@ export interface ResourcePropertyInputProps {
   readonly defaultPropertyType?: string | undefined;
   readonly defaultValue: any;
   readonly arrayElement?: boolean | undefined;
+  readonly arrayIndex?: number;
   readonly onChange: ((value: any, propName?: string) => void) | undefined;
   readonly outcome: OperationOutcome | undefined;
 }
@@ -96,6 +97,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         max={property.min}
         binding={property.binding}
         path={props.path}
+        arrayIndex={props.arrayIndex}
       />
     );
   }
@@ -159,10 +161,11 @@ export interface ElementDefinitionTypeInputProps
   readonly min: number;
   readonly max: number;
   readonly binding: ElementDefinitionBinding | undefined;
+  readonly arrayIndex?: number;
 }
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const { name, onChange, outcome, binding, path } = props;
+  const { name, onChange, outcome, binding, path, arrayIndex } = props;
   const required = props.min !== undefined && props.min > 0;
 
   const propertyType = props.elementDefinitionType.code;
@@ -199,7 +202,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     return <div>Property type not specified </div>;
   }
 
-  const properties: ComplexTypeInputProps<any> = { name, defaultValue, onChange, outcome, path };
+  //TODO{mattlong} propogate arrayIndex to non-complex types
+  const properties: ComplexTypeInputProps<any> = { name, defaultValue, onChange, outcome, path, arrayIndex };
 
   switch (propertyType) {
     // 2.24.0.1 Primitive Types

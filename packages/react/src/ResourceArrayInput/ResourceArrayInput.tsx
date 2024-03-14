@@ -98,6 +98,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             <div style={{ flexGrow: 1 }}>
               <ResourcePropertyInput
                 arrayElement={true}
+                arrayIndex={valueIndex}
                 property={props.property}
                 name={props.name + '.' + valueIndex}
                 path={props.path}
