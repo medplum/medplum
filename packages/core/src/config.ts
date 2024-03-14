@@ -75,6 +75,13 @@ export interface MedplumSourceInfraConfig {
     snsTopicArn?: ValueOrExternalSecret<string>;
     snsTopicName?: ValueOrExternalSecret<string>;
   };
+  fargateAutoScaling?: {
+    minCapacity: ValueOrExternalSecret<number>;
+    maxCapacity: ValueOrExternalSecret<number>;
+    targetUtilizationPercent: ValueOrExternalSecret<number>;
+    scaleInCooldown: ValueOrExternalSecret<number>;
+    scaleOutCooldown: ValueOrExternalSecret<number>;
+  };
   environment?: StringMap;
 }
 
@@ -137,6 +144,13 @@ export interface MedplumInfraConfig {
     logGroupCreate?: boolean;
     snsTopicArn?: string;
     snsTopicName?: string;
+  };
+  fargateAutoScaling?: {
+    minCapacity: number;
+    maxCapacity: number;
+    targetUtilizationPercent: number;
+    scaleInCooldown: number;
+    scaleOutCooldown: number;
   };
   environment?: StringMap;
 }
