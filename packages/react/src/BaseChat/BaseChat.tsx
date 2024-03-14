@@ -91,7 +91,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     const latestProfile = medplum.getProfile();
     if (profile?.id !== latestProfile?.id) {
       setProfile(latestProfile);
-      console.log('here!');
       setCommunications([]);
     }
   });
