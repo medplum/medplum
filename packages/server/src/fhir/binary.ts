@@ -29,7 +29,7 @@ binaryRouter.post(
 
     const stream = getContentStream(req);
     if (!stream) {
-      sendOutcome(res, badRequest('Unsupported content encoding'));
+      sendOutcome(req, res, badRequest('Unsupported content encoding'));
       return;
     }
 
@@ -40,7 +40,7 @@ binaryRouter.post(
         url: getPresignedUrl(resource),
       });
     } catch (err) {
-      sendOutcome(res, normalizeOperationOutcome(err));
+      sendOutcome(req, res, normalizeOperationOutcome(err));
     }
   })
 );
@@ -64,7 +64,7 @@ binaryRouter.put(
 
     const stream = getContentStream(req);
     if (!stream) {
-      sendOutcome(res, badRequest('Unsupported content encoding'));
+      sendOutcome(req, res, badRequest('Unsupported content encoding'));
       return;
     }
 

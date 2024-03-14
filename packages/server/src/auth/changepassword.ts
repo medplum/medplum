@@ -27,7 +27,7 @@ export async function changePasswordHandler(req: Request, res: Response): Promis
     newPassword: req.body.newPassword,
   });
 
-  sendOutcome(res, allOk);
+  sendOutcome(req, res, allOk);
 }
 
 export interface ChangePasswordRequest {

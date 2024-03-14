@@ -38,7 +38,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
   } else if (params.coding?.system) {
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.coding.system, params.version);
   } else {
-    sendOutcome(res, badRequest('No code system specified'));
+    sendOutcome(req, res, badRequest('No code system specified'));
     return;
   }
 
@@ -48,7 +48,7 @@ export async function codeSystemValidateCodeHandler(req: Request, res: Response)
   } else if (params.code) {
     coding = { system: params.url ?? codeSystem.url, code: params.code };
   } else {
-    sendOutcome(res, badRequest('No coding specified'));
+    sendOutcome(req, res, badRequest('No coding specified'));
     return;
   }
 

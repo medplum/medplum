@@ -32,7 +32,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   const config = getConfig();
   if (config.registerEnabled === false) {
     // Explicitly check for "false" because the config value may be undefined
-    sendOutcome(res, badRequest('Registration is disabled'));
+    sendOutcome(req, res, badRequest('Registration is disabled'));
     return;
   }
 
@@ -47,7 +47,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
     if (projectId) {
       if (client.meta?.project !== projectId) {
-        sendOutcome(res, badRequest('Client and project do not match'));
+        sendOutcome(req, res, badRequest('Client and project do not match'));
         return;
       }
     } else {
@@ -65,7 +65,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     existingUser = await getUserByEmailWithoutProject(email);
   }
   if (existingUser) {
-    sendOutcome(res, badRequest('Email already registered', 'email'));
+    sendOutcome(req, res, badRequest('Email already registered', 'email'));
     return;
   }
 
@@ -89,7 +89,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     });
     res.status(200).json({ login: login.id });
   } catch (err) {
-    sendOutcome(res, normalizeOperationOutcome(err));
+    sendOutcome(req, res, normalizeOperationOutcome(err));
   }
 }
 

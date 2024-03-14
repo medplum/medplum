@@ -17,14 +17,14 @@ export async function structureDefinitionExpandProfileHandler(req: Request, res:
   const { url } = req.query;
 
   if (!url || typeof url !== 'string') {
-    sendOutcome(res, badRequest('Profile url not specified'));
+    sendOutcome(req, res, badRequest('Profile url not specified'));
     return;
   }
 
   const profile = await fetchProfileByUrl(ctx.repo, url);
 
   if (!profile) {
-    sendOutcome(res, badRequest('Profile not found'));
+    sendOutcome(req, res, badRequest('Profile not found'));
     return;
   }
 

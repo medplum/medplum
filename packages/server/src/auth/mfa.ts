@@ -58,19 +58,19 @@ mfaRouter.post(
     const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
     if (user.mfaEnrolled) {
-      sendOutcome(res, badRequest('Already enrolled'));
+      sendOutcome(req, res, badRequest('Already enrolled'));
       return;
     }
 
     if (!user.mfaSecret) {
-      sendOutcome(res, badRequest('Secret not found'));
+      sendOutcome(req, res, badRequest('Secret not found'));
       return;
     }
 
     const secret = user.mfaSecret as string;
     const token = req.body.token as string;
     if (!authenticator.check(token, secret)) {
-      sendOutcome(res, badRequest('Invalid token'));
+      sendOutcome(req, res, badRequest('Invalid token'));
       return;
     }
 
@@ -78,7 +78,7 @@ mfaRouter.post(
       ...user,
       mfaEnrolled: true,
     });
-    sendOutcome(res, allOk);
+    sendOutcome(req, res, allOk);
   })
 );
 
@@ -88,7 +88,7 @@ mfaRouter.post(
   asyncWrap(async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+      sendOutcome(req, res, invalidRequest(errors));
       return Promise.resolve();
     }
 

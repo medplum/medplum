@@ -38,13 +38,13 @@ export interface ExternalAuthState {
 export const externalCallbackHandler = async (req: Request, res: Response): Promise<void> => {
   const code = req.query.code as string;
   if (!code) {
-    sendOutcome(res, badRequest('Missing code'));
+    sendOutcome(req, res, badRequest('Missing code'));
     return;
   }
 
   const state = req.query.state as string;
   if (!state) {
-    sendOutcome(res, badRequest('Missing state'));
+    sendOutcome(req, res, badRequest('Missing state'));
     return;
   }
 
@@ -52,7 +52,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 
   const { idp, client } = await getIdentityProvider(body);
   if (!idp) {
-    sendOutcome(res, badRequest('Identity provider not found'));
+    sendOutcome(req, res, badRequest('Identity provider not found'));
     return;
   }
 
@@ -67,14 +67,14 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   }
 
   if (body.domain && !email?.endsWith('@' + body.domain)) {
-    sendOutcome(res, badRequest('Email address does not match domain'));
+    sendOutcome(req, res, badRequest('Email address does not match domain'));
     return;
   }
 
   let projectId = body.projectId;
   if (client) {
     if (projectId !== undefined && projectId !== client.meta?.project) {
-      sendOutcome(res, badRequest('Invalid project'));
+      sendOutcome(req, res, badRequest('Invalid project'));
       return;
     }
     projectId = client.meta?.project;
@@ -97,7 +97,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 
   if (login.membership && body.redirectUri && client?.redirectUri) {
     if (!body.redirectUri.startsWith(client.redirectUri)) {
-      sendOutcome(res, badRequest('Invalid redirect URI'));
+      sendOutcome(req, res, badRequest('Invalid redirect URI'));
       return;
     }
     const redirectUrl = new URL(body.redirectUri);

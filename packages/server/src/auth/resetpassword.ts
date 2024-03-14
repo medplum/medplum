@@ -21,7 +21,7 @@ export const resetPasswordValidator = makeValidationMiddleware([
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
   const email = req.body.email.toLowerCase();
   if (await isExternalAuth(email)) {
-    sendOutcome(res, badRequest('Cannot reset password for external auth. Contact your system administrator.'));
+    sendOutcome(req, res, badRequest('Cannot reset password for external auth. Contact your system administrator.'));
     return;
   }
 
@@ -60,7 +60,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   if (!user) {
     // Per OWASP guidelines, send "ok" to prevent account enumeration attack
     // See: https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/03-Identity_Management_Testing/04-Testing_for_Account_Enumeration_and_Guessable_User_Account
-    sendOutcome(res, allOk);
+    sendOutcome(req, res, allOk);
     return;
   }
 
@@ -86,7 +86,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     });
   }
 
-  sendOutcome(res, allOk);
+  sendOutcome(req, res, allOk);
 }
 
 /**

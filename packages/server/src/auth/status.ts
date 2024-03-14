@@ -21,12 +21,12 @@ export async function statusHandler(req: Request, res: Response): Promise<void> 
   const login = await systemRepo.readResource<Login>('Login', loginId);
 
   if (login.granted) {
-    sendOutcome(res, badRequest('Login already granted'));
+    sendOutcome(req, res, badRequest('Login already granted'));
     return;
   }
 
   if (login.revoked) {
-    sendOutcome(res, badRequest('Login revoked'));
+    sendOutcome(req, res, badRequest('Login revoked'));
     return;
   }
 

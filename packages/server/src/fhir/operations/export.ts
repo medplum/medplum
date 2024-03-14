@@ -51,7 +51,7 @@ async function startExport(req: Request, res: Response, exportType: string): Pro
     .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
-  sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
+  sendOutcome(req, res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }
 
 export async function exportResources(

@@ -35,13 +35,13 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   let url = params.url;
   if (!url) {
-    sendOutcome(res, badRequest('Missing url'));
+    sendOutcome(req, res, badRequest('Missing url'));
     return;
   }
 
   const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
-    sendOutcome(res, badRequest('Invalid filter'));
+    sendOutcome(req, res, badRequest('Invalid filter'));
     return;
   }
 

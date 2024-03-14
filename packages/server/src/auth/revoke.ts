@@ -20,12 +20,12 @@ export async function revokeHandler(req: Request, res: Response): Promise<void> 
 
   // Make sure the login belongs to the current user
   if (login.user?.reference !== ctx.membership.user?.reference) {
-    sendOutcome(res, notFound);
+    sendOutcome(req, res, notFound);
     return;
   }
 
   // Mark the login as revoked
   await revokeLogin(login);
 
-  sendOutcome(res, allOk);
+  sendOutcome(req, res, allOk);
 }

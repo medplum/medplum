@@ -25,12 +25,12 @@ emailRouter.post(
 
     // Make sure the user project has the email feature enabled
     if (!ctx.project.features?.includes('email')) {
-      sendOutcome(res, forbidden);
+      sendOutcome(req, res, forbidden);
       return;
     }
 
     // Use the user repository to enforce permission checks on email attachments
     await sendEmail(ctx.repo, req.body);
-    sendOutcome(res, allOk);
+    sendOutcome(req, res, allOk);
   })
 );
