@@ -1,6 +1,6 @@
 import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import { Bundle, Communication } from '@medplum/fhirtypes';
-import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
+import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 // @ts-expect-error _subscriptionController is not exported from module normally
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
@@ -22,7 +22,7 @@ jest.mock('@medplum/react-hooks', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const EventEmitter = require('node:events');
   const _subscriptionController = new EventEmitter();
-  const original = jest.requireActual('@medplum/react-hooks'); // Step 2.
+  const original = jest.requireActual('@medplum/react-hooks');
   return {
     ...original,
     useSubscription: jest.fn().mockImplementation((criteria: string, callback: (bundle: Bundle) => void) => {
@@ -203,13 +203,36 @@ describe('BaseChat', () => {
     expect(await screen.findByText('Hello, Medplum!')).toBeInTheDocument();
   });
 
-  test('Chat loads initial messages and can receive new ones', async () => {
-    await setup({
-      title: 'Test Chat',
-      query: HOMER_DR_ALICE_CHAT_QUERY,
-      sendMessage: () => undefined,
-      open: true,
+  test('Loads initial messages and can receive new ones', async () => {
+    const medplum = new MockClient({ profile: HomerSimpson });
+    await Promise.all([
+      createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
+      createCommunication(medplum),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        payload: [{ contentString: 'Hello again!' }],
+      }),
+    ]);
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+        open: true,
+      },
+      medplum
+    );
+    expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
+    expect(screen.getByText('Hello again!')).toBeInTheDocument();
+
+    const subBundle = await createCommunicationSubBundle(medplum);
+    act(() => {
+      _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
     });
+
+    expect(screen.getAllByText('Hello, Medplum!').length).toEqual(3);
+    expect(screen.getByText('Hello again!')).toBeInTheDocument();
   });
 
   test('Sending a message', async () => {
@@ -281,5 +304,35 @@ describe('BaseChat', () => {
 
     expect(await screen.findByText("Sorry, I'm not home! Come back later!")).toBeInTheDocument();
     expect(onIncomingMessage).not.toHaveBeenCalled();
+  });
+
+  test('Messages cleared if profile changes', async () => {
+    const medplum = new MockClient({ profile: HomerSimpson });
+    await Promise.all([
+      createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
+      createCommunication(medplum),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        payload: [{ contentString: 'Hello again!' }],
+      }),
+    ]);
+
+    const baseProps = {
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      open: true,
+    };
+
+    const { rerender } = await setup(baseProps, medplum);
+    expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
+    expect(screen.getByText('Hello again!')).toBeInTheDocument();
+
+    medplum.setProfile(BartSimpson);
+    await rerender(baseProps);
+
+    expect(screen.queryAllByText('Hello, Medplum!')?.length).toEqual(0);
+    expect(screen.queryByText('Hello again!')).not.toBeInTheDocument();
   });
 });
