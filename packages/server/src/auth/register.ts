@@ -71,9 +71,9 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const token = await getAuthTokens(
     {
       ...login,
-      membership: createReference(membership),
+      membership: createReference(membership as ProjectMembership),
     },
-    createReference(profile)
+    createReference(profile as ProfileResource)
   );
 
   return {
@@ -81,8 +81,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     project,
     login,
-    membership,
-    profile,
+    membership: membership as ProjectMembership,
+    profile: profile as ProfileResource,
     client,
   };
 }
