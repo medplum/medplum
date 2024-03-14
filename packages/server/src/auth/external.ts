@@ -63,7 +63,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   if (idp.useSubject) {
     externalId = userInfo.sub as string;
   } else {
-    email = userInfo.email as string;
+    email = (userInfo.email as string).toLowerCase();
   }
 
   if (body.domain && !email?.endsWith('@' + body.domain)) {
