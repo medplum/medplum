@@ -3398,7 +3398,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     ) {
       const contentLocation = await tryGetContentLocation(response, body);
       if (contentLocation) {
-        // Follow redirect
         return this.request(contentLocation, { ...options, method: 'GET', body: undefined });
       }
     }
