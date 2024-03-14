@@ -1,6 +1,20 @@
 import { ClientStorage, MemoryStorage } from './storage';
 
 describe('Storage', () => {
+  test('clearing should keep non-medplum intact', () => {
+    const store = new MemoryStorage();
+    const storage = new ClientStorage(store);
+
+    store.setItem('foo', 'bar');
+    storage.setString('baz', 'qux');
+
+    expect(store.length).toEqual(2);
+
+    storage.clear();
+    expect(store.length).toEqual(1);
+    expect(store.getItem('foo')).toEqual('bar');
+  });
+
   test('Using localStorage', () => {
     const storage = new ClientStorage();
 
