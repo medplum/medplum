@@ -297,6 +297,37 @@ describe('ThreadChat', () => {
     expect(updatedMessage.status).toEqual('in-progress');
   });
 
+  test('Delivered timestamps show up when other participant has received chat', async () => {
+    const thread = await createThreadHeader(defaultMedplum);
+    const threadRef = createReference(thread);
+
+    await Promise.all([
+      createThreadMessage(defaultMedplum, threadRef, {
+        payload: [{ contentString: 'Hello, Homer. How are you feeling?' }],
+        received: new Date().toISOString(),
+      }),
+      createThreadMessage(defaultMedplum, threadRef, {
+        sender: homerReference,
+        recipient: [drAliceReference],
+        payload: [
+          {
+            contentString: "Sorry doc, I can't hear you over the Geiger counter at the plant. Can you call back later?",
+          },
+        ],
+      }),
+    ]);
+
+    const threadProps = { title: 'Test Chat', thread, open: true } satisfies ThreadChatProps;
+    await setup(threadProps, defaultMedplum);
+
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    expect(screen.getByText('Hello, Homer. How are you feeling?')).toBeInTheDocument();
+    expect(
+      screen.getByText("Sorry doc, I can't hear you over the Geiger counter at the plant. Can you call back later?")
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Delivered \d+:\d+/)).toBeInTheDocument();
+  });
+
   test('Clears messages if given a new thread', async () => {
     const thread1 = await createThreadHeader(defaultMedplum);
     const thread1Ref = createReference(thread1);
