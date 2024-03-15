@@ -6,7 +6,7 @@ import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { MemoryRouter } from 'react-router-dom';
-import { act, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ThreadChat, ThreadChatProps } from './ThreadChat';
 
 const homerReference = createReference(HomerSimpson);
@@ -351,5 +351,54 @@ describe('ThreadChat', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText('Hi, Bart. How are you feeling now?')).toBeInTheDocument();
     expect(screen.getByText('Not so great, doc')).toBeInTheDocument();
+  });
+
+  test('Sending message', async () => {
+    const thread = await createThreadHeader(defaultMedplum);
+    const onMessageSent = jest.fn();
+
+    const threadProps = {
+      title: 'Test Chat',
+      thread,
+      open: true,
+      onMessageSent,
+    } satisfies ThreadChatProps;
+
+    await setup(threadProps, defaultMedplum);
+    const input = screen.getByPlaceholderText('Type a message...');
+    expect(input).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.change(input, { target: { value: 'Hey, Homer. How are you feeling?' } });
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+    });
+
+    expect(screen.getByPlaceholderText('Type a message...')).toHaveValue('');
+    expect(await screen.findByText('Hey, Homer. How are you feeling?')).toBeInTheDocument();
+    expect(onMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining<Communication>({
+        resourceType: 'Communication',
+        payload: [{ contentString: 'Hey, Homer. How are you feeling?' }],
+        status: 'in-progress',
+      })
+    );
+  });
+
+  test('Not rendered when no profile', async () => {
+    const medplum = new MockClient({ profile: null });
+    const thread = await createThreadHeader(medplum);
+
+    const threadProps = {
+      title: 'Test Chat',
+      thread,
+      open: true,
+    } satisfies ThreadChatProps;
+
+    await setup(threadProps, medplum);
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close chat' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open chat' })).not.toBeInTheDocument();
   });
 });
