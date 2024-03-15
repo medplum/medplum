@@ -166,13 +166,17 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                       )}
                       {c.sender?.reference === profileRefStr ? (
                         <Group justify="flex-end" gap="xs" mb="sm">
-                          <ChatBubble communication={c} showDelivered={!!c.received && c.id === myLastDeliveredId} />
+                          <ChatBubble
+                            alignment="right"
+                            communication={c}
+                            showDelivered={!!c.received && c.id === myLastDeliveredId}
+                          />
                           <Avatar radius="xl" color="orange" />
                         </Group>
                       ) : (
                         <Group align="flex-start" gap="xs" mb="sm">
                           <Avatar radius="xl" color="teal" />
-                          <ChatBubble communication={c} />
+                          <ChatBubble alignment="left" communication={c} />
                         </Group>
                       )}
                     </Stack>
@@ -244,6 +248,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
 interface ChatBubbleProps {
   readonly communication: Communication;
+  readonly alignment: 'left' | 'right';
   readonly showDelivered?: boolean;
 }
 
@@ -251,8 +256,14 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
   const content = props.communication.payload?.[0]?.contentString || '';
   const seenTime = new Date(props.communication.received ?? -1);
   return (
-    <div className={classes.chatBubbleWrap}>
-      <div className={classes.chatBubble}>{content}</div>
+    <div className={classes.chatBubbleOuterWrap}>
+      <div
+        className={
+          props.alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
+        }
+      >
+        <div className={classes.chatBubble}>{content}</div>
+      </div>
       {props.showDelivered && (
         <div style={{ textAlign: 'right' }}>
           Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}

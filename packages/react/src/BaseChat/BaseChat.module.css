@@ -62,14 +62,25 @@
   padding: 4px 4px;
 }
 
-.chatBubbleWrap {
+.chatBubbleOuterWrap {
   max-width: 300px;
+}
+
+.chatBubbleRightAlignedInnerWrap {
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.chatBubbleLeftAlignedInnerWrap {
+  display: flex;
+  flex-direction: row;
 }
 
 .chatBubble {
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-blue-7));
   border-radius: var(--mantine-radius-lg);
   padding: var(--mantine-spacing-sm);
+  min-width: 40px;
   color: light-dark(var(--mantine-color-dark), var(--mantine-color-gray-2));
 
   & p {
