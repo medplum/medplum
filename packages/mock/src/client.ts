@@ -59,7 +59,7 @@ import {
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
-import { TestProject, TestProjectMembersihp } from './mocks/project';
+import { TestProject, TestProjectMembership } from './mocks/project';
 import SearchParameterList from './mocks/searchparameters.json';
 import { ExampleSmartClientApplication } from './mocks/smart';
 import StructureDefinitionList from './mocks/structuredefinitions.json';
@@ -590,7 +590,7 @@ export class MockFetchClient {
       ExampleWorkflowRequestGroup,
       ExampleSmartClientApplication,
       TestProject,
-      TestProjectMembersihp,
+      TestProjectMembership,
     ];
 
     for (const resource of defaultResources) {
