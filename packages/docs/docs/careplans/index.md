@@ -11,6 +11,39 @@ Care Plans are representations of protocols that patients are meant to follow. T
 
 It can be helpful to think of the historical analogs to these resources in the physical world. A `PlanDefinition` can be thought of as a written manual or protocol document that would be given to staff for training. A `CarePlan`/`RequestGroup` can be thought of a checklist that is added to a patient chart.
 
+```mermaid
+
+flowchart LR
+   CarePlan[<b>CarePlan</b>]
+   Goal[<table><thead><tr><th>Goal</th></tr></thead><tbody><tr><td>Reduce Fall Risk by 10%</td></tr></tbody></table>]
+    subgraph tasks [<i>Tasks</i>]
+   T1[<table><thead><tr><th>Task</th></tr></thead><tbody><tr><td>Complete ICA Assessment</td></tr></tbody></table>]
+   T2[<table><thead><tr><th>Task</th></tr></thead><tbody><tr><td>Schedule Appointment</td></tr></tbody></table>]
+   F1[<table><thead><tr><th>Questionnaire</th></tr></thead><tbody><tr><td>ICA Screen</td></tr></tbody></table>]
+   F2[<table><thead><tr><th>Schedule</th></tr></thead><tbody><tr><td>Dr. Alice Smith's schedule</td></tr></tbody></table>]
+   T1 -->|focus| F1
+   T2 -->|focus| F2
+   end
+
+   CarePlan-->|subject| D[<table><thead><tr><th>Patient</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr></tbody></table>]
+   CarePlan -->|goal| Goal
+   CarePlan -->|activity| T1
+   CarePlan -->|activity| T2
+
+```
+
+## Key Resources
+
+- [`Task`](/docs/api/fhir/resources/task): Workhorse resource defining all clinical work items to be completed.
+- [`Goal`](/docs/api/fhir/resources/goal): Resource to define a measurable target to achieve.
+- [`CarePlan`](/docs/api/fhir/resources/careplan): Grouping resource to organize a group of [`Tasks`](/docs/api/fhir/resources/task) for each [`Patient`](/docs/api/fhir/resources/patient).
+- [`PlanDefinition`](/docs/api/fhir/resources/plandefinition): Defines a clinical protocol that can be implemented per-patient.
+- [`RequestGroup`](/docs/api/fhir/resources/requestgroup): Can define complex relationships between tasks, including temporal tasks, recurring tasks, mutually exclusive tasks, etc.
+
+## Key Code Systems
+
+- [LOINC](https://www.medplum.com/docs/careplans/loinc): Used to the target measure of a [`Goal`](/docs/api/fhir/resources/goal) resource.
+
 ## Reference Material
 
 :::caution Note

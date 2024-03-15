@@ -14,6 +14,87 @@ Here is a **sample** of what a charting experience might look like - to be clear
 
 ![Chart sample](charting-screenshot.png)
 
+## Clinical Context
+
+```mermaid
+
+flowchart BT
+    homer[<table><thead><tr><th>Patient</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr></tbody></table>]
+    obsA[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>Heart Rate: 150 bpm</td></tr></tbody></table>]
+    obsB[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>Pregnancy Status: 26 weeks</td></tr></tbody></table>]
+    condition[<table><thead><tr><th>Condition</th></tr></thead><tbody><tr><td>Type II Diabetes</td></tr></tbody></table>]
+    allergy[<table><thead><tr><th>AllergyIntolerance</th></tr></thead><tbody><tr><td>Penicillin G</td></tr><tr><td><em>critical</em></td></tr></tbody></table>]
+    medication[<table><thead><tr><th>MedicationRequest</th></tr></thead><tbody><tr><td>Tylenol</td></tr></tbody></table>]
+    immunization[<table><thead><tr><th>Immunization</th></tr></thead><tbody><tr><td>Fluvax</td></tr></tbody></table>]
+    risk[<table><thead><tr><th>RiskAssessment</th></tr></thead><tbody><tr><td>Heart Attack: 10%</td></tr></tbody></table>]
+
+obsA -->|subject| homer
+obsB -->|subject| homer
+condition -->|subject| homer
+allergy -->|patient| homer
+medication -->|subject| homer
+immunization -->|patient| homer
+risk -->|subject| homer
+
+
+```
+
+### Key Resources
+
+- [`Observation`](/docs/api/fhir/resources/observation): Structured representations of **point-in-time clinical measurements.**
+- [`Condition`](/docs/api/fhir/resources/condition): Records of a **long-term diagnosis** for a patient.
+- [`RiskAssessment`])(/docs/api/fhir/resources/riskassessment): Specialized form of an [`Observation`](/docs/api/fhir/resources/observation) used to model **propensity for an adverse outcome.**
+- [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance): Used for a specific type of risk: **adverse reaction to a drug or substance.**
+- [`Medication`](/docs/api/fhir/resources/medication): Representations of an instance of a given drug. The [`Medication`](/docs/api/fhir/resources/medication) lifecycle also includes the following resources:
+  - [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest): an order or prescription.
+  - [`MedicationDispense`](/docs/api/fhir/resources/medicationdispense): the drug supplied to a [`Patient`](/docs/api/fhir/resources/patient).
+  - [`MedicationAdministration`](/docs/api/fhir/resources/medicationadministration): the [`Patient`](/docs/api/fhir/resources/patient) ingests the drug.
+  - [`MedicationStatement`](/docs/api/fhir/resources/medicationstatement): provides a summary statement of the drug.
+- [`Immunization`](/docs/api/fhir/resources/immunization): Similar to [`MedicationStatment`](/docs/api/fhir/resources/medicationstatement), but for vaccination records.
+
+### Key Code Systems
+
+- [LOINC](https://www.medplum.com/docs/careplans/loinc): Used in [`Observation`](/docs/api/fhir/resources/observation) and [`RiskAssessment`](/docs/api/fhir/resources/riskassessment) resources for compliance, billing, and reporting.
+- [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm): Used in [`Condition`](/docs/api/fhir/resources/condition) resources for interoperability and billing.
+- [RXNORM](https://www.medplum.com/docs/medications/medication-codes#rxnorm): Used in [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resources to track drug intolerances and [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) resources to track requested drugs.
+- [SNOMED](https://www.snomed.org/): Used in [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resources to track substance intolerances.
+- [CVX](https://www2a.cdc.gov/vaccines/iis/iisstandards/vaccines.asp?rpt=cvx): Used in [`Immunization`](/docs/api/fhir/resources/immunization) resources to track vaccine types.
+
+## Encounter & Charting
+
+```mermaid
+
+flowchart BT
+
+ app1[<table><thead><tr><th>Appointment</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr><tr><td>Fall Assessment</td><tr></tbody></table>]
+ encounter[<table><thead><tr><th>Encounter</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr><tr><td>Fall Assessment Encounter</td><tr></tbody></table>]
+ patient[<table><thead><tr><th>Patient</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr></tbody></table>]
+
+ subgraph Results
+   note[<table><thead><tr><th>Clinical Impression</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr><tr><td>Fall Assessment Note</td><tr></tbody></table>]
+   obs1[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>Heart Rate: 150 bpm</td></tr></tbody></table>]
+   ra1[<table><thead><tr><th>RiskAssessment</th></tr></thead><tbody><tr><td>Fall Risk: 80%</td></tr></tbody></table>]
+ end
+
+
+ encounter -->|appointment| app1
+ encounter -->|subject| patient
+ note -->|encounter| encounter
+ obs1 -->|encounter| encounter
+ ra1 -->|encounter| encounter
+
+```
+
+### Key Resources
+
+- [`Encounter`](/docs/api/fhir/resources/encounter): Primary tracking resource for a visit (either in-person or virtual).
+- [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression): Medplum-advised resource for recording unstructured notes.
+
+### Key Code Systems
+
+- [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval): Used to annotate [`Encounter`](/docs/api/fhir/resources/encounter) resources for billing.
+- [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm): Used to annotate [`Encounter`](/docs/api/fhir/resources/encounter) resources for billing.
+
 ## Data Model
 
 All the elements you expect in a charting experience can be modeled in FHIR. Below are some examples of how the elements are represented
