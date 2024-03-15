@@ -1,15 +1,15 @@
 import { Button, Group, Title } from '@mantine/core';
 import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
-import { Communication, Practitioner, Reference } from '@medplum/fhirtypes';
-import { DrAliceSmith } from '@medplum/mock';
+import { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { HomerSimpson } from '@medplum/mock';
 import { Document, Loading, ResourceName, ThreadChat, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useMemo, useState } from 'react';
 
-const DR_ALICE_SMITH: Reference<Practitioner> = {
-  reference: getReferenceString(DrAliceSmith),
-  display: 'Dr. Alice Smith',
+const HOMER_SIMPSON: Reference<Patient> = {
+  reference: getReferenceString(HomerSimpson),
+  display: 'Homer Simpson',
 };
-const DR_ALICE_REF_STR = getReferenceString(DR_ALICE_SMITH);
+const HOMER_SIMPSON_REF_STR = getReferenceString(HOMER_SIMPSON);
 
 /**
  * Home page that greets the user and displays a list of patients.
@@ -33,14 +33,17 @@ export function HomePage(): JSX.Element {
       return;
     }
     medplum
-      .searchOne('Communication', { 'part-of:missing': true, recipient: [profileRefStr, DR_ALICE_REF_STR] })
+      .searchOne(
+        'Communication',
+        `part-of:missing=true&recipient=${profileRefStr},${HOMER_SIMPSON_REF_STR}&topic:text='Demo Thread'`
+      )
       .then((thread) => {
         if (!thread) {
           medplum
             .createResource<Communication>({
               resourceType: 'Communication',
               topic: { text: 'Demo Thread' },
-              recipient: [profileRef, DR_ALICE_SMITH],
+              recipient: [profileRef, HOMER_SIMPSON],
               status: 'in-progress',
             })
             .then((thread) => {
@@ -62,9 +65,9 @@ export function HomePage(): JSX.Element {
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'in-progress',
-      sender: DR_ALICE_SMITH,
+      sender: HOMER_SIMPSON,
       recipient: [profileRef],
-      payload: [{ contentString: 'Can you come in tomorrow for a follow-up?' }],
+      payload: [{ contentString: "Hey doc, I just ate a dozen donuts and can't feel my legs! HELP" }],
       sent: new Date().toISOString(),
       partOf: [threadRef as Reference<Communication>],
     });
@@ -78,7 +81,7 @@ export function HomePage(): JSX.Element {
       <Group justify="center" pt="xl">
         <Button onClick={() => createIncomingMessage().catch(console.error)}>Create Incoming Message</Button>
       </Group>
-      {thread && <ThreadChat title={`Chat with ${DR_ALICE_SMITH.display}`} thread={thread} />}
+      {thread && <ThreadChat title={`Chat with ${HOMER_SIMPSON.display}`} thread={thread} />}
     </Document>
   );
 }
