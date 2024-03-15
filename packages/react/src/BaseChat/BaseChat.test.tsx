@@ -44,7 +44,7 @@ async function createCommunication(
     id: crypto.randomUUID(),
     resourceType: 'Communication',
     sender: createReference(medplum.getProfile() as ProfileResource),
-    recipient: [drAliceReference],
+    recipient: [homerReference],
     sent: new Date().toISOString(),
     status: 'in-progress',
     payload: [{ contentString: 'Hello, Medplum!' }],
@@ -90,7 +90,7 @@ describe('BaseChat', () => {
   let defaultMedplum: MockClient;
 
   beforeAll(() => {
-    defaultMedplum = new MockClient({ profile: HomerSimpson });
+    defaultMedplum = new MockClient({ profile: DrAliceSmith });
   });
 
   afterEach(() => {
@@ -268,9 +268,9 @@ describe('BaseChat', () => {
     });
 
     const incomingMessage = await createCommunication(defaultMedplum, {
-      sender: drAliceReference,
-      recipient: [homerReference],
-      payload: [{ contentString: 'Homer, are you there?' }],
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentString: "Doc, I can't feel my legs" }],
     });
     const subBundle = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
 
@@ -278,7 +278,7 @@ describe('BaseChat', () => {
       _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
     });
 
-    expect(await screen.findByText('Homer, are you there?')).toBeInTheDocument();
+    expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
     expect(onIncomingMessage).toHaveBeenCalledWith(incomingMessage);
   });
 
@@ -294,7 +294,7 @@ describe('BaseChat', () => {
     });
 
     const outgoingMessage = await createCommunication(defaultMedplum, {
-      payload: [{ contentString: "Sorry, I'm not home! Come back later!" }],
+      payload: [{ contentString: 'Homer, are you there?' }],
     });
     const subBundle = await createCommunicationSubBundle(defaultMedplum, outgoingMessage);
 
@@ -302,12 +302,12 @@ describe('BaseChat', () => {
       _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
     });
 
-    expect(await screen.findByText("Sorry, I'm not home! Come back later!")).toBeInTheDocument();
+    expect(await screen.findByText('Homer, are you there?')).toBeInTheDocument();
     expect(onIncomingMessage).not.toHaveBeenCalled();
   });
 
   test('Messages cleared if profile changes', async () => {
-    const medplum = new MockClient({ profile: HomerSimpson });
+    const medplum = new MockClient({ profile: DrAliceSmith });
     await Promise.all([
       createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
       createCommunication(medplum),
