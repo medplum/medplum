@@ -56,6 +56,16 @@ The `category` and `reasonCode` elements are similar, but offer different use ca
 
 ## Building and Structuring Threads
 
+```mermaid
+
+flowchart BT
+    A[<b>Communication </b> <br/> Homer Simpson April 10th lab tests]
+    B(<b>Communication</b> <br/> The specimen for you patient, Homer <br/> Simpson, has been received.) -->|partOf| A
+    C(<b>Communication</b> <br/> Will the results be ready by the end <br/> of the week?) -->|partOf| A
+    D(<b>Communication</b> <br/> Yes, we will have them to you <br/> by Thursday.) -->|partOf| A
+
+```
+
 Beyond producing individual messages, most healthcare communication tools group messages into "threads". When building a thread in FHIR, it is important to model these groupings so that they are easily identifiable and searchable.
 
 When creating threads, a two-level hierarchy should be used. This will include one parent [`Communication`](/docs/api/fhir/resources/communication) resource, or thread header, that represents that thread itself, and child [`Communication`](/docs/api/fhir/resources/communication) resources that represent each individual message.
@@ -72,16 +82,6 @@ Additionally, to help organize threads, it is useful to use add a `topic` elemen
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
-
-```mermaid
-
-flowchart BT
-    A[<b>Communication </b> <br/> Homer Simpson April 10th lab tests]
-    B(<b>Communication</b> <br/> The specimen for you patient, Homer <br/> Simpson, has been received.) -->|partOf| A
-    C(<b>Communication</b> <br/> Will the results be ready by the end <br/> of the week?) -->|partOf| A
-    D(<b>Communication</b> <br/> Yes, we will have them to you <br/> by Thursday.) -->|partOf| A
-
-```
 
 ## How to Tag or Group Threads
 

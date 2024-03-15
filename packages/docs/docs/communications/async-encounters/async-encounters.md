@@ -22,7 +22,7 @@ Each session should be represented by an [`Encounter`](/docs/api/fhir/resources/
 
 ```mermaid
 
-flowchart TD
+flowchart RL
     A(Encounter)
 
     subgraph Thread Header
@@ -74,21 +74,21 @@ The thread of [`Communication`](/docs/api/fhir/resources/communication) resource
 
 flowchart TD
     subgraph Session
-       A(Encounter)
+       A[<table><thead><tr><th>Encounter</th></tr></thead></table>]
     end
 
     subgraph Medical Encounter
-        B(Encounter)
-        C(Encounter)
+        B[<table><thead><tr><th>Encounter</th></tr></thead><tbody><tr><td><em>Patient A</em></td></tr></tobdy></table>]
+        C[<table><thead><tr><th>Encounter</th></tr></thead><tbody><tr><td><em>Patient B</em></td></tr></tobdy></table>]
     end
 
     subgraph Thread Header
-        D(Communication)
+        D[<table><thead><tr><th>Communication</th></tr></thead><tbody><tr><td>topic: Rash</td></tr></tbody></table>]
     end
 
     subgraph Messages
-        E(Communication)
-        F(Communication)
+        E[<table><thead><tr><th>Communication</th></tr></thead><tbody><tr><td>I've got a rash on my arm</td></tr></tbody></table>]
+        F[<table><thead><tr><th>Communication</th></tr></thead><tbody><tr><td>Come in right away!</td></tr></tbody></table>]
     end
 
     E --> |Communication.partOf| D
