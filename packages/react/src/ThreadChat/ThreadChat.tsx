@@ -8,10 +8,11 @@ export interface ThreadChatProps {
   readonly title: string;
   readonly thread: Communication;
   readonly open?: boolean;
+  readonly onMessageSent?: (message: Communication) => void;
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
-  const { title, thread, open } = props;
+  const { title, thread, open, onMessageSent } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious<string | undefined>(thread?.id);
@@ -42,17 +43,20 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
           payload: [{ contentString: message }],
           partOf: [threadRef],
         })
-        .then((communication) => setCommunications([...communications, communication]))
+        .then((communication) => {
+          setCommunications([...communications, communication]);
+          onMessageSent?.(communication);
+        })
         .catch(console.error);
     },
-    [medplum, profileRef, thread, threadRef, communications]
+    [medplum, profileRef, thread, threadRef, communications, onMessageSent]
   );
 
   // Currently we only support `delivered` on chats with 2 participants
   // Normally we would use `useCallback` to memoize a function
   // But in this case we only want to conditionally pass a function if the thread has 2 participants...
   // If the thread has 3 or more participants, we do not pass this function; instead we pass undefined
-  const onIncomingMessage = useMemo(
+  const onMessageReceived = useMemo(
     () =>
       thread.recipient?.length === 2
         ? (message: Communication): void => {
@@ -83,7 +87,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
       setCommunications={setCommunications}
       query={`part-of=Communication/${thread.id as string}`}
       sendMessage={sendMessage}
-      onIncomingMessage={onIncomingMessage}
+      onMessageReceived={onMessageReceived}
       open={open}
     />
   );

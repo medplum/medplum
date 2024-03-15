@@ -1,4 +1,4 @@
-import { ActionIcon, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Button, Stack, TextInput, Title } from '@mantine/core';
 import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
@@ -76,41 +76,58 @@ export function HomePage(): JSX.Element {
     });
   }
 
+  async function markLastMessageAsDelivered(): Promise<void> {
+    const lastMessage = await medplum.searchOne(
+      'Communication',
+      `part-of=${getReferenceString(threadRef as Reference<Communication>)}&sender=${profileRefStr}&_sort=-sent`
+    );
+
+    if (lastMessage && !lastMessage.received) {
+      await medplum.updateResource({
+        ...lastMessage,
+        received: new Date().toISOString(),
+        status: 'completed',
+      });
+    }
+  }
+
   return (
     <Document>
       <Title>
         Welcome <ResourceName value={profile} link />
       </Title>
-      <Form
-        onSubmit={(formData) => {
-          if (incomingInputRef.current) {
-            incomingInputRef.current.value = '';
-          }
-          createIncomingMessage(formData.message).catch(console.error);
-        }}
-      >
-        <TextInput
-          ref={incomingInputRef}
-          name="message"
-          placeholder="Create an incoming chat message"
-          radius="xl"
-          rightSectionWidth={42}
-          rightSection={
-            <ActionIcon
-              type="submit"
-              size="1.5rem"
-              radius="xl"
-              color="blue"
-              variant="filled"
-              aria-label="Create incoming message"
-            >
-              <IconArrowRight size="1rem" stroke={1.5} />
-            </ActionIcon>
-          }
-          pt={20}
-        />
-      </Form>
-
+      <Stack>
+        <Form
+          onSubmit={(formData) => {
+            if (incomingInputRef.current) {
+              incomingInputRef.current.value = '';
+            }
+            createIncomingMessage(formData.message).catch(console.error);
+          }}
+        >
+          <TextInput
+            ref={incomingInputRef}
+            name="message"
+            placeholder="Create an incoming chat message"
+            radius="xl"
+            rightSectionWidth={42}
+            rightSection={
+              <ActionIcon
+                type="submit"
+                size="1.5rem"
+                radius="xl"
+                color="blue"
+                variant="filled"
+                aria-label="Create incoming message"
+              >
+                <IconArrowRight size="1rem" stroke={1.5} />
+              </ActionIcon>
+            }
+            pt={20}
+          />
+        </Form>
+        <Button onClick={() => markLastMessageAsDelivered().catch(console.error)}>Mark Last Message Delivered</Button>
+      </Stack>
       {thread && <ThreadChat title={`Chat with ${HOMER_SIMPSON.display}`} thread={thread} />}
     </Document>
   );

@@ -44,12 +44,12 @@ export interface BaseChatProps {
   readonly setCommunications: (communications: Communication[]) => void;
   readonly query: string;
   readonly sendMessage: (content: string) => void;
-  readonly onIncomingMessage?: (message: Communication) => void;
+  readonly onMessageReceived?: (message: Communication) => void;
   readonly open?: boolean;
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
-  const { title, communications, setCommunications, query, sendMessage, open, onIncomingMessage } = props;
+  const { title, communications, setCommunications, query, sendMessage, open, onMessageReceived } = props;
   const medplum = useMedplum();
   const [opened, setOpened] = useState(open ?? false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,9 +68,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   useSubscription(`Communication?${query}`, (bundle: Bundle) => {
     const communication = bundle.entry?.[1]?.resource as Communication;
     upsertCommunications(communicationsRef.current, [communication], setCommunications);
-    // Call `onIncomingMessage` when we are not the sender of a chat message that came in
-    if (onIncomingMessage && getReferenceString(communication.sender as Reference) !== profileRefStr) {
-      onIncomingMessage(communication);
+    // Call `onMessageReceived` when we are not the sender of a chat message that came in
+    if (onMessageReceived && getReferenceString(communication.sender as Reference) !== profileRefStr) {
+      onMessageReceived(communication);
     }
   });
 

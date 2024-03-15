@@ -256,14 +256,14 @@ describe('BaseChat', () => {
     expect(sendMessage).toHaveBeenLastCalledWith("Doc, I can't feel my legs!");
   });
 
-  test('`onIncomingMessage` called on incoming message', async () => {
-    const onIncomingMessage = jest.fn();
+  test('`onMessageReceived` called on incoming message', async () => {
+    const onMessageReceived = jest.fn();
 
     await setup({
       title: 'Test Chat',
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
-      onIncomingMessage,
+      onMessageReceived,
       open: true,
     });
 
@@ -279,17 +279,17 @@ describe('BaseChat', () => {
     });
 
     expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
-    expect(onIncomingMessage).toHaveBeenCalledWith(incomingMessage);
+    expect(onMessageReceived).toHaveBeenCalledWith(incomingMessage);
   });
 
-  test('`onIncomingMessage` not called on outgoing message', async () => {
-    const onIncomingMessage = jest.fn();
+  test('`onMessageReceived` not called on outgoing message', async () => {
+    const onMessageReceived = jest.fn();
 
     await setup({
       title: 'Test Chat',
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
-      onIncomingMessage,
+      onMessageReceived,
       open: true,
     });
 
@@ -303,7 +303,7 @@ describe('BaseChat', () => {
     });
 
     expect(await screen.findByText('Homer, are you there?')).toBeInTheDocument();
-    expect(onIncomingMessage).not.toHaveBeenCalled();
+    expect(onMessageReceived).not.toHaveBeenCalled();
   });
 
   test('Messages cleared if profile changes', async () => {
