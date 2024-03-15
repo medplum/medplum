@@ -161,8 +161,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                   const currCommTime = parseSentTime(c);
                   return (
                     <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
-                      {!prevCommTime ||
-                        (currCommTime !== prevCommTime && <div style={{ textAlign: 'center' }}>{currCommTime}</div>)}
+                      {(!prevCommTime || currCommTime !== prevCommTime) && (
+                        <div style={{ textAlign: 'center' }}>{currCommTime}</div>
+                      )}
                       {c.sender?.reference === profileRefStr ? (
                         <Group justify="flex-end" gap="xs" mb="sm">
                           <ChatBubble
