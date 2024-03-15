@@ -128,12 +128,12 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     }
   });
 
-  const myLastCommunicationId = useMemo<string>(() => {
+  const myLastDeliveredId = useMemo<string>(() => {
     let i = communications.length;
 
     while (i--) {
       const comm = communications[i];
-      if (comm.sender?.reference === profileRefStr) {
+      if (comm.sender?.reference === profileRefStr && comm.received) {
         return comm.id as string;
       }
     }
@@ -166,10 +166,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                       )}
                       {c.sender?.reference === profileRefStr ? (
                         <Group justify="flex-end" gap="xs" mb="sm">
-                          <ChatBubble
-                            communication={c}
-                            showDelivered={!!c.received && c.id === myLastCommunicationId}
-                          />
+                          <ChatBubble communication={c} showDelivered={!!c.received && c.id === myLastDeliveredId} />
                           <Avatar radius="xl" color="orange" />
                         </Group>
                       ) : (
