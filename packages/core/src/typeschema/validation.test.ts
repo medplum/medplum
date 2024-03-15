@@ -115,14 +115,6 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(patientExtension)).toThrow();
   });
 
-  test('Invalid extraneous property', () => {
-    const invalidFormat = {
-      resourceType: 'Patient',
-      foo: 'bar',
-    } as unknown as Patient;
-    expect(() => validateResource(invalidFormat)).toThrow();
-  });
-
   test('Valid property name special cases', () => {
     const primitiveExtension = {
       resourceType: 'Patient',
@@ -481,6 +473,10 @@ describe('FHIR resource validation', () => {
           // Missing system property
           value: '555-555-5555',
         },
+        {
+          system: 'email',
+          value: 'patient@example.com',
+        },
       ],
       gender: 'unknown',
       name: [
@@ -491,7 +487,7 @@ describe('FHIR resource validation', () => {
       ],
     };
     expect(() => validateResource(patient, { profile: patientProfile })).toThrow(
-      new Error('Missing required property (Patient.telecom.system)')
+      new Error('Missing required property (Patient.telecom[0].system)')
     );
   });
 
@@ -772,7 +768,7 @@ describe('FHIR resource validation', () => {
 
   test('Additional properties', () => {
     expect(() => validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })).not.toThrow();
-    expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource)).toThrow(
+    expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Patient)).toThrow(
       new Error('Invalid additional property "fakeProperty" (Patient.fakeProperty)')
     );
   });
@@ -1196,7 +1192,7 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthBoolean: true })).not.toThrow();
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthInteger: 2 })).not.toThrow();
     expect(() =>
-      validateResource({ resourceType: 'Patient', multipleBirthXyz: 'xyz' } as unknown as Patient)
+      validateResource({ resourceType: 'Patient', multipleBirthString: 'xyz' } as unknown as Patient)
     ).toThrow();
   });
 
