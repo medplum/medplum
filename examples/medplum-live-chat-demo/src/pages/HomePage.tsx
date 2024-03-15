@@ -1,9 +1,10 @@
-import { Button, Group, Title } from '@mantine/core';
+import { ActionIcon, TextInput, Title } from '@mantine/core';
 import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
-import { Document, Loading, ResourceName, ThreadChat, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useEffect, useMemo, useState } from 'react';
+import { Document, Form, Loading, ResourceName, ThreadChat, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconArrowRight } from '@tabler/icons-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const HOMER_SIMPSON: Reference<Patient> = {
   reference: getReferenceString(HomerSimpson),
@@ -57,17 +58,19 @@ export function HomePage(): JSX.Element {
       .catch(console.error);
   }, [medplum, profile, profileRef, profileRefStr]);
 
+  const incomingInputRef = useRef<HTMLInputElement>(null);
+
   if (!(profile && threadRef)) {
     return <Loading />;
   }
 
-  async function createIncomingMessage(): Promise<void> {
+  async function createIncomingMessage(message: string): Promise<void> {
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'in-progress',
       sender: HOMER_SIMPSON,
       recipient: [profileRef],
-      payload: [{ contentString: "Hey doc, I just ate a dozen donuts and can't feel my legs! HELP" }],
+      payload: [{ contentString: message }],
       sent: new Date().toISOString(),
       partOf: [threadRef as Reference<Communication>],
     });
@@ -78,9 +81,36 @@ export function HomePage(): JSX.Element {
       <Title>
         Welcome <ResourceName value={profile} link />
       </Title>
-      <Group justify="center" pt="xl">
-        <Button onClick={() => createIncomingMessage().catch(console.error)}>Create Incoming Message</Button>
-      </Group>
+      <Form
+        onSubmit={(formData) => {
+          if (incomingInputRef.current) {
+            incomingInputRef.current.value = '';
+          }
+          createIncomingMessage(formData.message).catch(console.error);
+        }}
+      >
+        <TextInput
+          ref={incomingInputRef}
+          name="message"
+          placeholder="Create an incoming chat message"
+          radius="xl"
+          rightSectionWidth={42}
+          rightSection={
+            <ActionIcon
+              type="submit"
+              size="1.5rem"
+              radius="xl"
+              color="blue"
+              variant="filled"
+              aria-label="Create incoming message"
+            >
+              <IconArrowRight size="1rem" stroke={1.5} />
+            </ActionIcon>
+          }
+          pt={20}
+        />
+      </Form>
+
       {thread && <ThreadChat title={`Chat with ${HOMER_SIMPSON.display}`} thread={thread} />}
     </Document>
   );
