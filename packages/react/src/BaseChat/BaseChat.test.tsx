@@ -1,40 +1,42 @@
-import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
+import { ProfileResource, TypedEventTarget, createReference, getReferenceString } from '@medplum/core';
 import { Bundle, Communication } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 // @ts-expect-error _subscriptionController is not exported from module normally
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
-import { EventEmitter } from 'node:events';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { BaseChat, BaseChatProps } from './BaseChat';
 
 type TestComponentProps = Omit<Omit<BaseChatProps, 'communications'>, 'setCommunications'>;
-
-const homerReference = createReference(HomerSimpson);
-const homerReferenceStr = getReferenceString(homerReference);
-const drAliceReference = createReference(DrAliceSmith);
-const drAliceReferenceStr = getReferenceString(drAliceReference);
-const HOMER_DR_ALICE_CHAT_QUERY = `sender=${homerReferenceStr},${drAliceReferenceStr}&recipient=${homerReferenceStr},${drAliceReferenceStr}`;
+type SubscriptionControllerEvents = {
+  subscription: { type: 'subscription'; criteria: string; bundle: Bundle };
+};
 
 jest.mock('@medplum/react-hooks', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const EventEmitter = require('node:events');
-  const _subscriptionController = new EventEmitter();
+  const { TypedEventTarget } = require('@medplum/core');
+  const _subscriptionController = new TypedEventTarget() as TypedEventTarget<SubscriptionControllerEvents>;
   const original = jest.requireActual('@medplum/react-hooks');
   return {
     ...original,
     useSubscription: jest.fn().mockImplementation((criteria: string, callback: (bundle: Bundle) => void) => {
-      _subscriptionController.addListener('subscription', (_criteria: string, _bundle: Bundle) => {
-        if (criteria === _criteria) {
-          callback(_bundle);
+      _subscriptionController.addEventListener('subscription', (event) => {
+        if (criteria === event.criteria) {
+          callback(event.bundle);
         }
       });
     }),
     _subscriptionController,
   };
 });
+
+const homerReference = createReference(HomerSimpson);
+const homerReferenceStr = getReferenceString(homerReference);
+const drAliceReference = createReference(DrAliceSmith);
+const drAliceReferenceStr = getReferenceString(drAliceReference);
+const HOMER_DR_ALICE_CHAT_QUERY = `sender=${homerReferenceStr},${drAliceReferenceStr}&recipient=${homerReferenceStr},${drAliceReferenceStr}`;
 
 async function createCommunication(
   medplum: MockClient,
@@ -94,7 +96,7 @@ describe('BaseChat', () => {
   });
 
   afterEach(() => {
-    (_subscriptionController as EventEmitter).removeAllListeners();
+    (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).removeAllListeners();
   });
 
   function TestComponent(props: TestComponentProps): JSX.Element {
@@ -195,9 +197,13 @@ describe('BaseChat', () => {
     expect(screen.getByRole('heading', { name: /test chat/i })).toBeInTheDocument();
     expect(screen.queryByText('Hello, Medplum!')).not.toBeInTheDocument();
 
-    const subBundle = await createCommunicationSubBundle(defaultMedplum);
+    const bundle = await createCommunicationSubBundle(defaultMedplum);
     act(() => {
-      _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+        type: 'subscription',
+        criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
+        bundle,
+      });
     });
 
     expect(await screen.findByText('Hello, Medplum!')).toBeInTheDocument();
@@ -226,9 +232,13 @@ describe('BaseChat', () => {
     expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
     expect(screen.getByText('Hello again!')).toBeInTheDocument();
 
-    const subBundle = await createCommunicationSubBundle(medplum);
+    const bundle = await createCommunicationSubBundle(medplum);
     act(() => {
-      _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+        type: 'subscription',
+        criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
+        bundle,
+      });
     });
 
     expect(screen.getAllByText('Hello, Medplum!').length).toEqual(3);
@@ -272,10 +282,14 @@ describe('BaseChat', () => {
       recipient: [drAliceReference],
       payload: [{ contentString: "Doc, I can't feel my legs" }],
     });
-    const subBundle = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
 
+    const bundle = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
     act(() => {
-      _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+        type: 'subscription',
+        criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
+        bundle,
+      });
     });
 
     expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
@@ -296,10 +310,14 @@ describe('BaseChat', () => {
     const outgoingMessage = await createCommunication(defaultMedplum, {
       payload: [{ contentString: 'Homer, are you there?' }],
     });
-    const subBundle = await createCommunicationSubBundle(defaultMedplum, outgoingMessage);
 
+    const bundle = await createCommunicationSubBundle(defaultMedplum, outgoingMessage);
     act(() => {
-      _subscriptionController.emit('subscription', `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, subBundle);
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+        type: 'subscription',
+        criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
+        bundle,
+      });
     });
 
     expect(await screen.findByText('Homer, are you there?')).toBeInTheDocument();

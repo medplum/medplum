@@ -1,35 +1,38 @@
-import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
+import { ProfileResource, TypedEventTarget, createReference, getReferenceString } from '@medplum/core';
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 // @ts-expect-error _subscriptionController is not exported from module normally
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
-import { EventEmitter } from 'node:events';
 import { MemoryRouter } from 'react-router-dom';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ThreadChat, ThreadChatProps } from './ThreadChat';
 
-const homerReference = createReference(HomerSimpson);
-const drAliceReference = createReference(DrAliceSmith);
-const bartReference = createReference(BartSimpson);
+type SubscriptionControllerEvents = {
+  subscription: { type: 'subscription'; criteria: string; bundle: Bundle };
+};
 
 jest.mock('@medplum/react-hooks', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const EventEmitter = require('node:events');
-  const _subscriptionController = new EventEmitter();
+  const { TypedEventTarget } = require('@medplum/core');
+  const _subscriptionController = new TypedEventTarget() as TypedEventTarget<SubscriptionControllerEvents>;
   const original = jest.requireActual('@medplum/react-hooks');
   return {
     ...original,
     useSubscription: jest.fn().mockImplementation((criteria: string, callback: (bundle: Bundle) => void) => {
-      _subscriptionController.addListener('subscription', (_criteria: string, _bundle: Bundle) => {
-        if (criteria === _criteria) {
-          callback(_bundle);
+      _subscriptionController.addEventListener('subscription', (event) => {
+        if (criteria === event.criteria) {
+          callback(event.bundle);
         }
       });
     }),
     _subscriptionController,
   };
 });
+
+const homerReference = createReference(HomerSimpson);
+const drAliceReference = createReference(DrAliceSmith);
+const bartReference = createReference(BartSimpson);
 
 async function createThreadMessage(
   medplum: MockClient,
@@ -130,7 +133,7 @@ describe('ThreadChat', () => {
   });
 
   afterEach(() => {
-    (_subscriptionController as EventEmitter).removeAllListeners();
+    (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).removeAllListeners();
   });
 
   async function setup(
@@ -165,14 +168,14 @@ describe('ThreadChat', () => {
     const message = await createThreadMessage(defaultMedplum, defaultThreadRef, {
       payload: [{ contentString: 'Homer, this is a text chat.' }],
     });
-    const subBundle = await createThreadMessageSubBundle(defaultMedplum, defaultThreadRef, message);
+    const bundle = await createThreadMessageSubBundle(defaultMedplum, defaultThreadRef, message);
 
     act(() => {
-      (_subscriptionController as EventEmitter).emit(
-        'subscription',
-        `Communication?part-of=${getReferenceString(defaultThread)}`,
-        subBundle
-      );
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+        type: 'subscription',
+        criteria: `Communication?part-of=${getReferenceString(defaultThread)}`,
+        bundle,
+      });
     });
 
     // Displays incoming message
@@ -218,11 +221,11 @@ describe('ThreadChat', () => {
     const subBundle1 = await createThreadMessageSubBundle(defaultMedplum, threadRef, message);
 
     act(() => {
-      (_subscriptionController as EventEmitter).emit(
-        'subscription',
-        `Communication?part-of=${getReferenceString(thread)}`,
-        subBundle1
-      );
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+        type: 'subscription',
+        criteria: `Communication?part-of=${getReferenceString(thread)}`,
+        bundle: subBundle1,
+      });
     });
 
     const updatedMessage = await defaultMedplum.readResource('Communication', message.id as string);
@@ -231,11 +234,11 @@ describe('ThreadChat', () => {
 
     const subBundle2 = await createThreadMessageSubBundle(defaultMedplum, threadRef, updatedMessage);
     act(() => {
-      (_subscriptionController as EventEmitter).emit(
-        'subscription',
-        `Communication?part-of=${getReferenceString(thread)}`,
-        subBundle2
-      );
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+        type: 'subscription',
+        criteria: `Communication?part-of=${getReferenceString(thread)}`,
+        bundle: subBundle2,
+      });
     });
 
     expect(
@@ -282,14 +285,13 @@ describe('ThreadChat', () => {
     });
     expect(message.received).not.toBeDefined();
 
-    const subBundle1 = await createThreadMessageSubBundle(defaultMedplum, threadRef, message);
-
+    const bundle = await createThreadMessageSubBundle(defaultMedplum, threadRef, message);
     act(() => {
-      (_subscriptionController as EventEmitter).emit(
-        'subscription',
-        `Communication?part-of=${getReferenceString(thread)}`,
-        subBundle1
-      );
+      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+        type: 'subscription',
+        criteria: `Communication?part-of=${getReferenceString(thread)}`,
+        bundle,
+      });
     });
 
     const updatedMessage = await defaultMedplum.readResource('Communication', message.id as string);

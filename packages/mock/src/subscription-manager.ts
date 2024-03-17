@@ -10,8 +10,12 @@ import {
 
 class MockRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
   readyState = WebSocket.OPEN;
-  close(): void {}
-  send(): void {}
+  close(): void {
+    // Not implemented -- this is a mock
+  }
+  send(): void {
+    // Not implemented -- this is a mock
+  }
 }
 
 export interface MockSubManagerOptions {
