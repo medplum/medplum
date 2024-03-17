@@ -1,10 +1,10 @@
 import { ActionIcon, Button, Stack, TextInput, Title } from '@mantine/core';
-import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
 import { Document, Form, Loading, ResourceName, ThreadChat, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconArrowRight } from '@tabler/icons-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const HOMER_SIMPSON: Reference<Patient> = {
   reference: getReferenceString(HomerSimpson),
@@ -21,46 +21,37 @@ export function HomePage(): JSX.Element {
   // This can be a Practitioner, Patient, or RelatedPerson depending on the user's role in the project.
   // See the "Register" tutorial for more detail
   // https://www.medplum.com/docs/tutorials/register
+  // This page is not rendered unless profile is defined, so we can assert Practitioner
   const profile = useMedplumProfile() as Practitioner;
   const medplum = useMedplum();
   const [thread, setThread] = useState<Communication>();
-
-  const profileRef = useMemo(() => createReference(profile as ProfileResource), [profile]);
-  const profileRefStr = useMemo(() => getReferenceString(profile), [profile]);
-  const threadRef = useMemo(() => (thread ? createReference(thread) : undefined), [thread]);
+  const searchingThreadRef = useRef(false);
 
   useEffect(() => {
-    if (!profile) {
+    if (searchingThreadRef.current) {
       return;
     }
+    searchingThreadRef.current = true;
     medplum
-      .searchOne(
-        'Communication',
-        `part-of:missing=true&recipient=${profileRefStr},${HOMER_SIMPSON_REF_STR}&topic:text='Demo Thread'`
+      .createResourceIfNoneExist<Communication>(
+        {
+          resourceType: 'Communication',
+          topic: { text: 'Demo Thread' },
+          recipient: [createReference(profile), HOMER_SIMPSON],
+          status: 'in-progress',
+        },
+        `part-of:missing=true&recipient=${getReferenceString(profile)},${HOMER_SIMPSON_REF_STR}&topic:text='Demo Thread'`
       )
       .then((thread) => {
-        if (!thread) {
-          medplum
-            .createResource<Communication>({
-              resourceType: 'Communication',
-              topic: { text: 'Demo Thread' },
-              recipient: [profileRef, HOMER_SIMPSON],
-              status: 'in-progress',
-            })
-            .then((thread) => {
-              setThread(thread);
-            })
-            .catch(console.error);
-        } else {
-          setThread(thread);
-        }
+        setThread(thread);
+        searchingThreadRef.current = false;
       })
       .catch(console.error);
-  }, [medplum, profile, profileRef, profileRefStr]);
+  }, [medplum, profile]);
 
   const incomingInputRef = useRef<HTMLInputElement>(null);
 
-  if (!(profile && threadRef)) {
+  if (!thread) {
     return <Loading />;
   }
 
@@ -69,17 +60,17 @@ export function HomePage(): JSX.Element {
       resourceType: 'Communication',
       status: 'in-progress',
       sender: HOMER_SIMPSON,
-      recipient: [profileRef],
+      recipient: [],
       payload: [{ contentString: message }],
       sent: new Date().toISOString(),
-      partOf: [threadRef as Reference<Communication>],
+      partOf: [createReference(thread as Communication)],
     });
   }
 
   async function markLastMessageAsDelivered(): Promise<void> {
     const lastMessage = await medplum.searchOne(
       'Communication',
-      `part-of=${getReferenceString(threadRef as Reference<Communication>)}&sender=${profileRefStr}&_sort=-sent`
+      `part-of=${getReferenceString(thread as Communication)}&sender=${getReferenceString(profile)}&_sort=-sent`
     );
 
     if (lastMessage && !lastMessage.received) {
