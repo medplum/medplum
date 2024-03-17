@@ -8,7 +8,7 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import type { IncomingHttpHeaders } from 'http';
+import type { IncomingHttpHeaders } from 'node:http';
 import { Operation } from 'rfc6902';
 import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';

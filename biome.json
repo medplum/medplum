@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.0.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.6.0/schema.json",
   "organizeImports": {
     "enabled": false
   },
@@ -16,6 +16,8 @@
         "noUnusedVariables": "warn"
       },
       "style": {
+        "useImportType": "off",
+
         "useTemplate": "warn",
         "noParameterAssign": "warn",
         "noUnusedTemplateLiteral": "warn",

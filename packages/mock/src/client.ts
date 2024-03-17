@@ -59,7 +59,7 @@ import {
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
-import { TestProject, TestProjectMembersihp } from './mocks/project';
+import { TestProject, TestProjectMembership } from './mocks/project';
 import SearchParameterList from './mocks/searchparameters.json';
 import { ExampleSmartClientApplication } from './mocks/smart';
 import StructureDefinitionList from './mocks/structuredefinitions.json';
@@ -92,7 +92,7 @@ export class MockClient extends MedplumClient {
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
   private agentAvailable = true;
-  private readonly profile: ReturnType<MedplumClient['getProfile']>;
+  private profile: ReturnType<MedplumClient['getProfile']>;
   subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
@@ -156,6 +156,10 @@ export class MockClient extends MedplumClient {
 
   setActiveLoginOverride(activeLoginOverride: LoginState): void {
     this.activeLoginOverride = activeLoginOverride;
+  }
+
+  setProfile(profile: ProfileResource | undefined): void {
+    this.profile = profile;
   }
 
   getActiveLogin(): LoginState | undefined {
@@ -234,7 +238,9 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 
   getSubscriptionManager(): MockSubscriptionManager {
     if (!this.subManager) {
-      this.subManager = new MockSubscriptionManager(this, 'wss://example.com/ws/subscriptions-r4');
+      this.subManager = new MockSubscriptionManager(this, 'wss://example.com/ws/subscriptions-r4', {
+        mockRobustWebSocket: true,
+      });
     }
     return this.subManager;
   }
@@ -584,7 +590,7 @@ export class MockFetchClient {
       ExampleWorkflowRequestGroup,
       ExampleSmartClientApplication,
       TestProject,
-      TestProjectMembersihp,
+      TestProjectMembership,
     ];
 
     for (const resource of defaultResources) {
