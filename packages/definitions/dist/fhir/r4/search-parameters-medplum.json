@@ -961,7 +961,7 @@
         "code": "gender-identity",
         "base": ["Patient"],
         "type": "token",
-        "expression": "Patient.extension.where(url = 'http://hl7.org/fhir/StructureDefinition/patient-genderIdentity').extension.value.code",
+        "expression": "Patient.extension.where(url='http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity').value.coding.code",
         "xpath": "f:Patient/f:extension[@url='http://hl7.org/fhir/StructureDefinition/patient-genderIdentity']/f:extension/f:valueCoding/f:code/@value xpathUsage: normal",
         "xpathUsage": "normal",
         "multipleOr": true,
