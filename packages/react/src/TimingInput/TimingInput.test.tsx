@@ -16,7 +16,7 @@ describe('TimingInput', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Timing')).toBeDefined();
+    expect(await screen.findByText('Timing')).toBeDefined();
   });
 
   test('Cancel', async () => {
@@ -29,8 +29,9 @@ describe('TimingInput', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
+    const closeButton = await screen.findByLabelText('Close');
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Close'));
+      fireEvent.click(closeButton);
     });
 
     expect(onChange).not.toHaveBeenCalled();
@@ -46,7 +47,7 @@ describe('TimingInput', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Timing')).toBeDefined();
+    expect(await screen.findByText('Timing')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Repeat'));
@@ -71,7 +72,7 @@ describe('TimingInput', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Timing')).toBeDefined();
+    expect(await screen.findByText('Timing')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Repeat'));
@@ -94,7 +95,7 @@ describe('TimingInput', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Timing')).toBeDefined();
+    expect(await screen.findByText('Timing')).toBeDefined();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Starts on'), { target: { value: '2022' } });
@@ -117,7 +118,7 @@ describe('TimingInput', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Timing')).toBeDefined();
+    expect(await screen.findByText('Timing')).toBeDefined();
 
     await act(async () => {
       fireEvent.change(screen.getByDisplayValue('1'), { target: { value: '2' } });
@@ -144,7 +145,7 @@ describe('TimingInput', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Timing')).toBeDefined();
+    expect(await screen.findByText('Timing')).toBeDefined();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Repeat every'), { target: { value: '1' } });

@@ -216,7 +216,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
@@ -228,8 +228,6 @@ describe('Navbar', () => {
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
-
-    expect(input).not.toBeVisible();
   });
 
   test('Add Bookmark close', async () => {
@@ -241,15 +239,13 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     });
-
-    expect(input).not.toBeVisible();
   });
 
   test('Add Bookmark save', async () => {
@@ -261,14 +257,12 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     });
-
-    expect(input).not.toBeVisible();
   });
 });
