@@ -83,8 +83,10 @@ describe('SubscriptionsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Last Updated' }));
     });
 
+    const sortButton = await screen.findByRole('menuitem', { name: 'Sort Newest to Oldest' });
+
     await act(async () => {
-      fireEvent.click(screen.getByRole('menuitem', { name: 'Sort Newest to Oldest' }));
+      fireEvent.click(sortButton);
     });
 
     expect(screen.getByText(`${subscription.id}`)).toBeInTheDocument();

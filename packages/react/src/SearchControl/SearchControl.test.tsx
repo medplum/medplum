@@ -591,8 +591,9 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Name'));
     });
 
+    const containsButton = await screen.findByText('Contains...');
     await act(async () => {
-      fireEvent.click(screen.getByText('Contains...'));
+      fireEvent.click(containsButton);
     });
 
     await act(async () => {
@@ -707,11 +708,12 @@ describe('SearchControl', () => {
     });
 
     // Expect the popup menu to be open now
-    expect(screen.getByText('Sort A to Z')).toBeInTheDocument();
+    const sortButton = await screen.findByText('Sort A to Z');
+    expect(sortButton).toBeInTheDocument();
 
     // Click on a sort operation
     await act(async () => {
-      fireEvent.click(screen.getByText('Sort A to Z'));
+      fireEvent.click(sortButton);
     });
 
     // Click on the column header to activate the popup menu

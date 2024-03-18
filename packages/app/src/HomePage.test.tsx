@@ -153,8 +153,9 @@ describe('HomePage', () => {
       fireEvent.click(screen.getByText('Export...'));
     });
 
+    const exportButton = await screen.findByText('Export as CSV');
     await act(async () => {
-      fireEvent.click(screen.getByText('Export as CSV'));
+      fireEvent.click(exportButton);
     });
 
     expect(window.URL.createObjectURL).toHaveBeenCalled();
@@ -173,8 +174,9 @@ describe('HomePage', () => {
       fireEvent.click(screen.getByText('Export...'));
     });
 
+    const exportButton = await screen.findByText('Export as Transaction Bundle');
     await act(async () => {
-      fireEvent.click(screen.getByText('Export as Transaction Bundle'));
+      fireEvent.click(exportButton);
     });
     expect(screen.getByText('Export as Transaction Bundle')).toBeInTheDocument();
   });

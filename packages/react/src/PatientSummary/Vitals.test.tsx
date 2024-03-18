@@ -60,6 +60,8 @@ describe('PatientSummary - Vitals', () => {
       fireEvent.click(screen.getByText('+ Add'));
     });
 
+    await screen.findByLabelText('BP Sys');
+
     // Enter systolic
     await act(async () => {
       fireEvent.change(screen.getByLabelText('BP Sys'), { target: { value: '100' } });
