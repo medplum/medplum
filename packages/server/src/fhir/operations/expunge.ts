@@ -2,10 +2,10 @@ import { accepted, allOk, forbidden, getResourceTypes, Operator } from '@medplum
 import { ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
+import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
-import { getAuthenticatedContext } from '../../context';
 
 /**
  * Handles an expunge request.
@@ -49,13 +49,16 @@ export class Expunger {
 
   async expunge(): Promise<void> {
     const resourceTypes = getResourceTypes();
-
     for (const resourceType of resourceTypes) {
       await this.expungeByResourceType(resourceType);
     }
   }
 
   async expungeByResourceType(resourceType: ResourceType): Promise<void> {
+    if (resourceType === 'Binary') {
+      return;
+    }
+
     const repo = this.repo;
     let hasNext = true;
     while (hasNext) {
