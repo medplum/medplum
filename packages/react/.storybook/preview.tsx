@@ -46,26 +46,6 @@ const medplumDefault = createTheme({
   },
 });
 
-// const fooMedical = createTheme({
-//   primaryColor: 'teal',
-//   primaryShade: 8,
-//   fontFamily: 'Open Sans, sans-serif',
-//   fontSizes: {
-//     xs: '0.6875rem',
-//     sm: '0.875rem',
-//     md: '0.875rem',
-//     lg: '1rem',
-//     xl: '1.125rem',
-//   },
-//   components: {
-//     Container: {
-//       defaultProps: {
-//         size: 1200,
-//       },
-//     },
-//   },
-// });
-
 const fooMedical = createTheme({
   colorScheme: 'light',
   colors: {
@@ -113,8 +93,8 @@ const fooMedical = createTheme({
   },
   defaultRadius: 'xl',
   shadows: {
-    xs: '10px 10px 3px rgba(0, 0, 0, 0)',
-    md: '10px 10px 3px rgba(0, 0, 0, .25)',
+    xs: '0px 0px 0px rgba(0, 0, 0, 0)',
+    md: '2px 2px 1.5px rgba(0, 0, 0, .25)',
     xl: '5px 5px 3px rgba(0, 0, 0, .25)',
   },
   headings: {
@@ -128,7 +108,72 @@ const fooMedical = createTheme({
       h6: { fontSize: '14px', lineHeight: '1.15' },
     },
   },
-  // Define other theme properties like spacing, breakpoints, etc.
+});
+
+const bonFoo = createTheme({
+  components: {
+    Paper: {
+      defaultProps: {
+        p: 'sm',
+        shadow: 'xs',
+      },
+    },
+    Table: {
+      defaultProps: {
+        striped: true,
+      },
+    },
+  },
+  colors: {
+    destructive: [
+      '#FFF5F5',
+      '#FFE3E3',
+      '#FFC9C9',
+      '#FFA8A8',
+      '#FF8787',
+      '#FF6B6B',
+      '#FA5252',
+      '#F03E3E',
+      '#E03131',
+      '#C92A2A',
+    ],
+    dark: [
+      '#C1C2C5',
+      '#A6A7AB',
+      '#909296',
+      '#5C5F66',
+      '#373A40',
+      '#2C2E33',
+      '#25262B',
+      '#1A1B1E',
+      '#141517',
+      '#101113',
+    ],
+    primary: [
+      '#E7F5FF',
+      '#D0EBFF',
+      '#A5D8FF',
+      '#74C0FC',
+      '#4DABF7',
+      '#339AF0',
+      '#228BE6',
+      '#1C7ED6',
+      '#1971C2',
+      '#1864AB',
+    ],
+    neutral: [
+      '#F8F9FA',
+      '#F1F3F5',
+      '#E9ECEF',
+      '#DEE2E6',
+      '#CED4DA',
+      '#ADB5BD',
+      '#868E96',
+      '#495057',
+      '#343A40',
+      '#212529',
+    ],
+  },
 });
 
 export const decorators = [
