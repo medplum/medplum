@@ -75,8 +75,10 @@ describe('QuestionnaireResponsePage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Last Updated' }));
     });
 
+    const sortButton = await screen.findByRole('menuitem', { name: 'Sort Newest to Oldest' });
+
     await act(async () => {
-      fireEvent.click(screen.getByRole('menuitem', { name: 'Sort Newest to Oldest' }));
+      fireEvent.click(sortButton);
     });
 
     expect(screen.getByText(`${response1.id}`)).toBeInTheDocument();

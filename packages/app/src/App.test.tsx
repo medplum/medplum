@@ -1,9 +1,9 @@
 import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from './App';
+import { act, fireEvent, render, screen } from './test-utils/render';
 
 const navigateMock = jest.fn();
 
@@ -35,10 +35,7 @@ describe('App', () => {
 
   test('Click logo', async () => {
     await setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByTitle('Medplum Logo'));
-    });
+    await openNav();
 
     expect(screen.getByText('Patients')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
@@ -47,10 +44,7 @@ describe('App', () => {
 
   test('Click profile', async () => {
     await setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
+    await openMenu();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Account settings'));
@@ -59,10 +53,7 @@ describe('App', () => {
 
   test('Change profile', async () => {
     await setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
+    await openMenu();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Add another account'));
@@ -71,10 +62,7 @@ describe('App', () => {
 
   test('Click sign out', async () => {
     await setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
+    await openMenu();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sign out'));
@@ -83,10 +71,7 @@ describe('App', () => {
 
   test('Active link', async () => {
     await setup('/ServiceRequest?status=active');
-
-    await act(async () => {
-      fireEvent.click(screen.getByTitle('Medplum Logo'));
-    });
+    await openNav();
 
     const activeLink = screen.getByText('Active Orders');
     const completedLink = screen.getByText('Completed Orders');
@@ -95,8 +80,9 @@ describe('App', () => {
 
   test('Resource Type Search', async () => {
     await setup();
+    await openNav();
 
-    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Resource Type')) as HTMLInputElement;
 
     // Enter random text
     await act(async () => {
@@ -125,3 +111,29 @@ describe('App', () => {
     expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 });
+
+function isNavOpen(): boolean {
+  return !!screen.queryByRole('navigation');
+}
+
+async function openNav(): Promise<void> {
+  if (!isNavOpen()) {
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Medplum Logo'));
+    });
+  }
+}
+
+function isMenuOpen(): boolean {
+  return !!screen.queryByText('Sign out');
+}
+
+async function openMenu(): Promise<void> {
+  if (!isMenuOpen()) {
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
+    });
+
+    await screen.findByText('Sign out');
+  }
+}
