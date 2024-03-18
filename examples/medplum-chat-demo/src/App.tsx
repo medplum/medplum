@@ -6,6 +6,7 @@ import { Route, Routes } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
 import { PatientOverview } from './components/PatientOverview';
 import { Timeline } from './components/Timeline';
+import { CommunicationPage } from './pages/CommunicationPage';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
@@ -57,6 +58,7 @@ export function App(): JSX.Element | null {
           <Routes>
             <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
+            <Route path="/Communication/:id/*" element={<CommunicationPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
             <Route path="/Patient/:id" element={<PatientPage />}>
