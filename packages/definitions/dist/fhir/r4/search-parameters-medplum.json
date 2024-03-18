@@ -744,8 +744,8 @@
         "code": "asserted-date",
         "base": ["Condition"],
         "type": "date",
-        "expression": "Condition.extension.where(url = 'http://hl7.org/fhir/StructureDefinition/condition-assertedDate').extension.valueDateTime",
-        "xpath": "f:Condition/f:extension[@url='http://hl7.org/fhir/StructureDefinition/condition-assertedDate']/f:extension/f:valueDateTime/@value",
+        "expression": "Condition.extension.where(url = 'http://hl7.org/fhir/StructureDefinition/condition-assertedDate').valueDateTime",
+        "xpath": "f:Condition/f:extension[@url='http://hl7.org/fhir/StructureDefinition/condition-assertedDate']/f:valueDateTime/@value",
         "xpathUsage": "normal",
         "multipleOr": true,
         "_multipleOr": {
