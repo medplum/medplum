@@ -72,7 +72,7 @@ The thread of [`Communication`](/docs/api/fhir/resources/communication) resource
 
 ```mermaid
 
-flowchart TD
+flowchart RL
     subgraph Session
        A[<table><thead><tr><th>Encounter</th></tr></thead></table>]
     end
