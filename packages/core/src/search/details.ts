@@ -12,7 +12,7 @@ import {
 import { parseFhirPath } from '../fhirpath/parse';
 import { PropertyType, getElementDefinition, globalSchema } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
-import { capitalize } from '../utils';
+import { capitalize, lazy } from '../utils';
 
 export enum SearchParameterType {
   BOOLEAN = 'BOOLEAN',
@@ -87,8 +87,21 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
 
   for (const expression of expressions) {
     const atomArray = flattenAtom(expression);
+    const flattenedExpression = lazy(() => atomArray.join('.').toLowerCase());
+
     if (atomArray.length === 1 && atomArray[0] instanceof BooleanInfixOperatorAtom) {
       builder.propertyTypes.add('boolean');
+    } else if (
+      // To support US Core Patient search parameters without needing profile-aware logic,
+      // assume expressions for `Extension.value[x].code` and `Extension.value[x].coding.code`
+      // are of type `code`. Otherwise, crawling the Extension.value[x] element definition without
+      // access to the type narrowing specified in the profiles would be inconclusive.
+      atomArray.length >= 3 &&
+      (flattenedExpression().endsWith('extension.value.code') ||
+        flattenedExpression().endsWith('extension.value.coding.code'))
+    ) {
+      builder.array = true;
+      builder.propertyTypes.add('code');
     } else {
       crawlSearchParameterDetails(builder, flattenAtom(expression), resourceType, 1);
     }
