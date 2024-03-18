@@ -126,10 +126,16 @@ protectedRoutes.get('/CodeSystem/:id/([$]|%24)validate-code', asyncWrap(codeSyst
 protectedRoutes.post('/CodeSystem/:id/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
 
 // CodeSystem $subsumes operation
+protectedRoutes.get('/CodeSystem/([$]|%24)subsumes', codeSystemSubsumesOperation);
 protectedRoutes.post('/CodeSystem/([$]|%24)subsumes', codeSystemSubsumesOperation);
+protectedRoutes.get('/CodeSystem/:id/([$]|%24)subsumes', codeSystemSubsumesOperation);
+protectedRoutes.post('/CodeSystem/:id/([$]|%24)subsumes', codeSystemSubsumesOperation);
 
 // ValueSet $validate-code operation
+protectedRoutes.get('/ValueSet/([$]|%24)validate-code', valueSetValidateOperation);
 protectedRoutes.post('/ValueSet/([$]|%24)validate-code', valueSetValidateOperation);
+protectedRoutes.get('/ValueSet/:id/([$]|%24)validate-code', valueSetValidateOperation);
+protectedRoutes.post('/ValueSet/:id/([$]|%24)validate-code', valueSetValidateOperation);
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
