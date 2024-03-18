@@ -184,10 +184,7 @@ export class SubscriptionManager {
     this.medplum = medplum;
     this.ws = ws;
     this.masterSubEmitter = new SubscriptionEmitter();
-    this.criteriaEntries = new Map<
-      string,
-      { bareCriteria: CriteriaEntry | undefined; criteriaWithProps: CriteriaEntry[] }
-    >();
+    this.criteriaEntries = new Map<string, CriteriaMapEntry>();
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
     this.wsClosed = false;
 
