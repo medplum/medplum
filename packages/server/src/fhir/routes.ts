@@ -107,20 +107,28 @@ protectedRoutes.post('/ConceptMap/:id/([$]|%24)translate', asyncWrap(conceptMapT
 
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
+protectedRoutes.post('/ValueSet/([$]|%24)expand', expandOperator);
 
 // CodeSystem $import operation
 protectedRoutes.post('/CodeSystem/([$]|%24)import', asyncWrap(codeSystemImportHandler));
+protectedRoutes.post('/CodeSystem/:id/([$]|%24)import', asyncWrap(codeSystemImportHandler));
 
 // CodeSystem $lookup operation
+protectedRoutes.get('/CodeSystem/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
 protectedRoutes.post('/CodeSystem/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
+protectedRoutes.get('/CodeSystem/:id/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
+protectedRoutes.post('/CodeSystem/:id/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
 
 // CodeSystem $validate-code operation
+protectedRoutes.get('/CodeSystem/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
 protectedRoutes.post('/CodeSystem/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
+protectedRoutes.get('/CodeSystem/:id/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
+protectedRoutes.post('/CodeSystem/:id/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
 
 // CodeSystem $subsumes operation
 protectedRoutes.post('/CodeSystem/([$]|%24)subsumes', codeSystemSubsumesOperation);
 
-// CodeSystem $validate-code operation
+// ValueSet $validate-code operation
 protectedRoutes.post('/ValueSet/([$]|%24)validate-code', valueSetValidateOperation);
 
 // CSV Export

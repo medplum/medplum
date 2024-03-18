@@ -7,6 +7,7 @@ import { sendOutcome } from '../outcomes';
 import { InsertQuery, SelectQuery } from '../sql';
 import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { findTerminologyResource, parentProperty } from './utils/terminology';
+import { getAuthenticatedContext } from '../../context';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -20,7 +21,7 @@ const operation: OperationDefinition = {
   type: true,
   instance: false,
   parameter: [
-    { use: 'in', name: 'system', type: 'uri', min: 1, max: '1' },
+    { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
     { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
     {
       use: 'in',
@@ -44,7 +45,7 @@ export type ImportedProperty = {
 };
 
 export type CodeSystemImportParameters = {
-  system: string;
+  system?: string;
   concept?: Coding[];
   property?: ImportedProperty[];
 };
@@ -62,7 +63,16 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
-  const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
+
+  let codeSystem: CodeSystem;
+  if (req.params.id) {
+    codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+  } else if (params.system) {
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
+  } else {
+    sendOutcome(res, badRequest('No code system specified'));
+    return;
+  }
 
   try {
     await ctx.repo.withTransaction(async (db) => {

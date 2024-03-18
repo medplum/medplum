@@ -13,7 +13,7 @@ import {
 import { sendOutcome } from '../outcomes';
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import { addPropertyFilter, findAncestor, findTerminologyResource } from './utils/terminology';
-import { validateCode } from './codesystemvalidatecode';
+import { validateCoding } from './codesystemvalidatecode';
 import { Column, SelectQuery } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 
@@ -76,7 +76,7 @@ export async function validateCodingInValueSet(codings: Coding[], valueSetUrl: s
 
   if (found) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', found.system as string);
-    return codeSystem.content !== 'example' ? validateCode(codeSystem, found.code as string) : found;
+    return codeSystem.content !== 'example' ? validateCoding(codeSystem, found) : found;
   }
   return undefined;
 }
