@@ -24,11 +24,11 @@
     "@medplum/expo-polyfills": "3.0.10",
     "@medplum/fhirtypes": "3.0.10",
     "@medplum/react-hooks": "3.0.10",
-    "expo": "50.0.11",
+    "expo": "50.0.13",
     "expo-status-bar": "1.11.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-native": "0.73.5",
+    "react-native": "0.73.6",
     "react-native-web": "0.19.10"
   },
   "devDependencies": {

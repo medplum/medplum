@@ -25,21 +25,21 @@
   "devDependencies": {
     "@graphiql/react": "0.20.3",
     "@graphiql/toolkit": "0.9.1",
-    "@mantine/core": "7.6.1",
-    "@mantine/hooks": "7.6.1",
+    "@mantine/core": "7.6.2",
+    "@mantine/hooks": "7.6.2",
     "@medplum/core": "3.0.10",
     "@medplum/fhirtypes": "3.0.10",
     "@medplum/react": "3.0.10",
-    "@types/react": "18.2.64",
-    "@types/react-dom": "18.2.21",
+    "@types/react": "18.2.66",
+    "@types/react-dom": "18.2.22",
     "graphiql": "3.1.1",
     "graphql": "16.8.1",
     "graphql-ws": "5.15.0",
-    "postcss": "8.4.35",
+    "postcss": "8.4.36",
     "postcss-preset-mantine": "1.13.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vite": "5.1.5"
+    "vite": "5.1.6"
   },
   "engines": {
     "node": ">=18.0.0"
