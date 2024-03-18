@@ -16,6 +16,7 @@ const config: StorybookConfig = {
         },
       },
     },
+    'storybook-addon-mantine',
   ],
   staticDirs: ['../public'],
   framework: {
