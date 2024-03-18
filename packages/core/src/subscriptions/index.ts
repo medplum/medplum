@@ -213,7 +213,6 @@ export class SubscriptionManager {
         // Emit event for criteria
         criteriaEntry.emitter.dispatchEvent({ type: 'message', payload: bundle });
       } catch (err: unknown) {
-        console.log('ERROR');
         console.error(err);
         const errorEvent = { type: 'error', payload: err as Error } as SubscriptionEventMap['error'];
         this.masterSubEmitter?.dispatchEvent(errorEvent);
