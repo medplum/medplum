@@ -502,6 +502,9 @@ describe('SubscriptionManager', () => {
     });
 
     test('should return the correct amount of criteria', async () => {
+      const originalWarn = console.warn;
+      console.warn = jest.fn();
+
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
@@ -510,6 +513,9 @@ describe('SubscriptionManager', () => {
       expect(manager.getCriteriaCount()).toEqual(1);
       manager.removeCriteria('Communication');
       expect(manager.getCriteriaCount()).toEqual(0);
+
+      expect(console.warn).toHaveBeenCalledTimes(1);
+      console.warn = originalWarn;
     });
   });
 
