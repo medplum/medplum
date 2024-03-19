@@ -528,7 +528,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     await this.handleBinaryData(result);
-    await this.handleMaybeCacheOnly(result);
+    await this.handleMaybeCacheOnly(result, create);
     await setCacheEntry(result);
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
@@ -563,9 +563,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resource.data = undefined;
   }
 
-  private async handleMaybeCacheOnly(result: Resource): Promise<void> {
+  private async handleMaybeCacheOnly(result: Resource, create: boolean): Promise<void> {
     if (!this.isCacheOnly(result)) {
-      await this.writeToDatabase(result);
+      await this.writeToDatabase(result, create);
     } else if (result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       const redis = getRedis();
       const project = result?.meta?.project;
@@ -680,12 +680,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * Writes the resource to the database.
    * This is a single atomic operation inside of a transaction.
    * @param resource - The resource to write to the database.
+   * @param create - If true, then the resource is being created.
    */
-  private async writeToDatabase<T extends Resource>(resource: T): Promise<void> {
+  private async writeToDatabase<T extends Resource>(resource: T, create: boolean): Promise<void> {
     await this.withTransaction(async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
-      await this.writeLookupTables(client, resource);
+      await this.writeLookupTables(client, resource, create);
     });
   }
 
@@ -852,7 +853,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     await this.withTransaction(async (conn) => {
       await this.writeResource(conn, resource);
-      await this.writeLookupTables(conn, resource);
+      await this.writeLookupTables(conn, resource, false);
     });
   }
 
@@ -1420,10 +1421,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.
    * @param resource - The resource to index.
+   * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(client: PoolClient, resource: Resource): Promise<void> {
+  private async writeLookupTables(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
-      await lookupTable.indexResource(client, resource);
+      await lookupTable.indexResource(client, resource, create);
     }
   }
 
