@@ -14,11 +14,10 @@ import { Server } from 'http';
 import { randomUUID } from 'node:crypto';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';
 import { getRedis } from '../redis';
-import { withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { execSubscriptionJob, getSubscriptionQueue } from '../workers/subscription';
 
 jest.mock('hibp');
@@ -39,18 +38,15 @@ describe('WebSockets Subscriptions', () => {
     server = await initApp(app, config);
     await getRedis().flushdb();
 
-    const response = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
+    const result = await withTestContext(() =>
+      createTestProject({
+        project: { features: ['websocket-subscriptions'] },
+        withAccessToken: true,
       })
     );
 
-    project = response.project;
-    accessToken = response.accessToken;
+    project = result.project;
+    accessToken = result.accessToken;
 
     repo = new Repository({
       extendedMode: true,
@@ -285,18 +281,15 @@ describe('Subscription Heartbeat', () => {
     server = await initApp(app, config);
     await getRedis().flushdb();
 
-    const response = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
+    const result = await withTestContext(() =>
+      createTestProject({
+        project: { features: ['websocket-subscriptions'] },
+        withAccessToken: true,
       })
     );
 
-    project = response.project;
-    accessToken = response.accessToken;
+    project = result.project;
+    accessToken = result.accessToken;
 
     repo = new Repository({
       extendedMode: true,
