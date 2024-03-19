@@ -1,4 +1,15 @@
-# Questionnaires
+# Questionnaires & Assessments
+
+Creating, updating and embedding FHIR Questionnaires for both patients and practitioners is a common use-case for Medplum.
+
+- [Medplum app](https://app.medplum.com/Questionnaire) supports creating and updating Questionnaires
+- [Questionnaire](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--basic) react component can be embedded in patient facing or practitioner facing applications
+- [QuestionnaireBuilder](https://storybook.medplum.com/?path=/docs/medplum-questionnairebuilder--basic) react component can be embedded in applications as well
+- [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse) resources can also be viewed in the [Medplum app](../app/index.md)
+- [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response/bot-for-questionnaire-response.md) is one of the most common automations
+- [Questionnaire Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aquestionnaires) on Github
+
+## Key Resources
 
 ```mermaid
 
@@ -26,29 +37,20 @@ flowchart BT
 
 ```
 
-### Key Resources
+| **Resource**                                                              | **Description**                                                                                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| [`Questionnaire`](/docs/api/fhir/resources/questionnaire)                 | Definition of questions/answers. 1 per form.                                                                        |
+| [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) | A patient's responses to each question. 1 per patient, per instance.                                                |
+| [`Observation`](/docs/api/fhir/resources/observation)                     | A structured representation of a point-in-time result measured by an assessment.                                    |
+| [`RiskAssessment`](/docs/api/fhir/resources/riskassessment)               | A specialized form of an [`Observation`](/docs/api/fhir/resources/observation) tailored to propensity measurements. |
+| [`Condition`](/docs/api/fhir/resources/condition)                         | Records a long-term diagnosis for a [`Patient`](/docs/api/fhir/resources/patient).                                  |
 
-- [`Questionnaire`](/docs/api/fhir/resources/questionnaire): Definition of questions/answers. 1 per form.
-- [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse): A patient's responses to each question. 1 per patient, per instance.
-- [`Observation`](/docs/api/fhir/resources/observation): A structured representation of a point-in-time result measured by an assessment.
-- [`RiskAssessment`](/docs/api/fhir/resources/riskassessment): A specialized form of an [`Observation`](/docs/api/fhir/resources/observation) tailored to propensity measurements.
-- [`Condition`](/docs/api/fhir/resources/condition): Records a long-term diagnosis for a [`Patient`](/docs/api/fhir/resources/patient).
+## Key Code Systems
 
-### Key Code Systems
-
-- [LOINC](https://www.medplum.com/docs/careplans/loinc): Used to tag questions and answers. Also has predefined standard assessments.
-- [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm): Used to annotate [`Condition`](/docs/api/fhir/resources/condition) resources for billing.
-
-## Questionnaires in Medplum
-
-Creating, updating and embedding FHIR Questionnaires for both patients and practitioners is a common use-case for Medplum.
-
-- [Medplum app](https://app.medplum.com/Questionnaire) supports creating and updating Questionnaires
-- [Questionnaire](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--basic) react component can be embedded in patient facing or practitioner facing applications
-- [QuestionnaireBuilder](https://storybook.medplum.com/?path=/docs/medplum-questionnairebuilder--basic) react component can be embedded in applications as well
-- [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse) resources can also be viewed in the [Medplum app](../app/index.md)
-- [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response/bot-for-questionnaire-response.md) is one of the most common automations
-- [Questionnaire Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aquestionnaires) on Github
+| **Code System**                                                | **Description**                                                                           |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [LOINC](https://www.medplum.com/docs/careplans/loinc)          | Used to tag questions and answers. Also has predefined standard assessments.              |
+| [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used to annotate [`Condition`](/docs/api/fhir/resources/condition) resources for billing. |
 
 ## Other Resources
 

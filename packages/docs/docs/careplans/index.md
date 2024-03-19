@@ -11,6 +11,8 @@ Care Plans are representations of protocols that patients are meant to follow. T
 
 It can be helpful to think of the historical analogs to these resources in the physical world. A `PlanDefinition` can be thought of as a written manual or protocol document that would be given to staff for training. A `CarePlan`/`RequestGroup` can be thought of a checklist that is added to a patient chart.
 
+## Key Resources
+
 ```mermaid
 
 flowchart LR
@@ -32,19 +34,21 @@ flowchart LR
 
 ```
 
-## Key Resources
-
-- [`Task`](/docs/api/fhir/resources/task): Workhorse resource defining all clinical work items to be completed.
-- [`Goal`](/docs/api/fhir/resources/goal): Resource to define a measurable target to achieve.
-- [`CarePlan`](/docs/api/fhir/resources/careplan): Grouping resource to organize a group of [`Tasks`](/docs/api/fhir/resources/task) for each [`Patient`](/docs/api/fhir/resources/patient).
-- [`PlanDefinition`](/docs/api/fhir/resources/plandefinition): Defines a clinical protocol that can be implemented per-patient.
-- [`RequestGroup`](/docs/api/fhir/resources/requestgroup): Can define complex relationships between tasks, including temporal tasks, recurring tasks, mutually exclusive tasks, etc.
+| **Resource**                                                | **Description**                                                                                                                             |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`Task`](/docs/api/fhir/resources/task)                     | A workhorse resource defining all clinical work items to be completed.                                                                      |
+| [`Goal`](/docs/api/fhir/resources/goal)                     | A resource to define a measurable target to achieve.                                                                                        |
+| [`CarePlan`](/docs/api/fhir/resources/careplan)             | A grouping resource to organize a group of [`Tasks`](/docs/api/fhir/resources/task) for each [`Patient`](/docs/api/fhir/resources/patient). |
+| [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) | A resource that defines a clinical protocol that can be implemented on a per-patient basis.                                                 |
+| [`RequestGroup`](/docs/api/fhir/resources/requestgroup)     | A resource that can define complex relationships between tasks, including temporal tasks, recurring tasks, mutually exclusive tasks, etc.   |
 
 ## Key Code Systems
 
-- [LOINC](https://www.medplum.com/docs/careplans/loinc): Used to the target measure of a [`Goal`](/docs/api/fhir/resources/goal) resource.
+| **Code System**                                       | **Description**                                                                          |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [LOINC](https://www.medplum.com/docs/careplans/loinc) | Used to define the target measure of a [`Goal`](/docs/api/fhir/resources/goal) resource. |
 
-## Reference Material
+## Other Resources
 
 :::caution Note
 

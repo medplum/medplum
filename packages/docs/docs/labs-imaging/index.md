@@ -27,14 +27,18 @@ flowchart RL
 
 ## Key Resources
 
-- [`ServiceRequest`](/docs/api/fhir/resources/servicerequest): A record of an order for services such as diagnostic investigations, treatments, or operations to be performed.
-- [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport): The findings and interpretations of diagnostic tests performed on a patient.
-- [`Specimen`](/docs/api/fhir/resources/specimen): A record of a sample to be used for analysis.
-- [`Observation`](/docs/api/fhir/resources/observation): Structured representation of measurements and simple assertions made about a [`Patient`](/docs/api/fhir/resources/patient).
+| **Resource**                                                    | **Description**                                                                                                               |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`ServiceRequest`](/docs/api/fhir/resources/servicerequest)     | A record of an order for services such as diagnostic investigations, treatments, or operations to be performed.               |
+| [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) | The findings and interpretations of diagnostic tests performed on a patient.                                                  |
+| [`Specimen`](/docs/api/fhir/resources/specimen)                 | A record of a sample to be used for analysis.                                                                                 |
+| [`Observation`](/docs/api/fhir/resources/observation)           | A structured representation of measurements and simple assertions made about a [`Patient`](/docs/api/fhir/resources/patient). |
 
 ## Key Code Systems
 
-- [UCUM](https://ucum.nlm.nih.gov/): Used to define measurment units on [`Specimen`](/docs/api/fhir/resources/specimen) resources.
-- [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm): Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.
-- [SNOMED](https://www.snomed.org/): Used to define [`Specimen`](/docs/api/fhir/resources/specimen) types and methods.
-- [LOINC](https://www.medplum.com/docs/careplans/loinc): Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.
+| **Code System**                                                | **Description**                                                                                  |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| [UCUM](https://ucum.nlm.nih.gov/)                              | Used to define measurement units on a [`Speciment`](/docs/api/fhir/resources/specimen) resource. |
+| [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
+| [SNOMED](https://www.snomed.org/)                              | Used to define [`Specimen`](/docs/api/fhir/resources/specimen) types and retrieval methods.      |
+| [LOINC](https://www.medplum.com/docs/careplans/loinc)          | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |

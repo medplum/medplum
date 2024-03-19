@@ -2,7 +2,7 @@
 sidebar_position: 0
 ---
 
-# Communications
+# Messaging & Communications
 
 Communications in FHIR supports many common scenarios and can be used in concert with [Bots](/docs/bots/) to enable complex communications workflows. The first step is constructing a [Communication](/docs/api/fhir/resources/communication.mdx) FHIR resource. Adherence to the spec, referring to other relevant FHIR resources, and tagging the resource with LOINC, SNOMED or CPT codes can be useful here to aid in reporting, analytics and billing.
 

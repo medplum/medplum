@@ -30,12 +30,16 @@ flowchart TD
 
 ## Key Resources
 
-- [`CareTeam`](/docs/api/fhir/resources/careteam): Definition of a group of providers assembled for a specific patient.
-- [`Practitioner`](/docs/api/fhir/resources/practitioner): Defines the profile of each provider (i.e. physician, nurse, administrator, etc.).
+| **Resource**                                            | **Description**                                                                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [`CareTeam`](/docs/api/fhir/resources/careteam)         | A definition of a group of providers assembled for a specific [`Patient`](/docs/api/fhir/resources/patient). |
+| [`Practitioner`](/docs/api/fhir/resources/practitioner) | A resource that defines the profile of each provider (i.e., physician, nurse, administrator, etc.).          |
 
 ## Key Code Systems
 
-- [SNOMED](https://www.snomed.org/): Used to annotate the roles of [`Practitioner`](/docs/api/fhir/resources/practitioner) resources. Below is a selection of common SNOMED role codes.
+| **Code System**                   | **Description**                                                                                                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [SNOMED](https://www.snomed.org/) | Used to annotate the roles of [`Practitioner`](/docs/api/fhir/resources/practitioner) resources. Below is a selection of common [SNOMED](https://www.snomed.org/) role codes. |
 
 | Role                    | SNOMED Code |
 | ----------------------- | ----------- |
