@@ -1,8 +1,16 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference, getReferenceString, MedplumClient, PatchOperation } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import {
+  createReference,
+  getReferenceString,
+  MedplumClient,
+  normalizeErrorString,
+  PatchOperation,
+} from '@medplum/core';
 import { Communication, Encounter, Practitioner, Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface CreateEncounterProps {
   readonly communication: Communication;
@@ -20,12 +28,20 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
     try {
       await medplum.createResource(encounter);
       const updatedCommunication = await linkEncounterToCommunication(encounter, props.communication, medplum);
-      console.log('Success');
       if (updatedCommunication) {
         props.onChange(updatedCommunication);
       }
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Encounter created.',
+      });
     } catch (err) {
-      console.error(err);
+      showNotification({
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
     }
   };
 

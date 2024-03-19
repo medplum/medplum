@@ -1,9 +1,10 @@
-import { PROPERTY_TYPES } from '@babel/types';
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getQuestionnaireAnswers, PatchOperation } from '@medplum/core';
-import { CodeableConcept, Communication, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
+import { showNotification } from '@mantine/notifications';
+import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { CodeableConcept, Communication, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface EditTopicThreadProps {
   readonly communication: Communication;
@@ -43,10 +44,18 @@ export function EditThreadTopic({ communication, onChange }: EditTopicThreadProp
 
     try {
       const result = await medplum.patchResource(communication.resourceType, communicationId, ops);
-      console.log('Success!');
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Topic updated.',
+      });
       onChange(result);
     } catch (err) {
-      console.error(err);
+      showNotification({
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
     }
   };
 
