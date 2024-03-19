@@ -70,7 +70,6 @@ export class Expunger {
       });
 
       if (!bundle.entry || bundle.entry.length === 0) {
-        hasNext = false;
         break;
       }
 
