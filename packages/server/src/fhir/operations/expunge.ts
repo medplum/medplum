@@ -6,6 +6,7 @@ import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
+import { buildBinaryIds } from './utils/binary';
 
 /**
  * Handles an expunge request.
@@ -68,21 +69,29 @@ export class Expunger {
         filters: [{ code: '_compartment', operator: Operator.EQUALS, value: this.compartment }],
       });
 
-      if (bundle.entry && bundle.entry.length > 0) {
-        const resourcesToExpunge: string[] = [];
-        for (const entry of bundle.entry) {
-          if (entry.resource?.id) {
-            resourcesToExpunge.push(entry.resource.id);
-          }
-        }
-        await repo.expungeResources(resourceType, resourcesToExpunge);
+      if (!bundle.entry) {
+        hasNext = false;
+        break;
+      }
 
-        const linkNext = bundle.link?.find((b) => b.relation === 'next');
+      const resourcesToExpunge: string[] = [];
+      const binaryIds = new Set<string>();
 
-        if (!linkNext?.url) {
-          hasNext = false;
+      for (const entry of bundle.entry) {
+        if (entry.resource?.id) {
+          resourcesToExpunge.push(entry.resource.id);
+          buildBinaryIds(entry.resource, binaryIds);
         }
-      } else {
+      }
+
+      await repo.expungeResources(resourceType, resourcesToExpunge);
+
+      if (binaryIds.size > 0) {
+        await repo.expungeResources('Binary', Array.from(binaryIds));
+      }
+
+      const linkNext = bundle.link?.find((b) => b.relation === 'next');
+      if (!linkNext?.url) {
         hasNext = false;
       }
     }

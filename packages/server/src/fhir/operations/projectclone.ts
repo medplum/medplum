@@ -7,6 +7,7 @@ import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
+import { buildBinaryIds } from './utils/binary';
 
 /**
  * Handles a Project clone request.
@@ -68,7 +69,7 @@ class ProjectCloner {
           continue;
         }
         this.idMap.set(entry.resource.id as string, randomUUID());
-        this.getBinaryIds(entry.resource, binaryIds);
+        buildBinaryIds(entry.resource, binaryIds);
         if (entry.resource.resourceType !== 'Project') {
           allResources.push(entry.resource);
         }
@@ -115,16 +116,6 @@ class ProjectCloner {
       return this.allowedResourceTypes.includes(resourceType);
     }
     return true;
-  }
-
-  getBinaryIds(resource: Resource, output: Set<string>): void {
-    const resourceObj = JSON.stringify(resource);
-    const matches = resourceObj.matchAll(/"url":"Binary\/([a-f0-9-]+)"/g);
-    if (matches) {
-      for (const match of matches) {
-        output.add(match[1]);
-      }
-    }
   }
 
   rewriteIds<T extends Resource>(resource: T): T {
