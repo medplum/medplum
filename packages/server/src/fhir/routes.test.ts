@@ -621,5 +621,12 @@ describe('FHIR Routes', () => {
       expect(bundle.entry?.length).toBe(2);
       expect(bundleContains(bundle, patient)).toBeTruthy();
       expect(bundleContains(bundle, obs)).toBeTruthy();
+
+      // Also verify that trailing slash works
+      const res4 = await request(app)
+        .get('/fhir/R4/?_type=Patient,Observation')
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res4.status).toBe(200);
+      expect(res4.body).toEqual(res3.body);
     }));
 });
