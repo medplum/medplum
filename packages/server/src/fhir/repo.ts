@@ -171,7 +171,7 @@ export interface CacheEntry<T extends Resource = Resource> {
 /**
  * The lookup tables array includes a list of special tables for search indexing.
  */
-const lookupTables: LookupTable<unknown>[] = [
+const lookupTables: LookupTable[] = [
   new AddressTable(),
   new HumanNameTable(),
   new TokenTable(),
@@ -1868,7 +1868,7 @@ export function isIndexTable(resourceType: string, searchParam: SearchParameter)
   return !!getLookupTable(resourceType, searchParam);
 }
 
-export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable<unknown> | undefined {
+export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
   for (const lookupTable of lookupTables) {
     if (lookupTable.isIndexed(searchParam, resourceType)) {
       return lookupTable;
