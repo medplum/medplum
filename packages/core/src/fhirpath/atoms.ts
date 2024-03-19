@@ -25,8 +25,7 @@ export class FhirPathAtom implements Atom {
       if (input.length > 0) {
         const result = [];
         for (const e of input) {
-          context.variables.$this = e;
-          result.push(this.child.eval(context, [e]));
+          result.push(this.child.eval({ parent: context, variables: { $this: e } }, [e]));
         }
         return result.flat();
       } else {
