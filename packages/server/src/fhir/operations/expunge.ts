@@ -69,7 +69,7 @@ export class Expunger {
         filters: [{ code: '_compartment', operator: Operator.EQUALS, value: this.compartment }],
       });
 
-      if (!bundle.entry) {
+      if (!bundle.entry || bundle.entry.length === 0) {
         hasNext = false;
         break;
       }
