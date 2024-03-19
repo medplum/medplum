@@ -33,7 +33,7 @@ export function CommunicationDetails({ communication }: CommunicationDetailsProp
           <p>Chat</p>
         </Tabs.Panel>
         <Tabs.Panel value="details">
-          <ResourceTable value={communication} />
+          <ResourceTable value={communication} ignoreMissingValues={true} />
         </Tabs.Panel>
         <Tabs.Panel value="history">
           <ResourceHistoryTable resourceType="Communication" id={communication.id} />
