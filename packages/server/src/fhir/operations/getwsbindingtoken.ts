@@ -27,8 +27,13 @@ export type AdditionalWsBindingClaims = {
  * @param res - The HTTP response.
  */
 export async function getWsBindingTokenHandler(req: Request, res: Response): Promise<void> {
-  const { login, profile, repo } = getAuthenticatedContext();
+  const { login, profile, repo, project } = getAuthenticatedContext();
   const { baseUrl } = getConfig();
+
+  if (!project.features?.includes('websocket-subscriptions')) {
+    sendOutcome(res, badRequest('WebSocket subscriptions not enabled for current project'));
+    return;
+  }
 
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);

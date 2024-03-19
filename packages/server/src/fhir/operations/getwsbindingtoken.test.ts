@@ -14,7 +14,7 @@ describe('Get WebSocket binding token', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ project: { features: ['websocket-subscriptions'] } });
   });
 
   afterAll(async () => {
@@ -120,6 +120,40 @@ describe('Get WebSocket binding token', () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Subscription`)
       .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      } satisfies Subscription);
+    const createdSub = res1.body as Subscription;
+    expect(res1.status).toBe(201);
+    expect(createdSub).toBeDefined();
+    expect(createdSub.id).toBeDefined();
+
+    const anotherUserToken = await initTestAuth();
+
+    // Call $get-ws-binding-token
+    const res2 = await request(app)
+      .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
+      .set('Authorization', 'Bearer ' + anotherUserToken);
+
+    expect(res2.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid' }],
+    });
+  });
+
+  test("should return OperationOutcome error if Project doesn't have `websocket-subscriptions` feature enabled", async () => {
+    const anotherAccessToken = await initTestAuth();
+    // Create subscription to watch patient
+    const res1 = await request(app)
+      .post(`/fhir/R4/Subscription`)
+      .set('Authorization', 'Bearer ' + anotherAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Subscription',
