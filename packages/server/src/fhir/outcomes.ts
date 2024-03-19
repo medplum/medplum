@@ -1,9 +1,8 @@
-import { getStatus, isAccepted, isUnauthorized } from '@medplum/core';
+import { getStatus, isAccepted } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { Result, ValidationError } from 'express-validator';
-import { getConfig } from '../config';
 import { buildTracingExtension } from '../context';
 
 export function invalidRequest(errors: Result<ValidationError>): OperationOutcome {
@@ -27,15 +26,9 @@ function getValidationErrorExpression(error: ValidationError): string[] | undefi
   return undefined;
 }
 
-export function sendOutcome(req: Request, res: Response, outcome: OperationOutcome): Response {
+export function sendOutcome(res: Response, outcome: OperationOutcome): Response {
   if (isAccepted(outcome) && outcome.issue?.[0].diagnostics) {
     res.set('Content-Location', outcome.issue[0].diagnostics);
-  }
-  if (isUnauthorized(outcome)) {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || authHeader.startsWith('Basic')) {
-      res.set('WWW-Authenticate', `Basic realm="${getConfig().baseUrl}"`);
-    }
   }
   return res.status(getStatus(outcome)).json({
     ...outcome,

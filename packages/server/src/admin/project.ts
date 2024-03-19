@@ -28,25 +28,25 @@ projectAdminRouter.post(
   asyncWrap(async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendOutcome(req, res, invalidRequest(errors));
+      sendOutcome(res, invalidRequest(errors));
       return;
     }
 
     const ctx = getAuthenticatedContext();
     const projectId = ctx.project.id;
     if (!projectId) {
-      sendOutcome(req, res, badRequest('Project not found'));
+      sendOutcome(res, badRequest('Project not found'));
       return;
     }
 
     const user = await getUserByEmailInProject(req.body.email, projectId);
     if (!user) {
-      sendOutcome(req, res, badRequest('User not found'));
+      sendOutcome(res, badRequest('User not found'));
       return;
     }
 
     await setPassword(user, req.body.password as string);
-    sendOutcome(req, res, allOk);
+    sendOutcome(res, allOk);
   })
 );
 
@@ -106,7 +106,7 @@ projectAdminRouter.get(
     const { membershipId } = req.params;
     const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(ctx.project)) {
-      sendOutcome(req, res, forbidden);
+      sendOutcome(res, forbidden);
       return;
     }
     res.json(membership);
@@ -120,12 +120,12 @@ projectAdminRouter.post(
     const { membershipId } = req.params;
     const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(ctx.project)) {
-      sendOutcome(req, res, forbidden);
+      sendOutcome(res, forbidden);
       return;
     }
     const resource = req.body;
     if (resource?.resourceType !== 'ProjectMembership' || resource.id !== membershipId) {
-      sendOutcome(req, res, forbidden);
+      sendOutcome(res, forbidden);
       return;
     }
     const result = await ctx.repo.updateResource(resource);
@@ -140,16 +140,16 @@ projectAdminRouter.delete(
     const { membershipId } = req.params;
     const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     if (membership.project?.reference !== getReferenceString(ctx.project)) {
-      sendOutcome(req, res, forbidden);
+      sendOutcome(res, forbidden);
       return;
     }
 
     if (ctx.project.owner?.reference === membership.user?.reference) {
-      sendOutcome(req, res, badRequest('Cannot delete the owner of the project'));
+      sendOutcome(res, badRequest('Cannot delete the owner of the project'));
       return;
     }
 
     await ctx.repo.deleteResource('ProjectMembership', req.params.membershipId);
-    sendOutcome(req, res, allOk);
+    sendOutcome(res, allOk);
   })
 );

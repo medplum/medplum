@@ -18,7 +18,7 @@ import { getBinaryStorage } from '../storage';
 export async function projectCloneHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
   if (!ctx.login.superAdmin) {
-    sendOutcome(req, res, forbidden);
+    sendOutcome(res, forbidden);
     return;
   }
 

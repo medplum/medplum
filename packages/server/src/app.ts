@@ -107,22 +107,22 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     return;
   }
   if (err.outcome) {
-    sendOutcome(req, res, err.outcome as OperationOutcome);
+    sendOutcome(res, err.outcome as OperationOutcome);
     return;
   }
   if (err.resourceType === 'OperationOutcome') {
-    sendOutcome(req, res, err as OperationOutcome);
+    sendOutcome(res, err as OperationOutcome);
     return;
   }
   if (err.type === 'request.aborted') {
     return;
   }
   if (err.type === 'entity.parse.failed') {
-    sendOutcome(req, res, badRequest('Content could not be parsed'));
+    sendOutcome(res, badRequest('Content could not be parsed'));
     return;
   }
   if (err.type === 'entity.too.large') {
-    sendOutcome(req, res, badRequest('File too large'));
+    sendOutcome(res, badRequest('File too large'));
     return;
   }
   getLogger().error('Unhandled error', err);

@@ -15,7 +15,6 @@ import {
   isNotFound,
   isOk,
   isOperationOutcome,
-  isUnauthorized,
   normalizeErrorString,
   notFound,
   notModified,
@@ -37,13 +36,6 @@ describe('Outcomes', () => {
   test('Created', () => {
     expect(isCreated(allOk)).toBe(false);
     expect(isCreated(created)).toBe(true);
-  });
-
-  test('Unauthorized', () => {
-    expect(isOk(unauthorized)).toBe(false);
-    expect(isNotFound(unauthorized)).toBe(false);
-    expect(isUnauthorized(unauthorized)).toBe(true);
-    expect(isUnauthorized(allOk)).toBe(false);
   });
 
   test('Not Found', () => {

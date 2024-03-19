@@ -35,12 +35,12 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
   delete query['_fields'];
 
   if (!fields) {
-    sendOutcome(req, res, badRequest('Missing _fields parameter'));
+    sendOutcome(res, badRequest('Missing _fields parameter'));
     return;
   }
 
   if (!isResourceType(resourceType)) {
-    sendOutcome(req, res, badRequest('Unsupported resource type'));
+    sendOutcome(res, badRequest('Unsupported resource type'));
     return;
   }
 

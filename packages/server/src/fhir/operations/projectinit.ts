@@ -102,10 +102,10 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   const owner = ownerRef ? await getSystemRepo().readReference(ownerRef) : undefined;
   if (owner) {
     if (owner.resourceType !== 'User') {
-      sendOutcome(req, res, badRequest('Only Users are permitted to be the owner of a new Project'));
+      sendOutcome(res, badRequest('Only Users are permitted to be the owner of a new Project'));
       return;
     } else if (owner.project) {
-      sendOutcome(req, res, badRequest('Project owner must not belong to another Project'));
+      sendOutcome(res, badRequest('Project owner must not belong to another Project'));
       return;
     }
   }

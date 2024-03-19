@@ -20,12 +20,12 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   const pcr = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
 
   if (pcr.used) {
-    sendOutcome(req, res, badRequest('Already used'));
+    sendOutcome(res, badRequest('Already used'));
     return;
   }
 
   if (!timingSafeEqualStr(pcr.secret as string, req.body.secret)) {
-    sendOutcome(req, res, badRequest('Incorrect secret'));
+    sendOutcome(res, badRequest('Incorrect secret'));
     return;
   }
 
@@ -33,13 +33,13 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
 
   const numPwns = await pwnedPassword(req.body.password);
   if (numPwns > 0) {
-    sendOutcome(req, res, badRequest('Password found in breach database', 'password'));
+    sendOutcome(res, badRequest('Password found in breach database', 'password'));
     return;
   }
 
   await setPassword({ ...user, emailVerified: true }, req.body.password);
   await systemRepo.updateResource<PasswordChangeRequest>({ ...pcr, used: true });
-  sendOutcome(req, res, allOk);
+  sendOutcome(res, allOk);
 }
 
 export async function setPassword(user: User, password: string): Promise<void> {

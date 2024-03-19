@@ -92,13 +92,13 @@ async function validateParameters(req: Request, res: Response): Promise<PlanDefi
 
   const body = req.body as Resource;
   if (body.resourceType !== 'Parameters') {
-    sendOutcome(req, res, badRequest('Incorrect parameters type'));
+    sendOutcome(res, badRequest('Incorrect parameters type'));
     return undefined;
   }
 
   const subjectParam = body.parameter?.find((param) => param.name === 'subject');
   if (!subjectParam?.valueReference) {
-    sendOutcome(req, res, badRequest('Missing subject parameter'));
+    sendOutcome(res, badRequest('Missing subject parameter'));
     return undefined;
   }
 

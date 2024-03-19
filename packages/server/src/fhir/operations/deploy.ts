@@ -108,7 +108,7 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   // Validate that the request body has a code property
   const code = req.body.code as string | undefined;
   if (!code) {
-    sendOutcome(req, res, badRequest('Missing code'));
+    sendOutcome(res, badRequest('Missing code'));
     return;
   }
 
@@ -120,7 +120,7 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   const bot = await systemRepo.readResource<Bot>('Bot', id);
 
   if (!(await isBotEnabled(bot))) {
-    sendOutcome(req, res, badRequest('Bots not enabled'));
+    sendOutcome(res, badRequest('Bots not enabled'));
     return;
   }
 
@@ -150,9 +150,9 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
       await deployLambda(updatedBot, code);
     }
 
-    sendOutcome(req, res, allOk);
+    sendOutcome(res, allOk);
   } catch (err) {
-    sendOutcome(req, res, badRequest((err as Error).message));
+    sendOutcome(res, badRequest((err as Error).message));
   }
 });
 

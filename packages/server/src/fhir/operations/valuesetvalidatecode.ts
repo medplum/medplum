@@ -41,7 +41,7 @@ export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Res
   } else if (params.url) {
     valueSet = await findTerminologyResource<ValueSet>('ValueSet', params.url);
   } else {
-    sendOutcome(req, res, badRequest('No ValueSet specified'));
+    sendOutcome(res, badRequest('No ValueSet specified'));
     return;
   }
 
@@ -53,7 +53,7 @@ export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Res
   } else if (params.codeableConcept?.coding) {
     codings.push(...params.codeableConcept.coding);
   } else {
-    sendOutcome(req, res, badRequest('No coding specified'));
+    sendOutcome(res, badRequest('No coding specified'));
     return;
   }
 

@@ -30,12 +30,12 @@ export const codeSystemSubsumesOperation = asyncWrap(async (req: Request, res: R
   } else if (params.system) {
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, params.version);
   } else {
-    sendOutcome(req, res, badRequest('No code system specified'));
+    sendOutcome(res, badRequest('No code system specified'));
     return;
   }
 
   if (!params.codeA || !params.codeB) {
-    sendOutcome(req, res, badRequest('Must specify codeA and codeB parameters'));
+    sendOutcome(res, badRequest('Must specify codeA and codeB parameters'));
     return;
   }
   const outcome = await testSubsumption(codeSystem, params.codeA, params.codeB);

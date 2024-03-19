@@ -21,5 +21,5 @@ export const logoutHandler = asyncWrap(async (req: Request, res: Response): Prom
     });
   }
 
-  sendOutcome(req, res, allOk);
+  sendOutcome(res, allOk);
 });
