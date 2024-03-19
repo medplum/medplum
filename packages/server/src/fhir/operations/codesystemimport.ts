@@ -70,7 +70,7 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   } else if (params.system) {
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
   } else {
-    sendOutcome(req, res, badRequest('No code system specified'));
+    sendOutcome(res, badRequest('No code system specified'));
     return;
   }
 
@@ -79,7 +79,7 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
       await importCodeSystem(db, codeSystem, params.concept, params.property);
     });
   } catch (err) {
-    sendOutcome(req, res, normalizeOperationOutcome(err));
+    sendOutcome(res, normalizeOperationOutcome(err));
     return;
   }
   await sendOutputParameters(req, res, operation, allOk, codeSystem);

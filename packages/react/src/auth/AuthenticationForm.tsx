@@ -160,7 +160,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
   );
 
   return (
-    <Form onSubmit={handleSubmit}>
+    <Form style={{ maxWidth: 400 }} onSubmit={handleSubmit}>
       <Center style={{ flexDirection: 'column' }}>{children}</Center>
       <OperationOutcomeAlert issues={issues} />
       <Stack gap="xl">

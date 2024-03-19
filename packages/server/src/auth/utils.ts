@@ -242,30 +242,30 @@ export function validateRecaptcha(projectValidation?: (p: Project) => OperationO
       // The user can only authenticate with that project.
       const project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId);
       if (!project) {
-        sendOutcome(req, res, badRequest('Invalid recaptchaSiteKey'));
+        sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
         return;
       }
       secretKey = project.site?.find((s) => s.recaptchaSiteKey === recaptchaSiteKey)?.recaptchaSecretKey;
       if (!secretKey) {
-        sendOutcome(req, res, badRequest('Invalid recaptchaSecretKey'));
+        sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
         return;
       }
 
       const validationOutcome = projectValidation?.(project);
       if (validationOutcome) {
-        sendOutcome(req, res, validationOutcome);
+        sendOutcome(res, validationOutcome);
         return;
       }
     }
 
     if (secretKey) {
       if (!req.body.recaptchaToken) {
-        sendOutcome(req, res, badRequest('Recaptcha token is required'));
+        sendOutcome(res, badRequest('Recaptcha token is required'));
         return;
       }
 
       if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
-        sendOutcome(req, res, badRequest('Recaptcha failed'));
+        sendOutcome(res, badRequest('Recaptcha failed'));
         return;
       }
     }

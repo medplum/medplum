@@ -68,19 +68,19 @@ async function validateParameters(req: Request, res: Response): Promise<Evaluate
 
   const body = req.body as Resource;
   if (body.resourceType !== 'Parameters') {
-    sendOutcome(req, res, badRequest('Incorrect parameters type'));
+    sendOutcome(res, badRequest('Incorrect parameters type'));
     return undefined;
   }
 
   const periodStartParam = body.parameter?.find((param) => param.name === 'periodStart');
   if (!periodStartParam?.valueDate) {
-    sendOutcome(req, res, badRequest('Missing periodStart parameter'));
+    sendOutcome(res, badRequest('Missing periodStart parameter'));
     return undefined;
   }
 
   const periodEndParam = body.parameter?.find((param) => param.name === 'periodEnd');
   if (!periodEndParam?.valueDate) {
-    sendOutcome(req, res, badRequest('Missing periodEnd parameter'));
+    sendOutcome(res, badRequest('Missing periodEnd parameter'));
     return undefined;
   }
 
