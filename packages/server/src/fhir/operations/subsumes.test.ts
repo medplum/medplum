@@ -1,4 +1,4 @@
-import { Parameters } from '@medplum/fhirtypes';
+import { Bundle, Parameters } from '@medplum/fhirtypes';
 import { ContentType } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
@@ -81,7 +81,7 @@ describe('CodeSystem subsumes', () => {
     expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('equivalent');
   });
 
-  test('Equivalent', async () => {
+  test('Not subsumed', async () => {
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$subsumes`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -114,5 +114,35 @@ describe('CodeSystem subsumes', () => {
       } as Parameters);
     expect(res2.status).toBe(400);
     expect(res2.body.resourceType).toEqual('OperationOutcome');
+  });
+
+  test('GET endpoint', async () => {
+    const res2 = await request(app)
+      .get(`/fhir/R4/CodeSystem/$subsumes?system=${system}&codeA=SIB&codeB=ITWINBRO`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('subsumes');
+  });
+
+  test('GET instance endpoint', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/CodeSystem?url=${system}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toEqual('Bundle');
+    const codeSystem = (res.body as Bundle).entry?.[0]?.resource;
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/CodeSystem/${codeSystem?.id}/$subsumes?codeA=SIB&codeB=ITWINBRO`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('subsumes');
   });
 });

@@ -6,10 +6,10 @@ import { sendOutcome } from '../outcomes';
 import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction, Union } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 import { clamp, parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { validateCode } from './codesystemvalidatecode';
 import { getDatabasePool } from '../../database';
 import { getOperationDefinition } from './definitions';
 import { abstractProperty, addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
+import { validateCoding } from './codesystemvalidatecode';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
 
@@ -217,7 +217,7 @@ async function computeExpansion(
     const codeSystem = codeSystemCache[include.system] ?? (await findTerminologyResource('CodeSystem', include.system));
     codeSystemCache[include.system] = codeSystem;
     if (include.concept) {
-      const concepts = await Promise.all(include.concept.flatMap((c) => validateCode(codeSystem, c.code)));
+      const concepts = await Promise.all(include.concept.flatMap((c) => validateCoding(codeSystem, c)));
       for (const c of concepts) {
         if (c && (!filter || c.display?.includes(filter))) {
           c.id = undefined;

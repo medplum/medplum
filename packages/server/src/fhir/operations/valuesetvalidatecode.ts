@@ -13,7 +13,7 @@ import {
 import { sendOutcome } from '../outcomes';
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import { addPropertyFilter, findAncestor, findTerminologyResource } from './utils/terminology';
-import { validateCode } from './codesystemvalidatecode';
+import { validateCoding } from './codesystemvalidatecode';
 import { Column, SelectQuery } from '../sql';
 import { getAuthenticatedContext } from '../../context';
 
@@ -35,8 +35,13 @@ type ValueSetValidateCodeParameters = {
 export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Response) => {
   const params = parseInputParameters<ValueSetValidateCodeParameters>(operation, req);
 
-  if (!params.url) {
-    sendOutcome(res, badRequest('Missing ValueSet URL'));
+  let valueSet: ValueSet;
+  if (req.params.id) {
+    valueSet = await getAuthenticatedContext().repo.readResource<ValueSet>('ValueSet', req.params.id);
+  } else if (params.url) {
+    valueSet = await findTerminologyResource<ValueSet>('ValueSet', params.url);
+  } else {
+    sendOutcome(res, badRequest('No ValueSet specified'));
     return;
   }
 
@@ -52,7 +57,7 @@ export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Res
     return;
   }
 
-  const found = await validateCodingInValueSet(codings, params.url);
+  const found = await validateCodingInValueSet(valueSet, codings);
 
   await sendOutputParameters(req, res, operation, allOk, {
     result: Boolean(found) && (!params.display || found?.display === params.display),
@@ -60,8 +65,7 @@ export const valueSetValidateOperation = asyncWrap(async (req: Request, res: Res
   });
 });
 
-export async function validateCodingInValueSet(codings: Coding[], valueSetUrl: string): Promise<Coding | undefined> {
-  const valueSet = await findTerminologyResource<ValueSet>('ValueSet', valueSetUrl);
+export async function validateCodingInValueSet(valueSet: ValueSet, codings: Coding[]): Promise<Coding | undefined> {
   let found: Coding | undefined;
   if (valueSet.expansion && !valueSet.expansion.parameter) {
     found = valueSet.expansion.contains?.find((e) => codings.some((c) => e.system === c.system && e.code === c.code));
@@ -76,7 +80,7 @@ export async function validateCodingInValueSet(codings: Coding[], valueSetUrl: s
 
   if (found) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', found.system as string);
-    return codeSystem.content !== 'example' ? validateCode(codeSystem, found.code as string) : found;
+    return codeSystem.content !== 'example' ? validateCoding(codeSystem, found) : found;
   }
   return undefined;
 }
