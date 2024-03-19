@@ -169,6 +169,7 @@ export async function sendOutputParameters(
   if (outputParameters?.length === 1 && param1 && param1.name === 'return') {
     if (!isResource(output) || (param1.type && output.resourceType !== param1.type)) {
       sendOutcome(
+        req,
         res,
         serverError(new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`))
       );
@@ -195,12 +196,14 @@ export async function sendOutputParameters(
 
     if (param.min && param.min > 0 && count < param.min) {
       sendOutcome(
+        req,
         res,
         serverError(new Error(`Expected ${param.min} or more values for output parameter '${key}', got ${count}`))
       );
       return;
     } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
       sendOutcome(
+        req,
         res,
         serverError(new Error(`Expected at most ${param.max} values for output parameter '${key}', got ${count}`))
       );
@@ -228,7 +231,7 @@ export async function sendOutputParameters(
     res.status(getStatus(outcome)).json(response);
   } catch (err: any) {
     getLogger().error('Malformed operation output Parameters', { error: err.toString() });
-    sendOutcome(res, serverError(err));
+    sendOutcome(req, res, serverError(err));
   }
 }
 

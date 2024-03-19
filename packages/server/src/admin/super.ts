@@ -121,18 +121,18 @@ superAdminRouter.post(
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+      sendOutcome(req, res, invalidRequest(errors));
       return;
     }
 
     const user = await getUserByEmail(req.body.email, req.body.projectId);
     if (!user) {
-      sendOutcome(res, badRequest('User not found'));
+      sendOutcome(req, res, badRequest('User not found'));
       return;
     }
 
     await setPassword(user, req.body.password as string);
-    sendOutcome(res, allOk);
+    sendOutcome(req, res, allOk);
   })
 );
 
@@ -149,12 +149,12 @@ superAdminRouter.post(
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+      sendOutcome(req, res, invalidRequest(errors));
       return;
     }
 
     await ctx.repo.purgeResources(req.body.resourceType, req.body.before);
-    sendOutcome(res, allOk);
+    sendOutcome(req, res, allOk);
   })
 );
 
@@ -168,13 +168,13 @@ superAdminRouter.post(
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+      sendOutcome(req, res, invalidRequest(errors));
       return;
     }
 
     await removeBullMQJobByKey(req.body.botId);
 
-    sendOutcome(res, allOk);
+    sendOutcome(req, res, allOk);
   })
 );
 
@@ -244,5 +244,5 @@ async function sendAsyncResponse(req: Request, res: Response, callback: () => Pr
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);
-  sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  sendOutcome(req, res, accepted(exec.getContentLocation(baseUrl)));
 }

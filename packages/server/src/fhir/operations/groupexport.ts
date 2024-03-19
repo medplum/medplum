@@ -38,7 +38,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
     .then(() => ctx.logger.info('Group export completed', { id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Group export failed', { id: ctx.project.id, error: err }));
 
-  sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
+  sendOutcome(req, res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }
 
 export async function groupExportResources(

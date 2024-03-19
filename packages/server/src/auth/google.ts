@@ -62,7 +62,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     // The user can only authenticate with that project.
     const projects = await getProjectsByGoogleClientId(googleClientId, projectId);
     if (projects.length === 0) {
-      sendOutcome(res, badRequest('Invalid googleClientId'));
+      sendOutcome(req, res, badRequest('Invalid googleClientId'));
       return;
     }
 
@@ -83,7 +83,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   try {
     result = await jwtVerify(googleJwt, JWKS, verifyOptions);
   } catch (err) {
-    sendOutcome(res, badRequest((err as Error).message));
+    sendOutcome(req, res, badRequest((err as Error).message));
     return;
   }
 
@@ -98,7 +98,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   const existingUser = await getUserByEmail(claims.email, projectId);
   if (!existingUser) {
     if (!req.body.createUser) {
-      sendOutcome(res, badRequest('User not found'));
+      sendOutcome(req, res, badRequest('User not found'));
       return;
     }
     const systemRepo = getSystemRepo();

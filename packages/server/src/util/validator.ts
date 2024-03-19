@@ -8,7 +8,7 @@ export function makeValidationMiddleware(runners: ContextRunner[]): RequestHandl
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+      sendOutcome(req, res, invalidRequest(errors));
       return;
     }
 

@@ -17,7 +17,7 @@ import { getAuthenticatedContext } from '../../context';
 export async function expungeHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
   if (!ctx.login.superAdmin) {
-    sendOutcome(res, forbidden);
+    sendOutcome(req, res, forbidden);
     return;
   }
 
@@ -31,10 +31,10 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
       ctx.logger.info('Expunge started', { resourceType, id });
       await new Expunger(ctx.repo, id).expunge();
     });
-    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+    sendOutcome(req, res, accepted(exec.getContentLocation(baseUrl)));
   } else {
     await ctx.repo.expungeResource(resourceType, id);
-    sendOutcome(res, allOk);
+    sendOutcome(req, res, allOk);
   }
 }
 

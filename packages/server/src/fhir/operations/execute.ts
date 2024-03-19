@@ -77,7 +77,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
   if (!userBot) {
-    sendOutcome(res, badRequest('Must specify bot ID or identifier.'));
+    sendOutcome(req, res, badRequest('Must specify bot ID or identifier.'));
     return;
   }
 

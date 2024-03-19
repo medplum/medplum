@@ -31,14 +31,14 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
   const { baseUrl } = getConfig();
 
   if (!project.features?.includes('websocket-subscriptions')) {
-    sendOutcome(res, badRequest('WebSocket subscriptions not enabled for current project'));
+    sendOutcome(req, res, badRequest('WebSocket subscriptions not enabled for current project'));
     return;
   }
 
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
-    sendOutcome(res, badRequest('Login missing user'));
+    sendOutcome(req, res, badRequest('Login missing user'));
     return;
   }
 
@@ -46,7 +46,7 @@ export async function getWsBindingTokenHandler(req: Request, res: Response): Pro
   try {
     await repo.readResource<Subscription>('Subscription', subscriptionId);
   } catch (err: unknown) {
-    sendOutcome(res, badRequest(`Error reading subscription: ${normalizeErrorString(err)}`));
+    sendOutcome(req, res, badRequest(`Error reading subscription: ${normalizeErrorString(err)}`));
     return;
   }
 

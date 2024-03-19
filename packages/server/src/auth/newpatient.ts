@@ -24,7 +24,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
-    sendOutcome(res, badRequest('Login already has a membership'));
+    sendOutcome(req, res, badRequest('Login already has a membership'));
     return;
   }
 
@@ -32,7 +32,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
 
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   if (!user.project) {
-    sendOutcome(res, badRequest('User must be scoped to the project'));
+    sendOutcome(req, res, badRequest('User must be scoped to the project'));
     return;
   }
 

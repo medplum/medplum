@@ -42,7 +42,7 @@ export const agentStatusHandler = asyncWrap(async (req: Request, res: Response) 
   // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req, repo);
   if (!agent) {
-    sendOutcome(res, badRequest('Must specify agent ID or identifier'));
+    sendOutcome(req, res, badRequest('Must specify agent ID or identifier'));
     return;
   }
 

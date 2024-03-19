@@ -29,7 +29,7 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
-    sendOutcome(res, badRequest('Login already has a membership'));
+    sendOutcome(req, res, badRequest('Login already has a membership'));
     return;
   }
 

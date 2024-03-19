@@ -32,40 +32,40 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req, repo);
   if (!agent) {
-    sendOutcome(res, badRequest('Must specify agent ID or identifier'));
+    sendOutcome(req, res, badRequest('Must specify agent ID or identifier'));
     return;
   }
 
   const params = parseParameters<AgentPushParameters>(req.body);
   if (!params.body) {
-    sendOutcome(res, badRequest('Missing body parameter'));
+    sendOutcome(req, res, badRequest('Missing body parameter'));
     return;
   }
 
   if (!params.contentType) {
-    sendOutcome(res, badRequest('Missing contentType parameter'));
+    sendOutcome(req, res, badRequest('Missing contentType parameter'));
     return;
   }
 
   if (!params.destination) {
-    sendOutcome(res, badRequest('Missing destination parameter'));
+    sendOutcome(req, res, badRequest('Missing destination parameter'));
     return;
   }
 
   const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
   if (waitTimeout < 0 || waitTimeout > MAX_WAIT_TIMEOUT) {
-    sendOutcome(res, badRequest('Invalid wait timeout'));
+    sendOutcome(req, res, badRequest('Invalid wait timeout'));
     return;
   }
 
   const device = await getDevice(repo, params.destination);
   if (!device) {
-    sendOutcome(res, badRequest('Destination device not found'));
+    sendOutcome(req, res, badRequest('Destination device not found'));
     return;
   }
 
   if (!device.url) {
-    sendOutcome(res, badRequest('Destination device missing url'));
+    sendOutcome(req, res, badRequest('Destination device missing url'));
     return;
   }
 
@@ -79,7 +79,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // If not waiting for a response, publish and return
   if (!params.waitForResponse) {
     await publishMessage(agent, message);
-    sendOutcome(res, allOk);
+    sendOutcome(req, res, allOk);
     return;
   }
 
@@ -97,7 +97,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // Create a timer for 5 seconds for timeout
   const timer = setTimeout(() => {
     cleanup();
-    sendOutcome(res, badRequest('Timeout'));
+    sendOutcome(req, res, badRequest('Timeout'));
   }, waitTimeout);
 
   function cleanup(): void {

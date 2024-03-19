@@ -74,19 +74,19 @@ protectedCommonRoutes.post(
   asyncWrap(async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+      sendOutcome(req, res, invalidRequest(errors));
       return;
     }
 
     const type = req.body['hub.channel.type'];
     if (type !== 'websocket') {
-      sendOutcome(res, badRequest('Invalid hub.channel.type'));
+      sendOutcome(req, res, badRequest('Invalid hub.channel.type'));
       return;
     }
 
     const mode = req.body['hub.mode'];
     if (mode !== 'subscribe') {
-      sendOutcome(res, badRequest('Invalid hub.mode'));
+      sendOutcome(req, res, badRequest('Invalid hub.mode'));
       return;
     }
 
@@ -114,7 +114,7 @@ protectedCommonRoutes.post(
   asyncWrap(async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+      sendOutcome(req, res, invalidRequest(errors));
       return;
     }
 
