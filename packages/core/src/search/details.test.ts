@@ -205,6 +205,31 @@ describe('SearchParameterDetails', () => {
     expect(details.array).toBe(false);
   });
 
+  test('us-core-condition-asserted-date', () => {
+    const searchParam = searchParams.find((e) => e.id === 'us-core-condition-asserted-date') as SearchParameter;
+    const details = getSearchParameterDetails('Condition', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(false);
+  });
+
+  test('us-core-ethnicity', () => {
+    const searchParam = searchParams.find((e) => e.id === 'us-core-ethnicity') as SearchParameter;
+    const details = getSearchParameterDetails('Patient', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(true);
+    expect(details.type).toEqual(SearchParameterType.TEXT);
+    expect(details.elementDefinitions).toEqual([]);
+  });
+
+  test('us-core-patient-gender-identity', () => {
+    const searchParam = searchParams.find((e) => e.id === 'us-core-patient-gender-identity') as SearchParameter;
+    const details = getSearchParameterDetails('Patient', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(true);
+    expect(details.type).toEqual(SearchParameterType.TEXT);
+    expect(details.elementDefinitions).toEqual([]);
+  });
+
   test('Everything', () => {
     // Make sure that getSearchParameterDetails returns successfully for all known parameters.
     for (const resourceType of Object.keys(globalSchema.types)) {
