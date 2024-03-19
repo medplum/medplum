@@ -1001,13 +1001,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     try {
-      const resourceType = searchRequest.resourceType;
-      validateResourceType(resourceType);
-
-      if (!this.canReadResourceType(resourceType)) {
-        throw new OperationOutcomeError(forbidden);
-      }
-
+      // Resource type validation is performed in the searchImpl function
       const result = await searchImpl(this, searchRequest);
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
       return result;
