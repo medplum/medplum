@@ -33,7 +33,7 @@ export function sendOutcome(req: Request, res: Response, outcome: OperationOutco
   }
   if (isUnauthorized(outcome)) {
     const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Basic')) {
+    if (!authHeader?.startsWith('Basic')) {
       res.set('WWW-Authenticate', `Basic realm="${getConfig().baseUrl}"`);
     }
   }
