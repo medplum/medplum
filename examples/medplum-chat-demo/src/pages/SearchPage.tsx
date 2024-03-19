@@ -1,7 +1,6 @@
-import { Button, Modal } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import {
   Filter,
+  formatSearchQuery,
   getQuestionnaireAnswers,
   getReferenceString,
   Operator,
@@ -9,7 +8,7 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import { QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
-import { Document, Loading, QuestionnaireForm, SearchControl, useMedplum } from '@medplum/react';
+import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +17,6 @@ export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
-  const [opened, handlers] = useDisclosure(false);
 
   const [search, setSearch] = useState<SearchRequest>();
 
@@ -30,7 +28,14 @@ export function SearchPage(): JSX.Element {
     }
 
     const populatedSearch = getPopulatedSearch(parsedSearch);
-    setSearch(populatedSearch);
+    if (
+      location.pathname === `/${populatedSearch.resourceType}` &&
+      location.search === formatSearchQuery(populatedSearch)
+    ) {
+      setSearch(populatedSearch);
+    } else {
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+    }
   }, [medplum, navigate, location]);
 
   const handleCreateThread = (formData: QuestionnaireResponse) => {

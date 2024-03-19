@@ -1,8 +1,10 @@
-import { Button, Flex, Group, Modal } from '@mantine/core';
+import { Button, Group, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { PatchOperation } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface CloseOpenThreadProps {
   readonly communication: Communication;
@@ -27,11 +29,19 @@ export function CloseOpenThread(props: CloseOpenThreadProps): JSX.Element {
 
     try {
       const result = await medplum.patchResource('Communication', communicationId, ops);
-      console.log('Success');
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: `Thread ${display === 'Close' ? 'closed.' : 'reopened.'}`,
+      });
       props.onChange(result);
       handlers.close();
     } catch (err) {
-      console.error(err);
+      showNotification({
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
     }
   };
 

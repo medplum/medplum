@@ -1,8 +1,10 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getQuestionnaireAnswers, PatchOperation } from '@medplum/core';
-import { Communication, Questionnaire, QuestionnaireResponse, Reference, Resource } from '@medplum/fhirtypes';
+import { showNotification } from '@mantine/notifications';
+import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { Communication, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface AddParticipantProps {
   readonly communication: Communication;
@@ -44,10 +46,18 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
 
     try {
       const result = await medplum.patchResource('Communication', communicationId, ops);
-      console.log('Success!');
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'User added to thread.',
+      });
       props.onChange(result);
     } catch (err) {
-      console.error(err);
+      showNotification({
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
     }
   };
 
