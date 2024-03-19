@@ -244,24 +244,36 @@ export class SubscriptionManager {
     });
   }
 
-  private emitConnect(subscriptionId: string): void {
-    const connectEvent = { type: 'connect', payload: { subscriptionId } } as SubscriptionEventMap['connect'];
+  private emitConnect(criteriaEntry: CriteriaEntry): void {
+    const connectEvent = {
+      type: 'connect',
+      payload: { subscriptionId: criteriaEntry.subscriptionId as string },
+    } as SubscriptionEventMap['connect'];
     this.masterSubEmitter?.dispatchEvent(connectEvent);
     for (const emitter of this.getAllCriteriaEmitters()) {
       emitter.dispatchEvent(connectEvent);
     }
   }
 
-  private emitError(criteria: string, error: Error): void {
+  private emitError(criteriaEntry: CriteriaEntry, error: Error): void {
     const errorEvent = { type: 'error', payload: error } as SubscriptionEventMap['error'];
     this.masterSubEmitter?.dispatchEvent(errorEvent);
-    const entries = this.criteriaEntries.get(criteria);
-    if (entries) {
-      const { bareCriteria, criteriaWithProps } = entries;
-      bareCriteria?.emitter?.dispatchEvent(errorEvent);
-      for (const criteria of criteriaWithProps) {
-        criteria?.emitter?.dispatchEvent(errorEvent);
-      }
+    criteriaEntry.emitter.dispatchEvent(errorEvent);
+  }
+
+  private maybeEmitDisconnect(criteriaEntry: CriteriaEntry): void {
+    const { subscriptionId } = criteriaEntry;
+    if (subscriptionId) {
+      const disconnectEvent = {
+        type: 'disconnect',
+        payload: { subscriptionId },
+      } as SubscriptionEventMap['disconnect'];
+      // Emit disconnect on master
+      this.masterSubEmitter?.dispatchEvent(disconnectEvent);
+      // Emit disconnect on criteria emitter
+      criteriaEntry.emitter.dispatchEvent(disconnectEvent);
+    } else {
+      console.warn('Called disconnect for `CriteriaEntry` before `subscriptionId` was present.');
     }
   }
 
@@ -390,13 +402,13 @@ export class SubscriptionManager {
         newCriteriaEntry.subscriptionId = subscriptionId;
         this.criteriaEntriesBySubscriptionId.set(subscriptionId, newCriteriaEntry);
         // Emit connect event
-        this.emitConnect(subscriptionId);
+        this.emitConnect(newCriteriaEntry);
         // Send binding message
         this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
       })
       .catch((err) => {
         console.error(err.message);
-        this.emitError(criteria, err);
+        this.emitError(newCriteriaEntry, err);
         this.removeCriteriaEntry(newCriteriaEntry);
       });
 
@@ -415,17 +427,8 @@ export class SubscriptionManager {
       return;
     }
 
-    // If actually removing
-    const { subscriptionId } = criteriaEntry;
-    if (subscriptionId) {
-      const disconnectEvent = { type: 'disconnect', payload: { subscriptionId } } as SubscriptionEventMap['disconnect'];
-      // Emit disconnect on master
-      this.masterSubEmitter?.dispatchEvent(disconnectEvent);
-      // Emit disconnect on criteria emitter
-      criteriaEntry.emitter.dispatchEvent(disconnectEvent);
-    } else {
-      console.warn('CriteriaEntry removed before `subscriptionId` was present.');
-    }
+    // If actually removing (refcount === 0)
+    this.maybeEmitDisconnect(criteriaEntry);
     this.removeCriteriaEntry(criteriaEntry);
   }
 

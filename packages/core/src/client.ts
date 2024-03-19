@@ -28,6 +28,7 @@ import {
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  Subscription,
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
@@ -3811,10 +3812,11 @@ export class MedplumClient extends EventTarget {
    *
    * @category Subscriptions
    * @param criteria - The criteria to subscribe to.
+   * @param subscriptionProps - Optional properties to add to the created `Subscription` resource.
    * @returns a `SubscriptionEmitter` that emits `Bundle` resources containing changes to resources based on the given criteria.
    */
-  subscribeToCriteria(criteria: string): SubscriptionEmitter {
-    return this.getSubscriptionManager().addCriteria(criteria);
+  subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
+    return this.getSubscriptionManager().addCriteria(criteria, subscriptionProps);
   }
 
   /**
@@ -3825,12 +3827,13 @@ export class MedplumClient extends EventTarget {
    *
    * @category Subscriptions
    * @param criteria - The criteria to unsubscribe from.
+   * @param subscriptionProps - The optional properties that `subscribeToCriteria` was called with.
    */
-  unsubscribeFromCriteria(criteria: string): void {
+  unsubscribeFromCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): void {
     if (!this.subscriptionManager) {
       return;
     }
-    this.subscriptionManager.removeCriteria(criteria);
+    this.subscriptionManager.removeCriteria(criteria, subscriptionProps);
     if (this.subscriptionManager.getCriteriaCount() === 0) {
       this.subscriptionManager.closeWebSocket();
     }
