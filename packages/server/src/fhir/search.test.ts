@@ -15,6 +15,7 @@ import {
   AllergyIntolerance,
   Appointment,
   AuditEvent,
+  Binary,
   Bundle,
   CareTeam,
   Coding,
@@ -3225,6 +3226,17 @@ describe('FHIR Search', () => {
         expect(bundle.entry?.length).toBe(2);
         expect(bundleContains(bundle, patient)).toBeTruthy();
         expect(bundleContains(bundle, obs)).toBeTruthy();
+      }));
+
+    test('Binary search not allowed', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search<Binary>({ resourceType: 'Binary' });
+          throw new Error('Expected error');
+        } catch (err) {
+          const outcome = normalizeOperationOutcome(err);
+          expect(outcome.issue?.[0]?.details?.text).toBe('Cannot search on Binary resource type');
+        }
       }));
   });
 
