@@ -7,6 +7,7 @@ import {
   Practitioner,
   Questionnaire,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
@@ -28,20 +29,21 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
   const navigate = useNavigate();
 
   const handleCreateThread = async (formData: QuestionnaireResponse): Promise<void> => {
-    const answers = getQuestionnaireAnswers(formData);
-    const topic = answers.topic.valueString;
-    const participants = answers.participants.valueReference;
-    const recipients = [participants] as Communication['recipient'];
+    const participants = getRecipients(formData);
+    const topic = getQuestionnaireAnswers(formData)['topic'].valueString;
     const profileReference = createReference(profile);
     let subject;
+
+    const recipients = participants?.map((participant) => participant.valueReference) as Communication['recipient'];
 
     if (recipients?.length === 1 && parseReference(recipients[0])[0] === 'Patient') {
       subject = recipients[0] as Reference<Patient>;
     }
 
     recipients?.push(profileReference);
+    console.log(recipients);
 
-    if (!topic || !participants) {
+    if (!topic || !recipients) {
       throw new Error('Please ensure a valid input.');
     }
 
@@ -108,3 +110,23 @@ const createThreadQuestionnaire: Questionnaire = {
     },
   ],
 };
+
+function getRecipients(formData: QuestionnaireResponse) {
+  const items = formData.item;
+  const recipients = [];
+
+  if (!items) {
+    return;
+  }
+
+  for (const item of items) {
+    if (item.linkId === 'participants') {
+      if (!item.answer) {
+        return;
+      }
+      recipients.push(...item.answer);
+    }
+  }
+
+  return recipients;
+}
