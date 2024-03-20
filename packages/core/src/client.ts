@@ -77,6 +77,8 @@ import {
   createReference,
   getReferenceString,
   getWebSocketUrl,
+  isObject,
+  isString,
   resolveId,
   sleep,
 } from './utils';
@@ -468,6 +470,15 @@ export interface PatchOperation {
  * Source for a FHIR Binary.
  */
 export type BinarySource = string | File | Blob | Uint8Array;
+
+/**
+ * Binary upload options.
+ */
+export interface BinaryUploadOptions {
+  readonly contentType?: string;
+  readonly filename?: string;
+  readonly securityContext?: Reference;
+}
 
 /**
  * Email address definition.
@@ -1932,7 +1943,7 @@ export class MedplumClient extends EventTarget {
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    * @category Create
    * @param data - The binary data to upload.
-   * @param filename - Optional filename for the binary.
+   * @param filenameOrUploadOption - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
    * @param contentType - Content type for the binary.
    * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
@@ -1940,16 +1951,17 @@ export class MedplumClient extends EventTarget {
    */
   async createAttachment(
     data: BinarySource,
-    filename: string | undefined,
+    filenameOrUploadOption: BinaryUploadOptions | string | undefined,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void,
     options?: MedplumRequestOptions
   ): Promise<Attachment> {
-    const binary = await this.createBinary(data, filename, contentType, onProgress, options);
+    const uploadOptions = normalizeBinaryUploadOptions(filenameOrUploadOption);
+    const binary = await this.createBinary(data, uploadOptions, contentType, onProgress, options);
     return {
       contentType,
       url: binary.url,
-      title: filename,
+      title: uploadOptions.filename,
     };
   }
 
@@ -1973,7 +1985,7 @@ export class MedplumClient extends EventTarget {
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    * @category Create
    * @param data - The binary data to upload.
-   * @param filename - Optional filename for the binary.
+   * @param filenameOrUploadOption - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
    * @param contentType - Content type for the binary.
    * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
@@ -1981,14 +1993,20 @@ export class MedplumClient extends EventTarget {
    */
   createBinary(
     data: BinarySource,
-    filename: string | undefined,
+    filenameOrUploadOption: BinaryUploadOptions | string | undefined,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void,
-    options?: MedplumRequestOptions
+    options: MedplumRequestOptions = {}
   ): Promise<Binary> {
+    const uploadOptions = normalizeBinaryUploadOptions(filenameOrUploadOption);
+
     const url = this.fhirUrl('Binary');
-    if (filename) {
-      url.searchParams.set('_filename', filename);
+    if (uploadOptions.filename) {
+      url.searchParams.set('_filename', uploadOptions.filename);
+    }
+
+    if (uploadOptions.securityContext?.reference) {
+      this.setRequestHeader(options, 'X-Security-Context', uploadOptions.securityContext.reference);
     }
 
     if (onProgress) {
@@ -2068,14 +2086,14 @@ export class MedplumClient extends EventTarget {
    * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
    * @category Media
    * @param docDefinition - The PDF document definition.
-   * @param filename - Optional filename for the PDF binary resource.
+   * @param filenameOrUploadOption - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
    * @param tableLayouts - Optional pdfmake custom table layout.
    * @param fonts - Optional pdfmake custom font dictionary.
    * @returns The result of the create operation.
    */
   async createPdf(
     docDefinition: TDocumentDefinitions,
-    filename?: string,
+    filenameOrUploadOption?: BinaryUploadOptions | string,
     tableLayouts?: Record<string, CustomTableLayout>,
     fonts?: TFontDictionary
   ): Promise<Binary> {
@@ -2083,7 +2101,7 @@ export class MedplumClient extends EventTarget {
       throw new Error('PDF creation not enabled');
     }
     const blob = await this.createPdfImpl(docDefinition, tableLayouts, fonts);
-    return this.createBinary(blob, filename, 'application/pdf');
+    return this.createBinary(blob, filenameOrUploadOption, 'application/pdf');
   }
 
   /**
@@ -2694,7 +2712,7 @@ export class MedplumClient extends EventTarget {
    * Upload media to the server and create a Media instance for the uploaded content.
    * @param contents - The contents of the media file, as a string, Uint8Array, File, or Blob.
    * @param contentType - The media type of the content.
-   * @param filename - The name of the file to be uploaded, or undefined if not applicable.
+   * @param filenameOrUploadOption - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
    * @param additionalFields - Additional fields for Media.
    * @param options - Optional fetch options.
    * @returns Promise that resolves to the created Media
@@ -2702,11 +2720,12 @@ export class MedplumClient extends EventTarget {
   async uploadMedia(
     contents: string | Uint8Array | File | Blob,
     contentType: string,
-    filename: string | undefined,
+    filenameOrUploadOption: BinaryUploadOptions | string | undefined,
     additionalFields?: Partial<Media>,
     options?: MedplumRequestOptions
   ): Promise<Media> {
-    const binary = await this.createBinary(contents, filename, contentType);
+    const uploadOptions = normalizeBinaryUploadOptions(filenameOrUploadOption);
+    const binary = await this.createBinary(contents, uploadOptions, contentType);
     return this.createResource(
       {
         resourceType: 'Media',
@@ -2714,7 +2733,7 @@ export class MedplumClient extends EventTarget {
         content: {
           contentType: contentType,
           url: BINARY_URL_PREFIX + binary.id,
-          title: filename,
+          title: uploadOptions.filename,
         },
         ...additionalFields,
       },
@@ -3042,27 +3061,19 @@ export class MedplumClient extends EventTarget {
    * @param options - The options to add defaults to.
    */
   private addFetchOptionsDefaults(options: MedplumRequestOptions): void {
-    let headers = options.headers as Record<string, string> | undefined;
-    if (!headers) {
-      headers = {};
-      options.headers = headers;
-    }
+    this.setRequestHeader(options, 'X-Medplum', 'extended');
+    this.setRequestHeader(options, 'Accept', DEFAULT_ACCEPT, true);
 
-    if (!headers['Accept']) {
-      headers['Accept'] = DEFAULT_ACCEPT;
-    }
-
-    headers['X-Medplum'] = 'extended';
-
-    if (options.body && !headers['Content-Type']) {
-      headers['Content-Type'] = ContentType.FHIR_JSON;
+    if (options.body) {
+      this.setRequestHeader(options, 'Content-Type', ContentType.FHIR_JSON, true);
     }
 
     if (this.accessToken) {
-      headers['Authorization'] = 'Bearer ' + this.accessToken;
+      this.setRequestHeader(options, 'Authorization', 'Bearer ' + this.accessToken);
     } else if (this.basicAuth) {
-      headers['Authorization'] = 'Basic ' + this.basicAuth;
+      this.setRequestHeader(options, 'Authorization', 'Basic ' + this.basicAuth);
     }
+
     if (!options.cache) {
       options.cache = 'no-cache';
     }
@@ -3078,11 +3089,25 @@ export class MedplumClient extends EventTarget {
    * @param contentType - The new content type to set.
    */
   private setRequestContentType(options: MedplumRequestOptions, contentType: string): void {
+    this.setRequestHeader(options, 'Content-Type', contentType);
+  }
+
+  /**
+   * Sets a header on fetch options.
+   * @param options - The fetch options.
+   * @param key - The header key.
+   * @param value - The header value.
+   * @param ifNoneExist - Optional flag to only set the header if it doesn't already exist.
+   */
+  private setRequestHeader(options: MedplumRequestOptions, key: string, value: string, ifNoneExist = false): void {
     if (!options.headers) {
       options.headers = {};
     }
     const headers = options.headers as Record<string, string>;
-    headers['Content-Type'] = contentType;
+    if (ifNoneExist && headers[key]) {
+      return;
+    }
+    headers[key] = value;
   }
 
   /**
@@ -3774,4 +3799,16 @@ async function tryGetContentLocation(response: Response, body: any): Promise<str
 function bundleToResourceArray<T extends Resource>(bundle: Bundle<T>): ResourceArray<T> {
   const array = bundle.entry?.map((e) => e.resource as T) ?? [];
   return Object.assign(array, { bundle });
+}
+
+function normalizeBinaryUploadOptions(
+  filenameOrUploadOption: BinaryUploadOptions | string | undefined
+): BinaryUploadOptions {
+  if (isString(filenameOrUploadOption)) {
+    return { filename: filenameOrUploadOption };
+  }
+  if (isObject(filenameOrUploadOption)) {
+    return filenameOrUploadOption;
+  }
+  return {};
 }
