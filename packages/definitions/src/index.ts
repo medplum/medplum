@@ -6,8 +6,8 @@ export function readJson(filename: string): any {
 }
 
 /**
- * The list of all known search parameter definition bundles
- * filenames from `@medplum/definitions`.
+ * The list of all known search parameter definition bundle file paths relative to the
+ * `@medplum/definitions` package. Typically used in conjunction with `readJson`.
  */
 export const SEARCH_PARAMETER_BUNDLE_FILES = [
   'fhir/r4/search-parameters.json',
