@@ -20,8 +20,8 @@ export function CommunicationDetails({ communication }: CommunicationDetailsProp
   };
 
   return (
-    <Paper>
-      <Tabs defaultValue="details" onChange={handleTabChange}>
+    <Paper m="md">
+      <Tabs defaultValue="details" value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab} value={tab.toLowerCase()}>

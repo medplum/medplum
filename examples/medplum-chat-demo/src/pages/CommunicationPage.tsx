@@ -35,16 +35,33 @@ export function CommunicationPage(): JSX.Element {
   }
 
   return (
-    <Grid>
-      <GridCol span={4}>{patient ? <PatientSummary patient={patient} /> : null}</GridCol>
-      <GridCol span={5}>
-        <CommunicationDetails communication={communication} />
-      </GridCol>
-      <GridCol span={3}>
-        <Paper>
-          <CommunicationActions communication={communication} onChange={onCommunicationChange} />
-        </Paper>
-      </GridCol>
-    </Grid>
+    <div>
+      {patient ? (
+        <Grid gutter="xs">
+          <GridCol span={4}>
+            <PatientSummary patient={patient} />
+          </GridCol>
+          <GridCol span={5}>
+            <CommunicationDetails communication={communication} />
+          </GridCol>
+          <GridCol span={3}>
+            <Paper>
+              <CommunicationActions communication={communication} onChange={onCommunicationChange} />
+            </Paper>
+          </GridCol>
+        </Grid>
+      ) : (
+        <Grid gutter="xs">
+          <GridCol span={8}>
+            <CommunicationDetails communication={communication} />
+          </GridCol>
+          <GridCol span={4}>
+            <Paper m="md">
+              <CommunicationActions communication={communication} onChange={onCommunicationChange} />
+            </Paper>
+          </GridCol>
+        </Grid>
+      )}
+    </div>
   );
 }

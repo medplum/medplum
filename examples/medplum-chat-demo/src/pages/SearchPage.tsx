@@ -64,7 +64,6 @@ export function SearchPage(): JSX.Element {
   };
 
   const handleTabChange = (newTab: string | null): void => {
-    debugger;
     if (!search) {
       throw new Error('Error: No valid search');
     }
@@ -152,14 +151,17 @@ function getDefaultFilters(resourceType: string): Filter[] {
 }
 
 function getDefaultFields(resourceType: string): string[] {
-  const fields = ['id'];
+  const fields = [];
 
   switch (resourceType) {
     case 'Communication':
-      fields.push('sender', 'recipient', 'sent');
+      fields.push('topic', 'sender', 'recipient', 'sent');
       break;
     case 'Patient':
       fields.push('name', '_lastUpdated');
+      break;
+    default:
+      fields.push('id');
   }
 
   return fields;
