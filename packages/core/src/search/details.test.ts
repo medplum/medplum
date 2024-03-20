@@ -1,23 +1,28 @@
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { SearchParameterType, getSearchParameterDetails } from './details';
 
-const searchParamsBundle = readJson('fhir/r4/search-parameters.json');
-const medplumSearchParamsBundle = readJson('fhir/r4/search-parameters-medplum.json');
-const searchParams = [
-  ...(searchParamsBundle.entry as BundleEntry[]).map((e) => e.resource as SearchParameter),
-  ...(medplumSearchParamsBundle.entry as BundleEntry[]).map((e) => e.resource as SearchParameter),
-];
+const searchParams: SearchParameter[] = [];
+const searchParameterBundles: Bundle<SearchParameter>[] = [];
+
+for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+  const bundle = readJson(filename) as Bundle<SearchParameter>;
+  searchParameterBundles.push(bundle);
+  for (const entry of bundle.entry as BundleEntry[]) {
+    searchParams.push(entry.resource as SearchParameter);
+  }
+}
 
 describe('SearchParameterDetails', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    indexSearchParameterBundle(searchParamsBundle);
-    indexSearchParameterBundle(medplumSearchParamsBundle);
+    for (const bundle of searchParameterBundles) {
+      indexSearchParameterBundle(bundle);
+    }
   });
 
   test('Get details', () => {
@@ -203,6 +208,31 @@ describe('SearchParameterDetails', () => {
     const details = getSearchParameterDetails('Patient', searchParam);
     expect(details).toBeDefined();
     expect(details.array).toBe(false);
+  });
+
+  test('us-core-condition-asserted-date', () => {
+    const searchParam = searchParams.find((e) => e.id === 'us-core-condition-asserted-date') as SearchParameter;
+    const details = getSearchParameterDetails('Condition', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(false);
+  });
+
+  test('us-core-ethnicity', () => {
+    const searchParam = searchParams.find((e) => e.id === 'us-core-ethnicity') as SearchParameter;
+    const details = getSearchParameterDetails('Patient', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(true);
+    expect(details.type).toEqual(SearchParameterType.TEXT);
+    expect(details.elementDefinitions).toEqual([]);
+  });
+
+  test('us-core-patient-gender-identity', () => {
+    const searchParam = searchParams.find((e) => e.id === 'us-core-patient-gender-identity') as SearchParameter;
+    const details = getSearchParameterDetails('Patient', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(true);
+    expect(details.type).toEqual(SearchParameterType.TEXT);
+    expect(details.elementDefinitions).toEqual([]);
   });
 
   test('Everything', () => {
