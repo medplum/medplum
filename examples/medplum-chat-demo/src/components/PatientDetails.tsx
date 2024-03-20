@@ -15,6 +15,7 @@ import {
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from '../pages/PatientHeader';
+import { cleanResource } from '../utils';
 
 interface PatientDetailsProps {
   onChange: (patient: Patient) => void;
@@ -99,20 +100,4 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
       </Tabs>
     </Document>
   );
-}
-
-function cleanResource(resource: Resource): Resource {
-  let meta = resource.meta;
-  if (meta) {
-    meta = {
-      ...meta,
-      lastUpdated: undefined,
-      versionId: undefined,
-      author: undefined,
-    };
-  }
-  return {
-    ...resource,
-    meta,
-  };
 }

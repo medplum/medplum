@@ -15,6 +15,7 @@ import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { CreateThread } from '../components/CreateThread';
 import { PatientFilter } from '../components/PatientFilter';
+import { getPopulatedSearch } from '../utils';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
@@ -48,6 +49,7 @@ export function SearchPage(): JSX.Element {
     }
 
     const populatedSearch = getPopulatedSearch(parsedSearch);
+
     if (
       location.pathname === `/${populatedSearch.resourceType}` &&
       location.search === formatSearchQuery(populatedSearch)
@@ -120,51 +122,6 @@ export function SearchPage(): JSX.Element {
       )}
     </Document>
   );
-}
-
-function getPopulatedSearch(search: SearchRequest): SearchRequest<Resource> {
-  const filters = search.filters ?? getDefaultFilters(search.resourceType);
-  const fields = search.fields ?? getDefaultFields(search.resourceType);
-  const sortRules = search.sortRules ?? [{ code: '-_lastUpdated' }];
-
-  return {
-    resourceType: search.resourceType,
-    filters,
-    fields,
-    sortRules,
-  };
-}
-
-function getDefaultFilters(resourceType: string): Filter[] {
-  const filters = [];
-
-  switch (resourceType) {
-    case 'Communication':
-      filters.push(
-        { code: 'part-of:missing', operator: Operator.EQUALS, value: 'true' },
-        { code: 'status:not', operator: Operator.EQUALS, value: 'completed' }
-      );
-      break;
-  }
-
-  return filters;
-}
-
-function getDefaultFields(resourceType: string): string[] {
-  const fields = [];
-
-  switch (resourceType) {
-    case 'Communication':
-      fields.push('topic', 'sender', 'recipient', 'sent');
-      break;
-    case 'Patient':
-      fields.push('name', '_lastUpdated');
-      break;
-    default:
-      fields.push('id');
-  }
-
-  return fields;
 }
 
 function handleInitialTab(currentSearch: SearchRequest): string {
