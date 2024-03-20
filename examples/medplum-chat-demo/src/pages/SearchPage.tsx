@@ -1,20 +1,20 @@
-import { Modal, Tabs } from '@mantine/core';
+import { Group, Tabs } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   Filter,
   formatSearchQuery,
-  getQuestionnaireAnswers,
   getReferenceString,
   Operator,
   parseSearchRequest,
   SearchRequest,
 } from '@medplum/core';
-import { Communication, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
-import { Document, Loading, QuestionnaireForm, SearchControl, useMedplum } from '@medplum/react';
+import { Resource } from '@medplum/fhirtypes';
+import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { CreateThread } from '../components/CreateThread';
+import { PatientFilter } from '../components/PatientFilter';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
@@ -58,6 +58,11 @@ export function SearchPage(): JSX.Element {
     }
   }, [medplum, navigate, location]);
 
+  const handlePatientFilter = (search: SearchRequest): void => {
+    setSearch(search);
+    navigate(`/Communication${formatSearchQuery(search)}`);
+  };
+
   const handleTabChange = (newTab: string | null): void => {
     debugger;
     if (!search) {
@@ -75,6 +80,10 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Document>
+      <Group style={{ float: 'right' }}>
+        <PatientFilter search={search} onPatientFilter={handlePatientFilter} />
+        <CreateThread opened={opened} handlers={handlers} />
+      </Group>
       {showTabs ? (
         <Tabs value={currentTab?.toLowerCase()} onChange={handleTabChange}>
           <Tabs.List>
@@ -89,7 +98,7 @@ export function SearchPage(): JSX.Element {
               search={search}
               onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
               hideFilters={true}
-              hideToolbar={false}
+              hideToolbar={true}
               onNew={handlers.open}
             />
           </Tabs.Panel>
@@ -110,7 +119,6 @@ export function SearchPage(): JSX.Element {
           hideToolbar={true}
         />
       )}
-      <CreateThread opened={opened} handlers={handlers} />
     </Document>
   );
 }
@@ -143,7 +151,7 @@ function getDefaultFilters(resourceType: string): Filter[] {
   return filters;
 }
 
-function getDefaultFields(resourceType: string) {
+function getDefaultFields(resourceType: string): string[] {
   const fields = ['id'];
 
   switch (resourceType) {
@@ -157,7 +165,7 @@ function getDefaultFields(resourceType: string) {
   return fields;
 }
 
-function handleInitialTab(currentSearch: SearchRequest) {
+function handleInitialTab(currentSearch: SearchRequest): string {
   if (!currentSearch.filters) {
     return 'active';
   }
@@ -196,7 +204,7 @@ function updateSearch(newTab: string, search: SearchRequest): SearchRequest {
   };
 }
 
-function shouldShowTabs(search: SearchRequest) {
+function shouldShowTabs(search: SearchRequest): boolean {
   if (search.resourceType !== 'Communication') {
     return false;
   }

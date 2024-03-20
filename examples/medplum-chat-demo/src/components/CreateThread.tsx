@@ -1,4 +1,4 @@
-import { Modal } from '@mantine/core';
+import { Button, Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString, parseReference } from '@medplum/core';
 import {
@@ -27,7 +27,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
   const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
 
-  const handleCreateThread = async (formData: QuestionnaireResponse) => {
+  const handleCreateThread = async (formData: QuestionnaireResponse): Promise<void> => {
     const answers = getQuestionnaireAnswers(formData);
     const topic = answers.topic.valueString;
     const participants = answers.participants.valueReference;
@@ -78,9 +78,12 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
   };
 
   return (
-    <Modal opened={opened} onClose={handlers.close}>
-      <QuestionnaireForm questionnaire={createThreadQuestionnaire} onSubmit={handleCreateThread} />
-    </Modal>
+    <div>
+      <Button onClick={handlers.open}>Create New Thread</Button>
+      <Modal opened={opened} onClose={handlers.close}>
+        <QuestionnaireForm questionnaire={createThreadQuestionnaire} onSubmit={handleCreateThread} />
+      </Modal>
+    </div>
   );
 }
 
