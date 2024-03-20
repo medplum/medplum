@@ -176,7 +176,7 @@ class SyncSecureStorage implements Storage {
 
   constructor() {
     this.storage = new Map<string, string>();
-    this.initPromise = new Promise((resolve) => {
+    this.initPromise = new Promise((resolve, reject) => {
       // Fetch ::keys::
       SecureStore.getItemAsync('___keys___')
         .then((keysStr) => {
@@ -194,7 +194,7 @@ class SyncSecureStorage implements Storage {
                 .then((val) => {
                   resolve([key, val]);
                 })
-                .catch(console.error);
+                .catch(reject);
             });
           });
           Promise.all(promises)
@@ -208,9 +208,9 @@ class SyncSecureStorage implements Storage {
               this.initialized = true;
               resolve();
             })
-            .catch(console.error);
+            .catch(reject);
         })
-        .catch(console.error);
+        .catch(reject);
     });
   }
 

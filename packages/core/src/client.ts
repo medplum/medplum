@@ -758,13 +758,19 @@ export class MedplumClient extends EventTarget {
       this.initPromise = Promise.resolve();
     } else if (this.storage.getInitPromise !== undefined) {
       const storageInitPromise = this.storage.getInitPromise();
-      const initPromise = new Promise<void>((resolve) => {
+      const initPromise = new Promise<void>((resolve, reject) => {
         storageInitPromise
           .then(() => {
-            this.attemptResumeActiveLogin().then(resolve).catch(console.error);
+            this.attemptResumeActiveLogin()
+              .then(resolve)
+              .catch((error: Error) => {
+                console.error(error);
+                // Resolve here to mirror behavior in the happy path (initPromise should resolve even when error happens in attemptResumeActiveLogin())
+                resolve();
+              });
             this.initComplete = true;
           })
-          .catch(console.error);
+          .catch(reject);
       });
       this.initPromise = initPromise;
       this.initComplete = false;
