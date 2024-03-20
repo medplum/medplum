@@ -206,6 +206,9 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
       meta: {
         project: resource.meta?.project,
       },
+      securityContext: {
+        reference: `${resource.resourceType}/${resource.id}`,
+      },
     });
     if (response.body === null) {
       throw new Error('Received null response body');
