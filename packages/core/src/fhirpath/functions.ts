@@ -262,7 +262,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   where: (context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.filter((e) => toJsBoolean(criteria.eval(context, [e])));
+    return input.filter((e) => toJsBoolean(criteria.eval({ parent: context, variables: { $this: e } }, [e])));
   },
 
   /**
