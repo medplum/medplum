@@ -528,6 +528,19 @@ describe('Updated implementation', () => {
     });
   });
 
+  test('Excludes ancestor code in descendent-of filter', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/inactive')}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toHaveLength(11);
+    expect(expansion.contains).not.toContainEqual<ValueSetExpansionContains>({
+      code: '_ActMoodPredicate',
+    });
+  });
+
   test('Recursive subsumption', async () => {
     const res = await request(app)
       .get(
