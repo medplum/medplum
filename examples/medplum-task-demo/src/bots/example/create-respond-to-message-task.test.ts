@@ -1,4 +1,8 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import {
+  SEARCH_PARAMETER_BUNDLE_FILES,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+} from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -16,8 +20,9 @@ describe('Create Respond to Message Task', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
   });
 
   test('No messages in the last 30 minutes', async () => {

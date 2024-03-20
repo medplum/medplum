@@ -1,6 +1,6 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
-import { indexSearchParameterBundle } from '../types';
+import { SEARCH_PARAMETER_BUNDLE_FILES, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import {
   Operator,
@@ -15,8 +15,9 @@ import {
 describe('Search Utils', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
   });
 
   test('parseSearchRequest', () => {

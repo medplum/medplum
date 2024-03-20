@@ -4,13 +4,15 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   InternalTypeSchema,
+  isPopulated,
   isResourceTypeSchema,
   PropertyType,
+  SEARCH_PARAMETER_BUNDLE_FILES,
   SearchParameterDetails,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client } from 'pg';
@@ -48,21 +50,17 @@ export async function main(): Promise<void> {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
 
-  const searchParamBundle = readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>;
-  indexSearchParameterBundle(searchParamBundle);
+  for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+    const bundle = readJson(filename) as Bundle<SearchParameter>;
+    indexSearchParameterBundle(bundle);
 
-  const medplumSearchParamBundle = readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>;
-  indexSearchParameterBundle(medplumSearchParamBundle);
-
-  for (const entry of searchParamBundle.entry as BundleEntry<SearchParameter>[]) {
-    if (entry.resource) {
-      searchParams.push(entry.resource);
+    if (!isPopulated(bundle.entry)) {
+      throw new Error('Empty search parameter bundle: ' + filename);
     }
-  }
-
-  for (const entry of medplumSearchParamBundle.entry as BundleEntry<SearchParameter>[]) {
-    if (entry.resource) {
-      searchParams.push(entry.resource);
+    for (const entry of bundle.entry) {
+      if (entry.resource) {
+        searchParams.push(entry.resource);
+      }
     }
   }
 

@@ -1,23 +1,28 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { globalSchema, indexSearchParameterBundle } from '../types';
+import { SEARCH_PARAMETER_BUNDLE_FILES, globalSchema, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { SearchParameterType, getSearchParameterDetails } from './details';
 
-const searchParamsBundle = readJson('fhir/r4/search-parameters.json');
-const medplumSearchParamsBundle = readJson('fhir/r4/search-parameters-medplum.json');
-const searchParams = [
-  ...(searchParamsBundle.entry as BundleEntry[]).map((e) => e.resource as SearchParameter),
-  ...(medplumSearchParamsBundle.entry as BundleEntry[]).map((e) => e.resource as SearchParameter),
-];
+const searchParams: SearchParameter[] = [];
+const searchParameterBundles: Bundle<SearchParameter>[] = [];
+
+for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+  const bundle = readJson(filename) as Bundle<SearchParameter>;
+  searchParameterBundles.push(bundle);
+  for (const entry of bundle.entry as BundleEntry[]) {
+    searchParams.push(entry.resource as SearchParameter);
+  }
+}
 
 describe('SearchParameterDetails', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    indexSearchParameterBundle(searchParamsBundle);
-    indexSearchParameterBundle(medplumSearchParamsBundle);
+    for (const bundle of searchParameterBundles) {
+      indexSearchParameterBundle(bundle);
+    }
   });
 
   test('Get details', () => {

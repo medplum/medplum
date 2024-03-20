@@ -6,6 +6,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MedplumClient,
+  SEARCH_PARAMETER_BUNDLE_FILES,
   UCUM,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
@@ -42,8 +43,9 @@ describe('Read from Partner Lab', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
   });
 
   beforeEach(async (ctx: any) => {
