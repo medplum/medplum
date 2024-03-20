@@ -7,7 +7,7 @@ import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { sendOutcome } from './outcomes';
-import { sendResponse } from './response';
+import { sendResponse, sendResponseHeaders } from './response';
 import { getPresignedUrl } from './signer';
 import { BinarySource, getBinaryStorage } from './storage';
 
@@ -27,10 +27,20 @@ binaryRouter.get(
     const { id } = req.params;
     const binary = await ctx.repo.readResource<Binary>('Binary', id);
 
-    res.status(200).contentType(binary.contentType as string);
-
-    const stream = await getBinaryStorage().readBinary(binary);
-    stream.pipe(res);
+    const acceptHeader = req.get('Accept');
+    if (acceptHeader?.startsWith(ContentType.FHIR_JSON)) {
+      // When a read request is made with a FHIR type in the Accept header (e.g. "application/fhir+xml" or "application/fhir+json")
+      // the Binary resource is returned in the requested FHIR format.
+      // This applies even when the binary data itself has a FHIR mime type
+      await sendResponse(req, res, allOk, binary);
+    } else {
+      // When the read request has some other type in the Accept header,
+      // then the content should be returned with the content type stated in the resource in the Content-Type header.
+      // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
+      sendResponseHeaders(req, res, allOk, binary);
+      const stream = await getBinaryStorage().readBinary(binary);
+      stream.pipe(res);
+    }
   })
 );
 

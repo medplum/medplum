@@ -13,13 +13,7 @@ export function getFullUrl(resourceType: string, id: string): string {
   return concatUrls(getConfig().baseUrl, `/fhir/R4/${resourceType}/${id}`);
 }
 
-export async function sendResponse(
-  req: Request,
-  res: Response,
-  outcome: OperationOutcome,
-  body: Resource
-): Promise<void> {
-  const ctx = getAuthenticatedContext();
+export function sendResponseHeaders(_req: Request, res: Response, outcome: OperationOutcome, body: Resource): void {
   if (body.meta?.versionId) {
     res.set('ETag', `W/"${body.meta.versionId}"`);
   }
@@ -32,7 +26,17 @@ export async function sendResponse(
 
   res.status(getStatus(outcome));
   res.set('Content-Type', ContentType.FHIR_JSON);
+}
 
+export async function sendResponse(
+  req: Request,
+  res: Response,
+  outcome: OperationOutcome,
+  body: Resource
+): Promise<void> {
+  sendResponseHeaders(req, res, outcome, body);
+
+  const ctx = getAuthenticatedContext();
   const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
 
   if (req.query._pretty === 'true') {
