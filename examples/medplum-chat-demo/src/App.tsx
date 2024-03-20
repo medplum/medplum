@@ -3,9 +3,6 @@ import { AppShell, Loading, Logo, useMedplum, useMedplumProfile, NavbarLink } fr
 import { IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { PatientHistory } from './components/PatientHistory';
-import { PatientOverview } from './components/PatientOverview';
-import { Timeline } from './components/Timeline';
 import { CommunicationPage } from './pages/CommunicationPage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
@@ -60,12 +57,7 @@ export function App(): JSX.Element | null {
           <Route path="/Communication/:id/*" element={<CommunicationPage />} />
           <Route path="/:resourceType" element={<SearchPage />} />
           <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
-          <Route path="/Patient/:id" element={<PatientPage />}>
-            <Route index element={<PatientOverview />} />
-            <Route path="overview" element={<PatientOverview />} />
-            <Route path="timeline" element={<Timeline />} />
-            <Route path="history" element={<PatientHistory />} />
-          </Route>
+          <Route path="/Patient/:id/*" element={<PatientPage />} />
           <Route path="/:resourceType/:id" element={<ResourcePage />} />
           <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
         </Routes>
