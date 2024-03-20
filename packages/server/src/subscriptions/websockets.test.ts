@@ -42,22 +42,13 @@ describe('WebSockets Subscriptions', () => {
       createTestProject({
         project: { features: ['websocket-subscriptions'] },
         withAccessToken: true,
+        withRepo: true,
       })
     );
 
     project = result.project;
     accessToken = result.accessToken;
-
-    repo = new Repository({
-      extendedMode: true,
-      projects: [project.id as string],
-      author: {
-        reference: 'ClientApplication/' + randomUUID(),
-      },
-    });
-
-    // TODO: Remove this when the websocket-subscriptions feature flag is removed
-    project = await withTestContext(() => repo.updateResource({ ...project, features: ['websocket-subscriptions'] }));
+    repo = result.repo;
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 511, resolve);
