@@ -10,3 +10,12 @@ export interface ComplexTypeInputProps<ValueType> {
   onChange: ((value: ValueType, propName?: string) => void) | undefined;
   outcome: OperationOutcome | undefined;
 }
+
+export interface PrimitiveTypeInputProps {
+  id: string;
+  name: string;
+  'data-testid': string;
+  defaultValue?: any;
+  required: boolean;
+  error: string | undefined;
+}
