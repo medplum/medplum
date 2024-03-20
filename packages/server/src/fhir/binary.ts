@@ -1,10 +1,10 @@
-import { ContentType, OperationOutcomeError, allOk, badRequest, created, isResource } from '@medplum/core';
+import { ContentType, allOk, badRequest, created, isResource } from '@medplum/core';
 import { Binary, OperationOutcome } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import internal from 'stream';
 import zlib from 'zlib';
 import { asyncWrap } from '../async';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, getLogger } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { sendOutcome } from './outcomes';
 import { sendResponse, sendResponseHeaders } from './response';
@@ -71,10 +71,10 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
   let binaryContentSpecialCase = false;
 
   if (contentType === ContentType.FHIR_JSON) {
+    const str = await readStreamToString(stream);
     try {
       // The binary handler does *not* use Express body-parser in order to support raw binary data.
       // Therefore, we need to manually parse the body stream as JSON.
-      const str = await readStreamToString(stream);
       const body = JSON.parse(str);
       if (isResource(body) && body.resourceType === 'Binary' && body.id === id) {
         // Special case where the content is actually a Binary resource.
@@ -86,7 +86,9 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
         binarySource = str;
       }
     } catch (err) {
-      throw new OperationOutcomeError(badRequest('Invalid JSON'));
+      // If the JSON is invalid, then it is not eligible for the special case.
+      getLogger().debug('Invalid JSON', { error: err });
+      binarySource = str;
     }
   }
 

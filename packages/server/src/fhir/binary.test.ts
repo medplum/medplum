@@ -37,6 +37,14 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
     expect(res2.text).toEqual('Hello world');
+
+    // Read as FHIR JSON
+    const res3 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', ContentType.FHIR_JSON);
+    expect(res3.status).toBe(200);
+    expect(res3.body.resourceType).toBe('Binary');
   });
 
   test('Read binary not found', async () => {
@@ -207,6 +215,92 @@ describe('Binary', () => {
     // Verify that the file matches the expected contents
     const content = await streamToString(stream);
     expect(content).toEqual('Hello World!');
+  });
+
+  test('Update JSON', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello world');
+    expect(res.status).toBe(201);
+
+    const binary = res.body;
+    const res2 = await request(app)
+      .put('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        ...binary,
+        securityContext: { reference: 'Patient/123' },
+      });
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', ContentType.FHIR_JSON);
+    expect(res3.status).toBe(200);
+    expect(res3.body.securityContext.reference).toEqual('Patient/123');
+  });
+
+  test('Update JSON', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello world');
+    expect(res.status).toBe(201);
+
+    const binary = res.body;
+    const res2 = await request(app)
+      .put('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        ...binary,
+        securityContext: { reference: 'Patient/123' },
+      });
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', ContentType.FHIR_JSON);
+    expect(res3.status).toBe(200);
+    expect(res3.body.securityContext.reference).toEqual('Patient/123');
+
+    // Reading binary contents should still work, despite new version
+    const res4 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4.status).toBe(200);
+    expect(res4.text).toEqual('Hello world');
+  });
+
+  test('Handle non-binary JSON', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello world');
+    expect(res.status).toBe(201);
+
+    const binary = res.body;
+
+    // Send a non-binary JSON object
+    const res2 = await request(app)
+      .put('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.text).toEqual('{"resourceType":"Patient"}');
   });
 });
 
