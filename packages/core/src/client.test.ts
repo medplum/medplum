@@ -2642,7 +2642,7 @@ describe('Client', () => {
         baseUrl,
         expect.objectContaining({
           headers: {
-            Accept: DEFAULT_ACCEPT,
+            Accept: '*/*',
             Authorization: `Bearer ${accessToken}`,
             'X-Medplum': 'extended',
           },
@@ -2657,7 +2657,7 @@ describe('Client', () => {
         `${baseUrl}${fhirUrlPath}Binary/fake-id`,
         expect.objectContaining({
           headers: {
-            Accept: DEFAULT_ACCEPT,
+            Accept: '*/*',
             Authorization: `Bearer ${accessToken}`,
             'X-Medplum': 'extended',
           },
