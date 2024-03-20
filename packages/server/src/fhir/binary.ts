@@ -38,6 +38,7 @@ binaryRouter.get(
       // then the content should be returned with the content type stated in the resource in the Content-Type header.
       // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
       sendResponseHeaders(req, res, allOk, binary);
+      res.contentType(binary.contentType as string);
       const stream = await getBinaryStorage().readBinary(binary);
       stream.pipe(res);
     }

@@ -1,10 +1,11 @@
 import { normalizeOperationOutcome } from '@medplum/core';
-import { Attachment, Binary, OperationOutcome } from '@medplum/fhirtypes';
+import { Attachment, Binary, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { ChangeEvent, MouseEvent, ReactNode, useRef } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentButtonProps {
+  readonly securityContext?: Reference;
   readonly onUpload: (attachment: Attachment) => void;
   readonly onUploadStart?: () => void;
   readonly onUploadProgress?: (e: ProgressEvent) => void;

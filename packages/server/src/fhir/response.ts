@@ -25,7 +25,6 @@ export function sendResponseHeaders(_req: Request, res: Response, outcome: Opera
   }
 
   res.status(getStatus(outcome));
-  res.set('Content-Type', ContentType.FHIR_JSON);
 }
 
 export async function sendResponse(
@@ -35,6 +34,7 @@ export async function sendResponse(
   body: Resource
 ): Promise<void> {
   sendResponseHeaders(req, res, outcome, body);
+  res.set('Content-Type', ContentType.FHIR_JSON);
 
   const ctx = getAuthenticatedContext();
   const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
