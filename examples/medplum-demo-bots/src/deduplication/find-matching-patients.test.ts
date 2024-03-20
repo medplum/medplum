@@ -1,14 +1,13 @@
 import {
   ContentType,
   MedplumClient,
-  SEARCH_PARAMETER_BUNDLE_FILES,
   createReference,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   resolveId,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, List, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './find-matching-patients';

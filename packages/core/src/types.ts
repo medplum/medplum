@@ -139,16 +139,6 @@ export interface TypeInfo {
 }
 
 /**
- * The list of all known search parameter definition bundles
- * filenames from `@medplum/definitions`.
- */
-export const SEARCH_PARAMETER_BUNDLE_FILES = [
-  'fhir/r4/search-parameters.json',
-  'fhir/r4/search-parameters-medplum.json',
-  'fhir/r4/search-parameters-uscore.json',
-];
-
-/**
  * Indexes a bundle of SearchParameter resources for faster lookup.
  * @param bundle - A FHIR bundle SearchParameter resources.
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.

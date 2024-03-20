@@ -1,12 +1,11 @@
 import {
   LOINC,
-  SEARCH_PARAMETER_BUNDLE_FILES,
   UCUM,
   createReference,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, DiagnosticReport, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './finalize-report';

@@ -1,9 +1,5 @@
-import {
-  SEARCH_PARAMETER_BUNDLE_FILES,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
-} from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';

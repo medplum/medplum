@@ -7,11 +7,10 @@ import {
   isPopulated,
   isResourceTypeSchema,
   PropertyType,
-  SEARCH_PARAMETER_BUNDLE_FILES,
   SearchParameterDetails,
   SearchParameterType,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';

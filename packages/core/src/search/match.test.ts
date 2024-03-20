@@ -1,4 +1,4 @@
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import {
   ActivityDefinition,
   Bundle,
@@ -10,7 +10,7 @@ import {
   SearchParameter,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { SEARCH_PARAMETER_BUNDLE_FILES, indexSearchParameterBundle } from '../types';
+import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { matchesSearchRequest } from './match';
 import { Operator, SearchRequest, parseSearchRequest } from './search';

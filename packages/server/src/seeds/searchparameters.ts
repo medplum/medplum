@@ -1,10 +1,9 @@
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { r4ProjectId } from '../seed';
-import { SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/core';
 
 /**
  * Creates all SearchParameter resources.

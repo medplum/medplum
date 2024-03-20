@@ -1,11 +1,10 @@
 import {
   BotEvent,
-  SEARCH_PARAMETER_BUNDLE_FILES,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect } from 'vitest';

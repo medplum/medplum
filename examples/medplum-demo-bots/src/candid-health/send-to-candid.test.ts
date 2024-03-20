@@ -6,10 +6,9 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MedplumClient,
-  SEARCH_PARAMETER_BUNDLE_FILES,
   SNOMED,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Coverage, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import fetch from 'node-fetch';

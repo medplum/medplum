@@ -6,10 +6,9 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MedplumClient,
-  SEARCH_PARAMETER_BUNDLE_FILES,
   UCUM,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
   Bundle,
   QuestionnaireResponse,

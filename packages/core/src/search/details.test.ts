@@ -1,6 +1,6 @@
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { SEARCH_PARAMETER_BUNDLE_FILES, globalSchema, indexSearchParameterBundle } from '../types';
+import { globalSchema, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { SearchParameterType, getSearchParameterDetails } from './details';
 
