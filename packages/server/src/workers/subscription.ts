@@ -134,13 +134,19 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  *
  * Currently we log if the `AccessPolicy` is not satisfied only.
  *
- * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied.
+ * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied (for rest-hook subscriptins)
  *
  * @param resource - The resource to evaluate against the `AccessPolicy`.
  * @param project - The project containing the resource.
  * @param subscription - The `Subscription` to get the `AccessPolicy` for.
+ * @returns True if access policy is satisfied for this Subscription notification, otherwise returns false
  */
-async function checkAccessPolicy(resource: Resource, project: Project, subscription: Subscription): Promise<void> {
+async function satisfiesAccessPolicy(
+  resource: Resource,
+  project: Project,
+  subscription: Subscription
+): Promise<boolean> {
+  let returnVal = true;
   try {
     // Check access policy
     const subAuthor = subscription.meta?.author;
@@ -157,6 +163,9 @@ async function checkAccessPolicy(resource: Resource, project: Project, subscript
             `[Subscription Access Policy]: Access Policy not satisfied on '${resourceReference}' for '${subReference}'`,
             { subscription: subReference, project: projectReference, accessPolicy }
           );
+          if (subscription.channel.type === 'websocket') {
+            returnVal = false;
+          }
         }
       } else {
         const projectReference = getReferenceString(project);
@@ -166,12 +175,18 @@ async function checkAccessPolicy(resource: Resource, project: Project, subscript
           `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
           { subscription: subReference }
         );
+        if (subscription.channel.type === 'websocket') {
+          returnVal = false;
+        }
       }
     } else {
       // Log it if there is no author for this Subscription (this is not good)
       globalLogger.warn(
         `[Subscription Access Policy]: No author for subscription '${getReferenceString(subscription)}'`
       );
+      if (subscription.channel.type === 'websocket') {
+        returnVal = false;
+      }
     }
   } catch (err: unknown) {
     const resourceReference = getReferenceString(resource);
@@ -180,7 +195,11 @@ async function checkAccessPolicy(resource: Resource, project: Project, subscript
       `[Subscription Access Policy]: Error occurred while checking access policy for resource '${resourceReference}' against '${subReference}'`,
       { error: err, subscription: subReference }
     );
+    if (subscription.channel.type === 'websocket') {
+      returnVal = false;
+    }
   }
+  return returnVal;
 }
 
 /**
@@ -232,7 +251,9 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
-      await checkAccessPolicy(resource, project, subscription);
+      if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
+        continue;
+      }
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,

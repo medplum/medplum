@@ -1,5 +1,13 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { ContentType, LogLevel, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
+import {
+  ContentType,
+  LogLevel,
+  Operator,
+  createReference,
+  generateId,
+  getReferenceString,
+  stringify,
+} from '@medplum/core';
 import {
   AccessPolicy,
   AuditEvent,
@@ -1401,9 +1409,6 @@ describe('Subscription Worker', () => {
       const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
-      // Clear the queue
-      queue.add.mockClear();
-
       await systemRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
 
       // Update the patient
@@ -1430,21 +1435,9 @@ describe('Subscription Worker', () => {
 
   test('WebSocket Subscription -- Enabled', () =>
     withTestContext(async () => {
-      const wsSubProject = await systemRepo.createResource<Project>({
-        resourceType: 'Project',
-        name: 'WebSocket Subs Project',
-        owner: {
-          reference: 'User/' + randomUUID(),
-        },
-        features: ['websocket-subscriptions'],
-      });
-
-      const wsSubRepo = new Repository({
-        extendedMode: true,
-        projects: [wsSubProject.id as string],
-        author: {
-          reference: 'ClientApplication/' + randomUUID(),
-        },
+      const { repo: wsSubRepo } = await createTestProject({
+        project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
+        withRepo: true,
       });
 
       const subscription = await wsSubRepo.createResource<Subscription>({
@@ -1581,5 +1574,76 @@ describe('Subscription Worker', () => {
 
       console.log = originalConsoleLog;
       globalLogger.level = LogLevel.NONE;
+    }));
+
+  test('WebSocket Subscription -- Access Policy Not Met', () =>
+    withTestContext(async () => {
+      // Create an access policy in different project
+      // This should trigger an error when the subscription is executed
+      const accessPolicy = await repo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+      });
+
+      // Create an access policy in different project
+      // This should trigger an error when the subscription is executed
+      const { repo: wsRepo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          name: 'WebSockets AccessPolicy Denied Project',
+          owner: {
+            reference: 'User/' + randomUUID(),
+          },
+          features: ['websocket-subscriptions'],
+        },
+        membership: {
+          accessPolicy: createReference(accessPolicy),
+        },
+      });
+
+      const subscription = await wsRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Subscribe to the topic
+      const subscriber = getRedis().duplicate();
+      await subscriber.subscribe(subscription.id as string);
+
+      let resolve: () => void;
+      let reject: (error: Error) => void;
+
+      const deferredPromise = new Promise<void>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      subscriber.on('message', () => {
+        reject(new Error('Received message when not expected'));
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await wsRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      expect(patient).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      setTimeout(() => resolve(), 300);
+      await deferredPromise;
+      await subscriber.quit();
     }));
 });
