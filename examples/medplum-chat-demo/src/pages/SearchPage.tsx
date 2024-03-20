@@ -1,4 +1,5 @@
-import { Tabs } from '@mantine/core';
+import { Modal, Tabs } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import {
   Filter,
   formatSearchQuery,
@@ -8,20 +9,21 @@ import {
   parseSearchRequest,
   SearchRequest,
 } from '@medplum/core';
-import { QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
-import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
+import { Communication, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
+import { Document, Loading, QuestionnaireForm, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { CreateThread } from '../components/CreateThread';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
+  const [opened, handlers] = useDisclosure(false);
   const [showTabs, setShowTabs] = useState<boolean>(() => {
     const search = parseSearchRequest(location.pathname + location.search);
-    console.log(search);
     if (search.resourceType !== 'Communication') {
       return false;
     }
@@ -56,16 +58,11 @@ export function SearchPage(): JSX.Element {
     }
   }, [medplum, navigate, location]);
 
-  const handleCreateThread = (formData: QuestionnaireResponse) => {
-    const answers = getQuestionnaireAnswers(formData);
-  };
-
   const handleTabChange = (newTab: string | null): void => {
     debugger;
     if (!search) {
       throw new Error('Error: No valid search');
     }
-    console.log('handling tab change', search);
 
     const updatedSearch = updateSearch(newTab ?? 'active', search);
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
@@ -92,7 +89,8 @@ export function SearchPage(): JSX.Element {
               search={search}
               onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
               hideFilters={true}
-              hideToolbar={true}
+              hideToolbar={false}
+              onNew={handlers.open}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
@@ -112,6 +110,7 @@ export function SearchPage(): JSX.Element {
           hideToolbar={true}
         />
       )}
+      <CreateThread opened={opened} handlers={handlers} />
     </Document>
   );
 }
