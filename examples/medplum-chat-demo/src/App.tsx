@@ -19,7 +19,7 @@ export function App(): JSX.Element | null {
 
   const profileReference = profile && getReferenceString(profile);
   const [userLinks, setUserLinks] = useState<NavbarLink[]>([
-    { icon: <IconMessage />, label: 'All Threads', href: '/Communication?part-of:missing=true' },
+    { icon: <IconMessage />, label: 'All Threads', href: '/Communication?part-of:missing=true&status:not=completed' },
   ]);
 
   useEffect(() => {
@@ -32,6 +32,7 @@ export function App(): JSX.Element | null {
       filters: [
         { code: 'part-of:missing', operator: Operator.EQUALS, value: 'true' },
         { code: 'recipient', operator: Operator.EQUALS, value: profileReference },
+        { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
       ],
     });
 
