@@ -20,7 +20,7 @@ The first step is to set up your test framework in your Bots package. Medplum Bo
 
 Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](#query-the-results) work.
 
-<MedplumCodeBlock language="ts" selectBlocks="index-schema">
+<MedplumCodeBlock language="ts" selectBlocks="definitions-import,index-schema">
   {ExampleCode}
 </MedplumCodeBlock>
 
