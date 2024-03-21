@@ -99,20 +99,18 @@ export class AddressTable extends LookupTable {
     const resourceId = resource.id as string;
     const values = [];
 
-    for (let i = 0; i < addresses.length; i++) {
-      const address = addresses[i];
-      values.push({
-        id: randomUUID(),
-        resourceId,
-        index: i,
-        content: stringify(address),
-        address: formatAddress(address),
-        city: address.city?.trim(),
-        country: address.country?.trim(),
-        postalCode: address.postalCode?.trim(),
-        state: address.state?.trim(),
-        use: address.use?.trim(),
-      });
+const values = addresses.map((address, index) => ({
+  id: randomUUID(),
+  resourceId,
+  index,
+  content: stringify(address),
+  address: formatAddress(address),
+  city: address.city?.trim(),
+  country: address.country?.trim(),
+  postalCode: address.postalCode?.trim(),
+  state: address.state?.trim(),
+  use: address.use?.trim(),
+}));
     }
 
     await this.insertValuesForResource(client, resourceType, values);
