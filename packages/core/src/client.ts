@@ -475,10 +475,14 @@ export type BinarySource = string | File | Blob | Uint8Array;
  * Binary upload options.
  */
 export interface BinaryUploadOptions {
-  readonly contentType?: string;
   readonly filename?: string;
   readonly securityContext?: Reference;
 }
+
+/**
+ * Binary upload options or filename.
+ */
+export type BinaryUploadOptionsOrFilename = BinaryUploadOptions | string | undefined;
 
 /**
  * Email address definition.
@@ -1943,7 +1947,7 @@ export class MedplumClient extends EventTarget {
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    * @category Create
    * @param data - The binary data to upload.
-   * @param filenameOrUploadOption - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
+   * @param uploadOptionsOrFilename - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
    * @param contentType - Content type for the binary.
    * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
@@ -1951,12 +1955,12 @@ export class MedplumClient extends EventTarget {
    */
   async createAttachment(
     data: BinarySource,
-    filenameOrUploadOption: BinaryUploadOptions | string | undefined,
+    uploadOptionsOrFilename: BinaryUploadOptionsOrFilename,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void,
     options?: MedplumRequestOptions
   ): Promise<Attachment> {
-    const uploadOptions = normalizeBinaryUploadOptions(filenameOrUploadOption);
+    const uploadOptions = normalizeBinaryUploadOptions(uploadOptionsOrFilename);
     const binary = await this.createBinary(data, uploadOptions, contentType, onProgress, options);
     return {
       contentType,
@@ -1985,7 +1989,7 @@ export class MedplumClient extends EventTarget {
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    * @category Create
    * @param data - The binary data to upload.
-   * @param filenameOrUploadOption - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
+   * @param uploadOptionsOrFilename - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
    * @param contentType - Content type for the binary.
    * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
@@ -1993,12 +1997,12 @@ export class MedplumClient extends EventTarget {
    */
   createBinary(
     data: BinarySource,
-    filenameOrUploadOption: BinaryUploadOptions | string | undefined,
+    uploadOptionsOrFilename: BinaryUploadOptionsOrFilename,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void,
     options: MedplumRequestOptions = {}
   ): Promise<Binary> {
-    const uploadOptions = normalizeBinaryUploadOptions(filenameOrUploadOption);
+    const uploadOptions = normalizeBinaryUploadOptions(uploadOptionsOrFilename);
 
     const url = this.fhirUrl('Binary');
     if (uploadOptions.filename) {
@@ -2086,14 +2090,14 @@ export class MedplumClient extends EventTarget {
    * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
    * @category Media
    * @param docDefinition - The PDF document definition.
-   * @param filenameOrUploadOption - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
+   * @param uploadOptionsOrFilename - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
    * @param tableLayouts - Optional pdfmake custom table layout.
    * @param fonts - Optional pdfmake custom font dictionary.
    * @returns The result of the create operation.
    */
   async createPdf(
     docDefinition: TDocumentDefinitions,
-    filenameOrUploadOption?: BinaryUploadOptions | string,
+    uploadOptionsOrFilename?: BinaryUploadOptions | string,
     tableLayouts?: Record<string, CustomTableLayout>,
     fonts?: TFontDictionary
   ): Promise<Binary> {
@@ -2101,7 +2105,7 @@ export class MedplumClient extends EventTarget {
       throw new Error('PDF creation not enabled');
     }
     const blob = await this.createPdfImpl(docDefinition, tableLayouts, fonts);
-    return this.createBinary(blob, filenameOrUploadOption, 'application/pdf');
+    return this.createBinary(blob, uploadOptionsOrFilename, 'application/pdf');
   }
 
   /**
@@ -2712,7 +2716,7 @@ export class MedplumClient extends EventTarget {
    * Upload media to the server and create a Media instance for the uploaded content.
    * @param contents - The contents of the media file, as a string, Uint8Array, File, or Blob.
    * @param contentType - The media type of the content.
-   * @param filenameOrUploadOption - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
+   * @param uploadOptionsOrFilename - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
    * @param additionalFields - Additional fields for Media.
    * @param options - Optional fetch options.
    * @returns Promise that resolves to the created Media
@@ -2720,11 +2724,11 @@ export class MedplumClient extends EventTarget {
   async uploadMedia(
     contents: string | Uint8Array | File | Blob,
     contentType: string,
-    filenameOrUploadOption: BinaryUploadOptions | string | undefined,
+    uploadOptionsOrFilename: BinaryUploadOptionsOrFilename,
     additionalFields?: Partial<Media>,
     options?: MedplumRequestOptions
   ): Promise<Media> {
-    const uploadOptions = normalizeBinaryUploadOptions(filenameOrUploadOption);
+    const uploadOptions = normalizeBinaryUploadOptions(uploadOptionsOrFilename);
     const binary = await this.createBinary(contents, uploadOptions, contentType);
     return this.createResource(
       {
@@ -3801,14 +3805,12 @@ function bundleToResourceArray<T extends Resource>(bundle: Bundle<T>): ResourceA
   return Object.assign(array, { bundle });
 }
 
-function normalizeBinaryUploadOptions(
-  filenameOrUploadOption: BinaryUploadOptions | string | undefined
-): BinaryUploadOptions {
-  if (isString(filenameOrUploadOption)) {
-    return { filename: filenameOrUploadOption };
+function normalizeBinaryUploadOptions(uploadOptionsOrFilename: BinaryUploadOptionsOrFilename): BinaryUploadOptions {
+  if (isString(uploadOptionsOrFilename)) {
+    return { filename: uploadOptionsOrFilename };
   }
-  if (isObject(filenameOrUploadOption)) {
-    return filenameOrUploadOption;
+  if (isObject(uploadOptionsOrFilename)) {
+    return uploadOptionsOrFilename;
   }
   return {};
 }

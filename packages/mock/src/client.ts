@@ -1,5 +1,5 @@
 import {
-  BinaryUploadOptions,
+  BinaryUploadOptionsOrFilename,
   ContentType,
   LoginState,
   MedplumClient,
@@ -179,12 +179,12 @@ export class MockClient extends MedplumClient {
 
   async createBinary(
     data: string | File | Blob | Uint8Array,
-    filenameOrUploadOption: BinaryUploadOptions | string | undefined,
+    uploadOptionsOrFilename: BinaryUploadOptionsOrFilename,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void
   ): Promise<Binary> {
     const filename =
-      typeof filenameOrUploadOption === 'string' ? filenameOrUploadOption : filenameOrUploadOption?.filename;
+      typeof uploadOptionsOrFilename === 'string' ? uploadOptionsOrFilename : uploadOptionsOrFilename?.filename;
     if (filename?.endsWith('.exe')) {
       return Promise.reject(badRequest('Invalid file type'));
     }
