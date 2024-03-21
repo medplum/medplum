@@ -148,36 +148,29 @@ async function satisfiesAccessPolicy(
 ): Promise<boolean> {
   let satisfied = true;
   try {
-    // Check access policy
-    const subAuthor = subscription.meta?.author;
-    if (subAuthor) {
-      const membership = await findProjectMembership(project.id as string, subAuthor);
-      if (membership) {
-        const accessPolicy = await buildAccessPolicy(membership);
-        satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
-        if (!satisfied) {
-          const resourceReference = getReferenceString(resource);
-          const subReference = getReferenceString(subscription);
-          const projectReference = getReferenceString(project);
-          globalLogger.warn(
-            `[Subscription Access Policy]: Access Policy not satisfied on '${resourceReference}' for '${subReference}'`,
-            { subscription: subReference, project: projectReference, accessPolicy }
-          );
-        }
-      } else {
-        const projectReference = getReferenceString(project);
-        const authorReference = getReferenceString(subAuthor);
+    // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
+    // The current Repository author, which must exist for Repository to successfully construct
+    const subAuthor = subscription.meta?.author as Reference;
+    const membership = await findProjectMembership(project.id as string, subAuthor);
+    if (membership) {
+      const accessPolicy = await buildAccessPolicy(membership);
+      satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
+      if (!satisfied) {
+        const resourceReference = getReferenceString(resource);
         const subReference = getReferenceString(subscription);
+        const projectReference = getReferenceString(project);
         globalLogger.warn(
-          `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
-          { subscription: subReference }
+          `[Subscription Access Policy]: Access Policy not satisfied on '${resourceReference}' for '${subReference}'`,
+          { subscription: subReference, project: projectReference, accessPolicy }
         );
-        satisfied = false;
       }
     } else {
-      // Log it if there is no author for this Subscription (this is not good)
+      const projectReference = getReferenceString(project);
+      const authorReference = getReferenceString(subAuthor);
+      const subReference = getReferenceString(subscription);
       globalLogger.warn(
-        `[Subscription Access Policy]: No author for subscription '${getReferenceString(subscription)}'`
+        `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
+        { subscription: subReference }
       );
       satisfied = false;
     }
