@@ -7,13 +7,12 @@ import {
   Practitioner,
   Questionnaire,
   QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { getRecipients } from '../utils';
+import { getRecipients, checkForInvalidRecipient } from '../utils';
 
 interface CreateThreadProps {
   opened: boolean;
@@ -38,6 +37,22 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
 
     const recipients = participants?.map((participant) => participant.valueReference) as Communication['recipient'];
 
+    if (!topic || !recipients) {
+      throw new Error('Please ensure a valid input.');
+    }
+
+    const invalidRecipients = checkForInvalidRecipient(recipients);
+
+    if (invalidRecipients) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: 'Invalid recipient type',
+      });
+      throw new Error('Invalid recipient type');
+    }
+
     // If there a single patient in the recipient threads, set that patient as the subject of the thread.
     if (recipients?.length === 1 && parseReference(recipients[0])[0] === 'Patient') {
       subject = recipients[0] as Reference<Patient>;
@@ -45,10 +60,6 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
 
     // Add the user that created the trhead as a participant
     recipients?.push(profileReference);
-
-    if (!topic || !recipients) {
-      throw new Error('Please ensure a valid input.');
-    }
 
     const thread: Communication = {
       resourceType: 'Communication',

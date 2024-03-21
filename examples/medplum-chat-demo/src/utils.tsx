@@ -1,5 +1,5 @@
-import { Filter, Operator, SearchRequest } from '@medplum/core';
-import { QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
+import { Filter, Operator, parseReference, SearchRequest } from '@medplum/core';
+import { Communication, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
 
 export function cleanResource(resource: Resource): Resource {
   let meta = resource.meta;
@@ -81,4 +81,29 @@ export function getRecipients(formData: QuestionnaireResponse) {
   }
 
   return recipients;
+}
+
+export function checkForInvalidRecipient(recipients: Communication['recipient']): boolean {
+  if (!recipients) {
+    return true;
+  }
+
+  for (const recipient of recipients) {
+    const resourceType = parseReference(recipient)[0];
+    if (
+      resourceType === 'Patient' ||
+      resourceType === 'Practitioner' ||
+      resourceType === 'RelatedPerson' ||
+      resourceType === 'CareTeam' ||
+      resourceType === 'Device' ||
+      resourceType === 'Organization' ||
+      resourceType === 'Group' ||
+      resourceType === 'HealthcareService' ||
+      resourceType === 'PractitionerRole'
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }

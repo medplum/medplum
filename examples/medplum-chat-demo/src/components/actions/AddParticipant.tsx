@@ -10,7 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { getRecipients } from '../../utils';
+import { checkForInvalidRecipient, getRecipients } from '../../utils';
 
 interface AddParticipantProps {
   readonly communication: Communication;
@@ -22,7 +22,6 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
   const [opened, handlers] = useDisclosure(false);
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
-    debugger;
     const newParticipantsData = getRecipients(formData);
     if (!newParticipantsData) {
       throw new Error('Please select a valid person to add to this thread.');
@@ -33,6 +32,18 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
 
     if (!newParticipants) {
       throw new Error('Please select a valid person to add to this thread.');
+    }
+
+    const invalidRecipients = checkForInvalidRecipient(newParticipants);
+
+    if (invalidRecipients) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: 'Invalid recipient type',
+      });
+      throw new Error('Invalid recipient type');
     }
 
     handleNewParticipant(newParticipants);
