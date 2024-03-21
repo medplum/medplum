@@ -1,5 +1,5 @@
 import { normalizeOperationOutcome } from '@medplum/core';
-import { Attachment, Binary, OperationOutcome, Reference } from '@medplum/fhirtypes';
+import { Attachment, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { ChangeEvent, MouseEvent, ReactNode, useRef } from 'react';
 import { killEvent } from '../utils/dom';
@@ -48,17 +48,15 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
       props.onUploadStart();
     }
 
-    const filename = file.name;
-    const contentType = file.type || 'application/octet-stream';
     medplum
-      .createBinary(file, filename, contentType, props.onUploadProgress)
-      .then((binary: Binary) => {
-        props.onUpload({
-          contentType: binary.contentType,
-          url: binary.url,
-          title: filename,
-        });
+      .createAttachment({
+        data: file,
+        contentType: file.type || 'application/octet-stream',
+        filename: file.name,
+        securityContext: props.securityContext,
+        onProgress: props.onUploadProgress,
       })
+      .then((attachment: Attachment) => props.onUpload(attachment))
       .catch((err) => {
         if (props.onUploadError) {
           props.onUploadError(normalizeOperationOutcome(err));

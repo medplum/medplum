@@ -1,6 +1,12 @@
 import { ActionIcon, Center, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
-import { getReferenceString, MedplumClient, normalizeErrorString, ProfileResource } from '@medplum/core';
+import {
+  MedplumClient,
+  ProfileResource,
+  createReference,
+  getReferenceString,
+  normalizeErrorString,
+} from '@medplum/core';
 import {
   Attachment,
   AuditEvent,
@@ -293,6 +299,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 <IconMessage size={16} />
               </ActionIcon>
               <AttachmentButton
+                securityContext={createReference(resource)}
                 onUpload={createMedia}
                 onUploadStart={onUploadStart}
                 onUploadProgress={onUploadProgress}

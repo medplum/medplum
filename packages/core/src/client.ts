@@ -3956,8 +3956,8 @@ export function normalizeCreateBinaryOptions(
     return arg1;
   }
   return {
-    data: arg1 as BinarySource,
-    filename: arg2 as string,
+    data: arg1,
+    filename: arg2 as string | undefined,
     contentType: arg3 as string,
     onProgress: arg4,
   };
