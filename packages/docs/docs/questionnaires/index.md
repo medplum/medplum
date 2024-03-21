@@ -1,6 +1,4 @@
-# Questionnaires
-
-## Questionnaires in Medplum
+# Questionnaires & Assessments
 
 Creating, updating and embedding FHIR Questionnaires for both patients and practitioners is a common use-case for Medplum.
 
@@ -10,6 +8,49 @@ Creating, updating and embedding FHIR Questionnaires for both patients and pract
 - [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse) resources can also be viewed in the [Medplum app](../app/index.md)
 - [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response/bot-for-questionnaire-response.md) is one of the most common automations
 - [Questionnaire Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aquestionnaires) on Github
+
+## Key Resources
+
+```mermaid
+
+flowchart BT
+
+   Q[<table><thead><tr><th>Questionnaire</th></tr></thead><tbody><tr><td>ICA Assessment</td></tr></tbody></table>]
+   subgraph p1 [<i>Patient 1</i>]
+  QR1[<table><thead><tr><th>QuestionnaireResponse</th></tr></thead><tbody><tr><td>Homer Simpsons' Response</td></tr></tbody></table>]
+  Obs11[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>Heart Rate: 150 bpm</td></tr></tbody></table>] -->|basedOn| QR1
+  Obs12[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>BMI: 300</td></tr></tbody></table>] -->|basedOn| QR1
+  RA11[<table><thead><tr><th>RiskAssessment</th></tr></thead><tbody><tr><td>Future Fall Risk: 80%</td></tr></tbody></table>] -->|basedOn| QR1
+  condition1[<table><thead><tr><th>Condition</th></tr></thead><tbody><tr><td>Hypertension</td></tr></tbody></table>] -->|evidence.detail| QR1
+  end
+
+  subgraph p2 [<i>Patient 2</i>]
+  QR2[<table><thead><tr><th>QuestionnaireResponse</th></tr></thead><tbody><tr><td>Rick Sanchez's Response</td></tr></tbody></table>]
+  Obs21[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>Heart Rate: 190 bpm</td></tr></tbody></table>] -->|basedOn| QR2
+  Obs22[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>BMI: 110 </td></tr></tbody></table>] -->|basedOn| QR2
+  RA21[<table><thead><tr><th>RiskAssessment</th></tr></thead><tbody><tr><td>Future Fall Risk: 20%</td></tr></tbody></table>] -->|basedOn| QR2
+  condition2[<table><thead><tr><th>Condition</th></tr></thead><tbody><tr><td>Diabetes</td></tr></tbody></table>] -->|evidence.detail| QR2
+  end
+
+  QR1 --> Q
+  QR2 --> Q
+
+```
+
+| **Resource**                                                              | **Description**                                                                                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| [`Questionnaire`](/docs/api/fhir/resources/questionnaire)                 | Definition of questions/answers. 1 per form.                                                                        |
+| [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) | A patient's responses to each question. 1 per patient, per instance.                                                |
+| [`Observation`](/docs/api/fhir/resources/observation)                     | A structured representation of a point-in-time result measured by an assessment.                                    |
+| [`RiskAssessment`](/docs/api/fhir/resources/riskassessment)               | A specialized form of an [`Observation`](/docs/api/fhir/resources/observation) tailored to propensity measurements. |
+| [`Condition`](/docs/api/fhir/resources/condition)                         | Records a long-term diagnosis for a [`Patient`](/docs/api/fhir/resources/patient).                                  |
+
+## Key Code Systems
+
+| **Code System**                                                | **Description**                                                                           |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [LOINC](https://www.medplum.com/docs/careplans/loinc)          | Used to tag questions and answers. Also has predefined standard assessments.              |
+| [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used to annotate [`Condition`](/docs/api/fhir/resources/condition) resources for billing. |
 
 ## Other Resources
 
