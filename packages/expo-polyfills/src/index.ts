@@ -189,7 +189,7 @@ class SyncSecureStorage implements Storage {
           // Parse keys
           const keys = JSON.parse(keysStr) as string[];
           const promises = keys.map((key) => {
-            return new Promise<[string, string | null]>((resolve) => {
+            return new Promise<[string, string | null]>((resolve, reject) => {
               SecureStore.getItemAsync(key)
                 .then((val) => {
                   resolve([key, val]);
