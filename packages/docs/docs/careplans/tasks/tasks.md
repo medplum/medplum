@@ -68,9 +68,9 @@ Designing status codes for tasks varies from implementation to implementation, a
 
 `Task.priority` can be used to indicate the urgency of the task. This field uses a fixed set of codes that are borrowed from acute in-patient care settings.
 
-| **Code**                                                                                       | **Definition**                                                                             |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [`routine`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                                                           |
+| **Code**                                                                                       | **Definition**                                                                               |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [`routine`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                                                             |
 | [`urgent`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent)   | The request should be actioned promptly - higher priority than `routine`.                    |
 | [`asap`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap)       | The request should be actioned as soon as possible - higher priority than `urgent`.          |
 | [`stat`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat)       | The request should be actioned immediately - highest possible priority (i.e., an emergency). |
@@ -204,4 +204,4 @@ While task hierarchy functionality is powerful, it can be complex to maintain an
 - The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
 - [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
 - [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
-- [Charting Data Model](/docs/charting#data-model)
+- [Charting Data Model](/docs/charting#encounter-charting)

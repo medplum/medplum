@@ -69,7 +69,7 @@ risk -->|subject| homer
 | [SNOMED](https://www.snomed.org/)                                           | Used in [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resources to track substance intolerances.                                                                                                     |
 | [CVX](https://www2a.cdc.gov/vaccines/iis/iisstandards/vaccines.asp?rpt=cvx) | Used in [`Immunization`](/docs/api/fhir/resources/immunization) resources to track vaccine types.                                                                                                                          |
 
-## Encounter & Charting
+## Encounter & Charting {#encounter-charting}
 
 ### Capturing Notes
 
@@ -124,22 +124,9 @@ flowchart BT
 - [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval): Used to annotate [`Encounter`](/docs/api/fhir/resources/encounter) resources for billing.
 - [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm): Used to annotate [`Encounter`](/docs/api/fhir/resources/encounter) resources for billing.
 
-## Data Model
-
-All the elements you expect in a charting experience can be modeled in FHIR. Below are some examples of how the elements are represented
-
-![Chart Data Model 1](/img/tutorials/charting-annotation-1.png)
-You can read more about the [Patient](/docs/api/fhir/resources/patient), [Appointment](/docs/api/fhir/resources/appointment), [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance), [Condition](/docs/api/fhir/resources/condition), [Procedure](/docs/api/fhir/resources/procedure), [FamilyMemberHistory](/docs/api/fhir/resources/familymemberhistory), and [Observation](/docs/api/fhir/resources/observation) resources in our [reference material](/docs/api/fhir/resources).
-
-![Chart Data Model 2](/img/tutorials/charting-annotation-2.png)
-You can read more about the [Task](/docs/api/fhir/resources/task) resource in our [reference material](/docs/api/fhir/resources).
-
-![Chart Data Model 3](/img/tutorials/charting-annotation-3.png)
-You can read more about the [ClinicalImpression](/docs/api/fhir/resources/clinicalimpression), [Encounter](/docs/api/fhir/resources/encounter), [Condition](/docs/api/fhir/resources/condition), [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance), [FamilyMemberHistory](/docs/api/fhir/resources/familymemberhistory), [Observation](/docs/api/fhir/resources/observation), and [CarePlan](/docs/api/fhir/resources/careplan) resources in our [reference material](/docs/api/fhir/resources).
-
 ## Placing Orders
 
-Placing orders requires constructing the right resources, for example [CarePlans](/docs/api/fhir/resources/careplan.mdx) and [MedicationRequests](/docs/api/fhir/resources/medicationrequest.mdx) or others. Similar to notes, ordering workflows can be done by creating resources directly, or using [Questionnaires](/docs/questionnaires/) that practitioners fill out and use [Bots](/docs/bots/) to drive workflow and integrations.
+Placing orders requires constructing the right resources, which can be created directly or via [`Questionnaires`](/docs/api/fhir/resources/questionnaire) and [`Bots`](/docs/api/fhir/medplum/bot). Refer to our section on [Labs and Imaging](/docs/labs-imaging/index.md) or [Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders) for more details.
 
 ## Reference
 
