@@ -22,7 +22,7 @@ export const options: NextAuthOptions = {
       },
       clientId: process.env.MEDPLUM_CLIENT_ID,
       clientSecret: process.env.MEDPLUM_SECRET_ID,
-      profile: (profile, tokens) => {
+      profile: (profile) => {
         return {
           id: profile.login_id,
           name: profile.fhirUser,
@@ -31,7 +31,7 @@ export const options: NextAuthOptions = {
     },
   ],
   callbacks: {
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, account }) {
       if (account) {
         return {
           ...token,
@@ -40,7 +40,7 @@ export const options: NextAuthOptions = {
       }
       return token;
     },
-    async session({ session, user, token }) {
+    async session({ session, token }) {
       if (token) {
         return {
           ...session,

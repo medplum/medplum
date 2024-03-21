@@ -1,10 +1,10 @@
-import { options } from './api/auth/[...nextauth]/options';
-import { getServerSession } from 'next-auth/next';
-import { MedplumClient } from '@medplum/core';
-import { Bundle, Patient } from '@medplum/fhirtypes';
 import { PatientTable } from '@/app/components/PatientTable';
 import { Container } from '@mantine/core';
-import { Suspense } from 'react';
+import { MedplumClient } from '@medplum/core';
+import { Bundle, Patient } from '@medplum/fhirtypes';
+import { getServerSession } from 'next-auth/next';
+import React, { Suspense } from 'react';
+import { options } from './api/auth/[...nextauth]/options';
 
 interface Session {
   accessToken: string;
@@ -20,10 +20,10 @@ const containerProps = {
   mt: 'md',
 };
 
-export default async function Home() {
+export default async function Home(): Promise<React.ReactNode> {
   const session: Session | null = await getServerSession(options);
   const token = session?.accessToken;
-  var bundle: Bundle<Patient> = {
+  let bundle: Bundle<Patient> = {
     resourceType: 'Bundle',
     type: 'document',
   };
