@@ -154,7 +154,7 @@ async function satisfiesAccessPolicy(
       const membership = await findProjectMembership(project.id as string, subAuthor);
       if (membership) {
         const accessPolicy = await buildAccessPolicy(membership);
-        satisfied = satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
+        satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
         if (!satisfied) {
           const resourceReference = getReferenceString(resource);
           const subReference = getReferenceString(subscription);
@@ -190,7 +190,7 @@ async function satisfiesAccessPolicy(
     );
     satisfied = false;
   }
-  // Always return true if channelType !== websockets for now
+  // Always return true if channelType !== websocket for now
   return subscription.channel.type === 'websocket' ? satisfied : true;
 }
 
