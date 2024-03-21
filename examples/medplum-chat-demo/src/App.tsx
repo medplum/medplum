@@ -1,6 +1,6 @@
 import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile, NavbarLink } from '@medplum/react';
-import { IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
+import { IconDatabaseImport, IconFileImport, IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { CommunicationPage } from './pages/CommunicationPage';
@@ -9,32 +9,27 @@ import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { UploadDataPage } from './pages/UploadDataPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
-  const profileReference = profile && getReferenceString(profile);
-  const [userLinks, setUserLinks] = useState<NavbarLink[]>([
+  const profileReference = (profile && getReferenceString(profile)) as string;
+  const userLinks = [
     { icon: <IconMessage />, label: 'All Threads', href: '/Communication?part-of:missing=true&status:not=completed' },
-  ]);
+  ];
 
-  useEffect(() => {
-    if (!profileReference) {
-      return;
-    }
+  const myThreadsQuery = formatSearchQuery({
+    resourceType: 'Communication',
+    filters: [
+      { code: 'part-of:missing', operator: Operator.EQUALS, value: 'true' },
+      { code: 'recipient', operator: Operator.EQUALS, value: profileReference },
+      { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
+    ],
+  });
 
-    const myThreadsQuery = formatSearchQuery({
-      resourceType: 'Communication',
-      filters: [
-        { code: 'part-of:missing', operator: Operator.EQUALS, value: 'true' },
-        { code: 'recipient', operator: Operator.EQUALS, value: profileReference },
-        { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
-      ],
-    });
-
-    setUserLinks([...userLinks, { icon: <IconMessage2Bolt />, label: 'My Threads', href: myThreadsQuery }]);
-  }, [profileReference, medplum]);
+  userLinks.push({ icon: <IconMessage2Bolt />, label: 'My Threads', href: `/Communication${myThreadsQuery}` });
 
   if (medplum.isLoading()) {
     return null;
@@ -48,6 +43,13 @@ export function App(): JSX.Element | null {
           title: 'My Links',
           links: userLinks,
         },
+        {
+          title: 'Upload Data',
+          links: [
+            { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: 'upload/core' },
+            { icon: <IconFileImport />, label: 'Upload Example Data', href: 'upload/example' },
+          ],
+        },
       ]}
     >
       <Suspense fallback={<Loading />}>
@@ -60,6 +62,7 @@ export function App(): JSX.Element | null {
           <Route path="/Patient/:id/*" element={<PatientPage />} />
           <Route path="/:resourceType/:id" element={<ResourcePage />} />
           <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+          <Route path="/upload/:dataType" element={<UploadDataPage />} />
         </Routes>
       </Suspense>
     </AppShell>
