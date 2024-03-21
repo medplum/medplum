@@ -1,3 +1,4 @@
+import { execSync } from 'child_process';
 import { danger, message, warn } from 'danger';
 import { statSync } from 'fs';
 
@@ -12,5 +13,12 @@ if (packageChanged && !lockfileChanged) {
 }
 
 // Show the size of minified JS output
-message(`@medplum/core: ${(statSync('packages/core/dist/cjs/index.cjs').size / 1024).toFixed(1)} kB`);
-message(`@medplum/react: ${(statSync('packages/react/dist/cjs/index.cjs').size / 1024).toFixed(1)} kB`);
+message(`@medplum/core: ${getAssetSizeStats('packages/core/dist/cjs/index.cjs')}`);
+message(`@medplum/react: ${getAssetSizeStats('packages/react/dist/cjs/index.cjs')}`);
+
+function getAssetSizeStats(filename: string): string {
+  const originalStats = statSync(filename);
+  execSync(`gzip -c ${filename} > ${filename}.gz`);
+  const gzippedStats = statSync(`${filename}.gz`);
+  return `${(originalStats.size / 1024).toFixed(1)} kB (${(gzippedStats.size / 1024).toFixed(1)} kB gzip)`;
+}
