@@ -260,6 +260,9 @@ async function includeInExpansion(
         case 'is-a':
           query = addDescendants(query, codeSystem, condition.value);
           break;
+        case 'descendent-of':
+          query = addDescendants(query, codeSystem, condition.value).where('code', '!=', condition.value);
+          break;
         case '=':
           query = addPropertyFilter(query, condition.property, condition.value, true);
           break;
