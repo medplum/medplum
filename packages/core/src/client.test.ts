@@ -1526,7 +1526,7 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
     try {
-      await client.createPdf({ content: ['Hello world'] });
+      await client.createPdf({ docDefinition: { content: ['Hello world'] } });
     } catch (err) {
       expect((err as Error).message).toEqual('PDF creation not enabled');
     }

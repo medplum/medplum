@@ -1,6 +1,7 @@
 import {
-  BinaryUploadOptionsOrFilename,
+  BinarySource,
   ContentType,
+  CreateBinaryOptions,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -13,6 +14,7 @@ import {
   getStatus,
   indexSearchParameter,
   loadDataType,
+  normalizeCreateBinaryOptions,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
 import {
@@ -178,13 +180,14 @@ export class MockClient extends MedplumClient {
   }
 
   async createBinary(
-    data: string | File | Blob | Uint8Array,
-    uploadOptionsOrFilename: BinaryUploadOptionsOrFilename,
-    contentType: string,
-    onProgress?: (e: ProgressEvent) => void
+    arg1: BinarySource | CreateBinaryOptions,
+    arg2: string | undefined | MedplumRequestOptions,
+    arg3?: string,
+    arg4?: (e: ProgressEvent) => void
   ): Promise<Binary> {
-    const filename =
-      typeof uploadOptionsOrFilename === 'string' ? uploadOptionsOrFilename : uploadOptionsOrFilename?.filename;
+    const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
+    const { filename, contentType, onProgress } = createBinaryOptions;
+
     if (filename?.endsWith('.exe')) {
       return Promise.reject(badRequest('Invalid file type'));
     }
