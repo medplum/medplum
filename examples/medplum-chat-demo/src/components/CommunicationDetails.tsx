@@ -5,12 +5,13 @@ import { useNavigate } from 'react-router-dom';
 
 interface CommunicationDetailsProps {
   readonly communication: Communication;
+  readonly isThread: boolean;
 }
 
-export function CommunicationDetails({ communication }: CommunicationDetailsProps): JSX.Element {
+export function CommunicationDetails({ communication, isThread }: CommunicationDetailsProps): JSX.Element {
   const navigate = useNavigate();
   const id = communication.id as string;
-  const tabs = ['Chat', 'Details', 'History'];
+  const tabs = ['Details', 'History'];
 
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
@@ -29,9 +30,6 @@ export function CommunicationDetails({ communication }: CommunicationDetailsProp
             </Tabs.Tab>
           ))}
         </Tabs.List>
-        <Tabs.Panel value="chat">
-          <p>Chat</p>
-        </Tabs.Panel>
         <Tabs.Panel value="details">
           <ResourceTable value={communication} ignoreMissingValues={true} />
         </Tabs.Panel>
