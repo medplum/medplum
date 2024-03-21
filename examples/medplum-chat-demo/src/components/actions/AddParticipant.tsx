@@ -2,9 +2,15 @@ import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Communication, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import {
+  Communication,
+  Questionnaire,
+  QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
+} from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { getRecipients } from '../../utils';
 
 interface AddParticipantProps {
   readonly communication: Communication;
@@ -16,13 +22,20 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
   const [opened, handlers] = useDisclosure(false);
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
-    const newParticipant = getQuestionnaireAnswers(formData)['add-participant']
-      .valueReference as Communication['recipient'];
-    if (!newParticipant) {
+    debugger;
+    const newParticipantsData = getRecipients(formData);
+    if (!newParticipantsData) {
+      throw new Error('Please select a valid person to add to this thread.');
+    }
+    const newParticipants = newParticipantsData?.map(
+      (participant) => participant.valueReference
+    ) as Communication['recipient'];
+
+    if (!newParticipants) {
       throw new Error('Please select a valid person to add to this thread.');
     }
 
-    handleNewParticipant(newParticipant);
+    handleNewParticipant(newParticipants);
     handlers.close();
   };
 
@@ -83,9 +96,10 @@ const addParticipantQuestionnaire: Questionnaire = {
   id: 'add-participant',
   item: [
     {
-      linkId: 'add-participant',
+      linkId: 'participants',
       type: 'reference',
       text: 'Add someone to this thread:',
+      repeats: true,
     },
   ],
 };

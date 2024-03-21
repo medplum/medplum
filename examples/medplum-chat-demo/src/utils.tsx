@@ -1,5 +1,5 @@
 import { Filter, Operator, SearchRequest } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import { QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
 
 export function cleanResource(resource: Resource): Resource {
   let meta = resource.meta;
@@ -60,4 +60,25 @@ export function getDefaultFields(resourceType: string): string[] {
   }
 
   return fields;
+}
+
+// A helper function to specifically get all of the people entered as a participant in the form
+export function getRecipients(formData: QuestionnaireResponse) {
+  const items = formData.item;
+  const recipients = [];
+
+  if (!items) {
+    return;
+  }
+
+  for (const item of items) {
+    if (item.linkId === 'participants') {
+      if (!item.answer) {
+        return;
+      }
+      recipients.push(...item.answer);
+    }
+  }
+
+  return recipients;
 }
