@@ -170,16 +170,17 @@ async function satisfiesAccessPolicy(
       const subReference = getReferenceString(subscription);
       globalLogger.warn(
         `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
-        { subscription: subReference }
+        { subscription: subReference, project: projectReference }
       );
       satisfied = false;
     }
   } catch (err: unknown) {
+    const projectReference = getReferenceString(project);
     const resourceReference = getReferenceString(resource);
     const subReference = getReferenceString(subscription);
     globalLogger.warn(
       `[Subscription Access Policy]: Error occurred while checking access policy for resource '${resourceReference}' against '${subReference}'`,
-      { error: err, subscription: subReference }
+      { subscription: subReference, project: projectReference, error: err }
     );
     satisfied = false;
   }
