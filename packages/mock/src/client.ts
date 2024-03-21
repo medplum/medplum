@@ -1,10 +1,6 @@
 import {
-  allOk,
-  badRequest,
+  BinaryUploadOptions,
   ContentType,
-  getStatus,
-  indexSearchParameter,
-  loadDataType,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -12,6 +8,11 @@ import {
   OperationOutcomeError,
   ProfileResource,
   SubscriptionEmitter,
+  allOk,
+  badRequest,
+  getStatus,
+  indexSearchParameter,
+  loadDataType,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
 import {
@@ -38,7 +39,6 @@ import {
   ExampleQuestionnaire,
   ExampleQuestionnaireResponse,
   ExampleSubscription,
-  exampleValueSet,
   HomerCommunication,
   HomerDiagnosticReport,
   HomerEncounter,
@@ -55,8 +55,9 @@ import {
   HomerSimpson,
   HomerSimpsonPreviousVersion,
   HomerSimpsonSpecimen,
-  makeDrAliceSmithSlots,
   TestOrganization,
+  exampleValueSet,
+  makeDrAliceSmithSlots,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
 import { TestProject, TestProjectMembership } from './mocks/project';
@@ -178,10 +179,12 @@ export class MockClient extends MedplumClient {
 
   async createBinary(
     data: string | File | Blob | Uint8Array,
-    filename: string | undefined,
+    filenameOrUploadOption: BinaryUploadOptions | string | undefined,
     contentType: string,
     onProgress?: (e: ProgressEvent) => void
   ): Promise<Binary> {
+    const filename =
+      typeof filenameOrUploadOption === 'string' ? filenameOrUploadOption : filenameOrUploadOption?.filename;
     if (filename?.endsWith('.exe')) {
       return Promise.reject(badRequest('Invalid file type'));
     }
