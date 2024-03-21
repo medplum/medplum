@@ -1,7 +1,7 @@
 import { Grid, GridCol, Paper } from '@mantine/core';
 import { resolveId } from '@medplum/core';
 import { Communication, Patient } from '@medplum/fhirtypes';
-import { PatientSummary, ThreadChat, useMedplum } from '@medplum/react';
+import { PatientSummary, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { CommunicationActions } from './actions/CommunicationActions';
 import { CommunicationDetails } from './CommunicationDetails';
@@ -57,7 +57,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
           </GridCol>
         </Grid>
       )}
-      <ThreadChat thread={props.thread} title={topic} />
+      {/* <ThreadChat thread={props.thread} title={topic} /> */}
     </div>
   );
 }

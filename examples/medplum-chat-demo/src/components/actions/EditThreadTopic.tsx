@@ -17,7 +17,6 @@ export function EditThreadTopic({ communication, onChange }: EditTopicThreadProp
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
     const newTopic = getQuestionnaireAnswers(formData)['edit-topic'].valueString;
-    console.log(newTopic);
 
     if (!newTopic) {
       throw new Error('Please enter a new topic');
