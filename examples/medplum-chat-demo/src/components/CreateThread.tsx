@@ -13,6 +13,7 @@ import {
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
+import { getRecipients } from '../utils';
 
 interface CreateThreadProps {
   opened: boolean;
@@ -113,24 +114,3 @@ const createThreadQuestionnaire: Questionnaire = {
     },
   ],
 };
-
-// A helper function to specifically get all of the people entered as a participant in the form
-function getRecipients(formData: QuestionnaireResponse) {
-  const items = formData.item;
-  const recipients = [];
-
-  if (!items) {
-    return;
-  }
-
-  for (const item of items) {
-    if (item.linkId === 'participants') {
-      if (!item.answer) {
-        return;
-      }
-      recipients.push(...item.answer);
-    }
-  }
-
-  return recipients;
-}
