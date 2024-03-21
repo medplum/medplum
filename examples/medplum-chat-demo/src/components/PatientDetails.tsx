@@ -32,6 +32,7 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
+  // Create a search request to get all threads that the current patient is a participant in.
   const threadSearch: SearchRequest = {
     resourceType: 'Communication',
     filters: [

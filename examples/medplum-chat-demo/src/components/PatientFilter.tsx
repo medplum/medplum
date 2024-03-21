@@ -12,6 +12,8 @@ interface PatientFilterProps {
 
 export function PatientFilter(props: PatientFilterProps): JSX.Element {
   const [opened, handlers] = useDisclosure(false);
+
+  // Determine if a patient filter is already applied so the button displays and functions dynamically
   const [filtered, setFiltered] = useState<boolean>(() => {
     const filters = props.search.filters as Filter[];
     for (const filter of filters) {
@@ -28,6 +30,7 @@ export function PatientFilter(props: PatientFilterProps): JSX.Element {
       throw new Error('Select a valid patient.');
     }
 
+    // Update the search to filter for the selected patient
     const filters = props.search.filters || [];
     filters.push({ code: 'recipient', operator: Operator.EQUALS, value: patientReference.reference });
     const updatedSearch: SearchRequest = {
@@ -35,16 +38,19 @@ export function PatientFilter(props: PatientFilterProps): JSX.Element {
       filters,
     };
 
+    // Update the search, close the modal, and set the filter so the button is correct.
     props.onPatientFilter(updatedSearch);
     handlers.close();
     setFiltered(true);
   };
 
+  // If there is a patient filter applied, clear it
   const handleClearFilters = (): void => {
     const filters = props.search.filters as Filter[];
     const updatedFilters = [];
 
     for (const filter of filters) {
+      // Add all filters to the updated array UNLESS they are a filter on a patient
       if (filter.code === 'recipient' && filter.value.split('/')[0] === 'Patient') {
         continue;
       }

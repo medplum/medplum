@@ -3,6 +3,7 @@ import { capitalize } from '@medplum/core';
 import { useParams } from 'react-router-dom';
 
 export function UploadDataPage(): JSX.Element {
+  // Get the data type and capitalize the first letter
   const { dataType } = useParams();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
 

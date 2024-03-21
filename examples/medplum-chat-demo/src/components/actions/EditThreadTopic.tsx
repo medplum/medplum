@@ -29,6 +29,7 @@ export function EditThreadTopic({ communication, onChange }: EditTopicThreadProp
 
   const handleTopicUpdate = async (newTopic: string) => {
     const communicationId = communication.id as string;
+    // Create a codeable concept for the topic
     const topicCodeable: CodeableConcept = {
       coding: [
         {
@@ -37,12 +38,14 @@ export function EditThreadTopic({ communication, onChange }: EditTopicThreadProp
       ],
     };
 
+    // Add a topic or replace the previous topic
     const ops: PatchOperation[] = [
       { op: 'test', path: '/meta/versionId', value: communication.meta?.versionId },
       { op: communication.topic ? 'replace' : 'add', path: '/topic', value: topicCodeable },
     ];
 
     try {
+      // Update the thread
       const result = await medplum.patchResource(communication.resourceType, communicationId, ops);
       showNotification({
         icon: <IconCircleCheck />,
