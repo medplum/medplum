@@ -14,12 +14,14 @@ export function MessagePage(props: MessagePageProps): JSX.Element {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
 
+  // Get a reference to the patient if the sender of the message is a patient
   const patientReference = getPatientReference(props.message);
 
   useEffect(() => {
     const patientId = resolveId(patientReference);
 
     if (patientId) {
+      // Get the patient resource to display their summary
       medplum.readResource('Patient', patientId).then(setPatient).catch(console.error);
     }
   });
@@ -42,6 +44,7 @@ export function MessagePage(props: MessagePageProps): JSX.Element {
   );
 }
 
+// If the sender of the message is a patient, return a reference to that patient
 function getPatientReference(message: Communication) {
   const sender = parseReference(message.sender);
   if (sender[0] === 'Patient') {

@@ -18,7 +18,6 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
     const newParticipant = getQuestionnaireAnswers(formData)['add-participant']
       .valueReference as Communication['recipient'];
-    console.log(newParticipant);
     if (!newParticipant) {
       throw new Error('Please select a valid person to add to this thread.');
     }
@@ -32,19 +31,24 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
       return;
     }
 
+    // Get the communication id and the participants that are already a part of the thread
     const communicationId = props.communication.id as string;
     const currentParticipants = props.communication.recipient ?? [];
 
+    // If there are no participants, we will add a participant array, otherwise we will replace the current one with an udpated version.
     const op = currentParticipants.length === 0 ? 'add' : 'replace';
 
+    // Add the new participants to the array
     const updatedParticipants = currentParticipants.concat(newParticipant);
 
     const ops: PatchOperation[] = [
+      // Test to prevent race conditions
       { op: 'test', path: '/meta/versionId', value: props.communication.meta?.versionId },
       { op, path: '/recipient', value: updatedParticipants },
     ];
 
     try {
+      // Patch the thread with the updated participants
       const result = await medplum.patchResource('Communication', communicationId, ops);
       showNotification({
         icon: <IconCircleCheck />,

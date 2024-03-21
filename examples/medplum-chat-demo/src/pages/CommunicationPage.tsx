@@ -21,6 +21,8 @@ export function CommunicationPage(): JSX.Element {
         if (id) {
           const communication = await medplum.readResource('Communication', id);
           setCommunication(communication);
+
+          // If the Communication is a part of another communication, it is a message, otherwise it is a thread. For more details see https://www.medplum.com/docs/communications/organizing-communications
           setIsThread(communication.partOf ? false : true);
         }
       } catch (err) {

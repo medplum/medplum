@@ -23,12 +23,11 @@ export function SearchPage(): JSX.Element {
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
   const [opened, handlers] = useDisclosure(false);
+
+  // Only show the active and complete tabs when viewing Communication resources
   const [showTabs, setShowTabs] = useState<boolean>(() => {
     const search = parseSearchRequest(location.pathname + location.search);
-    if (search.resourceType !== 'Communication') {
-      return false;
-    }
-    return true;
+    return shouldShowTabs(search);
   });
 
   const tabs = ['Active', 'Completed'];
@@ -43,23 +42,28 @@ export function SearchPage(): JSX.Element {
 
   useEffect(() => {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
+    // Navigate to view Communication resources by default
     if (!parsedSearch.resourceType) {
       navigate('/Communication');
       return;
     }
 
+    // Populate the search with details for a given resource type
     const populatedSearch = getPopulatedSearch(parsedSearch);
 
     if (
       location.pathname === `/${populatedSearch.resourceType}` &&
       location.search === formatSearchQuery(populatedSearch)
     ) {
+      // If you are alrady at the correct url, execute the search
       setSearch(populatedSearch);
     } else {
+      // Otherwise, navigate to the correct url before executing
       navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
     }
   }, [medplum, navigate, location]);
 
+  // Updates the search and navigates to the correct url when you filter for threads with a specific patient
   const handlePatientFilter = (search: SearchRequest): void => {
     setSearch(search);
     navigate(`/Communication${formatSearchQuery(search)}`);

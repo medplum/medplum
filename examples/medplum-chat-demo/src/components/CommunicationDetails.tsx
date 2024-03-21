@@ -13,6 +13,7 @@ export function CommunicationDetails({ communication, isThread }: CommunicationD
   const id = communication.id as string;
   const tabs = ['Details', 'History'];
 
+  // Get the current tab
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 

@@ -29,6 +29,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
   const navigate = useNavigate();
 
   const handleCreateThread = async (formData: QuestionnaireResponse): Promise<void> => {
+    // The suggested way to handle threads is by including all participants in the `recipients` field. This gets all people that are a entered as a recipient
     const participants = getRecipients(formData);
     const topic = getQuestionnaireAnswers(formData)['topic'].valueString;
     const profileReference = createReference(profile);
@@ -36,12 +37,13 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
 
     const recipients = participants?.map((participant) => participant.valueReference) as Communication['recipient'];
 
+    // If there a single patient in the recipient threads, set that patient as the subject of the thread.
     if (recipients?.length === 1 && parseReference(recipients[0])[0] === 'Patient') {
       subject = recipients[0] as Reference<Patient>;
     }
 
+    // Add the user that created the trhead as a participant
     recipients?.push(profileReference);
-    console.log(recipients);
 
     if (!topic || !recipients) {
       throw new Error('Please ensure a valid input.');
@@ -62,6 +64,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
     };
 
     try {
+      // Create the thread
       const result = await medplum.createResource(thread);
       showNotification({
         icon: <IconCircleCheck />,
@@ -111,6 +114,7 @@ const createThreadQuestionnaire: Questionnaire = {
   ],
 };
 
+// A helper function to specifically get all of the people entered as a participant in the form
 function getRecipients(formData: QuestionnaireResponse) {
   const items = formData.item;
   const recipients = [];

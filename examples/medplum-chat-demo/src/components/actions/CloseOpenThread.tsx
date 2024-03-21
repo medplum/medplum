@@ -16,11 +16,13 @@ export function CloseOpenThread(props: CloseOpenThreadProps): JSX.Element {
   const [opened, handlers] = useDisclosure(false);
   const status = props.communication.status;
 
+  // Check the status to see if the thread should be closed or reopened
   const display = status === 'completed' ? 'Reopen' : 'Close';
 
   const handleStatusUpdate = async () => {
     const communicationId = props.communication.id as string;
-    const updatedStatus = status === 'completed' ? 'active' : 'completed';
+    // Update the status to the opposite of the current status
+    const updatedStatus = status === 'completed' ? 'in-progress' : 'completed';
 
     const ops: PatchOperation[] = [
       { op: 'test', path: '/meta/versionId', value: props.communication.meta?.versionId },
@@ -28,6 +30,7 @@ export function CloseOpenThread(props: CloseOpenThreadProps): JSX.Element {
     ];
 
     try {
+      // Update the thread to the new status
       const result = await medplum.patchResource('Communication', communicationId, ops);
       showNotification({
         icon: <IconCircleCheck />,

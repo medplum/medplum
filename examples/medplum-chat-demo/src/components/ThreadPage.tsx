@@ -15,6 +15,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
 
+  // Get the topic to display on the chat
   const topic = props.thread.topic?.coding?.[0].display ?? 'Thread';
 
   const patientReference = props.thread.subject;
@@ -22,6 +23,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
   useEffect(() => {
     const patientId = resolveId(patientReference);
 
+    // Get the patient linked to this thread to display their information.
     if (patientId) {
       medplum.readResource('Patient', patientId).then(setPatient).catch(console.error);
     }
