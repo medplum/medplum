@@ -134,7 +134,7 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  *
  * Currently we log if the `AccessPolicy` is not satisfied only.
  *
- * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied (for rest-hook subscriptins)
+ * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied (for rest-hook subscriptions)
  *
  * @param resource - The resource to evaluate against the `AccessPolicy`.
  * @param project - The project containing the resource.
@@ -146,7 +146,7 @@ async function satisfiesAccessPolicy(
   project: Project,
   subscription: Subscription
 ): Promise<boolean> {
-  let returnVal = true;
+  let satisfied = true;
   try {
     // Check access policy
     const subAuthor = subscription.meta?.author;
@@ -154,7 +154,7 @@ async function satisfiesAccessPolicy(
       const membership = await findProjectMembership(project.id as string, subAuthor);
       if (membership) {
         const accessPolicy = await buildAccessPolicy(membership);
-        const satisfied = satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
+        satisfied = satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
         if (!satisfied) {
           const resourceReference = getReferenceString(resource);
           const subReference = getReferenceString(subscription);
@@ -163,9 +163,6 @@ async function satisfiesAccessPolicy(
             `[Subscription Access Policy]: Access Policy not satisfied on '${resourceReference}' for '${subReference}'`,
             { subscription: subReference, project: projectReference, accessPolicy }
           );
-          if (subscription.channel.type === 'websocket') {
-            returnVal = false;
-          }
         }
       } else {
         const projectReference = getReferenceString(project);
@@ -175,18 +172,14 @@ async function satisfiesAccessPolicy(
           `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
           { subscription: subReference }
         );
-        if (subscription.channel.type === 'websocket') {
-          returnVal = false;
-        }
+        satisfied = false;
       }
     } else {
       // Log it if there is no author for this Subscription (this is not good)
       globalLogger.warn(
         `[Subscription Access Policy]: No author for subscription '${getReferenceString(subscription)}'`
       );
-      if (subscription.channel.type === 'websocket') {
-        returnVal = false;
-      }
+      satisfied = false;
     }
   } catch (err: unknown) {
     const resourceReference = getReferenceString(resource);
@@ -195,11 +188,10 @@ async function satisfiesAccessPolicy(
       `[Subscription Access Policy]: Error occurred while checking access policy for resource '${resourceReference}' against '${subReference}'`,
       { error: err, subscription: subReference }
     );
-    if (subscription.channel.type === 'websocket') {
-      returnVal = false;
-    }
+    satisfied = false;
   }
-  return returnVal;
+  // Always return true if channelType !== websockets for now
+  return subscription.channel.type === 'websocket' ? satisfied : true;
 }
 
 /**
