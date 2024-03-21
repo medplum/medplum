@@ -2668,23 +2668,63 @@ describe('Client', () => {
   });
 
   describe('Media', () => {
-    test('Upload Media', async () => {
+    test('Create Media', async () => {
       const fetch = mockFetch(200, {});
+      fetch.mockImplementationOnce(async () => mockFetchResponse(201, { resourceType: 'Media', id: '123' }));
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(201, { resourceType: 'Binary', id: '456', url: 'Binary/456' })
+      );
+      fetch.mockImplementationOnce(async () => mockFetchResponse(200, { resourceType: 'Media', id: '123' }));
+
       const client = new MedplumClient({ fetch });
-      const media = await client.uploadMedia('Hello world', 'text/plain', 'hello.txt');
+      const media = await client.createMedia({
+        data: 'Hello world',
+        contentType: 'text/plain',
+        filename: 'hello.txt',
+      });
       expect(media).toBeDefined();
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(fetch).toHaveBeenCalledTimes(3);
 
       const calls = fetch.mock.calls;
-      expect(calls).toHaveLength(2);
-      expect(calls[0][0]).toEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
-      expect(calls[1][0]).toEqual('https://api.medplum.com/fhir/R4/Media');
-      expect(JSON.parse(calls[1][1].body)).toMatchObject({
+      expect(calls).toHaveLength(3);
+      expect(calls[0][0]).toEqual('https://api.medplum.com/fhir/R4/Media');
+      expect(calls[1][0]).toEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
+      expect(calls[2][0]).toEqual('https://api.medplum.com/fhir/R4/Media/123');
+      expect(JSON.parse(calls[2][1].body)).toMatchObject({
         resourceType: 'Media',
         status: 'completed',
         content: {
           contentType: 'text/plain',
-          url: 'Binary/undefined',
+          url: 'Binary/456',
+          title: 'hello.txt',
+        },
+      });
+    });
+
+    test('Upload Media', async () => {
+      const fetch = mockFetch(200, {});
+      fetch.mockImplementationOnce(async () => mockFetchResponse(201, { resourceType: 'Media', id: '123' }));
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(201, { resourceType: 'Binary', id: '456', url: 'Binary/456' })
+      );
+      fetch.mockImplementationOnce(async () => mockFetchResponse(200, { resourceType: 'Media', id: '123' }));
+
+      const client = new MedplumClient({ fetch });
+      const media = await client.uploadMedia('Hello world', 'text/plain', 'hello.txt');
+      expect(media).toBeDefined();
+      expect(fetch).toHaveBeenCalledTimes(3);
+
+      const calls = fetch.mock.calls;
+      expect(calls).toHaveLength(3);
+      expect(calls[0][0]).toEqual('https://api.medplum.com/fhir/R4/Media');
+      expect(calls[1][0]).toEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
+      expect(calls[2][0]).toEqual('https://api.medplum.com/fhir/R4/Media/123');
+      expect(JSON.parse(calls[2][1].body)).toMatchObject({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: 'text/plain',
+          url: 'Binary/456',
           title: 'hello.txt',
         },
       });

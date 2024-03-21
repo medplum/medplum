@@ -500,6 +500,13 @@ export interface CreateBinaryOptions {
   readonly onProgress?: (e: ProgressEvent) => void;
 }
 
+export interface CreateMediaOptions extends CreateBinaryOptions {
+  /**
+   * Optional additional fields for the Media resource.
+   */
+  readonly additionalFields?: Partial<Media>;
+}
+
 /**
  * PDF upload options.
  */
@@ -2811,6 +2818,43 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Creates a FHIR Media resource with the provided data content.
+   *
+   * @category Create
+   * @param createMediaOptions - The media creation options. See `CreateMediaOptions` for full details.
+   * @param requestOptions - Optional fetch options.
+   * @returns The new media resource.
+   */
+  async createMedia(createMediaOptions: CreateMediaOptions, requestOptions?: MedplumRequestOptions): Promise<Media> {
+    const { additionalFields, ...createBinaryOptions } = createMediaOptions;
+
+    // First, create the media:
+    const media = await this.createResource({
+      resourceType: 'Media',
+      status: 'preparation',
+      content: {
+        contentType: createMediaOptions.contentType,
+      },
+      ...additionalFields,
+    });
+
+    // If the caller did not specify a security context, use the media reference:
+    if (!createBinaryOptions.securityContext) {
+      createBinaryOptions.securityContext = createReference(media);
+    }
+
+    // Next, upload the binary:
+    const content = await this.createAttachment(createBinaryOptions, requestOptions);
+
+    // Update the media with the binary content:
+    return this.updateResource({
+      ...media,
+      status: 'completed',
+      content,
+    });
+  }
+
+  /**
    * Upload media to the server and create a Media instance for the uploaded content.
    * @param contents - The contents of the media file, as a string, Uint8Array, File, or Blob.
    * @param contentType - The media type of the content.
@@ -2818,6 +2862,7 @@ export class MedplumClient extends EventTarget {
    * @param additionalFields - Additional fields for Media.
    * @param options - Optional fetch options.
    * @returns Promise that resolves to the created Media
+   * @deprecated Use `createMedia` with `CreateMediaOptions` instead.
    */
   async uploadMedia(
     contents: string | Uint8Array | File | Blob,
@@ -2826,17 +2871,12 @@ export class MedplumClient extends EventTarget {
     additionalFields?: Partial<Media>,
     options?: MedplumRequestOptions
   ): Promise<Media> {
-    const binary = await this.createBinary(contents, filename, contentType);
-    return this.createResource(
+    return this.createMedia(
       {
-        resourceType: 'Media',
-        status: 'completed',
-        content: {
-          contentType: contentType,
-          url: BINARY_URL_PREFIX + binary.id,
-          title: filename,
-        },
-        ...additionalFields,
+        data: contents,
+        contentType,
+        filename,
+        additionalFields,
       },
       options
     );
