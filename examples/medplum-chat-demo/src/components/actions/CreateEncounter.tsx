@@ -22,7 +22,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;
   const [opened, handlers] = useDisclosure(false);
 
-  const onEncounterSubmit = async (resource: Resource) => {
+  const onEncounterSubmit = async (resource: Resource): Promise<void> => {
     const encounter = resource as Encounter;
 
     try {
@@ -93,7 +93,7 @@ async function linkEncounterToCommunication(
   encounter: Encounter,
   communication: Communication,
   medplum: MedplumClient
-): Promise<Communication | undefined> {
+): Promise<Communication | void> {
   const communicationId = communication.id as string;
   const encounterReference = createReference(encounter);
 

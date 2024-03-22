@@ -15,18 +15,18 @@ export function EditThreadTopic({ communication, onChange }: EditTopicThreadProp
   const medplum = useMedplum();
   const [opened, handlers] = useDisclosure(false);
 
-  const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
+  const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
     const newTopic = getQuestionnaireAnswers(formData)['edit-topic'].valueString;
 
     if (!newTopic) {
       throw new Error('Please enter a new topic');
     }
 
-    handleTopicUpdate(newTopic);
+    handleTopicUpdate(newTopic).catch(console.error);
     handlers.close();
   };
 
-  const handleTopicUpdate = async (newTopic: string) => {
+  const handleTopicUpdate = async (newTopic: string): Promise<void> => {
     const communicationId = communication.id as string;
     // Create a codeable concept for the topic
     const topicCodeable: CodeableConcept = {

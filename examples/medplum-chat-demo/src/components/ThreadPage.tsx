@@ -16,7 +16,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
   const [patient, setPatient] = useState<Patient>();
 
   // Get the topic to display on the chat
-  const topic = props.thread.topic?.coding?.[0].display ?? 'Thread';
+  // const topic = props.thread.topic?.coding?.[0].display ?? 'Thread';
 
   const patientReference = props.thread.subject;
 
@@ -27,7 +27,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
     if (patientId) {
       medplum.readResource('Patient', patientId).then(setPatient).catch(console.error);
     }
-  });
+  }, [patientReference]);
 
   return (
     <div>
@@ -37,7 +37,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
             <PatientSummary patient={patient} />
           </GridCol>
           <GridCol span={5}>
-            <CommunicationDetails communication={props.thread} isThread={true} />
+            <CommunicationDetails communication={props.thread} />
           </GridCol>
           <GridCol span={3}>
             <Paper>
@@ -48,7 +48,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
       ) : (
         <Grid gutter="xs">
           <GridCol span={8}>
-            <CommunicationDetails communication={props.thread} isThread={true} />
+            <CommunicationDetails communication={props.thread} />
           </GridCol>
           <GridCol span={4}>
             <Paper m="md">

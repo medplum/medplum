@@ -1,4 +1,4 @@
-import { Grid, GridCol, Paper, Tabs } from '@mantine/core';
+import { Grid, GridCol } from '@mantine/core';
 import { parseReference, resolveId } from '@medplum/core';
 import { Communication, Patient } from '@medplum/fhirtypes';
 import { PatientSummary, useMedplum } from '@medplum/react';
@@ -24,7 +24,7 @@ export function MessagePage(props: MessagePageProps): JSX.Element {
       // Get the patient resource to display their summary
       medplum.readResource('Patient', patientId).then(setPatient).catch(console.error);
     }
-  });
+  }, [patientReference]);
 
   return (
     <div>
@@ -34,18 +34,18 @@ export function MessagePage(props: MessagePageProps): JSX.Element {
             <PatientSummary patient={patient} />
           </GridCol>
           <GridCol span={8}>
-            <CommunicationDetails communication={props.message} isThread={false} />
+            <CommunicationDetails communication={props.message} />
           </GridCol>
         </Grid>
       ) : (
-        <CommunicationDetails communication={props.message} isThread={false} />
+        <CommunicationDetails communication={props.message} />
       )}
     </div>
   );
 }
 
 // If the sender of the message is a patient, return a reference to that patient
-function getPatientReference(message: Communication) {
+function getPatientReference(message: Communication): Communication['sender'] | undefined {
   const sender = parseReference(message.sender);
   if (sender[0] === 'Patient') {
     return message.sender;

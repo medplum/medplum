@@ -11,26 +11,26 @@ export function CommunicationPage(): JSX.Element {
   const [communication, setCommunication] = useState<Communication>();
   const [isThread, setIsThread] = useState<boolean>();
 
-  const onCommunicationChange = (newCommunication: Communication) => {
+  const onCommunicationChange = (newCommunication: Communication): void => {
     setCommunication(newCommunication);
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (): Promise<void> => {
       try {
         if (id) {
           const communication = await medplum.readResource('Communication', id);
           setCommunication(communication);
 
           // If the Communication is a part of another communication, it is a message, otherwise it is a thread. For more details see https://www.medplum.com/docs/communications/organizing-communications
-          setIsThread(communication.partOf ? false : true);
+          setIsThread(communication.partOf ? false : true); // eslint-disable-line no-unneeded-ternary
         }
       } catch (err) {
         console.error(err);
       }
     };
 
-    fetchData();
+    fetchData().catch(console.error);
   });
 
   if (!communication) {

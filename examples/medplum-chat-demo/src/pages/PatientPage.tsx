@@ -24,7 +24,7 @@ export function PatientPage(): JSX.Element {
           message: normalizeErrorString(err),
         });
       });
-  });
+  }, [id]);
 
   if (!patient) {
     return <Loader />;

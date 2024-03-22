@@ -1,5 +1,5 @@
 import { Filter, Operator, parseReference, SearchRequest } from '@medplum/core';
-import { Communication, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
+import { Communication, QuestionnaireResponse, QuestionnaireResponseItemAnswer, Resource } from '@medplum/fhirtypes';
 
 export function cleanResource(resource: Resource): Resource {
   let meta = resource.meta;
@@ -17,7 +17,7 @@ export function cleanResource(resource: Resource): Resource {
   };
 }
 
-export function getPopulatedSearch(search: SearchRequest): SearchRequest<Resource> {
+export function getPopulatedSearch(search: SearchRequest): SearchRequest {
   const filters = search.filters ?? getDefaultFilters(search.resourceType);
   const fields = search.fields ?? getDefaultFields(search.resourceType);
   const sortRules = search.sortRules ?? [{ code: '-_lastUpdated' }];
@@ -63,7 +63,7 @@ export function getDefaultFields(resourceType: string): string[] {
 }
 
 // A helper function to specifically get all of the people entered as a participant in the form
-export function getRecipients(formData: QuestionnaireResponse) {
+export function getRecipients(formData: QuestionnaireResponse): QuestionnaireResponseItemAnswer[] | undefined {
   const items = formData.item;
   const recipients = [];
 

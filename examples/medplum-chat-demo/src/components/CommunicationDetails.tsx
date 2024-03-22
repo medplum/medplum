@@ -5,10 +5,9 @@ import { useNavigate } from 'react-router-dom';
 
 interface CommunicationDetailsProps {
   readonly communication: Communication;
-  readonly isThread: boolean;
 }
 
-export function CommunicationDetails({ communication, isThread }: CommunicationDetailsProps): JSX.Element {
+export function CommunicationDetails({ communication }: CommunicationDetailsProps): JSX.Element {
   const navigate = useNavigate();
   const id = communication.id as string;
   const tabs = ['Details', 'History'];
