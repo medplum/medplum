@@ -1,0 +1,235 @@
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4",
+      "request": { "method": "POST", "url": "Patient" },
+      "resource": {
+        "resourceType": "Patient",
+        "active": true,
+        "name": [{ "family": "Simpson", "given": ["Homer"] }],
+        "gender": "male"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111",
+      "request": { "method": "POST", "url": "Practitioner" },
+      "resource": {
+        "resourceType": "Practitioner",
+        "active": true,
+        "name": [{ "family": "Smith", "given": ["Alice"], "prefix": ["Dr."] }],
+        "gender": "female",
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD",
+                  "display": "Doctor of Medicine"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5e18d560-9223-4f43-a133-76a30200315d",
+      "request": { "method": "POST", "url": "Communication" },
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "recipient": [
+          { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" }
+        ],
+        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+        "topic": { "coding": [{ "display": "Blood Test for Peanut Allergy" }] },
+        "category": [{ "coding": [{ "display": "Lab Tests" }] }],
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:8f5c2717-7f5c-4c5c-a4a7-cf1047e4443e",
+      "request": { "method": "POST", "url": "Communication" },
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "partOf": [{ "reference": "urn:uuid:5e18d560-9223-4f43-a133-76a30200315d" }],
+        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+        "recipient": [{ "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }],
+        "topic": { "coding": [{ "display": "Blood Test for Peanut Allergy" }] },
+        "category": [{ "coding": [{ "display": "Lab Tests" }] }],
+        "sent": "2024-03-21T20:28:42.148Z",
+        "payload": [
+          { "contentString": "Hi Homer, your blood work just came back. Would you like to come in to talk about it?" }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:09ab29bd-934f-4f99-b3c5-8a35f85e312b",
+      "request": { "method": "POST", "url": "Communication" },
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "partOf": [{ "reference": "urn:uuid:5e18d560-9223-4f43-a133-76a30200315d" }],
+        "recipient": [{ "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" }],
+        "sender": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+        "topic": { "coding": [{ "display": "Blood Test for Peanut Allergy" }] },
+        "category": [{ "coding": [{ "display": "Lab Tests" }] }],
+        "sent": "2024-03-21T20:38:42.148Z",
+        "inResponseTo": [{ "reference": "urn:uuid:8f5c2717-7f5c-4c5c-a4a7-cf1047e4443e" }],
+        "payload": [{ "contentString": "Just tell me doc, I can't bear to wait any longer." }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:70546170-7f0a-4f95-88f4-1f908bd0a708",
+      "request": { "method": "POST", "url": "Communication" },
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "partOf": [{ "reference": "urn:uuid:5e18d560-9223-4f43-a133-76a30200315d" }],
+        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+        "recipient": [{ "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }],
+        "topic": { "coding": [{ "display": "Blood Test for Peanut Allergy" }] },
+        "category": [{ "coding": [{ "display": "Lab Tests" }] }],
+        "sent": "2024-03-21T20:40:42.148Z",
+        "inResponseTo": [{ "reference": "urn:uuid:09ab29bd-934f-4f99-b3c5-8a35f85e312b" }],
+        "payload": [
+          {
+            "contentString": "If you insist... Unfortunately, the results came back positive. You're allergic to peanuts."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944",
+      "request": { "method": "POST", "url": "Practitioner" },
+      "resource": {
+        "resourceType": "Practitioner",
+        "active": true,
+        "name": [{ "family": "House", "given": ["Gregory"], "prefix": ["Dr."] }],
+        "gender": "male",
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD",
+                  "display": "Doctor of Medicine"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6",
+      "request": { "method": "POST", "url": "Practitioner" },
+      "resource": {
+        "resourceType": "Practitioner",
+        "active": true,
+        "name": [{ "family": "Peyton", "given": ["Jackie"] }],
+        "gender": "female",
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "RN",
+                  "display": "Registered Nurse"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d2fe5b7d-98f5-4126-bd25-0dbb2ade1ff2",
+      "request": { "method": "POST", "url": "Communication" },
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "sender": { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" },
+        "recipient": [
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
+          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" }
+        ],
+        "topic": { "coding": [{ "display": "Capturing Homer's vitals" }] },
+        "category": [{ "coding": [{ "display": "Vital Signs" }] }],
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b82f3090-82bb-4102-9081-f9113fe81ff9",
+      "request": { "method": "POST", "url": "Communication" },
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "sender": { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" },
+        "sent": "2024-03-22T20:28:42.148Z",
+        "recipient": [
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
+          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" }
+        ],
+        "partOf": [{ "reference": "urn:uuid:d2fe5b7d-98f5-4126-bd25-0dbb2ade1ff2" }],
+        "topic": { "coding": [{ "display": "Capturing Homer's vitals" }] },
+        "category": [{ "coding": [{ "display": "Vital Signs" }] }],
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+        "payload": [
+          { "contentString": "Are either of available to take Homer's vital signs before his physical tomorrow?" }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:f7c6f976-edf9-4081-b179-f1dbb5347f13",
+      "request": { "method": "POST", "url": "Communication" },
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+        "sent": "2024-03-22T20:55:18.148Z",
+        "recipient": [
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
+          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" }
+        ],
+        "partOf": [{ "reference": "urn:uuid:d2fe5b7d-98f5-4126-bd25-0dbb2ade1ff2" }],
+        "inResponseTo": [{ "reference": "urn:uuid:b82f3090-82bb-4102-9081-f9113fe81ff9" }],
+        "topic": { "coding": [{ "display": "Capturing Homer's vitals" }] },
+        "category": [{ "coding": [{ "display": "Vital Signs" }] }],
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+        "payload": [{ "contentString": "I have the day off tomorrow, so I cannot." }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:35bf5aa3-6a85-400e-bce4-a114fb60f8b9",
+      "request": { "method": "POST", "url": "Communication" },
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "sender": { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
+        "sent": "2024-03-22T21:13:33.148Z",
+        "recipient": [
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
+          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" }
+        ],
+        "partOf": [{ "reference": "urn:uuid:d2fe5b7d-98f5-4126-bd25-0dbb2ade1ff2" }],
+        "inResponseTo": [{ "reference": "urn:uuid:f7c6f976-edf9-4081-b179-f1dbb5347f13" }],
+        "topic": { "coding": [{ "display": "Capturing Homer's vitals" }] },
+        "category": [{ "coding": [{ "display": "Vital Signs" }] }],
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+        "payload": [{ "contentString": "I can do it, but it will have to be quick and he must be on time." }]
+      }
+    }
+  ]
+}
