@@ -7,6 +7,7 @@ import {
   Practitioner,
   Questionnaire,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
@@ -28,12 +29,34 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
   const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
 
-  const handleCreateThread = async (formData: QuestionnaireResponse): Promise<void> => {
+  const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
+    debugger;
+    const participants = getRecipients(formData) as QuestionnaireResponseItemAnswer[];
+    const answers = getQuestionnaireAnswers(formData);
+    const topic = answers.topic.valueString as string;
+    const subject = answers.subject?.valueReference as Reference<Patient>;
+
+    if (subject && parseReference(subject)[0] !== 'Patient') {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: 'The subject of a thread must be a patient',
+      });
+      throw new Error('The subject of a thread must be a patient');
+    }
+
+    handleCreateThread(topic, participants, subject);
+    handlers.close();
+  };
+
+  const handleCreateThread = async (
+    topic: string,
+    participants: QuestionnaireResponseItemAnswer[],
+    subject?: Reference<Patient>
+  ): Promise<void> => {
     // The suggested way to handle threads is by including all participants in the `recipients` field. This gets all people that are a entered as a recipient
-    const participants = getRecipients(formData);
-    const topic = getQuestionnaireAnswers(formData)['topic'].valueString;
     const profileReference = createReference(profile);
-    let subject;
 
     const recipients = participants?.map((participant) => participant.valueReference) as Communication['recipient'];
 
@@ -53,11 +76,6 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
       throw new Error('Invalid recipient type');
     }
 
-    // If there a single patient in the recipient threads, set that patient as the subject of the thread.
-    if (recipients?.length === 1 && parseReference(recipients[0])[0] === 'Patient') {
-      subject = recipients[0] as Reference<Patient>;
-    }
-
     // Add the user that created the trhead as a participant
     recipients?.push(profileReference);
 
@@ -72,8 +90,12 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
         ],
       },
       recipient: recipients,
-      subject,
+      sender: profileReference,
     };
+
+    if (subject) {
+      thread.subject = subject;
+    }
 
     try {
       // Create the thread
@@ -83,7 +105,6 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
         title: 'Success',
         message: 'Thread created',
       });
-      handlers.close();
       navigate(`/Communication/${result.id}`);
     } catch (err) {
       showNotification({
@@ -95,12 +116,9 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
   };
 
   return (
-    <div>
-      <Button onClick={handlers.open}>Create New Thread</Button>
-      <Modal opened={opened} onClose={handlers.close}>
-        <QuestionnaireForm questionnaire={createThreadQuestionnaire} onSubmit={handleCreateThread} />
-      </Modal>
-    </div>
+    <Modal opened={opened} onClose={handlers.close}>
+      <QuestionnaireForm questionnaire={createThreadQuestionnaire} onSubmit={onQuestionnaireSubmit} />
+    </Modal>
   );
 }
 
@@ -122,6 +140,11 @@ const createThreadQuestionnaire: Questionnaire = {
       text: 'Add thread participants:',
       repeats: true,
       required: true,
+    },
+    {
+      linkId: 'subject',
+      type: 'reference',
+      text: 'Select a patient that is the subject of this thread (Optional)',
     },
   ],
 };
