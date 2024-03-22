@@ -1,6 +1,6 @@
-import { Paper, Tabs } from '@mantine/core';
+import { Paper, Tabs, Title } from '@mantine/core';
 import { Communication } from '@medplum/fhirtypes';
-import { ResourceHistoryTable, ResourceTable } from '@medplum/react';
+import { CodeableConceptDisplay, ResourceHistoryTable, ResourceTable } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
 
 interface CommunicationDetailsProps {
@@ -21,7 +21,10 @@ export function CommunicationDetails({ communication }: CommunicationDetailsProp
   };
 
   return (
-    <Paper m="md">
+    <Paper m="md" p="md">
+      <Title>
+        <CodeableConceptDisplay value={communication.topic} />
+      </Title>
       <Tabs defaultValue="details" value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List>
           {tabs.map((tab) => (
