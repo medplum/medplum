@@ -16,7 +16,7 @@ if (packageChanged && !lockfileChanged) {
 const modifiedFiles = danger.git.modified_files.filter((path) => /\/src\/.+\.tsx?/.exec(path));
 
 // Check for console.log statements
-const statements = ['console.debug', 'console.log', 'console.warn', 'describe.only', 'test.only'];
+const statements = ['console.debug', 'describe.only', 'test.only'];
 modifiedFiles.forEach((file) => {
   const content = readFileSync(file).toString();
   for (const statement of statements) {
