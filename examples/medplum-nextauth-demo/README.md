@@ -2,7 +2,7 @@
 
 This sample application demonstrates how to use [NextAuth]() to with Medplum's authentication framework
 
-![NextAuth Preview](./nextauth-preview.mp4)
+![NextAuth Preview](nextauth-preview.mp4)
 
 ## Running the Demo
 
