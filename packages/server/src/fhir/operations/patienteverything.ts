@@ -1,4 +1,5 @@
 import { allOk, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   Bundle,
   BundleEntry,
@@ -7,11 +8,10 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
-import { getFullUrl, sendResponse } from '../response';
+import { getFullUrl } from '../response';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
@@ -27,10 +27,10 @@ type PatientEverythingParameters = {
 /**
  * Handles a Patient everything request.
  * Searches for all resources related to the patient.
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function patientEverythingHandler(req: Request, res: Response): Promise<void> {
+export async function patientEverythingHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
   const params = parseInputParameters<PatientEverythingParameters>(operation, req);
@@ -41,7 +41,7 @@ export async function patientEverythingHandler(req: Request, res: Response): Pro
   // Then read all of the patient data
   const bundle = await getPatientEverything(ctx.repo, patient, params);
 
-  await sendResponse(req, res, allOk, bundle);
+  return [allOk, bundle];
 }
 
 /**

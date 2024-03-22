@@ -12,6 +12,7 @@ import {
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   GraphDefinition,
   GraphDefinitionLink,
@@ -20,10 +21,8 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { getAuthenticatedContext, getLogger } from '../../context';
 import { Repository } from '../repo';
-import { sendResponse } from '../response';
 
 /**
  * Handles a Resource $graph request.
@@ -31,10 +30,10 @@ import { sendResponse } from '../response';
  * The operation fetches all the data related to this resources as defined by a GraphDefinition resource
  *
  * See: https://hl7.org/fhir/plandefinition-operation-apply.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function resourceGraphHandler(req: Request, res: Response): Promise<void> {
+export async function resourceGraphHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { resourceType, id } = req.params;
   const definition = await validateQueryParameters(req);
@@ -51,13 +50,16 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   }
   await followLinks(ctx.repo, rootResource, definition.link, results, resourceCache);
 
-  await sendResponse(req, res, allOk, {
-    resourceType: 'Bundle',
-    entry: deduplicateResources(results).map((r) => ({
-      resource: r,
-    })),
-    type: 'collection',
-  });
+  return [
+    allOk,
+    {
+      resourceType: 'Bundle',
+      entry: deduplicateResources(results).map((r) => ({
+        resource: r,
+      })),
+      type: 'collection',
+    },
+  ];
 }
 
 /**
@@ -272,7 +274,7 @@ async function followSearchLink(
  * @param req - The HTTP request.
  * @returns The operation parameters if available; otherwise, undefined.
  */
-async function validateQueryParameters(req: Request): Promise<GraphDefinition> {
+async function validateQueryParameters(req: FhirRequest): Promise<GraphDefinition> {
   const ctx = getAuthenticatedContext();
   const { graph } = req.query;
   if (typeof graph !== 'string') {

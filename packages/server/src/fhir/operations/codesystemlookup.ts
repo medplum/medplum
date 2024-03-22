@@ -1,13 +1,12 @@
 import { OperationOutcomeError, TypedValue, allOk, append, badRequest, notFound } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import { getAuthenticatedContext } from '../../context';
 import { getDatabasePool } from '../../database';
-import { sendOutcome } from '../outcomes';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource } from './utils/terminology';
-import { getAuthenticatedContext } from '../../context';
 
 const operation = getOperationDefinition('CodeSystem', 'lookup');
 
@@ -19,7 +18,7 @@ type CodeSystemLookupParameters = {
   property?: string[];
 };
 
-export async function codeSystemLookupHandler(req: Request, res: Response): Promise<void> {
+export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
 
   let codeSystem: CodeSystem;
@@ -30,8 +29,7 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
   } else if (params.coding?.system) {
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.coding.system, params.version);
   } else {
-    sendOutcome(res, badRequest('No code system specified'));
-    return;
+    return [badRequest('No code system specified')];
   }
 
   let coding: Coding;
@@ -40,12 +38,11 @@ export async function codeSystemLookupHandler(req: Request, res: Response): Prom
   } else if (params.code) {
     coding = { system: params.system ?? codeSystem.url, code: params.code };
   } else {
-    sendOutcome(res, badRequest('No coding specified'));
-    return;
+    return [badRequest('No coding specified')];
   }
 
   const output = await lookupCoding(codeSystem, coding);
-  await sendOutputParameters(req, res, operation, allOk, output);
+  return [allOk, buildOutputParameters(operation, output)];
 }
 
 export type CodeSystemLookupOutput = {

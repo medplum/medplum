@@ -1,11 +1,9 @@
 import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { buildBinaryIds } from './utils/binary';
 
@@ -13,21 +11,20 @@ import { buildBinaryIds } from './utils/binary';
  * Handles a Project clone request.
  *
  * Endpoint: [fhir base]/Project/[id]/$clone
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function projectCloneHandler(req: Request, res: Response): Promise<void> {
+export async function projectCloneHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   if (!ctx.login.superAdmin) {
-    sendOutcome(res, forbidden);
-    return;
+    return [forbidden];
   }
 
   const { id } = req.params;
   const { name, resourceTypes, includeIds, excludeIds } = req.body;
   const cloner = new ProjectCloner(ctx.repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();
-  await sendResponse(req, res, created, result);
+  return [created, result];
 }
 
 class ProjectCloner {

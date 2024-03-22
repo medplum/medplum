@@ -1,4 +1,5 @@
 import { ProfileResource, badRequest, createReference, created } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   ClientApplication,
   OperationDefinition,
@@ -8,15 +9,13 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
-import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const projectInitOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -72,10 +71,10 @@ interface ProjectInitParameters {
  * Endpoint - Project resource type
  *   [fhir base]/Project/$init
  *
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function projectInitHandler(req: Request, res: Response): Promise<void> {
+export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const login = ctx.login;
 
@@ -102,15 +101,13 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
   const owner = ownerRef ? await getSystemRepo().readReference(ownerRef) : undefined;
   if (owner) {
     if (owner.resourceType !== 'User') {
-      sendOutcome(res, badRequest('Only Users are permitted to be the owner of a new Project'));
-      return;
+      return [badRequest('Only Users are permitted to be the owner of a new Project')];
     } else if (owner.project) {
-      sendOutcome(res, badRequest('Project owner must not belong to another Project'));
-      return;
+      return [badRequest('Project owner must not belong to another Project')];
     }
   }
   const { project } = await createProject(params.name, owner);
-  await sendOutputParameters(req, res, projectInitOperation, created, project);
+  return [created, buildOutputParameters(projectInitOperation, project)];
 }
 
 /**

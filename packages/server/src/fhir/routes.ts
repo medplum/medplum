@@ -10,6 +10,7 @@ import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { agentPushHandler } from './operations/agentpush';
+import { agentStatusHandler } from './operations/agentstatus';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -32,9 +33,8 @@ import { structureDefinitionExpandProfileHandler } from './operations/structured
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
-import { isFhirJsonContentType, sendResponse } from './response';
+import { sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { agentStatusHandler } from './operations/agentstatus';
 
 export const fhirRouter = Router();
 
@@ -91,60 +91,10 @@ publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 const protectedRoutes = Router().use(authenticateRequest);
 fhirRouter.use(protectedRoutes);
 
-// Project $export
-protectedRoutes.get('/([$]|%24)export', bulkExportHandler);
-protectedRoutes.post('/([$]|%24)export', bulkExportHandler);
-
-// Project $clone
-protectedRoutes.post('/Project/:id/([$]|%24)clone', asyncWrap(projectCloneHandler));
-
-// Project $init
-protectedRoutes.post('/Project/([$]|%24)init', asyncWrap(projectInitHandler));
-
-// ConceptMap $translate
-protectedRoutes.post('/ConceptMap/([$]|%24)translate', asyncWrap(conceptMapTranslateHandler));
-protectedRoutes.post('/ConceptMap/:id/([$]|%24)translate', asyncWrap(conceptMapTranslateHandler));
-
-// ValueSet $expand operation
-protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
-protectedRoutes.post('/ValueSet/([$]|%24)expand', expandOperator);
-
-// CodeSystem $import operation
-protectedRoutes.post('/CodeSystem/([$]|%24)import', asyncWrap(codeSystemImportHandler));
-protectedRoutes.post('/CodeSystem/:id/([$]|%24)import', asyncWrap(codeSystemImportHandler));
-
-// CodeSystem $lookup operation
-protectedRoutes.get('/CodeSystem/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
-protectedRoutes.post('/CodeSystem/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
-protectedRoutes.get('/CodeSystem/:id/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
-protectedRoutes.post('/CodeSystem/:id/([$]|%24)lookup', asyncWrap(codeSystemLookupHandler));
-
-// CodeSystem $validate-code operation
-protectedRoutes.get('/CodeSystem/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
-protectedRoutes.post('/CodeSystem/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
-protectedRoutes.get('/CodeSystem/:id/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
-protectedRoutes.post('/CodeSystem/:id/([$]|%24)validate-code', asyncWrap(codeSystemValidateCodeHandler));
-
-// CodeSystem $subsumes operation
-protectedRoutes.get('/CodeSystem/([$]|%24)subsumes', codeSystemSubsumesOperation);
-protectedRoutes.post('/CodeSystem/([$]|%24)subsumes', codeSystemSubsumesOperation);
-protectedRoutes.get('/CodeSystem/:id/([$]|%24)subsumes', codeSystemSubsumesOperation);
-protectedRoutes.post('/CodeSystem/:id/([$]|%24)subsumes', codeSystemSubsumesOperation);
-
-// ValueSet $validate-code operation
-protectedRoutes.get('/ValueSet/([$]|%24)validate-code', valueSetValidateOperation);
-protectedRoutes.post('/ValueSet/([$]|%24)validate-code', valueSetValidateOperation);
-protectedRoutes.get('/ValueSet/:id/([$]|%24)validate-code', valueSetValidateOperation);
-protectedRoutes.post('/ValueSet/:id/([$]|%24)validate-code', valueSetValidateOperation);
-
-// CSV Export
+// CSV Export (cannot use FhirRouter due to CSV output)
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
-// Agent $status operation
-protectedRoutes.get('/Agent/([$]|%24)status', agentStatusHandler);
-protectedRoutes.get('/Agent/:id/([$]|%24)status', agentStatusHandler);
-
-// Agent $push operation
+// Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);
 protectedRoutes.post('/Agent/:id/([$]|%24)push', agentPushHandler);
 
@@ -159,101 +109,160 @@ const botPaths = [
 protectedRoutes.get(botPaths, executeHandler);
 protectedRoutes.post(botPaths, executeHandler);
 
-// Bot $deploy operation
-protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
-
-// Group $export operation
-protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler));
-
-// Patient $export operation
-protectedRoutes.get('/Patient/([$]|%24)export', asyncWrap(patientExportHandler));
-
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);
 
 // Async Job
 protectedRoutes.use('/job', jobRouter);
 
-// Measure $evaluate-measure operation
-protectedRoutes.post('/Measure/:id/([$]|%24)evaluate-measure', asyncWrap(evaluateMeasureHandler));
+/**
+ * Returns the internal FHIR router.
+ * This function will be executed on every request.
+ * @returns The lazy initialized internal FHIR router.
+ */
+function getInternalFhirRouter(): FhirRouter {
+  if (!internalFhirRouter) {
+    internalFhirRouter = initInternalFhirRouter();
+  }
+  return internalFhirRouter;
+}
 
-// PlanDefinition $apply operation
-protectedRoutes.post('/PlanDefinition/:id/([$]|%24)apply', asyncWrap(planDefinitionApplyHandler));
+/**
+ * Returns a new FHIR router.
+ * This function should only be called once on the first request.
+ * @returns A new FHIR router with all the internal operations.
+ */
+function initInternalFhirRouter(): FhirRouter {
+  const router = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
 
-// Resource $graph operation
-protectedRoutes.get('/:resourceType/:id/([$]|%24)graph', asyncWrap(resourceGraphHandler));
+  // Project $export
+  router.add('GET', '/$export', bulkExportHandler);
+  router.add('POST', '/$export', bulkExportHandler);
 
-// Patient $everything operation
-protectedRoutes.get('/Patient/:id/([$]|%24)everything', asyncWrap(patientEverythingHandler));
+  // Project $clone
+  router.add('POST', '/Project/:id/$clone', projectCloneHandler);
 
-// $expunge operation
-protectedRoutes.post('/:resourceType/:id/([$]|%24)expunge', asyncWrap(expungeHandler));
+  // Project $init
+  router.add('POST', '/Project/$init', projectInitHandler);
 
-// $get-ws-binding-token operation
-protectedRoutes.get('/Subscription/:id/([$]|%24)get-ws-binding-token', asyncWrap(getWsBindingTokenHandler));
+  // ConceptMap $translate
+  router.add('POST', '/ConceptMap/$translate', conceptMapTranslateHandler);
+  router.add('POST', '/ConceptMap/:id/$translate', conceptMapTranslateHandler);
 
-// StructureDefinition $expand-profile operation
-protectedRoutes.post(
-  '/StructureDefinition/([$]|%24)expand-profile',
-  asyncWrap(structureDefinitionExpandProfileHandler)
-);
+  // ValueSet $expand operation
+  router.add('GET', '/ValueSet/$expand', expandOperator);
+  router.add('POST', '/ValueSet/$expand', expandOperator);
 
-// Validate create resource
-protectedRoutes.post(
-  '/:resourceType/([$])validate',
-  asyncWrap(async (req: Request, res: Response) => {
-    if (!isFhirJsonContentType(req)) {
-      res.status(400).send('Unsupported content type');
-      return;
-    }
+  // CodeSystem $import operation
+  router.add('POST', '/CodeSystem/$import', codeSystemImportHandler);
+  router.add('POST', '/CodeSystem/:id/$import', codeSystemImportHandler);
+
+  // CodeSystem $lookup operation
+  router.add('GET', '/CodeSystem/$lookup', codeSystemLookupHandler);
+  router.add('POST', '/CodeSystem/$lookup', codeSystemLookupHandler);
+  router.add('GET', '/CodeSystem/:id/$lookup', codeSystemLookupHandler);
+  router.add('POST', '/CodeSystem/:id/$lookup', codeSystemLookupHandler);
+
+  // CodeSystem $validate-code operation
+  router.add('GET', '/CodeSystem/$validate-code', codeSystemValidateCodeHandler);
+  router.add('POST', '/CodeSystem/$validate-code', codeSystemValidateCodeHandler);
+  router.add('GET', '/CodeSystem/:id/$validate-code', codeSystemValidateCodeHandler);
+  router.add('POST', '/CodeSystem/:id/$validate-code', codeSystemValidateCodeHandler);
+
+  // CodeSystem $subsumes operation
+  router.add('GET', '/CodeSystem/$subsumes', codeSystemSubsumesOperation);
+  router.add('POST', '/CodeSystem/$subsumes', codeSystemSubsumesOperation);
+  router.add('GET', '/CodeSystem/:id/$subsumes', codeSystemSubsumesOperation);
+  router.add('POST', '/CodeSystem/:id/$subsumes', codeSystemSubsumesOperation);
+
+  // ValueSet $validate-code operation
+  router.add('GET', '/ValueSet/$validate-code', valueSetValidateOperation);
+  router.add('POST', '/ValueSet/$validate-code', valueSetValidateOperation);
+  router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
+  router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
+
+  // Agent $status operation
+  router.add('GET', '/Agent/$status', agentStatusHandler);
+  router.add('GET', '/Agent/:id/$status', agentStatusHandler);
+
+  // Bot $deploy operation
+  router.add('POST', '/Bot/:id/$deploy', deployHandler);
+
+  // Group $export operation
+  router.add('GET', '/Group/:id/$export', groupExportHandler);
+
+  // Patient $export operation
+  router.add('GET', '/Patient/$export', patientExportHandler);
+
+  // Measure $evaluate-measure operation
+  router.add('POST', '/Measure/:id/$evaluate-measure', evaluateMeasureHandler);
+
+  // PlanDefinition $apply operation
+  router.add('POST', '/PlanDefinition/:id/$apply', planDefinitionApplyHandler);
+
+  // Resource $graph operation
+  router.add('GET', '/:resourceType/:id/$graph', resourceGraphHandler);
+
+  // Patient $everything operation
+  router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
+
+  // $expunge operation
+  router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
+
+  // $get-ws-binding-token operation
+  router.add('GET', '/Subscription/:id/$get-ws-binding-token', getWsBindingTokenHandler);
+
+  // StructureDefinition $expand-profile operation
+  router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
+
+  // Validate create resource
+  router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     await ctx.repo.validateResource(req.body);
-    sendOutcome(res, allOk);
-  })
-);
+    return [allOk];
+  });
 
-// Reindex resource
-protectedRoutes.post(
-  '/:resourceType/:id/([$])reindex',
-  asyncWrap(async (req: Request, res: Response) => {
+  // Reindex resource
+  router.add('POST', '/:resourceType/:id/$reindex', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params;
     await ctx.repo.reindexResource(resourceType, id);
-    sendOutcome(res, allOk);
-  })
-);
+    return [allOk];
+  });
 
-// Resend subscriptions
-protectedRoutes.post(
-  '/:resourceType/:id/([$])resend',
-  asyncWrap(async (req: Request, res: Response) => {
+  // Resend subscriptions
+  router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params;
     await ctx.repo.resendSubscriptions(resourceType, id);
-    sendOutcome(res, allOk);
-  })
-);
+    return [allOk];
+  });
+
+  router.addEventListener('warn', (e: any) => {
+    const ctx = getAuthenticatedContext();
+    ctx.logger.warn(e.message, { ...e.data, project: ctx.project.id });
+  });
+
+  router.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
+    recordHistogramValue('medplum.batch.entries', count, { bundleType });
+    recordHistogramValue('medplum.batch.errors', errors, { bundleType });
+    recordHistogramValue('medplum.batch.size', size, { bundleType });
+
+    if (errors > 0 && bundleType === 'transaction') {
+      const ctx = getAuthenticatedContext();
+      ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: ctx.project.id });
+    }
+  });
+
+  return router;
+}
 
 // Default route
 protectedRoutes.use(
   '*',
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    if (!internalFhirRouter) {
-      internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
-      internalFhirRouter.addEventListener('warn', (e: any) =>
-        ctx.logger.warn(e.message, { ...e.data, project: ctx.project.id })
-      );
-      internalFhirRouter.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
-        recordHistogramValue('medplum.batch.entries', count, { bundleType });
-        recordHistogramValue('medplum.batch.errors', errors, { bundleType });
-        recordHistogramValue('medplum.batch.size', size, { bundleType });
 
-        if (errors > 0 && bundleType === 'transaction') {
-          ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: ctx.project.id });
-        }
-      });
-    }
     const request: FhirRequest = {
       method: req.method as HttpMethod,
       pathname: req.originalUrl.replace('/fhir/R4', '').split('?').shift() as string,
@@ -263,7 +272,7 @@ protectedRoutes.use(
       headers: req.headers,
     };
 
-    const result = await internalFhirRouter.handleRequest(request, ctx.repo);
+    const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
     if (result.length === 1) {
       if (!isOk(result[0])) {
         throw new OperationOutcomeError(result[0]);

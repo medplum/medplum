@@ -1,38 +1,35 @@
 import { allOk, badRequest, Operator } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Bundle, BundleEntry, StructureDefinition } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../repo';
-import { getFullUrl, sendResponse } from '../response';
-import { sendOutcome } from '../outcomes';
+import { getFullUrl } from '../response';
 
 /**
  * Handles a StructureDefinition profile expansion request.
  * Searches for all extensions related to the profile.
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function structureDefinitionExpandProfileHandler(req: Request, res: Response): Promise<void> {
+export async function structureDefinitionExpandProfileHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { url } = req.query;
 
   if (!url || typeof url !== 'string') {
-    sendOutcome(res, badRequest('Profile url not specified'));
-    return;
+    return [badRequest('Profile url not specified')];
   }
 
   const profile = await fetchProfileByUrl(ctx.repo, url);
 
   if (!profile) {
-    sendOutcome(res, badRequest('Profile not found'));
-    return;
+    return [badRequest('Profile not found')];
   }
 
   const sds = await loadNestedStructureDefinitions(ctx.repo, profile, new Set([url]), 1);
 
   const bundle = bundleResults([profile, ...sds]);
 
-  await sendResponse(req, res, allOk, bundle);
+  return [allOk, bundle];
 }
 
 async function fetchProfileByUrl(repo: Repository, url: string): Promise<StructureDefinition | undefined> {

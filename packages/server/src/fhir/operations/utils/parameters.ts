@@ -1,24 +1,7 @@
-import {
-  OperationOutcomeError,
-  badRequest,
-  capitalize,
-  getStatus,
-  isEmpty,
-  isResource,
-  serverError,
-  validateResource,
-} from '@medplum/core';
-import {
-  OperationDefinition,
-  OperationDefinitionParameter,
-  OperationOutcome,
-  Parameters,
-  ParametersParameter,
-} from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { getLogger } from '../../../context';
-import { sendOutcome } from '../../outcomes';
-import { sendResponse } from '../../response';
+import { OperationOutcomeError, badRequest, capitalize, isEmpty, isResource, validateResource } from '@medplum/core';
+import { FhirRequest } from '@medplum/fhir-router';
+import { OperationDefinition, OperationDefinitionParameter, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import { Request } from 'express';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -37,7 +20,7 @@ export function parseParameters<T>(input: T | Parameters): T {
  * @param req - The incoming request.
  * @returns A dictionary of parameter names to values.
  */
-export function parseInputParameters<T>(operation: OperationDefinition, req: Request): T {
+export function parseInputParameters<T>(operation: OperationDefinition, req: Request | FhirRequest): T {
   if (!operation.parameter) {
     return {} as any;
   }
@@ -157,34 +140,23 @@ function parseParams(
   return parsed;
 }
 
-export async function sendOutputParameters(
-  req: Request,
-  res: Response,
-  operation: OperationDefinition,
-  outcome: OperationOutcome,
-  output: any
-): Promise<void> {
+export function buildOutputParameters(operation: OperationDefinition, output: any): Parameters {
   const outputParameters = operation.parameter?.filter((p) => p.use === 'out');
   const param1 = outputParameters?.[0];
   if (outputParameters?.length === 1 && param1 && param1.name === 'return') {
     if (!isResource(output) || (param1.type && output.resourceType !== param1.type)) {
-      sendOutcome(
-        res,
-        serverError(new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`))
-      );
+      throw new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`);
     } else {
       // Send Resource as output directly, instead of using Parameters format
-      await sendResponse(req, res, outcome, output);
+      return output as Parameters;
     }
-    return;
   }
   const response: Parameters = {
     resourceType: 'Parameters',
   };
   if (!outputParameters?.length) {
     // Send empty Parameters as response
-    res.status(getStatus(outcome)).json(response);
-    return;
+    return response;
   }
 
   response.parameter = [];
@@ -194,17 +166,9 @@ export async function sendOutputParameters(
     const count = Array.isArray(value) ? value.length : +(value !== undefined);
 
     if (param.min && param.min > 0 && count < param.min) {
-      sendOutcome(
-        res,
-        serverError(new Error(`Expected ${param.min} or more values for output parameter '${key}', got ${count}`))
-      );
-      return;
+      throw new Error(`Expected ${param.min} or more values for output parameter '${key}', got ${count}`);
     } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
-      sendOutcome(
-        res,
-        serverError(new Error(`Expected at most ${param.max} values for output parameter '${key}', got ${count}`))
-      );
-      return;
+      throw new Error(`Expected at most ${param.max} values for output parameter '${key}', got ${count}`);
     } else if (isEmpty(value)) {
       continue;
     }
@@ -223,13 +187,8 @@ export async function sendOutputParameters(
     }
   }
 
-  try {
-    validateResource(response);
-    res.status(getStatus(outcome)).json(response);
-  } catch (err: any) {
-    getLogger().error('Malformed operation output Parameters', { error: err.toString() });
-    sendOutcome(res, serverError(err));
-  }
+  validateResource(response);
+  return response;
 }
 
 function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter | undefined {

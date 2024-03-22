@@ -1,4 +1,5 @@
 import { Operator, parseSearchRequest } from '@medplum/core';
+import { FhirRequest } from '@medplum/fhir-router';
 import { Agent, Device } from '@medplum/fhirtypes';
 import { Request } from 'express';
 import { isIPv4 } from 'node:net';
@@ -19,7 +20,7 @@ import { Repository } from '../repo';
  * @param repo - The repository.
  * @returns The agent, or undefined if not found.
  */
-export async function getAgentForRequest(req: Request, repo: Repository): Promise<Agent | undefined> {
+export async function getAgentForRequest(req: Request | FhirRequest, repo: Repository): Promise<Agent | undefined> {
   // Prefer to search by ID from path parameter
   const { id } = req.params;
   if (id) {
