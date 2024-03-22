@@ -1,8 +1,7 @@
 # Medplum NextAuth Demo
+https://github.com/awamser/medplum/assets/1259236/105f1a5e-f3f0-47db-8a78-89e9171d7e50
 
-This sample application demonstrates how to use [NextAuth]() to with Medplum's authentication framework
-
-![NextAuth Preview](nextauth-preview.mp4)
+This sample application demonstrates how to use [NextAuth](https://next-auth.js.org/) to with Medplum's authentication framework
 
 ## Running the Demo
 
@@ -33,3 +32,7 @@ MEDPLUM_SECRET_ID==<Medplum ClientApplication secret>
 ```bash
 npm run dev
 ```
+
+
+https://github.com/awamser/medplum/assets/1259236/abfa8073-1b26-4dbf-8845-05b770c7d9df
+
