@@ -215,7 +215,7 @@ export async function shutdownApp(): Promise<void> {
 
   if (server) {
     await new Promise((resolve) => {
-      (server as ReturnType<typeof http.createServer>).close(resolve);
+      (server as http.Server).close(resolve);
     });
     server = undefined;
   }
