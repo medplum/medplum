@@ -369,7 +369,7 @@ export class SubscriptionManager {
     if (!subscriptionProps) {
       mapEntry.bareCriteria = undefined;
     } else {
-      mapEntry.criteriaWithProps.filter((otherEntry): boolean => {
+      mapEntry.criteriaWithProps = mapEntry.criteriaWithProps.filter((otherEntry): boolean => {
         const otherProps = otherEntry.subscriptionProps as Partial<Subscription>;
         return !deepEquals(subscriptionProps, otherProps);
       });
@@ -441,7 +441,7 @@ export class SubscriptionManager {
   }
 
   getCriteriaCount(): number {
-    return this.criteriaEntries.size;
+    return this.getAllCriteriaEmitters().length;
   }
 
   getMasterEmitter(): SubscriptionEmitter {
