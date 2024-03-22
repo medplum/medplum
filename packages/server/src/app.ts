@@ -214,7 +214,9 @@ export async function shutdownApp(): Promise<void> {
   closeRateLimiter();
 
   if (server) {
-    server.close();
+    await new Promise((resolve) => {
+      (server as ReturnType<typeof http.createServer>).close(resolve);
+    });
     server = undefined;
   }
 
