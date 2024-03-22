@@ -20,7 +20,17 @@ export type RobustWebSocketEventMap = {
   close: CloseEvent;
 };
 
-export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> {
+export interface IRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> {
+  readyState: number;
+  close(): void;
+  send(message: string): void;
+}
+
+export interface IRobustWebSocketCtor {
+  new (url: string): IRobustWebSocket;
+}
+
+export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
   private ws: WebSocket;
   private messageBuffer: string[];
   bufferedAmount = -Infinity;
@@ -132,15 +142,19 @@ class CriteriaEntry {
   }
 }
 
+export interface SubManagerOptions {
+  RobustWebSocket: IRobustWebSocketCtor;
+}
+
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
-  private ws: RobustWebSocket;
+  private ws: IRobustWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
   private criteriaEntries: Map<string, CriteriaEntry>; // Map<criteriaStr, CriteriaEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
 
-  constructor(medplum: MedplumClient, wsUrl: URL | string) {
+  constructor(medplum: MedplumClient, wsUrl: URL | string, options?: SubManagerOptions) {
     if (!(medplum instanceof MedplumClient)) {
       throw new OperationOutcomeError(validationError('First arg of constructor should be a `MedplumClient`'));
     }
@@ -150,7 +164,7 @@ export class SubscriptionManager {
     } catch (_err) {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
-    const ws = new RobustWebSocket(url);
+    const ws = options?.RobustWebSocket ? new options.RobustWebSocket(url) : new RobustWebSocket(url);
 
     this.medplum = medplum;
     this.ws = ws;

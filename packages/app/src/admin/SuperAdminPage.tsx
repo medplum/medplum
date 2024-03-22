@@ -1,6 +1,6 @@
 import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
 import { notifications, showNotification } from '@mantine/notifications';
-import { MedplumClient, forbidden, normalizeErrorString } from '@medplum/core';
+import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
 import {
   DateTimeInput,
   Document,
@@ -173,7 +173,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
     withCloseButton: false,
   });
 
-  const options: RequestInit = { method: 'POST' };
+  const options: MedplumRequestOptions = { method: 'POST', pollStatusOnAccepted: true };
   if (body) {
     options.body = JSON.stringify(body);
   }

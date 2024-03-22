@@ -75,7 +75,7 @@ export async function getDomainConfiguration(domain: string): Promise<DomainConf
       {
         code: 'domain',
         operator: Operator.EQUALS,
-        value: domain,
+        value: domain.toLowerCase(),
       },
     ],
   });

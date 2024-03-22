@@ -44,26 +44,6 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/exampl
 // end-block searchSpecificThreadCurl
 */
 
-// start-block searchEncounterThreadTs
-await medplum.searchResources('Communication', {
-  encounter: 'Encounter/example-encounter',
-  _include: 'Communication:encounter',
-  _sort: 'sent',
-});
-// end-block searchEncounterThreadTs
-
-/*
-// start-block searchEncounterThreadCli
-medplum get 'Communication?encounter=Encounter/example-encounter&_include=Communication:encounter&_sort=sent'
-// end-block searchEncounterThreadCli
-
-// start-block searchEncounterThreadCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?encounter=Encounter/example-encounter&_include=Communication:encounter&_sort=sent' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \
-// end-block searchEncounterThreadCurl
-*/
-
 // start-block searchThreadsWithMessagesTs
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
@@ -81,25 +61,6 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinc
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
 // end-block searchThreadsWithMessagesCurl
-*/
-
-// start-block searchEncountersWithMessagesTs
-await medplum.searchResources('Communication', {
-  'encounter:missing': false,
-  _include: 'Communication:encounter',
-});
-// end-block searchEncountersWithMessagesTs
-
-/*
-// start-block searchEncountersWithMessagesCli
-medplum get 'Communication?encounter:missing=false&_include=Communication:encounter'
-// end-block searchEncountersWithMessagesCli
-
-// start-block searchEncountersWithMessagesCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?encounter:missing=false&_include=Communication:encounter' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \
-// end-block searchEncountersWithMessagesCurl
 */
 
 // start-block searchFilteredThreadsTs
@@ -122,31 +83,11 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinc
 // end-block searchFilteredThreadsCurl
 */
 
-// start-block searchFilteredEncountersTs
-await medplum.searchResources('Communication', {
-  'encounter:missing': false,
-  _include: 'Communication:encounter',
-  subject: 'Patient/example-patient',
-});
-// end-block searchFilteredEncountersTs
-
-/*
-// start-block searchFilteredEncountersCli
-medplum get 'Communication?encounter:missing=false&_include=Communication:encounter&subject=Patient/example-patient'
-// end-block searchFilteredEncountersCli
-
-// start-block searchFilteredEncountersCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?encounter:missing=false&_include=Communication:encounter&subject=Patient/example-patient' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \
-// end-block searchFilteredEncountersCurl
-*/
-
 const communicationThread: Partial<Communication>[] = [
   // start-block communicationGroupedThread
   {
     resourceType: 'Communication',
-    id: 'example-parent-communication',
+    id: 'example-thread-header',
     // There is no `partOf` of `payload` field on this communication
     // ...
     topic: {
@@ -172,7 +113,7 @@ const communicationThread: Partial<Communication>[] = [
       {
         resource: {
           resourceType: 'Communication',
-          id: 'example-parent-communication',
+          id: 'example-thread-header',
           status: 'completed',
         },
       },
@@ -197,7 +138,7 @@ const communicationThread: Partial<Communication>[] = [
       {
         resource: {
           resourceType: 'Communication',
-          id: 'example-parent-communication',
+          id: 'example-thread-header',
           status: 'completed',
         },
       },
@@ -231,7 +172,7 @@ const communicationThread: Partial<Communication>[] = [
       {
         resource: {
           resourceType: 'Communication',
-          id: 'example-parent-communication',
+          id: 'example-thread-header',
           status: 'completed',
         },
       },

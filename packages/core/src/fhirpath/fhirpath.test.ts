@@ -1555,7 +1555,7 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath("Patient.name.where(given = 'X').count() = 0", patient)).toEqual([true]);
     });
 
-    test.skip('testWhere4', () => {
+    test('testWhere4', () => {
       expect(evalFhirPath("Patient.name.where($this.given = 'Jim').count() = 1", patient)).toEqual([true]);
     });
   });

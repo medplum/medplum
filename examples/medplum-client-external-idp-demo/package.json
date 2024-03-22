@@ -1,0 +1,21 @@
+{
+  "name": "medplum-client-external-idp-demo",
+  "version": "3.0.11",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true
+  },
+  "devDependencies": {
+    "@medplum/core": "3.0.11",
+    "rimraf": "5.0.5",
+    "typescript": "5.4.2",
+    "vite": "5.1.6"
+  }
+}

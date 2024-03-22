@@ -115,7 +115,14 @@ function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
   return getResourceTypes();
 }
 
-const unexportedResourceTypes = ['CodeSystem', 'SearchParameter', 'StructureDefinition', 'ValueSet', 'BulkDataExport'];
+const unexportedResourceTypes = [
+  'Binary',
+  'CodeSystem',
+  'SearchParameter',
+  'StructureDefinition',
+  'ValueSet',
+  'BulkDataExport',
+];
 
 function canBeExported(resourceType: string): boolean {
   return !unexportedResourceTypes.includes(resourceType) && !protectedResourceTypes.includes(resourceType);

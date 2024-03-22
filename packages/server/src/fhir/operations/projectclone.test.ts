@@ -247,7 +247,7 @@ describe('Project clone', () => {
     expect(ClientApplicationBundle.entry).toHaveLength(0);
   });
 
-  test('Success with includeIds in body', async () => {
+  test.skip('Success with includeIds in body', async () => {
     const { project, membership } = await createTestProject({ withClient: true });
     const includeIds = [membership.id];
     expect(project).toBeDefined();

@@ -129,7 +129,7 @@ describe('CodeSystem validate-code', () => {
     expect(res.status).toEqual(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: 'No coding specified' } }],
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'No code system specified' } }],
     });
   });
 
@@ -183,6 +183,86 @@ describe('CodeSystem validate-code', () => {
         { name: 'result', valueBoolean: true },
         { name: 'display', valueString: 'Neologism' },
       ],
+    });
+  });
+
+  test('GET endpoint', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/CodeSystem/$validate-code?url=${codeSystem.url}&code=1`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send();
+    expect(res.status).toEqual(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'result', valueBoolean: true },
+        { name: 'display', valueString: 'Biopsy of brain' },
+      ],
+    });
+  });
+
+  test('GET instance endpoint', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/CodeSystem/${codeSystem.id}/$validate-code?code=1`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send();
+    expect(res.status).toEqual(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'result', valueBoolean: true },
+        { name: 'display', valueString: 'Biopsy of brain' },
+      ],
+    });
+  });
+
+  test('Fail on instance system URL mismatch', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/CodeSystem/${codeSystem.id}/$validate-code?url=incorrect&code=1`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send();
+    expect(res.status).toEqual(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueBoolean: false }],
+    });
+  });
+
+  test('Instance endpoint with coding', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { code: '1' } }],
+      } as Parameters);
+    expect(res.status).toEqual(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'result', valueBoolean: true },
+        { name: 'display', valueString: 'Biopsy of brain' },
+      ],
+    });
+  });
+
+  test('Fail on instance coding system mismatch', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { system: 'incorrect', code: '1' } }],
+      } as Parameters);
+    expect(res.status).toEqual(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueBoolean: false }],
     });
   });
 });

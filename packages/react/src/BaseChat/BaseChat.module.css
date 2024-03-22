@@ -6,7 +6,7 @@
 }
 
 .icon {
-  background-color: white;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
   box-shadow:
     0 0.2rem 0.4rem rgba(0, 0, 0, 0.05),
     0 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
@@ -36,9 +36,9 @@
 }
 
 .chatTitle {
-  background-color: var(--mantine-color-blue-7);
+  background-color: light-dark(var(--mantine-color-blue-7), var(--mantine-color-blue-8));
   border-radius: var(--mantine-radius-md) var(--mantine-radius-md) 0 0;
-  color: var(--mantine-color-white);
+  color: light-dark(var(--mantine-color-white), var(--mantine-color-gray-3));
   font-size: var(--mantine-font-size-sm);
   font-weight: 500px;
   padding: var(--mantine-spacing-sm);
@@ -46,7 +46,7 @@
 }
 
 .chatBody {
-  background-color: var(--mantine-color-white);
+  background-color: var(--mantine-color-body);
   flex: 1px;
   height: 360px;
   max-height: 360px;
@@ -57,19 +57,31 @@
 }
 
 .chatInputContainer {
-  background-color: var(--mantine-color-gray-0);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
   border-radius: 0 0 var(--mantine-radius-md) var(--mantine-radius-md);
   padding: 4px 4px;
 }
 
-.chatBubbleWrap {
+.chatBubbleOuterWrap {
   max-width: 300px;
 }
 
+.chatBubbleRightAlignedInnerWrap {
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.chatBubbleLeftAlignedInnerWrap {
+  display: flex;
+  flex-direction: row;
+}
+
 .chatBubble {
-  background-color: var(--mantine-color-gray-0);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-blue-7));
   border-radius: var(--mantine-radius-lg);
   padding: var(--mantine-spacing-sm);
+  min-width: 40px;
+  color: light-dark(var(--mantine-color-dark), var(--mantine-color-gray-2));
 
   & p {
     margin-top: 0.25rem;

@@ -24,21 +24,30 @@ type CodeSystemSubsumesParameters = {
 export const codeSystemSubsumesOperation = asyncWrap(async (req: Request, res: Response) => {
   const params = parseInputParameters<CodeSystemSubsumesParameters>(operation, req);
 
-  if (!params.system || !params.codeA || !params.codeB) {
-    sendOutcome(res, badRequest('Must specify system, codeA, and codeB parameters'));
+  let codeSystem: CodeSystem;
+  if (req.params.id) {
+    codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+  } else if (params.system) {
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, params.version);
+  } else {
+    sendOutcome(res, badRequest('No code system specified'));
     return;
   }
-  const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, params.version);
-  const outcome = await testSubsumption(params.codeA, params.codeB, codeSystem);
+
+  if (!params.codeA || !params.codeB) {
+    sendOutcome(res, badRequest('Must specify codeA and codeB parameters'));
+    return;
+  }
+  const outcome = await testSubsumption(codeSystem, params.codeA, params.codeB);
   await sendOutputParameters(req, res, operation, allOk, { outcome });
 });
 
 export type SubsumptionOutcome = 'equivalent' | 'subsumes' | 'subsumed-by' | 'not-subsumed';
 
 export async function testSubsumption(
+  codeSystem: CodeSystem,
   left: string,
-  right: string,
-  codeSystem: CodeSystem
+  right: string
 ): Promise<SubsumptionOutcome> {
   const subsumedBy = await isSubsumed(left, right, codeSystem);
   const subsumes = await isSubsumed(right, left, codeSystem);

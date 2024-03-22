@@ -81,7 +81,7 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
 
   const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
 
-  let ownerRef: Reference;
+  let ownerRef: Reference | undefined;
   if (params.owner) {
     ownerRef = params.owner;
   } else if (params.ownerEmail) {
@@ -95,21 +95,20 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
       });
     }
     ownerRef = createReference(user);
-  } else {
+  } else if (login.user.reference?.startsWith('User/')) {
     ownerRef = login.user as Reference;
   }
 
-  const systemRepo = getSystemRepo();
-  const owner = await systemRepo.readReference(ownerRef);
-
-  if (owner.resourceType !== 'User') {
-    sendOutcome(res, badRequest('Only Users are permitted to be the owner of a new Project'));
-    return;
-  } else if (owner.project) {
-    sendOutcome(res, badRequest('Project owner must not belong to another Project'));
-    return;
+  const owner = ownerRef ? await getSystemRepo().readReference(ownerRef) : undefined;
+  if (owner) {
+    if (owner.resourceType !== 'User') {
+      sendOutcome(res, badRequest('Only Users are permitted to be the owner of a new Project'));
+      return;
+    } else if (owner.project) {
+      sendOutcome(res, badRequest('Project owner must not belong to another Project'));
+      return;
+    }
   }
-
   const { project } = await createProject(params.name, owner);
   await sendOutputParameters(req, res, projectInitOperation, created, project);
 }
@@ -118,16 +117,16 @@ export async function projectInitHandler(req: Request, res: Response): Promise<v
  * Creates a new project.
  * @param projectName - The new project name.
  * @param admin - The Project admin user.
- * @returns The new project, admin, membership and associated data.
+ * @returns The new project, and associated data.  Profile and membership are returned if and only if an admin user is specified.
  */
 export async function createProject(
   projectName: string,
-  admin: User
+  admin?: User
 ): Promise<{
   project: Project;
-  profile: ProfileResource;
-  membership: ProjectMembership;
   client: ClientApplication;
+  profile?: ProfileResource;
+  membership?: ProjectMembership;
 }> {
   const ctx = getRequestContext();
   const systemRepo = getSystemRepo();
@@ -136,7 +135,7 @@ export async function createProject(
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
-    owner: createReference(admin),
+    owner: admin ? createReference(admin) : undefined,
     strictMode: true,
   });
 
@@ -150,14 +149,16 @@ export async function createProject(
     description: 'Default client for ' + project.name,
   });
 
-  const profile = await createProfile(
-    project,
-    'Practitioner',
-    admin.firstName as string,
-    admin.lastName as string,
-    admin.email as string
-  );
-  const membership = await createProjectMembership(admin, project, profile, { admin: true });
-
-  return { project, profile, membership, client };
+  if (admin) {
+    const profile = await createProfile(
+      project,
+      'Practitioner',
+      admin.firstName as string,
+      admin.lastName as string,
+      admin.email as string
+    );
+    const membership = await createProjectMembership(admin, project, profile, { admin: true });
+    return { project, profile, membership, client };
+  }
+  return { project, client };
 }

@@ -1,17 +1,12 @@
-import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput } from '@mantine/core';
+import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ProfileResource, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Bundle, Communication, Practitioner, Reference } from '@medplum/fhirtypes';
-import { DrAliceSmith } from '@medplum/mock';
-import { Form, useMedplum, useSubscription } from '@medplum/react';
+import { ProfileResource, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
+import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import classes from './Chat.module.css';
-
-const DR_ALICE_SMITH: Reference<Practitioner> = {
-  reference: getReferenceString(DrAliceSmith),
-  display: 'Dr. Alice Smith',
-};
+import { Form } from '../Form/Form';
+import classes from './BaseChat.module.css';
 
 function parseSentTime(communication: Communication): string {
   const sentTime = new Date(communication.sent ?? 0);
@@ -43,10 +38,20 @@ function upsertCommunications(
   setCommunications(newCommunications);
 }
 
-export function Chat(): JSX.Element | null {
+export interface BaseChatProps {
+  readonly title: string;
+  readonly communications: Communication[];
+  readonly setCommunications: (communications: Communication[]) => void;
+  readonly query: string;
+  readonly sendMessage: (content: string) => void;
+  readonly onMessageReceived?: (message: Communication) => void;
+  readonly open?: boolean;
+}
+
+export function BaseChat(props: BaseChatProps): JSX.Element | null {
+  const { title, communications, setCommunications, query, sendMessage, open, onMessageReceived } = props;
   const medplum = useMedplum();
-  const [open, setOpen] = useState(false);
-  const [communications, setCommunications] = useState<Communication[]>([]);
+  const [opened, setOpened] = useState(open ?? false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
@@ -56,23 +61,28 @@ export function Chat(): JSX.Element | null {
     [profile, medplum]
   );
 
-  useSubscription(
-    `Communication?sender=${profileRefStr},${DR_ALICE_SMITH.reference}&recipient=${DR_ALICE_SMITH.reference},${profileRefStr}`,
-    (bundle: Bundle) => {
-      const communication = bundle.entry?.[1]?.resource as Communication;
-      upsertCommunications(communicationsRef.current, [communication], setCommunications);
-      if (!(communication.received && communication.status === 'completed')) {
-        medplum
-          .updateResource<Communication>({
-            ...communication,
-            received: communication.received ?? new Date().toISOString(), // Mark as received if needed
-            status: 'completed', // Mark as read
-            // See: https://www.medplum.com/docs/communications/organizing-communications#:~:text=THE%20Communication%20LIFECYCLE
-            // for more info about recommended `Communication` lifecycle
-          })
-          .catch(console.error);
-      }
+  useEffect(() => {
+    setOpened((prevVal) => open ?? prevVal);
+  }, [open]);
+
+  useSubscription(`Communication?${query}`, (bundle: Bundle) => {
+    const communication = bundle.entry?.[1]?.resource as Communication;
+    upsertCommunications(communicationsRef.current, [communication], setCommunications);
+    // Call `onMessageReceived` when we are not the sender of a chat message that came in
+    if (onMessageReceived && getReferenceString(communication.sender as Reference) !== profileRefStr) {
+      onMessageReceived(communication);
     }
+  });
+
+  const sendMessageInternal = useCallback(
+    (formData: Record<string, string>) => {
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+      sendMessage(formData.message);
+      scrollToBottomRef.current = true;
+    },
+    [sendMessage]
   );
 
   // Disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
@@ -81,6 +91,7 @@ export function Chat(): JSX.Element | null {
     const latestProfile = medplum.getProfile();
     if (profile?.id !== latestProfile?.id) {
       setProfile(latestProfile);
+      setCommunications([]);
     }
   });
 
@@ -88,41 +99,14 @@ export function Chat(): JSX.Element | null {
   communicationsRef.current = communications;
   const prevCommunicationsRef = useRef<Communication[]>(communications);
 
-  const scrollToBottomRef = useRef<boolean>(false);
+  const scrollToBottomRef = useRef<boolean>(true);
 
   const searchMessages = useCallback(async (): Promise<void> => {
-    const searchResult = await medplum.searchResources(
-      'Communication',
-      {
-        _sort: '-_lastUpdated',
-        sender: `${profileRefStr},${DR_ALICE_SMITH.reference}`,
-        recipient: `${profileRefStr},${DR_ALICE_SMITH.reference}`,
-      },
-      { cache: 'no-cache' }
-    );
+    const searchParams = new URLSearchParams(query);
+    searchParams.append('_sort', '-sent');
+    const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
     upsertCommunications(communicationsRef.current, searchResult, setCommunications);
-  }, [medplum, profileRefStr]);
-
-  const sendMessage = useCallback(
-    async (formData: Record<string, string>) => {
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
-      const message = formData.message;
-      const communication = await medplum.createResource<Communication>({
-        resourceType: 'Communication',
-        status: 'in-progress',
-        // subject: createReference(resource),
-        sender: createReference(profile as ProfileResource),
-        recipient: [DR_ALICE_SMITH],
-        sent: new Date().toISOString(),
-        payload: [{ contentString: message }],
-      });
-      setCommunications([...communications, communication]);
-      scrollToBottomRef.current = true;
-    },
-    [medplum, profile, communications]
-  );
+  }, [medplum, setCommunications, query]);
 
   useEffect(() => {
     searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
@@ -137,19 +121,19 @@ export function Chat(): JSX.Element | null {
 
   useEffect(() => {
     if (scrollToBottomRef.current) {
-      if (scrollAreaRef.current) {
+      if (scrollAreaRef.current?.scrollTo) {
         scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        scrollToBottomRef.current = false;
       }
-      scrollToBottomRef.current = false;
     }
   });
 
-  const myLastCommunicationId = useMemo<string>(() => {
+  const myLastDeliveredId = useMemo<string>(() => {
     let i = communications.length;
 
     while (i--) {
       const comm = communications[i];
-      if (comm.sender?.reference === profileRefStr) {
+      if (comm.sender?.reference === profileRefStr && comm.received) {
         return comm.id as string;
       }
     }
@@ -161,12 +145,14 @@ export function Chat(): JSX.Element | null {
     return null;
   }
 
-  if (open) {
+  if (opened) {
     return (
       <>
         <div className={classes.chatContainer}>
           <Paper className={classes.chatPaper} shadow="xl" p={0} radius="md" withBorder>
-            <div className={classes.chatTitle}>Chat with {DR_ALICE_SMITH.display}</div>
+            <Title order={2} className={classes.chatTitle}>
+              {title}
+            </Title>
             <div className={classes.chatBody}>
               <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
                 {communications.map((c, i) => {
@@ -175,20 +161,22 @@ export function Chat(): JSX.Element | null {
                   const currCommTime = parseSentTime(c);
                   return (
                     <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
-                      {!prevCommTime ||
-                        (currCommTime !== prevCommTime && <div style={{ textAlign: 'center' }}>{currCommTime}</div>)}
+                      {(!prevCommTime || currCommTime !== prevCommTime) && (
+                        <div style={{ textAlign: 'center' }}>{currCommTime}</div>
+                      )}
                       {c.sender?.reference === profileRefStr ? (
                         <Group justify="flex-end" gap="xs" mb="sm">
                           <ChatBubble
+                            alignment="right"
                             communication={c}
-                            showDelivered={!!c.received && c.id === myLastCommunicationId}
+                            showDelivered={!!c.received && c.id === myLastDeliveredId}
                           />
                           <Avatar radius="xl" color="orange" />
                         </Group>
                       ) : (
                         <Group align="flex-start" gap="xs" mb="sm">
                           <Avatar radius="xl" color="teal" />
-                          <ChatBubble communication={c} />
+                          <ChatBubble alignment="left" communication={c} />
                         </Group>
                       )}
                     </Stack>
@@ -197,7 +185,7 @@ export function Chat(): JSX.Element | null {
               </ScrollArea>
             </div>
             <div className={classes.chatInputContainer}>
-              <Form onSubmit={sendMessage}>
+              <Form onSubmit={sendMessageInternal}>
                 <TextInput
                   ref={inputRef}
                   name="message"
@@ -205,7 +193,14 @@ export function Chat(): JSX.Element | null {
                   radius="xl"
                   rightSectionWidth={42}
                   rightSection={
-                    <ActionIcon type="submit" size="1.5rem" radius="xl" color="blue" variant="filled">
+                    <ActionIcon
+                      type="submit"
+                      size="1.5rem"
+                      radius="xl"
+                      color="blue"
+                      variant="filled"
+                      aria-label="Send message"
+                    >
                       <IconArrowRight size="1rem" stroke={1.5} />
                     </ActionIcon>
                   }
@@ -221,7 +216,8 @@ export function Chat(): JSX.Element | null {
             size="lg"
             radius="xl"
             variant="outline"
-            onClick={() => setOpen(false)}
+            onClick={() => setOpened(false)}
+            aria-label="Close chat"
           >
             <IconChevronDown size="1.625rem" />
           </ActionIcon>
@@ -239,9 +235,10 @@ export function Chat(): JSX.Element | null {
         radius="xl"
         variant="outline"
         onClick={() => {
-          setOpen(true);
+          setOpened(true);
           scrollToBottomRef.current = true;
         }}
+        aria-label="Open chat"
       >
         <IconMessage size="1.625rem" />
       </ActionIcon>
@@ -250,16 +247,23 @@ export function Chat(): JSX.Element | null {
 }
 
 interface ChatBubbleProps {
-  communication: Communication;
-  showDelivered?: boolean;
+  readonly communication: Communication;
+  readonly alignment: 'left' | 'right';
+  readonly showDelivered?: boolean;
 }
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
   const content = props.communication.payload?.[0]?.contentString || '';
   const seenTime = new Date(props.communication.received ?? -1);
   return (
-    <div className={classes.chatBubbleWrap}>
-      <div className={classes.chatBubble}>{content}</div>
+    <div className={classes.chatBubbleOuterWrap}>
+      <div
+        className={
+          props.alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
+        }
+      >
+        <div className={classes.chatBubble}>{content}</div>
+      </div>
       {props.showDelivered && (
         <div style={{ textAlign: 'right' }}>
           Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}

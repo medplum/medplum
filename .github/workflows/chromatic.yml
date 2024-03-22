@@ -23,6 +23,7 @@ jobs:
           projectToken: chpt_429b596edaecafb
           workingDir: packages/react
           buildScriptName: storybook
+          autoAcceptChanges: 'main'
           exitOnceUploaded: true
           exitZeroOnChanges: true
           onlyChanged: true

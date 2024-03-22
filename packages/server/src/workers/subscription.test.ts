@@ -1,12 +1,19 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { ContentType, LogLevel, Operator, createReference, getReferenceString, stringify } from '@medplum/core';
+import {
+  ContentType,
+  LogLevel,
+  Operator,
+  createReference,
+  generateId,
+  getReferenceString,
+  stringify,
+} from '@medplum/core';
 import {
   AccessPolicy,
   AuditEvent,
   Bot,
   Observation,
   Patient,
-  Project,
   ProjectMembership,
   Subscription,
 } from '@medplum/fhirtypes';
@@ -31,6 +38,7 @@ describe('Subscription Worker', () => {
   let repo: Repository;
   let botRepo: Repository;
   let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let superAdminRepo: Repository;
 
   beforeEach(() => {
     mockLambdaClient = mockClient(LambdaClient);
@@ -56,9 +64,10 @@ describe('Subscription Worker', () => {
     await initAppServices(config);
 
     // Create one simple project with no advanced features enabled
-    const { project, client } = await withTestContext(() =>
+    const { client, repo: _repo } = await withTestContext(() =>
       createTestProject({
         withClient: true,
+        withRepo: true,
         project: {
           name: 'Test Project',
           features: [],
@@ -66,11 +75,8 @@ describe('Subscription Worker', () => {
       })
     );
 
-    repo = new Repository({
-      extendedMode: true,
-      projects: [project.id as string],
-      author: createReference(client),
-    });
+    repo = _repo;
+    superAdminRepo = new Repository({ extendedMode: true, superAdmin: true, author: createReference(client) });
 
     // Create another project, this one with bots enabled
     const botProjectDetails = await createTestProject({ withClient: true });
@@ -1340,7 +1346,7 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
     }));
 
-  test('Subscription -- AccessPolicy check throws (regression in #3978, see #4003)', () =>
+  test('Subscription -- Unexpected throw inside of satisfiesAccessPolicy (regression in #3978, see #4003)', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
       const originalConsoleLog = console.log;
@@ -1355,25 +1361,15 @@ describe('Subscription Worker', () => {
         resource: [{ resourceType: 'Patient', readonly: false }],
       });
 
-      const { project, client } = await createTestProject({
+      const { repo: apTestRepo } = await createTestProject({
         withClient: true,
+        withRepo: true,
         project: {
           name: 'AccessPolicy Throw Project',
-          owner: {
-            reference: 'User/' + randomUUID(),
-          },
           features: [],
         },
         membership: {
           accessPolicy: createReference(accessPolicy),
-        },
-      });
-
-      const apTestRepo = new Repository({
-        extendedMode: true,
-        projects: [project.id as string],
-        author: {
-          reference: getReferenceString(client),
         },
       });
 
@@ -1401,7 +1397,80 @@ describe('Subscription Worker', () => {
       const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
+      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+
+      // Update the patient
+      const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
+
+      expect(queue.add).toHaveBeenCalled();
+      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execSubscriptionJob(job);
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: stringify(patient2),
+        })
+      );
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Error occurred while checking access policy'));
+
+      globalLogger.level = LogLevel.NONE;
+      console.log = originalConsoleLog;
+    }));
+
+  // TODO: Remove this test when enforcing AccessPolicy will not break things
+  test('Subscription -- Rest Hook Sub does not meet AccessPolicy', () =>
+    withTestContext(async () => {
+      globalLogger.level = LogLevel.WARN;
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const url = 'https://example.com/subscription';
+
+      // Create an access policy in different project
+      // This should trigger an error when the subscription is executed
+      const accessPolicy = await repo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+      });
+
+      const { repo: apTestRepo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          name: 'AccessPolicy Not Met but Should Succeed Project',
+          features: [],
+        },
+        membership: {
+          accessPolicy: createReference(accessPolicy),
+        },
+      });
+
+      const subscription = await apTestRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Create the patient
+      const patient = await apTestRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
       // Clear the queue
+      const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
       await systemRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
@@ -1430,21 +1499,9 @@ describe('Subscription Worker', () => {
 
   test('WebSocket Subscription -- Enabled', () =>
     withTestContext(async () => {
-      const wsSubProject = await systemRepo.createResource<Project>({
-        resourceType: 'Project',
-        name: 'WebSocket Subs Project',
-        owner: {
-          reference: 'User/' + randomUUID(),
-        },
-        features: ['websocket-subscriptions'],
-      });
-
-      const wsSubRepo = new Repository({
-        extendedMode: true,
-        projects: [wsSubProject.id as string],
-        author: {
-          reference: 'ClientApplication/' + randomUUID(),
-        },
+      const { repo: wsSubRepo } = await createTestProject({
+        project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
+        withRepo: true,
       });
 
       const subscription = await wsSubRepo.createResource<Subscription>({
@@ -1516,20 +1573,9 @@ describe('Subscription Worker', () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
-      const noWsSubProject = await systemRepo.createResource<Project>({
-        resourceType: 'Project',
-        name: 'No WebSocket Subs Project',
-        owner: {
-          reference: 'User/' + randomUUID(),
-        },
-      });
-
-      const noWsSubRepo = new Repository({
-        extendedMode: true,
-        projects: [noWsSubProject.id as string],
-        author: {
-          reference: 'ClientApplication/' + randomUUID(),
-        },
+      const { repo: noWsSubRepo } = await createTestProject({
+        withRepo: true,
+        project: { name: 'No WebSocket Subs Project' },
       });
 
       const subscription = await noWsSubRepo.createResource<Subscription>({
@@ -1579,6 +1625,242 @@ describe('Subscription Worker', () => {
       await subscriber.quit();
       expect(console.log).toHaveBeenLastCalledWith(expect.stringMatching(/WebSocket Subscriptions/));
 
+      console.log = originalConsoleLog;
+      globalLogger.level = LogLevel.NONE;
+    }));
+
+  test('WebSocket Subscription -- Access Policy Not Satisfied', () =>
+    withTestContext(async () => {
+      globalLogger.level = LogLevel.WARN;
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      // Create an access policy in different project
+      // This should trigger an error when the subscription is executed
+      const accessPolicy = await repo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+      });
+
+      // Create an access policy in different project
+      // This should trigger an error when the subscription is executed
+      const { repo: wsRepo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          name: 'WebSockets AccessPolicy Denied Project',
+          features: ['websocket-subscriptions'],
+        },
+        membership: {
+          accessPolicy: createReference(accessPolicy),
+        },
+      });
+
+      const subscription = await wsRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Subscribe to the topic
+      const subscriber = getRedis().duplicate();
+      await subscriber.subscribe(subscription.id as string);
+
+      let resolve: () => void;
+      let reject: (error: Error) => void;
+
+      const deferredPromise = new Promise<void>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      subscriber.on('message', () => {
+        reject(new Error('Received message when not expected'));
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await wsRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      expect(patient).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      setTimeout(() => resolve(), 300);
+      await deferredPromise;
+      await subscriber.quit();
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('[Subscription Access Policy]: Access Policy not satisfied on')
+      );
+      console.log = originalConsoleLog;
+      globalLogger.level = LogLevel.NONE;
+    }));
+
+  test('WebSocket Subscription -- Subscription Author Has No Membership', () =>
+    withTestContext(async () => {
+      globalLogger.level = LogLevel.WARN;
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient', readonly: true }, { resourceType: 'Subscription' }],
+      });
+
+      const { repo: wsRepo, membership } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          name: 'WebSockets AccessPolicy No Membership Project',
+          features: ['websocket-subscriptions'],
+        },
+        membership: {
+          accessPolicy: createReference(accessPolicy),
+        },
+      });
+
+      const subscription = await wsRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(membership.id).toBeDefined();
+      expect(membership.accessPolicy).toBeDefined();
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      await superAdminRepo.deleteResource('ProjectMembership', membership.id as string);
+
+      // Subscribe to the topic
+      const subscriber = getRedis().duplicate();
+      await subscriber.subscribe(subscription.id as string);
+
+      let resolve: () => void;
+      let reject: (error: Error) => void;
+
+      const deferredPromise = new Promise<void>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      subscriber.on('message', () => {
+        reject(new Error('Received message when not expected'));
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await wsRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      expect(patient).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      setTimeout(() => resolve(), 300);
+      await deferredPromise;
+      await subscriber.quit();
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('[Subscription Access Policy]: No membership for subscription author')
+      );
+      console.log = originalConsoleLog;
+      globalLogger.level = LogLevel.NONE;
+    }));
+
+  test('WebSocket Subscription -- Error Occurred During Check', () =>
+    withTestContext(async () => {
+      globalLogger.level = LogLevel.WARN;
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient', readonly: true }, { resourceType: 'Subscription' }],
+      });
+
+      const { repo: wsRepo, membership } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          name: 'WebSockets AccessPolicy Error Project',
+          features: ['websocket-subscriptions'],
+        },
+        membership: {
+          accessPolicy: createReference(accessPolicy),
+        },
+      });
+
+      const subscription = await wsRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(membership.id).toBeDefined();
+      expect(membership.accessPolicy).toBeDefined();
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+
+      // Subscribe to the topic
+      const subscriber = getRedis().duplicate();
+      await subscriber.subscribe(subscription.id as string);
+
+      let resolve: () => void;
+      let reject: (error: Error) => void;
+
+      const deferredPromise = new Promise<void>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      subscriber.on('message', () => {
+        reject(new Error('Received message when not expected'));
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await wsRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      expect(patient).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      setTimeout(() => resolve(), 300);
+      await deferredPromise;
+      await subscriber.quit();
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '[Subscription Access Policy]: Error occurred while checking access policy for resource'
+        )
+      );
       console.log = originalConsoleLog;
       globalLogger.level = LogLevel.NONE;
     }));

@@ -217,4 +217,44 @@ describe('ValueSet validate-code', () => {
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
     expect(output.parameter?.find((p) => p.name === 'display')).toBeUndefined();
   });
+
+  test('GET endpoint', async () => {
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$validate-code?url=${valueSet.url}&system=${system}&code=WARD`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('ward');
+  });
+
+  test('GET instance endpoint', async () => {
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/${valueSet.id}/$validate-code?system=${system}&code=WARD`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('ward');
+  });
+
+  test('Instance endpoint with coding', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet/${valueSet.id}/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { system, code: 'WARD' } }],
+      } as Parameters);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('ward');
+  });
 });

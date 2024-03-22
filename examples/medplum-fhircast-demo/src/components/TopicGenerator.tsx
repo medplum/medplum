@@ -1,6 +1,6 @@
 import { Button, Stack, TextInput } from '@mantine/core';
+import { usePrevious } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { usePrevious } from '../hooks';
 
 interface TopicGeneratorProps {
   readonly onTopicChange?: (topic: string | undefined) => void;

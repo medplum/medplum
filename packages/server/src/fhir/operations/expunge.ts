@@ -2,10 +2,11 @@ import { accepted, allOk, forbidden, getResourceTypes, Operator } from '@medplum
 import { ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
+import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
-import { getAuthenticatedContext } from '../../context';
+import { buildBinaryIds } from './utils/binary';
 
 /**
  * Handles an expunge request.
@@ -49,13 +50,16 @@ export class Expunger {
 
   async expunge(): Promise<void> {
     const resourceTypes = getResourceTypes();
-
     for (const resourceType of resourceTypes) {
       await this.expungeByResourceType(resourceType);
     }
   }
 
   async expungeByResourceType(resourceType: ResourceType): Promise<void> {
+    if (resourceType === 'Binary') {
+      return;
+    }
+
     const repo = this.repo;
     let hasNext = true;
     while (hasNext) {
@@ -65,21 +69,28 @@ export class Expunger {
         filters: [{ code: '_compartment', operator: Operator.EQUALS, value: this.compartment }],
       });
 
-      if (bundle.entry && bundle.entry.length > 0) {
-        const resourcesToExpunge: string[] = [];
-        for (const entry of bundle.entry) {
-          if (entry.resource?.id) {
-            resourcesToExpunge.push(entry.resource.id);
-          }
-        }
-        await repo.expungeResources(resourceType, resourcesToExpunge);
+      if (!bundle.entry || bundle.entry.length === 0) {
+        break;
+      }
 
-        const linkNext = bundle.link?.find((b) => b.relation === 'next');
+      const resourcesToExpunge: string[] = [];
+      const binaryIds = new Set<string>();
 
-        if (!linkNext?.url) {
-          hasNext = false;
+      for (const entry of bundle.entry) {
+        if (entry.resource?.id) {
+          resourcesToExpunge.push(entry.resource.id);
+          buildBinaryIds(entry.resource, binaryIds);
         }
-      } else {
+      }
+
+      await repo.expungeResources(resourceType, resourcesToExpunge);
+
+      if (binaryIds.size > 0) {
+        await repo.expungeResources('Binary', Array.from(binaryIds));
+      }
+
+      const linkNext = bundle.link?.find((b) => b.relation === 'next');
+      if (!linkNext?.url) {
         hasNext = false;
       }
     }

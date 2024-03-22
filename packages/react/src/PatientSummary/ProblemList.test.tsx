@@ -62,7 +62,7 @@ describe('PatientSummary - ProblemList', () => {
     });
 
     // Enter problem "Dizziness"
-    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
+    const input = (await screen.findAllByRole('searchbox'))[0] as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Dizziness' } });
     });
@@ -108,7 +108,7 @@ describe('PatientSummary - ProblemList', () => {
     });
 
     // Enter problem "Dizziness"
-    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
+    const input = (await screen.findAllByRole('searchbox'))[0] as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Dizziness' } });
     });

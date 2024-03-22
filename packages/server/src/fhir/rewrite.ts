@@ -157,6 +157,9 @@ class Rewriter {
       } else {
         binary = await this.repo.readResource<Binary>('Binary', id);
       }
+      if (binary.securityContext) {
+        await this.repo.readReference(binary.securityContext);
+      }
     } catch (err: any) {
       getLogger().debug('Error reading binary to generate presigned URL', err);
       return `Binary/${id}`;

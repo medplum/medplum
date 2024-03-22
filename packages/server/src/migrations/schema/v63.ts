@@ -6,7 +6,18 @@
 import { PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
+  await client.query('ALTER TABLE IF EXISTS "Condition" ADD COLUMN IF NOT EXISTS "assertedDate" TIMESTAMPTZ');
   await client.query(
-    `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_Property_simple_idx" ON "Coding_Property" (coding, property, value) WHERE target IS NULL`
+    'CREATE INDEX CONCURRENTLY IF NOT EXISTS Condition_assertedDate_idx ON "Condition" ("assertedDate")'
   );
+  await client.query('ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "ethnicity" TEXT[]');
+  await client.query('ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "genderIdentity" TEXT[]');
+  await client.query('ALTER TABLE IF EXISTS "Patient" ADD COLUMN IF NOT EXISTS "race" TEXT[]');
+  await client.query(
+    'CREATE INDEX CONCURRENTLY IF NOT EXISTS Patient_ethnicity_idx ON "Patient" USING gin ("ethnicity")'
+  );
+  await client.query(
+    'CREATE INDEX CONCURRENTLY IF NOT EXISTS Patient_genderIdentity_idx ON "Patient" USING gin ("genderIdentity")'
+  );
+  await client.query('CREATE INDEX CONCURRENTLY IF NOT EXISTS Patient_race_idx ON "Patient" USING gin ("race")');
 }

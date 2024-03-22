@@ -1,4 +1,4 @@
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
@@ -14,11 +14,10 @@ export async function rebuildR4SearchParameters(): Promise<void> {
 
   const systemRepo = getSystemRepo();
 
-  for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry[]) {
-    await createParameter(systemRepo, entry.resource as SearchParameter);
-  }
-  for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as BundleEntry[]) {
-    await createParameter(systemRepo, entry.resource as SearchParameter);
+  for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+    for (const entry of readJson(filename).entry as BundleEntry[]) {
+      await createParameter(systemRepo, entry.resource as SearchParameter);
+    }
   }
 }
 

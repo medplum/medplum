@@ -15,6 +15,7 @@ import {
   AllergyIntolerance,
   Appointment,
   AuditEvent,
+  Binary,
   Bundle,
   CareTeam,
   Coding,
@@ -22,6 +23,7 @@ import {
   Condition,
   DiagnosticReport,
   Encounter,
+  Goal,
   MeasureReport,
   Observation,
   Organization,
@@ -3226,6 +3228,285 @@ describe('FHIR Search', () => {
         expect(bundleContains(bundle, patient)).toBeTruthy();
         expect(bundleContains(bundle, obs)).toBeTruthy();
       }));
+
+    test('Binary search not allowed', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search<Binary>({ resourceType: 'Binary' });
+          throw new Error('Expected error');
+        } catch (err) {
+          const outcome = normalizeOperationOutcome(err);
+          expect(outcome.issue?.[0]?.details?.text).toBe('Cannot search on Binary resource type');
+        }
+      }));
+
+    describe('US Core Search Parameters', () => {
+      test('USCoreCareTeamRole', async () =>
+        withTestContext(async () => {
+          const careTeam = await repo.createResource<CareTeam>({
+            resourceType: 'CareTeam',
+            participant: [
+              {
+                member: {
+                  reference: 'Practitioner/123',
+                },
+                role: [
+                  {
+                    coding: [
+                      {
+                        system: 'http://snomed.info/sct',
+                        code: '102262009',
+                        display: 'Chocolate (substance)',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          const bundle1 = await repo.search({
+            resourceType: 'CareTeam',
+            filters: [{ code: 'role', operator: Operator.EQUALS, value: '102262009' }],
+          });
+          expect(bundle1.entry?.length).toBe(1);
+          expect(bundleContains(bundle1, careTeam)).toBeTruthy();
+        }));
+      test('USCoreConditionAssertedDate', async () =>
+        withTestContext(async () => {
+          const resource = await repo.createResource<Condition>({
+            resourceType: 'Condition',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/condition-assertedDate',
+                // valueDateTime: '2024-03-18T23:04:00.000Z',
+                valueDateTime: '2000-03-18',
+              },
+            ],
+            subject: {
+              reference: 'Patient/123',
+              display: 'Matt Long',
+            },
+          });
+
+          const oldDate = new Date(1999, 11, 30);
+          const bundle1 = await repo.search({
+            resourceType: 'Condition',
+            // filters: [{ code: 'asserted-date', operator: Operator.GREATER_THAN, value: oldDate.toISOString() }],
+            filters: [{ code: 'asserted-date', operator: Operator.STARTS_AFTER, value: oldDate.toISOString() }],
+          });
+          expect(bundle1.entry?.length).toBe(1);
+          expect(bundleContains(bundle1, resource)).toBeTruthy();
+        }));
+      test('USCoreEncounterDischargeDisposition', async () =>
+        withTestContext(async () => {
+          const resource = await repo.createResource<Encounter>({
+            resourceType: 'Encounter',
+            status: 'unknown',
+            class: {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+              code: 'IMP',
+              display: 'inpatient encounter',
+            },
+            hospitalization: {
+              dischargeDisposition: {
+                coding: [
+                  {
+                    system: 'http://www.nubc.org/patient-discharge',
+                    code: '01',
+                    display: 'Discharged to Home',
+                  },
+                ],
+              },
+            },
+          });
+          const bundle1 = await repo.search({
+            resourceType: 'Encounter',
+            filters: [{ code: 'discharge-disposition', operator: Operator.EQUALS, value: '01' }],
+          });
+          expect(bundle1.entry?.length).toBe(1);
+          expect(bundleContains(bundle1, resource)).toBeTruthy();
+
+          const bundle2 = await repo.search({
+            resourceType: 'Encounter',
+            filters: [{ code: 'discharge-disposition', operator: Operator.EQUALS, value: '55' }],
+          });
+          expect(bundle2.entry?.length).toBe(0);
+        }));
+      test('USCoreGoalDescription', async () =>
+        withTestContext(async () => {
+          const resource = await repo.createResource<Goal>({
+            resourceType: 'Goal',
+            lifecycleStatus: 'active',
+            description: {
+              coding: [
+                {
+                  system: 'http://snomed.info/sct',
+                  code: '406156006',
+                  display: 'In paid employment',
+                },
+              ],
+              text: 'This text is ignored in search.',
+            },
+            subject: {
+              reference: 'Patient/example',
+              display: 'Amy Shaw',
+            },
+          });
+          const bundle1 = await repo.search({
+            resourceType: 'Goal',
+            filters: [{ code: 'description', operator: Operator.EQUALS, value: '406156006' }],
+          });
+          expect(bundle1.entry?.length).toBe(1);
+          expect(bundleContains(bundle1, resource)).toBeTruthy();
+        }));
+
+      test('USCorePatient race, ethnicity, genderIdentity', async () =>
+        withTestContext(async () => {
+          const resource = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            extension: [
+              {
+                extension: [
+                  {
+                    url: 'ombCategory',
+                    valueCoding: {
+                      system: 'urn:oid:2.16.840.1.113883.6.238',
+                      code: '2106-3',
+                      display: 'White',
+                    },
+                  },
+                  {
+                    url: 'ombCategory',
+                    valueCoding: {
+                      system: 'urn:oid:2.16.840.1.113883.6.238',
+                      code: '1002-5',
+                      display: 'American Indian or Alaska Native',
+                    },
+                  },
+                  {
+                    url: 'ombCategory',
+                    valueCoding: {
+                      system: 'urn:oid:2.16.840.1.113883.6.238',
+                      code: '2028-9',
+                      display: 'Asian',
+                    },
+                  },
+                  {
+                    url: 'detailed',
+                    valueCoding: {
+                      system: 'urn:oid:2.16.840.1.113883.6.238',
+                      code: '1586-7',
+                      display: 'Shoshone',
+                    },
+                  },
+                  {
+                    url: 'detailed',
+                    valueCoding: {
+                      system: 'urn:oid:2.16.840.1.113883.6.238',
+                      code: '2036-2',
+                      display: 'Filipino',
+                    },
+                  },
+                  {
+                    url: 'text',
+                    valueString: 'Mixed',
+                  },
+                ],
+                url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+              },
+              {
+                extension: [
+                  {
+                    url: 'ombCategory',
+                    valueCoding: {
+                      system: 'urn:oid:2.16.840.1.113883.6.238',
+                      code: '2135-2',
+                      display: 'Hispanic or Latino',
+                    },
+                  },
+                  {
+                    url: 'detailed',
+                    valueCoding: {
+                      system: 'urn:oid:2.16.840.1.113883.6.238',
+                      code: '2184-0',
+                      display: 'Dominican',
+                    },
+                  },
+                  {
+                    url: 'detailed',
+                    valueCoding: {
+                      system: 'urn:oid:2.16.840.1.113883.6.238',
+                      code: '2148-5',
+                      display: 'Mexican',
+                    },
+                  },
+                  {
+                    url: 'text',
+                    valueString: 'Hispanic or Latino',
+                  },
+                ],
+                url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
+              },
+              {
+                url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://terminology.hl7.org/CodeSystem/v3-NullFlavor',
+                      code: 'ASKU',
+                      display: 'asked but unknown',
+                    },
+                  ],
+                  text: 'asked but unknown',
+                },
+              },
+            ],
+          });
+
+          // race
+          const bundle1 = await repo.search({
+            resourceType: 'Patient',
+            // ombCategory
+            filters: [{ code: 'race', operator: Operator.EQUALS, value: '1002-5' }],
+          });
+          expect(bundle1.entry?.length).toBe(1);
+          expect(bundleContains(bundle1, resource)).toBeTruthy();
+
+          const bundle2 = await repo.search({
+            resourceType: 'Patient',
+            // detailed
+            filters: [{ code: 'race', operator: Operator.EQUALS, value: '1586-7' }],
+          });
+          expect(bundle2.entry?.length).toBe(1);
+          expect(bundleContains(bundle2, resource)).toBeTruthy();
+
+          // ethnicity
+          const bundle3 = await repo.search({
+            resourceType: 'Patient',
+            // ombCategory
+            filters: [{ code: 'ethnicity', operator: Operator.EQUALS, value: '2135-2' }],
+          });
+          expect(bundle3.entry?.length).toBe(1);
+          expect(bundleContains(bundle3, resource)).toBeTruthy();
+
+          const bundle4 = await repo.search({
+            resourceType: 'Patient',
+            // detailed
+            filters: [{ code: 'ethnicity', operator: Operator.EQUALS, value: '2184-0' }],
+          });
+          expect(bundle4.entry?.length).toBe(1);
+          expect(bundleContains(bundle4, resource)).toBeTruthy();
+
+          // genderIdentity
+          const bundle5 = await repo.search({
+            resourceType: 'Patient',
+            filters: [{ code: 'gender-identity', operator: Operator.EQUALS, value: 'ASKU' }],
+          });
+          expect(bundle5.entry?.length).toBe(1);
+          expect(bundleContains(bundle5, resource)).toBeTruthy();
+        }));
+    });
   });
 
   describe('systemRepo', () => {

@@ -380,6 +380,19 @@ export class BackEnd extends Construct {
       healthCheckGracePeriod: Duration.minutes(5),
     });
 
+    // Add autoscaling
+    if (config.fargateAutoScaling) {
+      const scaling = this.fargateService.autoScaleTaskCount({
+        minCapacity: config.fargateAutoScaling.minCapacity,
+        maxCapacity: config.fargateAutoScaling.maxCapacity,
+      });
+      scaling.scaleOnCpuUtilization('CpuScaling', {
+        targetUtilizationPercent: config.fargateAutoScaling.targetUtilizationPercent,
+        scaleInCooldown: Duration.seconds(config.fargateAutoScaling.scaleInCooldown),
+        scaleOutCooldown: Duration.seconds(config.fargateAutoScaling.scaleOutCooldown),
+      });
+    }
+
     // Add dependencies - make sure Fargate service is created after RDS and Redis
     if (this.rdsCluster) {
       this.fargateService.node.addDependency(this.rdsCluster);

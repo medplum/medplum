@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { addTestUser, createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -586,5 +586,47 @@ describe('FHIR Routes', () => {
         .set('Authorization', 'Bearer ' + normalRegistration.accessToken)
         .send({ ...membership, accessPolicy: undefined });
       expect(res3.status).toBe(403);
+    }));
+
+  test('Search multiple resource types with _type', async () =>
+    withTestContext(async () => {
+      const { accessToken } = await createTestProject({ withAccessToken: true });
+
+      const res1 = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Patient' });
+      expect(res1.status).toBe(201);
+
+      const res2 = await request(app)
+        .post('/fhir/R4/Observation')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'test' },
+          subject: { reference: `Patient/${res1.body.id}` },
+        });
+      expect(res2.status).toBe(201);
+
+      const res3 = await request(app)
+        .get('/fhir/R4?_type=Patient,Observation')
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res3.status).toBe(200);
+
+      const patient = res1.body;
+      const obs = res2.body;
+      const bundle = res3.body;
+
+      expect(bundle.entry?.length).toBe(2);
+      expect(bundleContains(bundle, patient)).toBeTruthy();
+      expect(bundleContains(bundle, obs)).toBeTruthy();
+
+      // Also verify that trailing slash works
+      const res4 = await request(app)
+        .get('/fhir/R4/?_type=Patient,Observation')
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res4.status).toBe(200);
+      expect(res4.body).toEqual(res3.body);
     }));
 });

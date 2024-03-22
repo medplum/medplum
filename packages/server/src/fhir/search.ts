@@ -134,6 +134,10 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
 function validateSearchResourceType(repo: Repository, resourceType: ResourceType): void {
   validateResourceType(resourceType);
 
+  if (resourceType === 'Binary') {
+    throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
+  }
+
   if (!repo.canReadResourceType(resourceType)) {
     throw new OperationOutcomeError(forbidden);
   }

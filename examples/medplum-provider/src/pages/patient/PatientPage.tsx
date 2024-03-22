@@ -33,7 +33,7 @@ const tabs = [
   {
     id: 'diagnosticreports',
     url: 'DiagnosticReport?_fields=_lastUpdated,category,code,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Diagnostic Reports',
+    label: 'Reports',
   },
   {
     id: 'documentreference',

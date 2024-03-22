@@ -258,7 +258,7 @@ async function assertPropertyExists(
   value: string
 ): Promise<any> {
   const db = getDatabasePool();
-  const query = await new SelectQuery('Coding_Property');
+  const query = new SelectQuery('Coding_Property');
   const codingTable = query.getNextJoinAlias();
   query.innerJoin(
     'Coding',

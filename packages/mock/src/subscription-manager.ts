@@ -1,12 +1,38 @@
-import { MedplumClient, SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from '@medplum/core';
+import {
+  IRobustWebSocket,
+  MedplumClient,
+  RobustWebSocketEventMap,
+  SubscriptionEmitter,
+  SubscriptionEventMap,
+  SubscriptionManager,
+  TypedEventTarget,
+} from '@medplum/core';
+
+class MockRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
+  readyState = WebSocket.OPEN;
+  close(): void {
+    // Not implemented -- this is a mock
+  }
+  send(): void {
+    // Not implemented -- this is a mock
+  }
+}
+
+export interface MockSubManagerOptions {
+  mockRobustWebSocket?: boolean;
+}
 
 export class MockSubscriptionManager extends SubscriptionManager {
   emitters: Map<string, SubscriptionEmitter>;
   counts: Map<string, number>;
   masterEmitter: SubscriptionEmitter;
 
-  constructor(medplum: MedplumClient, _wsOrUrl: WebSocket | string) {
-    super(medplum, 'wss://example.com/ws/subscriptions-r4');
+  constructor(medplum: MedplumClient, _wsUrl: string, options?: MockSubManagerOptions) {
+    super(
+      medplum,
+      'wss://example.com/ws/subscriptions-r4',
+      options?.mockRobustWebSocket ? { RobustWebSocket: MockRobustWebSocket } : undefined
+    );
     this.emitters = new Map<string, SubscriptionEmitter>();
     this.counts = new Map<string, number>();
     this.masterEmitter = new SubscriptionEmitter();
