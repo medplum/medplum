@@ -7,35 +7,13 @@ import {
   MeasureReport,
   MeasureReportGroup,
   MeasureReportGroupPopulation,
-  OperationDefinition,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../repo';
+import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  id: 'Measure-evaluate-measure',
-  url: 'http://hl7.org/fhir/OperationDefinition/Measure-evaluate-measure',
-  name: 'Evaluate Measure',
-  status: 'draft',
-  kind: 'operation',
-  code: 'evaluate-measure',
-  resource: ['Measure'],
-  system: false,
-  type: true,
-  instance: true,
-  parameter: [
-    { name: 'periodStart', use: 'in', min: 1, max: '1', type: 'date' },
-    { name: 'periodEnd', use: 'in', min: 1, max: '1', type: 'date' },
-    { name: 'measure', use: 'in', min: 0, max: '1', type: 'Reference' },
-    { name: 'reportType', use: 'in', min: 0, max: '1', type: 'code' },
-    { name: 'subject', use: 'in', min: 0, max: '1', type: 'Reference' },
-    { name: 'practitioner', use: 'in', min: 0, max: '1', type: 'Reference' },
-    { name: 'lastReceivedOn', use: 'in', min: 0, max: '1', type: 'dateTime' },
-    { name: 'return', use: 'out', min: 1, max: '1', type: 'MeasureReport' },
-  ],
-};
+const operation = getOperationDefinition('Measure', 'evaluate-measure');
 
 interface EvaluateMeasureParameters {
   readonly periodStart: string;

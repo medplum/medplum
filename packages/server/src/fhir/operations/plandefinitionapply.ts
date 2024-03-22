@@ -1,7 +1,6 @@
 import { allOk, createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
-  OperationDefinition,
   Patient,
   PlanDefinition,
   PlanDefinitionAction,
@@ -13,34 +12,10 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../repo';
+import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  id: 'PlanDefinition-apply',
-  version: '4.0.1',
-  name: 'Apply',
-  status: 'draft',
-  kind: 'operation',
-  code: 'apply',
-  resource: ['PlanDefinition'],
-  system: false,
-  type: true,
-  instance: true,
-  parameter: [
-    { name: 'planDefinition', use: 'in', min: 0, max: '1', type: 'PlanDefinition' },
-    { name: 'subject', use: 'in', min: 1, max: '*', type: 'string', searchType: 'reference' },
-    { name: 'encounter', use: 'in', min: 0, max: '1', type: 'string', searchType: 'reference' },
-    { name: 'practitioner', use: 'in', min: 0, max: '1', type: 'string', searchType: 'reference' },
-    { name: 'organization', use: 'in', min: 0, max: '1', type: 'string', searchType: 'reference' },
-    { name: 'userType', use: 'in', min: 0, max: '1', type: 'CodeableConcept' },
-    { name: 'userLanguage', use: 'in', min: 0, max: '1', type: 'CodeableConcept' },
-    { name: 'userTaskContext', use: 'in', min: 0, max: '1', type: 'CodeableConcept' },
-    { name: 'setting', use: 'in', min: 0, max: '1', type: 'CodeableConcept' },
-    { name: 'settingContext', use: 'in', min: 0, max: '1', type: 'CodeableConcept' },
-    { name: 'return', use: 'out', min: 1, max: '1', type: 'CarePlan' },
-  ],
-};
+const operation = getOperationDefinition('PlanDefinition', 'apply');
 
 interface PlanDefinitionApplyParameters {
   readonly subject: string[];
