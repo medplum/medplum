@@ -134,7 +134,7 @@ async function getIdentityProvider(
   if (state.clientId) {
     client = await getClientApplication(state.clientId);
     if (client.identityProvider) {
-      idp = client.identityProvider;
+      return { idp: client.identityProvider, client };
     }
   }
 
