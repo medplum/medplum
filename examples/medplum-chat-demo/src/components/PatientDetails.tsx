@@ -43,7 +43,7 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
     fields: ['topic', 'category', '_lastUpdated'],
   };
 
-  const handlePatientEdit = async (newPatient: Resource) => {
+  const handlePatientEdit = async (newPatient: Resource): Promise<void> => {
     try {
       const updatedPatient = (await medplum.updateResource(cleanResource(newPatient))) as Patient;
       showNotification({

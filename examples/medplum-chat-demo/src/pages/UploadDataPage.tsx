@@ -7,7 +7,7 @@ export function UploadDataPage(): JSX.Element {
   const { dataType } = useParams();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
 
-  const handleDataUpload = () => {
+  const handleDataUpload = (): void => {
     console.log('No Data Yet :(');
   };
 

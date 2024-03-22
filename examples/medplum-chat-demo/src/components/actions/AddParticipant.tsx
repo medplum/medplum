@@ -1,13 +1,8 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
-import {
-  Communication,
-  Questionnaire,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-} from '@medplum/fhirtypes';
+import { normalizeErrorString, PatchOperation } from '@medplum/core';
+import { Communication, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { checkForInvalidRecipient, getRecipients } from '../../utils';
@@ -21,7 +16,7 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
   const medplum = useMedplum();
   const [opened, handlers] = useDisclosure(false);
 
-  const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
+  const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
     const newParticipantsData = getRecipients(formData);
     if (!newParticipantsData) {
       throw new Error('Please select a valid person to add to this thread.');
@@ -46,11 +41,11 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
       throw new Error('Invalid recipient type');
     }
 
-    handleNewParticipant(newParticipants);
+    handleNewParticipant(newParticipants).catch(console.error);
     handlers.close();
   };
 
-  const handleNewParticipant = async (newParticipant: Communication['recipient']) => {
+  const handleNewParticipant = async (newParticipant: Communication['recipient']): Promise<void> => {
     if (!newParticipant) {
       return;
     }

@@ -32,7 +32,7 @@ export function ResourcePage(): JSX.Element | null {
     }
   }, [medplum, resourceType, id]);
 
-  const handleResourceEdit = async (newResource: Resource) => {
+  const handleResourceEdit = async (newResource: Resource): Promise<void> => {
     try {
       const updatedResource = await medplum.updateResource(cleanResource(newResource));
       setResource(updatedResource);
@@ -51,7 +51,7 @@ export function ResourcePage(): JSX.Element | null {
     }
   };
 
-  const handleTabChange = (newTab: string | null) => {
+  const handleTabChange = (newTab: string | null): void => {
     navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
   };
 

@@ -1,7 +1,7 @@
 import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
-import { AppShell, Loading, Logo, useMedplum, useMedplumProfile, NavbarLink } from '@medplum/react';
+import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDatabaseImport, IconFileImport, IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { CommunicationPage } from './pages/CommunicationPage';
 import { LandingPage } from './pages/LandingPage';

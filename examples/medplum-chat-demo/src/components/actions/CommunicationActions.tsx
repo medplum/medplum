@@ -1,4 +1,4 @@
-import { Button, Stack, Title } from '@mantine/core';
+import { Stack, Title } from '@mantine/core';
 import { Communication } from '@medplum/fhirtypes';
 import { AddParticipant } from './AddParticipant';
 import { CloseOpenThread } from './CloseOpenThread';

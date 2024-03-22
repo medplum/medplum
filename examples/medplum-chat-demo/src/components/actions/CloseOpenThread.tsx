@@ -19,7 +19,7 @@ export function CloseOpenThread(props: CloseOpenThreadProps): JSX.Element {
   // Check the status to see if the thread should be closed or reopened
   const display = status === 'completed' ? 'Reopen' : 'Close';
 
-  const handleStatusUpdate = async () => {
+  const handleStatusUpdate = async (): Promise<void> => {
     const communicationId = props.communication.id as string;
     // Update the status to the opposite of the current status
     const updatedStatus = status === 'completed' ? 'in-progress' : 'completed';
