@@ -118,7 +118,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const handleSearchChange = useCallback(
     (e: React.SyntheticEvent): void => {
-      if (options && options.length > 0) {
+      if ((options && options.length > 0) || creatable) {
         combobox.openDropdown();
       }
 
@@ -137,7 +137,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       const newTimer = window.setTimeout(() => handleTimer(), 100);
       setTimer(newTimer);
     },
-    [combobox, options, handleTimer]
+    [combobox, options, creatable, handleTimer]
   );
 
   const addSelected = useCallback(
