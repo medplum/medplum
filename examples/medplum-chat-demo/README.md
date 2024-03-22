@@ -1,4 +1,4 @@
-<h1 align="center">Medplum Hello World</h1>
+<h1 align="center">Medplum Chat Demo</h1>
 <p align="center">A starter application for using the Medplum platform.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
@@ -8,18 +8,33 @@
 
 This example app demonstrates the following:
 
-- Creating a new React app with Vite and TypeScript
-- Adding Medplum dependencies
-- Adding basic URL routing
-- Using the [Medplum client](https://www.medplum.com/docs/sdk/classes/MedplumClient) to search for FHIR resources
-- Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
-- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display FHIR data
+- Creating a new React app with Vite and TypeScript to demonstrate [`Communication`](/packages/docs/api/fhir/resources/communication)-based workflows.
+- Creating thread-level and message-level [`Communication`](/packages/docs/api/fhir/resources/communication) resources.
+- Sending and replying to messages
+- Adding new participants to existing threads
+- Editing thread topics and categories.
+
+![Chat Demo Screenshot](medplum-chat-demo-screenshot.png)
+
+### Code Organization
+
+This repo is organized into two main directories: `src` and `data`.
+
+The `src` directory contains the app, including a `pages` and `components` directory. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) for use.
+
+The `data` directory contains data that can be uploaded for use in the demo. The `example` directory contains data that is meant to be used for testing and learning, while the `core` directory contains resources, terminologies, and more that are necessary to use the demo.
 
 ### Getting Started
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-hello-world/fork) and clone the repo.
+[Fork](https://github.com/medplum/medplum/fork) and clone the main Medplum repo.
+
+Move into the `medplum-chat-demo` directory.
+
+```bash
+cd examples/medplum-chat-demo
+```
 
 Next, install the dependencies
 
