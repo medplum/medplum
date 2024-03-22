@@ -27,7 +27,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
     if (patientId) {
       medplum.readResource('Patient', patientId).then(setPatient).catch(console.error);
     }
-  }, [patientReference]);
+  }, [patientReference, medplum]);
 
   return (
     <div>

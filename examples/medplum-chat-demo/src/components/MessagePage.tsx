@@ -24,7 +24,7 @@ export function MessagePage(props: MessagePageProps): JSX.Element {
       // Get the patient resource to display their summary
       medplum.readResource('Patient', patientId).then(setPatient).catch(console.error);
     }
-  }, [patientReference]);
+  }, [patientReference, medplum]);
 
   return (
     <div>
