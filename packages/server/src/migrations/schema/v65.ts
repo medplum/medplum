@@ -171,17 +171,17 @@ const resourceTypes = [
 ];
 
 export async function run(client: PoolClient): Promise<void> {
-  await client.query('ALTER TABLE "Address" DROP CONSTRAINT "Address_pkey"');
+  await client.query('ALTER TABLE "Address" DROP CONSTRAINT IF EXISTS "Address_pkey"');
   await client.query('ALTER TABLE "Address" ALTER COLUMN "id" DROP NOT NULL');
   await client.query('ALTER TABLE "Address" ALTER COLUMN "index" DROP NOT NULL');
   await client.query('ALTER TABLE "Address" ALTER COLUMN "content" DROP NOT NULL');
 
-  await client.query('ALTER TABLE "HumanName" DROP CONSTRAINT "HumanName_pkey"');
+  await client.query('ALTER TABLE "HumanName" DROP CONSTRAINT IF EXISTS "HumanName_pkey"');
   await client.query('ALTER TABLE "HumanName" ALTER COLUMN "id" DROP NOT NULL');
   await client.query('ALTER TABLE "HumanName" ALTER COLUMN "index" DROP NOT NULL');
   await client.query('ALTER TABLE "HumanName" ALTER COLUMN "content" DROP NOT NULL');
 
-  await client.query('ALTER TABLE "ValueSetElement" DROP CONSTRAINT "ValueSetElement_pkey"');
+  await client.query('ALTER TABLE "ValueSetElement" DROP CONSTRAINT IF EXISTS "ValueSetElement_pkey"');
   await client.query('ALTER TABLE "ValueSetElement" ALTER COLUMN "id" DROP NOT NULL');
 
   await client.query('ALTER TABLE "Agent" ALTER COLUMN "projectId" DROP NOT NULL');

@@ -373,12 +373,7 @@ function buildHumanNameTable(result: SchemaDefinition): void {
 function buildLookupTable(result: SchemaDefinition, tableName: string, columns: string[]): void {
   const tableDefinition: TableDefinition = {
     name: tableName,
-    columns: [
-      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' }, // Deprecated - to be removed
-      { name: 'resourceId', type: 'UUID NOT NULL' },
-      { name: 'index', type: 'INTEGER NOT NULL' },
-      { name: 'content', type: 'TEXT NOT NULL' },
-    ],
+    columns: [{ name: 'resourceId', type: 'UUID NOT NULL' }],
     indexes: [{ columns: ['resourceId'], indexType: 'btree' }],
   };
 
