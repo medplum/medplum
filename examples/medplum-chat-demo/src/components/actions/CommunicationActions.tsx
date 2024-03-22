@@ -12,7 +12,7 @@ interface CommunicationActionsProps {
 
 export function CommunicationActions(props: CommunicationActionsProps): JSX.Element {
   return (
-    <Stack m="md">
+    <Stack m="md" p="md">
       <Title>Thread Actions</Title>
       <EditThreadTopic communication={props.communication} onChange={props.onChange} />
       <AddParticipant communication={props.communication} onChange={props.onChange} />
