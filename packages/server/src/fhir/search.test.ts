@@ -3240,8 +3240,7 @@ describe('FHIR Search', () => {
         }
       }));
 
-    // Dangerfile should catch this...
-    describe.only('US Core Search Parameters', () => {
+    describe('US Core Search Parameters', () => {
       test('USCoreCareTeamRole', async () =>
         withTestContext(async () => {
           const careTeam = await repo.createResource<CareTeam>({
