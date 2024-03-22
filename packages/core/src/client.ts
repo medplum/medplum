@@ -2006,7 +2006,7 @@ export class MedplumClient extends EventTarget {
    * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
-   * @deprecated Use `createAttachment` with `CreateBinaryOptions` instead.
+   * @deprecated Use `createAttachment` with `CreateBinaryOptions` instead. To be removed in Medplum 4.0.
    */
   createAttachment(
     data: BinarySource,
@@ -2067,7 +2067,7 @@ export class MedplumClient extends EventTarget {
    * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
-   * @deprecated Use `createBinary` with `CreateBinaryOptions` instead.
+   * @deprecated Use `createBinary` with `CreateBinaryOptions` instead. To be removed in Medplum 4.0.
    */
   createBinary(
     data: BinarySource,
@@ -2195,7 +2195,7 @@ export class MedplumClient extends EventTarget {
    * @param tableLayouts - Optional pdfmake custom table layout.
    * @param fonts - Optional pdfmake custom font dictionary.
    * @returns The result of the create operation.
-   * @deprecated Use `createPdf` with `CreatePdfOptions` instead.
+   * @deprecated Use `createPdf` with `CreatePdfOptions` instead. To be removed in Medplum 4.0.
    */
   createPdf(
     docDefinition: TDocumentDefinitions,
@@ -2870,7 +2870,7 @@ export class MedplumClient extends EventTarget {
    * @param additionalFields - Additional fields for Media.
    * @param options - Optional fetch options.
    * @returns Promise that resolves to the created Media
-   * @deprecated Use `createMedia` with `CreateMediaOptions` instead.
+   * @deprecated Use `createMedia` with `CreateMediaOptions` instead. To be removed in Medplum 4.0.
    */
   async uploadMedia(
     contents: string | Uint8Array | File | Blob,
@@ -3954,6 +3954,7 @@ function isCreateBinaryOptions(input: unknown): input is CreateBinaryOptions {
   return isObject(input) && 'data' in input && 'contentType' in input;
 }
 
+// This function can be deleted after Medplum 4.0 and we remove the legacy createBinary method
 export function normalizeCreateBinaryOptions(
   arg1: BinarySource | CreateBinaryOptions,
   arg2: string | undefined | MedplumRequestOptions,
@@ -3975,6 +3976,7 @@ function isCreatePdfOptions(input: unknown): input is CreatePdfOptions {
   return isObject(input) && 'docDefinition' in input;
 }
 
+// This function can be deleted after Medplum 4.0 and we remove the legacy createPdf method
 export function normalizeCreatePdfOptions(
   arg1: TDocumentDefinitions | CreatePdfOptions,
   arg2: string | undefined | MedplumRequestOptions,
