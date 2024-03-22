@@ -65,16 +65,16 @@ export function getDefaultFields(resourceType: string): string[] {
 // A helper function to specifically get all of the people entered as a participant in the form
 export function getRecipients(formData: QuestionnaireResponse): QuestionnaireResponseItemAnswer[] | undefined {
   const items = formData.item;
-  const recipients = [];
+  const recipients: QuestionnaireResponseItemAnswer[] = [];
 
   if (!items) {
-    return;
+    return recipients;
   }
 
   for (const item of items) {
     if (item.linkId === 'participants') {
       if (!item.answer) {
-        return;
+        return recipients;
       }
       recipients.push(...item.answer);
     }

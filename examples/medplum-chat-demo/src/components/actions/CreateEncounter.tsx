@@ -27,22 +27,43 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
 
     try {
       // Create the encounter and update the communication to be linked to it. For more details see https://www.medplum.com/docs/communications/async-encounters
-      await medplum.createResource(encounter);
-      const updatedCommunication = await linkEncounterToCommunication(encounter, props.communication, medplum);
-      if (updatedCommunication) {
-        props.onChange(updatedCommunication);
-      }
+      await medplum
+        .createResource(encounter)
+        .then((encounter) => linkEncounterToCommunication(encounter, props.communication));
+
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Encounter created.',
       });
+      handlers.close();
     } catch (err) {
       showNotification({
         icon: <IconCircleOff />,
         title: 'Error',
         message: normalizeErrorString(err),
       });
+    }
+  };
+
+  // A function that links a Communication to an Encounter using the Communication.encounter field. For more details see https://www.medplum.com/docs/communications/async-encounters
+  const linkEncounterToCommunication = async (encounter: Encounter, communication: Communication): Promise<void> => {
+    const communicationId = communication.id as string;
+    const encounterReference = createReference(encounter);
+
+    const ops: PatchOperation[] = [
+      // Test to prevent race conditions
+      { op: 'test', path: '/meta/versionId', value: communication.meta?.versionId },
+      // Patch the encounter field of the communication
+      { op: 'add', path: '/encounter', value: encounterReference },
+    ];
+
+    try {
+      // Update the communication
+      const result = await medplum.patchResource('Communication', communicationId, ops);
+      props.onChange(result);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -89,26 +110,3 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
 }
 
 // A function that links a Communication to an Encounter using the Communication.encounter field. For more details see https://www.medplum.com/docs/communications/async-encounters
-async function linkEncounterToCommunication(
-  encounter: Encounter,
-  communication: Communication,
-  medplum: MedplumClient
-): Promise<Communication | void> {
-  const communicationId = communication.id as string;
-  const encounterReference = createReference(encounter);
-
-  const ops: PatchOperation[] = [
-    // Test to prevent race conditions
-    { op: 'test', path: '/meta/versionId', value: communication.meta?.versionId },
-    // Patch the encounter field of the communication
-    { op: 'add', path: '/encounter', value: encounterReference },
-  ];
-
-  try {
-    // Update the communication
-    const result = await medplum.patchResource('Communication', communicationId, ops);
-    return result;
-  } catch (err) {
-    console.error(err);
-  }
-}
