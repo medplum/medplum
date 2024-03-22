@@ -13,7 +13,7 @@ if (packageChanged && !lockfileChanged) {
 }
 
 // Gather changes
-const modifiedFiles = danger.git.modified_files.filter((path) => path.endsWith('.ts') || path.endsWith('.tsx'));
+const modifiedFiles = danger.git.modified_files.filter((path) => /\/src\/.+\.tsx?/.exec(path));
 
 // Check for console.log statements
 const statements = ['console.debug', 'console.log', 'console.warn', 'describe.only', 'test.only'];
