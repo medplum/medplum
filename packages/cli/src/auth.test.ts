@@ -84,7 +84,7 @@ describe('CLI auth', () => {
   test('Login basic auth', async () => {
     expect(medplum.getActiveLogin()).toBeUndefined();
     await main(['node', 'index.js', 'login', '--auth-type', 'basic']);
-    expect(console.log).toHaveBeenCalledWith('Login successful');
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   test('Login client credentials', async () => {
@@ -100,7 +100,7 @@ describe('CLI auth', () => {
       '--client-secret',
       'abc',
     ]);
-    expect(console.log).toHaveBeenCalledWith('Login successful');
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   test('Load credentials from disk', async () => {
