@@ -39,6 +39,7 @@ import {
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
   AccessPolicy,
+  Binary,
   Bundle,
   BundleEntry,
   Meta,
@@ -527,7 +528,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.handleBinaryData(result);
+    await this.handleBinaryUpdate(existing, result);
     await this.handleMaybeCacheOnly(result, create);
     await setCacheEntry(result);
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
@@ -536,17 +537,32 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   /**
+   * Handles a Binary resource update.
+   * If the resource has embedded base-64 data, writes the data to the binary storage.
+   * Otherwise if the resource already exists, copies the existing binary to the new resource.
+   * @param existing - Existing binary if it exists.
+   * @param resource - The resource to write to the database.
+   */
+  private async handleBinaryUpdate<T extends Resource>(existing: T | undefined, resource: T): Promise<void> {
+    if (resource.resourceType !== 'Binary') {
+      return;
+    }
+
+    if (resource.data) {
+      await this.handleBinaryData(resource);
+    } else if (existing) {
+      await getBinaryStorage().copyBinary(existing as Binary, resource);
+    }
+  }
+
+  /**
    * Handles a Binary resource with embedded base-64 data.
    * Writes the data to the binary storage and removes the data field from the resource.
    * @param resource - The resource to write to the database.
    */
-  private async handleBinaryData(resource: Resource): Promise<void> {
-    if (resource.resourceType !== 'Binary' || !resource.data) {
-      return;
-    }
-
+  private async handleBinaryData(resource: Binary): Promise<void> {
     // Parse result.data as a base64 string
-    const buffer = Buffer.from(resource.data, 'base64');
+    const buffer = Buffer.from(resource.data as string, 'base64');
 
     // Convert buffer to a Readable stream
     const stream = new Readable({

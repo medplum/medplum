@@ -66,8 +66,6 @@ describe('DICOM', () => {
     //
     // C-ECHO
     //
-    console.log('CODY sending C-ECHO');
-
     const echoResponse = (await new Promise((resolve, reject) => {
       const request = new dimse.requests.CEchoRequest();
       request.on('response', resolve);

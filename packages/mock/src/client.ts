@@ -1,10 +1,7 @@
 import {
-  allOk,
-  badRequest,
+  BinarySource,
   ContentType,
-  getStatus,
-  indexSearchParameter,
-  loadDataType,
+  CreateBinaryOptions,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -12,6 +9,12 @@ import {
   OperationOutcomeError,
   ProfileResource,
   SubscriptionEmitter,
+  allOk,
+  badRequest,
+  getStatus,
+  indexSearchParameter,
+  loadDataType,
+  normalizeCreateBinaryOptions,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
 import {
@@ -38,7 +41,6 @@ import {
   ExampleQuestionnaire,
   ExampleQuestionnaireResponse,
   ExampleSubscription,
-  exampleValueSet,
   HomerCommunication,
   HomerDiagnosticReport,
   HomerEncounter,
@@ -55,8 +57,9 @@ import {
   HomerSimpson,
   HomerSimpsonPreviousVersion,
   HomerSimpsonSpecimen,
-  makeDrAliceSmithSlots,
   TestOrganization,
+  exampleValueSet,
+  makeDrAliceSmithSlots,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
 import { TestProject, TestProjectMembership } from './mocks/project';
@@ -177,11 +180,14 @@ export class MockClient extends MedplumClient {
   }
 
   async createBinary(
-    data: string | File | Blob | Uint8Array,
-    filename: string | undefined,
-    contentType: string,
-    onProgress?: (e: ProgressEvent) => void
+    arg1: BinarySource | CreateBinaryOptions,
+    arg2: string | undefined | MedplumRequestOptions,
+    arg3?: string,
+    arg4?: (e: ProgressEvent) => void
   ): Promise<Binary> {
+    const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
+    const { filename, contentType, onProgress } = createBinaryOptions;
+
     if (filename?.endsWith('.exe')) {
       return Promise.reject(badRequest('Invalid file type'));
     }
