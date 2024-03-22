@@ -76,10 +76,7 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Document>
-      <Group style={{ float: 'right' }}>
-        <PatientFilter search={search} onPatientFilter={handlePatientFilter} />
-        <CreateThread opened={opened} handlers={handlers} />
-      </Group>
+      <CreateThread opened={opened} handlers={handlers} />
       {showTabs ? (
         <Tabs value={currentTab?.toLowerCase()} onChange={handleTabChange}>
           <Tabs.List>
@@ -94,8 +91,11 @@ export function SearchPage(): JSX.Element {
               search={search}
               onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
               hideFilters={true}
-              hideToolbar={true}
+              hideToolbar={false}
               onNew={handlers.open}
+              onChange={(e) => {
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+              }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
@@ -103,7 +103,11 @@ export function SearchPage(): JSX.Element {
               search={search}
               onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
               hideFilters={true}
-              hideToolbar={true}
+              hideToolbar={false}
+              onNew={handlers.open}
+              onChange={(e) => {
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+              }}
             />
           </Tabs.Panel>
         </Tabs>

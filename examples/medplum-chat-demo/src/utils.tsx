@@ -91,15 +91,15 @@ export function checkForInvalidRecipient(recipients: Communication['recipient'])
   for (const recipient of recipients) {
     const resourceType = parseReference(recipient)[0];
     if (
-      resourceType === 'Patient' ||
-      resourceType === 'Practitioner' ||
-      resourceType === 'RelatedPerson' ||
-      resourceType === 'CareTeam' ||
-      resourceType === 'Device' ||
-      resourceType === 'Organization' ||
-      resourceType === 'Group' ||
-      resourceType === 'HealthcareService' ||
-      resourceType === 'PractitionerRole'
+      resourceType !== 'Patient' &&
+      resourceType !== 'Practitioner' &&
+      resourceType !== 'RelatedPerson' &&
+      resourceType !== 'CareTeam' &&
+      resourceType !== 'Device' &&
+      resourceType !== 'Organization' &&
+      resourceType !== 'Group' &&
+      resourceType !== 'HealthcareService' &&
+      resourceType !== 'PractitionerRole'
     ) {
       return true;
     }
