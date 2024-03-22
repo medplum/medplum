@@ -10,7 +10,7 @@ import {
   isPopulated,
   PropertyType,
 } from '@medplum/core';
-import { ElementDefinitionBinding, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
+import { ElementDefinitionBinding, ElementDefinitionType } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
@@ -37,19 +37,15 @@ import { ResourceArrayInput } from '../ResourceArrayInput/ResourceArrayInput';
 import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
-import { ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
+import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
 
-export interface ResourcePropertyInputProps {
+export interface ResourcePropertyInputProps extends BaseInputProps {
   readonly property: InternalSchemaElement;
   readonly name: string;
-  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
-  readonly path: string;
   readonly defaultPropertyType?: string | undefined;
   readonly defaultValue: any;
   readonly arrayElement?: boolean | undefined;
-  readonly arrayIndex?: number;
   readonly onChange: ((value: any, propName?: string) => void) | undefined;
-  readonly outcome: OperationOutcome | undefined;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
@@ -72,6 +68,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         property={property}
         name={name}
         path={props.path}
+        indexedPath={props.indexedPath}
         defaultValue={defaultValue}
         indent={indent}
         onChange={onChange}
@@ -97,7 +94,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         max={property.min}
         binding={property.binding}
         path={props.path}
-        arrayIndex={props.arrayIndex}
+        indexedPath={props.indexedPath}
       />
     );
   }
@@ -149,6 +146,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         max={props.property.max}
         binding={props.property.binding}
         path={props.property.path}
+        indexedPath={props.indexedPath}
       />
     </Group>
   );
@@ -156,16 +154,15 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
 export interface ElementDefinitionTypeInputProps
-  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'defaultValue' | 'onChange' | 'outcome'> {
+  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'indexedPath' | 'defaultValue' | 'onChange' | 'outcome'> {
   readonly elementDefinitionType: ElementDefinitionType;
   readonly min: number;
   readonly max: number;
   readonly binding: ElementDefinitionBinding | undefined;
-  readonly arrayIndex?: number;
 }
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const { name, onChange, outcome, binding, path, arrayIndex } = props;
+  const { name, onChange, outcome, binding, path, indexedPath } = props;
   const required = props.min !== undefined && props.min > 0;
 
   const propertyType = props.elementDefinitionType.code;
@@ -203,11 +200,11 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   }
 
   function getComplexInputProps(): ComplexTypeInputProps<any> {
-    return { name, defaultValue, onChange, outcome, path, arrayIndex };
+    return { name, defaultValue, onChange, outcome, path, indexedPath };
   }
 
   function getPrimitiveInputProps(): PrimitiveTypeInputProps {
-    const error = getErrorsForInput(props.outcome, path);
+    const error = getErrorsForInput(props.outcome, indexedPath ?? path);
     return {
       id: name,
       name,

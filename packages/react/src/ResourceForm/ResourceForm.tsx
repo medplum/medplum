@@ -80,6 +80,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       </Stack>
       <BackboneElementInput
         path={value.resourceType}
+        indexedPath={value.resourceType}
         typeName={schemaLoaded}
         defaultValue={value}
         outcome={outcome}

@@ -1,6 +1,5 @@
 import { Group, Stack } from '@mantine/core';
 import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { MouseEvent, useContext, useEffect, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -11,14 +10,13 @@ import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
 import classes from './ResourceArrayInput.module.css';
 import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
+import { BaseInputProps, getIndexedPath } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface ResourceArrayInputProps {
+export interface ResourceArrayInputProps extends BaseInputProps {
   readonly property: InternalSchemaElement;
   readonly name: string;
-  readonly path: string;
   readonly defaultValue?: any[];
   readonly indent?: boolean;
-  readonly outcome: OperationOutcome | undefined;
   readonly onChange?: (value: any[]) => void;
   readonly hideNonSliceValues?: boolean;
 }
@@ -82,6 +80,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             slice={slice}
             key={slice.name}
             path={props.path}
+            indexedPath={props.indexedPath}
             property={property}
             defaultValue={slicedValues[sliceIndex]}
             onChange={(newValue: any[]) => {
@@ -98,10 +97,10 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             <div style={{ flexGrow: 1 }}>
               <ResourcePropertyInput
                 arrayElement={true}
-                arrayIndex={valueIndex}
                 property={props.property}
                 name={props.name + '.' + valueIndex}
                 path={props.path}
+                indexedPath={getIndexedPath(props.path, props.indexedPath, valueIndex)}
                 defaultValue={value}
                 onChange={(newValue: any) => {
                   const newNonSliceValues = [...nonSliceValues];
