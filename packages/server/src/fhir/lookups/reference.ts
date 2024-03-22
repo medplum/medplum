@@ -1,15 +1,13 @@
 import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
-import { Reference, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
-import { compareArrays } from './util';
 
 /**
  * The ReferenceTable class represents a set of lookup tables for references between resources.
  * Each reference is represented as a separate row in the "<ResourceType>_References" table.
  */
-export class ReferenceTable extends LookupTable<Reference> {
+export class ReferenceTable extends LookupTable {
   getTableName(resourceType: ResourceType): string {
     return resourceType + '_References';
   }
@@ -27,16 +25,12 @@ export class ReferenceTable extends LookupTable<Reference> {
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
-    const values = getSearchReferences(resource);
-    const existing = await getExistingValues(client, this.getTableName(resource.resourceType), resource.id as string);
-    if (compareArrays(values, existing)) {
-      // Nothing changed
-      return;
-    }
-    if (existing.length > 0) {
+  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+    if (!create) {
       await this.deleteValuesForResource(client, resource);
     }
+
+    const values = getSearchReferences(resource);
     await this.insertValuesForResource(client, resource.resourceType, values);
   }
 }
@@ -89,26 +83,9 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
  * @returns True if the search parameter is an "reference" parameter.
  */
 function isIndexed(searchParam: SearchParameter): boolean {
-  if (searchParam.type !== 'reference') {
-    return false;
-  } else if (searchParam.code?.endsWith(':identifier')) {
-    return false;
-  }
-  return true;
-}
-
-/**
- * Returns the existing list of indexed references.
- * @param client - The current database client.
- * @param tableName - The table to query.
- * @param resourceId - The FHIR resource ID.
- * @returns Promise for the list of indexed references.
- */
-async function getExistingValues(client: PoolClient, tableName: string, resourceId: string): Promise<ReferenceRow[]> {
-  return new SelectQuery(tableName)
-    .column('code')
-    .column('resourceId')
-    .column('targetId')
-    .where('resourceId', '=', resourceId)
-    .execute(client);
+  return (
+    searchParam.type === 'reference' &&
+    searchParam.code !== '_compartment' && // Compartment search is a special internal case that is on the resource table
+    !searchParam.code.endsWith(':identifier') // Identifier search is a special internal case that is on the token table
+  );
 }

@@ -1,16 +1,16 @@
+import { append } from '@medplum/core';
 import { CodeSystem, CodeSystemConcept, CodeSystemConceptProperty, Coding, Resource } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
-import { DeleteQuery } from '../sql';
-import { append } from '@medplum/core';
 import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
+import { DeleteQuery } from '../sql';
+import { LookupTable } from './lookuptable';
 
 /**
  * The CodingTable class is used to index and search Coding values associated with a CodeSystem.
  * Each system/code/display triple is represented as a separate row in the "Coding" table.
  */
-export class CodingTable extends LookupTable<Coding> {
+export class CodingTable extends LookupTable {
   getTableName(): string {
     return 'Coding';
   }
@@ -27,9 +27,11 @@ export class CodingTable extends LookupTable<Coding> {
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
     if (resource.resourceType === 'CodeSystem' && (resource.content === 'complete' || resource.content === 'example')) {
-      await this.deleteValuesForResource(client, resource);
+      if (!create) {
+        await this.deleteValuesForResource(client, resource);
+      }
 
       const elements = this.getCodeSystemElements(resource);
       await importCodeSystem(client, resource, elements.concepts, elements.properties);

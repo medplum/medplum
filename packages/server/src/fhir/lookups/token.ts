@@ -25,7 +25,7 @@ import { PoolClient } from 'pg';
 import { getLogger } from '../../context';
 import { Column, Condition, Conjunction, Disjunction, Exists, Expression, Negation, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
-import { compareArrays, deriveIdentifierSearchParameter } from './util';
+import { deriveIdentifierSearchParameter } from './util';
 
 interface Token {
   readonly code: string;
@@ -39,7 +39,7 @@ interface Token {
  * The common case for tokens is a "system" and "value" key/value pair.
  * Each token is represented as a separate row in the "Token" table.
  */
-export class TokenTable extends LookupTable<Token> {
+export class TokenTable extends LookupTable {
   /**
    * Returns the table name.
    * @param resourceType - The resource type.
@@ -72,34 +72,31 @@ export class TokenTable extends LookupTable<Token> {
    * Attempts to reuse existing tokens if they are correct.
    * @param client - The database client.
    * @param resource - The resource to index.
+   * @param create - True if the resource should be created (vs updated).
    * @returns Promise on completion.
    */
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+    if (!create) {
+      await this.deleteValuesForResource(client, resource);
+    }
+
     const tokens = getTokens(resource);
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const existing = await getExistingValues(client, resourceType, resourceId);
+    const values = [];
 
-    if (!compareArrays(tokens, existing)) {
-      if (existing.length > 0) {
-        await this.deleteValuesForResource(client, resource);
-      }
-
-      const values = [];
-
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        values.push({
-          resourceId,
-          code: token.code,
-          index: i,
-          system: token.system?.trim(),
-          value: token.value?.trim?.(),
-        });
-      }
-
-      await this.insertValuesForResource(client, resourceType, values);
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      values.push({
+        resourceId,
+        code: token.code,
+        index: i,
+        system: token.system?.trim(),
+        value: token.value?.trim?.(),
+      });
     }
+
+    await this.insertValuesForResource(client, resourceType, values);
   }
 
   /**
@@ -397,31 +394,6 @@ function buildSimpleToken(
       value,
     });
   }
-}
-
-/**
- * Returns the existing list of indexed tokens.
- * @param client - The current database client.
- * @param resourceType - The FHIR resource type.
- * @param resourceId - The FHIR resource ID.
- * @returns Promise for the list of indexed tokens  .
- */
-async function getExistingValues(client: PoolClient, resourceType: ResourceType, resourceId: string): Promise<Token[]> {
-  const tableName = getTableName(resourceType);
-  return new SelectQuery(tableName)
-    .column('code')
-    .column('system')
-    .column('value')
-    .where('resourceId', '=', resourceId)
-    .orderBy('index')
-    .execute(client)
-    .then((result) =>
-      result.map((row) => ({
-        code: row.code,
-        system: row.system,
-        value: row.value,
-      }))
-    );
 }
 
 /**
