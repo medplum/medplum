@@ -3239,7 +3239,8 @@ describe('FHIR Search', () => {
           expect(outcome.issue?.[0]?.details?.text).toBe('Cannot search on Binary resource type');
         }
       }));
-    describe.only('US Core Search Parameters', () => {
+
+    describe('US Core Search Parameters', () => {
       test('USCoreCareTeamRole', async () =>
         withTestContext(async () => {
           const careTeam = await repo.createResource<CareTeam>({
