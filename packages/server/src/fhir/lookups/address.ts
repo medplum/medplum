@@ -1,6 +1,5 @@
-import { formatAddress, stringify } from '@medplum/core';
+import { formatAddress } from '@medplum/core';
 import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 
@@ -97,11 +96,8 @@ export class AddressTable extends LookupTable {
 
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const values = addresses.map((address, index) => ({
-      id: randomUUID(),
+    const values = addresses.map((address) => ({
       resourceId,
-      index,
-      content: stringify(address),
       address: formatAddress(address),
       city: address.city?.trim(),
       country: address.country?.trim(),

@@ -1,5 +1,4 @@
 import { CodeSystem, CodeSystemConcept, Resource, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 
@@ -45,19 +44,12 @@ export class ValueSetElementTable extends LookupTable {
       return;
     }
 
-    const values = [];
-
-    for (let i = 0; i < elements.length; i++) {
-      const element = elements[i];
-      values.push({
-        id: randomUUID(),
-        resourceId,
-        index: i,
-        system: element.system,
-        code: element.code,
-        display: element.display,
-      });
-    }
+    const values = elements.map((element) => ({
+      resourceId,
+      system: element.system,
+      code: element.code,
+      display: element.display,
+    }));
 
     await this.insertValuesForResource(client, resourceType, values);
   }

@@ -83,18 +83,12 @@ export class TokenTable extends LookupTable {
     const tokens = getTokens(resource);
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const values = [];
-
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-      values.push({
-        resourceId,
-        code: token.code,
-        index: i,
-        system: token.system?.trim(),
-        value: token.value?.trim?.(),
-      });
-    }
+    const values = tokens.map((token) => ({
+      resourceId,
+      code: token.code,
+      system: token.system?.trim(),
+      value: token.value?.trim?.(),
+    }));
 
     await this.insertValuesForResource(client, resourceType, values);
   }
