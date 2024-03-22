@@ -1,6 +1,5 @@
 import { Stack } from '@mantine/core';
 import { TypedValue, getPathDisplayName } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { FormSection } from '../FormSection/FormSection';
@@ -8,13 +7,11 @@ import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { EXTENSION_KEYS, ElementsContext, getElementsToRender } from './ElementsInput.utils';
+import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface ElementsInputProps {
+export interface ElementsInputProps extends BaseInputProps {
   readonly type: string;
-  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
-  readonly path: string;
   readonly defaultValue: any;
-  readonly outcome: OperationOutcome | undefined;
   readonly onChange: ((value: any) => void) | undefined;
   readonly testId?: string;
 }
@@ -46,12 +43,12 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
             property={element}
             name={key}
             path={props.path + '.' + key}
+            indexedPath={props.indexedPath ? props.indexedPath + '.' + key : undefined}
             defaultValue={propertyValue}
             defaultPropertyType={propertyType}
             onChange={(newValue: any, propName?: string) => {
               setValueWrapper(setPropertyValue({ ...value }, key, propName ?? key, element, newValue));
             }}
-            arrayElement={undefined}
             outcome={props.outcome}
           />
         );
