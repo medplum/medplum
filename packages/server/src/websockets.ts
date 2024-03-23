@@ -123,6 +123,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
 
   socket.on('close', () => {
     redisSubscriber.disconnect();
+    console.log('TESTING');
   });
 }
 
