@@ -94,6 +94,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
 
   socket.on('close', () => {
     redisSubscriber.quit().catch(console.error);
+    console.log('TESTING');
   });
 }
 
