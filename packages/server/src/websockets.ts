@@ -64,7 +64,7 @@ export function initWebSockets(server: http.Server): void {
       if (sockets.size) {
         sockets.delete(socket);
         if (sockets.size === 0) {
-          (socketsClosedResolve as () => void)();
+          socketsClosedResolve();
         }
       }
     });
