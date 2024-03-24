@@ -1,3 +1,4 @@
+import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
 import { MedplumRedisConfig } from './config';
 
@@ -9,8 +10,10 @@ export function initRedis(config: MedplumRedisConfig): void {
 
 export async function closeRedis(): Promise<void> {
   if (redis) {
-    await redis.quit();
+    const tmpRedis = redis;
     redis = undefined;
+    await tmpRedis.quit();
+    await sleep(100);
   }
 }
 

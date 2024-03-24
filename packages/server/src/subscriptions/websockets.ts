@@ -52,7 +52,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
       });
 
       onDisconnect = async (): Promise<void> => {
-        await redisSubscriber?.quit();
+        redisSubscriber?.disconnect();
         const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
         if (!cacheEntryStr) {
           globalLogger.error('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect.');

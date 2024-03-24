@@ -206,10 +206,10 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 }
 
 export async function shutdownApp(): Promise<void> {
-  await closeWorkers();
-  await closeDatabase();
   cleanupHeartbeat();
   await closeWebSockets();
+  await closeWorkers();
+  await closeDatabase();
   await closeRedis();
   closeRateLimiter();
 

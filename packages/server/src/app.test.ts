@@ -4,13 +4,8 @@ import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
 import { getDatabasePool } from './database';
 import { globalLogger } from './logger';
-import { closeRedis } from './redis';
 
 describe('App', () => {
-  afterEach(async () => {
-    await closeRedis();
-  });
-
   test('Get HTTP config', async () => {
     const app = express();
     const config = await loadTestConfig();
