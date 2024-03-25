@@ -281,7 +281,9 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     case PropertyType.code:
-      return <CodeInput {...getPrimitiveInputProps()} onChange={onChange} binding={binding?.valueSet} />;
+      return (
+        <CodeInput {...getPrimitiveInputProps()} error={undefined} onChange={onChange} binding={binding?.valueSet} />
+      );
     case PropertyType.boolean:
       return (
         <Checkbox
