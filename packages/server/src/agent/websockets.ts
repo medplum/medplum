@@ -85,7 +85,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     AsyncLocalStorage.bind(async () => {
       await updateStatus('disconnected');
       heartbeat.removeEventListener('heartbeat', heartbeatHandler);
-      redisSubscriber?.quit().catch(console.error);
+      redisSubscriber?.disconnect();
       redisSubscriber = undefined;
       agentId = undefined;
     })

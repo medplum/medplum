@@ -15,7 +15,7 @@ describe('App', () => {
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['referrer-policy']).toBeDefined();
-    await shutdownApp();
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('Use /api/', async () => {
@@ -27,7 +27,7 @@ describe('App', () => {
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['referrer-policy']).toBeDefined();
-    await shutdownApp();
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('Get HTTPS config', async () => {
@@ -40,7 +40,7 @@ describe('App', () => {
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['strict-transport-security']).toBeDefined();
-    await shutdownApp();
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('robots.txt', async () => {
@@ -50,7 +50,7 @@ describe('App', () => {
     const res = await request(app).get('/robots.txt');
     expect(res.status).toBe(200);
     expect(res.text).toBe('User-agent: *\nDisallow: /');
-    await shutdownApp();
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('No CORS', async () => {
@@ -60,11 +60,10 @@ describe('App', () => {
     const res = await request(app).get('/').set('Origin', 'https://blackhat.xyz');
     expect(res.status).toBe(200);
     expect(res.headers['origin']).toBeUndefined();
-    await shutdownApp();
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('Internal Server Error', async () => {
-    console.log = jest.fn();
     const app = express();
     app.get('/throw', () => {
       throw new Error('Catastrophe!');
@@ -74,7 +73,7 @@ describe('App', () => {
     const res = await request(app).get('/throw');
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
-    await shutdownApp();
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('Database disconnect', async () => {
@@ -82,15 +81,11 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    // Mock database disconnect
-    // Error should be logged, but should not crash the server
-    console.log = jest.fn();
     const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
     getDatabasePool().emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
-
-    await shutdownApp();
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test.skip('Preflight max age', async () => {
@@ -99,6 +94,5 @@ describe('App', () => {
     expect(res.status).toBe(204);
     expect(res.header['access-control-max-age']).toBe('86400');
     expect(res.header['cache-control']).toBe('public, max-age=86400');
-    await shutdownApp();
   });
 });

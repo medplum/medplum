@@ -55,7 +55,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
 
   socket.on('close', () => {
     heartbeat.removeEventListener('heartbeat', heartbeatHandler);
-    redisSubscriber.quit().catch(console.error);
+    redisSubscriber.disconnect();
   });
 
   // Send initial connection verification
