@@ -30,14 +30,14 @@
     "@medplum/mock": "3.0.11",
     "@medplum/react": "3.0.11",
     "@tabler/icons-react": "3.1.0",
-    "@types/node": "20.11.28",
-    "@types/react": "18.2.66",
+    "@types/node": "20.11.30",
+    "@types/react": "18.2.69",
     "@types/react-dom": "18.2.22",
     "@vitejs/plugin-react": "4.2.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.22.3",
-    "typescript": "5.4.2",
-    "vite": "5.1.6"
+    "typescript": "5.4.3",
+    "vite": "5.2.6"
   }
 }
