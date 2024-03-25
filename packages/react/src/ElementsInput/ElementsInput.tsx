@@ -37,13 +37,14 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
       {elementsToRender.map(([key, element]) => {
         const [propertyValue, propertyType] = getValueAndTypeFromElement(typedValue, key, element);
         const required = element.min !== undefined && element.min > 0;
+        const indexedPath = props.indexedPath ? props.indexedPath + '.' + key : undefined;
         const resourcePropertyInput = (
           <ResourcePropertyInput
             key={key}
             property={element}
             name={key}
             path={props.path + '.' + key}
-            indexedPath={props.indexedPath ? props.indexedPath + '.' + key : undefined}
+            indexedPath={indexedPath}
             defaultValue={propertyValue}
             defaultPropertyType={propertyType}
             onChange={(newValue: any, propName?: string) => {
@@ -82,6 +83,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
             htmlFor={key}
             outcome={props.outcome}
             fhirPath={element.path}
+            errorExpression={indexedPath}
           >
             {resourcePropertyInput}
           </FormSection>

@@ -379,7 +379,7 @@ describe('ResourceForm', () => {
       expect(onSubmit).toHaveBeenCalledWith(expectedValue);
     });
 
-    test.only('Array-aware error messages on primitive field', async () => {
+    test('Array-aware error messages on primitive field', async () => {
       const onSubmit = jest.fn();
       const mockedMedplum = new MockClient();
       mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
