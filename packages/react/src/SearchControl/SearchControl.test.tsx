@@ -842,6 +842,38 @@ describe('SearchControl', () => {
       ],
       fields: ['id', '_lastUpdated', 'name'],
     };
+    test('No results', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 0,
+        entry: [],
+      });
+      expect(await screen.findByText('No results')).toBeInTheDocument();
+      const element = screen.getByTestId('count-display');
+      expect([{ resource: HomerSimpson }, ...Array(4).fill({ resourceType: 'Patient' })].length).toBe(5);
+      expect(element.textContent).toBe('0-0 of 0');
+    });
+    test('One result', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 1,
+        entry: [{ resource: HomerSimpson }],
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      const element = screen.getByTestId('count-display');
+      expect([{ resource: HomerSimpson }, ...Array(4).fill({ resourceType: 'Patient' })].length).toBe(5);
+      expect(element.textContent).toBe('1-1 of 1');
+    });
     test('Single Page', async () => {
       const props: SearchControlProps = {
         search,

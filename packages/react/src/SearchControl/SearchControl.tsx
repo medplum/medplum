@@ -592,7 +592,7 @@ function getStart(search: SearchRequest, lastResult: Bundle): number {
 }
 
 function getEnd(search: SearchRequest, lastResult: Bundle): number {
-  return getStart(search, lastResult) + (lastResult.entry?.length ?? 0) - 1;
+  return Math.max(getStart(search, lastResult) + (lastResult.entry?.length ?? 0) - 1, 0);
 }
 
 function getTotal(search: SearchRequest, lastResult: Bundle): number {
