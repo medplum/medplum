@@ -117,12 +117,18 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
+  const total = search.total ?? 'accurate';
+
   const loadResults = useCallback(
     (options?: RequestInit) => {
       setOutcome(undefined);
 
       medplum
-        .search(search.resourceType as ResourceType, formatSearchQuery({ ...search, fields: undefined }), options)
+        .search(
+          search.resourceType as ResourceType,
+          formatSearchQuery({ ...search, total, fields: undefined }),
+          options
+        )
         .then((response) => {
           setState({ ...stateRef.current, searchResponse: response });
           if (onLoad) {
@@ -134,7 +140,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setOutcome(reason);
         });
     },
-    [medplum, search, onLoad]
+    [medplum, search, total, onLoad]
   );
 
   const refreshResults = useCallback(() => {
