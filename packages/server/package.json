@@ -86,7 +86,7 @@
     "@types/node": "20.11.30",
     "@types/node-fetch": "2.6.11",
     "@types/nodemailer": "6.4.14",
-    "@types/pg": "8.11.4",
+    "@types/pg": "8.11.2",
     "@types/pg-cursor": "2.7.2",
     "@types/set-cookie-parser": "2.4.7",
     "@types/supertest": "6.0.2",
