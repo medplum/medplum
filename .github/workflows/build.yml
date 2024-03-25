@@ -216,7 +216,7 @@ jobs:
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Upload code coverage
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 }}
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         uses: actions/upload-artifact@v4
         with:
           name: medplum-code-coverage
