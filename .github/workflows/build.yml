@@ -147,9 +147,11 @@ jobs:
       matrix:
         node-version: [18, 20]
         pg-version: [12, 14, 16]
+        redis-version: [6, 7]
     env:
       NODE_VERSION: ${{ matrix.node-version }}
       PG_VERSION: ${{ matrix.pg-version }}
+      REDIS_VERSION: ${{ matrix.redis-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     services:
       postgres:
@@ -166,7 +168,7 @@ jobs:
         ports:
           - 5432/tcp
       redis:
-        image: redis:6
+        image: redis:${{ matrix.redis-version }}
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
