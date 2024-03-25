@@ -58,7 +58,6 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger, getRequestContext } from '../context';
 import { getDatabasePool } from '../database';
-import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -188,6 +187,8 @@ const lookupTables: LookupTable[] = [
  */
 export class Repository extends BaseRepository implements FhirRepository<PoolClient>, Disposable {
   private readonly context: RepositoryContext;
+  private conn?: PoolClient;
+  private transactionDepth = 0;
   private closed = false;
 
   constructor(context: RepositoryContext) {
@@ -1840,32 +1841,105 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    */
   getDatabaseClient(): Pool | PoolClient {
     this.assertNotClosed();
-    return getDatabasePool();
+    // If in a transaction, then use the transaction client.
+    // Otherwise, use the pool client.
+    return this.conn ?? getDatabasePool();
+  }
+
+  /**
+   * Returns a proper database connection.
+   * Unlike getDatabaseClient(), this method always returns a PoolClient.
+   * @returns Database connection.
+   */
+  private async getConnection(): Promise<PoolClient> {
+    this.assertNotClosed();
+    if (!this.conn) {
+      this.conn = await getDatabasePool().connect();
+    }
+    return this.conn;
+  }
+
+  /**
+   * Releases the database connection.
+   * Include an error to remove the connection from the pool.
+   * See: https://github.com/brianc/node-postgres/blob/master/packages/pg-pool/index.js#L333
+   * @param err - Optional error to remove the connection from the pool.
+   */
+  private releaseConnection(err?: boolean | Error): void {
+    if (this.conn) {
+      this.conn.release(err);
+      this.conn = undefined;
+    }
   }
 
   async withTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
-    const conn = await getDatabasePool().connect();
     try {
-      await conn.query('BEGIN');
-      const result = await callback(conn);
-      await conn.query('COMMIT');
-      conn.release();
+      const client = await this.beginTransaction();
+      const result = await callback(client);
+      await this.commitTransaction();
       return result;
-    } catch (err: any) {
-      globalLogger.error('Transaction error', err);
+    } catch (err) {
       const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(err), err);
-      try {
-        await conn.query('ROLLBACK');
-      } catch (err2: any) {
-        globalLogger.error('Rollback error', err2);
-      }
-      conn.release(err);
+      await this.rollbackTransaction(operationOutcomeError);
       throw operationOutcomeError;
+    } finally {
+      this.endTransaction();
+    }
+  }
+
+  private async beginTransaction(): Promise<PoolClient> {
+    this.assertNotClosed();
+    this.transactionDepth++;
+    const conn = await this.getConnection();
+    if (this.transactionDepth === 1) {
+      await conn.query('BEGIN');
+    } else {
+      await conn.query('SAVEPOINT sp' + this.transactionDepth);
+    }
+    return conn;
+  }
+
+  private async commitTransaction(): Promise<void> {
+    this.assertInTransaction();
+    const conn = await this.getConnection();
+    if (this.transactionDepth === 1) {
+      await conn.query('COMMIT');
+    } else {
+      await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
+    }
+  }
+
+  private async rollbackTransaction(error: Error): Promise<void> {
+    this.assertInTransaction();
+    const conn = await this.getConnection();
+    if (this.transactionDepth === 1) {
+      await conn.query('ROLLBACK');
+      this.releaseConnection(error);
+    } else {
+      await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+    }
+  }
+
+  private endTransaction(): void {
+    this.assertInTransaction();
+    this.transactionDepth--;
+    if (this.transactionDepth === 0) {
+      this.releaseConnection();
+    }
+  }
+
+  private assertInTransaction(): void {
+    if (this.transactionDepth <= 0) {
+      throw new Error('Not in transaction');
     }
   }
 
   close(): void {
+    if (this.transactionDepth > 0) {
+      throw new Error('Closing with active transaction');
+    }
     this.assertNotClosed();
+    this.releaseConnection();
     this.closed = true;
   }
 
