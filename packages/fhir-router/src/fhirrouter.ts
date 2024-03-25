@@ -154,6 +154,10 @@ export class FhirRouter extends EventTarget {
     this.router.add('POST', '$graphql', graphqlHandler);
   }
 
+  add(method: HttpMethod, path: string, handler: FhirRouteHandler): void {
+    this.router.add(method, path, handler);
+  }
+
   async handleRequest(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
     const result = this.router.find(req.method, req.pathname);
     if (!result) {

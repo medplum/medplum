@@ -1,15 +1,13 @@
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { asyncWrap } from '../../async';
-import { sendOutcome } from '../outcomes';
-import { Column, Condition, Conjunction, SelectQuery, Expression, Disjunction, Union } from '../sql';
 import { getAuthenticatedContext } from '../../context';
-import { clamp, parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { getDatabasePool } from '../../database';
-import { getOperationDefinition } from './definitions';
-import { abstractProperty, addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
+import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery, Union } from '../sql';
 import { validateCoding } from './codesystemvalidatecode';
+import { getOperationDefinition } from './definitions';
+import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
+import { abstractProperty, addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
 
@@ -30,19 +28,17 @@ type ValueSetExpandParameters = {
 // 3) Optional offset for pagination (default is zero for beginning)
 // 4) Optional count for pagination (default is 10, can be 1-1000)
 
-export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
+export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
 
   let url = params.url;
   if (!url) {
-    sendOutcome(res, badRequest('Missing url'));
-    return;
+    return [badRequest('Missing url')];
   }
 
   const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
-    sendOutcome(res, badRequest('Invalid filter'));
-    return;
+    return [badRequest('Invalid filter')];
   }
 
   const pipeIndex = url.indexOf('|');
@@ -50,7 +46,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     url = url.substring(0, pipeIndex);
   }
 
-  let valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+  const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
 
   let offset = 0;
   if (params.offset) {
@@ -62,21 +58,23 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     count = clamp(params.count, 1, 1000);
   }
 
+  let result: ValueSet;
   if (shouldUseLegacyTable()) {
     const elements = await queryValueSetElements(valueSet, offset, count, filter);
-    await sendOutputParameters(req, res, operation, allOk, {
+    result = {
       resourceType: 'ValueSet',
       url,
       expansion: {
         offset,
         contains: elements,
       },
-    } as ValueSet);
+    } as ValueSet;
   } else {
-    valueSet = await expandValueSet(valueSet, params);
-    await sendOutputParameters(req, res, operation, allOk, valueSet);
+    result = await expandValueSet(valueSet, params);
   }
-});
+
+  return [allOk, buildOutputParameters(operation, result)];
+}
 
 function shouldUseLegacyTable(): boolean {
   const ctx = getAuthenticatedContext();

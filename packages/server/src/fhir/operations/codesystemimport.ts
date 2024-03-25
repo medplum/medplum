@@ -1,13 +1,12 @@
 import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { PoolClient } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
-import { sendOutcome } from '../outcomes';
-import { InsertQuery, SelectQuery } from '../sql';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { findTerminologyResource, parentProperty } from './utils/terminology';
 import { getAuthenticatedContext } from '../../context';
+import { InsertQuery, SelectQuery } from '../sql';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { findTerminologyResource, parentProperty } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -56,10 +55,10 @@ export type CodeSystemImportParameters = {
  * Endpoint - Project resource type
  *   [fhir base]/CodeSystem/$import
  *
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function codeSystemImportHandler(req: Request, res: Response): Promise<void> {
+export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
@@ -70,8 +69,7 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
   } else if (params.system) {
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
   } else {
-    sendOutcome(res, badRequest('No code system specified'));
-    return;
+    return [badRequest('No code system specified')];
   }
 
   try {
@@ -79,10 +77,9 @@ export async function codeSystemImportHandler(req: Request, res: Response): Prom
       await importCodeSystem(db, codeSystem, params.concept, params.property);
     });
   } catch (err) {
-    sendOutcome(res, normalizeOperationOutcome(err));
-    return;
+    return [normalizeOperationOutcome(err)];
   }
-  await sendOutputParameters(req, res, operation, allOk, codeSystem);
+  return [allOk, buildOutputParameters(operation, codeSystem)];
 }
 
 export async function importCodeSystem(

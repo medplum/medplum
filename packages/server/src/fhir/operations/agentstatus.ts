@@ -1,12 +1,10 @@
 import { allOk, badRequest } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
-import { getAgentForRequest } from './agentutils';
-import { sendOutputParameters } from './utils/parameters';
 import { getRedis } from '../../redis';
+import { getAgentForRequest } from './agentutils';
+import { buildOutputParameters } from './utils/parameters';
 
 interface AgentStatusOutput {
   status: string;
@@ -35,15 +33,17 @@ const operation: OperationDefinition = {
  * First reads the agent and makes sure it is valid and the user has access to it.
  * Then tries to get the agent status from Redis.
  * Returns the agent status details as a Parameters resource.
+ *
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export const agentStatusHandler = asyncWrap(async (req: Request, res: Response) => {
+export async function agentStatusHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
 
   // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req, repo);
   if (!agent) {
-    sendOutcome(res, badRequest('Must specify agent ID or identifier'));
-    return;
+    return [badRequest('Must specify agent ID or identifier')];
   }
 
   let output: AgentStatusOutput;
@@ -58,5 +58,5 @@ export const agentStatusHandler = asyncWrap(async (req: Request, res: Response) 
     output = { status: 'unknown' };
   }
 
-  await sendOutputParameters(req, res, operation, allOk, output);
-});
+  return [allOk, buildOutputParameters(operation, output)];
+}

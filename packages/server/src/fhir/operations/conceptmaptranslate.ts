@@ -6,22 +6,22 @@ import {
   badRequest,
   conceptMapTranslate,
 } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { ConceptMap } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { getOperationDefinition } from './definitions';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource } from './utils/terminology';
 
 const operation = getOperationDefinition('ConceptMap', 'translate');
 
-export async function conceptMapTranslateHandler(req: Request, res: Response): Promise<void> {
+export async function conceptMapTranslateHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ConceptMapTranslateParameters>(operation, req);
 
   const map = await lookupConceptMap(params, req.params.id);
 
   const output = conceptMapTranslate(map, params);
-  await sendOutputParameters(req, res, operation, allOk, output);
+  return [allOk, buildOutputParameters(operation, output)];
 }
 
 async function lookupConceptMap(params: ConceptMapTranslateParameters, id?: string): Promise<ConceptMap> {

@@ -1,9 +1,8 @@
-import { accepted, allOk, forbidden, getResourceTypes, Operator } from '@medplum/core';
+import { accepted, allOk, concatUrls, forbidden, getResourceTypes, Operator } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildBinaryIds } from './utils/binary';
@@ -12,14 +11,13 @@ import { buildBinaryIds } from './utils/binary';
  * Handles an expunge request.
  *
  * Endpoint: [fhir base]/[resourceType]/[id]/$expunge
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function expungeHandler(req: Request, res: Response): Promise<void> {
+export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   if (!ctx.login.superAdmin) {
-    sendOutcome(res, forbidden);
-    return;
+    return [forbidden];
   }
 
   const { resourceType, id } = req.params;
@@ -27,15 +25,15 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
   if (everything === 'true') {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(ctx.repo);
-    await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
+    await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
     exec.start(async () => {
       ctx.logger.info('Expunge started', { resourceType, id });
       await new Expunger(ctx.repo, id).expunge();
     });
-    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+    return [accepted(exec.getContentLocation(baseUrl))];
   } else {
     await ctx.repo.expungeResource(resourceType, id);
-    sendOutcome(res, allOk);
+    return [allOk];
   }
 }
 

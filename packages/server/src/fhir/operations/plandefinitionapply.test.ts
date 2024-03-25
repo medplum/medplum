@@ -88,7 +88,7 @@ describe('PlanDefinition apply', () => {
         parameter: [
           {
             name: 'subject',
-            valueReference: createReference(res3.body as Patient),
+            valueString: getReferenceString(res3.body as Patient),
           },
         ],
       });
@@ -135,7 +135,9 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res4.status).toBe(400);
-    expect(res4.text).toEqual('Unsupported content type');
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      "Expected at least 1 value(s) for required input parameter 'subject'"
+    );
   });
 
   test('Incorrect parameters type', async () => {
@@ -158,7 +160,9 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
       });
     expect(res4.status).toBe(400);
-    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Incorrect parameters type');
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      "Expected at least 1 value(s) for required input parameter 'subject'"
+    );
   });
 
   test('Missing subject', async () => {
@@ -182,7 +186,9 @@ describe('PlanDefinition apply', () => {
         parameter: [],
       });
     expect(res4.status).toBe(400);
-    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing subject parameter');
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Expected 1..NaN value(s) for input parameter subject, but 0 provided'
+    );
   });
 
   test('General task', async () => {
@@ -221,7 +227,7 @@ describe('PlanDefinition apply', () => {
         parameter: [
           {
             name: 'subject',
-            valueReference: createReference(res3.body as Patient),
+            valueString: getReferenceString(res3.body as Patient),
           },
         ],
       });

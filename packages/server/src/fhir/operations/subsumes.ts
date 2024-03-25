@@ -1,13 +1,11 @@
-import { Request, Response } from 'express';
-import { asyncWrap } from '../../async';
-import { getOperationDefinition } from './definitions';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
-import { sendOutcome } from '../outcomes';
 import { allOk, badRequest } from '@medplum/core';
-import { findAncestor, findTerminologyResource } from './utils/terminology';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem } from '@medplum/fhirtypes';
-import { Column, SelectQuery } from '../sql';
 import { getAuthenticatedContext } from '../../context';
+import { Column, SelectQuery } from '../sql';
+import { getOperationDefinition } from './definitions';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { findAncestor, findTerminologyResource } from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'subsumes');
 
@@ -21,7 +19,7 @@ type CodeSystemSubsumesParameters = {
 // Implements FHIR Terminology Subsumption testing
 // http://hl7.org/fhir/R4/codesystem-operation-subsumes.html
 
-export const codeSystemSubsumesOperation = asyncWrap(async (req: Request, res: Response) => {
+export async function codeSystemSubsumesOperation(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemSubsumesParameters>(operation, req);
 
   let codeSystem: CodeSystem;
@@ -30,17 +28,15 @@ export const codeSystemSubsumesOperation = asyncWrap(async (req: Request, res: R
   } else if (params.system) {
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, params.version);
   } else {
-    sendOutcome(res, badRequest('No code system specified'));
-    return;
+    return [badRequest('No code system specified')];
   }
 
   if (!params.codeA || !params.codeB) {
-    sendOutcome(res, badRequest('Must specify codeA and codeB parameters'));
-    return;
+    return [badRequest('Must specify codeA and codeB parameters')];
   }
   const outcome = await testSubsumption(codeSystem, params.codeA, params.codeB);
-  await sendOutputParameters(req, res, operation, allOk, { outcome });
-});
+  return [allOk, buildOutputParameters(operation, { outcome })];
+}
 
 export type SubsumptionOutcome = 'equivalent' | 'subsumes' | 'subsumed-by' | 'not-subsumed';
 

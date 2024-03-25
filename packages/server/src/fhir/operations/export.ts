@@ -1,9 +1,8 @@
-import { accepted, getResourceTypes, protectedResourceTypes } from '@medplum/core';
+import { accepted, concatUrls, getResourceTypes, protectedResourceTypes } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Project, ResourceType } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
 import { getPatientResourceTypes } from '../patient';
 import { BulkExporter } from './utils/bulkexporter';
 
@@ -15,11 +14,11 @@ import { BulkExporter } from './utils/bulkexporter';
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html
  * See: https://hl7.org/fhir/R4/async.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function bulkExportHandler(req: Request, res: Response): Promise<void> {
-  await startExport(req, res, 'System');
+export async function bulkExportHandler(req: FhirRequest): Promise<FhirResponse> {
+  return startExport(req, 'System');
 }
 
 /**
@@ -30,14 +29,14 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html#endpoint---all-patients
  * See: https://hl7.org/fhir/R4/async.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function patientExportHandler(req: Request, res: Response): Promise<void> {
-  await startExport(req, res, 'Patient');
+export async function patientExportHandler(req: FhirRequest): Promise<FhirResponse> {
+  return startExport(req, 'Patient');
 }
 
-async function startExport(req: Request, res: Response, exportType: string): Promise<void> {
+async function startExport(req: FhirRequest, exportType: string): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const query = req.query as Record<string, string | undefined>;
@@ -45,13 +44,13 @@ async function startExport(req: Request, res: Response, exportType: string): Pro
   const types = query._type?.split(',');
 
   const exporter = new BulkExporter(ctx.repo, since);
-  const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
+  const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
   exportResources(exporter, ctx.project, types, exportType)
     .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
-  sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
+  return [accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)];
 }
 
 export async function exportResources(

@@ -124,7 +124,9 @@ describe('Measure evaluate-measure', () => {
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res2.status).toBe(400);
-    expect(res2.text).toEqual('Unsupported content type');
+    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      "Expected at least 1 value(s) for required input parameter 'periodStart'"
+    );
   });
 
   test('Unsupported parameters type', async () => {
@@ -146,7 +148,9 @@ describe('Measure evaluate-measure', () => {
         resourceType: 'Patient',
       });
     expect(res2.status).toBe(400);
-    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Incorrect parameters type');
+    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      "Expected at least 1 value(s) for required input parameter 'periodStart'"
+    );
   });
 
   test('Missing period', async () => {
@@ -174,7 +178,9 @@ describe('Measure evaluate-measure', () => {
         ],
       });
     expect(res2.status).toBe(400);
-    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing periodStart parameter');
+    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Expected 1 value(s) for input parameter periodStart, but 0 provided'
+    );
 
     const res3 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
@@ -190,6 +196,8 @@ describe('Measure evaluate-measure', () => {
         ],
       });
     expect(res3.status).toBe(400);
-    expect((res3.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing periodEnd parameter');
+    expect((res3.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Expected 1 value(s) for input parameter periodEnd, but 0 provided'
+    );
   });
 });

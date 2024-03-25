@@ -9,16 +9,14 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { ContentType, allOk, badRequest, getReferenceString, sleep } from '@medplum/core';
+import { ContentType, allOk, badRequest, getReferenceString, normalizeOperationOutcome, sleep } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
-import { Request, Response } from 'express';
 import JSZip from 'jszip';
 import { Readable } from 'stream';
-import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
-import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 import { isBotEnabled } from './execute';
@@ -101,15 +99,14 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 }
 `;
 
-export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
+export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
 
   // Validate that the request body has a code property
   const code = req.body.code as string | undefined;
   if (!code) {
-    sendOutcome(res, badRequest('Missing code'));
-    return;
+    return [badRequest('Missing code')];
   }
 
   // First read the bot as the user to verify access
@@ -120,8 +117,7 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   const bot = await systemRepo.readResource<Bot>('Bot', id);
 
   if (!(await isBotEnabled(bot))) {
-    sendOutcome(res, badRequest('Bots not enabled'));
-    return;
+    return [badRequest('Bots not enabled')];
   }
 
   try {
@@ -150,11 +146,11 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
       await deployLambda(updatedBot, code);
     }
 
-    sendOutcome(res, allOk);
+    return [allOk];
   } catch (err) {
-    sendOutcome(res, badRequest((err as Error).message));
+    return [normalizeOperationOutcome(err)];
   }
-});
+}
 
 async function deployLambda(bot: Bot, code: string): Promise<void> {
   const ctx = getRequestContext();
