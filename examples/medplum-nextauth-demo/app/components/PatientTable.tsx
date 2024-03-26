@@ -10,7 +10,7 @@ type PatientTableProps = {
 
 export const PatientTable: React.FC<PatientTableProps> = ({ patients }) => {
   const rows = patients.entry?.map((item): any => (
-    <Table.Tr key={patients.id}>
+    <Table.Tr key={item.resource?.id}>
       <Table.Td>{item.resource?.id}</Table.Td>
       <Table.Td>{item.resource?.name?.[0].given?.[0]}</Table.Td>
       <Table.Td>{item.resource?.name?.[0].family}</Table.Td>
