@@ -24,6 +24,11 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
+  if (pcr.type === 'verify-email') {
+    sendOutcome(res, badRequest('Invalid request type'));
+    return;
+  }
+
   if (!timingSafeEqualStr(pcr.secret as string, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;

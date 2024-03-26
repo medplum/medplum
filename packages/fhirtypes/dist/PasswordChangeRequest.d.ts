@@ -46,7 +46,7 @@ export interface PasswordChangeRequest {
   /**
    * The type of password change request (invite or reset).
    */
-  type?: 'invite' | 'reset';
+  type?: 'invite' | 'verify-email' | 'reset';
 
   /**
    * The user requesting the password change.

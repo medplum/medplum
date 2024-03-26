@@ -595,6 +595,11 @@
             "definition": "Initial user invite"
           },
           {
+            "code": "verify-email",
+            "display": "Verify email",
+            "definition": "Email verification of a user"
+          },
+          {
             "code": "reset",
             "display": "Reset",
             "definition": "User requested password reset"
