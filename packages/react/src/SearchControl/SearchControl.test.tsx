@@ -855,7 +855,6 @@ describe('SearchControl', () => {
       });
       expect(await screen.findByText('No results')).toBeInTheDocument();
       const element = screen.getByTestId('count-display');
-      expect([{ resource: HomerSimpson }, ...Array(4).fill({ resourceType: 'Patient' })].length).toBe(5);
       expect(element.textContent).toBe('0-0 of 0');
     });
     test('One result', async () => {
@@ -871,7 +870,6 @@ describe('SearchControl', () => {
       });
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       const element = screen.getByTestId('count-display');
-      expect([{ resource: HomerSimpson }, ...Array(4).fill({ resourceType: 'Patient' })].length).toBe(5);
       expect(element.textContent).toBe('1-1 of 1');
     });
     test('Single Page', async () => {
