@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { ProfileResource, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
-import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
+import { IconArrowRight } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import classes from './BaseChat.module.css';
@@ -45,13 +45,11 @@ export interface BaseChatProps {
   readonly query: string;
   readonly sendMessage: (content: string) => void;
   readonly onMessageReceived?: (message: Communication) => void;
-  readonly open?: boolean;
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
-  const { title, communications, setCommunications, query, sendMessage, open, onMessageReceived } = props;
+  const { title, communications, setCommunications, query, sendMessage, onMessageReceived } = props;
   const medplum = useMedplum();
-  const [opened, setOpened] = useState(open ?? false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
@@ -60,10 +58,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     () => (profile ? getReferenceString(medplum.getProfile() as ProfileResource) : ''),
     [profile, medplum]
   );
-
-  useEffect(() => {
-    setOpened((prevVal) => open ?? prevVal);
-  }, [open]);
 
   useSubscription(`Communication?${query}`, (bundle: Bundle) => {
     const communication = bundle.entry?.[1]?.resource as Communication;
@@ -145,104 +139,70 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     return null;
   }
 
-  if (opened) {
-    return (
-      <>
-        <div className={classes.chatContainer}>
-          <Paper className={classes.chatPaper} shadow="xl" p={0} radius="md" withBorder>
-            <Title order={2} className={classes.chatTitle}>
-              {title}
-            </Title>
-            <div className={classes.chatBody}>
-              <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
-                {communications.map((c, i) => {
-                  const prevCommunication = i > 0 ? communications[i - 1] : undefined;
-                  const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
-                  const currCommTime = parseSentTime(c);
-                  return (
-                    <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
-                      {(!prevCommTime || currCommTime !== prevCommTime) && (
-                        <div style={{ textAlign: 'center' }}>{currCommTime}</div>
-                      )}
-                      {c.sender?.reference === profileRefStr ? (
-                        <Group justify="flex-end" gap="xs" mb="sm">
-                          <ChatBubble
-                            alignment="right"
-                            communication={c}
-                            showDelivered={!!c.received && c.id === myLastDeliveredId}
-                          />
-                          <Avatar radius="xl" color="orange" />
-                        </Group>
-                      ) : (
-                        <Group align="flex-start" gap="xs" mb="sm">
-                          <Avatar radius="xl" color="teal" />
-                          <ChatBubble alignment="left" communication={c} />
-                        </Group>
-                      )}
-                    </Stack>
-                  );
-                })}
-              </ScrollArea>
-            </div>
-            <div className={classes.chatInputContainer}>
-              <Form onSubmit={sendMessageInternal}>
-                <TextInput
-                  ref={inputRef}
-                  name="message"
-                  placeholder="Type a message..."
-                  radius="xl"
-                  rightSectionWidth={42}
-                  rightSection={
-                    <ActionIcon
-                      type="submit"
-                      size="1.5rem"
-                      radius="xl"
-                      color="blue"
-                      variant="filled"
-                      aria-label="Send message"
-                    >
-                      <IconArrowRight size="1rem" stroke={1.5} />
-                    </ActionIcon>
-                  }
-                />
-              </Form>
-            </div>
-          </Paper>
-        </div>
-        <div className={classes.iconContainer}>
-          <ActionIcon
-            className={classes.icon}
-            color="blue"
-            size="lg"
-            radius="xl"
-            variant="outline"
-            onClick={() => setOpened(false)}
-            aria-label="Close chat"
-          >
-            <IconChevronDown size="1.625rem" />
-          </ActionIcon>
-        </div>
-      </>
-    );
-  }
-
   return (
-    <div className={classes.iconContainer}>
-      <ActionIcon
-        className={classes.icon}
-        color="blue"
-        size="lg"
-        radius="xl"
-        variant="outline"
-        onClick={() => {
-          setOpened(true);
-          scrollToBottomRef.current = true;
-        }}
-        aria-label="Open chat"
-      >
-        <IconMessage size="1.625rem" />
-      </ActionIcon>
-    </div>
+    <>
+      <div className={classes.chatContainer}>
+        <Paper className={classes.chatPaper} shadow="xl" p={0} radius="md" withBorder>
+          <Title order={2} className={classes.chatTitle}>
+            {title}
+          </Title>
+          <div className={classes.chatBody}>
+            <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
+              {communications.map((c, i) => {
+                const prevCommunication = i > 0 ? communications[i - 1] : undefined;
+                const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
+                const currCommTime = parseSentTime(c);
+                return (
+                  <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
+                    {(!prevCommTime || currCommTime !== prevCommTime) && (
+                      <div style={{ textAlign: 'center' }}>{currCommTime}</div>
+                    )}
+                    {c.sender?.reference === profileRefStr ? (
+                      <Group justify="flex-end" gap="xs" mb="sm">
+                        <ChatBubble
+                          alignment="right"
+                          communication={c}
+                          showDelivered={!!c.received && c.id === myLastDeliveredId}
+                        />
+                        <Avatar radius="xl" color="orange" />
+                      </Group>
+                    ) : (
+                      <Group align="flex-start" gap="xs" mb="sm">
+                        <Avatar radius="xl" color="teal" />
+                        <ChatBubble alignment="left" communication={c} />
+                      </Group>
+                    )}
+                  </Stack>
+                );
+              })}
+            </ScrollArea>
+          </div>
+          <div className={classes.chatInputContainer}>
+            <Form onSubmit={sendMessageInternal}>
+              <TextInput
+                ref={inputRef}
+                name="message"
+                placeholder="Type a message..."
+                radius="xl"
+                rightSectionWidth={42}
+                rightSection={
+                  <ActionIcon
+                    type="submit"
+                    size="1.5rem"
+                    radius="xl"
+                    color="blue"
+                    variant="filled"
+                    aria-label="Send message"
+                  >
+                    <IconArrowRight size="1rem" stroke={1.5} />
+                  </ActionIcon>
+                }
+              />
+            </Form>
+          </div>
+        </Paper>
+      </div>
+    </>
   );
 }
 

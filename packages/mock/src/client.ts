@@ -163,6 +163,7 @@ export class MockClient extends MedplumClient {
 
   setProfile(profile: ProfileResource | undefined): void {
     this.profile = profile;
+    this.dispatchEvent({ type: 'change' });
   }
 
   getActiveLogin(): LoginState | undefined {

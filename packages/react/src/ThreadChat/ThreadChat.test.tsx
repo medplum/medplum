@@ -155,7 +155,7 @@ describe('ThreadChat', () => {
   }
 
   test('Displays existing and incoming thread messages', async () => {
-    const threadProps = { title: 'Test Chat', thread: defaultThread, open: true } satisfies ThreadChatProps;
+    const threadProps = { title: 'Test Chat', thread: defaultThread } satisfies ThreadChatProps;
     await setup(threadProps, defaultMedplum);
 
     // Displays existing messages
@@ -201,7 +201,7 @@ describe('ThreadChat', () => {
       }),
     ]);
 
-    const threadProps = { title: 'Test Chat', thread, open: true } satisfies ThreadChatProps;
+    const threadProps = { title: 'Test Chat', thread } satisfies ThreadChatProps;
     await setup(threadProps, defaultMedplum);
 
     // Displays existing messages
@@ -268,7 +268,7 @@ describe('ThreadChat', () => {
       }),
     ]);
 
-    const threadProps = { title: 'Test Chat', thread, open: true } satisfies ThreadChatProps;
+    const threadProps = { title: 'Test Chat', thread } satisfies ThreadChatProps;
     await setup(threadProps, defaultMedplum);
 
     // Displays existing messages
@@ -319,7 +319,7 @@ describe('ThreadChat', () => {
       }),
     ]);
 
-    const threadProps = { title: 'Test Chat', thread, open: true } satisfies ThreadChatProps;
+    const threadProps = { title: 'Test Chat', thread } satisfies ThreadChatProps;
     await setup(threadProps, defaultMedplum);
 
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
@@ -365,7 +365,7 @@ describe('ThreadChat', () => {
       }),
     ]);
 
-    const threadProps1 = { title: 'Test Chat', thread: thread1, open: true } satisfies ThreadChatProps;
+    const threadProps1 = { title: 'Test Chat', thread: thread1 } satisfies ThreadChatProps;
     const { rerender } = await setup(threadProps1, defaultMedplum);
 
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
@@ -374,7 +374,7 @@ describe('ThreadChat', () => {
       screen.getByText("Sorry doc, I can't hear you over the Geiger counter at the plant. Can you call back later?")
     ).toBeInTheDocument();
 
-    const threadProps2 = { title: 'Test Chat', thread: thread2, open: true } satisfies ThreadChatProps;
+    const threadProps2 = { title: 'Test Chat', thread: thread2 } satisfies ThreadChatProps;
     await rerender(threadProps2);
 
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
@@ -393,7 +393,6 @@ describe('ThreadChat', () => {
     const threadProps = {
       title: 'Test Chat',
       thread,
-      open: true,
       onMessageSent,
     } satisfies ThreadChatProps;
 
@@ -426,7 +425,6 @@ describe('ThreadChat', () => {
     const threadProps = {
       title: 'Test Chat',
       thread,
-      open: true,
     } satisfies ThreadChatProps;
 
     await setup(threadProps, medplum);
