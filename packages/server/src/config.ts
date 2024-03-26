@@ -53,6 +53,9 @@ export interface MedplumServerConfig {
   accurateCountThreshold: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
 
+  /** Temporary feature flag, to be removed */
+  chainedSearchWithReferenceTables?: boolean;
+
   /** @deprecated */
   auditEventLogGroup?: string;
 

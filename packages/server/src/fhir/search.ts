@@ -23,7 +23,6 @@ import {
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
-  serverError,
   SortRule,
   splitN,
   subsetResource,
@@ -67,6 +66,7 @@ const maxSearchResults = 1000;
 
 export interface ChainedSearchLink {
   resourceType: string;
+  code: string;
   details: SearchParameterDetails;
   reverse?: boolean;
   filter?: Filter;
@@ -576,7 +576,7 @@ function buildSearchFilterExpression(
   resourceType: ResourceType,
   table: string,
   filter: Filter
-): Expression | undefined {
+): Expression {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
   }
@@ -973,6 +973,91 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
 
+  if (getConfig().chainedSearchWithReferenceTables) {
+    buildChainedSearchUsingReferenceTable(selectQuery, resourceType, param);
+  } else {
+    buildChainedSearchUsingReferenceStrings(selectQuery, resourceType, param);
+  }
+}
+
+/**
+ * Builds a chained search using reference tables.
+ * This is the preferred technique for chained searches.
+ * However, reference tables were only populated after Medplum version 2.2.0.
+ * Self-hosted servers need to run a full re-index before this technique can be used.
+ * @param selectQuery - The select query builder.
+ * @param resourceType - The top level resource type.
+ * @param param - The chained search parameter.
+ */
+function buildChainedSearchUsingReferenceTable(
+  selectQuery: SelectQuery,
+  resourceType: string,
+  param: ChainedSearchParameter
+): void {
+  let currentResourceType = resourceType;
+  let currentTable = resourceType;
+  for (const link of param.chain) {
+    let referenceTableName: string;
+    let currentColumnName: string;
+    let nextColumnName;
+
+    if (link.reverse) {
+      referenceTableName = `${link.resourceType}_References`;
+      currentColumnName = 'targetId';
+      nextColumnName = 'resourceId';
+    } else {
+      referenceTableName = `${currentResourceType}_References`;
+      currentColumnName = 'resourceId';
+      nextColumnName = 'targetId';
+    }
+
+    const referenceTableAlias = selectQuery.getNextJoinAlias();
+    selectQuery.innerJoin(
+      referenceTableName,
+      referenceTableAlias,
+      new Conjunction([
+        new Condition(new Column(referenceTableAlias, currentColumnName), '=', new Column(currentTable, 'id')),
+        new Condition(new Column(referenceTableAlias, 'code'), '=', link.code),
+      ])
+    );
+
+    const nextTableAlias = selectQuery.getNextJoinAlias();
+    selectQuery.innerJoin(
+      link.resourceType,
+      nextTableAlias,
+      new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
+    );
+
+    if (link.filter) {
+      const endCondition = buildSearchFilterExpression(
+        selectQuery,
+        link.resourceType as ResourceType,
+        nextTableAlias,
+        link.filter
+      );
+      selectQuery.whereExpr(endCondition);
+    }
+
+    currentTable = nextTableAlias;
+    currentResourceType = link.resourceType;
+  }
+}
+
+/**
+ * Builds a chained search using reference strings.
+ * The query parses a `resourceType/id` formatted string in SQL and converts the id to a UUID.
+ * This is very slow and inefficient, but it is the only way to support chained searches with reference strings.
+ * This technique is deprecated and intended for removal.
+ * The preferred technique is to use reference tables.
+ * @param selectQuery - The select query builder.
+ * @param resourceType - The top level resource type.
+ * @param param - The chained search parameter.
+ */
+function buildChainedSearchUsingReferenceStrings(
+  selectQuery: SelectQuery,
+  resourceType: string,
+  param: ChainedSearchParameter
+): void {
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
@@ -987,9 +1072,6 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
         nextTable,
         link.filter
       );
-      if (!endCondition) {
-        throw new OperationOutcomeError(serverError(new Error(`Failed to build terminal filter for chained search`)));
-      }
       selectQuery.whereExpr(endCondition);
     }
 
@@ -1071,7 +1153,7 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
     throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
   }
   const details = getSearchParameterDetails(currentResourceType, searchParam);
-  return { resourceType, details };
+  return { resourceType, code, details };
 }
 
 function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
@@ -1085,7 +1167,7 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
     );
   }
   const details = getSearchParameterDetails(resourceType, searchParam);
-  return { resourceType, details, reverse: true };
+  return { resourceType, code, details, reverse: true };
 }
 
 function splitChainedSearch(chain: string): string[] {
