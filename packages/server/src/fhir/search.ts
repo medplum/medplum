@@ -728,7 +728,7 @@ function buildFilterParameterComparison(
     code: filterComparison.path,
     operator: filterComparison.operator as Operator,
     value: filterComparison.value,
-  }) as Expression;
+  });
 }
 
 /**
