@@ -672,6 +672,16 @@ describe('MockClient', () => {
     expect(homer.name[0].family).toEqual('Simpson');
   });
 
+  test('setProfile()', async () => {
+    const medplum = new MockClient({ profile: null });
+    expect(medplum.getProfile()).toBeUndefined();
+    const callback = jest.fn();
+    medplum.addEventListener('change', callback);
+    medplum.setProfile(DrAliceSmith);
+    expect(medplum.getProfile()).toEqual(DrAliceSmith);
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
   test('pushToAgent() -- Valid IP', async () => {
     const medplum = new MockClient();
     const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
