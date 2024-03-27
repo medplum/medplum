@@ -100,7 +100,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       return;
     }
     if (chatBodyRef.current.clientHeight !== scrollAreaHeight) {
-      console.log(chatBodyRef.current.clientHeight);
       setScrollAreaHeight(chatBodyRef.current.clientHeight);
     }
   });
