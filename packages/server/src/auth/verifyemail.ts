@@ -1,5 +1,5 @@
 import { allOk, badRequest, createReference, resolveId } from '@medplum/core';
-import { PasswordChangeRequest, Reference, User } from '@medplum/fhirtypes';
+import { Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
@@ -16,10 +16,10 @@ export const verifyEmailValidator = makeValidationMiddleware([
 
 export async function verifyEmailHandler(req: Request, res: Response): Promise<void> {
   const systemRepo = getSystemRepo();
-  const pcr = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
+  const pcr = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
 
   if (pcr.type !== 'verify-email') {
-    sendOutcome(res, badRequest('Invalid request type'));
+    sendOutcome(res, badRequest('Invalid user security request type'));
     return;
   }
 
@@ -37,7 +37,7 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 
   await systemRepo.withTransaction(async () => {
     await systemRepo.updateResource<User>({ ...user, emailVerified: true });
-    await systemRepo.updateResource<PasswordChangeRequest>({ ...pcr, used: true });
+    await systemRepo.updateResource<UserSecurityRequest>({ ...pcr, used: true });
   });
 
   sendOutcome(res, allOk);
@@ -53,8 +53,8 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 export async function createVerifyEmailRequest(user: User, redirectUri?: string): Promise<string> {
   // Create the verify email request
   const systemRepo = getSystemRepo();
-  const pcr = await systemRepo.createResource<PasswordChangeRequest>({
-    resourceType: 'PasswordChangeRequest',
+  const pcr = await systemRepo.createResource<UserSecurityRequest>({
+    resourceType: 'UserSecurityRequest',
     meta: {
       project: resolveId(user.project),
     },

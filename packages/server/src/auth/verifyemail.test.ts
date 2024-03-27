@@ -1,14 +1,31 @@
-import { Operator, SearchRequest } from '@medplum/core';
+import { Operator, SearchRequest, createReference, resolveId } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { getSystemRepo } from '../fhir/repo';
-import { PasswordChangeRequest, User } from '@medplum/fhirtypes';
-import { createVerifyEmailRequest } from './verifyemail';
+import { Repository, getSystemRepo } from '../fhir/repo';
+import { User, UserSecurityRequest } from '@medplum/fhirtypes';
+import { generateSecret } from '../oauth/keys';
 
 const app = express();
+
+export async function createVerifyEmailRequest(
+  repo: Repository,
+  user: User,
+  redirectUri?: string
+): Promise<UserSecurityRequest> {
+  return repo.createResource<UserSecurityRequest>({
+    resourceType: 'UserSecurityRequest',
+    meta: {
+      project: resolveId(user.project),
+    },
+    type: 'verify-email',
+    user: createReference(user),
+    secret: generateSecret(16),
+    redirectUri,
+  });
+}
 
 describe('Verify email', () => {
   beforeAll(async () => {
@@ -34,42 +51,30 @@ describe('Verify email', () => {
       expect(user.emailVerified).not.toEqual(true);
 
       const systemRepo = getSystemRepo();
-      const searchRequest: SearchRequest<PasswordChangeRequest> = {
-        resourceType: 'PasswordChangeRequest',
+      const searchRequest: SearchRequest<UserSecurityRequest> = {
+        resourceType: 'UserSecurityRequest',
         filters: [{ code: 'user', operator: Operator.EQUALS, value: `User/${user.id}` }],
         fields: ['id', 'type'],
       };
 
       const beforeResult = await systemRepo.searchResources(searchRequest);
-      expect(beforeResult.length).toBe(1);
-      expect(beforeResult[0].type).toBe('invite');
+      expect(beforeResult.filter((pcr) => pcr.type === 'verify-email').length).toBe(0);
 
-      // TODO - this is the hand-wavy part right now; how should this PasswordChangeRequest actually be
-      // created? Does there need to be a new endpoint for making a PCR(type = 'verify-email')? Or should
-      // one be created as part of the /auth/newpatient?
-      const verifyUrl = await createVerifyEmailRequest(user, 'http://example.com/verify-email-redirect');
-      expect(verifyUrl).toBeDefined();
+      const usr = await createVerifyEmailRequest(systemRepo, user, 'http://example.com/verify-email-redirect');
 
       const afterCreateResult = await systemRepo.searchResources(searchRequest);
-      const verifyEmailPCRs = afterCreateResult.filter((pcr) => pcr.type === 'verify-email');
-      expect(verifyEmailPCRs.length).toBe(1);
-      const pcr = verifyEmailPCRs[0] as PasswordChangeRequest;
-
-      // http://localhost:3000/verify-email/6dc1d389-2066-480b-bcc4-dbf0115eba32/fd82acd3384220f163f6356dbe40a26a
-      // console.log('Verify URL:', verifyUrl);
-      const paths = verifyUrl.split('/');
-      const id = paths[paths.length - 2];
-      const secret = paths[paths.length - 1];
-      expect(pcr.id).toEqual(id);
-      expect(pcr.secret).toEqual(secret);
+      expect(afterCreateResult.filter((pcr) => pcr.type === 'verify-email').length).toBe(1);
 
       const res = await request(app).post('/auth/verifyemail').type('json').send({
-        id,
-        secret,
+        id: usr.id,
+        secret: usr.secret,
       });
       expect(res.status).toBe(200);
 
-      const afterVerifyResult = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', id);
+      const afterVerifyResult = await systemRepo.readResource<UserSecurityRequest>(
+        'UserSecurityRequest',
+        usr.id as string
+      );
       expect(afterVerifyResult.used).toBe(true);
 
       const userAfter = await systemRepo.readResource<User>('User', user.id);
