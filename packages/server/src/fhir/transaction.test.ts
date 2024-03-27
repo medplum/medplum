@@ -82,7 +82,7 @@ describe('FHIR Repo', () => {
               details: {
                 text: 'Invalid additional property "foo"',
               },
-              expression: ['foo'],
+              expression: ['Patient.foo'],
             },
           ],
         });
@@ -213,7 +213,7 @@ describe('FHIR Repo', () => {
                 details: {
                   text: 'Invalid additional property "foo"',
                 },
-                expression: ['foo'],
+                expression: ['Patient.foo'],
               },
             ],
           });
