@@ -17,7 +17,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
     // spread these unused props so they don't get passed to ValueSetAutocomplete in `rest`
     outcome: _outcome,
     path: _path,
-    indexedPath: _indexedPath,
+    expression: _expression,
     ...rest
   } = props;
   const [value, setValue] = useState<CodeableConcept | undefined>(defaultValue);

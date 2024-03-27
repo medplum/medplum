@@ -89,7 +89,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                   max={slice.max}
                   binding={slice.binding}
                   path={props.path}
-                  indexedPath={undefined /* `indexedPath` not supported in slices */}
+                  expression={undefined /* `expression` not supported in slices */}
                 />
               </div>
               {values.length > slice.min && (
