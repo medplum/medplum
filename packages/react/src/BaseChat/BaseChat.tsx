@@ -4,7 +4,7 @@ import { ProfileResource, getReferenceString, normalizeErrorString } from '@medp
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import classes from './BaseChat.module.css';
 
@@ -53,7 +53,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const medplum = useMedplum();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
+  const [scrollAreaHeight, setScrollAreaHeight] = useState(0);
 
   const profileRefStr = useMemo<string>(
     () => (profile ? getReferenceString(medplum.getProfile() as ProfileResource) : ''),
@@ -90,6 +92,16 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     if (profile?.id !== latestProfile?.id) {
       setProfile(latestProfile);
       setCommunications([]);
+    }
+  });
+
+  useLayoutEffect(() => {
+    if (!chatBodyRef.current) {
+      return;
+    }
+    if (chatBodyRef.current.clientHeight !== scrollAreaHeight) {
+      console.log(chatBodyRef.current.clientHeight);
+      setScrollAreaHeight(chatBodyRef.current.clientHeight);
     }
   });
 
@@ -144,71 +156,68 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   }
 
   return (
-    <div className={classes.chatContainer}>
-      <Paper className={classes.chatPaper} shadow="xl" p={0} radius="md" withBorder>
-        <Title order={2} className={classes.chatTitle}>
-          {title}
-        </Title>
-        <div className={classes.chatBody}>
-          <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
-            {communications.map((c, i) => {
-              const prevCommunication = i > 0 ? communications[i - 1] : undefined;
-              const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
-              const currCommTime = parseSentTime(c);
-              return (
-                <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
-                  {(!prevCommTime || currCommTime !== prevCommTime) && (
-                    <div style={{ textAlign: 'center' }}>{currCommTime}</div>
-                  )}
-                  {c.sender?.reference === profileRefStr ? (
-                    <Group justify="flex-end" gap="xs" mb="sm">
-                      <ChatBubble
-                        alignment="right"
-                        communication={c}
-                        showDelivered={!!c.received && c.id === myLastDeliveredId}
-                      />
-                      <Avatar radius="xl" color="orange" />
-                    </Group>
-                  ) : (
-                    <Group align="flex-start" gap="xs" mb="sm">
-                      <Avatar radius="xl" color="teal" />
-                      <ChatBubble alignment="left" communication={c} />
-                    </Group>
-                  )}
-                </Stack>
-              );
-            })}
-          </ScrollArea>
-        </div>
-        <div className={classes.chatInputContainer}>
-          <Form onSubmit={sendMessageInternal}>
-            <TextInput
-              ref={inputRef}
-              name="message"
-              placeholder={!inputDisabled ? 'Type a message...' : 'Replies are disabled'}
-              radius="xl"
-              rightSectionWidth={42}
-              disabled={inputDisabled}
-              rightSection={
-                !inputDisabled ? (
-                  <ActionIcon
-                    type="submit"
-                    size="1.5rem"
-                    radius="xl"
-                    color="blue"
-                    variant="filled"
-                    aria-label="Send message"
-                  >
-                    <IconArrowRight size="1rem" stroke={1.5} />
-                  </ActionIcon>
-                ) : undefined
-              }
-            />
-          </Form>
-        </div>
-        )
-      </Paper>
-    </div>
+    <Paper className={classes.chatPaper} p={0} radius="md">
+      <Title order={2} className={classes.chatTitle}>
+        {title}
+      </Title>
+      <div className={classes.chatBody} ref={chatBodyRef}>
+        <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} h={scrollAreaHeight}>
+          {communications.map((c, i) => {
+            const prevCommunication = i > 0 ? communications[i - 1] : undefined;
+            const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
+            const currCommTime = parseSentTime(c);
+            return (
+              <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
+                {(!prevCommTime || currCommTime !== prevCommTime) && (
+                  <div style={{ textAlign: 'center' }}>{currCommTime}</div>
+                )}
+                {c.sender?.reference === profileRefStr ? (
+                  <Group justify="flex-end" gap="xs" mb="sm">
+                    <ChatBubble
+                      alignment="right"
+                      communication={c}
+                      showDelivered={!!c.received && c.id === myLastDeliveredId}
+                    />
+                    <Avatar radius="xl" color="orange" />
+                  </Group>
+                ) : (
+                  <Group align="flex-start" gap="xs" mb="sm">
+                    <Avatar radius="xl" color="teal" />
+                    <ChatBubble alignment="left" communication={c} />
+                  </Group>
+                )}
+              </Stack>
+            );
+          })}
+        </ScrollArea>
+      </div>
+      <div className={classes.chatInputContainer}>
+        <Form onSubmit={sendMessageInternal}>
+          <TextInput
+            ref={inputRef}
+            name="message"
+            placeholder={!inputDisabled ? 'Type a message...' : 'Replies are disabled'}
+            radius="xl"
+            rightSectionWidth={42}
+            disabled={inputDisabled}
+            rightSection={
+              !inputDisabled ? (
+                <ActionIcon
+                  type="submit"
+                  size="1.5rem"
+                  radius="xl"
+                  color="blue"
+                  variant="filled"
+                  aria-label="Send message"
+                >
+                  <IconArrowRight size="1rem" stroke={1.5} />
+                </ActionIcon>
+              ) : undefined
+            }
+          />
+        </Form>
+      </div>
+    </Paper>
   );
 }
 

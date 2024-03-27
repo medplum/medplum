@@ -24,7 +24,7 @@ export function ChatModal(props: ChatModalProps): JSX.Element | null {
 
   return (
     <>
-      {opened && children}
+      {opened && <div className={classes.chatModalContainer}>{children}</div>}
       {opened ? (
         <div className={classes.iconContainer}>
           <ActionIcon
