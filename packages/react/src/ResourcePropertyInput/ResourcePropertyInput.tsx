@@ -68,7 +68,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         property={property}
         name={name}
         path={props.path}
-        indexedPath={props.indexedPath}
+        expression={props.expression}
         defaultValue={defaultValue}
         indent={indent}
         onChange={onChange}
@@ -94,7 +94,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         max={property.min}
         binding={property.binding}
         path={props.path}
-        indexedPath={props.indexedPath}
+        expression={props.expression}
       />
     );
   }
@@ -146,7 +146,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         max={props.property.max}
         binding={props.property.binding}
         path={props.property.path}
-        indexedPath={props.indexedPath}
+        expression={props.expression}
       />
     </Group>
   );
@@ -154,7 +154,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
 export interface ElementDefinitionTypeInputProps
-  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'indexedPath' | 'defaultValue' | 'onChange' | 'outcome'> {
+  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'expression' | 'defaultValue' | 'onChange' | 'outcome'> {
   readonly elementDefinitionType: ElementDefinitionType;
   readonly min: number;
   readonly max: number;
@@ -162,7 +162,7 @@ export interface ElementDefinitionTypeInputProps
 }
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const { name, onChange, outcome, binding, path, indexedPath } = props;
+  const { name, onChange, outcome, binding, path, expression } = props;
   const required = props.min !== undefined && props.min > 0;
 
   const propertyType = props.elementDefinitionType.code;
@@ -200,11 +200,11 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   }
 
   function getComplexInputProps(): ComplexTypeInputProps<any> {
-    return { name, defaultValue, onChange, outcome, path, indexedPath };
+    return { name, defaultValue, onChange, outcome, path, expression };
   }
 
   function getPrimitiveInputProps(): PrimitiveTypeInputProps {
-    const error = getErrorsForInput(props.outcome, indexedPath ?? path);
+    const error = getErrorsForInput(props.outcome, expression ?? path);
     return {
       id: name,
       name,

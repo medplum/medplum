@@ -4,7 +4,7 @@ export interface BaseInputProps {
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
   readonly path: string;
   /** TODO */
-  readonly indexedPath?: string;
+  readonly expression?: string;
   /** (optional) OperationOutcome from the last attempted system action*/
   readonly outcome?: OperationOutcome;
 }
@@ -24,10 +24,10 @@ export interface PrimitiveTypeInputProps {
   error: string | undefined;
 }
 
-export function getIndexedPath(path: string, indexedPath: string | undefined, arrayIndex?: number): string {
-  if (indexedPath === undefined) {
+export function getExpression(path: string, expression: string | undefined, arrayIndex?: number): string {
+  if (expression === undefined) {
     return path;
   }
 
-  return arrayIndex === undefined ? indexedPath : `${indexedPath}[${arrayIndex}]`;
+  return arrayIndex === undefined ? expression : `${expression}[${arrayIndex}]`;
 }

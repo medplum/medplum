@@ -56,7 +56,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
     setContactPointWrapper(newValue);
   }
 
-  const errorPath = props.indexedPath ?? path;
+  const errorPath = props.expression ?? path;
 
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">

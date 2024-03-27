@@ -10,7 +10,7 @@ import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
 import classes from './ResourceArrayInput.module.css';
 import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
-import { BaseInputProps, getIndexedPath } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { BaseInputProps, getExpression } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface ResourceArrayInputProps extends BaseInputProps {
   readonly property: InternalSchemaElement;
@@ -80,7 +80,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             slice={slice}
             key={slice.name}
             path={props.path}
-            indexedPath={props.indexedPath}
+            expression={props.expression}
             property={property}
             defaultValue={slicedValues[sliceIndex]}
             onChange={(newValue: any[]) => {
@@ -100,7 +100,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
                 property={props.property}
                 name={props.name + '.' + valueIndex}
                 path={props.path}
-                indexedPath={getIndexedPath(props.path, props.indexedPath, valueIndex)}
+                expression={getExpression(props.path, props.expression, valueIndex)}
                 defaultValue={value}
                 onChange={(newValue: any) => {
                   const newNonSliceValues = [...nonSliceValues];

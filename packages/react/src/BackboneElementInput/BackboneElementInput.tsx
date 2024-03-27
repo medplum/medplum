@@ -44,7 +44,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     contextValue,
     <ElementsInput
       path={props.path}
-      indexedPath={props.indexedPath}
+      expression={props.expression}
       type={type}
       defaultValue={defaultValue}
       onChange={props.onChange}
