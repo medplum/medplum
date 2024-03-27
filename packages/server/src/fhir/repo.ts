@@ -842,7 +842,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resourceType: T['resourceType'],
     callback: (resource: T) => Promise<void>
   ): Promise<void> {
-    const batchSize = 100;
+    const batchSize = 1000;
     let hasMore = true;
     let currentTimestamp: string | undefined = undefined;
 
@@ -866,9 +866,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
           await callback(resource);
 
           const lastUpdated = resource.meta?.lastUpdated as string;
-          if (!currentTimestamp || lastUpdated > currentTimestamp) {
-            currentTimestamp = lastUpdated;
-          }
+          currentTimestamp = lastUpdated;
         }
       }
 
