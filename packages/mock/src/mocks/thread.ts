@@ -13,70 +13,64 @@ export const ExampleThreadHeader = {
   status: 'in-progress',
 } satisfies Communication;
 
-export const ExampleThreadMessages: Communication[] = [
+const baseExampleThreadMessage = {
+  resourceType: 'Communication',
+  status: 'completed',
+  partOf: [createReference(ExampleThreadHeader)],
+} satisfies Communication;
+
+const baseExampleDrAliceMessage = {
+  ...baseExampleThreadMessage,
+  sender: createReference(DrAliceSmith),
+  recipient: [createReference(HomerSimpson)],
+} satisfies Communication;
+
+const baseExampleHomerMessage = {
+  ...baseExampleThreadMessage,
+  sender: createReference(HomerSimpson),
+  recipient: [createReference(DrAliceSmith)],
+} satisfies Communication;
+
+export const ExampleThreadMessages = [
   {
+    ...baseExampleDrAliceMessage,
     id: 'message-1',
-    resourceType: 'Communication',
-    sender: createReference(DrAliceSmith),
-    recipient: [createReference(HomerSimpson)],
-    status: 'completed',
     payload: [{ contentString: 'Hi, Homer. Can you come in to discuss treatment for your radiation poisoning?' }],
     sent: '2024-03-27T06:31:35Z',
     received: '2024-03-27T06:31:39Z',
-    partOf: [createReference(ExampleThreadHeader)],
   },
   {
+    ...baseExampleHomerMessage,
     id: 'message-2',
-    resourceType: 'Communication',
-    sender: createReference(HomerSimpson),
-    recipient: [createReference(DrAliceSmith)],
-    status: 'completed',
     payload: [{ contentString: 'Aww, not again... Doh!' }],
     sent: '2024-03-27T06:32:35Z',
     received: '2024-03-27T06:32:39Z',
-    partOf: [createReference(ExampleThreadHeader)],
   },
   {
+    ...baseExampleDrAliceMessage,
     id: 'message-3',
-    resourceType: 'Communication',
-    sender: createReference(DrAliceSmith),
-    recipient: [createReference(HomerSimpson)],
-    status: 'completed',
     payload: [{ contentString: "Homer, I haven't received your labs yet. Did you go for your lab work?" }],
     sent: '2024-03-27T06:35:35Z',
     received: '2024-03-27T06:36:35Z',
-    partOf: [createReference(ExampleThreadHeader)],
   },
   {
-    id: 'message-4',
-    resourceType: 'Communication',
-    sender: createReference(HomerSimpson),
-    recipient: [createReference(DrAliceSmith)],
-    status: 'completed',
+    ...baseExampleHomerMessage,
     payload: [{ contentString: 'Of course I did! Must be in the mail' }],
     sent: '2024-03-27T06:36:39Z',
     received: '2024-03-27T06:37:39Z',
-    partOf: [createReference(ExampleThreadHeader)],
   },
   {
+    ...baseExampleDrAliceMessage,
     id: 'message-5',
-    resourceType: 'Communication',
-    sender: createReference(DrAliceSmith),
-    recipient: [createReference(HomerSimpson)],
-    status: 'completed',
     payload: [{ contentString: 'Homer, this is for your own wellbeing. You need to take this seriously.' }],
     sent: '2024-03-27T06:37:39Z',
     received: '2024-03-27T06:38:39Z',
-    partOf: [createReference(ExampleThreadHeader)],
   },
   {
+    ...baseExampleHomerMessage,
     id: 'message-6',
-    resourceType: 'Communication',
-    sender: createReference(HomerSimpson),
-    recipient: [createReference(DrAliceSmith)],
     status: 'in-progress',
     payload: [{ contentString: "Well I stopped eating donuts didn't I? Sometimes..." }],
     sent: '2024-03-27T06:38:42Z',
-    partOf: [createReference(ExampleThreadHeader)],
   },
-];
+] satisfies Communication[];
