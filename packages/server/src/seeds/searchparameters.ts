@@ -25,7 +25,12 @@ async function createParameter(systemRepo: Repository, param: SearchParameter): 
   globalLogger.debug('SearchParameter: ' + param.name);
   await systemRepo.createResource<SearchParameter>({
     ...param,
-    meta: { ...param.meta, project: r4ProjectId },
+    meta: {
+      ...param.meta,
+      project: r4ProjectId,
+      lastUpdated: undefined,
+      versionId: undefined,
+    },
     text: undefined,
   });
 }
