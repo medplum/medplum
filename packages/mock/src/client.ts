@@ -41,6 +41,8 @@ import {
   ExampleQuestionnaire,
   ExampleQuestionnaireResponse,
   ExampleSubscription,
+  ExampleThreadHeader,
+  ExampleThreadMessages,
   HomerCommunication,
   HomerDiagnosticReport,
   HomerEncounter,
@@ -598,7 +600,9 @@ export class MockFetchClient {
       ExampleSmartClientApplication,
       TestProject,
       TestProjectMembership,
-    ];
+      ExampleThreadHeader,
+      ...ExampleThreadMessages,
+    ] satisfies Resource[];
 
     for (const resource of defaultResources) {
       await this.repo.createResource(resource);

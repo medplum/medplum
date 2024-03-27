@@ -24,7 +24,7 @@ export const Basic = (): JSX.Element => {
     <Document>
       <div style={{ width: 360, height: 400, margin: '0 auto' }}>
         <BaseChat
-          title={'Chat with Homer Simpson'}
+          title="Chat with Homer Simpson"
           query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
           communications={[
             {
@@ -69,7 +69,7 @@ export const DeliveredTimestamps = (): JSX.Element => {
     <Document>
       <div style={{ width: 360, height: 400, margin: '0 auto' }}>
         <BaseChat
-          title={'Chat with Homer Simpson'}
+          title="Chat with Homer Simpson"
           query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
           communications={[
             {
@@ -119,7 +119,7 @@ export const ChatScrolls = (): JSX.Element => {
     <Document>
       <div style={{ width: 360, height: 400, margin: '0 auto' }}>
         <BaseChat
-          title={'Chat with Homer Simpson'}
+          title="Chat with Homer Simpson"
           query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
           communications={[
             {
@@ -200,7 +200,7 @@ export const InputDisabled = (): JSX.Element => {
     <Document>
       <div style={{ width: 360, height: 400, margin: '0 auto' }}>
         <BaseChat
-          title={'Chat with Homer Simpson'}
+          title="Chat with Homer Simpson"
           query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
           communications={[
             {
