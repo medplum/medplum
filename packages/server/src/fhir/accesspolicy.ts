@@ -113,7 +113,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     }
   }
 
-  if (!membership.access && !membership.accessPolicy) {
+  if ((!membership.access || membership.access.length === 0) && !membership.accessPolicy) {
     // Preserve legacy behavior of null access policy
     // TODO: This should be removed in future release when access policies are required
     resourcePolicies.push({ resourceType: '*' });
