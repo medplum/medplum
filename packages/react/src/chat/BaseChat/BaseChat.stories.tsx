@@ -1,12 +1,12 @@
 import { createReference, getReferenceString } from '@medplum/core';
 import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
-import { Document } from '../Document/Document';
-import { withMockedDate } from '../stories/decorators';
+import { Document } from '../../Document/Document';
+import { withMockedDate } from '../../stories/decorators';
 import { BaseChat } from './BaseChat';
 
 export default {
-  title: 'Medplum/BaseChat',
+  title: 'Medplum/Chat/BaseChat',
   component: BaseChat,
   decorators: [withMockedDate],
 } as Meta;

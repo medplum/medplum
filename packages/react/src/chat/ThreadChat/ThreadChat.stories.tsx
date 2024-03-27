@@ -1,11 +1,11 @@
 import { ExampleThreadHeader } from '@medplum/mock';
 import { Meta } from '@storybook/react';
-import { Document } from '../Document/Document';
-import { withMockedDate } from '../stories/decorators';
+import { Document } from '../../Document/Document';
+import { withMockedDate } from '../../stories/decorators';
 import { ThreadChat } from './ThreadChat';
 
 export default {
-  title: 'Medplum/ThreadChat',
+  title: 'Medplum/Chat/ThreadChat',
   component: ThreadChat,
   decorators: [withMockedDate],
 } as Meta;
