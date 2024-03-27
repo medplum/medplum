@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import classes from './ChatModal.module.css';
 
 export interface ChatModalProps {
-  open?: boolean;
-  children: React.ReactNode;
+  readonly open?: boolean;
+  readonly children: React.ReactNode;
 }
 
 export function ChatModal(props: ChatModalProps): JSX.Element | null {
