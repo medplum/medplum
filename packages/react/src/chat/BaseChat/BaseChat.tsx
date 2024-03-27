@@ -1,12 +1,14 @@
-import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
+import { ActionIcon, DefaultMantineColor, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { ProfileResource, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { ProfileResource, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useSubscription } from '@medplum/react-hooks';
+import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
+import cx from 'clsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
+import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
 
 function parseSentTime(communication: Communication): string {
@@ -163,17 +165,17 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                   <div style={{ textAlign: 'center' }}>{currCommTime}</div>
                 )}
                 {c.sender?.reference === profileRefStr ? (
-                  <Group justify="flex-end" gap="xs" mb="sm">
+                  <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
                     <ChatBubble
                       alignment="right"
                       communication={c}
                       showDelivered={!!c.received && c.id === myLastDeliveredId}
                     />
-                    <Avatar radius="xl" color="orange" />
+                    <ResourceAvatar radius="xl" color="orange" value={c.sender} />
                   </Group>
                 ) : (
-                  <Group align="flex-start" gap="xs" mb="sm">
-                    <Avatar radius="xl" color="teal" />
+                  <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
+                    <ResourceAvatar radius="xl" value={c.sender} />
                     <ChatBubble alignment="left" communication={c} />
                   </Group>
                 )}
@@ -213,24 +215,33 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 }
 
 interface ChatBubbleProps {
+  readonly accentColor?: DefaultMantineColor;
   readonly communication: Communication;
   readonly alignment: 'left' | 'right';
   readonly showDelivered?: boolean;
 }
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
-  const content = props.communication.payload?.[0]?.contentString || '';
-  const seenTime = new Date(props.communication.received ?? -1);
+  const { communication, alignment, showDelivered } = props;
+  const content = communication.payload?.[0]?.contentString || '';
+  const seenTime = new Date(communication.received ?? -1);
+  const senderResource = useResource(communication.sender);
   return (
     <div className={classes.chatBubbleOuterWrap}>
       <div
+        className={cx(classes.chatBubbleName, alignment === 'right' && classes.chatBubbleNameRight)}
+        aria-label="Sender name"
+      >
+        {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
+      </div>
+      <div
         className={
-          props.alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
+          alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
         }
       >
         <div className={classes.chatBubble}>{content}</div>
       </div>
-      {props.showDelivered && (
+      {showDelivered && (
         <div style={{ textAlign: 'right' }}>
           Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
           {seenTime.getMinutes()}

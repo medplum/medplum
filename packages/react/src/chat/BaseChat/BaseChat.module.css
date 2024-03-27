@@ -31,6 +31,7 @@
 
 .chatBubbleOuterWrap {
   max-width: 75%;
+  padding-bottom: 10px;
 }
 
 .chatBubbleRightAlignedInnerWrap {
@@ -59,4 +60,13 @@
     max-width: 280px;
     overflow: auto;
   }
+}
+
+.chatBubbleName {
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.chatBubbleNameRight {
+  text-align: right;
 }
