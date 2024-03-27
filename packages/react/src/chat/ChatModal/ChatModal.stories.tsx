@@ -2,13 +2,13 @@ import { Text } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
+import { Document } from '../../Document/Document';
+import { withMockedDate } from '../../stories/decorators';
 import { BaseChat } from '../BaseChat/BaseChat';
-import { ChatModal } from '../ChatModal/ChatModal';
-import { Document } from '../Document/Document';
-import { withMockedDate } from '../stories/decorators';
+import { ChatModal } from './ChatModal';
 
 export default {
-  title: 'Medplum/ChatModal',
+  title: 'Medplum/Chat/ChatModal',
   component: ChatModal,
   decorators: [withMockedDate],
 } as Meta;
@@ -22,7 +22,7 @@ export const ChatClosed = (): JSX.Element => {
       <Text>Click on the button in the bottom right corner to open the chat!</Text>
       <ChatModal>
         <BaseChat
-          title={'Chat with Homer Simpson'}
+          title="Chat with Homer Simpson"
           query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
           communications={[
             {
@@ -59,7 +59,7 @@ export const ChatOpen = (): JSX.Element => {
   return (
     <ChatModal open={true}>
       <BaseChat
-        title={'Chat with Homer Simpson'}
+        title="Chat with Homer Simpson"
         query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
         communications={[
           {

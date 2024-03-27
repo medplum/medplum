@@ -5,7 +5,7 @@ import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Form } from '../Form/Form';
+import { Form } from '../../Form/Form';
 import classes from './BaseChat.module.css';
 
 function parseSentTime(communication: Communication): string {

@@ -6,7 +6,7 @@ import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../../test-utils/render';
 import { BaseChat, BaseChatProps } from './BaseChat';
 
 type TestComponentProps = Omit<Omit<BaseChatProps, 'communications'>, 'setCommunications'>;
