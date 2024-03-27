@@ -2005,7 +2005,7 @@
       "abstract" : false,
       "type" : "PasswordChangeRequest",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "Password change request for the 'forgot password' flow.",
+      "description" : "DEPRECATED Password change request for the 'forgot password' flow. Use UserSecurityCheck instead.",
       "snapshot" : {
         "element" : [
           {

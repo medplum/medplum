@@ -65,7 +65,7 @@
           {
             "code": "PasswordChangeRequest",
             "display": "PasswordChangeRequest",
-            "definition": "Password change request for the 'forgot password' flow."
+            "definition": "DEPRECATED Password change request for the 'forgot password' flow. Use UserSecurityRequest instead."
           },
           {
             "code": "UserSecurityRequest",
