@@ -34,7 +34,7 @@ export const InputDisabled = (): JSX.Element => {
   return (
     <Document>
       <div style={{ width: 360, height: 400, margin: '0 auto' }}>
-        <ThreadChat title="Chat with Homer Simpson" thread={ExampleThreadHeader} inputDisabled />
+        <ThreadChat thread={ExampleThreadHeader} inputDisabled />
       </div>
     </Document>
   );
