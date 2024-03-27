@@ -8,10 +8,11 @@ export interface ThreadChatProps {
   readonly thread: Communication;
   readonly title?: string;
   readonly onMessageSent?: (message: Communication) => void;
+  readonly inputDisabled?: boolean;
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
-  const { thread, title, onMessageSent } = props;
+  const { thread, title, onMessageSent, inputDisabled } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious<string | undefined>(thread?.id);
@@ -87,6 +88,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
       query={`part-of=Communication/${thread.id as string}`}
       sendMessage={sendMessage}
       onMessageReceived={onMessageReceived}
+      inputDisabled={inputDisabled}
     />
   );
 }
