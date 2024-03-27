@@ -30,7 +30,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { createTestProject, withTestContext } from '../test.setup';
-import { getRepoForLogin } from './accesspolicy';
+import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
@@ -2022,5 +2022,19 @@ describe('AccessPolicy', () => {
 
       const updatedProject = await repo.updateResource(project);
       expect(updatedProject.link).toBeUndefined();
+    }));
+
+  test('Build access policy with empty access array', async () =>
+    withTestContext(async () => {
+      const accessPolicy = await buildAccessPolicy({
+        resourceType: 'ProjectMembership',
+        project: createReference(testProject),
+        user: { reference: 'User/123' },
+        profile: { reference: 'Practitioner/123' },
+        access: [],
+      });
+
+      expect(accessPolicy).toBeDefined();
+      expect(accessPolicy.resource?.find((r) => r.resourceType === '*')).toBeDefined();
     }));
 });
