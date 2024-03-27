@@ -1,10 +1,11 @@
 import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
+import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ProfileResource, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import classes from './BaseChat.module.css';
 
@@ -53,9 +54,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const medplum = useMedplum();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const chatBodyRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
-  const [scrollAreaHeight, setScrollAreaHeight] = useState(0);
 
   const profileRefStr = useMemo<string>(
     () => (profile ? getReferenceString(medplum.getProfile() as ProfileResource) : ''),
@@ -95,14 +94,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     }
   });
 
-  useLayoutEffect(() => {
-    if (!chatBodyRef.current) {
-      return;
-    }
-    if (chatBodyRef.current.clientHeight !== scrollAreaHeight) {
-      setScrollAreaHeight(chatBodyRef.current.clientHeight);
-    }
-  });
+  const [parentRef, parentRect] = useResizeObserver<HTMLDivElement>();
 
   const communicationsRef = useRef<Communication[]>(communications);
   communicationsRef.current = communications;
@@ -159,8 +151,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       <Title order={2} className={classes.chatTitle}>
         {title}
       </Title>
-      <div className={classes.chatBody} ref={chatBodyRef}>
-        <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} h={scrollAreaHeight}>
+      <div className={classes.chatBody} ref={parentRef}>
+        <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} h={parentRect.height}>
           {communications.map((c, i) => {
             const prevCommunication = i > 0 ? communications[i - 1] : undefined;
             const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
