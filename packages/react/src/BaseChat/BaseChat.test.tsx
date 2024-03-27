@@ -277,10 +277,22 @@ describe('BaseChat', () => {
     expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
     expect(screen.getByText('Hello again!')).toBeInTheDocument();
 
-    medplum.setProfile(BartSimpson);
-    await rerender(baseProps);
+    await act(async () => {
+      medplum.setProfile(BartSimpson);
+      await rerender(baseProps);
+    });
 
     expect(screen.queryAllByText('Hello, Medplum!')?.length).toEqual(0);
     expect(screen.queryByText('Hello again!')).not.toBeInTheDocument();
+  });
+
+  test('inputDisabled', async () => {
+    const baseProps = { title: 'Testing', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
+    const { rerender } = await setup({ ...baseProps });
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    await rerender({ ...baseProps, inputDisabled: false });
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    await rerender({ ...baseProps, inputDisabled: true });
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
   });
 });

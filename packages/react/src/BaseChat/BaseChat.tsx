@@ -45,10 +45,11 @@ export interface BaseChatProps {
   readonly query: string;
   readonly sendMessage: (content: string) => void;
   readonly onMessageReceived?: (message: Communication) => void;
+  readonly inputDisabled?: boolean;
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
-  const { title, communications, setCommunications, query, sendMessage, onMessageReceived } = props;
+  const { title, communications, setCommunications, query, sendMessage, onMessageReceived, inputDisabled } = props;
   const medplum = useMedplum();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -70,13 +71,16 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   const sendMessageInternal = useCallback(
     (formData: Record<string, string>) => {
+      if (inputDisabled) {
+        return;
+      }
       if (inputRef.current) {
         inputRef.current.value = '';
       }
       sendMessage(formData.message);
       scrollToBottomRef.current = true;
     },
-    [sendMessage]
+    [inputDisabled, sendMessage]
   );
 
   // Disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
@@ -181,24 +185,28 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
             <TextInput
               ref={inputRef}
               name="message"
-              placeholder="Type a message..."
+              placeholder={!inputDisabled ? 'Type a message...' : 'Replies are disabled'}
               radius="xl"
               rightSectionWidth={42}
+              disabled={inputDisabled}
               rightSection={
-                <ActionIcon
-                  type="submit"
-                  size="1.5rem"
-                  radius="xl"
-                  color="blue"
-                  variant="filled"
-                  aria-label="Send message"
-                >
-                  <IconArrowRight size="1rem" stroke={1.5} />
-                </ActionIcon>
+                !inputDisabled ? (
+                  <ActionIcon
+                    type="submit"
+                    size="1.5rem"
+                    radius="xl"
+                    color="blue"
+                    variant="filled"
+                    aria-label="Send message"
+                  >
+                    <IconArrowRight size="1rem" stroke={1.5} />
+                  </ActionIcon>
+                ) : undefined
               }
             />
           </Form>
         </div>
+        )
       </Paper>
     </div>
   );

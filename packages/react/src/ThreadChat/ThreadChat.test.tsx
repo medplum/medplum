@@ -451,4 +451,14 @@ describe('ThreadChat', () => {
     expect(screen.getByText('[No thread title]')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
   });
+
+  test('inputDisabled', async () => {
+    const threadProps = { thread: defaultThread };
+    const { rerender } = await setup({ ...threadProps });
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    await rerender({ ...threadProps, inputDisabled: false });
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    await rerender({ ...threadProps, inputDisabled: true });
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+  });
 });
