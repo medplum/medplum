@@ -13,9 +13,8 @@ import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { CodeChallengeMethod, tryLogin } from '../oauth/utils';
+import { CodeChallengeMethod, getClientApplication, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -129,9 +128,11 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 async function getIdentityProvider(
   state: ExternalAuthState
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
+  let idp: IdentityProvider | undefined;
+  let client: ClientApplication | undefined;
+
   if (state.clientId) {
-    const systemRepo = getSystemRepo();
-    const client = await systemRepo.readResource<ClientApplication>('ClientApplication', state.clientId);
+    client = await getClientApplication(state.clientId);
     if (client.identityProvider) {
       return { idp: client.identityProvider, client };
     }
@@ -140,11 +141,11 @@ async function getIdentityProvider(
   if (state.domain) {
     const domainConfig = await getDomainConfiguration(state.domain);
     if (domainConfig?.identityProvider) {
-      return { idp: domainConfig.identityProvider };
+      idp = domainConfig.identityProvider;
     }
   }
 
-  return {};
+  return { idp, client };
 }
 
 /**

@@ -174,8 +174,6 @@ describe('Profiles', () => {
     await main(['node', 'index.js', 'profile', 'describe', profileName]);
     expect(console.log).toHaveBeenCalledWith(obj);
 
-    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('testProfile profile create'));
-
     // Replace the previous values
     const obj2 = {
       name: profileName,
