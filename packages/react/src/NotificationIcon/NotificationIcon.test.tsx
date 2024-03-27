@@ -23,8 +23,8 @@ describe('NotificationIcon()', () => {
         <NotificationIcon
           label="Mail"
           resourceType="Communication"
-          countCriteria={`recipient=Practitioner/123&status:not=completed&_summary=count`}
-          subscriptionCriteria={`Communication?recipient=Practitioner/123`}
+          countCriteria={`recipient=Practitioner/456&status:not=completed&_summary=count`}
+          subscriptionCriteria={`Communication?recipient=Practitioner/456`}
           iconComponent={<IconMail />}
           onClick={() => console.log('foo')}
         />
@@ -39,12 +39,12 @@ describe('NotificationIcon()', () => {
     const communication = await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'in-progress',
-      recipient: [{ reference: 'Practitioner/123' }],
+      recipient: [{ reference: 'Practitioner/456' }],
     });
 
     // Emulate the server sending a message
     await act(async () => {
-      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication?recipient=Practitioner/123', {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication?recipient=Practitioner/456', {
         type: 'message',
         payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
       });
