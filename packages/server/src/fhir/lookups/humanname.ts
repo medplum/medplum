@@ -1,6 +1,5 @@
-import { formatFamilyName, formatGivenName, formatHumanName, stringify } from '@medplum/core';
+import { formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
 import { HumanName, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 
@@ -73,20 +72,12 @@ export class HumanNameTable extends LookupTable {
 
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const values = [];
-
-    for (let i = 0; i < names.length; i++) {
-      const name = names[i];
-      values.push({
-        id: randomUUID(),
-        resourceId,
-        index: i,
-        content: stringify(name),
-        name: getNameString(name),
-        given: formatGivenName(name),
-        family: formatFamilyName(name),
-      });
-    }
+    const values = names.map((name) => ({
+      resourceId,
+      name: getNameString(name),
+      given: formatGivenName(name),
+      family: formatFamilyName(name),
+    }));
 
     await this.insertValuesForResource(client, resourceType, values);
   }
