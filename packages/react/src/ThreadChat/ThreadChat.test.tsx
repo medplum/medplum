@@ -432,4 +432,23 @@ describe('ThreadChat', () => {
     expect(screen.queryByRole('button', { name: 'Close chat' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Open chat' })).not.toBeInTheDocument();
   });
+
+  test('Title passed in', async () => {
+    await setup({ title: 'Testing the title', thread: defaultThread });
+    expect(screen.getByText('Testing the title')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+  });
+
+  test('No title passed in', async () => {
+    const thread = await createThreadHeader(defaultMedplum, { topic: { text: 'Test Topic' } });
+    await setup({ thread });
+    expect(screen.getByText('Test Topic')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+  });
+
+  test('No title passed in and no thread topic', async () => {
+    await setup({ thread: defaultThread });
+    expect(screen.getByText('[No thread title]')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+  });
 });
