@@ -37,7 +37,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => await rebuildR4ValueSets());
+    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets());
   })
 );
 
