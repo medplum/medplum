@@ -35,6 +35,10 @@ const poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig)
     escapeLiteral(_str: string): string {
       return '';
     }
+    getTypeParser(): any {
+      return undefined;
+    }
+    setTypeParser(): void {}
   }
 
   class MockPool extends EventEmitter implements Pool {
