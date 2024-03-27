@@ -55,6 +55,14 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url as string, 'http://localhost:9615');
     const code = url.searchParams.get('code');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200, {
+        Allow: 'GET, POST',
+        'Content-Type': ContentType.TEXT,
+      });
+      res.end('OK');
+      return;
+    }
     if (url.pathname === '/' && code) {
       try {
         const profile = await medplum.processCode(code, { clientId, redirectUri });
