@@ -13,6 +13,7 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
  * Otherwise it will fallback to "_id".
  */
 const SEARCH_CODES: Record<string, string> = {
+  Device: 'device-name',
   Observation: 'code',
   User: 'email:contains',
 };
