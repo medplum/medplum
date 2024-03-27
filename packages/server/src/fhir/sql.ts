@@ -1,8 +1,6 @@
 import { OperationOutcomeError, append, conflict } from '@medplum/core';
 import { Period } from '@medplum/fhirtypes';
-import { AsyncLocalStorage } from 'async_hooks';
 import { Client, Pool, PoolClient } from 'pg';
-import Cursor from 'pg-cursor';
 import { env } from 'process';
 
 const DEBUG = env['SQL_DEBUG'];
@@ -526,33 +524,6 @@ export class SelectQuery extends BaseQuery implements Expression {
     const sql = new SqlBuilder();
     this.buildSql(sql);
     return sql.execute(conn);
-  }
-
-  async executeCursor(pool: Pool, callback: (row: any) => Promise<void>): Promise<void> {
-    callback = AsyncLocalStorage.bind(callback);
-    const BATCH_SIZE = 100;
-
-    const sql = new SqlBuilder();
-    this.buildSql(sql);
-
-    const client = await pool.connect();
-    try {
-      const cursor = client.query(new Cursor(sql.toString(), sql.getValues()));
-      try {
-        let hasMore = true;
-        while (hasMore) {
-          const rows = await cursor.read(BATCH_SIZE);
-          for (const row of rows) {
-            await callback(row);
-          }
-          hasMore = rows.length === BATCH_SIZE;
-        }
-      } finally {
-        await cursor.close();
-      }
-    } finally {
-      client.release();
-    }
   }
 
   private buildDistinctOn(sql: SqlBuilder): void {
