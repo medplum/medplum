@@ -1,4 +1,4 @@
-import { MemoryStorage } from '@medplum/core';
+import { MemoryStorage, sleep } from '@medplum/core';
 import SecureStore from 'expo-secure-store';
 import { subtle, webcrypto } from 'node:crypto';
 import { Platform } from 'react-native';
@@ -198,18 +198,33 @@ describe('polyfillMedplumWebAPIs', () => {
 
     if (Platform.OS !== 'web') {
       test('If an error is thrown while getting keys, should call delete and init anyways', async () => {
+        // Setup, pre-init with keys
+        const storage1 = new ExpoClientStorage();
+        await expect(storage1.getInitPromise()).resolves.toBeUndefined();
+        storage1.setString('bestEhr', 'medplum');
+        expect(storage1.length).toBe(1);
+
+        // Sleep for a bit to let async stuff settle
+        await sleep(25);
+
+        const storage2 = new ExpoClientStorage();
+        await expect(storage2.getInitPromise()).resolves.toBeUndefined();
+        expect(storage2.length).toBe(1);
+        expect(storage2.getString('bestEhr')).toEqual('medplum');
+
         const originalError = console.error;
         console.error = jest.fn();
 
         // @ts-expect-error This function is only exported for testing
         SecureStore._makeNextGetKeysThrow();
 
-        const newStorage = new ExpoClientStorage();
-        await expect(newStorage.getInitPromise()).resolves.toBeUndefined();
+        const storage3 = new ExpoClientStorage();
+        await expect(storage3.getInitPromise()).resolves.toBeUndefined();
         expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('___keys___');
 
-        // Assert size is 0
-        expect(newStorage.length).toEqual(0);
+        // Assert size is 0 and key is undefined
+        expect(storage3.length).toEqual(0);
+        expect(storage3.getString('bestEhr')).toBeUndefined();
 
         expect(console.error).toHaveBeenCalledTimes(1);
         console.error = originalError;
