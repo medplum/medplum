@@ -1567,6 +1567,95 @@ describe('Subscription Worker', () => {
       await subscriber.quit();
     }));
 
+  test('WebSocket Subscription -- Supported Interaction Extension', () =>
+    withTestContext(async () => {
+      const wsSubProject = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'WebSocket Subs Project',
+        owner: {
+          reference: 'User/' + randomUUID(),
+        },
+        features: ['websocket-subscriptions'],
+      });
+
+      const wsSubRepo = new Repository({
+        extendedMode: true,
+        projects: [wsSubProject.id as string],
+        author: {
+          reference: 'ClientApplication/' + randomUUID(),
+        },
+      });
+
+      const subscription = await wsSubRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      });
+
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Subscribe to the topic
+      const subscriber = getRedis().duplicate();
+      await subscriber.subscribe(subscription.id as string);
+
+      let resolve: () => void;
+      const deferredPromise = new Promise<void>((_resolve) => {
+        resolve = _resolve;
+      });
+
+      subscriber.on('message', (topic, message) => {
+        expect(topic).toEqual(subscription.id);
+        expect(JSON.parse(message)).toEqual(expect.any(Object));
+        resolve();
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await wsSubRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execSubscriptionJob(job);
+
+      // Expect that a job is published
+
+      // Clear the queue
+      queue.add.mockClear();
+
+      // Update the patient
+      await wsSubRepo.updateResource({ ...patient, active: true });
+
+      // Update should also trigger the subscription
+      expect(queue.add).not.toHaveBeenCalled();
+
+      // Clear the queue
+      queue.add.mockClear();
+
+      // Delete the patient
+      await wsSubRepo.deleteResource('Patient', patient.id as string);
+
+      expect(queue.add).not.toHaveBeenCalled();
+
+      await deferredPromise;
+      await subscriber.quit();
+    }));
+
   test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
