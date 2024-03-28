@@ -1,5 +1,5 @@
 import { allOk, badRequest } from '@medplum/core';
-import { PasswordChangeRequest, Reference, User } from '@medplum/fhirtypes';
+import { PasswordChangeRequest, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
@@ -17,7 +17,12 @@ export const setPasswordValidator = makeValidationMiddleware([
 
 export async function setPasswordHandler(req: Request, res: Response): Promise<void> {
   const systemRepo = getSystemRepo();
-  const pcr = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
+  let pcr: UserSecurityRequest | PasswordChangeRequest;
+  try {
+    pcr = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
+  } catch (err) {
+    pcr = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
+  }
 
   if (pcr.used) {
     sendOutcome(res, badRequest('Already used'));
@@ -43,7 +48,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   await setPassword({ ...user, emailVerified: true }, req.body.password);
-  await systemRepo.updateResource<PasswordChangeRequest>({ ...pcr, used: true });
+  await systemRepo.updateResource<typeof pcr>({ ...pcr, used: true });
   sendOutcome(res, allOk);
 }
 
