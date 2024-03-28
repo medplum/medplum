@@ -4,7 +4,7 @@ import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAuto
 
 export interface CodeInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {
   readonly defaultValue?: string;
-  readonly onChange?: (value: string | undefined) => void;
+  readonly onChange: ((value: string | undefined) => void) | undefined;
 }
 
 export function CodeInput(props: CodeInputProps): JSX.Element {

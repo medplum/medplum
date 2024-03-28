@@ -223,7 +223,7 @@ describe('Operation Input Parameters parsing', () => {
     ],
     [
       { resourceType: 'Parameters', parameter: [{ valueQuantity: { value: 5 } }] } as unknown as Parameters,
-      'Missing required property (Parameters.parameter.name)',
+      'Missing required property (Parameters.parameter[0].name)',
     ],
   ])('Throws error on invalid Parameters: %j', (parameters, errorMsg) => {
     const req: Request = { body: parameters } as unknown as Request;

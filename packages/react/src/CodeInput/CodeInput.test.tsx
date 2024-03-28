@@ -26,7 +26,7 @@ describe('CodeInput', () => {
   }
 
   test('Renders', async () => {
-    await setup(<CodeInput binding={binding} name="test" />);
+    await setup(<CodeInput binding={binding} name="test" onChange={undefined} />);
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
@@ -35,7 +35,7 @@ describe('CodeInput', () => {
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>
-          <CodeInput binding={binding} name="test" defaultValue="xyz" />
+          <CodeInput binding={binding} name="test" defaultValue="xyz" onChange={undefined} />
         </MedplumProvider>
       );
     });
@@ -45,7 +45,7 @@ describe('CodeInput', () => {
   });
 
   test('Searches for results', async () => {
-    await setup(<CodeInput binding={binding} name="test" />);
+    await setup(<CodeInput binding={binding} name="test" onChange={undefined} />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -73,7 +73,7 @@ describe('CodeInput', () => {
   });
 
   test('Searches for results with creatable set to false', async () => {
-    await setup(<CodeInput binding={binding} name="test" creatable={false} clearable={false} />);
+    await setup(<CodeInput binding={binding} name="test" creatable={false} clearable={false} onChange={undefined} />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 

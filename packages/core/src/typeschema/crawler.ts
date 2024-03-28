@@ -1,19 +1,19 @@
 import { Resource } from '@medplum/fhirtypes';
-import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
+import { GetTypedPropertyValueOptions, getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import { isResource, TypedValue } from '../types';
 import { arrayify, isLowerCase } from '../utils';
 import { getDataType, InternalTypeSchema } from './types';
 
 export interface ResourceVisitor {
-  onEnterObject?: (path: string, value: TypedValue, schema: InternalTypeSchema) => void;
-  onExitObject?: (path: string, value: TypedValue, schema: InternalTypeSchema) => void;
-  onEnterResource?: (path: string, value: TypedValue, schema: InternalTypeSchema) => void;
-  onExitResource?: (path: string, value: TypedValue, schema: InternalTypeSchema) => void;
+  onEnterObject?: (path: string, value: TypedValueWithExpression, schema: InternalTypeSchema) => void;
+  onExitObject?: (path: string, value: TypedValueWithExpression, schema: InternalTypeSchema) => void;
+  onEnterResource?: (path: string, value: TypedValueWithExpression, schema: InternalTypeSchema) => void;
+  onExitResource?: (path: string, value: TypedValueWithExpression, schema: InternalTypeSchema) => void;
   visitProperty?: (
-    parent: TypedValue,
+    parent: TypedValueWithExpression,
     key: string,
     path: string,
-    propertyValues: (TypedValue | TypedValue[] | undefined)[],
+    propertyValues: (TypedValueWithExpression | TypedValueWithExpression[])[],
     schema: InternalTypeSchema
   ) => void;
 }
@@ -51,10 +51,14 @@ class ResourceCrawler {
   }
 
   crawl(): void {
-    this.crawlObject(toTypedValue(this.rootResource), this.schema, this.initialPath);
+    this.crawlObject(
+      { ...toTypedValue(this.rootResource), expression: this.initialPath },
+      this.schema,
+      this.initialPath
+    );
   }
 
-  private crawlObject(obj: TypedValue, schema: InternalTypeSchema, path: string): void {
+  private crawlObject(obj: TypedValueWithExpression, schema: InternalTypeSchema, path: string): void {
     const objIsResource = isResource(obj.value);
 
     if (objIsResource && this.visitor.onEnterResource) {
@@ -78,22 +82,22 @@ class ResourceCrawler {
     }
   }
 
-  private crawlProperty(parent: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
-    const propertyValues = getNestedProperty(parent, key);
+  private crawlProperty(parent: TypedValueWithExpression, key: string, schema: InternalTypeSchema, path: string): void {
+    const propertyValues = getNestedProperty(parent, key, { withExpression: true });
     if (this.visitor.visitProperty) {
       this.visitor.visitProperty(parent, key, path, propertyValues, schema);
     }
 
     for (const propertyValue of propertyValues) {
       if (propertyValue) {
-        for (const value of arrayify(propertyValue) as TypedValue[]) {
+        for (const value of arrayify(propertyValue) as TypedValueWithExpression[]) {
           this.crawlPropertyValue(value, path);
         }
       }
     }
   }
 
-  private crawlPropertyValue(value: TypedValue, path: string): void {
+  private crawlPropertyValue(value: TypedValueWithExpression, path: string): void {
     if (!isLowerCase(value.type.charAt(0))) {
       // Recursively crawl as the expected data type
       const type = getDataType(value.type);
@@ -103,27 +107,78 @@ class ResourceCrawler {
 }
 
 export function getNestedProperty(
-  value: TypedValue,
+  value: TypedValueWithExpression | undefined,
   key: string,
-  options?: { profileUrl?: string }
+  options: { profileUrl?: string; withExpression: true }
+): (TypedValueWithExpression | TypedValueWithExpression[])[];
+export function getNestedProperty(
+  value: TypedValue | undefined,
+  key: string,
+  options?: { profileUrl?: string; withExpression?: false }
+): (TypedValue | TypedValue[] | undefined)[];
+export function getNestedProperty(
+  value: TypedValue | undefined,
+  key: string,
+  options?: { profileUrl?: string; withExpression?: boolean }
 ): (TypedValue | TypedValue[] | undefined)[] {
+  if (value === undefined) {
+    return [undefined];
+  }
+
   if (key === '$this') {
     return [value];
   }
+
+  const propertyGetter = options?.withExpression ? getTypedPropertyValueWithExpression : getTypedPropertyValue;
+
   const [firstProp, ...nestedProps] = key.split('.');
-  let propertyValues = [getTypedPropertyValue(value, firstProp, options)];
+  let propertyValues = [propertyGetter(value, firstProp, options)];
   for (const prop of nestedProps) {
     const next = [];
     for (const current of propertyValues) {
       if (Array.isArray(current)) {
         for (const element of current) {
-          next.push(getTypedPropertyValue(element, prop, options));
+          next.push(propertyGetter(element, prop, options));
         }
-      } else if (current !== undefined) {
-        next.push(getTypedPropertyValue(current, prop, options));
+      } else if (options?.withExpression && current && current.value !== undefined) {
+        next.push(propertyGetter(current, prop, options));
+      } else if (!options?.withExpression && current !== undefined) {
+        next.push(propertyGetter(current, prop, options));
       }
     }
     propertyValues = next;
   }
   return propertyValues;
+}
+
+function getTypedPropertyValueWithExpression(
+  input: TypedValue | TypedValueWithExpression,
+  path: string,
+  options?: GetTypedPropertyValueOptions
+): TypedValueWithExpression[] | TypedValueWithExpression {
+  const parentExpression = (input as TypedValueWithExpression).expression;
+  return withExpression(getTypedPropertyValue(input, path, options), parentExpression, path);
+}
+
+export type TypedValueWithExpression = TypedValue & { expression: string };
+
+function withExpression(
+  tv: TypedValue | TypedValue[] | undefined,
+  parentExpression: string | undefined,
+  key: string
+): TypedValueWithExpression | TypedValueWithExpression[] {
+  const parentPrefix = parentExpression ? parentExpression + '.' : '';
+
+  if (tv === undefined) {
+    return { type: 'undefined', value: undefined, expression: `${parentPrefix}${key}` };
+  }
+
+  if (Array.isArray(tv)) {
+    return tv.map((v, idx) => ({
+      ...v,
+      expression: `${parentPrefix}${key}[${idx}]`,
+    }));
+  }
+
+  return { ...tv, expression: `${parentPrefix}${key}` };
 }
