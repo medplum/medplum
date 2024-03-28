@@ -1,0 +1,846 @@
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "request": { "method": "POST", "url": "ValueSet" },
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://example.org/x12-service-type-codes",
+        "name": "x12-service-type-codes",
+        "title": "X12 Service Type Codes",
+        "status": "active",
+        "description": "These codes identify business groupings for health care services or benefits.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://example.org/x12-service-type-codes",
+              "concept": [
+                {
+                  "code": "1",
+                  "display": "Medical Care"
+                },
+                {
+                  "code": "2",
+                  "display": "Surgical"
+                },
+                {
+                  "code": "3",
+                  "display": "Consultation"
+                },
+                {
+                  "code": "4",
+                  "display": "Diagnostic X-Ray"
+                },
+                {
+                  "code": "5",
+                  "display": "Diagnostic Lab"
+                },
+                {
+                  "code": "6",
+                  "display": "Radiation Therapy"
+                },
+                {
+                  "code": "7",
+                  "display": "Anesthesia"
+                },
+                {
+                  "code": "8",
+                  "display": "Surgical Assistance"
+                },
+                {
+                  "code": "9",
+                  "display": "Hearing Aid"
+                },
+                {
+                  "code": "10",
+                  "display": "Blood"
+                },
+                {
+                  "code": "11",
+                  "display": "Durable Medical Equipment Used"
+                },
+                {
+                  "code": "12",
+                  "display": "Durable Medical Equipment Purchased"
+                },
+                {
+                  "code": "13",
+                  "display": "Hearing Aid Power Source"
+                },
+                {
+                  "code": "14",
+                  "display": "Renal Supplies"
+                },
+                {
+                  "code": "15",
+                  "display": "Sleep Study"
+                },
+                {
+                  "code": "17",
+                  "display": "Pre-Admission Testing"
+                },
+                {
+                  "code": "18",
+                  "display": "Durable Medical Equipment Rental"
+                },
+                {
+                  "code": "19",
+                  "display": "Pneumonia Vaccine"
+                },
+                {
+                  "code": "20",
+                  "display": "Second Surgical Opinion"
+                },
+                {
+                  "code": "21",
+                  "display": "Third Surgical Opinion"
+                },
+                {
+                  "code": "22",
+                  "display": "Social Work"
+                },
+                {
+                  "code": "23",
+                  "display": "Diagnostic Dental"
+                },
+                {
+                  "code": "24",
+                  "display": "Periodontics"
+                },
+                {
+                  "code": "25",
+                  "display": "Restorative"
+                },
+                {
+                  "code": "26",
+                  "display": "Endodontics"
+                },
+                {
+                  "code": "27",
+                  "display": "Maxillofacial Prosthetics"
+                },
+                {
+                  "code": "28",
+                  "display": "Adjunctive Dental Services"
+                },
+                {
+                  "code": "30",
+                  "display": "Plan Coverage and General Benefits"
+                },
+                {
+                  "code": "32",
+                  "display": "Plan Waiting Period"
+                },
+                {
+                  "code": "33",
+                  "display": "Chiropractic"
+                },
+                {
+                  "code": "35",
+                  "display": "Dental Care"
+                },
+                {
+                  "code": "36",
+                  "display": "Dental Crowns"
+                },
+                {
+                  "code": "37",
+                  "display": "Dental Accident"
+                },
+                {
+                  "code": "38",
+                  "display": "Orthodontics"
+                },
+                {
+                  "code": "39",
+                  "display": "Prosthodontics"
+                },
+                {
+                  "code": "40",
+                  "display": "Oral Surgery"
+                },
+                {
+                  "code": "41",
+                  "display": "Preventative Dental"
+                },
+                {
+                  "code": "42",
+                  "display": "Home Health Care"
+                },
+                {
+                  "code": "43",
+                  "display": "Home Health Prescription"
+                },
+                {
+                  "code": "45",
+                  "display": "Hospice"
+                },
+                {
+                  "code": "46",
+                  "display": "Respite Care"
+                },
+                {
+                  "code": "47",
+                  "display": "Hospitalization"
+                },
+                {
+                  "code": "49",
+                  "display": "Hospital - Room and Board"
+                },
+                {
+                  "code": "54",
+                  "display": "Long Term Care"
+                },
+                {
+                  "code": "55",
+                  "display": "Major Medical"
+                },
+                {
+                  "code": "56",
+                  "display": "Medically Related Transportation"
+                },
+                {
+                  "code": "60",
+                  "display": "Plan Coverage"
+                },
+                {
+                  "code": "61",
+                  "display": "In-vitro Fertilization"
+                },
+                {
+                  "code": "62",
+                  "display": "MRI Scan"
+                },
+                {
+                  "code": "63",
+                  "display": "Donor Procedures"
+                },
+                {
+                  "code": "64",
+                  "display": "Acupuncture"
+                },
+                {
+                  "code": "65",
+                  "display": "Newborn Care"
+                },
+                {
+                  "code": "66",
+                  "display": "Pathology"
+                },
+                {
+                  "code": "67",
+                  "display": "Smoking Cessation"
+                },
+                {
+                  "code": "68",
+                  "display": "Well Baby Care"
+                },
+                {
+                  "code": "69",
+                  "display": "Maternity"
+                },
+                {
+                  "code": "70",
+                  "display": "Transplants"
+                },
+                {
+                  "code": "71",
+                  "display": "Audiology"
+                },
+                {
+                  "code": "72",
+                  "display": "Inhalation Therapy"
+                },
+                {
+                  "code": "73",
+                  "display": "Diagnostic Medical"
+                },
+                {
+                  "code": "74",
+                  "display": "Private Duty Nursing"
+                },
+                {
+                  "code": "75",
+                  "display": "Prosthetics"
+                },
+                {
+                  "code": "76",
+                  "display": "Dialysis"
+                },
+                {
+                  "code": "77",
+                  "display": "Otology"
+                },
+                {
+                  "code": "78",
+                  "display": "Chemotherapy"
+                },
+                {
+                  "code": "79",
+                  "display": "Allergy Testing"
+                },
+                {
+                  "code": "80",
+                  "display": "Immunizations"
+                },
+                {
+                  "code": "81",
+                  "display": "Routine Physical"
+                },
+                {
+                  "code": "82",
+                  "display": "Family Planning"
+                },
+                {
+                  "code": "83",
+                  "display": "Infertility"
+                },
+                {
+                  "code": "84",
+                  "display": "Abortion"
+                },
+                {
+                  "code": "85",
+                  "display": "HIV - AIDS Treatment"
+                },
+                {
+                  "code": "86",
+                  "display": "Emergency Services"
+                },
+                {
+                  "code": "87",
+                  "display": "Cancer Treatment"
+                },
+                {
+                  "code": "88",
+                  "display": "Retail/Independent Pharmacy"
+                },
+                {
+                  "code": "89",
+                  "display": "Free Standing Prescription Drug"
+                },
+                {
+                  "code": "90",
+                  "display": "Mail Order Pharmacy"
+                },
+                {
+                  "code": "91",
+                  "display": "Brand Name Prescription Drug"
+                },
+                {
+                  "code": "92",
+                  "display": "Generic Prescription Drug"
+                },
+                {
+                  "code": "93",
+                  "display": "Podiatry"
+                },
+                {
+                  "code": "94",
+                  "display": "Dental and prediagnostic tests and examinations"
+                },
+                {
+                  "code": "95",
+                  "display": "Periodontal Surgical Services"
+                },
+                {
+                  "code": "96",
+                  "display": "Adjustments to dentures/repairs to complete dentures, denture rebase procedures, and denture reline procedures"
+                },
+                {
+                  "code": "97",
+                  "display": "Dental, non-surgical extractions"
+                },
+                {
+                  "code": "98",
+                  "display": "Prescription Drug"
+                },
+                {
+                  "code": "99",
+                  "display": "Bariatric services - Services that deal with the causes, education, prevention and treatment of obesity"
+                },
+                {
+                  "code": "A4",
+                  "display": "Psychiatric"
+                },
+                {
+                  "code": "A6",
+                  "display": "Psychotherapy"
+                },
+                {
+                  "code": "A7",
+                  "display": "Psychiatric - Inpatient"
+                },
+                {
+                  "code": "A8",
+                  "display": "Psychiatric - Outpatient"
+                },
+                {
+                  "code": "A9",
+                  "display": "Rehabilitation"
+                },
+                {
+                  "code": "AB",
+                  "display": "Rehabilitation - Inpatient"
+                },
+                {
+                  "code": "AC",
+                  "display": "Rehabilitation - Outpatient"
+                },
+                {
+                  "code": "AD",
+                  "display": "Occupational Therapy"
+                },
+                {
+                  "code": "AE",
+                  "display": "Physical Medicine"
+                },
+                {
+                  "code": "AF",
+                  "display": "Speech Therapy"
+                },
+                {
+                  "code": "AG",
+                  "display": "Skilled Nursing Care"
+                },
+                {
+                  "code": "AI",
+                  "display": "Substance Abuse"
+                },
+                {
+                  "code": "AJ",
+                  "display": "Alcoholism Treatment"
+                },
+                {
+                  "code": "AK",
+                  "display": "Drug Addiction"
+                },
+                {
+                  "code": "AL",
+                  "display": "Optometry"
+                },
+                {
+                  "code": "AM",
+                  "display": "Frames"
+                },
+                {
+                  "code": "AO",
+                  "display": "Lenses"
+                },
+                {
+                  "code": "AP",
+                  "display": "Routine Eye Exam"
+                },
+                {
+                  "code": "AQ",
+                  "display": "Nonmedically Necessary Physical (These physicals are required by other entities e.g., insurance application, pilot license, employment or school)"
+                },
+                {
+                  "code": "AR",
+                  "display": "Experimental Drug Therapy"
+                },
+                {
+                  "code": "B1",
+                  "display": "Burn Care"
+                },
+                {
+                  "code": "B2",
+                  "display": "Brand Name Prescription Drug - Formulary"
+                },
+                {
+                  "code": "B3",
+                  "display": "Brand Name Prescription Drug - Non-Formulary"
+                },
+                {
+                  "code": "BA",
+                  "display": "Independent Medical Evaluation"
+                },
+                {
+                  "code": "BB",
+                  "display": "Psychiatric Treatment Partial Hospitalization"
+                },
+                {
+                  "code": "BC",
+                  "display": "Day Care (Psychiatric)"
+                },
+                {
+                  "code": "BD",
+                  "display": "Cognitive Therapy"
+                },
+                {
+                  "code": "BE",
+                  "display": "Massage Therapy"
+                },
+                {
+                  "code": "BF",
+                  "display": "Pulmonary Rehabilitation"
+                },
+                {
+                  "code": "BG",
+                  "display": "Cardiac Rehabilitation"
+                },
+                {
+                  "code": "BH",
+                  "display": "Pediatric"
+                },
+                {
+                  "code": "BI",
+                  "display": "Nursery Room and Board"
+                },
+                {
+                  "code": "BK",
+                  "display": "Orthopedic"
+                },
+                {
+                  "code": "BL",
+                  "display": "Cardiac"
+                },
+                {
+                  "code": "BM",
+                  "display": "Lymphatic"
+                },
+                {
+                  "code": "BN",
+                  "display": "Gastrointestinal"
+                },
+                {
+                  "code": "BP",
+                  "display": "Endocrine"
+                },
+                {
+                  "code": "BQ",
+                  "display": "Neurology"
+                },
+                {
+                  "code": "BT",
+                  "display": "Gynecological"
+                },
+                {
+                  "code": "BU",
+                  "display": "Obstetrical"
+                },
+                {
+                  "code": "BV",
+                  "display": "Obstetrical/Gynecological"
+                },
+                {
+                  "code": "BY",
+                  "display": "Physician Visit - Sick"
+                },
+                {
+                  "code": "BZ",
+                  "display": "Physician Visit - Well"
+                },
+                {
+                  "code": "C1",
+                  "display": "Coronary Care"
+                },
+                {
+                  "code": "CK",
+                  "display": "Screening X-ray"
+                },
+                {
+                  "code": "CL",
+                  "display": "Screening laboratory"
+                },
+                {
+                  "code": "CM",
+                  "display": "Mammogram, High Risk Patient"
+                },
+                {
+                  "code": "CN",
+                  "display": "Mammogram, Low Risk Patient"
+                },
+                {
+                  "code": "CO",
+                  "display": "Flu Vaccination"
+                },
+                {
+                  "code": "CP",
+                  "display": "Eyewear Accessories"
+                },
+                {
+                  "code": "CQ",
+                  "display": "Case Management"
+                },
+                {
+                  "code": "DG",
+                  "display": "Dermatology"
+                },
+                {
+                  "code": "DM",
+                  "display": "Durable Medical Equipment"
+                },
+                {
+                  "code": "DS",
+                  "display": "Diabetic Supplies"
+                },
+                {
+                  "code": "E0",
+                  "display": "Applied Behavioral Analysis Therapy"
+                },
+                {
+                  "code": "E1",
+                  "display": "Non-Medical Equipment (non DME)"
+                },
+                {
+                  "code": "E2",
+                  "display": "Psychiatric Emergency"
+                },
+                {
+                  "code": "E3",
+                  "display": "Step Down Unit"
+                },
+                {
+                  "code": "E4",
+                  "display": "Skilled Nursing Facility Head Level of Care"
+                },
+                {
+                  "code": "E5",
+                  "display": "Skilled Nursing Facility Ventilator Level of Care"
+                },
+                {
+                  "code": "E6",
+                  "display": "Level of Care 1"
+                },
+                {
+                  "code": "E7",
+                  "display": "Level of Care 2"
+                },
+                {
+                  "code": "E8",
+                  "display": "Level of Care 3"
+                },
+                {
+                  "code": "E9",
+                  "display": "Level of Care 4"
+                },
+                {
+                  "code": "E10",
+                  "display": "Radiographs"
+                },
+                {
+                  "code": "E11",
+                  "display": "Diagnostic Imaging"
+                },
+                {
+                  "code": "E14",
+                  "display": "Fixed Prosthodontics"
+                },
+                {
+                  "code": "E15",
+                  "display": "Removable Prosthodontics"
+                },
+                {
+                  "code": "E16",
+                  "display": "Intraoral Images - Complete Series"
+                },
+                {
+                  "code": "E17",
+                  "display": "Oral Evaluation"
+                },
+                {
+                  "code": "E18",
+                  "display": "Dental Prophylaxis"
+                },
+                {
+                  "code": "E19",
+                  "display": "Panoramic Images"
+                },
+                {
+                  "code": "E20",
+                  "display": "Sealants"
+                },
+                {
+                  "code": "E21",
+                  "display": "Fluoride Treatments"
+                },
+                {
+                  "code": "E22",
+                  "display": "Dental Implants"
+                },
+                {
+                  "code": "E23",
+                  "display": "Temporomandibular Joint Dysfunction"
+                },
+                {
+                  "code": "E25",
+                  "display": "Long Term Care Pharmacy"
+                },
+                {
+                  "code": "E26",
+                  "display": "Comprehensive Medication Therapy Managment Reveiw"
+                },
+                {
+                  "code": "E27",
+                  "display": "Targeted Medication Therapy Management Review"
+                },
+                {
+                  "code": "E28",
+                  "display": "Dietary/Nutritional Services"
+                },
+                {
+                  "code": "E33",
+                  "display": "Intensive Cardiac Rehabilitation"
+                },
+                {
+                  "code": "E36",
+                  "display": "Convenience Care"
+                },
+                {
+                  "code": "E37",
+                  "display": "Telemedicine"
+                },
+                {
+                  "code": "E38",
+                  "display": "Pharmacist Services"
+                },
+                {
+                  "code": "E39",
+                  "display": "Diabetic Education"
+                },
+                {
+                  "code": "E40",
+                  "display": "Early Intervention"
+                },
+                {
+                  "code": "EA",
+                  "display": "Preventive Services"
+                },
+                {
+                  "code": "EB",
+                  "display": "Specialty Pharmacy"
+                },
+                {
+                  "code": "EC",
+                  "display": "Durable Medical Equipment New"
+                },
+                {
+                  "code": "ED",
+                  "display": "CAT Scan"
+                },
+                {
+                  "code": "EE",
+                  "display": "Ophthalmology"
+                },
+                {
+                  "code": "EF",
+                  "display": "Contact Lenses"
+                },
+                {
+                  "code": "EG",
+                  "display": "Fertility Preservation"
+                },
+                {
+                  "code": "EH",
+                  "display": "Medically Tailored Meals (MTM)"
+                },
+                {
+                  "code": "EJ",
+                  "display": "IV Therapy"
+                },
+                {
+                  "code": "F1",
+                  "display": "Medical Coverage"
+                },
+                {
+                  "code": "F2",
+                  "display": "Social Work Coverage"
+                },
+                {
+                  "code": "F3",
+                  "display": "Dental Coverage"
+                },
+                {
+                  "code": "F4",
+                  "display": "Hearing Coverage"
+                },
+                {
+                  "code": "F5",
+                  "display": "Prescription Drug Coverage"
+                },
+                {
+                  "code": "F6",
+                  "display": "Vision Coverage"
+                },
+                {
+                  "code": "F7",
+                  "display": "Orthodontia Coverage"
+                },
+                {
+                  "code": "F8",
+                  "display": "Mental Health Coverage"
+                },
+                {
+                  "code": "GF",
+                  "display": "Generic Prescription Drug - Formulary"
+                },
+                {
+                  "code": "GN",
+                  "display": "Generic Prescription Drug - Non-Formulary"
+                },
+                {
+                  "code": "GY",
+                  "display": "Allergy"
+                },
+                {
+                  "code": "IC",
+                  "display": "Intensive Care"
+                },
+                {
+                  "code": "MH",
+                  "display": "Mental Health"
+                },
+                {
+                  "code": "NI",
+                  "display": "Neonatal Intensive Care"
+                },
+                {
+                  "code": "ON",
+                  "display": "Oncology"
+                },
+                {
+                  "code": "PE",
+                  "display": "Positron Emission Tomography (PET) Scan"
+                },
+                {
+                  "code": "PT",
+                  "display": "Physical Therapy"
+                },
+                {
+                  "code": "PU",
+                  "display": "Pulmonary"
+                },
+                {
+                  "code": "RN",
+                  "display": "Renal"
+                },
+                {
+                  "code": "RT",
+                  "display": "Residential Psychiatric Treatment"
+                },
+                {
+                  "code": "SMH",
+                  "display": "Serious Mental Health"
+                },
+                {
+                  "code": "TC",
+                  "display": "Transitional Care"
+                },
+                {
+                  "code": "TN",
+                  "display": "Transitional Nursery Care"
+                },
+                {
+                  "code": "UC",
+                  "display": "Urgent Care"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
