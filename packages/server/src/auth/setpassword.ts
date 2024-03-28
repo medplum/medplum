@@ -17,29 +17,31 @@ export const setPasswordValidator = makeValidationMiddleware([
 
 export async function setPasswordHandler(req: Request, res: Response): Promise<void> {
   const systemRepo = getSystemRepo();
-  let pcr: UserSecurityRequest | PasswordChangeRequest;
+  let securityRequest: UserSecurityRequest | PasswordChangeRequest;
+
+  // PasswordChangeRequest is deprecated but still supported. When it is removed, this try/catch can be removed
   try {
-    pcr = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
+    securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
   } catch (err) {
-    pcr = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
+    securityRequest = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
   }
 
-  if (pcr.used) {
+  if (securityRequest.used) {
     sendOutcome(res, badRequest('Already used'));
     return;
   }
 
-  if (pcr.type === 'verify-email') {
+  if (securityRequest.type === 'verify-email') {
     sendOutcome(res, badRequest('Invalid request type'));
     return;
   }
 
-  if (!timingSafeEqualStr(pcr.secret as string, req.body.secret)) {
+  if (!timingSafeEqualStr(securityRequest.secret as string, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;
   }
 
-  const user = await systemRepo.readReference(pcr.user as Reference<User>);
+  const user = await systemRepo.readReference(securityRequest.user as Reference<User>);
 
   const numPwns = await pwnedPassword(req.body.password);
   if (numPwns > 0) {
@@ -48,7 +50,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   await setPassword({ ...user, emailVerified: true }, req.body.password);
-  await systemRepo.updateResource<typeof pcr>({ ...pcr, used: true });
+  await systemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
   sendOutcome(res, allOk);
 }
 
