@@ -1,4 +1,4 @@
-# medplum-react-native-example
+# Medplum React Native Example
 
 This is a basic starter app that demonstrates how to sign into Medplum with React Native.
 
