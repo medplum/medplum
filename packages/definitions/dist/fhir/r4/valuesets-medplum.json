@@ -65,7 +65,12 @@
           {
             "code": "PasswordChangeRequest",
             "display": "PasswordChangeRequest",
-            "definition": "Password change request for the 'forgot password' flow."
+            "definition": "DEPRECATED Password change request for the 'forgot password' flow. Use UserSecurityRequest instead."
+          },
+          {
+            "code": "UserSecurityRequest",
+            "display": "UserSecurityRequest",
+            "definition": "User security request for the 'forgot password' flow or email verification."
           },
           {
             "code": "Project",
@@ -613,6 +618,50 @@
           "include": [
             {
               "system": "https://medplum.com/fhir/CodeSystem/password-change-request-type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/user-security-request-type",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "user-security-request-type",
+        "url": "https://medplum.com/fhir/CodeSystem/user-security-request-type",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "invite",
+            "display": "Invite",
+            "definition": "Initial user invite"
+          },
+          {
+            "code": "verify-email",
+            "display": "Verify email",
+            "definition": "Email verification of a user"
+          },
+          {
+            "code": "reset",
+            "display": "Reset",
+            "definition": "User requested password reset"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "user-security-request-type",
+        "url": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/user-security-request-type"
             }
           ]
         }

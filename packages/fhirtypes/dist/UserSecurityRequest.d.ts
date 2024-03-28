@@ -8,15 +8,15 @@ import { Reference } from './Reference';
 import { User } from './User';
 
 /**
- * DEPRECATED Password change request for the 'forgot password' flow. Use
- * UserSecurityCheck instead.
+ * User security request for the 'forgot password' flow, email
+ * verification, etc.
  */
-export interface PasswordChangeRequest {
+export interface UserSecurityRequest {
 
   /**
-   * This is a PasswordChangeRequest resource
+   * This is a UserSecurityRequest resource
    */
-  readonly resourceType: 'PasswordChangeRequest';
+  readonly resourceType: 'UserSecurityRequest';
 
   /**
    * The logical id of the resource, as used in the URL for the resource.
@@ -45,12 +45,12 @@ export interface PasswordChangeRequest {
   language?: string;
 
   /**
-   * The type of password change request (invite or reset).
+   * The type of user security request.
    */
-  type?: 'invite' | 'reset';
+  type?: 'invite' | 'verify-email' | 'reset';
 
   /**
-   * The user requesting the password change.
+   * The user performing the security request.
    */
   user: Reference<User>;
 

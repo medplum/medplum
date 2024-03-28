@@ -233,6 +233,11 @@ function applyProjectAdminAccessPolicy(
     });
 
     accessPolicy.resource.push({
+      resourceType: 'UserSecurityRequest',
+      readonly: true,
+    });
+
+    accessPolicy.resource.push({
       resourceType: 'User',
       criteria: `User?project=${membership.project?.reference}`,
       hiddenFields: ['passwordHash', 'mfaSecret'],
