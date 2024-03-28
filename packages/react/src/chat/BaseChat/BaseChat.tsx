@@ -1,4 +1,4 @@
-import { ActionIcon, DefaultMantineColor, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ProfileResource, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
@@ -215,7 +215,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 }
 
 interface ChatBubbleProps {
-  readonly accentColor?: DefaultMantineColor;
   readonly communication: Communication;
   readonly alignment: 'left' | 'right';
   readonly showDelivered?: boolean;
