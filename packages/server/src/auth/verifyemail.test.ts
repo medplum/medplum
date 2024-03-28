@@ -1,4 +1,4 @@
-import { Operator, SearchRequest, createReference, resolveId } from '@medplum/core';
+import { createReference, resolveId } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
@@ -10,20 +10,19 @@ import { generateSecret } from '../oauth/keys';
 
 const app = express();
 
-export async function createVerifyEmailRequest(
+export async function createUserSecurityRequest(
   repo: Repository,
   user: User,
-  redirectUri?: string
+  type: UserSecurityRequest['type']
 ): Promise<UserSecurityRequest> {
   return repo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
     meta: {
       project: resolveId(user.project),
     },
-    type: 'verify-email',
+    type,
     user: createReference(user),
     secret: generateSecret(16),
-    redirectUri,
   });
 }
 
@@ -37,47 +36,74 @@ describe('Verify email', () => {
     await shutdownApp();
   });
 
+  let user: User;
+
+  beforeEach(async () => {
+    const { project } = await createTestProject({
+      membership: { admin: true },
+    });
+
+    const addUserResult = await addTestUser(project);
+    user = addUserResult.user;
+
+    expect(user.emailVerified).not.toEqual(true);
+  });
+
   test('Success', async () =>
     withTestContext(async () => {
-      const { project } = await createTestProject({
-        membership: { admin: true },
-      });
-
-      const { user } = await addTestUser(project);
-      if (user.id === undefined) {
-        fail('User ID is undefined');
-      }
-
-      expect(user.emailVerified).not.toEqual(true);
-
       const systemRepo = getSystemRepo();
-      const searchRequest: SearchRequest<UserSecurityRequest> = {
-        resourceType: 'UserSecurityRequest',
-        filters: [{ code: 'user', operator: Operator.EQUALS, value: `User/${user.id}` }],
-        fields: ['id', 'type'],
-      };
+      const usr = await createUserSecurityRequest(systemRepo, user, 'verify-email');
 
-      const beforeResult = await systemRepo.searchResources(searchRequest);
-      expect(beforeResult.filter((pcr) => pcr.type === 'verify-email').length).toBe(0);
+      // Attempt verification with incorrect secret
+      const res1 = await request(app)
+        .post('/auth/verifyemail')
+        .type('json')
+        .send({
+          id: usr.id,
+          secret: usr.secret.slice(0, -1),
+        });
+      expect(res1.status).toBe(400);
 
-      const usr = await createVerifyEmailRequest(systemRepo, user, 'http://example.com/verify-email-redirect');
-
-      const afterCreateResult = await systemRepo.searchResources(searchRequest);
-      expect(afterCreateResult.filter((pcr) => pcr.type === 'verify-email').length).toBe(1);
-
-      const res = await request(app).post('/auth/verifyemail').type('json').send({
+      // Successfully verify email
+      const res2 = await request(app).post('/auth/verifyemail').type('json').send({
         id: usr.id,
         secret: usr.secret,
       });
-      expect(res.status).toBe(200);
+      expect(res2.status).toBe(200);
 
+      // Check that the security request was marked as used
       const afterVerifyResult = await systemRepo.readResource<UserSecurityRequest>(
         'UserSecurityRequest',
         usr.id as string
       );
       expect(afterVerifyResult.used).toBe(true);
 
-      const userAfter = await systemRepo.readResource<User>('User', user.id);
+      // Check that the user was updated
+      const userAfter = await systemRepo.readResource<User>('User', user.id as string);
       expect(userAfter.emailVerified).toBe(true);
+
+      // Should not be able to verify again with the same UserSecurityRequest
+      const res3 = await request(app).post('/auth/verifyemail').type('json').send({
+        id: usr.id,
+        secret: usr.secret,
+      });
+      expect(res3.status).toBe(400);
     }));
+
+  test('Incorrect UserSecurityRequest.type', async () => {
+    const systemRepo = getSystemRepo();
+    const invite = await createUserSecurityRequest(systemRepo, user, 'invite');
+    const res1 = await request(app).post('/auth/verifyemail').type('json').send({
+      id: invite.id,
+      secret: invite.secret,
+    });
+    expect(res1.status).toBe(400);
+
+    const reset = await createUserSecurityRequest(systemRepo, user, 'reset');
+    const res2 = await request(app).post('/auth/verifyemail').type('json').send({
+      id: reset.id,
+      secret: reset.secret,
+    });
+    expect(res2.status).toBe(400);
+  });
 });

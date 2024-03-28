@@ -150,6 +150,40 @@ describe('Set Password', () => {
     expect(res4.status).toBe(200);
   });
 
+  test('UserSecurityRequest invalid type', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const usr = await withTestContext(async () =>
+      getSystemRepo().createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: {
+          project: project.id,
+        },
+        type: 'verify-email', // Invalid type
+        user: createReference(user),
+        secret: generateSecret(16),
+      })
+    );
+
+    const res3 = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res3.status).toBe(400);
+  });
+
   test('Wrong secret', async () => {
     const email = `george${randomUUID()}@example.com`;
 
