@@ -210,7 +210,15 @@ class SyncSecureStorage implements Storage {
             })
             .catch(reject);
         })
-        .catch(reject);
+        .catch((err: Error) => {
+          console.error(err);
+          SecureStore.deleteItemAsync('___keys___')
+            .then(() => {
+              this.initialized = true;
+              resolve();
+            })
+            .catch(reject);
+        });
     });
   }
 
