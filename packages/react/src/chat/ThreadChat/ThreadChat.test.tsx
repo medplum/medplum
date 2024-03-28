@@ -5,7 +5,7 @@ import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mo
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import { MemoryRouter } from 'react-router-dom';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../../test-utils/render';
 import { ThreadChat, ThreadChatProps } from './ThreadChat';
 
 type SubscriptionControllerEvents = {
@@ -155,7 +155,7 @@ describe('ThreadChat', () => {
   }
 
   test('Displays existing and incoming thread messages', async () => {
-    const threadProps = { title: 'Test Chat', thread: defaultThread, open: true } satisfies ThreadChatProps;
+    const threadProps = { title: 'Test Chat', thread: defaultThread } satisfies ThreadChatProps;
     await setup(threadProps, defaultMedplum);
 
     // Displays existing messages
@@ -201,7 +201,7 @@ describe('ThreadChat', () => {
       }),
     ]);
 
-    const threadProps = { title: 'Test Chat', thread, open: true } satisfies ThreadChatProps;
+    const threadProps = { title: 'Test Chat', thread } satisfies ThreadChatProps;
     await setup(threadProps, defaultMedplum);
 
     // Displays existing messages
@@ -268,7 +268,7 @@ describe('ThreadChat', () => {
       }),
     ]);
 
-    const threadProps = { title: 'Test Chat', thread, open: true } satisfies ThreadChatProps;
+    const threadProps = { title: 'Test Chat', thread } satisfies ThreadChatProps;
     await setup(threadProps, defaultMedplum);
 
     // Displays existing messages
@@ -319,7 +319,7 @@ describe('ThreadChat', () => {
       }),
     ]);
 
-    const threadProps = { title: 'Test Chat', thread, open: true } satisfies ThreadChatProps;
+    const threadProps = { title: 'Test Chat', thread } satisfies ThreadChatProps;
     await setup(threadProps, defaultMedplum);
 
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
@@ -365,7 +365,7 @@ describe('ThreadChat', () => {
       }),
     ]);
 
-    const threadProps1 = { title: 'Test Chat', thread: thread1, open: true } satisfies ThreadChatProps;
+    const threadProps1 = { title: 'Test Chat', thread: thread1 } satisfies ThreadChatProps;
     const { rerender } = await setup(threadProps1, defaultMedplum);
 
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
@@ -374,7 +374,7 @@ describe('ThreadChat', () => {
       screen.getByText("Sorry doc, I can't hear you over the Geiger counter at the plant. Can you call back later?")
     ).toBeInTheDocument();
 
-    const threadProps2 = { title: 'Test Chat', thread: thread2, open: true } satisfies ThreadChatProps;
+    const threadProps2 = { title: 'Test Chat', thread: thread2 } satisfies ThreadChatProps;
     await rerender(threadProps2);
 
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
@@ -393,7 +393,6 @@ describe('ThreadChat', () => {
     const threadProps = {
       title: 'Test Chat',
       thread,
-      open: true,
       onMessageSent,
     } satisfies ThreadChatProps;
 
@@ -426,12 +425,40 @@ describe('ThreadChat', () => {
     const threadProps = {
       title: 'Test Chat',
       thread,
-      open: true,
     } satisfies ThreadChatProps;
 
     await setup(threadProps, medplum);
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Close chat' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Open chat' })).not.toBeInTheDocument();
+  });
+
+  test('Title passed in', async () => {
+    await setup({ title: 'Testing the title', thread: defaultThread });
+    expect(screen.getByText('Testing the title')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+  });
+
+  test('No title passed in', async () => {
+    const thread = await createThreadHeader(defaultMedplum, { topic: { text: 'Test Topic' } });
+    await setup({ thread });
+    expect(screen.getByText('Test Topic')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+  });
+
+  test('No title passed in and no thread topic', async () => {
+    await setup({ thread: defaultThread });
+    expect(screen.getByText('[No thread title]')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+  });
+
+  test('inputDisabled', async () => {
+    const threadProps = { thread: defaultThread };
+    const { rerender } = await setup({ ...threadProps });
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    await rerender({ ...threadProps, inputDisabled: false });
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    await rerender({ ...threadProps, inputDisabled: true });
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
   });
 });

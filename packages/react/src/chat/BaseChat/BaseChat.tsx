@@ -1,11 +1,14 @@
-import { ActionIcon, Avatar, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
+import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { ProfileResource, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { ProfileResource, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useSubscription } from '@medplum/react-hooks';
-import { IconArrowRight, IconChevronDown, IconMessage } from '@tabler/icons-react';
+import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
+import { IconArrowRight } from '@tabler/icons-react';
+import cx from 'clsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Form } from '../Form/Form';
+import { Form } from '../../Form/Form';
+import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
 
 function parseSentTime(communication: Communication): string {
@@ -45,13 +48,12 @@ export interface BaseChatProps {
   readonly query: string;
   readonly sendMessage: (content: string) => void;
   readonly onMessageReceived?: (message: Communication) => void;
-  readonly open?: boolean;
+  readonly inputDisabled?: boolean;
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
-  const { title, communications, setCommunications, query, sendMessage, open, onMessageReceived } = props;
+  const { title, communications, setCommunications, query, sendMessage, onMessageReceived, inputDisabled } = props;
   const medplum = useMedplum();
-  const [opened, setOpened] = useState(open ?? false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState(medplum.getProfile());
@@ -60,10 +62,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     () => (profile ? getReferenceString(medplum.getProfile() as ProfileResource) : ''),
     [profile, medplum]
   );
-
-  useEffect(() => {
-    setOpened((prevVal) => open ?? prevVal);
-  }, [open]);
 
   useSubscription(`Communication?${query}`, (bundle: Bundle) => {
     const communication = bundle.entry?.[1]?.resource as Communication;
@@ -76,13 +74,16 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   const sendMessageInternal = useCallback(
     (formData: Record<string, string>) => {
+      if (inputDisabled) {
+        return;
+      }
       if (inputRef.current) {
         inputRef.current.value = '';
       }
       sendMessage(formData.message);
       scrollToBottomRef.current = true;
     },
-    [sendMessage]
+    [inputDisabled, sendMessage]
   );
 
   // Disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
@@ -94,6 +95,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       setCommunications([]);
     }
   });
+
+  const [parentRef, parentRect] = useResizeObserver<HTMLDivElement>();
 
   const communicationsRef = useRef<Communication[]>(communications);
   communicationsRef.current = communications;
@@ -145,104 +148,69 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     return null;
   }
 
-  if (opened) {
-    return (
-      <>
-        <div className={classes.chatContainer}>
-          <Paper className={classes.chatPaper} shadow="xl" p={0} radius="md" withBorder>
-            <Title order={2} className={classes.chatTitle}>
-              {title}
-            </Title>
-            <div className={classes.chatBody}>
-              <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} w={400} h={360}>
-                {communications.map((c, i) => {
-                  const prevCommunication = i > 0 ? communications[i - 1] : undefined;
-                  const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
-                  const currCommTime = parseSentTime(c);
-                  return (
-                    <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
-                      {(!prevCommTime || currCommTime !== prevCommTime) && (
-                        <div style={{ textAlign: 'center' }}>{currCommTime}</div>
-                      )}
-                      {c.sender?.reference === profileRefStr ? (
-                        <Group justify="flex-end" gap="xs" mb="sm">
-                          <ChatBubble
-                            alignment="right"
-                            communication={c}
-                            showDelivered={!!c.received && c.id === myLastDeliveredId}
-                          />
-                          <Avatar radius="xl" color="orange" />
-                        </Group>
-                      ) : (
-                        <Group align="flex-start" gap="xs" mb="sm">
-                          <Avatar radius="xl" color="teal" />
-                          <ChatBubble alignment="left" communication={c} />
-                        </Group>
-                      )}
-                    </Stack>
-                  );
-                })}
-              </ScrollArea>
-            </div>
-            <div className={classes.chatInputContainer}>
-              <Form onSubmit={sendMessageInternal}>
-                <TextInput
-                  ref={inputRef}
-                  name="message"
-                  placeholder="Type a message..."
-                  radius="xl"
-                  rightSectionWidth={42}
-                  rightSection={
-                    <ActionIcon
-                      type="submit"
-                      size="1.5rem"
-                      radius="xl"
-                      color="blue"
-                      variant="filled"
-                      aria-label="Send message"
-                    >
-                      <IconArrowRight size="1rem" stroke={1.5} />
-                    </ActionIcon>
-                  }
-                />
-              </Form>
-            </div>
-          </Paper>
-        </div>
-        <div className={classes.iconContainer}>
-          <ActionIcon
-            className={classes.icon}
-            color="blue"
-            size="lg"
-            radius="xl"
-            variant="outline"
-            onClick={() => setOpened(false)}
-            aria-label="Close chat"
-          >
-            <IconChevronDown size="1.625rem" />
-          </ActionIcon>
-        </div>
-      </>
-    );
-  }
-
   return (
-    <div className={classes.iconContainer}>
-      <ActionIcon
-        className={classes.icon}
-        color="blue"
-        size="lg"
-        radius="xl"
-        variant="outline"
-        onClick={() => {
-          setOpened(true);
-          scrollToBottomRef.current = true;
-        }}
-        aria-label="Open chat"
-      >
-        <IconMessage size="1.625rem" />
-      </ActionIcon>
-    </div>
+    <Paper className={classes.chatPaper} p={0} radius="md">
+      <Title order={2} className={classes.chatTitle}>
+        {title}
+      </Title>
+      <div className={classes.chatBody} ref={parentRef}>
+        <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} h={parentRect.height}>
+          {communications.map((c, i) => {
+            const prevCommunication = i > 0 ? communications[i - 1] : undefined;
+            const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
+            const currCommTime = parseSentTime(c);
+            return (
+              <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
+                {(!prevCommTime || currCommTime !== prevCommTime) && (
+                  <div style={{ textAlign: 'center' }}>{currCommTime}</div>
+                )}
+                {c.sender?.reference === profileRefStr ? (
+                  <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
+                    <ChatBubble
+                      alignment="right"
+                      communication={c}
+                      showDelivered={!!c.received && c.id === myLastDeliveredId}
+                    />
+                    <ResourceAvatar radius="xl" color="orange" value={c.sender} />
+                  </Group>
+                ) : (
+                  <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
+                    <ResourceAvatar radius="xl" value={c.sender} />
+                    <ChatBubble alignment="left" communication={c} />
+                  </Group>
+                )}
+              </Stack>
+            );
+          })}
+        </ScrollArea>
+      </div>
+      <div className={classes.chatInputContainer}>
+        <Form onSubmit={sendMessageInternal}>
+          <TextInput
+            ref={inputRef}
+            name="message"
+            placeholder={!inputDisabled ? 'Type a message...' : 'Replies are disabled'}
+            radius="xl"
+            rightSectionWidth={42}
+            disabled={inputDisabled}
+            rightSection={
+              !inputDisabled ? (
+                <ActionIcon
+                  type="submit"
+                  size="1.5rem"
+                  radius="xl"
+                  color="blue"
+                  variant="filled"
+                  aria-label="Send message"
+                >
+                  <IconArrowRight size="1rem" stroke={1.5} />
+                </ActionIcon>
+              ) : undefined
+            }
+          />
+        </Form>
+      </div>
+    </Paper>
   );
 }
 
@@ -253,18 +221,26 @@ interface ChatBubbleProps {
 }
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
-  const content = props.communication.payload?.[0]?.contentString || '';
-  const seenTime = new Date(props.communication.received ?? -1);
+  const { communication, alignment, showDelivered } = props;
+  const content = communication.payload?.[0]?.contentString || '';
+  const seenTime = new Date(communication.received ?? -1);
+  const senderResource = useResource(communication.sender);
   return (
     <div className={classes.chatBubbleOuterWrap}>
       <div
+        className={cx(classes.chatBubbleName, alignment === 'right' && classes.chatBubbleNameRight)}
+        aria-label="Sender name"
+      >
+        {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
+      </div>
+      <div
         className={
-          props.alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
+          alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
         }
       >
         <div className={classes.chatBubble}>{content}</div>
       </div>
-      {props.showDelivered && (
+      {showDelivered && (
         <div style={{ textAlign: 'right' }}>
           Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
           {seenTime.getMinutes()}

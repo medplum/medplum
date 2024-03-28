@@ -67,6 +67,7 @@ const searchParams = [
   'Observation-value-string',
   'Encounter-length',
   'Communication-encounter',
+  'Communication-part-of',
   'Media-encounter',
   'Questionnaire-name',
   'ActivityDefinition-name',

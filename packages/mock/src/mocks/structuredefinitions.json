@@ -14812,7 +14812,12 @@
           "id": "Project",
           "path": "Project",
           "min": 0,
-          "max": "*"
+          "max": "*",
+          "base": {
+            "min": 0,
+            "max": "*",
+            "path": "Project"
+          }
         },
         {
           "id": "Project.id",
@@ -14879,6 +14884,22 @@
           ]
         },
         {
+          "id": "Project.identifier",
+          "path": "Project.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ],
+          "base": {
+            "path": "Project.identifier",
+            "min": 0,
+            "max": "*"
+          }
+        },
+        {
           "id": "Project.name",
           "path": "Project.name",
           "min": 0,
@@ -14887,7 +14908,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.name",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.description",
@@ -14898,7 +14924,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.description",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.superAdmin",
@@ -14909,7 +14940,12 @@
             {
               "code": "boolean"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.superAdmin",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.strictMode",
@@ -14920,7 +14956,12 @@
             {
               "code": "boolean"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.strictMode",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.checkReferencesOnWrite",
@@ -14931,7 +14972,12 @@
             {
               "code": "boolean"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.checkReferencesOnWrite",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.owner",
@@ -14943,7 +14989,12 @@
               "code": "Reference",
               "targetProfile": ["https://medplum.com/fhir/StructureDefinition/User"]
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.owner",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.features",
@@ -14954,7 +15005,12 @@
             {
               "code": "code"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.features",
+            "min": 0,
+            "max": "*"
+          }
         },
         {
           "id": "Project.defaultPatientAccessPolicy",
@@ -14966,7 +15022,12 @@
               "code": "Reference",
               "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.defaultPatientAccessPolicy",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.secret",
@@ -14977,7 +15038,12 @@
             {
               "code": "BackboneElement"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.secret",
+            "min": 0,
+            "max": "*"
+          }
         },
         {
           "id": "Project.secret.name",
@@ -14988,7 +15054,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.secret.name",
+            "min": 1,
+            "max": "1"
+          }
         },
         {
           "id": "Project.secret.value[x]",
@@ -15008,7 +15079,12 @@
             {
               "code": "integer"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.secret.value[x]",
+            "min": 1,
+            "max": "1"
+          }
         },
         {
           "id": "Project.site",
@@ -15019,7 +15095,12 @@
             {
               "code": "BackboneElement"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.site",
+            "min": 0,
+            "max": "*"
+          }
         },
         {
           "id": "Project.site.name",
@@ -15030,7 +15111,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.site.name",
+            "min": 1,
+            "max": "1"
+          }
         },
         {
           "id": "Project.site.domain",
@@ -15041,7 +15127,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.site.domain",
+            "min": 1,
+            "max": "*"
+          }
         },
         {
           "id": "Project.site.googleClientId",
@@ -15052,7 +15143,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.site.googleClientId",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.site.googleClientSecret",
@@ -15063,7 +15159,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.site.googleClientSecret",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.site.recaptchaSiteKey",
@@ -15074,7 +15175,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.site.recaptchaSiteKey",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Project.site.recaptchaSecretKey",
@@ -15085,7 +15191,45 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Project.site.recaptchaSecretKey",
+            "min": 0,
+            "max": "1"
+          }
+        },
+        {
+          "id": "Project.link",
+          "path": "Project.link",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ],
+          "base": {
+            "path": "Project.link",
+            "min": 0,
+            "max": "*"
+          }
+        },
+        {
+          "id": "Project.link.project",
+          "path": "Project.link.project",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["Project"]
+            }
+          ],
+          "base": {
+            "path": "Project.link.project",
+            "min": 1,
+            "max": "1"
+          }
         }
       ]
     }
@@ -15101,7 +15245,12 @@
           "id": "Bot",
           "path": "Bot",
           "min": 0,
-          "max": "*"
+          "max": "*",
+          "base": {
+            "path": "Bot",
+            "min": 0,
+            "max": "*"
+          }
         },
         {
           "id": "Bot.id",
@@ -15168,6 +15317,22 @@
           ]
         },
         {
+          "id": "Bot.identifier",
+          "path": "Bot.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ],
+          "base": {
+            "path": "Bot.identifier",
+            "min": 0,
+            "max": "*"
+          }
+        },
+        {
           "id": "Bot.name",
           "path": "Bot.name",
           "min": 0,
@@ -15176,7 +15341,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Bot.name",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Bot.description",
@@ -15187,7 +15357,12 @@
             {
               "code": "string"
             }
-          ]
+          ],
+          "base": {
+            "path": "Bot.description",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Bot.runtimeVersion",
@@ -15196,15 +15371,140 @@
           "max": "1",
           "type": [
             {
-              "code": "string"
+              "code": "code"
             }
-          ]
+          ],
+          "base": {
+            "path": "Bot.runtimeVersion",
+            "min": 0,
+            "max": "1"
+          }
         },
         {
           "id": "Bot.photo",
           "path": "Bot.photo",
           "min": 0,
           "max": "1",
+          "type": [
+            {
+              "code": "Attachment"
+            }
+          ],
+          "base": {
+            "path": "Bot.photo",
+            "min": 0,
+            "max": "1"
+          }
+        },
+        {
+          "id": "Bot.cron[x]",
+          "path": "Bot.cron[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "string"
+            }
+          ],
+          "base": {
+            "path": "Bot.cron[x]",
+            "min": 0,
+            "max": "1"
+          }
+        },
+        {
+          "id": "Bot.category",
+          "path": "Bot.category",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "base": {
+            "path": "Bot.category",
+            "min": 0,
+            "max": "*"
+          }
+        },
+        {
+          "id": "Bot.runAsUser",
+          "path": "Bot.runAsUser",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ],
+          "base": {
+            "path": "Bot.runAsUser",
+            "min": 0,
+            "max": "1"
+          }
+        },
+        {
+          "id": "Bot.auditEventTrigger",
+          "path": "Bot.auditEventTrigger",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Bot.auditEventTrigger",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Bot.auditEventDestination",
+          "path": "Bot.auditEventDestination",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Bot.auditEventDestination",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Bot.sourceCode",
+          "path": "Bot.sourceCode",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Bot.sourceCode",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Attachment"
+            }
+          ]
+        },
+        {
+          "id": "Bot.executableCode",
+          "path": "Bot.executableCode",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Bot.executableCode",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Attachment"
@@ -15220,18 +15520,12 @@
             {
               "code": "string"
             }
-          ]
-        },
-        {
-          "id": "Bot.runAsUser",
-          "path": "Bot.runAsUser",
-          "min": 0,
-          "max": "1",
-          "type": [
-            {
-              "code": "boolean"
-            }
-          ]
+          ],
+          "base": {
+            "path": "Bot.code",
+            "min": 0,
+            "max": "1"
+          }
         }
       ]
     }
