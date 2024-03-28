@@ -36,7 +36,7 @@ jest.mock('expo-secure-store', () => {
     deleteItemAsync: jest.fn().mockImplementation(async (key: string): Promise<void> => {
       store.delete(key);
     }),
-    _nextGetKeysShouldThrow(): void {
+    _makeNextGetKeysThrow(): void {
       getKeysShouldThrow = true;
     },
   };
@@ -202,7 +202,7 @@ describe('polyfillMedplumWebAPIs', () => {
         console.error = jest.fn();
 
         // @ts-expect-error This function is only exported for testing
-        SecureStore._nextGetKeysShouldThrow();
+        SecureStore._makeNextGetKeysThrow();
 
         const newStorage = new ExpoClientStorage();
         await expect(newStorage.getInitPromise()).resolves.toBeUndefined();
