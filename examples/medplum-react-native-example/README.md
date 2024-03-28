@@ -39,11 +39,11 @@ npm run web
 ### iOS Emulator
 
 1. Follow [these instructions](https://docs.expo.dev/workflow/ios-simulator/) to download Xcode and set up an emulated device
-2. Run
+2. Follow [these instructions](https://developer.apple.com/documentation/safari-developer-tools/adding-additional-simulators) to add an iOS device to your simulator
+3. Run
    ```bash
    npm run ios
    ```
-
 
 
 ## Medplum Login
