@@ -37,6 +37,15 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "Measure-url",
+    "name": "url",
+    "code": "url",
+    "base": ["Measure"],
+    "type": "uri",
+    "expression": "Measure.url"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Media-encounter",
     "name": "encounter",
     "code": "encounter",

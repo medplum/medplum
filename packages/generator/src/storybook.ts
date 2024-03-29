@@ -75,6 +75,7 @@ const searchParams = [
   'Task-identifier',
   'Slot-schedule',
   'Slot-start',
+  'Measure-url',
 ];
 
 const USCoreStructureDefinitionFiles = [
@@ -121,6 +122,11 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
   for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
+      for (const element of resource.snapshot?.element ?? []) {
+        if (element.base) {
+          element.base = undefined;
+        }
+      }
       output.push(resource);
     }
   }
@@ -160,12 +166,12 @@ if (process.argv[1].endsWith('storybook.ts')) {
 
 // or with jq: jq 'del(.text, .differential, .mapping, .snapshot.element[].mapping)' <input-file.json>
 function cleanStructureDefinition(sd: StructureDefinition): void {
-  delete sd.text;
-  delete sd.differential;
-  delete sd.mapping;
+  sd.text = undefined;
+  sd.differential = undefined;
+  sd.mapping = undefined;
   if (sd?.snapshot?.element) {
     for (const element of sd.snapshot.element) {
-      delete element.mapping;
+      element.mapping = undefined;
     }
   }
 }

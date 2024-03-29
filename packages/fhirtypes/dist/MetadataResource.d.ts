@@ -12,7 +12,6 @@ import { Resource } from './Resource';
 import { UsageContext } from './UsageContext';
 
 export interface MetadataResource {
-
   /**
    * This is a MetadataResource resource
    */
