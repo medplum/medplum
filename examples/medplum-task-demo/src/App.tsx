@@ -7,7 +7,15 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import { AppShell, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconCategory, IconDatabaseImport, IconFileImport, IconGridDots, IconUser } from '@tabler/icons-react';
+import {
+  IconCategory,
+  IconChecklist,
+  IconDatabaseImport,
+  IconGridDots,
+  IconMail,
+  IconReportMedical,
+  IconUser,
+} from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
@@ -97,10 +105,10 @@ export function App(): JSX.Element | null {
           {
             title: 'Upload Data',
             links: [
-              { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
-              { icon: <IconFileImport />, label: 'Upload Example Tasks', href: '/upload/task' },
-              { icon: <IconFileImport />, label: 'Upload Example Messages', href: '/upload/message' },
-              { icon: <IconFileImport />, label: 'Upload Example Report', href: '/upload/report' },
+              { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
+              { icon: <IconChecklist />, label: 'Upload Example Tasks', href: '/upload/task' },
+              { icon: <IconMail />, label: 'Upload Example Messages', href: '/upload/message' },
+              { icon: <IconReportMedical />, label: 'Upload Example Report', href: '/upload/report' },
             ],
           },
         ]}
