@@ -427,4 +427,64 @@ describe('Execute', () => {
     // Disable VM context bots
     getConfig().vmContextBotsEnabled = false;
   });
+
+  test('Super admin bot permissions', async () => {
+    // Create a super admin access token
+    const accessToken = await initTestAuth({ superAdmin: true });
+
+    // Temporarily enable VM context bots
+    getConfig().vmContextBotsEnabled = true;
+
+    // Create a bot with empty code
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Deploy the bot
+    // Given that we are using vmcontext bots, this code will actually be "deployed"
+    // Due to a limitation of supertest, we can't make API calls from the bot back to the "server"
+    // So what we're going to do instead is return the temp login ID
+    const res5 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          const { parseJWTPayload } = require("@medplum/core");
+          exports.handler = async function (medplum) {
+            const claims = parseJWTPayload(medplum.getAccessToken());
+            return claims.login_id;
+          };
+      `,
+      });
+    expect(res5.status).toBe(200);
+
+    // Execute the bot success
+    const res6 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send('');
+    expect(res6.status).toBe(200);
+
+    // Get the login
+    // Verify that the login is actually a super admin login
+    const res7 = await request(app)
+      .get(`/fhir/R4/Login/${res6.text}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res7.status).toBe(200);
+    expect(res7.body.resourceType).toBe('Login');
+    expect(res7.body.superAdmin).toBe(true);
+
+    // Disable VM context bots
+    getConfig().vmContextBotsEnabled = false;
+  });
 });
