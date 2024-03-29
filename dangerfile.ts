@@ -4,6 +4,9 @@ import { readFileSync, statSync } from 'fs';
 
 // Gather changes
 const modifiedFiles = danger.git.modified_files ?? [];
+if (!modifiedFiles.length) {
+  warn('No files were modified by this PR. Make sure this is expected!');
+}
 const modifiedSourceFiles = modifiedFiles.filter((path) => /\/src\/.+\.tsx?/.exec(path));
 
 // Keep package-lock.json up to date
