@@ -56,6 +56,8 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
     setContactPointWrapper(newValue);
   }
 
+  const errorPath = props.valuePath ?? path;
+
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <NativeSelect
@@ -66,7 +68,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
           setSystem(e.currentTarget.value as 'url' | 'phone' | 'fax' | 'email' | 'pager' | 'sms' | 'other')
         }
         data={['', 'email', 'phone', 'fax', 'pager', 'sms', 'other']}
-        error={getErrorsForInput(outcome, path + '.system')}
+        error={getErrorsForInput(outcome, errorPath + '.system')}
       />
       <NativeSelect
         data-testid="use"
@@ -74,14 +76,14 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
         required={(useElement?.min ?? 0) > 0}
         onChange={(e) => setUse(e.currentTarget.value as 'home' | 'work' | 'temp' | 'old' | 'mobile')}
         data={['', 'home', 'work', 'temp', 'old', 'mobile']}
-        error={getErrorsForInput(outcome, path + '.use')}
+        error={getErrorsForInput(outcome, errorPath + '.use')}
       />
       <TextInput
         placeholder="Value"
         defaultValue={contactPoint?.value}
         required={(valueElement?.min ?? 0) > 0}
         onChange={(e) => setValue(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, path + '.value')}
+        error={getErrorsForInput(outcome, errorPath + '.value')}
       />
     </Group>
   );

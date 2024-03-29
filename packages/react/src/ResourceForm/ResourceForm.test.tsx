@@ -1,6 +1,6 @@
 import { HTTP_HL7_ORG, createReference, deepClone, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Observation, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
+import { Observation, OperationOutcome, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
@@ -264,7 +264,7 @@ describe('ResourceForm', () => {
     expect(fakeRequestProfileSchema).toHaveBeenCalledTimes(1);
   });
 
-  test('US Core Patient add extensions', async () => {
+  describe('US Core Patient', () => {
     const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`;
     const raceExtensionUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-race`;
     const ethnicityExtensionUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-ethnicity`;
@@ -275,104 +275,163 @@ describe('ResourceForm', () => {
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
     ];
-    for (const url of profileUrls) {
-      const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
-      if (!sd) {
-        fail(`could not find structure definition for ${url}`);
-      }
-      loadDataType(sd, sd.url);
-    }
-
-    const onSubmit = jest.fn();
-    const mockedMedplum = new MockClient();
     const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
       return [profileUrl];
     });
-    mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
-
-    const initialValue: Patient = {
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Lisa'],
-          family: 'Simpson',
-          use: 'usual',
-        },
-      ],
-      gender: 'female',
-      identifier: [
-        {
-          system: 'http://name.ly',
-          value: 'lisa-123',
-        },
-      ],
-    };
-    const expectedValue = deepClone(initialValue);
-    expectedValue.extension = [];
-
-    await setup({ defaultValue: initialValue, profileUrl, onSubmit }, mockedMedplum);
-
-    const raceExtension = screen.getByTestId('slice-race');
-
-    await act(async () => {
-      fireEvent.click(within(raceExtension).getByText('Add Race'));
+    beforeAll(() => {
+      for (const url of profileUrls) {
+        const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
+        if (!sd) {
+          fail(`could not find structure definition for ${url}`);
+        }
+        loadDataType(sd, sd.url);
+      }
     });
 
-    await act(async () => {
-      fireEvent.click(within(raceExtension).getByText('Add OMB Category'));
-    });
+    test('add extensions', async () => {
+      const onSubmit = jest.fn();
+      const mockedMedplum = new MockClient();
+      mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
 
-    const ombCategoryInput = within(within(raceExtension).getByTestId('slice-ombCategory')).getByRole('searchbox');
-
-    await act(async () => {
-      fireEvent.focus(ombCategoryInput);
-    });
-
-    await act(async () => {
-      fireEvent.change(ombCategoryInput, { target: { value: 'custom-omb-category-value' } });
-    });
-
-    expect(await screen.findByText('+ Create custom-omb-category-value')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('+ Create custom-omb-category-value'));
-    });
-
-    expect(await screen.findByText('custom-omb-category-value')).toBeInTheDocument();
-
-    await act(async () => {
-      const textInput = within(within(raceExtension).getByTestId('slice-text')).getByTestId('value[x]');
-      fireEvent.change(textInput, {
-        target: { value: 'This is a text value' },
-      });
-    });
-
-    // Just clicking add, but not filling in a value should not add it to the final value
-    await act(async () => {
-      fireEvent.click(within(raceExtension).getByText('Add Detailed'));
-    });
-
-    expectedValue.extension.push({
-      extension: [
-        {
-          url: 'ombCategory',
-          valueCoding: {
-            code: 'custom-omb-category-value',
-            display: 'custom-omb-category-value',
+      const initialValue: Patient = {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Lisa'],
+            family: 'Simpson',
+            use: 'usual',
           },
-        },
-        {
-          url: 'text',
-          valueString: 'This is a text value',
-        },
-      ],
-      url: raceExtensionUrl,
+        ],
+        gender: 'female',
+        identifier: [
+          {
+            system: 'http://name.ly',
+            value: 'lisa-123',
+          },
+        ],
+      };
+      const expectedValue = deepClone(initialValue);
+      expectedValue.extension = [];
+
+      await setup({ defaultValue: initialValue, profileUrl, onSubmit }, mockedMedplum);
+
+      const raceExtension = screen.getByTestId('slice-race');
+
+      await act(async () => {
+        fireEvent.click(within(raceExtension).getByText('Add Race'));
+      });
+
+      await act(async () => {
+        fireEvent.click(within(raceExtension).getByText('Add OMB Category'));
+      });
+
+      const ombCategoryInput = within(within(raceExtension).getByTestId('slice-ombCategory')).getByRole('searchbox');
+
+      await act(async () => {
+        fireEvent.focus(ombCategoryInput);
+      });
+
+      await act(async () => {
+        fireEvent.change(ombCategoryInput, { target: { value: 'custom-omb-category-value' } });
+      });
+
+      expect(await screen.findByText('+ Create custom-omb-category-value')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('+ Create custom-omb-category-value'));
+      });
+
+      expect(await screen.findByText('custom-omb-category-value')).toBeInTheDocument();
+
+      await act(async () => {
+        const textInput = within(within(raceExtension).getByTestId('slice-text')).getByTestId('value[x]');
+        fireEvent.change(textInput, {
+          target: { value: 'This is a text value' },
+        });
+      });
+
+      // Just clicking add, but not filling in a value should not add it to the final value
+      await act(async () => {
+        fireEvent.click(within(raceExtension).getByText('Add Detailed'));
+      });
+
+      expectedValue.extension.push({
+        extension: [
+          {
+            url: 'ombCategory',
+            valueCoding: {
+              code: 'custom-omb-category-value',
+              display: 'custom-omb-category-value',
+            },
+          },
+          {
+            url: 'text',
+            valueString: 'This is a text value',
+          },
+        ],
+        url: raceExtensionUrl,
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('OK'));
+      });
+
+      expect(onSubmit).toHaveBeenCalledWith(expectedValue);
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
-    });
+    test('Array-aware error messages on primitive field', async () => {
+      const onSubmit = jest.fn();
+      const mockedMedplum = new MockClient();
+      mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
+      const defaultValue: Patient = {
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://system.com', value: 'foo' }],
+        name: [{ given: ['Matt'] }, { prefix: ['Sir'] }],
+        gender: 'male',
+        meta: {
+          profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+        },
+        link: [
+          { other: { reference: 'Patient/5bf4658e-b598-45a1-b575-a896206ae4e0', display: 'Matt' } } as any,
+          {
+            other: { reference: 'Patient/5bf4658e-b598-45a1-b575-a896206ae4e0', display: 'Matt' },
+            type: 'replaced-by',
+          },
+        ],
+      };
 
-    expect(onSubmit).toHaveBeenCalledWith(expectedValue);
+      const outcome: OperationOutcome = {
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'structure',
+            details: {
+              text: 'Missing required property',
+            },
+            expression: ['Patient.link[0].type'],
+          },
+        ],
+      };
+
+      await setup({ defaultValue, profileUrl, onSubmit, outcome }, mockedMedplum);
+
+      const typeInputs = screen.getAllByText('Type');
+      expect(typeInputs).toHaveLength(2);
+
+      // Patient.link[0].type has error
+      const typeLabel1 = typeInputs[0];
+      if (typeLabel1.parentElement === null) {
+        fail('typeLabel1.parentElement is null');
+      }
+      expect(within(typeLabel1.parentElement).queryByText('Missing required property')).toBeInTheDocument();
+
+      // Patient.link[1].type has NO error
+      const typeLabel2 = typeInputs[1];
+      if (typeLabel2.parentElement === null) {
+        fail('typeLabel2.parentElement is null');
+      }
+      expect(within(typeLabel2.parentElement).queryByText('Missing required property')).not.toBeInTheDocument();
+    });
   });
 });

@@ -12,7 +12,7 @@ import {
 } from '../outcomes';
 import { PropertyType, TypedValue, isReference } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
-import { ResourceVisitor, crawlResource, getNestedProperty } from './crawler';
+import { ResourceVisitor, TypedValueWithPath, crawlResource, getNestedProperty } from './crawler';
 import {
   Constraint,
   InternalSchemaElement,
@@ -147,13 +147,13 @@ class ResourceValidator implements ResourceVisitor {
     return issues;
   }
 
-  onExitObject(path: string, obj: TypedValue, schema: InternalTypeSchema): void {
+  onExitObject(path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
     this.checkAdditionalProperties(obj, schema.elements, path);
   }
 
-  onEnterResource(_path: string, obj: TypedValue): void {
+  onEnterResource(_path: string, obj: TypedValueWithPath): void {
     this.currentResource.push(obj.value);
   }
 
@@ -162,22 +162,23 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   visitProperty(
-    _parent: TypedValue,
+    _parent: TypedValueWithPath,
     key: string,
     path: string,
-    propertyValues: (TypedValue | TypedValue[] | undefined)[],
+    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
     schema: InternalTypeSchema
   ): void {
     const element = schema.elements[key];
     if (!element) {
       throw new Error(`Missing element validation schema for ${key}`);
     }
+
     for (const value of propertyValues) {
       if (!this.checkPresence(value, element, path)) {
         return;
       }
       // Check cardinality
-      let values: TypedValue[];
+      let values: TypedValueWithPath[];
       if (element.isArray) {
         if (!Array.isArray(value)) {
           this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
@@ -225,20 +226,22 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   private checkPresence(
-    value: TypedValue | TypedValue[] | undefined,
+    value: TypedValueWithPath | TypedValueWithPath[],
     field: InternalSchemaElement,
     path: string
-  ): value is TypedValue | TypedValue[] {
-    if (value === undefined) {
+  ): boolean {
+    if (!Array.isArray(value) && value.value === undefined) {
       if (field.min > 0) {
-        this.issues.push(createStructureIssue(path, 'Missing required property'));
+        this.issues.push(createStructureIssue(value.path, 'Missing required property'));
       }
       return false;
     }
+
     if (isEmpty(value)) {
       this.issues.push(createStructureIssue(path, 'Invalid empty value'));
       return false;
     }
+
     return true;
   }
 
@@ -524,10 +527,16 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
 }
 
 function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: InternalSchemaElement): boolean {
-  if (element.pattern && !deepIncludes(value, element.pattern)) {
+  // It is possible that `value` has additional keys beyond `type` and `value` (e.g. `expression` if a
+  // `TypedValueWithExpression` is being used), so ensure that only `type` and `value` are considered for comparison.
+  const typeAndValue = Array.isArray(value)
+    ? value.map((v) => ({ type: v.type, value: v.value }))
+    : { type: value.type, value: value.value };
+
+  if (element.pattern && !deepIncludes(typeAndValue, element.pattern)) {
     return false;
   }
-  if (element.fixed && !deepEquals(value, element.fixed)) {
+  if (element.fixed && !deepEquals(typeAndValue, element.fixed)) {
     return false;
   }
   return true;
