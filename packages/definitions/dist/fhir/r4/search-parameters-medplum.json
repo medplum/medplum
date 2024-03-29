@@ -540,6 +540,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/UserSecurityRequest-user",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "UserSecurityRequest-user",
+        "url": "https://medplum.com/fhir/SearchParameter/UserSecurityRequest-user",
+        "version": "4.0.1",
+        "name": "user",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The user for the security request.",
+        "code": "user",
+        "base": ["UserSecurityRequest"],
+        "type": "reference",
+        "expression": "UserSecurityRequest.user",
+        "target": ["User"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Task-due-date",
       "resource": {
         "resourceType": "SearchParameter",

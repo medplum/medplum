@@ -162,6 +162,7 @@ import { TestReport } from './TestReport';
 import { TestScript } from './TestScript';
 import { User } from './User';
 import { UserConfiguration } from './UserConfiguration';
+import { UserSecurityRequest } from './UserSecurityRequest';
 import { ValueSet } from './ValueSet';
 import { VerificationResult } from './VerificationResult';
 import { VisionPrescription } from './VisionPrescription';
@@ -325,6 +326,7 @@ export type Resource = AccessPolicy
   | TestScript
   | User
   | UserConfiguration
+  | UserSecurityRequest
   | ValueSet
   | VerificationResult
   | VisionPrescription;

@@ -1,6 +1,6 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
-import { DomainConfiguration, PasswordChangeRequest } from '@medplum/fhirtypes';
+import { DomainConfiguration, UserSecurityRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -431,10 +431,10 @@ describe('Reset Password', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(1); // Ensure SESv2Client is called once
     expect(SendEmailCommand).toHaveBeenCalledTimes(1); // Ensure SendEmailCommand is called once
 
-    // Get newly created PasswordChangeRequest
-    const passwordChangeRequest = (await withTestContext(async () => {
-      const passwordChangeRequest = await systemRepo.searchOne<PasswordChangeRequest>({
-        resourceType: 'PasswordChangeRequest',
+    // Get newly created UserSecurityRequest
+    const userSecurityRequest = (await withTestContext(async () =>
+      systemRepo.searchOne<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
         filters: [
           {
             code: 'user',
@@ -442,12 +442,11 @@ describe('Reset Password', () => {
             value: getReferenceString(user),
           },
         ],
-      });
-      return passwordChangeRequest;
-    })) as PasswordChangeRequest;
+      })
+    )) as UserSecurityRequest;
 
-    // Verify PasswordChangeRequest redirectUri
-    expect(passwordChangeRequest.redirectUri).toBe('http://example.com');
+    // Verify UserSecurityRequest.redirectUri
+    expect(userSecurityRequest.redirectUri).toBe('http://example.com');
 
     // Verify email details
     const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
