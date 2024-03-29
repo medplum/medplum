@@ -14,6 +14,14 @@ jobs:
           repository: ${{ github.event.workflow_run.head_repository.full_name }}
           ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
+      - id: stats
+        name: Log branch stats
+        run: |
+          BRANCH_NAME=$(git branch --show-current)
+          COMMIT_HASH=$(git rev-parse HEAD)
+
+          echo "Current branch: $BRANCH_NAME"
+          echo "Commit hash: $COMMIT_HASH"
       - uses: actions/setup-node@v4
         with:
           node-version: 20
