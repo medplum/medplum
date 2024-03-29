@@ -19,6 +19,7 @@ import {
   IconGridDots,
   IconMail,
   IconReportMedical,
+  IconRibbonHealth,
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
@@ -85,6 +86,11 @@ export function App(): JSX.Element | null {
               { icon: <IconChecklist />, label: 'Upload Example Tasks', href: '/upload/task' },
               { icon: <IconMail />, label: 'Upload Example Messages', href: '/upload/message' },
               { icon: <IconReportMedical />, label: 'Upload Example Report', href: '/upload/report' },
+              {
+                icon: <IconRibbonHealth />,
+                label: 'Upload Example User Qualifications',
+                href: '/upload/qualifications',
+              },
             ],
           },
         ]}

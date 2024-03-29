@@ -1,10 +1,10 @@
 import { Button } from '@mantine/core';
 import { MedplumClient, capitalize, isOk, normalizeErrorString } from '@medplum/core';
-import { Document, useMedplum } from '@medplum/react';
+import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import { showNotification } from '@mantine/notifications';
-import { Bundle, ValueSet } from '@medplum/fhirtypes';
+import { Bundle, Coding, Practitioner, ValueSet } from '@medplum/fhirtypes';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import businessStatusValueSet from '../../data/core/business-status-valueset.json';
@@ -16,6 +16,7 @@ import exampleTaskData from '../../data/example/example-tasks.json';
 
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const { dataType } = useParams();
   const navigate = useNavigate();
   const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
@@ -24,7 +25,7 @@ export function UploadDataPage(): JSX.Element {
 
   const handleUpload = useCallback(() => {
     setButtonDisabled(true);
-    let uploadFunction: (medplum: MedplumClient) => Promise<void>;
+    let uploadFunction: (medplum: MedplumClient, profile?: Practitioner) => Promise<void>;
     switch (dataType) {
       case 'core':
         uploadFunction = uploadCoreData;
@@ -38,11 +39,14 @@ export function UploadDataPage(): JSX.Element {
       case 'report':
         uploadFunction = uploadExampleReportData;
         break;
+      case 'qualifications':
+        uploadFunction = uploadExampleQualifications;
+        break;
       default:
         throw new Error(`Invalid upload type '${dataType}'`);
     }
 
-    uploadFunction(medplum)
+    uploadFunction(medplum, profile as Practitioner)
       .then(() => navigate(-1))
       .catch((error) => {
         showNotification({
@@ -53,7 +57,7 @@ export function UploadDataPage(): JSX.Element {
         });
       })
       .finally(() => setButtonDisabled(false));
-  }, [medplum, dataType, navigate]);
+  }, [medplum, profile, dataType, navigate]);
 
   return (
     <Document>
@@ -124,5 +128,58 @@ async function uploadExampleTaskData(medplum: MedplumClient): Promise<void> {
     icon: <IconCircleCheck />,
     title: 'Success',
     message: 'Uploaded Example Tasks',
+  });
+}
+
+async function uploadExampleQualifications(medplum: MedplumClient, profile?: Practitioner): Promise<void> {
+  if (!profile) {
+    return;
+  }
+
+  const states: Coding[] = [
+    { code: 'NY', display: 'State of New York', system: 'https://www.usps.com/' },
+    { code: 'CA', display: 'State of California', system: 'https://www.usps.com/' },
+    { code: 'TX', display: 'State of Texas', system: 'https://www.usps.com/' },
+  ];
+
+  await medplum.patchResource(profile.resourceType, profile.id as string, [
+    {
+      path: '/qualification',
+      op: 'replace',
+      value: states.map((state) => ({
+        code: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0360',
+              code: 'MD',
+            },
+          ],
+          text: 'MD',
+        },
+        // Medical License Issuer: State of New York
+        issuer: {
+          display: state.display,
+        },
+        // Extension: Medical License Valid in NY
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification',
+            extension: [
+              {
+                url: 'whereValid',
+                valueCodeableConcept: {
+                  coding: [state],
+                },
+              },
+            ],
+          },
+        ],
+      })),
+    },
+  ]);
+  showNotification({
+    icon: <IconCircleCheck />,
+    title: 'Success',
+    message: 'Uploaded Example Qualifications',
   });
 }
