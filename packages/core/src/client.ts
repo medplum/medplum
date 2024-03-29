@@ -820,8 +820,10 @@ export class MedplumClient extends EventTarget {
       if (!options?.accessToken) {
         this.attemptResumeActiveLogin().catch(console.error);
       }
+      this.initPromise = Promise.resolve();
     } else {
-      this.initPromise = this.initStorage();
+      this.initComplete = false;
+      this.initPromise = this.storage.getInitPromise();
       this.initPromise
         .then(() => {
           if (!options?.accessToken) {
@@ -848,15 +850,6 @@ export class MedplumClient extends EventTarget {
    */
   getInitPromise(): Promise<void> {
     return this.initPromise;
-  }
-
-  private async initStorage(): Promise<void> {
-    if (this.storage.getInitPromise === undefined) {
-      return Promise.resolve();
-    }
-
-    this.initComplete = false;
-    return this.storage.getInitPromise();
   }
 
   private async attemptResumeActiveLogin(): Promise<void> {
