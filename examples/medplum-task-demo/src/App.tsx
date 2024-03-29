@@ -9,7 +9,7 @@ import {
 import { AppShell, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCategory, IconDatabaseImport, IconFileImport, IconGridDots, IconUser } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
@@ -17,7 +17,7 @@ import { SignInPage } from './pages/SignInPage';
 import { TaskPage } from './pages/TaskPage';
 import { UploadDataPage } from './pages/UploadDataPage';
 
-const SEARCH_TABLE_FIELDS = ['code', '_lastUpdated', 'owner', 'for', 'priority'];
+const SEARCH_TABLE_FIELDS = ['code', 'owner', 'for', 'priority', 'due-date', '_lastUpdated'];
 const ALL_TASKS_LINK = {
   icon: <IconGridDots />,
   label: 'All Tasks',
@@ -100,15 +100,15 @@ export function App(): JSX.Element | null {
               { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
               { icon: <IconFileImport />, label: 'Upload Example Tasks', href: '/upload/task' },
               { icon: <IconFileImport />, label: 'Upload Example Messages', href: '/upload/message' },
+              { icon: <IconFileImport />, label: 'Upload Example Report', href: '/upload/report' },
             ],
           },
         ]}
-        resourceTypeSearchDisabled={true}
         headerSearchDisabled={true}
       >
         <Suspense fallback={<Loading />}>
           <Routes>
-            <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
+            <Route path="/" element={profile ? <Navigate to={ALL_TASKS_LINK.href} /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/:resourceType/:id/*" element={<ResourcePage />} />

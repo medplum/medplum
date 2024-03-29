@@ -19,9 +19,7 @@ export function SearchPage(): JSX.Element {
   });
 
   const tabs = ['Active', 'Completed'];
-  const searchQuery = window.location.search;
-  const currentSearch = parseSearchRequest(searchQuery);
-
+  const currentSearch = parseSearchRequest(window.location.toString());
   const currentTab = handleInitialTab(currentSearch);
 
   useEffect(() => {

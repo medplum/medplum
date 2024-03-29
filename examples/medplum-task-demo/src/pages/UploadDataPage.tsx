@@ -1,7 +1,7 @@
 import { Button } from '@mantine/core';
 import { MedplumClient, capitalize, isOk, normalizeErrorString } from '@medplum/core';
 import { Document, useMedplum } from '@medplum/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 import { showNotification } from '@mantine/notifications';
 import { Bundle, ValueSet } from '@medplum/fhirtypes';
@@ -10,7 +10,8 @@ import { useCallback, useState } from 'react';
 import businessStatusValueSet from '../../data/core/business-status-valueset.json';
 import practitionerRoleValueSet from '../../data/core/practitioner-role-valueset.json';
 import taskTypeValueSet from '../../data/core/task-type-valueset.json';
-import exampleMessageData from '../../data/example/respond-to-message-data.json';
+import exampleMessageData from '../../data/example/example-messages.json';
+import exampleReportData from '../../data/example/example-reports.json';
 import exampleTaskData from '../../data/example/example-tasks.json';
 
 export function UploadDataPage(): JSX.Element {
@@ -24,18 +25,25 @@ export function UploadDataPage(): JSX.Element {
   const handleUpload = useCallback(() => {
     setButtonDisabled(true);
     let uploadFunction: (medplum: MedplumClient) => Promise<void>;
-    if (dataType === 'core') {
-      uploadFunction = uploadCoreData;
-    } else if (dataType === 'task') {
-      uploadFunction = uploadExampleTaskData;
-    } else if (dataType === 'message') {
-      uploadFunction = uploadExampleMessageData;
-    } else {
-      throw new Error(`Invalid upload type '${dataType}'`);
+    switch (dataType) {
+      case 'core':
+        uploadFunction = uploadCoreData;
+        break;
+      case 'task':
+        uploadFunction = uploadExampleTaskData;
+        break;
+      case 'message':
+        uploadFunction = uploadExampleMessageData;
+        break;
+      case 'report':
+        uploadFunction = uploadExampleReportData;
+        break;
+      default:
+        throw new Error(`Invalid upload type '${dataType}'`);
     }
 
     uploadFunction(medplum)
-      .then(() => navigate('/'))
+      .then(() => navigate(-1))
       .catch((error) => {
         showNotification({
           color: 'red',
@@ -97,7 +105,16 @@ async function uploadExampleMessageData(medplum: MedplumClient): Promise<void> {
   showNotification({
     icon: <IconCircleCheck />,
     title: 'Success',
-    message: 'Uploaded Example Message Data',
+    message: 'Uploaded Example Messages',
+  });
+}
+
+async function uploadExampleReportData(medplum: MedplumClient): Promise<void> {
+  await medplum.executeBatch(exampleReportData as Bundle);
+  showNotification({
+    icon: <IconCircleCheck />,
+    title: 'Success',
+    message: 'Uploaded Example Report',
   });
 }
 
@@ -106,6 +123,6 @@ async function uploadExampleTaskData(medplum: MedplumClient): Promise<void> {
   showNotification({
     icon: <IconCircleCheck />,
     title: 'Success',
-    message: 'Uploaded Task Message Data',
+    message: 'Uploaded Example Tasks',
   });
 }
