@@ -3,7 +3,7 @@
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:b0dd25cd-9856-489b-8ede-2d34b0c66871",
+      "fullUrl": "urn:uuid:146feddc-7915-4ab3-800d-c98e312116cd",
       "request": {
         "method": "POST",
         "url": "Binary"
@@ -15,7 +15,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:a080f2df-e597-4eb4-b180-d9b0d1a75372",
+      "fullUrl": "urn:uuid:e038a143-8c66-4b27-b69c-5430aeff6053",
       "request": {
         "method": "POST",
         "url": "Binary"
@@ -33,15 +33,16 @@
       },
       "resource": {
         "resourceType": "Bot",
+        "id": "$bot-create-review-report-task-id",
         "name": "create-review-report-task",
         "runtimeVersion": "awslambda",
         "sourceCode": {
           "contentType": "text/typescript",
-          "url": "urn:uuid:b0dd25cd-9856-489b-8ede-2d34b0c66871"
+          "url": "urn:uuid:146feddc-7915-4ab3-800d-c98e312116cd"
         },
         "executableCode": {
           "contentType": "text/javascript",
-          "url": "urn:uuid:a080f2df-e597-4eb4-b180-d9b0d1a75372"
+          "url": "urn:uuid:e038a143-8c66-4b27-b69c-5430aeff6053"
         }
       }
     },
@@ -54,14 +55,16 @@
       "resource": {
         "resourceType": "Subscription",
         "status": "active",
+        "reason": "create-review-report-task",
         "channel": {
-          "endpoint": "$bot-create-review-report-task-reference"
+          "endpoint": "$bot-create-review-report-task-reference",
+          "type": "rest-hook"
         },
         "criteria": "DiagnosticReport"
       }
     },
     {
-      "fullUrl": "urn:uuid:d58964a6-6da2-4f79-8af3-f5af3a674350",
+      "fullUrl": "urn:uuid:067a72c8-f24a-44c1-8145-cc6aa3049037",
       "request": {
         "method": "POST",
         "url": "Binary"
@@ -73,7 +76,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:39ae0a98-c658-4379-bf28-8eb8204667a0",
+      "fullUrl": "urn:uuid:a97b0a11-3e9f-42cd-af63-c33a736145b8",
       "request": {
         "method": "POST",
         "url": "Binary"
@@ -91,15 +94,16 @@
       },
       "resource": {
         "resourceType": "Bot",
+        "id": "$bot-create-respond-to-message-task-id",
         "name": "create-respond-to-message-task",
         "runtimeVersion": "awslambda",
         "sourceCode": {
           "contentType": "text/typescript",
-          "url": "urn:uuid:d58964a6-6da2-4f79-8af3-f5af3a674350"
+          "url": "urn:uuid:067a72c8-f24a-44c1-8145-cc6aa3049037"
         },
         "executableCode": {
           "contentType": "text/javascript",
-          "url": "urn:uuid:39ae0a98-c658-4379-bf28-8eb8204667a0"
+          "url": "urn:uuid:a97b0a11-3e9f-42cd-af63-c33a736145b8"
         }
       }
     },
@@ -112,8 +116,10 @@
       "resource": {
         "resourceType": "Subscription",
         "status": "active",
+        "reason": "create-respond-to-message-task",
         "channel": {
-          "endpoint": "$bot-create-respond-to-message-task-reference"
+          "endpoint": "$bot-create-respond-to-message-task-reference",
+          "type": "rest-hook"
         },
         "criteria": "Communication?part-of:missing=true"
       }
