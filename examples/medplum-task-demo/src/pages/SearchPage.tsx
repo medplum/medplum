@@ -13,19 +13,9 @@ export function SearchPage(): JSX.Element {
   const [search, setSearch] = useState<SearchRequest>();
   const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
 
-  const [showTabs, setShowTabs] = useState<boolean>(() => {
-    const search = parseSearchRequest(window.location.pathname + window.location.search);
-    return shouldShowTabs(search);
-  });
-
   const tabs = ['Active', 'Completed'];
   const currentSearch = parseSearchRequest(window.location.toString());
   const currentTab = handleInitialTab(currentSearch);
-
-  useEffect(() => {
-    const searchQuery = parseSearchRequest(location.pathname + location.search);
-    setShowTabs(shouldShowTabs(searchQuery));
-  }, [location]);
 
   useEffect(() => {
     // Parse the search definition from the url and get the correct fields for the resource type
@@ -65,7 +55,7 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Document>
-      {showTabs ? (
+      {shouldShowTabs(search) ? (
         <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
           <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
             {tabs.map((tab) => (
@@ -81,9 +71,6 @@ export function SearchPage(): JSX.Element {
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
-              onChange={(e) => {
-                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
-              }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
@@ -142,10 +129,12 @@ function shouldShowTabs(search: SearchRequest): boolean {
     return true;
   }
 
-  for (const filter of search.filters) {
-    if (filter.code === 'performer') {
-      return false;
-    }
+  if (search.filters.some((filter) => filter.code === 'performer')) {
+    return false;
+  }
+
+  if (search.filters.some((filter) => filter.code === 'patient.address-state')) {
+    return false;
   }
 
   return true;

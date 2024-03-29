@@ -31,11 +31,11 @@ import { SignInPage } from './pages/SignInPage';
 import { TaskPage } from './pages/TaskPage';
 import { UploadDataPage } from './pages/UploadDataPage';
 
-const SEARCH_TABLE_FIELDS = ['code', 'owner', 'for', 'priority', 'due-date', '_lastUpdated'];
+const SEARCH_TABLE_FIELDS = ['code', 'owner', 'for', 'priority', 'due-date', '_lastUpdated', 'performerType'];
 const ALL_TASKS_LINK = {
   icon: <IconGridDots />,
   label: 'All Tasks',
-  href: `/Task?_fields=${[...SEARCH_TABLE_FIELDS, 'performerType'].join(',')}`,
+  href: `/Task?_fields=${SEARCH_TABLE_FIELDS.join(',')}`,
 };
 
 export function App(): JSX.Element | null {
