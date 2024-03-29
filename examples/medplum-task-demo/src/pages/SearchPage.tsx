@@ -4,7 +4,7 @@ import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CreateTaskModal } from '../components/actions/CreateTaskModal';
-import { getPopulatedSearch } from './utils';
+import { getPopulatedSearch } from '../utils/search-control';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();

@@ -1,11 +1,16 @@
+import { LoadingOverlay } from '@mantine/core';
 import {
+  MedplumClient,
   Operator,
   SearchRequest,
+  capitalize,
   formatCodeableConcept,
   formatSearchQuery,
+  getExtension,
   getReferenceString,
   normalizeErrorString,
 } from '@medplum/core';
+import { Practitioner } from '@medplum/fhirtypes';
 import { AppShell, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconCategory,
@@ -35,62 +40,33 @@ const ALL_TASKS_LINK = {
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const [userLinks, setUserLinks] = useState<NavbarLink[]>([]);
 
-  const profileReference = profile && getReferenceString(profile);
-  const [userLinks, setUserLinks] = useState<NavbarLink[]>([ALL_TASKS_LINK]);
-
+  // Update the sidebar links associated with the Medplum profiles
   useEffect(() => {
-    if (!profileReference) {
+    const profileReferenceString = profile && getReferenceString(profile);
+
+    if (!profileReferenceString) {
       return;
     }
-    const myTasksQuery = formatSearchQuery({
-      resourceType: 'Task',
-      fields: SEARCH_TABLE_FIELDS,
-      sortRules: [{ code: '-priority-order,due-date' }],
-      filters: [
-        { code: 'owner', operator: Operator.EQUALS, value: profileReference },
-        { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
-      ],
-    });
 
-    const myTasksLink = { icon: <IconCategory />, label: 'My Tasks', href: `/Task${myTasksQuery}` };
+    // Construct the search for "My Tasks"
+    const myTasksLink = getMyTasksLink(profileReferenceString);
 
-    medplum
-      .searchResources('PractitionerRole', {
-        practitioner: profileReference,
-      })
-      .then((roles) => {
-        const roleLinks = [];
-
-        for (const role of roles) {
-          const roleCode = role?.code?.[0];
-          if (!roleCode?.coding?.[0]?.code) {
-            continue;
-          }
-
-          const search: SearchRequest = {
-            resourceType: 'Task',
-            fields: SEARCH_TABLE_FIELDS,
-            sortRules: [{ code: '-priority-order,due-date' }],
-            filters: [
-              { code: 'owner:missing', operator: Operator.EQUALS, value: 'true' },
-              { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
-              { code: 'performer', operator: Operator.EQUALS, value: roleCode?.coding?.[0]?.code },
-            ],
-          };
-
-          const searchQuery = formatSearchQuery(search);
-          const roleDisplay = formatCodeableConcept(roleCode);
-          roleLinks.push({ icon: <IconUser />, label: `${roleDisplay} Tasks`, href: `/Task${searchQuery}` });
-        }
-
-        setUserLinks([myTasksLink, ...roleLinks, ALL_TASKS_LINK]);
-      })
+    // Query the user's `PractitionerRole` resources to find all applicable roles
+    const roleLinks: NavbarLink[] = [];
+    getTasksByRoleLinks(medplum, profileReferenceString)
+      .then((links) => roleLinks.push(...links))
       .catch((error) => console.error('Failed to fetch PractitionerRoles', normalizeErrorString(error)));
-  }, [profileReference, medplum]);
 
-  if (medplum.isLoading()) {
-    return null;
+    // Construct Search links for all Tasks for patients in the current user's licensed states
+    const stateLinks = getTasksByState(profile as Practitioner);
+
+    setUserLinks([myTasksLink, ...roleLinks, ...stateLinks, ALL_TASKS_LINK]);
+  }, [profile, medplum]);
+
+  if (medplum.isLoading() || userLinks.length === 0) {
+    return <LoadingOverlay />;
   }
 
   return (
@@ -128,4 +104,97 @@ export function App(): JSX.Element | null {
       </AppShell>
     </>
   );
+}
+
+/**
+ * @param profileReference - string representing the current user's profile
+ * @returns a NavBar link to a search for all open `Tasks` assigned to the current user
+ */
+function getMyTasksLink(profileReference: string): NavbarLink {
+  const myTasksQuery = formatSearchQuery({
+    resourceType: 'Task',
+    fields: SEARCH_TABLE_FIELDS,
+    sortRules: [{ code: '-priority-order,due-date' }],
+    filters: [
+      { code: 'owner', operator: Operator.EQUALS, value: profileReference },
+      { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
+    ],
+  });
+
+  const myTasksLink = { icon: <IconCategory />, label: 'My Tasks', href: `/Task${myTasksQuery}` };
+  return myTasksLink;
+}
+
+/**
+ * @param medplum - the MedplumClient
+ * @param profileReference - string representing the current user's profile
+ * @returns an array of NavBarLinks to searches for all open `Tasks` assigned to the current user's roles
+ */
+async function getTasksByRoleLinks(medplum: MedplumClient, profileReference: string): Promise<NavbarLink[]> {
+  const roles = await medplum.searchResources('PractitionerRole', {
+    practitioner: profileReference,
+  });
+  // Query the user's `PractitionerRole` resources to find all applicable roles
+  return roles
+    .map((role) => {
+      // For each role, generate a link to all open Tasks
+      const roleCode = role?.code?.[0];
+      if (!roleCode?.coding?.[0]?.code) {
+        return undefined;
+      }
+
+      const search: SearchRequest = {
+        resourceType: 'Task',
+        fields: SEARCH_TABLE_FIELDS,
+        sortRules: [{ code: '-priority-order,due-date' }],
+        filters: [
+          { code: 'owner:missing', operator: Operator.EQUALS, value: 'true' },
+          { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
+          { code: 'performer', operator: Operator.EQUALS, value: roleCode?.coding?.[0]?.code },
+        ],
+      };
+
+      const searchQuery = formatSearchQuery(search);
+      const roleDisplay = formatCodeableConcept(roleCode);
+      return { icon: <IconUser />, label: `${roleDisplay} Tasks`, href: `/Task${searchQuery}` } as NavbarLink;
+    })
+    .filter((link): link is NavbarLink => !!link);
+}
+
+/**
+ *
+ * Read all the states for which this practitioner is licensed.
+ * Refer to [Modeling Provider Qualifications](https://www.medplum.com/docs/administration/provider-directory/provider-credentials)
+ * for more information on how to represent a clinician's licenses
+ * @param profile - The resource representing the current user
+ * @returns an array of NavBarLinks to searches for all open `Tasks` assigned to patients' in states
+ *          where the current user is licensed
+ */
+function getTasksByState(profile: Practitioner): NavbarLink[] {
+  const myStates =
+    profile.qualification
+      ?.map(
+        (qualification) =>
+          getExtension(
+            qualification,
+            'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification',
+            'whereValid'
+          )?.valueCodeableConcept?.coding?.find((coding) => coding.system === 'https://www.usps.com/')?.code
+      )
+      .filter((state): state is string => !!state) ?? [];
+
+  return myStates.map((state) => {
+    const search: SearchRequest = {
+      resourceType: 'Task',
+      fields: SEARCH_TABLE_FIELDS,
+      sortRules: [{ code: '-priority-order,due-date' }],
+      filters: [
+        { code: 'owner:missing', operator: Operator.EQUALS, value: 'true' },
+        { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
+        { code: 'patient.address-state', operator: Operator.EQUALS, value: state },
+      ],
+    };
+    const searchQuery = formatSearchQuery(search);
+    return { icon: <IconUser />, label: `${capitalize(state)} Tasks`, href: `/Task${searchQuery}` } as NavbarLink;
+  });
 }
