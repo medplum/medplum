@@ -2,22 +2,26 @@ import { execSync } from 'child_process';
 import { danger, message, warn } from 'danger';
 import { readFileSync, statSync } from 'fs';
 
+// Gather changes
+const modifiedFiles = danger.git.modified_files ?? [];
+if (!modifiedFiles.length) {
+  warn('No files were modified by this PR. Make sure this is expected!');
+}
+const modifiedSourceFiles = modifiedFiles.filter((path) => /\/src\/.+\.tsx?/.exec(path));
+
 // Keep package-lock.json up to date
 // See: https://danger.systems/js/
-const packageChanged = danger.git.modified_files.includes('package.json');
-const lockfileChanged = danger.git.modified_files.includes('package-lock.json');
+const packageChanged = modifiedFiles.includes('package.json');
+const lockfileChanged = modifiedFiles.includes('package-lock.json');
 if (packageChanged && !lockfileChanged) {
   const message = 'Changes were made to package.json, but not to package-lock.json';
   const idea = 'Perhaps you need to run `npm install`?';
   warn(`${message} - <i>${idea}</i>`);
 }
 
-// Gather changes
-const modifiedFiles = danger.git.modified_files.filter((path) => /\/src\/.+\.tsx?/.exec(path));
-
 // Check for console.log statements
 const statements = ['console.debug', 'describe.only', 'test.only'];
-modifiedFiles.forEach((file) => {
+modifiedSourceFiles.forEach((file) => {
   const content = readFileSync(file).toString();
   for (const statement of statements) {
     if (content.includes(statement)) {
