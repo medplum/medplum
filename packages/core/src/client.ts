@@ -814,27 +814,22 @@ export class MedplumClient extends EventTarget {
 
     if (options?.accessToken) {
       this.setAccessToken(options.accessToken);
-      this.initPromise = Promise.resolve();
-    } else if (this.storage.getInitPromise !== undefined) {
-      const storageInitPromise = this.storage.getInitPromise();
-      const initPromise = new Promise<void>((resolve, reject) => {
-        storageInitPromise
-          .then(() => {
-            this.attemptResumeActiveLogin()
-              .then(resolve)
-              .catch((error: Error) => {
-                console.error(error);
-                // Resolve here to mirror behavior in the happy path (initPromise should resolve even when error happens in attemptResumeActiveLogin())
-                resolve();
-              });
-            this.initComplete = true;
-          })
-          .catch(reject);
-      });
-      this.initPromise = initPromise;
-      this.initComplete = false;
+    }
+
+    if (this.storage.getInitPromise === undefined) {
+      if (!options?.accessToken) {
+        this.attemptResumeActiveLogin().catch(console.error);
+      }
     } else {
-      this.initPromise = this.attemptResumeActiveLogin().catch(console.error);
+      this.initPromise = this.initStorage();
+      this.initPromise
+        .then(() => {
+          if (!options?.accessToken) {
+            this.attemptResumeActiveLogin().catch(console.error);
+          }
+          this.initComplete = true;
+        })
+        .catch(console.error);
     }
 
     this.setupStorageListener();
@@ -853,6 +848,15 @@ export class MedplumClient extends EventTarget {
    */
   getInitPromise(): Promise<void> {
     return this.initPromise;
+  }
+
+  private async initStorage(): Promise<void> {
+    if (this.storage.getInitPromise === undefined) {
+      return Promise.resolve();
+    }
+
+    this.initComplete = false;
+    return this.storage.getInitPromise();
   }
 
   private async attemptResumeActiveLogin(): Promise<void> {
