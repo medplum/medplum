@@ -19,7 +19,7 @@ In [`App.tsx`](./src/App.tsx#L6-L20):
 1. Update your `baseUrl`. If you are testing this out against a server on your localhost, you will need to put your computer's local IP address here, for example: `baseUrl: 'http://192.168.x.x:8103`
 Metro will usually emit this address in the line: 'Metro waiting on exp://192.168.1.216:8081'
 but you will need to change the protocol to 'http://' and the port to 8103 (the Medplum server's default) or whatever port your server is using
-1. Add your Medplum Client ID
+2. Add your Medplum Client ID
 
 
 ### Web
