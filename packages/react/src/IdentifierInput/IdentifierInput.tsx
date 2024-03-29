@@ -22,7 +22,7 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
       props.onChange(newValue);
     }
   }
-  const errorPath: string = props.expression ?? props.path;
+  const errorPath: string = props.valuePath ?? props.path;
 
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">

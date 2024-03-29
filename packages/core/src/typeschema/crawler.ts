@@ -5,15 +5,15 @@ import { arrayify, isLowerCase } from '../utils';
 import { getDataType, InternalTypeSchema } from './types';
 
 export interface ResourceVisitor {
-  onEnterObject?: (path: string, value: TypedValueWithExpression, schema: InternalTypeSchema) => void;
-  onExitObject?: (path: string, value: TypedValueWithExpression, schema: InternalTypeSchema) => void;
-  onEnterResource?: (path: string, value: TypedValueWithExpression, schema: InternalTypeSchema) => void;
-  onExitResource?: (path: string, value: TypedValueWithExpression, schema: InternalTypeSchema) => void;
+  onEnterObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void;
+  onExitObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void;
+  onEnterResource?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void;
+  onExitResource?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void;
   visitProperty?: (
-    parent: TypedValueWithExpression,
+    parent: TypedValueWithPath,
     key: string,
     path: string,
-    propertyValues: (TypedValueWithExpression | TypedValueWithExpression[])[],
+    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
     schema: InternalTypeSchema
   ) => void;
 }
@@ -51,14 +51,10 @@ class ResourceCrawler {
   }
 
   crawl(): void {
-    this.crawlObject(
-      { ...toTypedValue(this.rootResource), expression: this.initialPath },
-      this.schema,
-      this.initialPath
-    );
+    this.crawlObject({ ...toTypedValue(this.rootResource), path: this.initialPath }, this.schema, this.initialPath);
   }
 
-  private crawlObject(obj: TypedValueWithExpression, schema: InternalTypeSchema, path: string): void {
+  private crawlObject(obj: TypedValueWithPath, schema: InternalTypeSchema, path: string): void {
     const objIsResource = isResource(obj.value);
 
     if (objIsResource && this.visitor.onEnterResource) {
@@ -82,22 +78,22 @@ class ResourceCrawler {
     }
   }
 
-  private crawlProperty(parent: TypedValueWithExpression, key: string, schema: InternalTypeSchema, path: string): void {
-    const propertyValues = getNestedProperty(parent, key, { withExpression: true });
+  private crawlProperty(parent: TypedValueWithPath, key: string, schema: InternalTypeSchema, path: string): void {
+    const propertyValues = getNestedProperty(parent, key, { withPath: true });
     if (this.visitor.visitProperty) {
       this.visitor.visitProperty(parent, key, path, propertyValues, schema);
     }
 
     for (const propertyValue of propertyValues) {
       if (propertyValue) {
-        for (const value of arrayify(propertyValue) as TypedValueWithExpression[]) {
+        for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
           this.crawlPropertyValue(value, path);
         }
       }
     }
   }
 
-  private crawlPropertyValue(value: TypedValueWithExpression, path: string): void {
+  private crawlPropertyValue(value: TypedValueWithPath, path: string): void {
     if (!isLowerCase(value.type.charAt(0))) {
       // Recursively crawl as the expected data type
       const type = getDataType(value.type);
@@ -107,19 +103,19 @@ class ResourceCrawler {
 }
 
 export function getNestedProperty(
-  value: TypedValueWithExpression | undefined,
+  value: TypedValueWithPath | undefined,
   key: string,
-  options: { profileUrl?: string; withExpression: true }
-): (TypedValueWithExpression | TypedValueWithExpression[])[];
+  options: { profileUrl?: string; withPath: true }
+): (TypedValueWithPath | TypedValueWithPath[])[];
 export function getNestedProperty(
   value: TypedValue | undefined,
   key: string,
-  options?: { profileUrl?: string; withExpression?: false }
+  options?: { profileUrl?: string; withPath?: false }
 ): (TypedValue | TypedValue[] | undefined)[];
 export function getNestedProperty(
   value: TypedValue | undefined,
   key: string,
-  options?: { profileUrl?: string; withExpression?: boolean }
+  options?: { profileUrl?: string; withPath?: boolean }
 ): (TypedValue | TypedValue[] | undefined)[] {
   if (value === undefined) {
     return [undefined];
@@ -129,7 +125,7 @@ export function getNestedProperty(
     return [value];
   }
 
-  const propertyGetter = options?.withExpression ? getTypedPropertyValueWithExpression : getTypedPropertyValue;
+  const propertyGetter = options?.withPath ? getTypedPropertyValueWithPath : getTypedPropertyValue;
 
   const [firstProp, ...nestedProps] = key.split('.');
   let propertyValues = [propertyGetter(value, firstProp, options)];
@@ -140,9 +136,9 @@ export function getNestedProperty(
         for (const element of current) {
           next.push(propertyGetter(element, prop, options));
         }
-      } else if (options?.withExpression && current && current.value !== undefined) {
+      } else if (options?.withPath && current && current.value !== undefined) {
         next.push(propertyGetter(current, prop, options));
-      } else if (!options?.withExpression && current !== undefined) {
+      } else if (!options?.withPath && current !== undefined) {
         next.push(propertyGetter(current, prop, options));
       }
     }
@@ -151,34 +147,34 @@ export function getNestedProperty(
   return propertyValues;
 }
 
-function getTypedPropertyValueWithExpression(
-  input: TypedValue | TypedValueWithExpression,
+function getTypedPropertyValueWithPath(
+  input: TypedValue | TypedValueWithPath,
   path: string,
   options?: GetTypedPropertyValueOptions
-): TypedValueWithExpression[] | TypedValueWithExpression {
-  const parentExpression = (input as TypedValueWithExpression).expression;
-  return withExpression(getTypedPropertyValue(input, path, options), parentExpression, path);
+): TypedValueWithPath[] | TypedValueWithPath {
+  const parentPath = (input as TypedValueWithPath).path;
+  return withPath(getTypedPropertyValue(input, path, options), parentPath, path);
 }
 
-export type TypedValueWithExpression = TypedValue & { expression: string };
+export type TypedValueWithPath = TypedValue & { path: string };
 
-function withExpression(
+function withPath(
   tv: TypedValue | TypedValue[] | undefined,
-  parentExpression: string | undefined,
+  parentPath: string | undefined,
   key: string
-): TypedValueWithExpression | TypedValueWithExpression[] {
-  const parentPrefix = parentExpression ? parentExpression + '.' : '';
+): TypedValueWithPath | TypedValueWithPath[] {
+  const parentPrefix = parentPath ? parentPath + '.' : '';
 
   if (tv === undefined) {
-    return { type: 'undefined', value: undefined, expression: `${parentPrefix}${key}` };
+    return { type: 'undefined', value: undefined, path: `${parentPrefix}${key}` };
   }
 
   if (Array.isArray(tv)) {
     return tv.map((v, idx) => ({
       ...v,
-      expression: `${parentPrefix}${key}[${idx}]`,
+      path: `${parentPrefix}${key}[${idx}]`,
     }));
   }
 
-  return { ...tv, expression: `${parentPrefix}${key}` };
+  return { ...tv, path: `${parentPrefix}${key}` };
 }

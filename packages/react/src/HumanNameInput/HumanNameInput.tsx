@@ -51,7 +51,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
     });
   }
 
-  const errorPath = props.expression ?? path;
+  const errorPath = props.valuePath ?? path;
 
   return (
     <Group gap="xs" grow wrap="nowrap">

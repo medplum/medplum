@@ -12,7 +12,7 @@ import {
 } from '../outcomes';
 import { PropertyType, TypedValue, isReference } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
-import { ResourceVisitor, TypedValueWithExpression, crawlResource, getNestedProperty } from './crawler';
+import { ResourceVisitor, TypedValueWithPath, crawlResource, getNestedProperty } from './crawler';
 import {
   Constraint,
   InternalSchemaElement,
@@ -147,13 +147,13 @@ class ResourceValidator implements ResourceVisitor {
     return issues;
   }
 
-  onExitObject(path: string, obj: TypedValueWithExpression, schema: InternalTypeSchema): void {
+  onExitObject(path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
     this.checkAdditionalProperties(obj, schema.elements, path);
   }
 
-  onEnterResource(_path: string, obj: TypedValueWithExpression): void {
+  onEnterResource(_path: string, obj: TypedValueWithPath): void {
     this.currentResource.push(obj.value);
   }
 
@@ -162,10 +162,10 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   visitProperty(
-    _parent: TypedValueWithExpression,
+    _parent: TypedValueWithPath,
     key: string,
     path: string,
-    propertyValues: (TypedValueWithExpression | TypedValueWithExpression[])[],
+    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
     schema: InternalTypeSchema
   ): void {
     const element = schema.elements[key];
@@ -178,7 +178,7 @@ class ResourceValidator implements ResourceVisitor {
         return;
       }
       // Check cardinality
-      let values: TypedValueWithExpression[];
+      let values: TypedValueWithPath[];
       if (element.isArray) {
         if (!Array.isArray(value)) {
           this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
@@ -226,13 +226,13 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   private checkPresence(
-    value: TypedValueWithExpression | TypedValueWithExpression[],
+    value: TypedValueWithPath | TypedValueWithPath[],
     field: InternalSchemaElement,
     path: string
   ): boolean {
     if (!Array.isArray(value) && value.value === undefined) {
       if (field.min > 0) {
-        this.issues.push(createStructureIssue(value.expression, 'Missing required property'));
+        this.issues.push(createStructureIssue(value.path, 'Missing required property'));
       }
       return false;
     }
