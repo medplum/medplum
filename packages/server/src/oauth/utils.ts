@@ -405,7 +405,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   }
 
   // Get the access policy
-  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+  const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
 
   // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
@@ -416,7 +416,6 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   return systemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership),
-    superAdmin: project.superAdmin,
   });
 }
 

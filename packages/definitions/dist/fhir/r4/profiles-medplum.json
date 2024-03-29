@@ -1916,7 +1916,7 @@
           {
             "id" : "Login.admin",
             "path" : "Login.admin",
-            "definition" : "DEPRECATED",
+            "definition" : "@deprecated",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1931,7 +1931,7 @@
           {
             "id" : "Login.superAdmin",
             "path" : "Login.superAdmin",
-            "definition" : "Whether this login has super administrator privileges.",
+            "definition" : "@deprecated",
             "min" : 0,
             "max" : "1",
             "type" : [{

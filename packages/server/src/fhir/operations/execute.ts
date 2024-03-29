@@ -493,7 +493,6 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
 
 async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
   const systemRepo = getSystemRepo();
-  const project = await systemRepo.readReference(runAs.project);
 
   // Create the Login resource
   const login = await systemRepo.createResource<Login>({
@@ -504,7 +503,6 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
     authTime: new Date().toISOString(),
     scope: 'openid',
     granted: true,
-    superAdmin: project.superAdmin,
   });
 
   // Create the access token

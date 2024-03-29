@@ -16,7 +16,7 @@ import { buildBinaryIds } from './utils/binary';
  */
 export async function projectCloneHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  if (!ctx.login.superAdmin) {
+  if (!ctx.project.superAdmin) {
     return [forbidden];
   }
 
