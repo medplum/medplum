@@ -22,9 +22,7 @@
         ],
         "name": [
           {
-            "given": [
-              "Jane"
-            ],
+            "given": ["Jane"],
             "family": "Doe "
           }
         ],
@@ -32,9 +30,7 @@
         "address": [
           {
             "use": "home",
-            "line": [
-              "123 Main St."
-            ],
+            "line": ["123 Main St."],
             "city": "Springfiled",
             "state": "IL",
             "postalCode": "98732"
@@ -52,13 +48,8 @@
         "resourceType": "Practitioner",
         "name": [
           {
-            "prefix": [
-              "Care",
-              "Coordinator"
-            ],
-            "given": [
-              "Chuck"
-            ],
+            "prefix": ["Care", "Coordinator"],
+            "given": ["Chuck"],
             "family": "Finnegan"
           }
         ],
@@ -77,12 +68,8 @@
         "active": true,
         "name": [
           {
-            "prefix": [
-              "Nurse"
-            ],
-            "given": [
-              "Bob"
-            ],
+            "prefix": ["Nurse"],
+            "given": ["Bob"],
             "family": "Jones"
           }
         ],
@@ -107,12 +94,8 @@
         "name": [
           {
             "family": "Smith",
-            "given": [
-              "Alice"
-            ],
-            "prefix": [
-              "Dr."
-            ]
+            "given": ["Alice"],
+            "prefix": ["Dr."]
           }
         ],
         "gender": "female",
