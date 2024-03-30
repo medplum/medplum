@@ -6,7 +6,7 @@ import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../../test-utils/render';
 import { BaseChat, BaseChatProps } from './BaseChat';
 
 type TestComponentProps = Omit<Omit<BaseChatProps, 'communications'>, 'setCommunications'>;
@@ -99,7 +99,7 @@ describe('BaseChat', () => {
     (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).removeAllListeners();
   });
 
-  function TestComponent(props: TestComponentProps): JSX.Element {
+  function TestComponent(props: TestComponentProps): JSX.Element | null {
     const [communications, setCommunications] = useState<Communication[]>([]);
     return <BaseChat {...props} communications={communications} setCommunications={setCommunications} />;
   }
@@ -122,76 +122,11 @@ describe('BaseChat', () => {
     };
   }
 
-  test('Render nothing when no profile', async () => {
-    const baseProps = { title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
-
-    const medplum = new MockClient({ profile: null });
-    const { rerender } = await setup(baseProps, medplum);
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
-
-    medplum.setProfile(DrAliceSmith);
-    await rerender(baseProps);
-    expect(screen.getByRole('button', { name: 'Open chat' })).toBeInTheDocument();
-  });
-
-  test('Setting `open` to `true`', async () => {
-    const baseProps = { title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
-
-    const { rerender } = await setup({ ...baseProps });
-    const openChatButton = screen.getByRole('button');
-    expect(openChatButton).toBeInTheDocument();
-
-    await rerender({ ...baseProps, open: true });
-    expect(openChatButton).not.toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
-  });
-
-  test('Setting `open` to `false` then `true` then to `false` again', async () => {
-    const baseProps = { title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
-
-    const { rerender } = await setup({ ...baseProps, open: false });
-    const openChatButton = screen.getByRole('button');
-    expect(openChatButton).toBeInTheDocument();
-
-    await rerender({ ...baseProps, open: true });
-    expect(openChatButton).not.toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
-
-    await rerender({ ...baseProps, open: false });
-    expect(screen.getByRole('button')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
-  });
-
-  test('Setting `open` to `true` then `undefined`', async () => {
-    const baseProps = { title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
-
-    const { rerender } = await setup({ ...baseProps, open: true });
-    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
-
-    await rerender({ ...baseProps, open: undefined });
-    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
-  });
-
-  test('Clicking toggles chat open and closed', async () => {
-    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined });
-    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
-    act(() => {
-      fireEvent.click(screen.getByRole('button', { name: 'Open chat' }));
-    });
-    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
-    act(() => {
-      fireEvent.click(screen.getByRole('button', { name: 'Close chat' }));
-    });
-    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
-  });
-
   test('No initial messages', async () => {
     await setup({
       title: 'Test Chat',
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
-      open: true,
     });
 
     expect(screen.getByRole('heading', { name: /test chat/i })).toBeInTheDocument();
@@ -225,7 +160,6 @@ describe('BaseChat', () => {
         title: 'Test Chat',
         query: HOMER_DR_ALICE_CHAT_QUERY,
         sendMessage: () => undefined,
-        open: true,
       },
       medplum
     );
@@ -252,7 +186,6 @@ describe('BaseChat', () => {
       title: 'Test Chat',
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage,
-      open: true,
     });
 
     const chatInput = screen.getByPlaceholderText('Type a message...') as HTMLInputElement;
@@ -274,7 +207,6 @@ describe('BaseChat', () => {
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
       onMessageReceived,
-      open: true,
     });
 
     const incomingMessage = await createCommunication(defaultMedplum, {
@@ -304,7 +236,6 @@ describe('BaseChat', () => {
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
       onMessageReceived,
-      open: true,
     });
 
     const outgoingMessage = await createCommunication(defaultMedplum, {
@@ -340,17 +271,28 @@ describe('BaseChat', () => {
       title: 'Test Chat',
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
-      open: true,
     };
 
     const { rerender } = await setup(baseProps, medplum);
     expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
     expect(screen.getByText('Hello again!')).toBeInTheDocument();
 
-    medplum.setProfile(BartSimpson);
-    await rerender(baseProps);
+    await act(async () => {
+      medplum.setProfile(BartSimpson);
+      await rerender(baseProps);
+    });
 
     expect(screen.queryAllByText('Hello, Medplum!')?.length).toEqual(0);
     expect(screen.queryByText('Hello again!')).not.toBeInTheDocument();
+  });
+
+  test('inputDisabled', async () => {
+    const baseProps = { title: 'Testing', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
+    const { rerender } = await setup({ ...baseProps });
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    await rerender({ ...baseProps, inputDisabled: false });
+    expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
+    await rerender({ ...baseProps, inputDisabled: true });
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
   });
 });

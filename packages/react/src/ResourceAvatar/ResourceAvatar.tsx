@@ -18,9 +18,7 @@ export function ResourceAvatar(props: ResourceAvatarProps): JSX.Element {
   const imageUrl = useCachedBinaryUrl(uncachedImageUrl ?? undefined);
   const radius = props.radius ?? 'xl';
 
-  const avatarProps = { ...props };
-  delete avatarProps.value;
-  delete avatarProps.link;
+  const avatarProps = { ...props, value: undefined, link: undefined };
 
   if (props.link) {
     return (

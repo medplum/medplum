@@ -1,18 +1,18 @@
-import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
+import { ProfileResource, createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
 
 export interface ThreadChatProps {
-  readonly title: string;
   readonly thread: Communication;
-  readonly open?: boolean;
+  readonly title?: string;
   readonly onMessageSent?: (message: Communication) => void;
+  readonly inputDisabled?: boolean;
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
-  const { title, thread, open, onMessageSent } = props;
+  const { thread, title, onMessageSent, inputDisabled } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious<string | undefined>(thread?.id);
@@ -82,13 +82,13 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
 
   return (
     <BaseChat
-      title={title}
+      title={title ?? (thread?.topic ? formatCodeableConcept(thread.topic) : '[No thread title]')}
       communications={communications}
       setCommunications={setCommunications}
       query={`part-of=Communication/${thread.id as string}`}
       sendMessage={sendMessage}
       onMessageReceived={onMessageReceived}
-      open={open}
+      inputDisabled={inputDisabled}
     />
   );
 }

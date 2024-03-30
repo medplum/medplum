@@ -41,6 +41,8 @@ import {
   ExampleQuestionnaire,
   ExampleQuestionnaireResponse,
   ExampleSubscription,
+  ExampleThreadHeader,
+  ExampleThreadMessages,
   HomerCommunication,
   HomerDiagnosticReport,
   HomerEncounter,
@@ -163,6 +165,7 @@ export class MockClient extends MedplumClient {
 
   setProfile(profile: ProfileResource | undefined): void {
     this.profile = profile;
+    this.dispatchEvent({ type: 'change' });
   }
 
   getActiveLogin(): LoginState | undefined {
@@ -597,7 +600,9 @@ export class MockFetchClient {
       ExampleSmartClientApplication,
       TestProject,
       TestProjectMembership,
-    ];
+      ExampleThreadHeader,
+      ...ExampleThreadMessages,
+    ] satisfies Resource[];
 
     for (const resource of defaultResources) {
       await this.repo.createResource(resource);
