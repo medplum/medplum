@@ -37,9 +37,10 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - id: install
-        name: Install deps
+      - name: Install deps
         run: npm ci --maxsockets 1
+      - name: Build
+        run: npm run build:fast
       - name: Danger
         run: npx danger ci --failOnErrors
         env:
