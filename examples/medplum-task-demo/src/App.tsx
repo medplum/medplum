@@ -20,6 +20,7 @@ import {
   IconMail,
   IconReportMedical,
   IconRibbonHealth,
+  IconRobot,
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
@@ -42,6 +43,7 @@ export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const [userLinks, setUserLinks] = useState<NavbarLink[]>([]);
+  const showLoadingOverlay = profile && (medplum.isLoading() || userLinks.length === 0);
 
   // Update the sidebar links associated with the Medplum profiles
   useEffect(() => {
@@ -66,10 +68,6 @@ export function App(): JSX.Element | null {
     setUserLinks([myTasksLink, ...roleLinks, ...stateLinks, ALL_TASKS_LINK]);
   }, [profile, medplum]);
 
-  if (medplum.isLoading() || userLinks.length === 0) {
-    return <LoadingOverlay />;
-  }
-
   return (
     <>
       <AppShell
@@ -83,6 +81,7 @@ export function App(): JSX.Element | null {
             title: 'Upload Data',
             links: [
               { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
+              { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
               { icon: <IconChecklist />, label: 'Upload Example Tasks', href: '/upload/task' },
               { icon: <IconMail />, label: 'Upload Example Messages', href: '/upload/message' },
               { icon: <IconReportMedical />, label: 'Upload Example Report', href: '/upload/report' },
@@ -96,6 +95,7 @@ export function App(): JSX.Element | null {
         ]}
         headerSearchDisabled={true}
       >
+        <LoadingOverlay visible={showLoadingOverlay} />
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={profile ? <Navigate to={ALL_TASKS_LINK.href} /> : <LandingPage />} />

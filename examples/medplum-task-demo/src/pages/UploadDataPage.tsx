@@ -1,31 +1,36 @@
-import { Button } from '@mantine/core';
-import { MedplumClient, capitalize, isOk, normalizeErrorString } from '@medplum/core';
+import { Button, LoadingOverlay } from '@mantine/core';
+import { MedplumClient, capitalize, getReferenceString, isOk, normalizeErrorString } from '@medplum/core';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { showNotification } from '@mantine/notifications';
-import { Bundle, Coding, Practitioner, ValueSet } from '@medplum/fhirtypes';
+import { Bot, Bundle, BundleEntry, Coding, Practitioner, ValueSet } from '@medplum/fhirtypes';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import businessStatusValueSet from '../../data/core/business-status-valueset.json';
 import practitionerRoleValueSet from '../../data/core/practitioner-role-valueset.json';
 import taskTypeValueSet from '../../data/core/task-type-valueset.json';
+import exampleBotData from '../../data/example/example-bots.json';
 import exampleMessageData from '../../data/example/example-messages.json';
 import exampleReportData from '../../data/example/example-reports.json';
 import exampleTaskData from '../../data/example/example-tasks.json';
+
+type UploadFunction =
+  | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
+  | ((medplum: MedplumClient) => Promise<void>);
 
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const { dataType } = useParams();
   const navigate = useNavigate();
-  const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
+  const [pageDisabled, setPageDisabled] = useState<boolean>(false);
 
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
 
   const handleUpload = useCallback(() => {
-    setButtonDisabled(true);
-    let uploadFunction: (medplum: MedplumClient, profile?: Practitioner) => Promise<void>;
+    setPageDisabled(true);
+    let uploadFunction: UploadFunction;
     switch (dataType) {
       case 'core':
         uploadFunction = uploadCoreData;
@@ -42,6 +47,9 @@ export function UploadDataPage(): JSX.Element {
       case 'qualifications':
         uploadFunction = uploadExampleQualifications;
         break;
+      case 'bots':
+        uploadFunction = uploadExampleBots;
+        break;
       default:
         throw new Error(`Invalid upload type '${dataType}'`);
     }
@@ -56,12 +64,13 @@ export function UploadDataPage(): JSX.Element {
           message: normalizeErrorString(error),
         });
       })
-      .finally(() => setButtonDisabled(false));
+      .finally(() => setPageDisabled(false));
   }, [medplum, profile, dataType, navigate]);
 
   return (
     <Document>
-      <Button disabled={buttonDisabled} onClick={handleUpload}>{`Upload ${dataTypeDisplay} Data`}</Button>
+      <LoadingOverlay visible={pageDisabled} />
+      <Button disabled={pageDisabled} onClick={handleUpload}>{`Upload ${dataTypeDisplay} Data`}</Button>
     </Document>
   );
 }
@@ -131,7 +140,7 @@ async function uploadExampleTaskData(medplum: MedplumClient): Promise<void> {
   });
 }
 
-async function uploadExampleQualifications(medplum: MedplumClient, profile?: Practitioner): Promise<void> {
+async function uploadExampleQualifications(medplum: MedplumClient, profile: Practitioner): Promise<void> {
   if (!profile) {
     return;
   }
@@ -181,5 +190,53 @@ async function uploadExampleQualifications(medplum: MedplumClient, profile?: Pra
     icon: <IconCircleCheck />,
     title: 'Success',
     message: 'Uploaded Example Qualifications',
+  });
+}
+
+async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
+  let transactionString = JSON.stringify(exampleBotData);
+  const botEntries: BundleEntry[] =
+    (exampleBotData as Bundle).entry?.filter((e) => e.resource?.resourceType === 'Bot') || [];
+  const botNames = botEntries.map((e) => (e.resource as Bot).name ?? '');
+  const botIds: Record<string, string> = {};
+
+  for (const botName of botNames) {
+    let existingBot = await medplum.searchOne('Bot', { name: botName });
+    // Create a new Bot if it doesn't already exist
+    if (!existingBot) {
+      const projectId = profile.meta?.project;
+      const createBotUrl = new URL('admin/projects/' + (projectId as string) + '/bot', medplum.getBaseUrl());
+      existingBot = (await medplum.post(createBotUrl, {
+        name: botName,
+      })) as Bot;
+    }
+
+    botIds[botName] = existingBot.id as string;
+
+    // Replace the Bot id placeholder in the bundle
+    transactionString = transactionString
+      .replaceAll(`$bot-${botName}-reference`, getReferenceString(existingBot))
+      .replaceAll(`$bot-${botName}-id`, existingBot.id as string);
+  }
+
+  // Execute the transaction to upload / update the bot
+  const transaction = JSON.parse(transactionString);
+  await medplum.executeBatch(transaction);
+
+  // Deploy the new bots
+  for (const entry of botEntries) {
+    const botName = (entry?.resource as Bot)?.name as string;
+    const distUrl = (entry.resource as Bot).executableCode?.url;
+    const distBinaryEntry = exampleBotData.entry.find((e) => e.fullUrl === distUrl);
+    // Decode the base64 encoded code and deploy
+    const code = atob(distBinaryEntry?.resource.data as string);
+    const response = await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
+    console.debug('Deployed', entry.request?.url, response);
+  }
+
+  showNotification({
+    icon: <IconCircleCheck />,
+    title: 'Success',
+    message: 'Deployed Example Bots',
   });
 }
