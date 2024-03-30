@@ -19,6 +19,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
       // The focus of the resource will be the DiagnosticReport
       reference: getReferenceString(report),
     },
+    for: report.subject,
     // The performer type is a medical practitioner. This will ensure it is assigned to the correct queue so a doctor can review it.
     performerType: [
       {
