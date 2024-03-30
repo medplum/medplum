@@ -1,7 +1,8 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { Bundle, CoverageEligibilityRequest, SearchParameter } from '@medplum/fhirtypes';
 import { readJson } from '@medplum/definitions';
+import { Bundle, CoverageEligibilityRequest, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { beforeAll, describe, expect, test, vi } from 'vitest';
 import {
   generalBenefitsCheck,
   otherEligibilityCheck,
@@ -9,7 +10,6 @@ import {
   requestWithNoCoverage,
 } from '../../data/example/bot-testing-data';
 import { handler } from './process-eligibility-request';
-import { describe, beforeAll, test, expect, vi } from 'vitest';
 
 describe('Process Eligibility Request', async () => {
   beforeAll(() => {
@@ -41,8 +41,10 @@ describe('Process Eligibility Request', async () => {
     const request = (await medplum.searchOne('CoverageEligibilityRequest')) as CoverageEligibilityRequest;
 
     const contentType = 'application/fhir+json';
-    await handler(medplum, { input: request, contentType, secrets: {} });
 
+    await expect(handler(medplum, { input: request, contentType, secrets: {} })).rejects.toThrow(
+      /Invalid request submitted/
+    );
     expect(console.log).toHaveBeenCalledWith('This request has no linked coverage');
   });
 
