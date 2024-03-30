@@ -223,7 +223,7 @@ superAdminRouter.post(
 
 export function requireSuperAdmin(): AuthenticatedRequestContext {
   const ctx = getAuthenticatedContext();
-  if (!ctx.login.superAdmin) {
+  if (!ctx.project.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
   return ctx;

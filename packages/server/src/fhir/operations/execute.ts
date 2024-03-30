@@ -33,7 +33,7 @@ import vm from 'node:vm';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
-import { getAuthenticatedContext, getLogger, buildTracingExtension } from '../../context';
+import { buildTracingExtension, getAuthenticatedContext, getLogger } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
@@ -502,6 +502,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
     membership: createReference(runAs),
     authTime: new Date().toISOString(),
     scope: 'openid',
+    granted: true,
   });
 
   // Create the access token
