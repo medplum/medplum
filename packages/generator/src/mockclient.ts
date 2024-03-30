@@ -109,7 +109,7 @@ export function main(): void {
 function writeStructureDefinitions(): void {
   const output: StructureDefinition[] = [];
   addStructureDefinitions('fhir/r4/profiles-resources.json', output);
-  addStructureDefinitions('fhir/r4/profiles-medplum.json', output, true);
+  addStructureDefinitions('fhir/r4/profiles-medplum.json', output);
   writeFileSync(
     resolve(__dirname, '../../mock/src/mocks/structuredefinitions.json'),
     JSON.stringify(output, keyReplacer, 2),
@@ -117,28 +117,12 @@ function writeStructureDefinitions(): void {
   );
 }
 
-function addStructureDefinitions(fileName: string, output: StructureDefinition[], removeBase = false): void {
+function addStructureDefinitions(fileName: string, output: StructureDefinition[]): void {
   const bundle = readJson(fileName) as Bundle<StructureDefinition>;
   for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
-      if (removeBase) {
-        removeBaseFromElements(resource);
-      }
       output.push(resource);
-    }
-  }
-}
-
-function removeBaseFromElements(sd: StructureDefinition): void {
-  for (const element of sd.snapshot?.element ?? []) {
-    if (
-      element.base &&
-      element.base.max === element.max &&
-      element.base.min === element.min &&
-      element.base.path === element.path
-    ) {
-      element.base = undefined;
     }
   }
 }
