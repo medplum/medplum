@@ -122,15 +122,26 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
   for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
-      for (const element of resource.snapshot?.element ?? []) {
-        if (element.base) {
-          element.base = undefined;
-        }
-      }
+      // if (removeBase) {
+      //   removeBaseFromElements(resource);
+      // }
       output.push(resource);
     }
   }
 }
+
+// function removeBaseFromElements(sd: StructureDefinition): void {
+//   for (const element of sd.snapshot?.element ?? []) {
+//     if (
+//       element.base &&
+//       element.base.max === element.max &&
+//       element.base.min === element.min &&
+//       element.base.path === element.path
+//     ) {
+//       element.base = undefined;
+//     }
+//   }
+// }
 
 function writeSearchParameters(): void {
   const output: SearchParameter[] = [];

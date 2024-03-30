@@ -17,6 +17,11 @@
           "path": "ActivityDefinition.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -28,6 +33,11 @@
           "path": "ActivityDefinition.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -39,6 +49,11 @@
           "path": "ActivityDefinition.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -50,6 +65,11 @@
           "path": "ActivityDefinition.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -61,6 +81,11 @@
           "path": "ActivityDefinition.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -72,6 +97,11 @@
           "path": "ActivityDefinition.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -83,6 +113,11 @@
           "path": "ActivityDefinition.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -94,6 +129,11 @@
           "path": "ActivityDefinition.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -534,6 +574,11 @@
           "path": "ActivityDefinition.participant.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -545,6 +590,11 @@
           "path": "ActivityDefinition.participant.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -556,6 +606,11 @@
           "path": "ActivityDefinition.participant.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -699,6 +754,11 @@
           "path": "ActivityDefinition.dynamicValue.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -710,6 +770,11 @@
           "path": "ActivityDefinition.dynamicValue.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -721,6 +786,11 @@
           "path": "ActivityDefinition.dynamicValue.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -770,6 +840,11 @@
           "path": "Communication.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -781,6 +856,11 @@
           "path": "Communication.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -792,6 +872,11 @@
           "path": "Communication.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -803,6 +888,11 @@
           "path": "Communication.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -814,6 +904,11 @@
           "path": "Communication.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -825,6 +920,11 @@
           "path": "Communication.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -836,6 +936,11 @@
           "path": "Communication.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -847,6 +952,11 @@
           "path": "Communication.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1142,6 +1252,11 @@
           "path": "Communication.payload.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -1153,6 +1268,11 @@
           "path": "Communication.payload.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1164,6 +1284,11 @@
           "path": "Communication.payload.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1220,6 +1345,11 @@
           "path": "DiagnosticReport.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -1231,6 +1361,11 @@
           "path": "DiagnosticReport.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -1242,6 +1377,11 @@
           "path": "DiagnosticReport.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -1253,6 +1393,11 @@
           "path": "DiagnosticReport.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -1264,6 +1409,11 @@
           "path": "DiagnosticReport.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -1275,6 +1425,11 @@
           "path": "DiagnosticReport.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -1286,6 +1441,11 @@
           "path": "DiagnosticReport.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1297,6 +1457,11 @@
           "path": "DiagnosticReport.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1505,6 +1670,11 @@
           "path": "DiagnosticReport.media.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -1516,6 +1686,11 @@
           "path": "DiagnosticReport.media.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1527,6 +1702,11 @@
           "path": "DiagnosticReport.media.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1610,6 +1790,11 @@
           "path": "Encounter.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -1621,6 +1806,11 @@
           "path": "Encounter.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -1632,6 +1822,11 @@
           "path": "Encounter.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -1643,6 +1838,11 @@
           "path": "Encounter.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -1654,6 +1854,11 @@
           "path": "Encounter.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -1665,6 +1870,11 @@
           "path": "Encounter.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -1676,6 +1886,11 @@
           "path": "Encounter.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1687,6 +1902,11 @@
           "path": "Encounter.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1731,6 +1951,11 @@
           "path": "Encounter.statusHistory.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -1742,6 +1967,11 @@
           "path": "Encounter.statusHistory.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1753,6 +1983,11 @@
           "path": "Encounter.statusHistory.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1808,6 +2043,11 @@
           "path": "Encounter.classHistory.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -1819,6 +2059,11 @@
           "path": "Encounter.classHistory.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1830,6 +2075,11 @@
           "path": "Encounter.classHistory.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1946,6 +2196,11 @@
           "path": "Encounter.participant.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -1957,6 +2212,11 @@
           "path": "Encounter.participant.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -1968,6 +2228,11 @@
           "path": "Encounter.participant.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2090,6 +2355,11 @@
           "path": "Encounter.diagnosis.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -2101,6 +2371,11 @@
           "path": "Encounter.diagnosis.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2112,6 +2387,11 @@
           "path": "Encounter.diagnosis.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2183,6 +2463,11 @@
           "path": "Encounter.hospitalization.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -2194,6 +2479,11 @@
           "path": "Encounter.hospitalization.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2205,6 +2495,11 @@
           "path": "Encounter.hospitalization.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2334,6 +2629,11 @@
           "path": "Encounter.location.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -2345,6 +2645,11 @@
           "path": "Encounter.location.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2356,6 +2661,11 @@
           "path": "Encounter.location.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2452,6 +2762,11 @@
           "path": "Media.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -2463,6 +2778,11 @@
           "path": "Media.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -2474,6 +2794,11 @@
           "path": "Media.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -2485,6 +2810,11 @@
           "path": "Media.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -2496,6 +2826,11 @@
           "path": "Media.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -2507,6 +2842,11 @@
           "path": "Media.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -2518,6 +2858,11 @@
           "path": "Media.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2529,6 +2874,11 @@
           "path": "Media.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2830,6 +3180,11 @@
           "path": "Observation.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -2841,6 +3196,11 @@
           "path": "Observation.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -2852,6 +3212,11 @@
           "path": "Observation.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -2863,6 +3228,11 @@
           "path": "Observation.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -2874,6 +3244,11 @@
           "path": "Observation.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -2885,6 +3260,11 @@
           "path": "Observation.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -2896,6 +3276,11 @@
           "path": "Observation.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -2907,6 +3292,11 @@
           "path": "Observation.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3225,6 +3615,11 @@
           "path": "Observation.referenceRange.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -3236,6 +3631,11 @@
           "path": "Observation.referenceRange.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3247,6 +3647,11 @@
           "path": "Observation.referenceRange.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3370,6 +3775,11 @@
           "path": "Observation.component.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -3381,6 +3791,11 @@
           "path": "Observation.component.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3392,6 +3807,11 @@
           "path": "Observation.component.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3500,6 +3920,11 @@
           "path": "ObservationDefinition.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -3511,6 +3936,11 @@
           "path": "ObservationDefinition.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -3522,6 +3952,11 @@
           "path": "ObservationDefinition.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -3533,6 +3968,11 @@
           "path": "ObservationDefinition.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -3544,6 +3984,11 @@
           "path": "ObservationDefinition.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -3555,6 +4000,11 @@
           "path": "ObservationDefinition.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -3566,6 +4016,11 @@
           "path": "ObservationDefinition.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3577,6 +4032,11 @@
           "path": "ObservationDefinition.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3692,6 +4152,11 @@
           "path": "ObservationDefinition.quantitativeDetails.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -3703,6 +4168,11 @@
           "path": "ObservationDefinition.quantitativeDetails.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3714,6 +4184,11 @@
           "path": "ObservationDefinition.quantitativeDetails.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3780,6 +4255,11 @@
           "path": "ObservationDefinition.qualifiedInterval.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -3791,6 +4271,11 @@
           "path": "ObservationDefinition.qualifiedInterval.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3802,6 +4287,11 @@
           "path": "ObservationDefinition.qualifiedInterval.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -3965,6 +4455,11 @@
           "path": "Organization.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -3976,6 +4471,11 @@
           "path": "Organization.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -3987,6 +4487,11 @@
           "path": "Organization.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -3998,6 +4503,11 @@
           "path": "Organization.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -4009,6 +4519,11 @@
           "path": "Organization.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -4020,6 +4535,11 @@
           "path": "Organization.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -4031,6 +4551,11 @@
           "path": "Organization.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4042,6 +4567,11 @@
           "path": "Organization.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4153,6 +4683,11 @@
           "path": "Organization.contact.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -4164,6 +4699,11 @@
           "path": "Organization.contact.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4175,6 +4715,11 @@
           "path": "Organization.contact.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4258,6 +4803,11 @@
           "path": "Patient.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -4269,6 +4819,11 @@
           "path": "Patient.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -4280,6 +4835,11 @@
           "path": "Patient.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -4291,6 +4851,11 @@
           "path": "Patient.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -4302,6 +4867,11 @@
           "path": "Patient.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -4313,6 +4883,11 @@
           "path": "Patient.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -4324,6 +4899,11 @@
           "path": "Patient.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4335,6 +4915,11 @@
           "path": "Patient.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4484,6 +5069,11 @@
           "path": "Patient.contact.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -4495,6 +5085,11 @@
           "path": "Patient.contact.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4506,6 +5101,11 @@
           "path": "Patient.contact.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4606,6 +5206,11 @@
           "path": "Patient.communication.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -4617,6 +5222,11 @@
           "path": "Patient.communication.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4628,6 +5238,11 @@
           "path": "Patient.communication.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4700,6 +5315,11 @@
           "path": "Patient.link.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -4711,6 +5331,11 @@
           "path": "Patient.link.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4722,6 +5347,11 @@
           "path": "Patient.link.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4775,6 +5405,11 @@
           "path": "PlanDefinition.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -4786,6 +5421,11 @@
           "path": "PlanDefinition.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -4797,6 +5437,11 @@
           "path": "PlanDefinition.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -4808,6 +5453,11 @@
           "path": "PlanDefinition.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -4819,6 +5469,11 @@
           "path": "PlanDefinition.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -4830,6 +5485,11 @@
           "path": "PlanDefinition.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -4841,6 +5501,11 @@
           "path": "PlanDefinition.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -4852,6 +5517,11 @@
           "path": "PlanDefinition.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5198,6 +5868,11 @@
           "path": "PlanDefinition.goal.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -5209,6 +5884,11 @@
           "path": "PlanDefinition.goal.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5220,6 +5900,11 @@
           "path": "PlanDefinition.goal.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5308,6 +5993,11 @@
           "path": "PlanDefinition.goal.target.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -5319,6 +6009,11 @@
           "path": "PlanDefinition.goal.target.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5330,6 +6025,11 @@
           "path": "PlanDefinition.goal.target.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5391,6 +6091,11 @@
           "path": "PlanDefinition.action.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -5402,6 +6107,11 @@
           "path": "PlanDefinition.action.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5413,6 +6123,11 @@
           "path": "PlanDefinition.action.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5560,6 +6275,11 @@
           "path": "PlanDefinition.action.condition.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -5571,6 +6291,11 @@
           "path": "PlanDefinition.action.condition.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5582,6 +6307,11 @@
           "path": "PlanDefinition.action.condition.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5648,6 +6378,11 @@
           "path": "PlanDefinition.action.relatedAction.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -5659,6 +6394,11 @@
           "path": "PlanDefinition.action.relatedAction.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5670,6 +6410,11 @@
           "path": "PlanDefinition.action.relatedAction.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5754,6 +6499,11 @@
           "path": "PlanDefinition.action.participant.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -5765,6 +6515,11 @@
           "path": "PlanDefinition.action.participant.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5776,6 +6531,11 @@
           "path": "PlanDefinition.action.participant.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5917,6 +6677,11 @@
           "path": "PlanDefinition.action.dynamicValue.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -5928,6 +6693,11 @@
           "path": "PlanDefinition.action.dynamicValue.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5939,6 +6709,11 @@
           "path": "PlanDefinition.action.dynamicValue.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -5995,6 +6770,11 @@
           "path": "Practitioner.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -6006,6 +6786,11 @@
           "path": "Practitioner.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -6017,6 +6802,11 @@
           "path": "Practitioner.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -6028,6 +6818,11 @@
           "path": "Practitioner.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -6039,6 +6834,11 @@
           "path": "Practitioner.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -6050,6 +6850,11 @@
           "path": "Practitioner.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -6061,6 +6866,11 @@
           "path": "Practitioner.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6072,6 +6882,11 @@
           "path": "Practitioner.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6182,6 +6997,11 @@
           "path": "Practitioner.qualification.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -6193,6 +7013,11 @@
           "path": "Practitioner.qualification.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6204,6 +7029,11 @@
           "path": "Practitioner.qualification.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6287,6 +7117,11 @@
           "path": "Questionnaire.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -6298,6 +7133,11 @@
           "path": "Questionnaire.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -6309,6 +7149,11 @@
           "path": "Questionnaire.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -6320,6 +7165,11 @@
           "path": "Questionnaire.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -6331,6 +7181,11 @@
           "path": "Questionnaire.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -6342,6 +7197,11 @@
           "path": "Questionnaire.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -6353,6 +7213,11 @@
           "path": "Questionnaire.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6364,6 +7229,11 @@
           "path": "Questionnaire.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6618,6 +7488,11 @@
           "path": "Questionnaire.item.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -6629,6 +7504,11 @@
           "path": "Questionnaire.item.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6640,6 +7520,11 @@
           "path": "Questionnaire.item.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6728,6 +7613,11 @@
           "path": "Questionnaire.item.enableWhen.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -6739,6 +7629,11 @@
           "path": "Questionnaire.item.enableWhen.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6750,6 +7645,11 @@
           "path": "Questionnaire.item.enableWhen.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6900,6 +7800,11 @@
           "path": "Questionnaire.item.answerOption.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -6911,6 +7816,11 @@
           "path": "Questionnaire.item.answerOption.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6922,6 +7832,11 @@
           "path": "Questionnaire.item.answerOption.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -6982,6 +7897,11 @@
           "path": "Questionnaire.item.initial.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -6993,6 +7913,11 @@
           "path": "Questionnaire.item.initial.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7004,6 +7929,11 @@
           "path": "Questionnaire.item.initial.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7083,6 +8013,11 @@
           "path": "QuestionnaireResponse.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -7094,6 +8029,11 @@
           "path": "QuestionnaireResponse.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -7105,6 +8045,11 @@
           "path": "QuestionnaireResponse.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -7116,6 +8061,11 @@
           "path": "QuestionnaireResponse.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -7127,6 +8077,11 @@
           "path": "QuestionnaireResponse.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -7138,6 +8093,11 @@
           "path": "QuestionnaireResponse.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -7149,6 +8109,11 @@
           "path": "QuestionnaireResponse.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7160,6 +8125,11 @@
           "path": "QuestionnaireResponse.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7317,6 +8287,11 @@
           "path": "QuestionnaireResponse.item.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -7328,6 +8303,11 @@
           "path": "QuestionnaireResponse.item.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7339,6 +8319,11 @@
           "path": "QuestionnaireResponse.item.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7394,6 +8379,11 @@
           "path": "QuestionnaireResponse.item.answer.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -7405,6 +8395,11 @@
           "path": "QuestionnaireResponse.item.answer.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7416,6 +8411,11 @@
           "path": "QuestionnaireResponse.item.answer.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7502,6 +8502,11 @@
           "path": "Schedule.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -7513,6 +8518,11 @@
           "path": "Schedule.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -7524,6 +8534,11 @@
           "path": "Schedule.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -7535,6 +8550,11 @@
           "path": "Schedule.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -7546,6 +8566,11 @@
           "path": "Schedule.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -7557,6 +8582,11 @@
           "path": "Schedule.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -7568,6 +8598,11 @@
           "path": "Schedule.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7579,6 +8614,11 @@
           "path": "Schedule.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7703,6 +8743,11 @@
           "path": "ServiceRequest.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -7714,6 +8759,11 @@
           "path": "ServiceRequest.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -7725,6 +8775,11 @@
           "path": "ServiceRequest.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -7736,6 +8791,11 @@
           "path": "ServiceRequest.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -7747,6 +8807,11 @@
           "path": "ServiceRequest.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -7758,6 +8823,11 @@
           "path": "ServiceRequest.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -7769,6 +8839,11 @@
           "path": "ServiceRequest.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -7780,6 +8855,11 @@
           "path": "ServiceRequest.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8234,6 +9314,11 @@
           "path": "Slot.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -8245,6 +9330,11 @@
           "path": "Slot.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -8256,6 +9346,11 @@
           "path": "Slot.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -8267,6 +9362,11 @@
           "path": "Slot.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -8278,6 +9378,11 @@
           "path": "Slot.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -8289,6 +9394,11 @@
           "path": "Slot.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -8300,6 +9410,11 @@
           "path": "Slot.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8311,6 +9426,11 @@
           "path": "Slot.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8460,6 +9580,11 @@
           "path": "Specimen.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -8471,6 +9596,11 @@
           "path": "Specimen.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -8482,6 +9612,11 @@
           "path": "Specimen.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -8493,6 +9628,11 @@
           "path": "Specimen.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -8504,6 +9644,11 @@
           "path": "Specimen.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -8515,6 +9660,11 @@
           "path": "Specimen.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -8526,6 +9676,11 @@
           "path": "Specimen.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8537,6 +9692,11 @@
           "path": "Specimen.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8656,6 +9816,11 @@
           "path": "Specimen.collection.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -8667,6 +9832,11 @@
           "path": "Specimen.collection.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8678,6 +9848,11 @@
           "path": "Specimen.collection.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8787,6 +9962,11 @@
           "path": "Specimen.processing.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -8798,6 +9978,11 @@
           "path": "Specimen.processing.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8809,6 +9994,11 @@
           "path": "Specimen.processing.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8879,6 +10069,11 @@
           "path": "Specimen.container.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -8890,6 +10085,11 @@
           "path": "Specimen.container.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -8901,6 +10101,11 @@
           "path": "Specimen.container.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9020,6 +10225,11 @@
           "path": "SpecimenDefinition.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -9031,6 +10241,11 @@
           "path": "SpecimenDefinition.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -9042,6 +10257,11 @@
           "path": "SpecimenDefinition.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -9053,6 +10273,11 @@
           "path": "SpecimenDefinition.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -9064,6 +10289,11 @@
           "path": "SpecimenDefinition.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -9075,6 +10305,11 @@
           "path": "SpecimenDefinition.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -9086,6 +10321,11 @@
           "path": "SpecimenDefinition.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9097,6 +10337,11 @@
           "path": "SpecimenDefinition.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9174,6 +10419,11 @@
           "path": "SpecimenDefinition.typeTested.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -9185,6 +10435,11 @@
           "path": "SpecimenDefinition.typeTested.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9196,6 +10451,11 @@
           "path": "SpecimenDefinition.typeTested.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9251,6 +10511,11 @@
           "path": "SpecimenDefinition.typeTested.container.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -9262,6 +10527,11 @@
           "path": "SpecimenDefinition.typeTested.container.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9273,6 +10543,11 @@
           "path": "SpecimenDefinition.typeTested.container.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9364,6 +10639,11 @@
           "path": "SpecimenDefinition.typeTested.container.additive.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -9375,6 +10655,11 @@
           "path": "SpecimenDefinition.typeTested.container.additive.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9386,6 +10671,11 @@
           "path": "SpecimenDefinition.typeTested.container.additive.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9467,6 +10757,11 @@
           "path": "SpecimenDefinition.typeTested.handling.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -9478,6 +10773,11 @@
           "path": "SpecimenDefinition.typeTested.handling.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9489,6 +10789,11 @@
           "path": "SpecimenDefinition.typeTested.handling.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9560,6 +10865,11 @@
           "path": "Task.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -9571,6 +10881,11 @@
           "path": "Task.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -9582,6 +10897,11 @@
           "path": "Task.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -9593,6 +10913,11 @@
           "path": "Task.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -9604,6 +10929,11 @@
           "path": "Task.text",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Narrative"
@@ -9615,6 +10945,11 @@
           "path": "Task.contained",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Resource"
@@ -9626,6 +10961,11 @@
           "path": "Task.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9637,6 +10977,11 @@
           "path": "Task.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -9998,6 +11343,11 @@
           "path": "Task.restriction.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -10009,6 +11359,11 @@
           "path": "Task.restriction.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -10020,6 +11375,11 @@
           "path": "Task.restriction.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -10083,6 +11443,11 @@
           "path": "Task.input.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -10094,6 +11459,11 @@
           "path": "Task.input.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -10105,6 +11475,11 @@
           "path": "Task.input.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -10296,6 +11671,11 @@
           "path": "Task.output.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "http://hl7.org/fhirpath/System.String"
@@ -10307,6 +11687,11 @@
           "path": "Task.output.extension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -10318,6 +11703,11 @@
           "path": "Task.output.modifierExtension",
           "min": 0,
           "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
           "type": [
             {
               "code": "Extension"
@@ -10514,6 +11904,11 @@
           "path": "Project.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "string"
@@ -10525,6 +11920,11 @@
           "path": "Project.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -10536,6 +11936,11 @@
           "path": "Project.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -10547,6 +11952,11 @@
           "path": "Project.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -10817,6 +12227,11 @@
           "path": "Bot.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "string"
@@ -10828,6 +12243,11 @@
           "path": "Bot.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -10839,6 +12259,11 @@
           "path": "Bot.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -10850,6 +12275,11 @@
           "path": "Bot.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"

@@ -18,9 +18,9 @@
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
     "docs": "ts-node src/docs.ts",
-    "generate": "npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run storybook",
+    "generate": "npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient",
     "migrate": "ts-node src/migrate.ts",
-    "storybook": "ts-node src/storybook.ts && npx prettier ../mock/src/mocks/*.json --write",
+    "mockclient": "ts-node src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
     "test": "jest"
   },
   "devDependencies": {
