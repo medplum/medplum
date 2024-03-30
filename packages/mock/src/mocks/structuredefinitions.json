@@ -10,12 +10,7 @@
           "id": "ActivityDefinition",
           "path": "ActivityDefinition",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "ActivityDefinition",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "ActivityDefinition.id",
@@ -150,11 +145,6 @@
           "path": "ActivityDefinition.url",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.url",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "uri"
@@ -166,11 +156,6 @@
           "path": "ActivityDefinition.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -182,11 +167,6 @@
           "path": "ActivityDefinition.version",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.version",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -198,11 +178,6 @@
           "path": "ActivityDefinition.name",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.name",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -214,11 +189,6 @@
           "path": "ActivityDefinition.title",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.title",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -230,11 +200,6 @@
           "path": "ActivityDefinition.subtitle",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.subtitle",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -246,11 +211,6 @@
           "path": "ActivityDefinition.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -262,11 +222,6 @@
           "path": "ActivityDefinition.experimental",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.experimental",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -278,11 +233,6 @@
           "path": "ActivityDefinition.subject[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.subject[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -298,11 +248,6 @@
           "path": "ActivityDefinition.date",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.date",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -314,11 +259,6 @@
           "path": "ActivityDefinition.publisher",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.publisher",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -330,11 +270,6 @@
           "path": "ActivityDefinition.contact",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.contact",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -346,11 +281,6 @@
           "path": "ActivityDefinition.description",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.description",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -362,11 +292,6 @@
           "path": "ActivityDefinition.useContext",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.useContext",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "UsageContext"
@@ -378,11 +303,6 @@
           "path": "ActivityDefinition.jurisdiction",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.jurisdiction",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -394,11 +314,6 @@
           "path": "ActivityDefinition.purpose",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.purpose",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -410,11 +325,6 @@
           "path": "ActivityDefinition.usage",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.usage",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -426,11 +336,6 @@
           "path": "ActivityDefinition.copyright",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.copyright",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -442,11 +347,6 @@
           "path": "ActivityDefinition.approvalDate",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.approvalDate",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "date"
@@ -458,11 +358,6 @@
           "path": "ActivityDefinition.lastReviewDate",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.lastReviewDate",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "date"
@@ -474,11 +369,6 @@
           "path": "ActivityDefinition.effectivePeriod",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.effectivePeriod",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -490,11 +380,6 @@
           "path": "ActivityDefinition.topic",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.topic",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -506,11 +391,6 @@
           "path": "ActivityDefinition.author",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.author",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -522,11 +402,6 @@
           "path": "ActivityDefinition.editor",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.editor",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -538,11 +413,6 @@
           "path": "ActivityDefinition.reviewer",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.reviewer",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -554,11 +424,6 @@
           "path": "ActivityDefinition.endorser",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.endorser",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -570,11 +435,6 @@
           "path": "ActivityDefinition.relatedArtifact",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.relatedArtifact",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "RelatedArtifact"
@@ -586,11 +446,6 @@
           "path": "ActivityDefinition.library",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.library",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "canonical",
@@ -603,11 +458,6 @@
           "path": "ActivityDefinition.kind",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.kind",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -619,11 +469,6 @@
           "path": "ActivityDefinition.profile",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.profile",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "canonical",
@@ -636,11 +481,6 @@
           "path": "ActivityDefinition.code",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.code",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -652,11 +492,6 @@
           "path": "ActivityDefinition.intent",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.intent",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -668,11 +503,6 @@
           "path": "ActivityDefinition.priority",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.priority",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -684,11 +514,6 @@
           "path": "ActivityDefinition.doNotPerform",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.doNotPerform",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -700,11 +525,6 @@
           "path": "ActivityDefinition.timing[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.timing[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Timing"
@@ -731,11 +551,6 @@
           "path": "ActivityDefinition.location",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.location",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -748,11 +563,6 @@
           "path": "ActivityDefinition.participant",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.participant",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -812,11 +622,6 @@
           "path": "ActivityDefinition.participant.type",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.participant.type",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -828,11 +633,6 @@
           "path": "ActivityDefinition.participant.role",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.participant.role",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -844,11 +644,6 @@
           "path": "ActivityDefinition.product[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.product[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -867,11 +662,6 @@
           "path": "ActivityDefinition.quantity",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.quantity",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -883,11 +673,6 @@
           "path": "ActivityDefinition.dosage",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.dosage",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Dosage"
@@ -899,11 +684,6 @@
           "path": "ActivityDefinition.bodySite",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.bodySite",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -915,11 +695,6 @@
           "path": "ActivityDefinition.specimenRequirement",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.specimenRequirement",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -932,11 +707,6 @@
           "path": "ActivityDefinition.observationRequirement",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.observationRequirement",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -949,11 +719,6 @@
           "path": "ActivityDefinition.observationResultRequirement",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.observationResultRequirement",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -966,11 +731,6 @@
           "path": "ActivityDefinition.transform",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.transform",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "canonical",
@@ -983,11 +743,6 @@
           "path": "ActivityDefinition.dynamicValue",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ActivityDefinition.dynamicValue",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -1047,11 +802,6 @@
           "path": "ActivityDefinition.dynamicValue.path",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.dynamicValue.path",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -1063,11 +813,6 @@
           "path": "ActivityDefinition.dynamicValue.expression",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "ActivityDefinition.dynamicValue.expression",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Expression"
@@ -1088,12 +833,7 @@
           "id": "Communication",
           "path": "Communication",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Communication",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Communication.id",
@@ -1228,11 +968,6 @@
           "path": "Communication.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -1244,11 +979,6 @@
           "path": "Communication.instantiatesCanonical",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.instantiatesCanonical",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "canonical",
@@ -1267,11 +997,6 @@
           "path": "Communication.instantiatesUri",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.instantiatesUri",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "uri"
@@ -1283,11 +1008,6 @@
           "path": "Communication.basedOn",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.basedOn",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1300,11 +1020,6 @@
           "path": "Communication.partOf",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.partOf",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1317,11 +1032,6 @@
           "path": "Communication.inResponseTo",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.inResponseTo",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1334,11 +1044,6 @@
           "path": "Communication.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Communication.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -1350,11 +1055,6 @@
           "path": "Communication.statusReason",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Communication.statusReason",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -1366,11 +1066,6 @@
           "path": "Communication.category",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.category",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -1382,11 +1077,6 @@
           "path": "Communication.priority",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Communication.priority",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -1398,11 +1088,6 @@
           "path": "Communication.medium",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.medium",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -1414,11 +1099,6 @@
           "path": "Communication.subject",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Communication.subject",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1434,11 +1114,6 @@
           "path": "Communication.topic",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Communication.topic",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -1450,11 +1125,6 @@
           "path": "Communication.about",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.about",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1467,11 +1137,6 @@
           "path": "Communication.encounter",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Communication.encounter",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1484,11 +1149,6 @@
           "path": "Communication.sent",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Communication.sent",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -1500,11 +1160,6 @@
           "path": "Communication.received",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Communication.received",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -1516,11 +1171,6 @@
           "path": "Communication.recipient",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.recipient",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1543,11 +1193,6 @@
           "path": "Communication.sender",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Communication.sender",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1568,11 +1213,6 @@
           "path": "Communication.reasonCode",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.reasonCode",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -1584,11 +1224,6 @@
           "path": "Communication.reasonReference",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.reasonReference",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1606,11 +1241,6 @@
           "path": "Communication.payload",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.payload",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -1670,11 +1300,6 @@
           "path": "Communication.payload.content[x]",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Communication.payload.content[x]",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -1693,11 +1318,6 @@
           "path": "Communication.note",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Communication.note",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Annotation"
@@ -1718,12 +1338,7 @@
           "id": "DiagnosticReport",
           "path": "DiagnosticReport",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "DiagnosticReport",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "DiagnosticReport.id",
@@ -1858,11 +1473,6 @@
           "path": "DiagnosticReport.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -1874,11 +1484,6 @@
           "path": "DiagnosticReport.basedOn",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.basedOn",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1897,11 +1502,6 @@
           "path": "DiagnosticReport.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -1913,11 +1513,6 @@
           "path": "DiagnosticReport.category",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.category",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -1929,11 +1524,6 @@
           "path": "DiagnosticReport.code",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.code",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -1945,11 +1535,6 @@
           "path": "DiagnosticReport.subject",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.subject",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1967,11 +1552,6 @@
           "path": "DiagnosticReport.encounter",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.encounter",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -1984,11 +1564,6 @@
           "path": "DiagnosticReport.effective[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.effective[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -2003,11 +1578,6 @@
           "path": "DiagnosticReport.issued",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.issued",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "instant"
@@ -2019,11 +1589,6 @@
           "path": "DiagnosticReport.performer",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.performer",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2041,11 +1606,6 @@
           "path": "DiagnosticReport.resultsInterpreter",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.resultsInterpreter",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2063,11 +1623,6 @@
           "path": "DiagnosticReport.specimen",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.specimen",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2080,11 +1635,6 @@
           "path": "DiagnosticReport.result",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.result",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2097,11 +1647,6 @@
           "path": "DiagnosticReport.imagingStudy",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.imagingStudy",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2114,11 +1659,6 @@
           "path": "DiagnosticReport.media",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.media",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -2178,11 +1718,6 @@
           "path": "DiagnosticReport.media.comment",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.media.comment",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -2194,11 +1729,6 @@
           "path": "DiagnosticReport.media.link",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.media.link",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2211,11 +1741,6 @@
           "path": "DiagnosticReport.conclusion",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "DiagnosticReport.conclusion",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -2227,11 +1752,6 @@
           "path": "DiagnosticReport.conclusionCode",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.conclusionCode",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -2243,11 +1763,6 @@
           "path": "DiagnosticReport.presentedForm",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "DiagnosticReport.presentedForm",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Attachment"
@@ -2268,12 +1783,7 @@
           "id": "Encounter",
           "path": "Encounter",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Encounter",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Encounter.id",
@@ -2408,11 +1918,6 @@
           "path": "Encounter.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -2424,11 +1929,6 @@
           "path": "Encounter.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Encounter.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -2440,11 +1940,6 @@
           "path": "Encounter.statusHistory",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.statusHistory",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -2504,11 +1999,6 @@
           "path": "Encounter.statusHistory.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Encounter.statusHistory.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -2520,11 +2010,6 @@
           "path": "Encounter.statusHistory.period",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Encounter.statusHistory.period",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -2536,11 +2021,6 @@
           "path": "Encounter.class",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Encounter.class",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Coding"
@@ -2552,11 +2032,6 @@
           "path": "Encounter.classHistory",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.classHistory",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -2616,11 +2091,6 @@
           "path": "Encounter.classHistory.class",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Encounter.classHistory.class",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Coding"
@@ -2632,11 +2102,6 @@
           "path": "Encounter.classHistory.period",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Encounter.classHistory.period",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -2648,11 +2113,6 @@
           "path": "Encounter.type",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.type",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -2664,11 +2124,6 @@
           "path": "Encounter.serviceType",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.serviceType",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -2680,11 +2135,6 @@
           "path": "Encounter.priority",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.priority",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -2696,11 +2146,6 @@
           "path": "Encounter.subject",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.subject",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2716,11 +2161,6 @@
           "path": "Encounter.episodeOfCare",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.episodeOfCare",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2733,11 +2173,6 @@
           "path": "Encounter.basedOn",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.basedOn",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2750,11 +2185,6 @@
           "path": "Encounter.participant",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.participant",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -2814,11 +2244,6 @@
           "path": "Encounter.participant.type",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.participant.type",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -2830,11 +2255,6 @@
           "path": "Encounter.participant.period",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.participant.period",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -2846,11 +2266,6 @@
           "path": "Encounter.participant.individual",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.participant.individual",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2867,11 +2282,6 @@
           "path": "Encounter.appointment",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.appointment",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2884,11 +2294,6 @@
           "path": "Encounter.period",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.period",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -2900,11 +2305,6 @@
           "path": "Encounter.length",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.length",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Duration"
@@ -2916,11 +2316,6 @@
           "path": "Encounter.reasonCode",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.reasonCode",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -2932,11 +2327,6 @@
           "path": "Encounter.reasonReference",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.reasonReference",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -2954,11 +2344,6 @@
           "path": "Encounter.diagnosis",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.diagnosis",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -3018,11 +2403,6 @@
           "path": "Encounter.diagnosis.condition",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Encounter.diagnosis.condition",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3038,11 +2418,6 @@
           "path": "Encounter.diagnosis.use",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.diagnosis.use",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3054,11 +2429,6 @@
           "path": "Encounter.diagnosis.rank",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.diagnosis.rank",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "positiveInt"
@@ -3070,11 +2440,6 @@
           "path": "Encounter.account",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.account",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3087,11 +2452,6 @@
           "path": "Encounter.hospitalization",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.hospitalization",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -3151,11 +2511,6 @@
           "path": "Encounter.hospitalization.preAdmissionIdentifier",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.hospitalization.preAdmissionIdentifier",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -3167,11 +2522,6 @@
           "path": "Encounter.hospitalization.origin",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.hospitalization.origin",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3187,11 +2537,6 @@
           "path": "Encounter.hospitalization.admitSource",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.hospitalization.admitSource",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3203,11 +2548,6 @@
           "path": "Encounter.hospitalization.reAdmission",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.hospitalization.reAdmission",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3219,11 +2559,6 @@
           "path": "Encounter.hospitalization.dietPreference",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.hospitalization.dietPreference",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3235,11 +2570,6 @@
           "path": "Encounter.hospitalization.specialCourtesy",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.hospitalization.specialCourtesy",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3251,11 +2581,6 @@
           "path": "Encounter.hospitalization.specialArrangement",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.hospitalization.specialArrangement",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3267,11 +2592,6 @@
           "path": "Encounter.hospitalization.destination",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.hospitalization.destination",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3287,11 +2607,6 @@
           "path": "Encounter.hospitalization.dischargeDisposition",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.hospitalization.dischargeDisposition",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3303,11 +2618,6 @@
           "path": "Encounter.location",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Encounter.location",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -3367,11 +2677,6 @@
           "path": "Encounter.location.location",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Encounter.location.location",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3384,11 +2689,6 @@
           "path": "Encounter.location.status",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.location.status",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -3400,11 +2700,6 @@
           "path": "Encounter.location.physicalType",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.location.physicalType",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3416,11 +2711,6 @@
           "path": "Encounter.location.period",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.location.period",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -3432,11 +2722,6 @@
           "path": "Encounter.serviceProvider",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.serviceProvider",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3449,11 +2734,6 @@
           "path": "Encounter.partOf",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Encounter.partOf",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3475,12 +2755,7 @@
           "id": "Media",
           "path": "Media",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Media",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Media.id",
@@ -3615,11 +2890,6 @@
           "path": "Media.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Media.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -3631,11 +2901,6 @@
           "path": "Media.basedOn",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Media.basedOn",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3651,11 +2916,6 @@
           "path": "Media.partOf",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Media.partOf",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3668,11 +2928,6 @@
           "path": "Media.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Media.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -3684,11 +2939,6 @@
           "path": "Media.type",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.type",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3700,11 +2950,6 @@
           "path": "Media.modality",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.modality",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3716,11 +2961,6 @@
           "path": "Media.view",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.view",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3732,11 +2972,6 @@
           "path": "Media.subject",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.subject",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3757,11 +2992,6 @@
           "path": "Media.encounter",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.encounter",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3774,11 +3004,6 @@
           "path": "Media.created[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.created[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -3793,11 +3018,6 @@
           "path": "Media.issued",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.issued",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "instant"
@@ -3809,11 +3029,6 @@
           "path": "Media.operator",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.operator",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3834,11 +3049,6 @@
           "path": "Media.reasonCode",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Media.reasonCode",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3850,11 +3060,6 @@
           "path": "Media.bodySite",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.bodySite",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -3866,11 +3071,6 @@
           "path": "Media.deviceName",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.deviceName",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -3882,11 +3082,6 @@
           "path": "Media.device",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.device",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -3903,11 +3098,6 @@
           "path": "Media.height",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.height",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "positiveInt"
@@ -3919,11 +3109,6 @@
           "path": "Media.width",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.width",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "positiveInt"
@@ -3935,11 +3120,6 @@
           "path": "Media.frames",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.frames",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "positiveInt"
@@ -3951,11 +3131,6 @@
           "path": "Media.duration",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Media.duration",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "decimal"
@@ -3967,11 +3142,6 @@
           "path": "Media.content",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Media.content",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Attachment"
@@ -3983,11 +3153,6 @@
           "path": "Media.note",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Media.note",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Annotation"
@@ -4008,12 +3173,7 @@
           "id": "Observation",
           "path": "Observation",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Observation",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Observation.id",
@@ -4148,11 +3308,6 @@
           "path": "Observation.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -4164,11 +3319,6 @@
           "path": "Observation.basedOn",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.basedOn",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4188,11 +3338,6 @@
           "path": "Observation.partOf",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.partOf",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4212,11 +3357,6 @@
           "path": "Observation.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Observation.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -4228,11 +3368,6 @@
           "path": "Observation.category",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.category",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4244,11 +3379,6 @@
           "path": "Observation.code",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Observation.code",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4260,11 +3390,6 @@
           "path": "Observation.subject",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.subject",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4282,11 +3407,6 @@
           "path": "Observation.focus",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.focus",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4299,11 +3419,6 @@
           "path": "Observation.encounter",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.encounter",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4316,11 +3431,6 @@
           "path": "Observation.effective[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.effective[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -4341,11 +3451,6 @@
           "path": "Observation.issued",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.issued",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "instant"
@@ -4357,11 +3462,6 @@
           "path": "Observation.performer",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.performer",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4381,11 +3481,6 @@
           "path": "Observation.value[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.value[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -4427,11 +3522,6 @@
           "path": "Observation.dataAbsentReason",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.dataAbsentReason",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4443,11 +3533,6 @@
           "path": "Observation.interpretation",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.interpretation",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4459,11 +3544,6 @@
           "path": "Observation.note",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.note",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Annotation"
@@ -4475,11 +3555,6 @@
           "path": "Observation.bodySite",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.bodySite",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4491,11 +3566,6 @@
           "path": "Observation.method",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.method",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4507,11 +3577,6 @@
           "path": "Observation.specimen",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.specimen",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4524,11 +3589,6 @@
           "path": "Observation.device",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.device",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4544,11 +3604,6 @@
           "path": "Observation.referenceRange",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.referenceRange",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -4608,11 +3663,6 @@
           "path": "Observation.referenceRange.low",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.referenceRange.low",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -4624,11 +3674,6 @@
           "path": "Observation.referenceRange.high",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.referenceRange.high",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -4640,11 +3685,6 @@
           "path": "Observation.referenceRange.type",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.referenceRange.type",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4656,11 +3696,6 @@
           "path": "Observation.referenceRange.appliesTo",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.referenceRange.appliesTo",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4672,11 +3707,6 @@
           "path": "Observation.referenceRange.age",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.referenceRange.age",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Range"
@@ -4688,11 +3718,6 @@
           "path": "Observation.referenceRange.text",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.referenceRange.text",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -4704,11 +3729,6 @@
           "path": "Observation.hasMember",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.hasMember",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4725,11 +3745,6 @@
           "path": "Observation.derivedFrom",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.derivedFrom",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -4749,11 +3764,6 @@
           "path": "Observation.component",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.component",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -4813,11 +3823,6 @@
           "path": "Observation.component.code",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Observation.component.code",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4829,11 +3834,6 @@
           "path": "Observation.component.value[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.component.value[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -4875,11 +3875,6 @@
           "path": "Observation.component.dataAbsentReason",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Observation.component.dataAbsentReason",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4891,11 +3886,6 @@
           "path": "Observation.component.interpretation",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.component.interpretation",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -4907,11 +3897,6 @@
           "path": "Observation.component.referenceRange",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Observation.component.referenceRange",
-            "min": 0,
-            "max": "*"
-          },
           "contentReference": "#Observation.referenceRange"
         }
       ]
@@ -4928,12 +3913,7 @@
           "id": "ObservationDefinition",
           "path": "ObservationDefinition",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "ObservationDefinition",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "ObservationDefinition.id",
@@ -5068,11 +4048,6 @@
           "path": "ObservationDefinition.publisher",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.publisher",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -5089,11 +4064,6 @@
           "path": "ObservationDefinition.category",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ObservationDefinition.category",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5105,11 +4075,6 @@
           "path": "ObservationDefinition.code",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.code",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5121,11 +4086,6 @@
           "path": "ObservationDefinition.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ObservationDefinition.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -5137,11 +4097,6 @@
           "path": "ObservationDefinition.permittedDataType",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ObservationDefinition.permittedDataType",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "code"
@@ -5153,11 +4108,6 @@
           "path": "ObservationDefinition.multipleResultsAllowed",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.multipleResultsAllowed",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -5169,11 +4119,6 @@
           "path": "ObservationDefinition.method",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.method",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5185,11 +4130,6 @@
           "path": "ObservationDefinition.preferredReportName",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.preferredReportName",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -5201,11 +4141,6 @@
           "path": "ObservationDefinition.quantitativeDetails",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.quantitativeDetails",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -5265,11 +4200,6 @@
           "path": "ObservationDefinition.quantitativeDetails.customaryUnit",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.quantitativeDetails.customaryUnit",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5281,11 +4211,6 @@
           "path": "ObservationDefinition.quantitativeDetails.unit",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.quantitativeDetails.unit",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5297,11 +4222,6 @@
           "path": "ObservationDefinition.quantitativeDetails.conversionFactor",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.quantitativeDetails.conversionFactor",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "decimal"
@@ -5313,11 +4233,6 @@
           "path": "ObservationDefinition.quantitativeDetails.decimalPrecision",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.quantitativeDetails.decimalPrecision",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "integer"
@@ -5329,11 +4244,6 @@
           "path": "ObservationDefinition.qualifiedInterval",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -5393,11 +4303,6 @@
           "path": "ObservationDefinition.qualifiedInterval.category",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval.category",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -5409,11 +4314,6 @@
           "path": "ObservationDefinition.qualifiedInterval.range",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval.range",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Range"
@@ -5425,11 +4325,6 @@
           "path": "ObservationDefinition.qualifiedInterval.context",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval.context",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5441,11 +4336,6 @@
           "path": "ObservationDefinition.qualifiedInterval.appliesTo",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval.appliesTo",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5457,11 +4347,6 @@
           "path": "ObservationDefinition.qualifiedInterval.gender",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval.gender",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -5473,11 +4358,6 @@
           "path": "ObservationDefinition.qualifiedInterval.age",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval.age",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Range"
@@ -5489,11 +4369,6 @@
           "path": "ObservationDefinition.qualifiedInterval.gestationalAge",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval.gestationalAge",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Range"
@@ -5505,11 +4380,6 @@
           "path": "ObservationDefinition.qualifiedInterval.condition",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.qualifiedInterval.condition",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -5521,11 +4391,6 @@
           "path": "ObservationDefinition.validCodedValueSet",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.validCodedValueSet",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -5538,11 +4403,6 @@
           "path": "ObservationDefinition.normalCodedValueSet",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.normalCodedValueSet",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -5555,11 +4415,6 @@
           "path": "ObservationDefinition.abnormalCodedValueSet",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.abnormalCodedValueSet",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -5572,11 +4427,6 @@
           "path": "ObservationDefinition.criticalCodedValueSet",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ObservationDefinition.criticalCodedValueSet",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -5598,12 +4448,7 @@
           "id": "Organization",
           "path": "Organization",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Organization",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Organization.id",
@@ -5738,11 +4583,6 @@
           "path": "Organization.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Organization.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -5754,11 +4594,6 @@
           "path": "Organization.active",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Organization.active",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -5770,11 +4605,6 @@
           "path": "Organization.type",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Organization.type",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5786,11 +4616,6 @@
           "path": "Organization.name",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Organization.name",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -5802,11 +4627,6 @@
           "path": "Organization.alias",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Organization.alias",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "string"
@@ -5818,11 +4638,6 @@
           "path": "Organization.telecom",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Organization.telecom",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactPoint"
@@ -5834,11 +4649,6 @@
           "path": "Organization.address",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Organization.address",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Address"
@@ -5850,11 +4660,6 @@
           "path": "Organization.partOf",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Organization.partOf",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -5867,11 +4672,6 @@
           "path": "Organization.contact",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Organization.contact",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -5931,11 +4731,6 @@
           "path": "Organization.contact.purpose",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Organization.contact.purpose",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -5947,11 +4742,6 @@
           "path": "Organization.contact.name",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Organization.contact.name",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "HumanName"
@@ -5963,11 +4753,6 @@
           "path": "Organization.contact.telecom",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Organization.contact.telecom",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactPoint"
@@ -5979,11 +4764,6 @@
           "path": "Organization.contact.address",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Organization.contact.address",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Address"
@@ -5995,11 +4775,6 @@
           "path": "Organization.endpoint",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Organization.endpoint",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -6021,12 +4796,7 @@
           "id": "Patient",
           "path": "Patient",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Patient",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Patient.id",
@@ -6161,11 +4931,6 @@
           "path": "Patient.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -6177,11 +4942,6 @@
           "path": "Patient.active",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.active",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -6193,11 +4953,6 @@
           "path": "Patient.name",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.name",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "HumanName"
@@ -6209,11 +4964,6 @@
           "path": "Patient.telecom",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.telecom",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactPoint"
@@ -6225,11 +4975,6 @@
           "path": "Patient.gender",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.gender",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -6241,11 +4986,6 @@
           "path": "Patient.birthDate",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.birthDate",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "date"
@@ -6257,11 +4997,6 @@
           "path": "Patient.deceased[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.deceased[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -6276,11 +5011,6 @@
           "path": "Patient.address",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.address",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Address"
@@ -6292,11 +5022,6 @@
           "path": "Patient.maritalStatus",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.maritalStatus",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -6308,11 +5033,6 @@
           "path": "Patient.multipleBirth[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.multipleBirth[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -6327,11 +5047,6 @@
           "path": "Patient.photo",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.photo",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Attachment"
@@ -6343,11 +5058,6 @@
           "path": "Patient.contact",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.contact",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -6407,11 +5117,6 @@
           "path": "Patient.contact.relationship",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.contact.relationship",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -6423,11 +5128,6 @@
           "path": "Patient.contact.name",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.contact.name",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "HumanName"
@@ -6439,11 +5139,6 @@
           "path": "Patient.contact.telecom",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.contact.telecom",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactPoint"
@@ -6455,11 +5150,6 @@
           "path": "Patient.contact.address",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.contact.address",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Address"
@@ -6471,11 +5161,6 @@
           "path": "Patient.contact.gender",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.contact.gender",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -6487,11 +5172,6 @@
           "path": "Patient.contact.organization",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.contact.organization",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -6504,11 +5184,6 @@
           "path": "Patient.contact.period",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.contact.period",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -6520,11 +5195,6 @@
           "path": "Patient.communication",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.communication",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -6584,11 +5254,6 @@
           "path": "Patient.communication.language",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Patient.communication.language",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -6600,11 +5265,6 @@
           "path": "Patient.communication.preferred",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.communication.preferred",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -6616,11 +5276,6 @@
           "path": "Patient.generalPractitioner",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.generalPractitioner",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -6637,11 +5292,6 @@
           "path": "Patient.managingOrganization",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Patient.managingOrganization",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -6654,11 +5304,6 @@
           "path": "Patient.link",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Patient.link",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -6718,11 +5363,6 @@
           "path": "Patient.link.other",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Patient.link.other",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -6738,11 +5378,6 @@
           "path": "Patient.link.type",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Patient.link.type",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -6763,12 +5398,7 @@
           "id": "PlanDefinition",
           "path": "PlanDefinition",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "PlanDefinition",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "PlanDefinition.id",
@@ -6903,11 +5533,6 @@
           "path": "PlanDefinition.url",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.url",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "uri"
@@ -6919,11 +5544,6 @@
           "path": "PlanDefinition.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -6935,11 +5555,6 @@
           "path": "PlanDefinition.version",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.version",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -6951,11 +5566,6 @@
           "path": "PlanDefinition.name",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.name",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -6967,11 +5577,6 @@
           "path": "PlanDefinition.title",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.title",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -6983,11 +5588,6 @@
           "path": "PlanDefinition.subtitle",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.subtitle",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -6999,11 +5599,6 @@
           "path": "PlanDefinition.type",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.type",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7015,11 +5610,6 @@
           "path": "PlanDefinition.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -7031,11 +5621,6 @@
           "path": "PlanDefinition.experimental",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.experimental",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -7047,11 +5632,6 @@
           "path": "PlanDefinition.subject[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.subject[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7067,11 +5647,6 @@
           "path": "PlanDefinition.date",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.date",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -7083,11 +5658,6 @@
           "path": "PlanDefinition.publisher",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.publisher",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -7099,11 +5669,6 @@
           "path": "PlanDefinition.contact",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.contact",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -7115,11 +5680,6 @@
           "path": "PlanDefinition.description",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.description",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -7131,11 +5691,6 @@
           "path": "PlanDefinition.useContext",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.useContext",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "UsageContext"
@@ -7147,11 +5702,6 @@
           "path": "PlanDefinition.jurisdiction",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.jurisdiction",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7163,11 +5713,6 @@
           "path": "PlanDefinition.purpose",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.purpose",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -7179,11 +5724,6 @@
           "path": "PlanDefinition.usage",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.usage",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -7195,11 +5735,6 @@
           "path": "PlanDefinition.copyright",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.copyright",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -7211,11 +5746,6 @@
           "path": "PlanDefinition.approvalDate",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.approvalDate",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "date"
@@ -7227,11 +5757,6 @@
           "path": "PlanDefinition.lastReviewDate",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.lastReviewDate",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "date"
@@ -7243,11 +5768,6 @@
           "path": "PlanDefinition.effectivePeriod",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.effectivePeriod",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -7259,11 +5779,6 @@
           "path": "PlanDefinition.topic",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.topic",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7275,11 +5790,6 @@
           "path": "PlanDefinition.author",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.author",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -7291,11 +5801,6 @@
           "path": "PlanDefinition.editor",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.editor",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -7307,11 +5812,6 @@
           "path": "PlanDefinition.reviewer",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.reviewer",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -7323,11 +5823,6 @@
           "path": "PlanDefinition.endorser",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.endorser",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -7339,11 +5834,6 @@
           "path": "PlanDefinition.relatedArtifact",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.relatedArtifact",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "RelatedArtifact"
@@ -7355,11 +5845,6 @@
           "path": "PlanDefinition.library",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.library",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "canonical",
@@ -7372,11 +5857,6 @@
           "path": "PlanDefinition.goal",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.goal",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -7436,11 +5916,6 @@
           "path": "PlanDefinition.goal.category",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.goal.category",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7452,11 +5927,6 @@
           "path": "PlanDefinition.goal.description",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.goal.description",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7468,11 +5938,6 @@
           "path": "PlanDefinition.goal.priority",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.goal.priority",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7484,11 +5949,6 @@
           "path": "PlanDefinition.goal.start",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.goal.start",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7500,11 +5960,6 @@
           "path": "PlanDefinition.goal.addresses",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.goal.addresses",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7516,11 +5971,6 @@
           "path": "PlanDefinition.goal.documentation",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.goal.documentation",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "RelatedArtifact"
@@ -7532,11 +5982,6 @@
           "path": "PlanDefinition.goal.target",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.goal.target",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -7596,11 +6041,6 @@
           "path": "PlanDefinition.goal.target.measure",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.goal.target.measure",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7612,11 +6052,6 @@
           "path": "PlanDefinition.goal.target.detail[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.goal.target.detail[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -7634,11 +6069,6 @@
           "path": "PlanDefinition.goal.target.due",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.goal.target.due",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Duration"
@@ -7650,11 +6080,6 @@
           "path": "PlanDefinition.action",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -7714,11 +6139,6 @@
           "path": "PlanDefinition.action.prefix",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.prefix",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -7730,11 +6150,6 @@
           "path": "PlanDefinition.action.title",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.title",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -7746,11 +6161,6 @@
           "path": "PlanDefinition.action.description",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.description",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -7762,11 +6172,6 @@
           "path": "PlanDefinition.action.textEquivalent",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.textEquivalent",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -7778,11 +6183,6 @@
           "path": "PlanDefinition.action.priority",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.priority",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -7794,11 +6194,6 @@
           "path": "PlanDefinition.action.code",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.code",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7810,11 +6205,6 @@
           "path": "PlanDefinition.action.reason",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.reason",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7826,11 +6216,6 @@
           "path": "PlanDefinition.action.documentation",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.documentation",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "RelatedArtifact"
@@ -7842,11 +6227,6 @@
           "path": "PlanDefinition.action.goalId",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.goalId",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "id"
@@ -7858,11 +6238,6 @@
           "path": "PlanDefinition.action.subject[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.subject[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -7878,11 +6253,6 @@
           "path": "PlanDefinition.action.trigger",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.trigger",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "TriggerDefinition"
@@ -7894,11 +6264,6 @@
           "path": "PlanDefinition.action.condition",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.condition",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -7958,11 +6323,6 @@
           "path": "PlanDefinition.action.condition.kind",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.condition.kind",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -7974,11 +6334,6 @@
           "path": "PlanDefinition.action.condition.expression",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.condition.expression",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Expression"
@@ -7990,11 +6345,6 @@
           "path": "PlanDefinition.action.input",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.input",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "DataRequirement"
@@ -8006,11 +6356,6 @@
           "path": "PlanDefinition.action.output",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.output",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "DataRequirement"
@@ -8022,11 +6367,6 @@
           "path": "PlanDefinition.action.relatedAction",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.relatedAction",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -8086,11 +6426,6 @@
           "path": "PlanDefinition.action.relatedAction.actionId",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.relatedAction.actionId",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "id"
@@ -8102,11 +6437,6 @@
           "path": "PlanDefinition.action.relatedAction.relationship",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.relatedAction.relationship",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -8118,11 +6448,6 @@
           "path": "PlanDefinition.action.relatedAction.offset[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.relatedAction.offset[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Duration"
@@ -8137,11 +6462,6 @@
           "path": "PlanDefinition.action.timing[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.timing[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -8168,11 +6488,6 @@
           "path": "PlanDefinition.action.participant",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.participant",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -8232,11 +6547,6 @@
           "path": "PlanDefinition.action.participant.type",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.participant.type",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -8248,11 +6558,6 @@
           "path": "PlanDefinition.action.participant.role",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.participant.role",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -8264,11 +6569,6 @@
           "path": "PlanDefinition.action.type",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.type",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -8280,11 +6580,6 @@
           "path": "PlanDefinition.action.groupingBehavior",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.groupingBehavior",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -8296,11 +6591,6 @@
           "path": "PlanDefinition.action.selectionBehavior",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.selectionBehavior",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -8312,11 +6602,6 @@
           "path": "PlanDefinition.action.requiredBehavior",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.requiredBehavior",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -8328,11 +6613,6 @@
           "path": "PlanDefinition.action.precheckBehavior",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.precheckBehavior",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -8344,11 +6624,6 @@
           "path": "PlanDefinition.action.cardinalityBehavior",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.cardinalityBehavior",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -8360,11 +6635,6 @@
           "path": "PlanDefinition.action.definition[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.definition[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "canonical",
@@ -8384,11 +6654,6 @@
           "path": "PlanDefinition.action.transform",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.transform",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "canonical",
@@ -8401,11 +6666,6 @@
           "path": "PlanDefinition.action.dynamicValue",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.dynamicValue",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -8465,11 +6725,6 @@
           "path": "PlanDefinition.action.dynamicValue.path",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.dynamicValue.path",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -8481,11 +6736,6 @@
           "path": "PlanDefinition.action.dynamicValue.expression",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "PlanDefinition.action.dynamicValue.expression",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Expression"
@@ -8497,11 +6747,6 @@
           "path": "PlanDefinition.action.action",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "PlanDefinition.action.action",
-            "min": 0,
-            "max": "*"
-          },
           "contentReference": "#PlanDefinition.action"
         }
       ]
@@ -8518,12 +6763,7 @@
           "id": "Practitioner",
           "path": "Practitioner",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Practitioner",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Practitioner.id",
@@ -8658,11 +6898,6 @@
           "path": "Practitioner.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Practitioner.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -8674,11 +6909,6 @@
           "path": "Practitioner.active",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Practitioner.active",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -8690,11 +6920,6 @@
           "path": "Practitioner.name",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Practitioner.name",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "HumanName"
@@ -8706,11 +6931,6 @@
           "path": "Practitioner.telecom",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Practitioner.telecom",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactPoint"
@@ -8722,11 +6942,6 @@
           "path": "Practitioner.address",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Practitioner.address",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Address"
@@ -8738,11 +6953,6 @@
           "path": "Practitioner.gender",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Practitioner.gender",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -8754,11 +6964,6 @@
           "path": "Practitioner.birthDate",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Practitioner.birthDate",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "date"
@@ -8770,11 +6975,6 @@
           "path": "Practitioner.photo",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Practitioner.photo",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Attachment"
@@ -8786,11 +6986,6 @@
           "path": "Practitioner.qualification",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Practitioner.qualification",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -8850,11 +7045,6 @@
           "path": "Practitioner.qualification.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Practitioner.qualification.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -8866,11 +7056,6 @@
           "path": "Practitioner.qualification.code",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Practitioner.qualification.code",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -8882,11 +7067,6 @@
           "path": "Practitioner.qualification.period",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Practitioner.qualification.period",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -8898,11 +7078,6 @@
           "path": "Practitioner.qualification.issuer",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Practitioner.qualification.issuer",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -8915,11 +7090,6 @@
           "path": "Practitioner.communication",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Practitioner.communication",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -8940,12 +7110,7 @@
           "id": "Questionnaire",
           "path": "Questionnaire",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Questionnaire",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Questionnaire.id",
@@ -9080,11 +7245,6 @@
           "path": "Questionnaire.url",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.url",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "uri"
@@ -9096,11 +7256,6 @@
           "path": "Questionnaire.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -9112,11 +7267,6 @@
           "path": "Questionnaire.version",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.version",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -9128,11 +7278,6 @@
           "path": "Questionnaire.name",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.name",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -9144,11 +7289,6 @@
           "path": "Questionnaire.title",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.title",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -9160,11 +7300,6 @@
           "path": "Questionnaire.derivedFrom",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.derivedFrom",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "canonical",
@@ -9177,11 +7312,6 @@
           "path": "Questionnaire.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -9193,11 +7323,6 @@
           "path": "Questionnaire.experimental",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.experimental",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -9209,11 +7334,6 @@
           "path": "Questionnaire.subjectType",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.subjectType",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "code"
@@ -9225,11 +7345,6 @@
           "path": "Questionnaire.date",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.date",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -9241,11 +7356,6 @@
           "path": "Questionnaire.publisher",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.publisher",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -9257,11 +7367,6 @@
           "path": "Questionnaire.contact",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.contact",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "ContactDetail"
@@ -9273,11 +7378,6 @@
           "path": "Questionnaire.description",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.description",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -9289,11 +7389,6 @@
           "path": "Questionnaire.useContext",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.useContext",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "UsageContext"
@@ -9305,11 +7400,6 @@
           "path": "Questionnaire.jurisdiction",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.jurisdiction",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -9321,11 +7411,6 @@
           "path": "Questionnaire.purpose",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.purpose",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -9337,11 +7422,6 @@
           "path": "Questionnaire.copyright",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.copyright",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "markdown"
@@ -9353,11 +7433,6 @@
           "path": "Questionnaire.approvalDate",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.approvalDate",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "date"
@@ -9369,11 +7444,6 @@
           "path": "Questionnaire.lastReviewDate",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.lastReviewDate",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "date"
@@ -9385,11 +7455,6 @@
           "path": "Questionnaire.effectivePeriod",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.effectivePeriod",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -9401,11 +7466,6 @@
           "path": "Questionnaire.code",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.code",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Coding"
@@ -9417,11 +7477,6 @@
           "path": "Questionnaire.item",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.item",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -9481,11 +7536,6 @@
           "path": "Questionnaire.item.linkId",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.linkId",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -9497,11 +7547,6 @@
           "path": "Questionnaire.item.definition",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.definition",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "uri"
@@ -9513,11 +7558,6 @@
           "path": "Questionnaire.item.code",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.item.code",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Coding"
@@ -9529,11 +7569,6 @@
           "path": "Questionnaire.item.prefix",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.prefix",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -9545,11 +7580,6 @@
           "path": "Questionnaire.item.text",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.text",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -9561,11 +7591,6 @@
           "path": "Questionnaire.item.type",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.type",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -9577,11 +7602,6 @@
           "path": "Questionnaire.item.enableWhen",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.item.enableWhen",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -9641,11 +7661,6 @@
           "path": "Questionnaire.item.enableWhen.question",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.enableWhen.question",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -9657,11 +7672,6 @@
           "path": "Questionnaire.item.enableWhen.operator",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.enableWhen.operator",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -9673,11 +7683,6 @@
           "path": "Questionnaire.item.enableWhen.answer[x]",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.enableWhen.answer[x]",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -9717,11 +7722,6 @@
           "path": "Questionnaire.item.enableBehavior",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.enableBehavior",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -9733,11 +7733,6 @@
           "path": "Questionnaire.item.required",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.required",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -9749,11 +7744,6 @@
           "path": "Questionnaire.item.repeats",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.repeats",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -9765,11 +7755,6 @@
           "path": "Questionnaire.item.readOnly",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.readOnly",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -9781,11 +7766,6 @@
           "path": "Questionnaire.item.maxLength",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.maxLength",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "integer"
@@ -9797,11 +7777,6 @@
           "path": "Questionnaire.item.answerValueSet",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.answerValueSet",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "canonical",
@@ -9814,11 +7789,6 @@
           "path": "Questionnaire.item.answerOption",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.item.answerOption",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -9878,11 +7848,6 @@
           "path": "Questionnaire.item.answerOption.value[x]",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.answerOption.value[x]",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "integer"
@@ -9910,11 +7875,6 @@
           "path": "Questionnaire.item.answerOption.initialSelected",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.answerOption.initialSelected",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -9926,11 +7886,6 @@
           "path": "Questionnaire.item.initial",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.item.initial",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -9990,11 +7945,6 @@
           "path": "Questionnaire.item.initial.value[x]",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Questionnaire.item.initial.value[x]",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -10040,11 +7990,6 @@
           "path": "Questionnaire.item.item",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Questionnaire.item.item",
-            "min": 0,
-            "max": "*"
-          },
           "contentReference": "#Questionnaire.item"
         }
       ]
@@ -10061,12 +8006,7 @@
           "id": "QuestionnaireResponse",
           "path": "QuestionnaireResponse",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "QuestionnaireResponse",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "QuestionnaireResponse.id",
@@ -10201,11 +8141,6 @@
           "path": "QuestionnaireResponse.identifier",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.identifier",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -10217,11 +8152,6 @@
           "path": "QuestionnaireResponse.basedOn",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "QuestionnaireResponse.basedOn",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -10237,11 +8167,6 @@
           "path": "QuestionnaireResponse.partOf",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "QuestionnaireResponse.partOf",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -10257,11 +8182,6 @@
           "path": "QuestionnaireResponse.questionnaire",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.questionnaire",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "canonical",
@@ -10274,11 +8194,6 @@
           "path": "QuestionnaireResponse.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -10290,11 +8205,6 @@
           "path": "QuestionnaireResponse.subject",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.subject",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -10307,11 +8217,6 @@
           "path": "QuestionnaireResponse.encounter",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.encounter",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -10324,11 +8229,6 @@
           "path": "QuestionnaireResponse.authored",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.authored",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -10340,11 +8240,6 @@
           "path": "QuestionnaireResponse.author",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.author",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -10364,11 +8259,6 @@
           "path": "QuestionnaireResponse.source",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.source",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -10386,11 +8276,6 @@
           "path": "QuestionnaireResponse.item",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "QuestionnaireResponse.item",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -10450,11 +8335,6 @@
           "path": "QuestionnaireResponse.item.linkId",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.item.linkId",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -10466,11 +8346,6 @@
           "path": "QuestionnaireResponse.item.definition",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.item.definition",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "uri"
@@ -10482,11 +8357,6 @@
           "path": "QuestionnaireResponse.item.text",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.item.text",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -10498,11 +8368,6 @@
           "path": "QuestionnaireResponse.item.answer",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "QuestionnaireResponse.item.answer",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -10562,11 +8427,6 @@
           "path": "QuestionnaireResponse.item.answer.value[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "QuestionnaireResponse.item.answer.value[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -10612,11 +8472,6 @@
           "path": "QuestionnaireResponse.item.answer.item",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "QuestionnaireResponse.item.answer.item",
-            "min": 0,
-            "max": "*"
-          },
           "contentReference": "#QuestionnaireResponse.item"
         },
         {
@@ -10624,11 +8479,6 @@
           "path": "QuestionnaireResponse.item.item",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "QuestionnaireResponse.item.item",
-            "min": 0,
-            "max": "*"
-          },
           "contentReference": "#QuestionnaireResponse.item"
         }
       ]
@@ -10645,12 +8495,7 @@
           "id": "Schedule",
           "path": "Schedule",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Schedule",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Schedule.id",
@@ -10785,11 +8630,6 @@
           "path": "Schedule.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Schedule.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -10801,11 +8641,6 @@
           "path": "Schedule.active",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Schedule.active",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -10817,11 +8652,6 @@
           "path": "Schedule.serviceCategory",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Schedule.serviceCategory",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -10833,11 +8663,6 @@
           "path": "Schedule.serviceType",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Schedule.serviceType",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -10849,11 +8674,6 @@
           "path": "Schedule.specialty",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Schedule.specialty",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -10865,11 +8685,6 @@
           "path": "Schedule.actor",
           "min": 1,
           "max": "*",
-          "base": {
-            "path": "Schedule.actor",
-            "min": 1,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -10890,11 +8705,6 @@
           "path": "Schedule.planningHorizon",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Schedule.planningHorizon",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -10906,11 +8716,6 @@
           "path": "Schedule.comment",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Schedule.comment",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -10931,12 +8736,7 @@
           "id": "ServiceRequest",
           "path": "ServiceRequest",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "ServiceRequest",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "ServiceRequest.id",
@@ -11071,11 +8871,6 @@
           "path": "ServiceRequest.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -11087,11 +8882,6 @@
           "path": "ServiceRequest.instantiatesCanonical",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.instantiatesCanonical",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "canonical",
@@ -11107,11 +8897,6 @@
           "path": "ServiceRequest.instantiatesUri",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.instantiatesUri",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "uri"
@@ -11123,11 +8908,6 @@
           "path": "ServiceRequest.basedOn",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.basedOn",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11144,11 +8924,6 @@
           "path": "ServiceRequest.replaces",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.replaces",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11161,11 +8936,6 @@
           "path": "ServiceRequest.requisition",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.requisition",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -11177,11 +8947,6 @@
           "path": "ServiceRequest.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -11193,11 +8958,6 @@
           "path": "ServiceRequest.intent",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.intent",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -11209,11 +8969,6 @@
           "path": "ServiceRequest.category",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.category",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11225,11 +8980,6 @@
           "path": "ServiceRequest.priority",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.priority",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -11241,11 +8991,6 @@
           "path": "ServiceRequest.doNotPerform",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.doNotPerform",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -11257,11 +9002,6 @@
           "path": "ServiceRequest.code",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.code",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11273,11 +9013,6 @@
           "path": "ServiceRequest.orderDetail",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.orderDetail",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11289,11 +9024,6 @@
           "path": "ServiceRequest.quantity[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.quantity[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -11311,11 +9041,6 @@
           "path": "ServiceRequest.subject",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.subject",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11333,11 +9058,6 @@
           "path": "ServiceRequest.encounter",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.encounter",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11350,11 +9070,6 @@
           "path": "ServiceRequest.occurrence[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.occurrence[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -11372,11 +9087,6 @@
           "path": "ServiceRequest.asNeeded[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.asNeeded[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -11391,11 +9101,6 @@
           "path": "ServiceRequest.authoredOn",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.authoredOn",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -11407,11 +9112,6 @@
           "path": "ServiceRequest.requester",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.requester",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11431,11 +9131,6 @@
           "path": "ServiceRequest.performerType",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.performerType",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11447,11 +9142,6 @@
           "path": "ServiceRequest.performer",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.performer",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11473,11 +9163,6 @@
           "path": "ServiceRequest.locationCode",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.locationCode",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11489,11 +9174,6 @@
           "path": "ServiceRequest.locationReference",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.locationReference",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11506,11 +9186,6 @@
           "path": "ServiceRequest.reasonCode",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.reasonCode",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11522,11 +9197,6 @@
           "path": "ServiceRequest.reasonReference",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.reasonReference",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11544,11 +9214,6 @@
           "path": "ServiceRequest.insurance",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.insurance",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11564,11 +9229,6 @@
           "path": "ServiceRequest.supportingInfo",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.supportingInfo",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11581,11 +9241,6 @@
           "path": "ServiceRequest.specimen",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.specimen",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11598,11 +9253,6 @@
           "path": "ServiceRequest.bodySite",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.bodySite",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11614,11 +9264,6 @@
           "path": "ServiceRequest.note",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.note",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Annotation"
@@ -11630,11 +9275,6 @@
           "path": "ServiceRequest.patientInstruction",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "ServiceRequest.patientInstruction",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -11646,11 +9286,6 @@
           "path": "ServiceRequest.relevantHistory",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "ServiceRequest.relevantHistory",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11672,12 +9307,7 @@
           "id": "Slot",
           "path": "Slot",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Slot",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Slot.id",
@@ -11812,11 +9442,6 @@
           "path": "Slot.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Slot.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -11828,11 +9453,6 @@
           "path": "Slot.serviceCategory",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Slot.serviceCategory",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11844,11 +9464,6 @@
           "path": "Slot.serviceType",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Slot.serviceType",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11860,11 +9475,6 @@
           "path": "Slot.specialty",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Slot.specialty",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11876,11 +9486,6 @@
           "path": "Slot.appointmentType",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Slot.appointmentType",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -11892,11 +9497,6 @@
           "path": "Slot.schedule",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Slot.schedule",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -11909,11 +9509,6 @@
           "path": "Slot.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Slot.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -11925,11 +9520,6 @@
           "path": "Slot.start",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Slot.start",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "instant"
@@ -11941,11 +9531,6 @@
           "path": "Slot.end",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Slot.end",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "instant"
@@ -11957,11 +9542,6 @@
           "path": "Slot.overbooked",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Slot.overbooked",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -11973,11 +9553,6 @@
           "path": "Slot.comment",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Slot.comment",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -11998,12 +9573,7 @@
           "id": "Specimen",
           "path": "Specimen",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Specimen",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Specimen.id",
@@ -12138,11 +9708,6 @@
           "path": "Specimen.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -12154,11 +9719,6 @@
           "path": "Specimen.accessionIdentifier",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.accessionIdentifier",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -12170,11 +9730,6 @@
           "path": "Specimen.status",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.status",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -12186,11 +9741,6 @@
           "path": "Specimen.type",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.type",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12202,11 +9752,6 @@
           "path": "Specimen.subject",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.subject",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -12225,11 +9770,6 @@
           "path": "Specimen.receivedTime",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.receivedTime",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -12241,11 +9781,6 @@
           "path": "Specimen.parent",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.parent",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -12258,11 +9793,6 @@
           "path": "Specimen.request",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.request",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -12275,11 +9805,6 @@
           "path": "Specimen.collection",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.collection",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -12339,11 +9864,6 @@
           "path": "Specimen.collection.collector",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.collection.collector",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -12359,11 +9879,6 @@
           "path": "Specimen.collection.collected[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.collection.collected[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -12378,11 +9893,6 @@
           "path": "Specimen.collection.duration",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.collection.duration",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Duration"
@@ -12394,11 +9904,6 @@
           "path": "Specimen.collection.quantity",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.collection.quantity",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -12410,11 +9915,6 @@
           "path": "Specimen.collection.method",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.collection.method",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12426,11 +9926,6 @@
           "path": "Specimen.collection.bodySite",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.collection.bodySite",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12442,11 +9937,6 @@
           "path": "Specimen.collection.fastingStatus[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.collection.fastingStatus[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12461,11 +9951,6 @@
           "path": "Specimen.processing",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.processing",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -12525,11 +10010,6 @@
           "path": "Specimen.processing.description",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.processing.description",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -12541,11 +10021,6 @@
           "path": "Specimen.processing.procedure",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.processing.procedure",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12557,11 +10032,6 @@
           "path": "Specimen.processing.additive",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.processing.additive",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -12574,11 +10044,6 @@
           "path": "Specimen.processing.time[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.processing.time[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -12593,11 +10058,6 @@
           "path": "Specimen.container",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.container",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -12657,11 +10117,6 @@
           "path": "Specimen.container.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.container.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -12673,11 +10128,6 @@
           "path": "Specimen.container.description",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.container.description",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -12689,11 +10139,6 @@
           "path": "Specimen.container.type",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.container.type",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12705,11 +10150,6 @@
           "path": "Specimen.container.capacity",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.container.capacity",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -12721,11 +10161,6 @@
           "path": "Specimen.container.specimenQuantity",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.container.specimenQuantity",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -12737,11 +10172,6 @@
           "path": "Specimen.container.additive[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Specimen.container.additive[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12757,11 +10187,6 @@
           "path": "Specimen.condition",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.condition",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12773,11 +10198,6 @@
           "path": "Specimen.note",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Specimen.note",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Annotation"
@@ -12798,12 +10218,7 @@
           "id": "SpecimenDefinition",
           "path": "SpecimenDefinition",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "SpecimenDefinition",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "SpecimenDefinition.id",
@@ -12938,11 +10353,6 @@
           "path": "SpecimenDefinition.identifier",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.identifier",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -12954,11 +10364,6 @@
           "path": "SpecimenDefinition.typeCollected",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeCollected",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12970,11 +10375,6 @@
           "path": "SpecimenDefinition.patientPreparation",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "SpecimenDefinition.patientPreparation",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -12986,11 +10386,6 @@
           "path": "SpecimenDefinition.timeAspect",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.timeAspect",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -13002,11 +10397,6 @@
           "path": "SpecimenDefinition.collection",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "SpecimenDefinition.collection",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13018,11 +10408,6 @@
           "path": "SpecimenDefinition.typeTested",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "SpecimenDefinition.typeTested",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -13082,11 +10467,6 @@
           "path": "SpecimenDefinition.typeTested.isDerived",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.isDerived",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "boolean"
@@ -13098,11 +10478,6 @@
           "path": "SpecimenDefinition.typeTested.type",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.type",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13114,11 +10489,6 @@
           "path": "SpecimenDefinition.typeTested.preference",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.preference",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -13130,11 +10500,6 @@
           "path": "SpecimenDefinition.typeTested.container",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -13194,11 +10559,6 @@
           "path": "SpecimenDefinition.typeTested.container.material",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.material",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13210,11 +10570,6 @@
           "path": "SpecimenDefinition.typeTested.container.type",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.type",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13226,11 +10581,6 @@
           "path": "SpecimenDefinition.typeTested.container.cap",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.cap",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13242,11 +10592,6 @@
           "path": "SpecimenDefinition.typeTested.container.description",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.description",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -13258,11 +10603,6 @@
           "path": "SpecimenDefinition.typeTested.container.capacity",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.capacity",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -13274,11 +10614,6 @@
           "path": "SpecimenDefinition.typeTested.container.minimumVolume[x]",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.minimumVolume[x]",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Quantity"
@@ -13293,11 +10628,6 @@
           "path": "SpecimenDefinition.typeTested.container.additive",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.additive",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -13357,11 +10687,6 @@
           "path": "SpecimenDefinition.typeTested.container.additive.additive[x]",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.additive.additive[x]",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13377,11 +10702,6 @@
           "path": "SpecimenDefinition.typeTested.container.preparation",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.container.preparation",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -13393,11 +10713,6 @@
           "path": "SpecimenDefinition.typeTested.requirement",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.requirement",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -13409,11 +10724,6 @@
           "path": "SpecimenDefinition.typeTested.retentionTime",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.retentionTime",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Duration"
@@ -13425,11 +10735,6 @@
           "path": "SpecimenDefinition.typeTested.rejectionCriterion",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.rejectionCriterion",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13441,11 +10746,6 @@
           "path": "SpecimenDefinition.typeTested.handling",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.handling",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -13505,11 +10805,6 @@
           "path": "SpecimenDefinition.typeTested.handling.temperatureQualifier",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.handling.temperatureQualifier",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13521,11 +10816,6 @@
           "path": "SpecimenDefinition.typeTested.handling.temperatureRange",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.handling.temperatureRange",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Range"
@@ -13537,11 +10827,6 @@
           "path": "SpecimenDefinition.typeTested.handling.maxDuration",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.handling.maxDuration",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Duration"
@@ -13553,11 +10838,6 @@
           "path": "SpecimenDefinition.typeTested.handling.instruction",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "SpecimenDefinition.typeTested.handling.instruction",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -13578,12 +10858,7 @@
           "id": "Task",
           "path": "Task",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Task",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Task.id",
@@ -13718,11 +10993,6 @@
           "path": "Task.identifier",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.identifier",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -13734,11 +11004,6 @@
           "path": "Task.instantiatesCanonical",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.instantiatesCanonical",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "canonical",
@@ -13751,11 +11016,6 @@
           "path": "Task.instantiatesUri",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.instantiatesUri",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "uri"
@@ -13767,11 +11027,6 @@
           "path": "Task.basedOn",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.basedOn",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -13784,11 +11039,6 @@
           "path": "Task.groupIdentifier",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.groupIdentifier",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Identifier"
@@ -13800,11 +11050,6 @@
           "path": "Task.partOf",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.partOf",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -13817,11 +11062,6 @@
           "path": "Task.status",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Task.status",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -13833,11 +11073,6 @@
           "path": "Task.statusReason",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.statusReason",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13849,11 +11084,6 @@
           "path": "Task.businessStatus",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.businessStatus",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13865,11 +11095,6 @@
           "path": "Task.intent",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Task.intent",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -13881,11 +11106,6 @@
           "path": "Task.priority",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.priority",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -13897,11 +11117,6 @@
           "path": "Task.code",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.code",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -13913,11 +11128,6 @@
           "path": "Task.description",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.description",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "string"
@@ -13929,11 +11139,6 @@
           "path": "Task.focus",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.focus",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -13946,11 +11151,6 @@
           "path": "Task.for",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.for",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -13963,11 +11163,6 @@
           "path": "Task.encounter",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.encounter",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -13980,11 +11175,6 @@
           "path": "Task.executionPeriod",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.executionPeriod",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -13996,11 +11186,6 @@
           "path": "Task.authoredOn",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.authoredOn",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -14012,11 +11197,6 @@
           "path": "Task.lastModified",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.lastModified",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "dateTime"
@@ -14028,11 +11208,6 @@
           "path": "Task.requester",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.requester",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -14052,11 +11227,6 @@
           "path": "Task.performerType",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.performerType",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -14068,11 +11238,6 @@
           "path": "Task.owner",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.owner",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -14094,11 +11259,6 @@
           "path": "Task.location",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.location",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -14111,11 +11271,6 @@
           "path": "Task.reasonCode",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.reasonCode",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -14127,11 +11282,6 @@
           "path": "Task.reasonReference",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.reasonReference",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Reference",
@@ -14144,11 +11294,6 @@
           "path": "Task.insurance",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.insurance",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -14164,11 +11309,6 @@
           "path": "Task.note",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.note",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Annotation"
@@ -14180,11 +11320,6 @@
           "path": "Task.relevantHistory",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.relevantHistory",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -14197,11 +11332,6 @@
           "path": "Task.restriction",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.restriction",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -14261,11 +11391,6 @@
           "path": "Task.restriction.repetitions",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.restriction.repetitions",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "positiveInt"
@@ -14277,11 +11402,6 @@
           "path": "Task.restriction.period",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Task.restriction.period",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Period"
@@ -14293,11 +11413,6 @@
           "path": "Task.restriction.recipient",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.restriction.recipient",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "Reference",
@@ -14317,11 +11432,6 @@
           "path": "Task.input",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.input",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -14381,11 +11491,6 @@
           "path": "Task.input.type",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Task.input.type",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -14397,11 +11502,6 @@
           "path": "Task.input.value[x]",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Task.input.value[x]",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "base64Binary"
@@ -14560,11 +11660,6 @@
           "path": "Task.output",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Task.output",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "BackboneElement"
@@ -14624,11 +11719,6 @@
           "path": "Task.output.type",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Task.output.type",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "CodeableConcept"
@@ -14640,11 +11730,6 @@
           "path": "Task.output.value[x]",
           "min": 1,
           "max": "1",
-          "base": {
-            "path": "Task.output.value[x]",
-            "min": 1,
-            "max": "1"
-          },
           "type": [
             {
               "code": "base64Binary"
@@ -14812,12 +11897,7 @@
           "id": "Project",
           "path": "Project",
           "min": 0,
-          "max": "*",
-          "base": {
-            "min": 0,
-            "max": "*",
-            "path": "Project"
-          }
+          "max": "*"
         },
         {
           "id": "Project.id",
@@ -14892,12 +11972,7 @@
             {
               "code": "Identifier"
             }
-          ],
-          "base": {
-            "path": "Project.identifier",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.name",
@@ -14908,12 +11983,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.name",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.description",
@@ -14924,12 +11994,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.description",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.superAdmin",
@@ -14940,12 +12005,7 @@
             {
               "code": "boolean"
             }
-          ],
-          "base": {
-            "path": "Project.superAdmin",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.strictMode",
@@ -14956,12 +12016,7 @@
             {
               "code": "boolean"
             }
-          ],
-          "base": {
-            "path": "Project.strictMode",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.checkReferencesOnWrite",
@@ -14972,12 +12027,7 @@
             {
               "code": "boolean"
             }
-          ],
-          "base": {
-            "path": "Project.checkReferencesOnWrite",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.owner",
@@ -14989,12 +12039,7 @@
               "code": "Reference",
               "targetProfile": ["https://medplum.com/fhir/StructureDefinition/User"]
             }
-          ],
-          "base": {
-            "path": "Project.owner",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.features",
@@ -15005,12 +12050,7 @@
             {
               "code": "code"
             }
-          ],
-          "base": {
-            "path": "Project.features",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.defaultPatientAccessPolicy",
@@ -15022,12 +12062,7 @@
               "code": "Reference",
               "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
             }
-          ],
-          "base": {
-            "path": "Project.defaultPatientAccessPolicy",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.secret",
@@ -15038,12 +12073,7 @@
             {
               "code": "BackboneElement"
             }
-          ],
-          "base": {
-            "path": "Project.secret",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.secret.name",
@@ -15054,12 +12084,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.secret.name",
-            "min": 1,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.secret.value[x]",
@@ -15079,12 +12104,7 @@
             {
               "code": "integer"
             }
-          ],
-          "base": {
-            "path": "Project.secret.value[x]",
-            "min": 1,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site",
@@ -15095,12 +12115,7 @@
             {
               "code": "BackboneElement"
             }
-          ],
-          "base": {
-            "path": "Project.site",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.site.name",
@@ -15111,12 +12126,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.name",
-            "min": 1,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site.domain",
@@ -15127,12 +12137,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.domain",
-            "min": 1,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.site.googleClientId",
@@ -15143,12 +12148,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.googleClientId",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site.googleClientSecret",
@@ -15159,12 +12159,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.googleClientSecret",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site.recaptchaSiteKey",
@@ -15175,12 +12170,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.recaptchaSiteKey",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.site.recaptchaSecretKey",
@@ -15191,12 +12181,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Project.site.recaptchaSecretKey",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Project.link",
@@ -15207,12 +12192,7 @@
             {
               "code": "BackboneElement"
             }
-          ],
-          "base": {
-            "path": "Project.link",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Project.link.project",
@@ -15224,12 +12204,7 @@
               "code": "Reference",
               "targetProfile": ["Project"]
             }
-          ],
-          "base": {
-            "path": "Project.link.project",
-            "min": 1,
-            "max": "1"
-          }
+          ]
         }
       ]
     }
@@ -15245,12 +12220,7 @@
           "id": "Bot",
           "path": "Bot",
           "min": 0,
-          "max": "*",
-          "base": {
-            "path": "Bot",
-            "min": 0,
-            "max": "*"
-          }
+          "max": "*"
         },
         {
           "id": "Bot.id",
@@ -15325,12 +12295,7 @@
             {
               "code": "Identifier"
             }
-          ],
-          "base": {
-            "path": "Bot.identifier",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Bot.name",
@@ -15341,12 +12306,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Bot.name",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.description",
@@ -15357,12 +12317,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Bot.description",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.runtimeVersion",
@@ -15373,12 +12328,7 @@
             {
               "code": "code"
             }
-          ],
-          "base": {
-            "path": "Bot.runtimeVersion",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.photo",
@@ -15389,12 +12339,7 @@
             {
               "code": "Attachment"
             }
-          ],
-          "base": {
-            "path": "Bot.photo",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.cron[x]",
@@ -15408,12 +12353,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Bot.cron[x]",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.category",
@@ -15424,12 +12364,7 @@
             {
               "code": "CodeableConcept"
             }
-          ],
-          "base": {
-            "path": "Bot.category",
-            "min": 0,
-            "max": "*"
-          }
+          ]
         },
         {
           "id": "Bot.runAsUser",
@@ -15440,23 +12375,13 @@
             {
               "code": "boolean"
             }
-          ],
-          "base": {
-            "path": "Bot.runAsUser",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         },
         {
           "id": "Bot.auditEventTrigger",
           "path": "Bot.auditEventTrigger",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Bot.auditEventTrigger",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "code"
@@ -15468,11 +12393,6 @@
           "path": "Bot.auditEventDestination",
           "min": 0,
           "max": "*",
-          "base": {
-            "path": "Bot.auditEventDestination",
-            "min": 0,
-            "max": "*"
-          },
           "type": [
             {
               "code": "code"
@@ -15484,11 +12404,6 @@
           "path": "Bot.sourceCode",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Bot.sourceCode",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Attachment"
@@ -15500,11 +12415,6 @@
           "path": "Bot.executableCode",
           "min": 0,
           "max": "1",
-          "base": {
-            "path": "Bot.executableCode",
-            "min": 0,
-            "max": "1"
-          },
           "type": [
             {
               "code": "Attachment"
@@ -15520,12 +12430,7 @@
             {
               "code": "string"
             }
-          ],
-          "base": {
-            "path": "Bot.code",
-            "min": 0,
-            "max": "1"
-          }
+          ]
         }
       ]
     }

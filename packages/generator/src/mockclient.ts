@@ -122,7 +122,21 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
   for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
+      removeBaseFromElements(resource);
       output.push(resource);
+    }
+  }
+}
+
+function removeBaseFromElements(sd: StructureDefinition): void {
+  for (const element of sd.snapshot?.element ?? []) {
+    if (
+      element.base &&
+      element.path === element.base.path &&
+      element.min === element.base.min &&
+      element.max === element.base.max
+    ) {
+      element.base = undefined;
     }
   }
 }
