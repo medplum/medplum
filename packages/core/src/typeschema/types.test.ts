@@ -2,6 +2,7 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { LOINC } from '../constants';
 import { TypedValue } from '../types';
 import {
   InternalSchemaElement,
@@ -15,7 +16,6 @@ import {
   tryGetDataType,
   tryGetProfile,
 } from './types';
-import { LOINC } from '../constants';
 
 describe('FHIR resource and data type representations', () => {
   beforeAll(() => {
