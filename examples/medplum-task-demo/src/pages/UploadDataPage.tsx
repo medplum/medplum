@@ -1,5 +1,12 @@
 import { Button, LoadingOverlay } from '@mantine/core';
-import { MedplumClient, capitalize, getReferenceString, isOk, normalizeErrorString } from '@medplum/core';
+import {
+  MedplumClient,
+  capitalize,
+  createReference,
+  getReferenceString,
+  isOk,
+  normalizeErrorString,
+} from '@medplum/core';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -12,6 +19,7 @@ import practitionerRoleValueSet from '../../data/core/practitioner-role-valueset
 import taskTypeValueSet from '../../data/core/task-type-valueset.json';
 import exampleBotData from '../../data/example/example-bots.json';
 import exampleMessageData from '../../data/example/example-messages.json';
+import exampleRoleData from '../../data/example/example-practitioner-role.json';
 import exampleReportData from '../../data/example/example-reports.json';
 import exampleTaskData from '../../data/example/example-tasks.json';
 
@@ -37,6 +45,9 @@ export function UploadDataPage(): JSX.Element {
         break;
       case 'task':
         uploadFunction = uploadExampleTaskData;
+        break;
+      case 'role':
+        uploadFunction = uploadExampleRoleData;
         break;
       case 'message':
         uploadFunction = uploadExampleMessageData;
@@ -193,6 +204,34 @@ async function uploadExampleQualifications(medplum: MedplumClient, profile: Prac
   });
 }
 
+async function uploadExampleRoleData(medplum: MedplumClient, profile: Practitioner): Promise<void> {
+  // Update the suffix of the current user to highlight the change
+  if (!profile?.name?.[0]?.suffix) {
+    await medplum.patchResource(profile.resourceType, profile.id as string, [
+      {
+        op: 'add',
+        path: '/name/0/suffix',
+        value: ['MD'],
+      },
+    ]);
+  }
+
+  const bundleString = JSON.stringify(exampleRoleData, null, 2)
+    .replaceAll('$practitionerReference', getReferenceString(profile))
+    .replaceAll('"$practitioner"', JSON.stringify(createReference(profile)));
+
+  const transaction = JSON.parse(bundleString) as Bundle;
+
+  // Create the practitioner role
+  await medplum.executeBatch(transaction);
+
+  showNotification({
+    icon: <IconCircleCheck />,
+    title: 'Success',
+    message: 'Uploaded Example Qualifications',
+  });
+}
+
 async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
@@ -230,8 +269,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
     const distBinaryEntry = exampleBotData.entry.find((e) => e.fullUrl === distUrl);
     // Decode the base64 encoded code and deploy
     const code = atob(distBinaryEntry?.resource.data as string);
-    const response = await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
-    console.debug('Deployed', entry.request?.url, response);
+    await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
   }
 
   showNotification({

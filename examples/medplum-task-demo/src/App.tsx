@@ -57,15 +57,14 @@ export function App(): JSX.Element | null {
     const myTasksLink = getMyTasksLink(profileReferenceString);
 
     // Query the user's `PractitionerRole` resources to find all applicable roles
-    const roleLinks: NavbarLink[] = [];
     getTasksByRoleLinks(medplum, profileReferenceString)
-      .then((links) => roleLinks.push(...links))
+      .then((roleLinks) => {
+        setUserLinks([myTasksLink, ...roleLinks, ...stateLinks, ALL_TASKS_LINK]);
+      })
       .catch((error) => console.error('Failed to fetch PractitionerRoles', normalizeErrorString(error)));
 
     // Construct Search links for all Tasks for patients in the current user's licensed states
     const stateLinks = getTasksByState(profile as Practitioner);
-
-    setUserLinks([myTasksLink, ...roleLinks, ...stateLinks, ALL_TASKS_LINK]);
   }, [profile, medplum]);
 
   return (
@@ -81,9 +80,10 @@ export function App(): JSX.Element | null {
             title: 'Upload Data',
             links: [
               { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
-              { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
               { icon: <IconChecklist />, label: 'Upload Example Tasks', href: '/upload/task' },
+              { icon: <IconChecklist />, label: 'Upload Example Role', href: '/upload/role' },
               { icon: <IconMail />, label: 'Upload Example Messages', href: '/upload/message' },
+              { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
               { icon: <IconReportMedical />, label: 'Upload Example Report', href: '/upload/report' },
               {
                 icon: <IconRibbonHealth />,
@@ -140,11 +140,13 @@ async function getTasksByRoleLinks(medplum: MedplumClient, profileReference: str
   const roles = await medplum.searchResources('PractitionerRole', {
     practitioner: profileReference,
   });
+
   // Query the user's `PractitionerRole` resources to find all applicable roles
   return roles
     .map((role) => {
       // For each role, generate a link to all open Tasks
       const roleCode = role?.code?.[0];
+
       if (!roleCode?.coding?.[0]?.code) {
         return undefined;
       }
