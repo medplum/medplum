@@ -46,7 +46,7 @@
           { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" }
         ],
         "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
-        "topic": { "coding": [{ "display": "Blood Test for Peanut Allergy" }] },
+        "topic": { "text": "Blood Test for Peanut Allergy" },
         "category": [{ "coding": [{ "display": "Lab Tests" }] }],
         "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }
       }

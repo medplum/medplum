@@ -1,4 +1,4 @@
-import { Button, Modal } from '@mantine/core';
+import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString, parseReference } from '@medplum/core';
 import {
@@ -13,7 +13,7 @@ import {
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { getRecipients, checkForInvalidRecipient } from '../utils';
+import { getRecipients, checkForInvalidRecipient } from '../../utils';
 
 interface CreateThreadProps {
   opened: boolean;
