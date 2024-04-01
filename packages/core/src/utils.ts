@@ -205,7 +205,7 @@ export function getImageSrc(resource: Resource): string | undefined {
 }
 
 function getPhotoImageSrc(photo: Attachment): string | undefined {
-  if (photo.url && photo.contentType && photo.contentType.startsWith('image/')) {
+  if (photo.url && photo.contentType?.startsWith('image/')) {
     return photo.url;
   }
   return undefined;
