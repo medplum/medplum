@@ -54,6 +54,10 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+      - name: Log npm stats
+        run: |
+          echo "node version: $(node --version)"
+          echo "npm version: $(npm --version)"
       - name: Install
         run: npm ci --maxsockets 1
       - name: Build Project
