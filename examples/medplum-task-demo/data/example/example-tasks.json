@@ -682,8 +682,8 @@
         "method": "POST",
         "url": "Task"
       }
-    },    
-    
+    },
+
     {
       "fullUrl": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac129872",
       "resource": {
