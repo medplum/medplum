@@ -2215,6 +2215,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * @category Create
+   * @param createBinaryOptions -The binary options. See `CreateBinaryOptions` for full details.
+   * @param requestOptions - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @returns The result of the create operation.
+   */
+  createAttachment(
+    createBinaryOptions: CreateBinaryOptions,
+    requestOptions?: MedplumRequestOptions
+  ): Promise<Attachment>;
+
+  /**
+   * @category Create
    * @param data - The binary data to upload.
    * @param filename - Optional filename for the binary.
    * @param contentType - Content type for the binary.
@@ -2439,6 +2450,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The result of the create operation.
    */
   createPdf(createPdfOptions: CreatePdfOptions, requestOptions?: MedplumRequestOptions): Promise<WithId<Binary>>;
+
+  /**
+   * @category Media
+   * @param createPdfOptions - The PDF creation options. See `CreatePdfOptions` for full details.
+   * @param requestOptions - Optional fetch options.
+   * @returns The result of the create operation.
+   */
+  createPdf(createPdfOptions: CreatePdfOptions, requestOptions?: MedplumRequestOptions): Promise<Binary>;
 
   /**
    * @category Media
