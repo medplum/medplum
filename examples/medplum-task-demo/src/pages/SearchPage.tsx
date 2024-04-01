@@ -71,6 +71,9 @@ export function SearchPage(): JSX.Element {
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
+              onChange={(e) => {
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+              }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">

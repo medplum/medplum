@@ -123,46 +123,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120812",
-      "resource": {
-        "resourceType": "Practitioner",
-        "name": [
-          {
-            "prefix": ["Care", "Coordinator"],
-            "given": ["Chuck"],
-            "family": "Finnegan"
-          }
-        ],
-        "gender": "male",
-        "birthDate": "1964-02-21"
-      },
-      "request": {
-        "method": "POST",
-        "url": "Practitioner"
-      }
-    },
-    {
-      "fullUrl": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120002",
-      "resource": {
-        "resourceType": "Practitioner",
-        "active": true,
-        "name": [
-          {
-            "prefix": ["Nurse"],
-            "given": ["Bob"],
-            "family": "Jones"
-          }
-        ],
-        "gender": "male",
-        "birthDate": "1973-11-02"
-      },
-      "request": {
-        "method": "POST",
-        "url": "Practitioner"
-      }
-    },
-    {
-      "fullUrl": "urn:uuid:c9d3cba2-1234-11ee-8c90-0242ac120002",
+      "fullUrl": "urn:uuid:c9d3c09b-9474-11ee-8c90-0242ac120812",
       "resource": {
         "resourceType": "Practitioner",
         "identifier": [
@@ -220,78 +181,23 @@
       }
     },
     {
-      "fullUrl": "fa6ad189-d8ce-4a76-aafc-98aaf1acc347",
+      "fullUrl": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120002",
       "resource": {
-        "resourceType": "PractitionerRole",
-        "code": [
+        "resourceType": "Practitioner",
+        "active": true,
+        "name": [
           {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "158965000",
-                "display": "Doctor"
-              }
-            ]
+            "prefix": ["Nurse"],
+            "given": ["Bob"],
+            "family": "Jones"
           }
         ],
-        "practitioner": {
-          "reference": "urn:uuid:c9d3cba2-1234-11ee-8c90-0242ac120002",
-          "display": "Dr. Alice Smith"
-        }
+        "gender": "male",
+        "birthDate": "1973-11-02"
       },
       "request": {
         "method": "POST",
-        "url": "PractitionerRole"
-      }
-    },
-    {
-      "fullUrl": "20a78a94-da0f-4854-9506-1c83269b8419",
-      "resource": {
-        "resourceType": "PractitionerRole",
-        "code": [
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "224535009",
-                "display": "Registered Nurse"
-              }
-            ]
-          }
-        ],
-        "practitioner": {
-          "reference": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120002",
-          "display": "Nurse Bob Jones"
-        }
-      },
-      "request": {
-        "method": "POST",
-        "url": "PractitionerRole"
-      }
-    },
-    {
-      "fullUrl": "de68d529-fb10-4c52-9af6-a00f90bb8a6b",
-      "resource": {
-        "resourceType": "PractitionerRole",
-        "code": [
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "768820003",
-                "display": "Care Coordinator"
-              }
-            ]
-          }
-        ],
-        "practitioner": {
-          "reference": "urn:uuid:c9d3c09b-1234-11ee-8c90-0242ac120812",
-          "display": "Care Coordinator Chuck Finnegan"
-        }
-      },
-      "request": {
-        "method": "POST",
-        "url": "PractitionerRole"
+        "url": "Practitioner"
       }
     },
     {
@@ -674,8 +580,8 @@
           "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
         },
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
-          "display": "Jane California"
+          "reference": "urn:uuid:ba4a1ef7-c674-4acb-a506-6aac4a7aec53",
+          "display": "Tony Soprano"
         },
         "performerType": [
           {
@@ -776,287 +682,8 @@
         "method": "POST",
         "url": "Task"
       }
-    },
-    {
-      "resource": {
-        "resourceType": "Task",
-        "intent": "order",
-        "status": "completed",
-        "focus": {
-          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
-        },
-        "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
-          "display": "Jane California"
-        },
-        "performerType": [
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "224535009",
-                "display": "Registered Nurse"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "768820003",
-                "display": "Care Coordinator"
-              }
-            ]
-          }
-        ],
-        "businessStatus": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-example-app/task-status",
-              "code": "ready",
-              "display": "Ready"
-            }
-          ]
-        },
-        "code": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-demo/task-type",
-              "code": "respond-to-message",
-              "display": "Respond to Patient Message"
-            }
-          ]
-        }
-      },
-      "request": {
-        "method": "POST",
-        "url": "Task"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "Task",
-        "intent": "order",
-        "status": "ready",
-        "focus": {
-          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
-        },
-        "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
-          "display": "Jane California"
-        },
-        "performerType": [
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "224535009",
-                "display": "Registered Nurse"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "768820003",
-                "display": "Care Coordinator"
-              }
-            ]
-          }
-        ],
-        "businessStatus": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-example-app/task-status",
-              "code": "ready",
-              "display": "Ready"
-            }
-          ]
-        },
-        "code": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-demo/task-type",
-              "code": "respond-to-message",
-              "display": "Respond to Patient Message"
-            }
-          ]
-        }
-      },
-      "request": {
-        "method": "POST",
-        "url": "Task"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "Task",
-        "intent": "order",
-        "status": "completed",
-        "focus": {
-          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
-        },
-        "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
-          "display": "Jane California"
-        },
-        "performerType": [
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "224535009",
-                "display": "Registered Nurse"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "768820003",
-                "display": "Care Coordinator"
-              }
-            ]
-          }
-        ],
-        "businessStatus": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-example-app/task-status",
-              "code": "ready",
-              "display": "Ready"
-            }
-          ]
-        },
-        "code": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-demo/task-type",
-              "code": "respond-to-message",
-              "display": "Respond to Patient Message"
-            }
-          ]
-        }
-      },
-      "request": {
-        "method": "POST",
-        "url": "Task"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "Task",
-        "intent": "order",
-        "status": "completed",
-        "focus": {
-          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
-        },
-        "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
-          "display": "Jane California"
-        },
-        "performerType": [
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "224535009",
-                "display": "Registered Nurse"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "768820003",
-                "display": "Care Coordinator"
-              }
-            ]
-          }
-        ],
-        "businessStatus": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-example-app/task-status",
-              "code": "ready",
-              "display": "Ready"
-            }
-          ]
-        },
-        "code": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-demo/task-type",
-              "code": "respond-to-message",
-              "display": "Respond to Patient Message"
-            }
-          ]
-        }
-      },
-      "request": {
-        "method": "POST",
-        "url": "Task"
-      }
-    },
-    {
-      "resource": {
-        "resourceType": "Task",
-        "intent": "order",
-        "status": "ready",
-        "focus": {
-          "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002"
-        },
-        "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
-          "display": "Jane California"
-        },
-        "performerType": [
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "224535009",
-                "display": "Registered Nurse"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://snomed.info/sct",
-                "code": "768820003",
-                "display": "Care Coordinator"
-              }
-            ]
-          }
-        ],
-        "businessStatus": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-example-app/task-status",
-              "code": "ready",
-              "display": "Ready"
-            }
-          ]
-        },
-        "code": {
-          "coding": [
-            {
-              "system": "https://medplum.com/medplum-task-demo/task-type",
-              "code": "respond-to-message",
-              "display": "Respond to Patient Message"
-            }
-          ]
-        }
-      },
-      "request": {
-        "method": "POST",
-        "url": "Task"
-      }
-    },
+    },    
+    
     {
       "fullUrl": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac129872",
       "resource": {
@@ -1064,7 +691,7 @@
         "active": true,
         "actor": [
           {
-            "reference": "urn:uuid:c9d3cba2-1234-11ee-8c90-0242ac120002"
+            "reference": "urn:uuid:c9d3c09b-9474-11ee-8c90-0242ac120812"
           }
         ]
       },
@@ -1605,8 +1232,8 @@
         },
         "intent": "order",
         "for": {
-          "reference": "urn:uuid:c9d3cba2-9db5-11ee-8c90-0242ac120002",
-          "display": "Jane California"
+          "reference": "urn:uuid:ba4a1ef7-c674-4acb-a506-6aac4a7aec53",
+          "display": "Tony Soprano"
         },
         "performerType": [
           {
