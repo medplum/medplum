@@ -27,7 +27,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
           {
             system: 'http://snomed.info/sct',
             code: '158965000',
-            display: 'Medical practitioner (occupation)',
+            display: 'Doctor',
           },
         ],
       },
