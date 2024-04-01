@@ -94,14 +94,28 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
     practitionerRoleValueSet as ValueSet,
   ];
 
-  const result = await medplum.executeBatch({
+  // Upsert the ValueSet (see: https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#performing-upserts)
+  const batch: Bundle = {
     resourceType: 'Bundle',
-    type: 'batch',
-    entry: valueSets.map((valueSet) => ({
-      request: { method: 'POST', url: valueSet.resourceType, ifNoneExist: `url=${valueSet.url}` },
-      resource: valueSet,
-    })),
-  });
+    type: 'transaction',
+    entry: valueSets.flatMap((valueSet) => {
+      const tempId = valueSet.id;
+      return [
+        {
+          fullUrl: tempId,
+          request: { method: 'POST', url: valueSet.resourceType, ifNoneExist: `url=${valueSet.url}` },
+          resource: valueSet,
+        },
+        {
+          request: { method: 'PUT', url: tempId },
+          resource: { id: tempId, ...valueSet },
+        },
+      ] as BundleEntry[];
+    }),
+  };
+  console.log(batch);
+  const result = await medplum.executeBatch(batch);
+  console.log(result);
 
   showNotification({
     icon: <IconCircleCheck />,

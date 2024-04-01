@@ -1,7 +1,7 @@
 {
   "resourceType": "ValueSet",
   "url": "https://medplum.com/medplum-task-demo/task-type",
-  "name": "example-task-type-value-set",
+  "name": "urn:uuid:9e3727a4-5d07-4380-bf6d-215c58b26b4f",
   "title": "Example Task Type Value Set",
   "status": "active",
   "compose": {
