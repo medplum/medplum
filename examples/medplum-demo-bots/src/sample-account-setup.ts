@@ -76,10 +76,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 
 /**
- * Returns a practitioner resource.
- * Creates the practitioner if one does not already exist.
+ * Returns a Questionnaire resource.
+ * Creates the questionnaire if one does not already exist.
  * @param medplum - The medplum client.
- * @returns The practitioner resource.
+ * @returns The questionnaire resource.
  */
 async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
   const questionnaire = await medplum.searchOne('Questionnaire', 'title=Order Lab Tests');
