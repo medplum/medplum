@@ -85,7 +85,7 @@ type SearchLink = Omit<GraphDefinitionLink, 'path'> & {
   target: Required<Pick<GraphDefinitionLinkTarget, 'type' | 'params'>>;
 };
 function isSearchLink(link: GraphDefinitionLink): link is SearchLink {
-  return link.path === undefined && link.target !== undefined && link.target.every((t) => t.type && t.params);
+  return !!(link.path === undefined && link.target?.every((t) => t.type && t.params));
 }
 async function followLinks(
   repo: Repository,
