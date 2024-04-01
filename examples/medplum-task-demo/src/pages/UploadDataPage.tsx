@@ -179,7 +179,8 @@ async function uploadExampleQualifications(medplum: MedplumClient, profile: Prac
   await medplum.patchResource(profile.resourceType, profile.id as string, [
     {
       path: '/qualification',
-      op: 'add',
+      // JSON patch does not have an upsert operation. If the user already has qualifications, we should just replace them with these licences
+      op: profile.qualification ? 'replace' : 'add',
       value: states.map((state) => ({
         code: {
           coding: [
