@@ -230,6 +230,49 @@
         "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
         "payload": [{ "contentString": "I can do it, but it will have to be quick and he must be on time." }]
       }
+    },
+    {
+      "fullUrl": "urn:uuid:23b65226-f1fd-424b-90c7-af2914dd6eba",
+      "request": { "method": "POST", "url": "ValueSet" },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "url": "https://example.org/thread-categories",
+        "name": "thread-category-codes",
+        "title": "Thread Category Codes",
+        "description": "These codes identify categories to be help organize threads.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://example.org/thread-categories",
+              "concept": [
+                { "code": "physical", "display": "Annual Physical" },
+                { "code": "pediatric-vaccination", "display": "Pediatric Vaccinations" },
+                { "code": "x-ray", "display": "X-Ray Imaging Services" },
+                { "code": "lab-blood-test", "display": "Laboratory Blood Tests" },
+                { "code": "prescriptions", "display": "Prescription Medication Dispensing" },
+                { "code": "dental", "display": "Dental Cleaning and Checkup" },
+                { "code": "vision", "display": "Eye Exam and Vision Testing" },
+                { "code": "mental-health", "display": "Mental Health Counseling" },
+                { "code": "physical-therapy", "display": "Physical Therapy" },
+                { "code": "dermatology", "display": "Dermatology" },
+                { "code": "allergies", "display": "Allergy Testing and Treatment" },
+                { "code": "cardiology", "display": "Cardiology Diagnostics" },
+                { "code": "orthopedics", "display": "Orthopedic Surgery and Procedures" },
+                { "code": "obstetrics-and-gynecology", "display": "Obstetric and Gynecological Care" },
+                { "code": "oncology", "display": "Oncology Treatment" },
+                { "code": "diabetes", "display": "Diabetes and Weight Loss" },
+                { "code": "rehabilitation", "display": "Post-care Rehabilitation Services" },
+                { "code": "sleep", "display": "Sleep Care and Evaluation" },
+                { "code": "nutrition", "display": "Nutrition Counseling and Dietary Planning" },
+                { "code": "smoking", "display": "Smoking Cessation Program" },
+                { "code": "hearing", "display": "Hearing and Auditory Care" },
+                { "code": "podiatry", "display": "Podiatry Services" }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }
