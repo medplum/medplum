@@ -1,24 +1,20 @@
-import { allOk, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { allOk, getReferenceString, Operator, sortStringArray } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
-  Bundle,
-  BundleEntry,
-  CompartmentDefinitionResource,
-  Patient,
-  Resource,
-  ResourceType,
-} from '@medplum/fhirtypes';
+import { Bundle, CompartmentDefinitionResource, Patient, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
-import { getFullUrl } from '../response';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
 const operation = getOperationDefinition('Patient', 'everything');
 
+const defaultMaxResults = 1000;
+
 type PatientEverythingParameters = {
   _since?: string;
+  _count?: number;
+  _offset?: number;
 };
 
 // Patient everything operation.
@@ -57,12 +53,19 @@ export async function getPatientEverything(
   patient: Patient,
   params?: PatientEverythingParameters
 ): Promise<Bundle> {
-  const patientRef = getReferenceString(patient);
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const searches: SearchRequest[] = [];
+  const types = resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
+  types.push('Patient');
+  sortStringArray(types);
 
-  // Build a list of filters to apply to the searches
-  const filters = [];
+  const filters = [
+    {
+      code: '_compartment',
+      operator: Operator.EQUALS,
+      value: getReferenceString(patient),
+    },
+  ];
+
   if (params?._since) {
     filters.push({
       code: '_lastUpdated',
@@ -71,59 +74,11 @@ export async function getPatientEverything(
     });
   }
 
-  // Build a list of searches
-  for (const resource of resourceList) {
-    const searchParams = resource.param;
-    if (!searchParams) {
-      continue;
-    }
-    for (const code of searchParams) {
-      searches.push({
-        resourceType: resource.code as ResourceType,
-        count: 1000,
-        filters: [
-          {
-            code,
-            operator: Operator.EQUALS,
-            value: patientRef,
-          },
-          ...filters,
-        ],
-      });
-    }
-  }
-
-  // Execute all of the searches in parallel
-  // Some day we could do this in a single SQL query
-  const promises = searches.map((searchRequest) => repo.search(searchRequest));
-  const searchResults = await Promise.all(promises);
-
-  // Build the result bundle
-  const entry: BundleEntry[] = [];
-
-  if (!params?._since || (patient.meta?.lastUpdated as string) >= params?._since) {
-    entry.push({
-      fullUrl: getFullUrl('Patient', patient.id as string),
-      resource: patient,
-    });
-  }
-
-  const resourceSet = new Set<string>([getReferenceString(patient)]);
-  for (const searchResult of searchResults) {
-    if (searchResult.entry) {
-      for (const e of searchResult.entry) {
-        const resourceRef = getReferenceString(e.resource as Resource);
-        if (!resourceSet.has(resourceRef)) {
-          resourceSet.add(resourceRef);
-          entry.push(e);
-        }
-      }
-    }
-  }
-
-  return {
-    resourceType: 'Bundle',
-    type: 'searchset',
-    entry,
-  };
+  return repo.search({
+    resourceType: 'Patient',
+    types,
+    filters,
+    count: params?._count ?? defaultMaxResults,
+    offset: params?._offset,
+  });
 }

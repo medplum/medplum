@@ -1,5 +1,5 @@
 import { ContentType, LOINC, createReference } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { Bundle, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -91,5 +91,19 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     expect(res6.body.entry).toHaveLength(1);
+
+    // Execute the operation with _count and _offset
+    const res7 = await request(app)
+      .get(`/fhir/R4/Patient/${res1.body.id}/$everything?_count=1&_offset=1`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res7.status).toBe(200);
+
+    // Bundle should have pagination links
+    const bundle = res7.body as Bundle;
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.link).toBeDefined();
+    expect(bundle.link?.some((link) => link.relation === 'next')).toBeTruthy();
+    expect(bundle.link?.some((link) => link.relation === 'first')).toBeTruthy();
+    expect(bundle.link?.some((link) => link.relation === 'previous')).toBeTruthy();
   });
 });
