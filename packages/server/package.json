@@ -85,7 +85,7 @@
     "@types/node": "20.12.2",
     "@types/node-fetch": "2.6.11",
     "@types/nodemailer": "6.4.14",
-    "@types/pg": "8.11.4",
+    "@types/pg": "8.11.2",
     "@types/set-cookie-parser": "2.4.7",
     "@types/supertest": "6.0.2",
     "@types/ua-parser-js": "0.7.39",
