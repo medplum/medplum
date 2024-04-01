@@ -18,6 +18,7 @@ import {
   IconDatabaseImport,
   IconGridDots,
   IconMail,
+  IconNurse,
   IconReportMedical,
   IconRibbonHealth,
   IconRobot,
@@ -81,7 +82,7 @@ export function App(): JSX.Element | null {
             links: [
               { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
               { icon: <IconChecklist />, label: 'Upload Example Tasks', href: '/upload/task' },
-              { icon: <IconChecklist />, label: 'Upload Example Role', href: '/upload/role' },
+              { icon: <IconNurse />, label: 'Upload Example Role', href: '/upload/role' },
               { icon: <IconMail />, label: 'Upload Example Messages', href: '/upload/message' },
               { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
               { icon: <IconReportMedical />, label: 'Upload Example Report', href: '/upload/report' },

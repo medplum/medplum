@@ -179,7 +179,7 @@ async function uploadExampleQualifications(medplum: MedplumClient, profile: Prac
   await medplum.patchResource(profile.resourceType, profile.id as string, [
     {
       path: '/qualification',
-      op: 'replace',
+      op: 'add',
       value: states.map((state) => ({
         code: {
           coding: [
