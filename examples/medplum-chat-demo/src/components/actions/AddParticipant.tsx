@@ -106,6 +106,42 @@ const addParticipantQuestionnaire: Questionnaire = {
       type: 'reference',
       text: 'Add someone to this thread:',
       repeats: true,
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+          valueCodeableConcept: {
+            coding: [
+              {
+                code: 'Patient',
+              },
+              {
+                code: 'Practitioner',
+              },
+              {
+                code: 'Device',
+              },
+              {
+                code: 'Organization',
+              },
+              {
+                code: 'PractitionerRole',
+              },
+              {
+                code: 'RelatedPerson',
+              },
+              {
+                code: 'Group',
+              },
+              {
+                code: 'CareTeam',
+              },
+              {
+                code: 'HealthCareService',
+              },
+            ],
+          },
+        },
+      ],
     },
   ],
 };

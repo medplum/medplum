@@ -139,11 +139,62 @@ const createThreadQuestionnaire: Questionnaire = {
       text: 'Add thread participants:',
       repeats: true,
       required: true,
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+          valueCodeableConcept: {
+            coding: [
+              {
+                code: 'Patient',
+              },
+              {
+                code: 'Practitioner',
+              },
+              {
+                code: 'Device',
+              },
+              {
+                code: 'Organization',
+              },
+              {
+                code: 'PractitionerRole',
+              },
+              {
+                code: 'RelatedPerson',
+              },
+              {
+                code: 'Group',
+              },
+              {
+                code: 'CareTeam',
+              },
+              {
+                code: 'HealthCareService',
+              },
+            ],
+          },
+        },
+      ],
     },
     {
       linkId: 'subject',
       type: 'reference',
       text: 'Select a patient that is the subject of this thread (Optional)',
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+          valueCodeableConcept: {
+            coding: [
+              {
+                code: 'Patient',
+              },
+              {
+                code: 'Group',
+              },
+            ],
+          },
+        },
+      ],
     },
   ],
 };
