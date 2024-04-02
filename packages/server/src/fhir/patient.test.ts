@@ -120,7 +120,7 @@ describe('FHIR Patient utils', () => {
       sender: { reference: 'Patient/456' },
       recipient: [{ reference: 'Patient/789' }],
     };
-    expect(getPatients(communication)).toMatchObject([
+    expect(sortReferenceArray(getPatients(communication))).toMatchObject([
       { reference: 'Patient/123' },
       { reference: 'Patient/456' },
       { reference: 'Patient/789' },
@@ -135,7 +135,10 @@ describe('FHIR Patient utils', () => {
       sender: { reference: 'Patient/123' },
       recipient: [{ reference: 'Patient/789' }],
     };
-    expect(getPatients(communication)).toMatchObject([{ reference: 'Patient/123' }, { reference: 'Patient/789' }]);
+    expect(sortReferenceArray(getPatients(communication))).toMatchObject([
+      { reference: 'Patient/123' },
+      { reference: 'Patient/789' },
+    ]);
   });
 
   test('Follow search params', () => {
@@ -208,3 +211,7 @@ describe('FHIR Patient utils', () => {
     });
   });
 });
+
+function sortReferenceArray<T extends Reference & { reference: string }>(input: T[]): T[] {
+  return input.sort((a, b) => a.reference.localeCompare(b.reference));
+}

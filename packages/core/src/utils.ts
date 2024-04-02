@@ -1058,7 +1058,10 @@ export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
 }
 
 /**
- * Sorts an array of strings using the localeCompare method.
+ * Sorts an array of strings in place using the localeCompare method.
+ *
+ * This method will mutate the input array.
+ *
  * @param array - The array of strings to sort.
  * @returns The sorted array of strings.
  */
