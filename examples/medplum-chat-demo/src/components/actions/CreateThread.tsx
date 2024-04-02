@@ -29,8 +29,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
   const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
 
-  const onQuestionnaireSubmit = (formData: QuestionnaireResponse) => {
-    debugger;
+  const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
     const participants = getRecipients(formData) as QuestionnaireResponseItemAnswer[];
     const answers = getQuestionnaireAnswers(formData);
     const topic = answers.topic.valueString as string;
@@ -46,7 +45,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
       throw new Error('The subject of a thread must be a patient');
     }
 
-    handleCreateThread(topic, participants, subject);
+    handleCreateThread(topic, participants, subject).catch(console.error);
     handlers.close();
   };
 

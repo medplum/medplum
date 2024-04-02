@@ -34,7 +34,9 @@ export function UploadDataPage(): JSX.Element {
 
   return (
     <Document>
-      <Button onClick={handleDataUpload}>Upload {dataTypeDisplay} Data</Button>
+      <Button disabled={buttonDisabled} onClick={handleDataUpload}>
+        Upload {dataTypeDisplay} Data
+      </Button>
     </Document>
   );
 }

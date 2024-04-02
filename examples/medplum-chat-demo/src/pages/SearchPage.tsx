@@ -53,12 +53,6 @@ export function SearchPage(): JSX.Element {
     }
   }, [medplum, navigate, location]);
 
-  // Updates the search and navigates to the correct url when you filter for threads with a specific patient
-  const handlePatientFilter = (search: SearchRequest): void => {
-    setSearch(search);
-    navigate(`/Communication${formatSearchQuery(search)}`);
-  };
-
   const handleTabChange = (newTab: string | null): void => {
     if (!search) {
       throw new Error('Error: No valid search');
