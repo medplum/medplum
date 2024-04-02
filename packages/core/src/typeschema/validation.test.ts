@@ -8,6 +8,7 @@ import {
   CarePlan,
   CodeSystem,
   Condition,
+  Consent,
   DiagnosticReport,
   DocumentReference,
   ElementDefinition,
@@ -1312,6 +1313,21 @@ describe('FHIR resource validation', () => {
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe('warning');
     expect(issues[0].details?.text).toContain('Invalid reference for');
+  });
+
+  test('Nested recursive properties', () => {
+    const consent: Consent = {
+      resourceType: 'Consent',
+      status: 'active',
+      scope: { text: 'test' },
+      category: [{ text: 'test' }],
+      policyRule: { text: 'test' },
+      provision: {
+        type: 'permit',
+        provision: [{ type: 'permit' }],
+      },
+    };
+    expect(() => validateResource(consent)).not.toThrow();
   });
 });
 
