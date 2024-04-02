@@ -14,7 +14,7 @@ export function CreateResourcePage(): JSX.Element {
   const defaultValue = { resourceType } as Partial<Resource>;
 
   const handleSubmit = (newResource: Resource): void => {
-    if (setOutcome) {
+    if (outcome) {
       setOutcome(undefined);
     }
     medplum
