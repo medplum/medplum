@@ -3,8 +3,8 @@ import { resolveId } from '@medplum/core';
 import { Communication, Patient } from '@medplum/fhirtypes';
 import { PatientSummary, useMedplum, ThreadChat } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { CommunicationActions } from './actions/CommunicationActions';
-import { CommunicationDetails } from './CommunicationDetails';
+import { CommunicationActions } from '../components/actions/CommunicationActions';
+import { CommunicationDetails } from '../components/CommunicationDetails';
 
 interface ThreadPageProps {
   readonly thread: Communication;

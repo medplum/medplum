@@ -1,6 +1,6 @@
 {
   "name": "medplum-chat-demo",
-  "version": "3.0.11",
+  "version": "3.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,10 +22,10 @@
     "@mantine/core": "7.6.2",
     "@mantine/hooks": "7.6.2",
     "@mantine/notifications": "7.6.2",
-    "@medplum/core": "3.0.11",
-    "@medplum/eslint-config": "3.0.11",
-    "@medplum/fhirtypes": "3.0.11",
-    "@medplum/react": "3.0.11",
+    "@medplum/core": "3.1.0",
+    "@medplum/eslint-config": "3.1.0",
+    "@medplum/fhirtypes": "3.1.0",
+    "@medplum/react": "3.1.0",
     "@tabler/icons-react": "3.1.0",
     "@types/node": "20.11.28",
     "@types/react": "18.2.66",
