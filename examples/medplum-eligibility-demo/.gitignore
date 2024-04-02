@@ -1,25 +1,23 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+.DS_Store
 
-node_modules
-dist
-dist-ssr
-*.local
+# Node/npm
+node_modules/
 package-lock.json
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Dotenv
+.env
+
+# Output
+dist/
+
+# Jest code coverage
+coverage/
+
+# TypeScript incremental build
+tsconfig.tsbuildinfo
+
+# VSCode
+.vscode/
+
+# JetBrains
+.idea/
