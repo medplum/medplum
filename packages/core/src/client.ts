@@ -80,6 +80,7 @@ import {
   isObject,
   resolveId,
   sleep,
+  sortStringArray,
 } from './utils';
 
 export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
@@ -3115,9 +3116,8 @@ export class MedplumClient extends EventTarget {
     console.log(`> ${options.method} ${url}`);
     if (options.headers) {
       const headers = options.headers as Record<string, string>;
-      const entries = Object.entries(headers).sort((a, b) => a[0].localeCompare(b[0]));
-      for (const [key, value] of entries) {
-        console.log(`> ${key}: ${value}`);
+      for (const key of sortStringArray(Object.keys(headers))) {
+        console.log(`> ${key}: ${headers[key]}`);
       }
     }
   }
