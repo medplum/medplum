@@ -161,6 +161,11 @@ export interface RepositoryContext {
    * 3) "account" - Optional reference to a subaccount that owns the resource.
    */
   extendedMode?: boolean;
+
+  /**
+   * Optional flag to allow the repository to write resources with IDs assigned by the client.
+   */
+  clientAssignedIds?: boolean;
 }
 
 export interface CacheEntry<T extends Resource = Resource> {
@@ -207,7 +212,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   async createResource<T extends Resource>(resource: T): Promise<T> {
     const resourceWithId = {
       ...resource,
-      id: randomUUID(),
+      id: this.context.clientAssignedIds && resource.id ? resource.id : randomUUID(),
     };
     try {
       const result = await this.updateResourceImpl(resourceWithId, true);
@@ -1587,7 +1592,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @returns True if the current user can manually set the ID field.
    */
   private canSetId(): boolean {
-    return this.isSuperAdmin();
+    return this.isSuperAdmin() || this.context.clientAssignedIds === true;
   }
 
   /**

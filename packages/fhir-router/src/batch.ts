@@ -4,11 +4,11 @@ import {
   getReferenceString,
   getStatus,
   isOk,
-  normalizeOperationOutcome,
   OperationOutcomeError,
   parseSearchRequest,
-  resolveId,
   Event,
+  generateRandomId,
+  normalizeOperationOutcome,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRouter } from './fhirrouter';
@@ -28,12 +28,14 @@ export async function processBatch(router: FhirRouter, repo: FhirRepository, bun
   return new BatchProcessor(router, repo, bundle).processBatch();
 }
 
+const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
  * In particular, it tracks rewritten ID's as necessary.
  */
 class BatchProcessor {
-  private readonly ids: Record<string, Resource>;
+  private readonly resolvedIdentities: Record<string, string>;
 
   /**
    * Creates a batch processor.
@@ -46,7 +48,7 @@ class BatchProcessor {
     private readonly repo: FhirRepository,
     private readonly bundle: Bundle
   ) {
-    this.ids = {};
+    this.resolvedIdentities = Object.create(null);
   }
 
   /**
@@ -55,36 +57,28 @@ class BatchProcessor {
    */
   async processBatch(): Promise<Bundle> {
     const bundleType = this.bundle.type;
+
     if (!bundleType) {
       throw new OperationOutcomeError(badRequest('Missing bundle type'));
     }
-
     if (bundleType !== 'batch' && bundleType !== 'transaction') {
       throw new OperationOutcomeError(badRequest('Unrecognized bundle type'));
     }
 
-    const entries = this.bundle.entry;
-    if (!entries) {
-      throw new OperationOutcomeError(badRequest('Missing bundle entry'));
-    }
-
-    const resultEntries: BundleEntry[] = [];
+    const resultEntries: (BundleEntry | OperationOutcome)[] = new Array(this.bundle.entry?.length ?? 0);
     let count = 0;
     let errors = 0;
-    for (const entry of entries) {
-      const rewritten = this.rewriteIdsInObject(entry);
-      // If the resource 'id' element is specified, we want to replace the `urn:uuid:*` string and
-      // remove the `resourceType` prefix
-      if (entry.resource?.id) {
-        rewritten.resource.id = this.rewriteIdsInString(entry.resource.id, true);
-      }
 
+    const entryIndices = await this.preprocessBundle(resultEntries);
+    for (const entryIndex of entryIndices) {
+      const entry = this.bundle.entry?.[entryIndex] as BundleEntry;
+      const rewritten = this.rewriteIdsInObject(entry);
       try {
         count++;
-        resultEntries.push(await this.processBatchEntry(rewritten));
+        resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
       } catch (err) {
         errors++;
-        resultEntries.push(buildBundleResponse(normalizeOperationOutcome(err)));
+        resultEntries[entryIndex] = buildBundleResponse(normalizeOperationOutcome(err));
       }
     }
 
@@ -104,14 +98,115 @@ class BatchProcessor {
     };
   }
 
+  private async preprocessBundle(results: BundleEntry[]): Promise<number[]> {
+    const entries = this.bundle.entry;
+    if (!entries?.length) {
+      throw new OperationOutcomeError(badRequest('Missing bundle entries'));
+    }
+
+    const bucketedEntries: Record<BundleEntryRequest['method'], number[]> = {
+      DELETE: [],
+      POST: [],
+      PUT: [],
+      PATCH: [],
+      GET: [],
+      HEAD: [],
+    };
+    const seenIdentities = new Set<string>();
+
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      const method = entry.request?.method;
+      if (!method) {
+        results[i] = buildBundleResponse(
+          badRequest('Missing Bundle entry request method', `Bundle.entry[${i}].request.method`)
+        );
+        continue;
+      }
+      if (!entry.request?.url) {
+        results[i] = buildBundleResponse(
+          badRequest('Missing Bundle entry request URL', `Bundle.entry[${i}].request.url`)
+        );
+        continue;
+      }
+
+      bucketedEntries[method]?.push(i);
+      let resolved: { placeholder: string; reference: string } | undefined;
+      try {
+        resolved = await this.resolveIdentity(entry, `Bundle.entry[${i}]`);
+      } catch (err: any) {
+        if ((err as OperationOutcomeError).outcome && this.bundle.type !== 'transaction') {
+          results[i] = buildBundleResponse(err.outcome);
+          continue;
+        }
+        throw err;
+      }
+      if (resolved) {
+        this.resolvedIdentities[resolved.placeholder] = resolved.reference;
+        if (seenIdentities.has(resolved.reference)) {
+          throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
+        }
+      }
+    }
+
+    const result = [];
+    for (const bucket of Object.values(bucketedEntries)) {
+      result.push(...bucket);
+    }
+    return result;
+  }
+
+  private async resolveIdentity(
+    entry: BundleEntry,
+    path: string
+  ): Promise<{ placeholder: string; reference: string } | undefined> {
+    switch (entry.request?.method) {
+      case 'POST':
+        if (entry.resource && entry.fullUrl?.startsWith('urn:uuid:')) {
+          entry.resource.id = generateRandomId();
+          return {
+            placeholder: entry.fullUrl,
+            reference: getReferenceString(entry.resource),
+          };
+        }
+        break;
+      case 'DELETE':
+      case 'PUT':
+      case 'PATCH':
+        if (entry.request?.url?.includes('?')) {
+          // Resolve conditional update via search
+          const resolved = await this.repo.searchResources(parseSearchRequest(entry.request.url));
+          if (resolved.length !== 1) {
+            throw new OperationOutcomeError(
+              badRequest(
+                `Conditional ${entry.request.method} matched ${resolved.length} resources`,
+                path + '.request.url'
+              )
+            );
+          }
+          return { placeholder: entry.request.url, reference: getReferenceString(resolved[0]) };
+        } else if (entry.request?.url.includes('/')) {
+          return { placeholder: entry.request.url, reference: entry.request.url };
+        }
+        break;
+      case 'GET':
+      case 'HEAD':
+        // Ignore read-only requests
+        break;
+      default:
+        throw new OperationOutcomeError(
+          badRequest('Invalid batch request method: ' + entry.request?.method, path + '.request.method')
+        );
+    }
+    return undefined;
+  }
+
   /**
    * Processes a single entry from a FHIR batch request.
    * @param entry - The bundle entry.
    * @returns The bundle entry response.
    */
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
-    this.validateEntry(entry);
-
     const request = entry.request as BundleEntryRequest;
 
     if (entry.resource?.resourceType && request.ifNoneExist) {
@@ -124,9 +219,6 @@ class BatchProcessor {
       }
       if (entries.length === 1) {
         const matchingResource = entries[0].resource as Resource;
-        if (entry.fullUrl) {
-          this.addReplacementId(entry.fullUrl, matchingResource);
-        }
         return buildBundleResponse(allOk, matchingResource);
       }
     }
@@ -151,25 +243,7 @@ class BatchProcessor {
       this.repo
     );
 
-    if (entry.fullUrl && result.length === 2) {
-      this.addReplacementId(entry.fullUrl, result[1]);
-    }
-
     return buildBundleResponse(result[0], result[1]);
-  }
-
-  private validateEntry(entry: BundleEntry): void {
-    if (!entry.request) {
-      throw new OperationOutcomeError(badRequest('Missing entry.request'));
-    }
-
-    if (!entry.request.method) {
-      throw new OperationOutcomeError(badRequest('Missing entry.request.method'));
-    }
-
-    if (!entry.request.url) {
-      throw new OperationOutcomeError(badRequest('Missing entry.request.url'));
-    }
   }
 
   private parsePatchBody(entry: BundleEntry): any {
@@ -187,12 +261,6 @@ class BatchProcessor {
     }
 
     return this.rewriteIdsInArray(JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8')));
-  }
-
-  private addReplacementId(fullUrl: string, resource: Resource): void {
-    if (fullUrl.startsWith('urn:uuid:')) {
-      this.ids[fullUrl] = resource;
-    }
   }
 
   private rewriteIds(input: any): any {
@@ -216,9 +284,9 @@ class BatchProcessor {
     return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
   }
 
-  private rewriteIdsInString(input: string, removeResourceType = false): string {
-    const matches = /urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/.exec(input);
-    if (matches) {
+  private rewriteIdsInString(input: string): string {
+    const match = input.match(localBundleReference);
+    if (match) {
       if (this.bundle.type !== 'transaction') {
         const event: LogEvent = {
           type: 'warn',
@@ -226,15 +294,9 @@ class BatchProcessor {
         };
         this.router.dispatchEvent(event);
       }
-      const fullUrl = matches[0];
-      const resource = this.ids[fullUrl];
-      if (resource) {
-        let referenceString: string | undefined = getReferenceString(resource);
-        if (removeResourceType) {
-          referenceString = resolveId({ reference: referenceString });
-        }
-        return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
-      }
+      const fullUrl = match[0];
+      const referenceString = this.resolvedIdentities[fullUrl];
+      return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
     }
     return input;
   }
