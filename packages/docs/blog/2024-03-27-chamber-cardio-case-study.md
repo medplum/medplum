@@ -62,3 +62,7 @@ Chamber took advantage of a wide array of Retool’s platform capabilities for b
 ## Conclusion
 
 Chamber Cardio’s initiative underscores the effectiveness of combining cutting-edge technologies—Retool’s frontend versatility, Medplum’s backend strength, and BonFHIR’s supplementary libraries and tooling —to craft a cardiology care platform that stands out for its comprehensive data integration and workflow management offering. This collaboration resulted in a product and technology foundation for enhanced care coordination, streamlined decision-making processes, and a supportive pathway for cardiology practices transitioning to value-based care and exemplifies how strategic tool selection and technology partners can enable meaningful advancements in healthcare innovation and delivery.
+
+## References
+
+- [Chamber Cardio Blog Post](https://www.chambercardio.com/blog/modernizing-cardiology-care) on Modernizing Cardiology Care
