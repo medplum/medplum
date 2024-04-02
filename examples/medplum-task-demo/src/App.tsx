@@ -82,10 +82,10 @@ export function App(): JSX.Element | null {
             links: [
               { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
               { icon: <IconChecklist />, label: 'Upload Example Tasks', href: '/upload/task' },
-              { icon: <IconNurse />, label: 'Upload Example Role', href: '/upload/role' },
+              { icon: <IconNurse />, label: 'Upload Example Certifications', href: '/upload/role' },
               {
                 icon: <IconRibbonHealth />,
-                label: 'Upload Example User Qualifications',
+                label: 'Upload Example Licenses',
                 href: '/upload/qualifications',
               },
               { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
