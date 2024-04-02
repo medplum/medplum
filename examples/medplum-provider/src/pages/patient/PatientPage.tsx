@@ -57,7 +57,8 @@ export function PatientPage(): JSX.Element {
   const patient = usePatient();
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tabId = window.location.pathname.split('/')[3] ?? '';
-    return tabId && tabs.find((t) => t.id === tabId) ? tabId : tabs[0].id;
+    const tab = tabId ? tabs.find((t) => t.id === tabId || t.url.startsWith(tabId)) : undefined;
+    return (tab ?? tabs[0]).id;
   });
 
   if (!patient) {
