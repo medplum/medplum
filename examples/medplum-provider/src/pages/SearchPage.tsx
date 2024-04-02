@@ -47,6 +47,9 @@ export function SearchPage(): JSX.Element {
         search={search}
         onClick={(e) => navigate(getResourceUrl(e.resource))}
         onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
+        onNew={() => {
+          navigate(`/${search.resourceType}/new`);
+        }}
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}

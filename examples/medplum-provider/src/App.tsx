@@ -116,6 +116,7 @@ export function App(): JSX.Element | null {
                 <Route path="meds" element={<MedsTab />} />
                 <Route path="tasks" element={<TasksTab />} />
                 <Route path="timeline" element={<TimelineTab />} />
+                <Route path=":resourceType/new" element={<CreateResourcePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path="" element={<TimelineTab />} />
