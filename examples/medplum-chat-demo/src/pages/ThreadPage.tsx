@@ -57,7 +57,6 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
           </GridCol>
         </Grid>
       )}
-      <ThreadChat thread={props.thread} title={topic} />
     </div>
   );
 }
