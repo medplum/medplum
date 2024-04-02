@@ -1,5 +1,5 @@
 import { Table } from '@mantine/core';
-import { capitalize, formatRange } from '@medplum/core';
+import { capitalize, formatRange, sortStringArray } from '@medplum/core';
 import { ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Loading, RangeDisplay, useSearchResources } from '@medplum/react';
 import { Fragment } from 'react';
@@ -59,7 +59,7 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
 
   const genders = getUnique(ranges.map((r) => r.gender));
   if (genders.length > 1) {
-    genders.sort((a, b) => a.localeCompare(b));
+    sortStringArray(genders);
     return (
       <>
         {genders.map((gender) => (
@@ -76,7 +76,7 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
 
   const ages = getUnique(ranges.map((r) => r.age && formatRange(r.age)));
   if (ages.length > 1) {
-    ages.sort((a, b) => a.localeCompare(b));
+    sortStringArray(ages);
     return (
       <>
         {ages.map((age) => (
