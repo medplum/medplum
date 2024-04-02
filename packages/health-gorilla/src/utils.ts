@@ -178,7 +178,11 @@ export async function checkAbn(
     const abnUint8Array = new Uint8Array(abnArrayBuffer);
 
     // Create a Medplum media resource
-    const media = await medplum.uploadMedia(abnUint8Array, 'application/pdf', 'RequestGroup-ABN.pdf');
+    const media = await medplum.createMedia({
+      data: abnUint8Array,
+      contentType: 'application/pdf',
+      filename: 'RequestGroup-ABN.pdf',
+    });
     console.log('Uploaded ABN PDF as media: ' + media.id);
   }
 }

@@ -1,3 +1,5 @@
+import { createReference } from '@medplum/core';
+import { MedicationRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactNode } from 'react';
@@ -61,7 +63,53 @@ describe('PatientSummary - Medications', () => {
       fireEvent.click(screen.getByText('+ Add'));
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = (await screen.findByRole('searchbox')) as HTMLInputElement;
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(screen.getByText('Test Display')).toBeDefined();
+
+    // Click "Save" button
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+  });
+
+  test('Edit medication', async () => {
+    const medication: MedicationRequest = {
+      resourceType: 'MedicationRequest',
+      id: 'tylenol',
+      status: 'active',
+      intent: 'order',
+      subject: createReference(HomerSimpson),
+      medicationCodeableConcept: { text: 'Tylenol' },
+    };
+
+    await setup(<Medications patient={HomerSimpson} medicationRequests={[medication]} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Edit Tylenol'));
+    });
+
+    const input = (await screen.findByRole('searchbox')) as HTMLInputElement;
 
     // Enter random text
     await act(async () => {

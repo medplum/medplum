@@ -65,7 +65,12 @@
           {
             "code": "PasswordChangeRequest",
             "display": "PasswordChangeRequest",
-            "definition": "Password change request for the 'forgot password' flow."
+            "definition": "DEPRECATED Password change request for the 'forgot password' flow. Use UserSecurityRequest instead."
+          },
+          {
+            "code": "UserSecurityRequest",
+            "display": "UserSecurityRequest",
+            "definition": "User security request for the 'forgot password' flow or email verification."
           },
           {
             "code": "Project",
@@ -148,6 +153,16 @@
             "code": "graphql-introspection",
             "display": "GraphQL Introspection",
             "definition": "GraphQL Introspection"
+          },
+          {
+            "code": "terminology",
+            "display": "Terminology Service",
+            "definition": "Updated implementation of Terminology Service functionality"
+          },
+          {
+            "code": "websocket-subscriptions",
+            "display": "WebSocket Subscriptions",
+            "definition": "WebSocket Subscriptions"
           }
         ]
       }
@@ -609,6 +624,50 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/user-security-request-type",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "user-security-request-type",
+        "url": "https://medplum.com/fhir/CodeSystem/user-security-request-type",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "invite",
+            "display": "Invite",
+            "definition": "Initial user invite"
+          },
+          {
+            "code": "verify-email",
+            "display": "Verify email",
+            "definition": "Email verification of a user"
+          },
+          {
+            "code": "reset",
+            "display": "Reset",
+            "definition": "User requested password reset"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "user-security-request-type",
+        "url": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/user-security-request-type"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported",
       "resource": {
         "resourceType": "CodeSystem",
@@ -695,6 +754,59 @@
             }
           ]
         }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/loinc-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://loinc.org",
+        "version": "0.0.0",
+        "status": "active",
+        "hierarchyMeaning": "is-a",
+        "content": "example",
+        "concept": [
+          {
+            "code": "LA28865-6",
+            "display": "Longitudinal care-coordination focused care team"
+          },
+          {
+            "code": "86645-9",
+            "display": "Pregnancy intention in the next year - Reported"
+          },
+          {
+            "code": "82810-3",
+            "display": "Pregnancy status"
+          },
+          {
+            "code": "76690-7",
+            "display": "Sexual orientation"
+          },
+          {
+            "code": "77606-2",
+            "display": "Weight-for-length Per age and sex"
+          },
+          {
+            "code": "8480-6",
+            "display": "Systolic blood pressure"
+          },
+          {
+            "code": "8462-4",
+            "display": "Diastolic blood pressure"
+          },
+          {
+            "code": "8867-4",
+            "display": "Heart rate"
+          },
+          {
+            "code": "2708-6",
+            "display": "Oxygen saturation in Arterial blood"
+          },
+          {
+            "code": "3151-8",
+            "display": "Inhaled oxygen flow rate"
+          }
+        ]
       }
     }
   ]

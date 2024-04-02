@@ -2,8 +2,8 @@ import { CSSProperties, ReactNode } from 'react';
 import styles from './FeatureGrid.module.css';
 
 export interface FeatureGridProps {
-  columns: number;
-  children?: ReactNode;
+  readonly columns: number;
+  readonly children?: ReactNode;
 }
 
 export function FeatureGrid(props: FeatureGridProps): JSX.Element {
@@ -15,9 +15,9 @@ export function FeatureGrid(props: FeatureGridProps): JSX.Element {
 }
 
 export interface FeatureProps {
-  imgSrc: string;
-  title: string;
-  children: ReactNode;
+  readonly imgSrc: string;
+  readonly title: string;
+  readonly children: ReactNode;
 }
 
 export function Feature(props: FeatureProps): JSX.Element {

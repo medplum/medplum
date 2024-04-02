@@ -349,10 +349,15 @@ function capitalizeDisplayWord(word: string): string {
  * Returns an element definition by type and property name.
  * @param typeName - The type name.
  * @param propertyName - The property name.
+ * @param profileUrl - (optional) The URL of the current resource profile
  * @returns The element definition if found.
  */
-export function getElementDefinition(typeName: string, propertyName: string): InternalSchemaElement | undefined {
-  const typeSchema = tryGetDataType(typeName);
+export function getElementDefinition(
+  typeName: string,
+  propertyName: string,
+  profileUrl?: string
+): InternalSchemaElement | undefined {
+  const typeSchema = tryGetDataType(typeName, profileUrl);
   if (!typeSchema) {
     return undefined;
   }
@@ -408,7 +413,7 @@ export function isResource(value: unknown): value is Resource {
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
 export function isReference(value: unknown): value is Reference & { reference: string } {
-  return !!(value && typeof value === 'object' && 'reference' in value);
+  return !!(value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string');
 }
 
 /**

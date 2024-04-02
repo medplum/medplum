@@ -5,13 +5,14 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 
-const app = express();
-let user: User;
-
 describe('Status', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let user: User;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);

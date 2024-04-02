@@ -1,9 +1,10 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { loadDataType } from '@medplum/core';
 import { Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
@@ -13,9 +14,19 @@ const medplum = new MockClient();
 describe('ProfilesPage', () => {
   const fishPatientProfile = FishPatientResources.getFishPatientProfileSD();
   beforeAll(async () => {
+    const loadedProfileUrls: string[] = [];
     for (const profile of [fishPatientProfile, FishPatientResources.getFishSpeciesExtensionSD()]) {
-      await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
+      const sd = await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
+      loadedProfileUrls.push(sd.url);
+      loadDataType(sd, sd.url);
     }
+    medplum.requestProfileSchema = jest.fn((profileUrl) => {
+      if (loadedProfileUrls.includes(profileUrl)) {
+        return Promise.resolve([profileUrl]);
+      } else {
+        throw new Error('unexpected profileUrl');
+      }
+    });
   });
 
   async function setup(url: string): Promise<void> {
@@ -35,7 +46,7 @@ describe('ProfilesPage', () => {
         </MedplumProvider>
       );
     });
-    await waitFor(() => screen.getByText('Available Patient profiles'));
+    expect(await screen.findByText('Available Patient profiles')).toBeInTheDocument();
   }
 
   test('Can add a profile to an empty resource', async () => {

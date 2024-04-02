@@ -25,7 +25,14 @@ fi
 
 # Build the new version number
 NEW_VERSION="${CURR_VERSION_PARTS[0]}.${CURR_VERSION_PARTS[1]}.${CURR_VERSION_PARTS[2]}"
-echo "New version: $NEW_VERSION"
+
+# Check if a new version is provided as a command line argument and override if present
+if [ ! -z "$1" ]; then
+    NEW_VERSION=$1
+    echo "Overriding new version to: $NEW_VERSION"
+else
+    echo "New version: $NEW_VERSION"
+fi
 
 # Use the Github gh tool to make sure the user is logged in
 gh auth status
@@ -42,12 +49,13 @@ sed -i'' -E -e "s/\"version\": \"[^\"]+\"/\"version\": \"$NEW_VERSION\"/g" packa
 
 # Set version in all examples/\*/package.json files
 find examples -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
+find packages -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
 
 # Run `npm version $version --workspaces`
 npm version "$NEW_VERSION" --workspaces
 
 # Generate release notes
-RELEASE_NOTES=$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'%s')
+RELEASE_NOTES=$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'%s' | tac)
 
 # Add changes to the staging area
 git add -u .

@@ -1,6 +1,6 @@
 import { operationOutcomeToString } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
@@ -35,7 +35,7 @@ describe('useSearch hooks', () => {
 
   test('Happy path', async () => {
     await setup(<TestComponent />);
-    await waitFor(() => screen.getByText('All OK'));
+    expect(await screen.findByText('All OK')).toBeInTheDocument();
 
     const el = screen.getByTestId('bundle');
     expect(el).toBeInTheDocument();

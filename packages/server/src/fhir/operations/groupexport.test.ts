@@ -5,14 +5,15 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
 
-const app = express();
-let accessToken: string;
-
 describe('Group Export', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -329,7 +330,7 @@ describe('Group Export', () => {
     await groupExportResources(exporter, project, group, systemRepo);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
-    expect(exportWriteResourceSpy).toBeCalledTimes(0);
+    expect(exportWriteResourceSpy).toHaveBeenCalledTimes(0);
   });
 
   test('groupExportResources members without reference', async () => {

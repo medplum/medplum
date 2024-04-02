@@ -1,15 +1,16 @@
 import { Button } from '@mantine/core';
-import { Attachment } from '@medplum/fhirtypes';
+import { Attachment, Reference } from '@medplum/fhirtypes';
 import { MouseEvent, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentInputProps {
-  name: string;
-  defaultValue?: Attachment;
-  arrayElement?: boolean;
-  onChange?: (value: Attachment | undefined) => void;
+  readonly name: string;
+  readonly defaultValue?: Attachment;
+  readonly arrayElement?: boolean;
+  readonly securityContext?: Reference;
+  readonly onChange?: (value: Attachment | undefined) => void;
 }
 
 export function AttachmentInput(props: AttachmentInputProps): JSX.Element {
@@ -39,6 +40,8 @@ export function AttachmentInput(props: AttachmentInputProps): JSX.Element {
   }
 
   return (
-    <AttachmentButton onUpload={setValueWrapper}>{(props) => <Button {...props}>Upload...</Button>}</AttachmentButton>
+    <AttachmentButton securityContext={props.securityContext} onUpload={setValueWrapper}>
+      {(props) => <Button {...props}>Upload...</Button>}
+    </AttachmentButton>
   );
 }

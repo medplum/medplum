@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 import { InfoBar } from './InfoBar';
 
 export interface ResourceHeaderProps {
-  resource: Resource | Reference;
+  readonly resource: Resource | Reference;
 }
 
 export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
@@ -44,9 +44,11 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
     }
   }
 
-  const name = getDisplayString(resource);
-  if (name !== getReferenceString(resource)) {
-    addEntry('Name', name);
+  if ('name' in resource) {
+    const name = getDisplayString(resource);
+    if (name !== getReferenceString(resource)) {
+      addEntry('Name', name);
+    }
   }
 
   if ('category' in resource) {

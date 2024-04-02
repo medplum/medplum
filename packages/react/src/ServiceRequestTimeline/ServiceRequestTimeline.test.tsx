@@ -1,10 +1,10 @@
 import { createReference, getReferenceString } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { ServiceRequestTimeline, ServiceRequestTimelineProps } from './ServiceRequestTimeline';
 
 const medplum = new MockClient();
@@ -101,7 +101,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -109,8 +109,9 @@ describe('ServiceRequestTimeline', () => {
     });
 
     // Click on the "Pin" menu item
+    const pinButton = await screen.findByLabelText('Pin ' + getReferenceString(comment));
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Pin ' + getReferenceString(comment)));
+      fireEvent.click(pinButton);
     });
 
     // Click on the actions link
@@ -119,8 +120,9 @@ describe('ServiceRequestTimeline', () => {
     });
 
     // Click on the "Unpin" menu item
+    const unpinButton = await screen.findByLabelText('Unpin ' + getReferenceString(comment));
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Unpin ' + getReferenceString(comment)));
+      fireEvent.click(unpinButton);
     });
   });
 
@@ -137,7 +139,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -145,8 +147,9 @@ describe('ServiceRequestTimeline', () => {
     });
 
     // Click on the "Details" menu item
+    const detailsButton = await screen.findByLabelText('Details ' + getReferenceString(comment));
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Details ' + getReferenceString(comment)));
+      fireEvent.click(detailsButton);
     });
   });
 
@@ -163,7 +166,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -171,8 +174,9 @@ describe('ServiceRequestTimeline', () => {
     });
 
     // Click on the "Edit" menu item
+    const editButton = await screen.findByLabelText('Edit ' + getReferenceString(comment));
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Edit ' + getReferenceString(comment)));
+      fireEvent.click(editButton);
     });
   });
 
@@ -189,7 +193,7 @@ describe('ServiceRequestTimeline', () => {
     await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -197,8 +201,9 @@ describe('ServiceRequestTimeline', () => {
     });
 
     // Click on the "Delete" menu item
+    const deleteButton = await screen.findByLabelText('Delete ' + getReferenceString(comment));
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Delete ' + getReferenceString(comment)));
+      fireEvent.click(deleteButton);
     });
   });
 });

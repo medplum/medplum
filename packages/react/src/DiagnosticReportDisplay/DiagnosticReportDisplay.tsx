@@ -22,9 +22,9 @@ import { StatusBadge } from '../StatusBadge/StatusBadge';
 import classes from './DiagnosticReportDisplay.module.css';
 
 export interface DiagnosticReportDisplayProps {
-  value?: DiagnosticReport | Reference<DiagnosticReport>;
-  hideObservationNotes?: boolean;
-  hideSpecimenInfo?: boolean;
+  readonly value?: DiagnosticReport | Reference<DiagnosticReport>;
+  readonly hideObservationNotes?: boolean;
+  readonly hideSpecimenInfo?: boolean;
 }
 
 DiagnosticReportDisplay.defaultProps = {
@@ -77,7 +77,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 }
 
 interface DiagnosticReportHeaderProps {
-  value: DiagnosticReport;
+  readonly value: DiagnosticReport;
 }
 
 function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Element {
@@ -153,9 +153,9 @@ function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
 }
 
 export interface ObservationTableProps {
-  value?: Observation[] | Reference<Observation>[];
-  ancestorIds?: string[];
-  hideObservationNotes?: boolean;
+  readonly value?: Observation[] | Reference<Observation>[];
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
@@ -184,9 +184,9 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
 }
 
 interface ObservationRowGroupProps {
-  value?: Observation[] | Reference<Observation>[];
-  ancestorIds?: string[];
-  hideObservationNotes?: boolean;
+  readonly value?: Observation[] | Reference<Observation>[];
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
@@ -205,9 +205,9 @@ function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
 }
 
 interface ObservationRowProps {
-  value: Observation | Reference<Observation>;
-  ancestorIds?: string[];
-  hideObservationNotes?: boolean;
+  readonly value: Observation | Reference<Observation>;
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
@@ -277,7 +277,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
 }
 
 interface ObservationValueDisplayProps {
-  value?: Observation | ObservationComponent;
+  readonly value?: Observation | ObservationComponent;
 }
 
 function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Element | null {
@@ -286,7 +286,7 @@ function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Eleme
 }
 
 interface ReferenceRangeProps {
-  value?: ObservationReferenceRange[];
+  readonly value?: ObservationReferenceRange[];
 }
 
 function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {

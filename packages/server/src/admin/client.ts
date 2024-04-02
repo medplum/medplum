@@ -9,9 +9,9 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { Repository, systemRepo } from '../fhir/repo';
-import { generateSecret } from '../oauth/keys';
 import { getAuthenticatedContext } from '../context';
+import { Repository, getSystemRepo } from '../fhir/repo';
+import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const createClientValidator = makeValidationMiddleware([
@@ -57,6 +57,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     identityProvider: request.identityProvider,
   });
 
+  const systemRepo = getSystemRepo();
   await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,

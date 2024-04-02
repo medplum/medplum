@@ -1,7 +1,6 @@
 import { OperationOutcomeError, append, conflict } from '@medplum/core';
-import { AsyncLocalStorage } from 'async_hooks';
+import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
-import Cursor from 'pg-cursor';
 import { env } from 'process';
 
 const DEBUG = env['SQL_DEBUG'];
@@ -10,6 +9,7 @@ export enum ColumnType {
   UUID = 'uuid',
   TIMESTAMP = 'timestamp',
   TEXT = 'text',
+  TSTZRANGE = 'tstzrange',
 }
 
 export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
@@ -105,6 +105,30 @@ export const Operator = {
     sql.append('||');
     sql.appendColumn(parameter as Column);
   },
+  RANGE_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' && ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' >> ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_LEFT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' << ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
 };
 
 function simpleBinaryOperator(operator: string): OperatorFunc {
@@ -145,6 +169,10 @@ export class Condition implements Expression {
     readonly parameter: any,
     readonly parameterType?: string
   ) {
+    if (operator === 'ARRAY_CONTAINS' && !parameterType) {
+      throw new Error('ARRAY_CONTAINS requires paramType');
+    }
+
     this.column = getColumn(column);
   }
 
@@ -199,10 +227,38 @@ export class Disjunction extends Connective {
   }
 }
 
+export class Exists implements Expression {
+  constructor(readonly selectQuery: SelectQuery) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('EXISTS(');
+    this.selectQuery.buildSql(sql);
+    sql.append(')');
+  }
+}
+
+export class Union implements Expression {
+  readonly queries: SelectQuery[];
+  constructor(...queries: SelectQuery[]) {
+    this.queries = queries;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    for (let i = 0; i < this.queries.length; i++) {
+      if (i > 0) {
+        sql.append(' UNION ');
+      }
+      sql.append('(');
+      this.queries[i].buildSql(sql);
+      sql.append(')');
+    }
+  }
+}
+
 export class Join {
   constructor(
     readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
-    readonly joinItem: string,
+    readonly joinItem: SelectQuery | string,
     readonly joinAlias: string,
     readonly onExpression: Expression
   ) {}
@@ -217,10 +273,6 @@ export class OrderBy {
     readonly column: Column,
     readonly descending?: boolean
   ) {}
-}
-
-export interface Expression {
-  buildSql(sql: SqlBuilder): void;
 }
 
 export class SqlBuilder {
@@ -350,18 +402,27 @@ export abstract class BaseQuery {
   }
 }
 
-export class SelectQuery extends BaseQuery {
+interface CTE {
+  name: string;
+  expr: Expression;
+  recursive?: boolean;
+}
+
+export class SelectQuery extends BaseQuery implements Expression {
+  readonly innerQuery?: SelectQuery | Union;
   readonly distinctOns: Column[];
   readonly columns: Column[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
+  with?: CTE;
   limit_: number;
   offset_: number;
   joinCount = 0;
 
-  constructor(tableName: string) {
+  constructor(tableName: string, innerQuery?: SelectQuery | Union) {
     super(tableName);
+    this.innerQuery = innerQuery;
     this.distinctOns = [];
     this.columns = [];
     this.joins = [];
@@ -369,6 +430,11 @@ export class SelectQuery extends BaseQuery {
     this.orderBys = [];
     this.limit_ = 0;
     this.offset_ = 0;
+  }
+
+  withRecursive(name: string, expr: Expression): this {
+    this.with = { name, expr: expr, recursive: true };
+    return this;
   }
 
   distinctOn(column: Column | string): this {
@@ -391,12 +457,12 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joinCount}`;
   }
 
-  innerJoin(joinItem: string, joinAlias: string, onExpression: Expression): this {
+  innerJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
 
-  leftJoin(joinItem: string, joinAlias: string, onExpression: Expression): this {
+  leftJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join('LEFT JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
@@ -425,6 +491,16 @@ export class SelectQuery extends BaseQuery {
     if (this.explain) {
       sql.append('EXPLAIN ');
     }
+    if (this.with) {
+      sql.append('WITH ');
+      if (this.with.recursive) {
+        sql.append('RECURSIVE ');
+      }
+      sql.appendIdentifier(this.with.name);
+      sql.append(' AS (');
+      this.with.expr.buildSql(sql);
+      sql.append(') ');
+    }
     sql.append('SELECT ');
     this.buildDistinctOn(sql);
     this.buildColumns(sql);
@@ -450,33 +526,6 @@ export class SelectQuery extends BaseQuery {
     return sql.execute(conn);
   }
 
-  async executeCursor(pool: Pool, callback: (row: any) => Promise<void>): Promise<void> {
-    callback = AsyncLocalStorage.bind(callback);
-    const BATCH_SIZE = 100;
-
-    const sql = new SqlBuilder();
-    this.buildSql(sql);
-
-    const client = await pool.connect();
-    try {
-      const cursor = client.query(new Cursor(sql.toString(), sql.getValues()));
-      try {
-        let hasMore = true;
-        while (hasMore) {
-          const rows = await cursor.read(BATCH_SIZE);
-          for (const row of rows) {
-            await callback(row);
-          }
-          hasMore = rows.length === BATCH_SIZE;
-        }
-      } finally {
-        await cursor.close();
-      }
-    } finally {
-      client.release();
-    }
-  }
-
   private buildDistinctOn(sql: SqlBuilder): void {
     if (this.distinctOns.length > 0) {
       sql.append('DISTINCT ON (');
@@ -493,6 +542,9 @@ export class SelectQuery extends BaseQuery {
   }
 
   private buildColumns(sql: SqlBuilder): void {
+    if (this.columns.length === 0) {
+      throw new Error('No columns selected');
+    }
     let first = true;
     for (const column of this.columns) {
       if (!first) {
@@ -505,11 +557,24 @@ export class SelectQuery extends BaseQuery {
 
   private buildFrom(sql: SqlBuilder): void {
     sql.append(' FROM ');
+
+    if (this.innerQuery) {
+      sql.append('(');
+      this.innerQuery.buildSql(sql);
+      sql.append(') AS ');
+    }
+
     sql.appendIdentifier(this.tableName);
 
     for (const join of this.joins) {
       sql.append(` ${join.joinType} `);
-      sql.appendIdentifier(join.joinItem);
+      if (join.joinItem instanceof SelectQuery) {
+        sql.append('(');
+        join.joinItem.buildSql(sql);
+        sql.append(')');
+      } else {
+        sql.appendIdentifier(join.joinItem);
+      }
       sql.append(' AS ');
       sql.appendIdentifier(join.joinAlias);
       sql.append(' ON ');
@@ -537,13 +602,7 @@ export class SelectQuery extends BaseQuery {
 
     for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
-      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
-        sql.append('MIN(');
-      }
       sql.appendColumn(orderBy.column);
-      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
-        sql.append(')');
-      }
       if (orderBy.descending) {
         sql.append(' DESC');
       }
@@ -702,4 +761,17 @@ function getColumn(column: Column | string, defaultTableName?: string): Column {
   } else {
     return column;
   }
+}
+
+export function periodToRangeString(period: Period): string | undefined {
+  if (period.start && period.end) {
+    return `[${period.start},${period.end}]`;
+  }
+  if (period.start) {
+    return `[${period.start},]`;
+  }
+  if (period.end) {
+    return `[,${period.end}]`;
+  }
+  return undefined;
 }

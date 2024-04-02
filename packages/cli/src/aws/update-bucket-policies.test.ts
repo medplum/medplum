@@ -146,7 +146,7 @@ describe('update-bucket-policies command', () => {
     );
 
     await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'dev']);
-    expect(console.log).toBeCalledWith('App bucket policy:');
+    expect(console.log).toHaveBeenCalledWith('App bucket policy:');
   });
 
   test('Config not found', async () => {
@@ -154,7 +154,7 @@ describe('update-bucket-policies command', () => {
 
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
-    expect(console.log).toBeCalledWith('Config not found: not-found');
+    expect(console.log).toHaveBeenCalledWith('Config not found: not-found (medplum.not-found.config.json)');
   });
 
   test('Stack not found', async () => {
@@ -165,20 +165,20 @@ describe('update-bucket-policies command', () => {
     (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
 
     await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found: not-found');
+    expect(console.log).toHaveBeenCalledWith('Stack not found: not-found');
   });
 
   describe('updateBucketPolicy', () => {
     test('Bucket not found', async () => {
       console.log = jest.fn();
       await updateBucketPolicy('App', undefined, undefined, undefined, {});
-      expect(console.log).toBeCalledWith('App bucket not found');
+      expect(console.log).toHaveBeenCalledWith('App bucket not found');
     });
 
     test('Distribution not found', async () => {
       console.log = jest.fn();
       await updateBucketPolicy('App', { PhysicalResourceId: 'x' } as StackResource, undefined, undefined, {});
-      expect(console.log).toBeCalledWith('App distribution not found');
+      expect(console.log).toHaveBeenCalledWith('App distribution not found');
     });
 
     test('OAI not found', async () => {
@@ -190,7 +190,7 @@ describe('update-bucket-policies command', () => {
         undefined,
         {}
       );
-      expect(console.log).toBeCalledWith('App OAI not found');
+      expect(console.log).toHaveBeenCalledWith('App OAI not found');
     });
 
     test('Dry run', async () => {
@@ -202,7 +202,7 @@ describe('update-bucket-policies command', () => {
         { PhysicalResourceId: 'x' } as StackResource,
         { dryrun: true }
       );
-      expect(console.log).toBeCalledWith('Dry run - skipping updates');
+      expect(console.log).toHaveBeenCalledWith('Dry run - skipping updates');
     });
   });
 });

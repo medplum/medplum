@@ -1,4 +1,4 @@
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import {
   ActivityDefinition,
   Bundle,
@@ -13,7 +13,7 @@ import {
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { matchesSearchRequest } from './match';
-import { Operator, SearchRequest, parseSearchDefinition } from './search';
+import { Operator, SearchRequest, parseSearchRequest } from './search';
 
 // Dimensions:
 // 1. Search parameter type
@@ -27,8 +27,9 @@ describe('Search matching', () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
   });
 
   test('Matches resource type', () => {
@@ -308,25 +309,25 @@ describe('Search matching', () => {
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'preliminary' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status=cancelled')
+          parseSearchRequest('DiagnosticReport?status=cancelled')
         )
       ).toBe(false);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'preliminary' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status:not=cancelled')
+          parseSearchRequest('DiagnosticReport?status:not=cancelled')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'cancelled' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status=cancelled')
+          parseSearchRequest('DiagnosticReport?status=cancelled')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'DiagnosticReport', status: 'cancelled' } as DiagnosticReport,
-          parseSearchDefinition('DiagnosticReport?status:not=cancelled')
+          parseSearchRequest('DiagnosticReport?status:not=cancelled')
         )
       ).toBe(false);
 
@@ -335,25 +336,25 @@ describe('Search matching', () => {
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'ORDERED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail=VOIDED,CANCELLED')
         )
       ).toBe(false);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'ORDERED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'VOIDED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail=VOIDED,CANCELLED')
         )
       ).toBe(true);
       expect(
         matchesSearchRequest(
           { resourceType: 'ServiceRequest', orderDetail: [{ text: 'VOIDED' }] } as ServiceRequest,
-          parseSearchDefinition('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
+          parseSearchRequest('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
         )
       ).toBe(false);
     });

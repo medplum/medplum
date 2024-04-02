@@ -8,8 +8,8 @@ import ConnectionHandler from './ConnectionHandler';
 import TopicLoader from './TopicLoader';
 
 type FhircastMessageDisplayProps = {
-  eventNo: number;
-  message: FhircastMessagePayload<'Patient-open'>;
+  readonly eventNo: number;
+  readonly message: FhircastMessagePayload<'Patient-open'>;
 };
 
 function FhircastMessageLabel(props: FhircastMessageDisplayProps): JSX.Element {

@@ -29,14 +29,21 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { withTestContext } from '../test.setup';
-import { getRepoForLogin } from './accesspolicy';
-import { Repository, systemRepo } from './repo';
+import { createTestProject, withTestContext } from '../test.setup';
+import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
+import { getSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
+  let testProject: Project;
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
+  });
+
+  beforeEach(async () => {
+    testProject = (await createTestProject()).project;
   });
 
   afterAll(async () => {
@@ -72,26 +79,27 @@ describe('AccessPolicy', () => {
       }
     }));
 
-  test('Access policy restricting search', async () => {
-    // Empty access policy effectively blocks all reads and writes
-    const accessPolicy: AccessPolicy = {
-      resourceType: 'AccessPolicy',
-    };
+  test('Access policy restricting search', () =>
+    withTestContext(async () => {
+      // Empty access policy effectively blocks all reads and writes
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+      };
 
-    const repo2 = new Repository({
-      author: {
-        reference: 'Practitioner/123',
-      },
-      accessPolicy,
-    });
+      const repo2 = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
 
-    try {
-      await repo2.search({ resourceType: 'Patient' });
-      fail('Expected error');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
-    }
-  });
+      try {
+        await repo2.search({ resourceType: 'Patient' });
+        fail('Expected error');
+      } catch (err) {
+        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+      }
+    }));
 
   test('Access policy restricting write', () =>
     withTestContext(async () => {
@@ -598,27 +606,22 @@ describe('AccessPolicy', () => {
 
   test('Multiple entries per resource type', () =>
     withTestContext(async () => {
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'ServiceRequest',
-            criteria: `ServiceRequest?status=active`,
-          },
-          {
-            resourceType: 'ServiceRequest',
-            criteria: `ServiceRequest?status=completed`,
-            readonly: true,
-          },
-        ],
-      };
-
-      const repo = new Repository({
-        extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'ServiceRequest',
+              criteria: `ServiceRequest?status=active`,
+            },
+            {
+              resourceType: 'ServiceRequest',
+              criteria: `ServiceRequest?status=completed`,
+              readonly: true,
+            },
+          ],
         },
-        accessPolicy: accessPolicy,
       });
 
       // User can create a ServiceRequest with status=active
@@ -653,7 +656,6 @@ describe('AccessPolicy', () => {
 
   test('ClientApplication with account restriction', () =>
     withTestContext(async () => {
-      const project = randomUUID();
       const account = 'Organization/' + randomUUID();
 
       // Create the access policy
@@ -703,12 +705,13 @@ describe('AccessPolicy', () => {
         {
           resourceType: 'ProjectMembership',
           project: {
-            reference: 'Project/' + project,
+            reference: 'Project/' + testProject.id,
           },
           profile: createReference(clientApplication as ClientApplication),
           accessPolicy: createReference(accessPolicy),
           user: createReference(clientApplication),
-        }
+        },
+        testProject
       );
 
       // Create a Patient using the ClientApplication
@@ -778,8 +781,6 @@ describe('AccessPolicy', () => {
 
   test('ClientApplication with access policy', () =>
     withTestContext(async () => {
-      const project = randomUUID();
-
       // Create the access policy
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
@@ -809,12 +810,13 @@ describe('AccessPolicy', () => {
         {
           resourceType: 'ProjectMembership',
           project: {
-            reference: 'Project/' + project,
+            reference: 'Project/' + testProject.id,
           },
           profile: createReference(clientApplication as ClientApplication),
           accessPolicy: createReference(accessPolicy),
           user: createReference(clientApplication),
-        }
+        },
+        testProject
       );
 
       // Create a Patient using the ClientApplication
@@ -1437,10 +1439,9 @@ describe('AccessPolicy', () => {
 
   test('Compound parameterized access policy', () =>
     withTestContext(async () => {
-      const project = randomUUID();
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        project,
+        projects: [testProject.id as string],
         strictMode: true,
         extendedMode: true,
       });
@@ -1465,7 +1466,7 @@ describe('AccessPolicy', () => {
       const membership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
         user: { reference: 'User/' + randomUUID() },
-        project: { reference: 'Project/' + project },
+        project: { reference: 'Project/' + testProject.id },
         profile: { reference: 'Practitioner/' + randomUUID() },
         access: [
           {
@@ -1479,7 +1480,7 @@ describe('AccessPolicy', () => {
         ],
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership);
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, testProject);
 
       const check1 = await repo2.readResource<Patient>('Patient', p1.id as string);
       expect(check1.id).toBe(p1.id);
@@ -1497,10 +1498,9 @@ describe('AccessPolicy', () => {
 
   test('String parameters', () =>
     withTestContext(async () => {
-      const project = randomUUID();
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        project,
+        projects: [testProject.id as string],
         strictMode: true,
         extendedMode: true,
       });
@@ -1520,8 +1520,9 @@ describe('AccessPolicy', () => {
 
       const membership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
+        meta: { project: testProject.id },
         user: { reference: 'User/' + randomUUID() },
-        project: { reference: 'Project/' + project },
+        project: { reference: 'Project/' + testProject.id },
         profile: { reference: 'Practitioner/' + randomUUID() },
         access: [
           {
@@ -1531,7 +1532,7 @@ describe('AccessPolicy', () => {
         ],
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership);
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, testProject);
 
       const check1 = await repo2.readResource<Task>('Task', t1.id as string);
       expect(check1.id).toBe(t1.id);
@@ -1550,7 +1551,7 @@ describe('AccessPolicy', () => {
 
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        project: project.id,
+        projects: [project.id as string],
         strictMode: true,
         extendedMode: true,
       });
@@ -1593,7 +1594,7 @@ describe('AccessPolicy', () => {
         sendEmail: false,
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, true, true, true);
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
 
       const check1 = await repo2.readResource<Task>('Patient', patient.id as string);
       expect(check1.id).toBe(patient.id);
@@ -1633,7 +1634,7 @@ describe('AccessPolicy', () => {
         admin: true,
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, true, true);
+      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
 
       const check1 = await repo2.readResource<Project>('Project', project.id as string);
       expect(check1.id).toEqual(project.id);
@@ -1707,8 +1708,8 @@ describe('AccessPolicy', () => {
         admin: false,
       });
 
-      const adminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, adminMembership, true, true);
-      const nonAdminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, nonAdminMembership, true, true);
+      const adminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, adminMembership, project, true);
+      const nonAdminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, nonAdminMembership, project, true);
       const account1 = randomUUID();
       const account2 = randomUUID();
 
@@ -1753,7 +1754,7 @@ describe('AccessPolicy', () => {
   test('Mutex resource type policies with hidden fields', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
-      const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+      const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization', name: 'Test2' });
       const orgRef = createReference(org);
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
@@ -1775,7 +1776,7 @@ describe('AccessPolicy', () => {
       });
       const repo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        project: project.id,
+        projects: [project.id as string],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -1841,17 +1842,17 @@ describe('AccessPolicy', () => {
       const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
       const repo1 = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        project: project1.id,
+        projects: [project1.id as string],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
         checkReferencesOnWrite: true,
       });
 
-      const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
       const repo2 = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        project: project2.id,
+        projects: [project2.id as string],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -1905,7 +1906,7 @@ describe('AccessPolicy', () => {
       });
 
       // Get a repo for the user
-      const repo = await getRepoForLogin(login, updatedMembership, true, true, true);
+      const repo = await getRepoForLogin(login, updatedMembership, project, true);
 
       // Try to search for StructureDefinitions, should succeed
       const bundle1 = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
@@ -1937,7 +1938,7 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const repo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        project: randomUUID(),
+        projects: [testProject.id as string],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -1968,5 +1969,72 @@ describe('AccessPolicy', () => {
         const outcome = normalizeOperationOutcome(err);
         expect(outcome.issue?.[0]?.code).toEqual('forbidden');
       }
+    }));
+
+  test('Repo with multiple Projects', async () =>
+    withTestContext(async () => {
+      const patientData: Patient = {
+        resourceType: 'Patient',
+      };
+
+      const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const repo1 = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        projects: [project1.id as string],
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        checkReferencesOnWrite: true,
+      });
+
+      const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
+      const repo2 = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        projects: [project2.id as string, project1.id as string],
+        projectAdmin: true,
+        strictMode: true,
+        extendedMode: true,
+        checkReferencesOnWrite: true,
+      });
+
+      const patient1 = await repo1.createResource(patientData);
+      const patient2 = await repo2.createResource(patientData);
+
+      await expect(repo1.readResource('Patient', patient1.id as string)).resolves.toEqual(patient1);
+      await expect(repo1.readResource('Patient', patient2.id as string)).rejects.toBeInstanceOf(Error);
+      await expect(repo2.readResource('Patient', patient1.id as string)).resolves.toEqual(patient1);
+      await expect(repo2.readResource('Patient', patient2.id as string)).resolves.toEqual(patient2);
+    }));
+
+  test('Project Admin cannot link Projects', async () =>
+    withTestContext(async () => {
+      const { project, membership, login } = await registerNew({
+        firstName: 'Link',
+        lastName: 'Test',
+        projectName: 'Project link test',
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      expect(project.link).toBeUndefined();
+      const repo = await getRepoForLogin(login, membership, project, true);
+
+      project.link = [{ project: { reference: 'Project/foo' } }, { project: { reference: 'Project/bar' } }];
+
+      const updatedProject = await repo.updateResource(project);
+      expect(updatedProject.link).toBeUndefined();
+    }));
+
+  test('Build access policy with empty access array', async () =>
+    withTestContext(async () => {
+      const accessPolicy = await buildAccessPolicy({
+        resourceType: 'ProjectMembership',
+        project: createReference(testProject),
+        user: { reference: 'User/123' },
+        profile: { reference: 'Practitioner/123' },
+        access: [],
+      });
+
+      expect(accessPolicy).toBeDefined();
+      expect(accessPolicy.resource?.find((r) => r.resourceType === '*')).toBeDefined();
     }));
 });

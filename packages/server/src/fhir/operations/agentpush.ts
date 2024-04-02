@@ -1,20 +1,12 @@
-import {
-  AgentTransmitRequest,
-  allOk,
-  badRequest,
-  BaseAgentRequestMessage,
-  getReferenceString,
-  Operator,
-  parseSearchDefinition,
-} from '@medplum/core';
-import { Agent, Device } from '@medplum/fhirtypes';
+import { AgentTransmitRequest, allOk, badRequest, BaseAgentRequestMessage, getReferenceString } from '@medplum/core';
+import { Agent } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
 import { sendOutcome } from '../outcomes';
-import { Repository } from '../repo';
+import { getAgentForRequest, getDevice } from './agentutils';
 import { parseParameters } from './utils/parameters';
 
 export interface AgentPushParameters {
@@ -22,7 +14,11 @@ export interface AgentPushParameters {
   contentType: string;
   destination: string;
   waitForResponse?: boolean;
+  waitTimeout?: number;
 }
+
+const DEFAULT_WAIT_TIMEOUT = 10000;
+const MAX_WAIT_TIMEOUT = 60000;
 
 /**
  * Handles HTTP requests for the Agent $push operation.
@@ -53,6 +49,12 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
 
   if (!params.destination) {
     sendOutcome(res, badRequest('Missing destination parameter'));
+    return;
+  }
+
+  const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
+  if (waitTimeout < 0 || waitTimeout > MAX_WAIT_TIMEOUT) {
+    sendOutcome(res, badRequest('Invalid wait timeout'));
     return;
   }
 
@@ -96,7 +98,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   const timer = setTimeout(() => {
     cleanup();
     sendOutcome(res, badRequest('Timeout'));
-  }, 5000);
+  }, waitTimeout);
 
   function cleanup(): void {
     redisSubscriber.disconnect();
@@ -110,49 +112,6 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // 1. The agent will respond with a message on the channel
   // 2. The timer will expire and the request will timeout
 });
-
-/**
- * Returns the Agent for the execute request.
- * If using "/Agent/:id/$execute", then the agent ID is read from the path parameter.
- * If using "/Agent/$execute?identifier=...", then the agent is searched by identifier.
- * Otherwise, returns undefined.
- * @param req - The HTTP request.
- * @param repo - The repository.
- * @returns The agent, or undefined if not found.
- */
-async function getAgentForRequest(req: Request, repo: Repository): Promise<Agent | undefined> {
-  // Prefer to search by ID from path parameter
-  const { id } = req.params;
-  if (id) {
-    return repo.readResource<Agent>('Agent', id);
-  }
-
-  // Otherwise, search by identifier
-  const { identifier } = req.query;
-  if (identifier && typeof identifier === 'string') {
-    return repo.searchOne<Agent>({
-      resourceType: 'Agent',
-      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
-    });
-  }
-
-  // If no agent ID or identifier, return undefined
-  return undefined;
-}
-
-async function getDevice(repo: Repository, destination: string): Promise<Device | undefined> {
-  if (destination.startsWith('Device/')) {
-    try {
-      return await repo.readReference<Device>({ reference: destination });
-    } catch (err) {
-      return undefined;
-    }
-  }
-  if (destination.startsWith('Device?')) {
-    return repo.searchOne<Device>(parseSearchDefinition(destination));
-  }
-  return undefined;
-}
 
 async function publishMessage(agent: Agent, message: BaseAgentRequestMessage): Promise<number> {
   return getRedis().publish(getReferenceString(agent), JSON.stringify(message));

@@ -2,7 +2,7 @@ import { showNotification } from '@mantine/notifications';
 import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Document } from '../Document/Document';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
@@ -46,6 +46,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   } = props;
   const medplum = useMedplum();
   const [login, setLogin] = useState<string>();
+  const loginRequested = useRef(false);
   const [mfaRequired, setAuthenticatorRequired] = useState(false);
   const [memberships, setMemberships] = useState<ProjectMembership[]>();
 
@@ -102,16 +103,17 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     // The `useMedplum` hook will return a new instance of the MedplumClient on login
     // We do not want to request the login status again in that case
     // Only request login status once
-    if (loginCode && !login) {
+    if (loginCode && !loginRequested.current && !login) {
+      loginRequested.current = true;
       medplum
         .get('auth/login/' + loginCode)
         .then(handleAuthResponse)
         .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }
-  }, [medplum, loginCode, login, handleAuthResponse]);
+  }, [medplum, loginCode, loginRequested, login, handleAuthResponse]);
 
   return (
-    <Document width={450}>
+    <Document width={450} px="sm" py="md">
       {(() => {
         if (!login) {
           return (

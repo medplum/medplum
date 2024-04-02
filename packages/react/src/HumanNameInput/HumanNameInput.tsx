@@ -51,6 +51,8 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
     });
   }
 
+  const errorPath = props.valuePath ?? path;
+
   return (
     <Group gap="xs" grow wrap="nowrap">
       <NativeSelect
@@ -61,35 +63,35 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
           setUse(e.currentTarget.value as 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden')
         }
         data={['', 'temp', 'old', 'usual', 'official', 'nickname', 'anonymous', 'maiden']}
-        error={getErrorsForInput(outcome, path + '.use')}
+        error={getErrorsForInput(outcome, errorPath + '.use')}
       />
       <TextInput
         placeholder="Prefix"
         name={props.name + '-prefix'}
         defaultValue={value?.prefix?.join(' ')}
         onChange={(e) => setPrefix(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, path + '.prefix')}
+        error={getErrorsForInput(outcome, errorPath + '.prefix')}
       />
       <TextInput
         placeholder="Given"
         name={props.name + '-given'}
         defaultValue={value?.given?.join(' ')}
         onChange={(e) => setGiven(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, path + '.given')}
+        error={getErrorsForInput(outcome, errorPath + '.given')}
       />
       <TextInput
         name={props.name + '-family'}
         placeholder="Family"
         defaultValue={value?.family}
         onChange={(e) => setFamily(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, path + '.family')}
+        error={getErrorsForInput(outcome, errorPath + '.family')}
       />
       <TextInput
         placeholder="Suffix"
         name={props.name + '-suffix'}
         defaultValue={value?.suffix?.join(' ')}
         onChange={(e) => setSuffix(e.currentTarget.value)}
-        error={getErrorsForInput(outcome, path + '.suffix')}
+        error={getErrorsForInput(outcome, errorPath + '.suffix')}
       />
     </Group>
   );

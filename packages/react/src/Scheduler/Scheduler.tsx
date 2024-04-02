@@ -11,8 +11,8 @@ import { ResourceName } from '../ResourceName/ResourceName';
 import classes from './Scheduler.module.css';
 
 export interface SchedulerProps {
-  schedule: Schedule | Reference<Schedule>;
-  questionnaire: Questionnaire | Reference<Questionnaire>;
+  readonly schedule: Schedule | Reference<Schedule>;
+  readonly questionnaire: Questionnaire | Reference<Questionnaire>;
 }
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {

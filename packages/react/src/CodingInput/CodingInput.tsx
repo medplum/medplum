@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodingInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {
-  defaultValue?: Coding;
-  onChange?: (value: Coding | undefined) => void;
+  readonly defaultValue?: Coding;
+  readonly onChange?: (value: Coding | undefined) => void;
 }
 
 export function CodingInput(props: CodingInputProps): JSX.Element {
-  const { defaultValue, onChange, ...rest } = props;
+  const { defaultValue, onChange, withHelpText, ...rest } = props;
   const [value, setValue] = useState<Coding | undefined>(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
@@ -25,6 +25,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
       defaultValue={value && codingToValueSetElement(value)}
       maxValues={1}
       onChange={handleChange}
+      withHelpText={withHelpText ?? true}
       {...rest}
     />
   );

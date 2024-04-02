@@ -1,6 +1,7 @@
 import {
   Attachment,
   CodeableConcept,
+  Coding,
   Device,
   Extension,
   Identifier,
@@ -15,9 +16,9 @@ import {
   Reference,
   RelatedPerson,
   Resource,
-  ResourceType,
 } from '@medplum/fhirtypes';
-import { formatHumanName } from './format';
+import { getTypedPropertyValue } from './fhirpath/utils';
+import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference } from './types';
 
@@ -77,15 +78,15 @@ export function resolveId(input: Reference | Resource | undefined): string | und
  * @param reference - A reference to a FHIR resource.
  * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
  */
-export function parseReference(reference: Reference | undefined): [ResourceType, string] {
+export function parseReference<T extends Resource>(reference: Reference<T> | undefined): [T['resourceType'], string] {
   if (reference?.reference === undefined) {
     throw new OperationOutcomeError(validationError('Reference missing reference property.'));
   }
-  const [type, id] = reference.reference.split('/');
+  const [type, id] = reference.reference.split('/') as [T['resourceType'] | '', string];
   if (type === '' || id === '' || id === undefined) {
     throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
-  return [type as ResourceType, id];
+  return [type, id];
 }
 
 /**
@@ -119,9 +120,10 @@ export function getDisplayString(resource: Resource): string {
       return deviceName;
     }
   }
-  if (resource.resourceType === 'Observation') {
-    if ('code' in resource && resource.code?.text) {
-      return resource.code.text;
+  if (resource.resourceType === 'MedicationRequest') {
+    const code = resource.medicationCodeableConcept;
+    if (code) {
+      return formatCodeableConcept(code);
     }
   }
   if (resource.resourceType === 'User') {
@@ -131,6 +133,18 @@ export function getDisplayString(resource: Resource): string {
   }
   if ('name' in resource && resource.name && typeof resource.name === 'string') {
     return resource.name;
+  }
+  if ('code' in resource && resource.code) {
+    let code = resource.code;
+    if (Array.isArray(code)) {
+      code = code[0];
+    }
+    if (isCodeableConcept(code)) {
+      return formatCodeableConcept(code);
+    }
+    if (isTextObject(code)) {
+      return code.text;
+    }
   }
   return getReferenceString(resource);
 }
@@ -191,7 +205,7 @@ export function getImageSrc(resource: Resource): string | undefined {
 }
 
 function getPhotoImageSrc(photo: Attachment): string | undefined {
-  if (photo.url && photo.contentType && photo.contentType.startsWith('image/')) {
+  if (photo.url && photo.contentType?.startsWith('image/')) {
     return photo.url;
   }
   return undefined;
@@ -387,15 +401,17 @@ export function setIdentifier(resource: Resource & { identifier?: Identifier[] }
  * @returns The extension value if found; undefined otherwise.
  */
 export function getExtensionValue(resource: any, ...urls: string[]): string | undefined {
-  // Let curr be the current resource or extension. Extensions can be nested.
-  let curr: any = resource;
-
-  // For each of the urls, try to find a matching nested extension.
-  for (let i = 0; i < urls.length && curr; i++) {
-    curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
+  const extension = getExtension(resource, ...urls);
+  if (!extension) {
+    return undefined;
   }
 
-  return curr?.valueString as string | undefined;
+  const typedValue = getTypedPropertyValue({ type: 'Extension', value: extension }, 'value[x]');
+  if (!typedValue) {
+    return undefined;
+  }
+
+  return Array.isArray(typedValue) ? typedValue[0].value : typedValue.value;
 }
 
 /**
@@ -606,7 +622,7 @@ function deepIncludesObject(value: { [key: string]: unknown }, pattern: { [key: 
  * @returns A deep clone of the input.
  */
 export function deepClone<T>(input: T): T {
-  return JSON.parse(JSON.stringify(input)) as T;
+  return input === undefined ? input : (JSON.parse(JSON.stringify(input)) as T);
 }
 
 /**
@@ -633,7 +649,46 @@ export function isObject(obj: unknown): obj is Record<string, unknown> {
  * @returns True if the input array is an array of strings.
  */
 export function isStringArray(arr: any[]): arr is string[] {
-  return arr.every((e) => typeof e === 'string');
+  return arr.every(isString);
+}
+
+/**
+ * Returns true if the input value is a string.
+ * @param value - The candidate value.
+ * @returns True if the input value is a string.
+ */
+export function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+/**
+ * Returns true if the input value is a Coding object.
+ * This is a heuristic check based on the presence of the "code" property.
+ * @param value - The candidate value.
+ * @returns True if the input value is a Coding.
+ */
+export function isCoding(value: unknown): value is Coding & { code: string } {
+  return isObject(value) && 'code' in value && typeof value.code === 'string';
+}
+
+/**
+ * Returns true if the input value is a CodeableConcept object.
+ * This is a heuristic check based on the presence of the "coding" property.
+ * @param value - The candidate value.
+ * @returns True if the input value is a CodeableConcept.
+ */
+export function isCodeableConcept(value: unknown): value is CodeableConcept & { coding: Coding[] } {
+  return isObject(value) && 'coding' in value && Array.isArray(value.coding) && value.coding.every(isCoding);
+}
+
+/**
+ * Returns true if the input value is an object with a string text property.
+ * This is a heuristic check based on the presence of the "text" property.
+ * @param value - The candidate value.
+ * @returns True if the input value is a text object.
+ */
+export function isTextObject(value: unknown): value is { text: string } {
+  return isObject(value) && 'text' in value && typeof value.text === 'string';
 }
 
 // Precompute hex octets
@@ -681,6 +736,24 @@ export function capitalize(word: string): string {
 
 export function isLowerCase(c: string): boolean {
   return c === c.toLowerCase() && c !== c.toUpperCase();
+}
+
+export function isComplexTypeCode(code: string): boolean {
+  return code.length > 0 && code.startsWith(code[0].toUpperCase());
+}
+
+/**
+ * Returns the difference between two paths which is often suitable to use as a key in a `Record<string, InternalSchemaElement>`
+ * @param parentPath - The parent path that will be removed from `path`.
+ * @param path - The element path that should be a child of `parentPath`.
+ * @returns - The difference between `path` and `parentPath` or `undefined` if `path` is not a child of `parentPath`.
+ */
+export function getPathDifference(parentPath: string, path: string): string | undefined {
+  const parentPathPrefix = parentPath + '.';
+  if (path.startsWith(parentPathPrefix)) {
+    return path.slice(parentPathPrefix.length);
+  }
+  return undefined;
 }
 
 /**
@@ -930,19 +1003,27 @@ export const sleep = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
+/**
+ * Splits a string into an array of strings using the specified delimiter.
+ * Unlike the built-in split function, this function will split the string into a maximum of exactly n parts.
+ * Trailing empty strings are included in the result.
+ * @param str - The string to split.
+ * @param delim - The delimiter.
+ * @param n - The maximum number of parts to split the string into.
+ * @returns The resulting array of strings.
+ */
 export function splitN(str: string, delim: string, n: number): string[] {
   const result: string[] = [];
   for (let i = 0; i < n - 1; i++) {
-    let delimIndex = str.indexOf(delim);
+    const delimIndex = str.indexOf(delim);
     if (delimIndex < 0) {
-      delimIndex = str.length;
+      break;
+    } else {
+      result.push(str.slice(0, delimIndex));
+      str = str.slice(delimIndex + delim.length);
     }
-    result.push(str.slice(0, delimIndex));
-    str = str.slice(delimIndex + delim.length);
   }
-  if (str) {
-    result.push(str);
-  }
+  result.push(str);
   return result;
 }
 
@@ -970,4 +1051,20 @@ export function append<T>(array: T[] | undefined, value: T): T[] {
   }
   array.push(value);
   return array;
+}
+
+export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
+  return new URL(path, baseUrl).toString().replace('http://', 'ws://').replace('https://', 'wss://');
+}
+
+/**
+ * Sorts an array of strings in place using the localeCompare method.
+ *
+ * This method will mutate the input array.
+ *
+ * @param array - The array of strings to sort.
+ * @returns The sorted array of strings.
+ */
+export function sortStringArray(array: string[]): string[] {
+  return array.sort((a, b) => a.localeCompare(b));
 }

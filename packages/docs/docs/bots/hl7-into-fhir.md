@@ -6,7 +6,7 @@ sidebar_position: 8
 
 HL7 interfaces are common in healthcare, and widely supported by legacy EHRs, RIS/PACS systems, lab machines and more. Some common HL7 feeds include:
 
-- Admission, Discharge and Transfer fees (ADT Feed)
+- Admission, Discharge and Transfer feeds (ADT Feed)
 - Observation Results (OBX Feed)
 - Scheduling Information Unsolicited (SIU feed)
 

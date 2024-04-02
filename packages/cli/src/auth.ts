@@ -1,4 +1,10 @@
-import { ContentType, getDisplayString, MedplumClient, normalizeErrorString } from '@medplum/core';
+import {
+  ContentType,
+  getDisplayString,
+  MEDPLUM_CLI_CLIENT_ID,
+  MedplumClient,
+  normalizeErrorString,
+} from '@medplum/core';
 import { exec } from 'child_process';
 import { createServer } from 'http';
 import { platform } from 'os';
@@ -6,7 +12,7 @@ import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 import { jwtAssertionLogin, jwtBearerLogin, Profile, saveProfile } from './utils';
 
-const clientId = 'medplum-cli';
+const clientId = MEDPLUM_CLI_CLIENT_ID;
 const redirectUri = 'http://localhost:9615';
 
 export const login = createMedplumCommand('login');
@@ -47,14 +53,20 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
       await jwtAssertionLogin(medplum, profile);
       break;
   }
-
-  console.log('Login successful');
 }
 
 async function startWebServer(medplum: MedplumClient): Promise<void> {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url as string, 'http://localhost:9615');
     const code = url.searchParams.get('code');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200, {
+        Allow: 'GET, POST',
+        'Content-Type': ContentType.TEXT,
+      });
+      res.end('OK');
+      return;
+    }
     if (url.pathname === '/' && code) {
       try {
         const profile = await medplum.processCode(code, { clientId, redirectUri });

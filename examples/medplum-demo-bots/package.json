@@ -1,12 +1,12 @@
 {
   "name": "medplum-demo-bots",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "scripts": {
-    "build": "npm run clean && npm run lint && tsc && node esbuild-script.mjs",
+    "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src/",
     "prettier": "prettier --write .",
@@ -20,31 +20,34 @@
     "trailingComma": "es5"
   },
   "eslintConfig": {
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
     "extends": [
       "@medplum/eslint-config"
-    ]
-  },
-  "dependencies": {
-    "esbuild": "0.19.11"
+    ],
+    "root": true
   },
   "devDependencies": {
-    "@medplum/cli": "3.0.0",
-    "@medplum/core": "3.0.0",
-    "@medplum/eslint-config": "3.0.0",
-    "@medplum/fhirtypes": "3.0.0",
-    "@medplum/mock": "3.0.0",
-    "@types/node": "20.11.5",
+    "@medplum/cli": "3.1.0",
+    "@medplum/core": "3.1.0",
+    "@medplum/eslint-config": "3.1.0",
+    "@medplum/fhirtypes": "3.1.0",
+    "@medplum/mock": "3.1.0",
+    "@types/node": "20.12.2",
     "@types/node-fetch": "2.6.11",
     "@types/ssh2-sftp-client": "9.0.3",
-    "@vitest/coverage-v8": "1.2.1",
-    "@vitest/ui": "1.2.1",
+    "@vitest/coverage-v8": "1.4.0",
+    "@vitest/ui": "1.4.0",
+    "esbuild": "0.20.2",
     "form-data": "4.0.0",
-    "glob": "^10.3.10",
+    "glob": "^10.3.12",
     "node-fetch": "2.7.0",
-    "pdfmake": "0.2.9",
-    "ssh2-sftp-client": "9.1.0",
-    "stripe": "14.12.0",
-    "typescript": "5.3.3",
-    "vitest": "1.2.1"
+    "pdfmake": "0.2.10",
+    "rimraf": "5.0.5",
+    "ssh2-sftp-client": "10.0.3",
+    "stripe": "14.23.0",
+    "typescript": "5.4.3",
+    "vitest": "1.4.0"
   }
 }

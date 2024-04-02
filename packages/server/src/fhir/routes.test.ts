@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { initTestAuth, withTestContext } from '../test.setup';
+import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -160,11 +160,19 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Read resourcex', async () => {
+  test('Read resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+  });
+
+  test('Read resource _pretty', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Patient/${patientId}?_pretty=true`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.text).toEqual(JSON.stringify(res.body, undefined, 2));
   });
 
   test('Read resource invalid UUID', async () => {
@@ -348,6 +356,38 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Update resource with precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"' + patient.meta?.versionId + '"')
+      .send({ ...patient, active: true });
+    expect(res2.status).toBe(200);
+  });
+
+  test('Update resource with failed precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"bad-id"')
+      .send({ ...patient, active: true });
+    expect(res2.status).toBe(412);
+  });
+
   test('Delete resource', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -516,4 +556,77 @@ describe('FHIR Routes', () => {
       .send({});
     expect(res.status).toBe(200);
   });
+
+  test('ProjectMembership with null access policy', async () =>
+    withTestContext(async () => {
+      const adminRegistration = await createTestProject({
+        membership: { admin: true },
+        withRepo: true,
+        withAccessToken: true,
+      });
+      expect(adminRegistration).toBeDefined();
+
+      const normalRegistration = await addTestUser(adminRegistration.project);
+      expect(normalRegistration).toBeDefined();
+
+      const membership = normalRegistration.membership;
+
+      const res1 = await request(app)
+        .get(`/fhir/R4/ProjectMembership/${membership.id}`)
+        .set('Authorization', 'Bearer ' + adminRegistration.accessToken);
+      expect(res1.status).toBe(200);
+
+      const res2 = await request(app)
+        .get(`/fhir/R4/ProjectMembership/${membership.id}`)
+        .set('Authorization', 'Bearer ' + normalRegistration.accessToken);
+      expect(res2.status).toBe(403);
+
+      const res3 = await request(app)
+        .put(`/fhir/R4/ProjectMembership/${membership.id}`)
+        .set('Authorization', 'Bearer ' + normalRegistration.accessToken)
+        .send({ ...membership, accessPolicy: undefined });
+      expect(res3.status).toBe(403);
+    }));
+
+  test('Search multiple resource types with _type', async () =>
+    withTestContext(async () => {
+      const { accessToken } = await createTestProject({ withAccessToken: true });
+
+      const res1 = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Patient' });
+      expect(res1.status).toBe(201);
+
+      const res2 = await request(app)
+        .post('/fhir/R4/Observation')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'test' },
+          subject: { reference: `Patient/${res1.body.id}` },
+        });
+      expect(res2.status).toBe(201);
+
+      const res3 = await request(app)
+        .get('/fhir/R4?_type=Patient,Observation')
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res3.status).toBe(200);
+
+      const patient = res1.body;
+      const obs = res2.body;
+      const bundle = res3.body;
+
+      expect(bundle.entry?.length).toBe(2);
+      expect(bundleContains(bundle, patient)).toBeTruthy();
+      expect(bundleContains(bundle, obs)).toBeTruthy();
+
+      // Also verify that trailing slash works
+      const res4 = await request(app)
+        .get('/fhir/R4/?_type=Patient,Observation')
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res4.status).toBe(200);
+      expect(res4.body).toEqual(res3.body);
+    }));
 });

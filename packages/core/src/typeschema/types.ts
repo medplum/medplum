@@ -74,6 +74,7 @@ export interface SliceDefinition {
   elements: Record<string, InternalSchemaElement>;
   min: number;
   max: number;
+  binding?: ElementDefinitionBinding;
 }
 
 export interface SliceDiscriminator {
@@ -163,11 +164,16 @@ export function isDataTypeLoaded(type: string): boolean {
 }
 
 export function tryGetDataType(type: string, profileUrl?: string): InternalTypeSchema | undefined {
-  return getDataTypesMap(profileUrl)[type];
+  let result: InternalTypeSchema | undefined = getDataTypesMap(profileUrl)[type];
+  if (!result && profileUrl) {
+    // Fallback to base schema if no result found in profileUrl namespace
+    result = getDataTypesMap()[type];
+  }
+  return result;
 }
 
 export function getDataType(type: string, profileUrl?: string): InternalTypeSchema {
-  const schema = getDataTypesMap(profileUrl)[type];
+  const schema = tryGetDataType(type, profileUrl);
   if (!schema) {
     throw new OperationOutcomeError(badRequest('Unknown data type: ' + type));
   }
@@ -367,7 +373,7 @@ class StructureDefinitionParser {
         } while (this.backboneContext && !pathsCompatible(this.backboneContext.path, element?.path));
       } else {
         this.innerTypes.push(this.backboneContext.type);
-        delete this.backboneContext;
+        this.backboneContext = undefined;
       }
     }
     if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path as string)) {
@@ -376,7 +382,7 @@ class StructureDefinitionParser {
       if (this.slicingContext?.current) {
         this.slicingContext.field.slices.push(this.slicingContext.current);
       }
-      delete this.slicingContext;
+      this.slicingContext = undefined;
     }
   }
 
@@ -394,7 +400,8 @@ class StructureDefinitionParser {
     if (element) {
       this.elementIndex[element.path ?? ''] = element;
       if (element.contentReference) {
-        const ref = this.elementIndex[element.contentReference.slice(element.contentReference.indexOf('#') + 1)];
+        const contentRefPath = element.contentReference.slice(element.contentReference.indexOf('#') + 1);
+        const ref = this.elementIndex[contentRefPath];
         if (!ref) {
           return undefined;
         }
@@ -404,6 +411,11 @@ class StructureDefinitionParser {
           path: element.path,
           min: element.min ?? ref.min,
           max: element.max ?? ref.max,
+          base: ref.base ?? {
+            path: contentRefPath,
+            min: ref.min as number,
+            max: ref.max as string,
+          },
           contentReference: element.contentReference,
           definition: element.definition,
         };
@@ -423,7 +435,7 @@ class StructureDefinitionParser {
 
   private parseSliceStart(element: ElementDefinition): void {
     if (!this.slicingContext) {
-      throw new Error('Invalid slice start before discriminator: ' + element.sliceName);
+      throw new Error(`Invalid slice start before discriminator: ${element.sliceName} (${element.id})`);
     }
     if (this.slicingContext.current) {
       this.slicingContext.field.slices.push(this.slicingContext.current);
@@ -436,6 +448,7 @@ class StructureDefinitionParser {
       elements: {},
       min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
+      binding: element.binding,
     };
   }
 
@@ -457,7 +470,7 @@ class StructureDefinitionParser {
       }
 
       return {
-        code: code satisfies string,
+        code,
         targetProfile: type.targetProfile,
         profile: type.profile,
       };

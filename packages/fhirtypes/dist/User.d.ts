@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Project } from './Project';
 import { Reference } from './Reference';
@@ -42,6 +43,11 @@ export interface User {
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * An identifier for this user.
+   */
+  identifier?: Identifier[];
 
   /**
    * The first name or given name of the user. This is the value as entered

@@ -1,6 +1,7 @@
 import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
 import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
-import { isUUID } from './utils';
+import { deepClone, isUUID } from './utils';
+import { getDataType } from './typeschema/types';
 
 let jsonFile: any;
 
@@ -213,6 +214,70 @@ describe('Bundle tests', () => {
           },
         ],
       });
+    });
+
+    test('Preserve resource.meta', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          account: {
+            reference: 'Organization/33333333-3333-3333-3333-333333333333',
+            display: 'Organization #3',
+          },
+          author: {
+            reference: 'Practitioner/22222222-2222-2222-2222-222222222222',
+            display: 'Doctor',
+          },
+          compartment: [
+            {
+              reference: 'Project/11111111-2222-3333-4444-555555555555',
+            },
+            {
+              reference: 'Patient/00000000-0000-0000-0000-000000000000',
+            },
+          ],
+          extension: [{ url: 'https://example.com/Extension/meta-1', valueBoolean: true }],
+          id: 'some-id',
+          lastUpdated: '2024-02-14T21:47:11.777Z',
+          profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+          project: '11111111-2222-3333-4444-555555555555',
+          security: [{ system: 'http://hl7.org/fhir/v3/Confidentiality', code: 'N' }],
+          source: 'https://example.com/source',
+          tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }],
+          versionId: '55555555-5555-5555-5555-555555555555',
+        },
+        active: true,
+      };
+
+      const expected = deepClone(patient);
+      const meta = expected.meta;
+      if (meta === undefined) {
+        fail('Expected meta to be defined');
+      }
+
+      const removedKeys = ['project', 'versionId', 'lastUpdated', 'compartment', 'author'];
+      for (const key of Object.keys(getDataType('Meta').elements)) {
+        // make sure every possible element is defined in the test
+        expect((meta as any)[key]).toBeDefined();
+
+        if (removedKeys.includes(key)) {
+          delete (meta as any)[key];
+        }
+      }
+
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            fullUrl: 'https://example.com/Patient/00000000-0000-0000-0000-000000000000',
+            resource: patient,
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      expect(result?.entry?.[0]?.resource).toEqual(expected);
     });
   });
 

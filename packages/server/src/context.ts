@@ -1,10 +1,10 @@
-import { ProfileResource, isUUID } from '@medplum/core';
-import { Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { LogLevel, Logger, ProfileResource, isUUID } from '@medplum/core';
+import { Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
-import { Repository, systemRepo } from './fhir/repo';
-import { LogLevel, Logger } from './logger';
+import { Repository, getSystemRepo } from './fhir/repo';
+import { parseTraceparent } from './traceparent';
 
 export class RequestContext {
   readonly requestId: string;
@@ -14,13 +14,21 @@ export class RequestContext {
   constructor(requestId: string, traceId: string, logger?: Logger) {
     this.requestId = requestId;
     this.traceId = traceId;
-    this.logger = logger ?? new Logger(process.stdout, { requestId, traceId });
+    this.logger =
+      logger ??
+      new Logger(write, { requestId, traceId }, process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO);
+  }
+
+  close(): void {
+    // No-op, descendants may override
   }
 
   static empty(): RequestContext {
     return new RequestContext('', '');
   }
 }
+
+const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
 
 export class AuthenticatedRequestContext extends RequestContext {
   readonly repo: Repository;
@@ -49,20 +57,28 @@ export class AuthenticatedRequestContext extends RequestContext {
     this.accessToken = accessToken;
   }
 
-  static system(): AuthenticatedRequestContext {
-    const systemLogger = new Logger(process.stdout, undefined, LogLevel.ERROR);
+  close(): void {
+    this.repo.close();
+  }
+
+  static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
     return new AuthenticatedRequestContext(
-      new RequestContext('', ''),
+      new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? ''),
       {} as unknown as Login,
       {} as unknown as Project,
       {} as unknown as ProjectMembership,
-      systemRepo,
+      getSystemRepo(),
       systemLogger
     );
   }
 }
 
 export const requestContextStore = new AsyncLocalStorage<RequestContext>();
+
+export function tryGetRequestContext(): RequestContext | undefined {
+  return requestContextStore.getStore();
+}
+
 export function getRequestContext(): RequestContext {
   const ctx = requestContextStore.getStore();
   if (!ctx) {
@@ -84,28 +100,75 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
   requestContextStore.run(new RequestContext(requestId, traceId), () => next());
 }
 
+export function closeRequestContext(): void {
+  const ctx = requestContextStore.getStore();
+  if (ctx) {
+    ctx.close();
+  }
+}
+
+export function getLogger(): Logger {
+  const ctx = requestContextStore.getStore();
+  return ctx ? ctx.logger : systemLogger;
+}
+
+export function tryRunInRequestContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {
+  if (requestId && traceId) {
+    return requestContextStore.run(new RequestContext(requestId, traceId), fn);
+  } else {
+    return fn();
+  }
+}
+
+export function getTraceId(req: Request): string | undefined {
+  const xTraceId = req.header('x-trace-id');
+  if (xTraceId && isUUID(xTraceId)) {
+    return xTraceId;
+  }
+
+  const traceparent = req.header('traceparent');
+  if (traceparent && parseTraceparent(traceparent)) {
+    return traceparent;
+  }
+
+  return undefined;
+}
+
+export function buildTracingExtension(): Extension[] | undefined {
+  const ctx = tryGetRequestContext();
+
+  if (ctx === undefined) {
+    return undefined;
+  }
+
+  const subExtensions: Extension[] = [];
+  if (ctx.requestId) {
+    subExtensions.push({ url: 'requestId', valueId: ctx.requestId });
+  }
+
+  if (ctx.traceId) {
+    subExtensions.push({ url: 'traceId', valueId: ctx.traceId });
+  }
+
+  if (subExtensions.length === 0) {
+    return undefined;
+  }
+
+  return [
+    {
+      url: 'https://medplum.com/fhir/StructureDefinition/tracing',
+      extension: subExtensions,
+    },
+  ];
+}
+
 function requestIds(req: Request): { requestId: string; traceId: string } {
   const requestId = randomUUID();
-  const traceIdHeader = req.header('x-trace-id');
-  const traceParentHeader = req.header('traceparent');
-  let traceId: string | undefined;
-  if (traceIdHeader && isUUID(traceIdHeader)) {
-    traceId = traceIdHeader;
-  } else if (traceParentHeader?.startsWith('00-')) {
-    const id = traceParentHeader.split('-')[1];
-    const uuid = [
-      id.substring(0, 8),
-      id.substring(8, 12),
-      id.substring(12, 16),
-      id.substring(16, 20),
-      id.substring(20, 32),
-    ].join('-');
-    if (isUUID(uuid)) {
-      traceId = uuid;
-    }
-  }
-  if (!traceId) {
-    traceId = randomUUID();
-  }
+  const traceId = getTraceId(req) ?? randomUUID();
+
   return { requestId, traceId };
+}
+
+function write(msg: string): void {
+  process.stdout.write(msg + '\n');
 }

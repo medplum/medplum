@@ -10,15 +10,8 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
-import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery } from '@medplum/core';
-import {
-  Bundle,
-  OperationOutcome,
-  Resource,
-  ResourceType,
-  SearchParameter,
-  UserConfiguration,
-} from '@medplum/fhirtypes';
+import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery, isDataTypeLoaded } from '@medplum/core';
+import { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -73,33 +66,31 @@ export class SearchClickEvent extends Event {
 }
 
 export interface SearchControlProps {
-  search: SearchRequest;
-  userConfig?: UserConfiguration;
-  checkboxesEnabled?: boolean;
-  hideToolbar?: boolean;
-  hideFilters?: boolean;
-  onLoad?: (e: SearchLoadEvent) => void;
-  onChange?: (e: SearchChangeEvent) => void;
-  onClick?: (e: SearchClickEvent) => void;
-  onAuxClick?: (e: SearchClickEvent) => void;
-  onNew?: () => void;
-  onExport?: () => void;
-  onExportCsv?: () => void;
-  onExportTransactionBundle?: () => void;
-  onDelete?: (ids: string[]) => void;
-  onPatch?: (ids: string[]) => void;
-  onBulk?: (ids: string[]) => void;
+  readonly search: SearchRequest;
+  readonly checkboxesEnabled?: boolean;
+  readonly hideToolbar?: boolean;
+  readonly hideFilters?: boolean;
+  readonly onLoad?: (e: SearchLoadEvent) => void;
+  readonly onChange?: (e: SearchChangeEvent) => void;
+  readonly onClick?: (e: SearchClickEvent) => void;
+  readonly onAuxClick?: (e: SearchClickEvent) => void;
+  readonly onNew?: () => void;
+  readonly onExport?: () => void;
+  readonly onExportCsv?: () => void;
+  readonly onExportTransactionBundle?: () => void;
+  readonly onDelete?: (ids: string[]) => void;
+  readonly onBulk?: (ids: string[]) => void;
 }
 
 interface SearchControlState {
-  searchResponse?: Bundle;
-  selected: { [id: string]: boolean };
-  fieldEditorVisible: boolean;
-  filterEditorVisible: boolean;
-  filterDialogVisible: boolean;
-  exportDialogVisible: boolean;
-  filterDialogFilter?: Filter;
-  filterDialogSearchParam?: SearchParameter;
+  readonly searchResponse?: Bundle;
+  readonly selected: { [id: string]: boolean };
+  readonly fieldEditorVisible: boolean;
+  readonly filterEditorVisible: boolean;
+  readonly filterDialogVisible: boolean;
+  readonly exportDialogVisible: boolean;
+  readonly filterDialogFilter?: Filter;
+  readonly filterDialogSearchParam?: SearchParameter;
 }
 
 /**
@@ -111,7 +102,7 @@ interface SearchControlState {
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
-  const [schemaLoaded, setSchemaLoaded] = useState(false);
+  const [loadingSchema, setLoadingSchema] = useState<string>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
 
@@ -126,7 +117,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  const totalType = search.total ?? 'accurate';
+  const total = search.total ?? 'accurate';
 
   const loadResults = useCallback(
     (options?: RequestInit) => {
@@ -135,7 +126,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       medplum
         .search(
           search.resourceType as ResourceType,
-          formatSearchQuery({ ...search, total: totalType, fields: undefined }),
+          formatSearchQuery({ ...search, total, fields: undefined }),
           options
         )
         .then((response) => {
@@ -149,7 +140,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setOutcome(reason);
         });
     },
-    [medplum, search, totalType, onLoad]
+    [medplum, search, total, onLoad]
   );
 
   const refreshResults = useCallback(() => {
@@ -249,14 +240,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   useEffect(() => {
-    setSchemaLoaded(false);
+    setLoadingSchema(props.search.resourceType);
     medplum
       .requestSchema(props.search.resourceType as ResourceType)
-      .then(() => setSchemaLoaded(true))
-      .catch(console.log);
+      .catch(console.error)
+      .finally(() => setLoadingSchema(undefined));
   }, [medplum, props.search.resourceType]);
 
-  if (!schemaLoaded) {
+  if (!isDataTypeLoaded(props.search.resourceType) || loadingSchema === props.search.resourceType) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
         <Loader />
@@ -348,9 +339,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           </Group>
           <Group gap={2}>
             {lastResult && (
-              <Text size="xs" c="dimmed">
-                {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-                {`${totalType === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
+              <Text size="xs" c="dimmed" data-testid="count-display">
+                {getStart(search, lastResult).toLocaleString()}-{getEnd(search, lastResult).toLocaleString()}
+                {lastResult.total !== undefined &&
+                  ` of ${search.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
               </Text>
             )}
             <ActionIcon variant={buttonVariant} color={buttonColor} title="Refresh" onClick={refreshResults}>
@@ -463,11 +455,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           </Center>
         </Container>
       )}
-      {lastResult?.total !== undefined && lastResult.total > 0 && (
+      {lastResult && (
         <Center m="md" p="md">
           <Pagination
             value={getPage(search)}
-            total={getTotalPages(search, lastResult.total)}
+            total={getTotalPages(search, lastResult)}
             onChange={(newPage) => emitSearchChange(setPage(search, newPage))}
             getControlProps={(control) => {
               switch (control) {
@@ -589,15 +581,28 @@ function getPage(search: SearchRequest): number {
   return Math.floor((search.offset ?? 0) / (search.count ?? DEFAULT_SEARCH_COUNT)) + 1;
 }
 
-function getTotalPages(search: SearchRequest, total: number): number {
+function getTotalPages(search: SearchRequest, lastResult: Bundle): number {
   const pageSize = search.count ?? DEFAULT_SEARCH_COUNT;
+  const total = getTotal(search, lastResult);
   return Math.ceil(total / pageSize);
 }
 
-function getStart(search: SearchRequest, total: number): number {
-  return Math.min(total, (search.offset ?? 0) + 1);
+function getStart(search: SearchRequest, lastResult: Bundle): number {
+  return Math.min(getTotal(search, lastResult), (search.offset ?? 0) + 1);
 }
 
-function getEnd(search: SearchRequest, total: number): number {
-  return Math.min(total, ((search.offset ?? 0) + 1) * (search.count ?? DEFAULT_SEARCH_COUNT));
+function getEnd(search: SearchRequest, lastResult: Bundle): number {
+  return Math.max(getStart(search, lastResult) + (lastResult.entry?.length ?? 0) - 1, 0);
+}
+
+function getTotal(search: SearchRequest, lastResult: Bundle): number {
+  let total = lastResult.total;
+  if (total === undefined) {
+    // If the total is not specified, then we have to estimate it
+    total =
+      (search.offset ?? 0) +
+      (lastResult.entry?.length ?? 0) +
+      (lastResult.link?.some((l) => l.relation === 'next') ? 1 : 0);
+  }
+  return total;
 }

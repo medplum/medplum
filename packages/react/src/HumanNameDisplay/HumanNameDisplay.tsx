@@ -2,8 +2,8 @@ import { formatHumanName, HumanNameFormatOptions } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
 
 export interface HumanNameDisplayProps {
-  value?: HumanName;
-  options?: HumanNameFormatOptions;
+  readonly value?: HumanName;
+  readonly options?: HumanNameFormatOptions;
 }
 
 export function HumanNameDisplay(props: HumanNameDisplayProps): JSX.Element | null {

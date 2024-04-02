@@ -8,7 +8,8 @@ import { Reference } from './Reference';
 import { User } from './User';
 
 /**
- * Password change request for the 'forgot password' flow.
+ * DEPRECATED Password change request for the 'forgot password' flow. Use
+ * UserSecurityCheck instead.
  */
 export interface PasswordChangeRequest {
 

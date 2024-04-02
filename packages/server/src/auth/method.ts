@@ -1,11 +1,11 @@
-import { Operator, OperationOutcomeError, badRequest } from '@medplum/core';
+import { OperationOutcomeError, Operator, badRequest } from '@medplum/core';
 import { DomainConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
-import { makeValidationMiddleware } from '../util/validator';
+import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { makeValidationMiddleware } from '../util/validator';
 
 /*
  * The method handler is used to determine available login methods.
@@ -68,13 +68,14 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
  * @returns The domain configuration for the domain name if available.
  */
 export async function getDomainConfiguration(domain: string): Promise<DomainConfiguration | undefined> {
+  const systemRepo = getSystemRepo();
   const results = await systemRepo.search<DomainConfiguration>({
     resourceType: 'DomainConfiguration',
     filters: [
       {
         code: 'domain',
         operator: Operator.EQUALS,
-        value: domain,
+        value: domain.toLowerCase(),
       },
     ],
   });

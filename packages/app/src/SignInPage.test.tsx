@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
-import { act, fireEvent, render, screen, waitFor } from './test-utils/render';
+import { act, fireEvent, render, screen } from './test-utils/render';
 
 // logged out
 const medplum = new MockClient({ profile: null });
@@ -62,8 +62,7 @@ describe('SignInPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
 
-    await waitFor(() => screen.getByTestId('search-control'));
-    expect(screen.getByTestId('search-control')).toBeInTheDocument();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
   test('Forgot password', async () => {
@@ -118,8 +117,7 @@ describe('SignInPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
 
-    await waitFor(() => screen.getByText('Batch Create'));
-    expect(screen.getByText('Batch Create')).toBeInTheDocument();
+    expect(await screen.findByText('Batch Create')).toBeInTheDocument();
   });
 
   test('Redirects to homepage after login if bad next', async () => {
@@ -142,8 +140,7 @@ describe('SignInPage', () => {
     });
 
     // should redirect to the homepage
-    await waitFor(() => screen.getByTestId('search-control'));
-    expect(screen.getByTestId('search-control')).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
   test('Does NOT automatically redirect to next if logged in and next NOT present', async () => {
@@ -155,15 +152,13 @@ describe('SignInPage', () => {
   test('Automatically redirects to next if logged in and next present', async () => {
     setup('/signin?next=/batch', new MockClient({ profile: DrAliceSmith }));
 
-    await waitFor(() => screen.getByText('Batch Create'));
-    expect(screen.getByText('Batch Create')).toBeInTheDocument();
+    expect(await screen.findByText('Batch Create')).toBeInTheDocument();
   });
 
   test('Automatically redirects to homepage if logged with bad next', async () => {
     setup('/signin?next=https%3A%2F%2Fevil.com', new MockClient({ profile: DrAliceSmith }));
 
     // should redirect to the homepage
-    await waitFor(() => screen.getByTestId('search-control'));
-    expect(screen.getByTestId('search-control')).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 });

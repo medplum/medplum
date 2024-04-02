@@ -13,8 +13,8 @@ import classes from './ReferenceRangeEditor.module.css';
 const intervalFilters = ['gender', 'age', 'gestationalAge', 'context', 'appliesTo', 'category'] as const;
 
 export interface ReferenceRangeEditorProps {
-  definition: ObservationDefinition;
-  onSubmit: (result: ObservationDefinition) => void;
+  readonly definition: ObservationDefinition;
+  readonly onSubmit: (result: ObservationDefinition) => void;
 }
 
 // Helper type that groups of qualified intervals by equal filter criteria
@@ -159,12 +159,12 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
  * that have the same filter values
  */
 export interface ReferenceRangeGroupEditorProps {
-  intervalGroup: IntervalGroup;
-  unit: string | undefined;
-  onChange: (groupId: string, changed: ObservationDefinitionQualifiedInterval) => void;
-  onAdd: (groupId: string, added: ObservationDefinitionQualifiedInterval) => void;
-  onRemove: (groupId: string, removed: ObservationDefinitionQualifiedInterval) => void;
-  onRemoveGroup: (removedGroup: IntervalGroup) => void;
+  readonly intervalGroup: IntervalGroup;
+  readonly unit: string | undefined;
+  readonly onChange: (groupId: string, changed: ObservationDefinitionQualifiedInterval) => void;
+  readonly onAdd: (groupId: string, added: ObservationDefinitionQualifiedInterval) => void;
+  readonly onRemove: (groupId: string, removed: ObservationDefinitionQualifiedInterval) => void;
+  readonly onRemoveGroup: (removedGroup: IntervalGroup) => void;
 }
 
 export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps): JSX.Element {
@@ -250,8 +250,8 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
 }
 
 interface ReferenceRangeGroupFiltersProps {
-  intervalGroup: IntervalGroup;
-  onChange: ReferenceRangeGroupEditorProps['onChange'];
+  readonly intervalGroup: IntervalGroup;
+  readonly onChange: ReferenceRangeGroupEditorProps['onChange'];
 }
 
 /**

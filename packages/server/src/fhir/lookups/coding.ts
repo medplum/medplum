@@ -1,16 +1,16 @@
-import { CodeSystem, CodeSystemConcept, Coding, Resource } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
-import { DeleteQuery } from '../sql';
 import { append } from '@medplum/core';
-import { ImportedProperty, importCodeSystem, parentProperty } from '../operations/codesystemimport';
-import { getAuthenticatedContext } from '../../context';
+import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
+import { CodeSystem, CodeSystemConcept, CodeSystemConceptProperty, Coding, Resource } from '@medplum/fhirtypes';
+import { Pool, PoolClient } from 'pg';
+import { parentProperty } from '../operations/utils/terminology';
+import { DeleteQuery } from '../sql';
+import { LookupTable } from './lookuptable';
 
 /**
  * The CodingTable class is used to index and search Coding values associated with a CodeSystem.
  * Each system/code/display triple is represented as a separate row in the "Coding" table.
  */
-export class CodingTable extends LookupTable<Coding> {
+export class CodingTable extends LookupTable {
   getTableName(): string {
     return 'Coding';
   }
@@ -27,17 +27,14 @@ export class CodingTable extends LookupTable<Coding> {
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
-    if (resource.resourceType === 'CodeSystem' && resource.content === 'complete') {
-      await this.deleteValuesForResource(client, resource);
+  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+    if (resource.resourceType === 'CodeSystem' && (resource.content === 'complete' || resource.content === 'example')) {
+      if (!create) {
+        await this.deleteValuesForResource(client, resource);
+      }
 
       const elements = this.getCodeSystemElements(resource);
-      await importCodeSystem(
-        getAuthenticatedContext().repo,
-        resource as CodeSystem,
-        elements.concepts,
-        elements.properties
-      );
+      await importCodeSystem(client, resource, elements.concepts, elements.properties);
     }
   }
 
@@ -53,13 +50,15 @@ export class CodingTable extends LookupTable<Coding> {
       .execute(client);
     await new DeleteQuery('CodeSystem_Property').where('system', '=', resource.id).execute(client);
     if (deletedCodes.length) {
-      await new DeleteQuery('Coding_Property')
-        .where(
-          'coding',
-          'IN',
-          deletedCodes.map((c) => c.id)
-        )
-        .execute(client);
+      for (let i = 0; i < deletedCodes.length; i += 500) {
+        await new DeleteQuery('Coding_Property')
+          .where(
+            'coding',
+            'IN',
+            deletedCodes.slice(i, i + 500).map((c) => c.id)
+          )
+          .execute(client);
+      }
     }
   }
 
@@ -89,16 +88,34 @@ export class CodingTable extends LookupTable<Coding> {
   ): void {
     const { code, display } = concept;
     result.concepts = append(result.concepts, { code, display });
+
+    if (concept.property) {
+      for (const prop of concept.property) {
+        result.properties = append(result.properties, { code, property: prop.code, value: getPropertyValue(prop) });
+      }
+    }
+
     if (concept.concept) {
       for (const child of concept.concept) {
         this.addCodeSystemConcepts(codeSystem, child, result);
         result.properties = append(result.properties, {
-          code: child.code as string,
+          code: child.code,
           property:
             codeSystem.property?.find((p) => p.uri === parentProperty)?.code ?? codeSystem.hierarchyMeaning ?? 'parent',
-          value: code as string,
+          value: code,
         });
       }
     }
   }
+}
+
+function getPropertyValue(prop: CodeSystemConceptProperty): string {
+  if (prop.valueBoolean !== undefined) {
+    return prop.valueBoolean ? 'true' : 'false';
+  } else if (prop.valueCode) {
+    return prop.valueCode;
+  } else if (prop.valueString) {
+    return prop.valueString;
+  }
+  return '';
 }

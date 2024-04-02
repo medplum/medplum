@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -39,13 +39,13 @@ describe('SitesPage', () => {
 
   test('Renders', async () => {
     await setup('/admin/sites');
-    await waitFor(() => screen.getByText('Project Sites'));
+    expect(await screen.findByText('Project Sites')).toBeInTheDocument();
     expect(screen.getByText('Project Sites')).toBeInTheDocument();
   });
 
   test('Add and submit', async () => {
     await setup('/admin/sites');
-    await waitFor(() => screen.getByTitle('Add Site'));
+    expect(await screen.findByTitle('Add Site')).toBeInTheDocument();
 
     // Click the "Add" button
     await act(async () => {
@@ -63,6 +63,6 @@ describe('SitesPage', () => {
     });
 
     // Wait for the toast
-    await waitFor(() => screen.getByText('Saved'));
+    expect(await screen.findByText('Saved')).toBeInTheDocument();
   });
 });

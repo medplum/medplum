@@ -5,14 +5,15 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { generateAccessToken, generateSecret } from './keys';
 
-const app = express();
-let client: ClientApplication;
-
 describe('Auth middleware', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  let client: ClientApplication;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -189,7 +190,7 @@ describe('Auth middleware', () => {
   });
 
   test('Basic auth with super admin client', async () => {
-    const { client } = await createTestProject({ superAdmin: true });
+    const { client } = await createTestProject({ superAdmin: true, withClient: true });
     const res = await request(app)
       .get('/fhir/R4/Project?_total=accurate')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));

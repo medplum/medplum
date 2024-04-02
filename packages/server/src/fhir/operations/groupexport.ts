@@ -1,12 +1,11 @@
-import { accepted } from '@medplum/core';
+import { accepted, concatUrls } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Group, Patient, Project } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { getConfig } from '../../config';
-import { sendOutcome } from '../outcomes';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { Repository } from '../repo';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
 
 /**
  * Handles a Group export request.
@@ -16,10 +15,10 @@ import { getAuthenticatedContext, getRequestContext } from '../../context';
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html
  * See: https://hl7.org/fhir/R4/async.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function groupExportHandler(req: Request, res: Response): Promise<void> {
+export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
@@ -32,13 +31,13 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
 
   // Start the exporter
   const exporter = new BulkExporter(ctx.repo, since, types);
-  const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
+  const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
   groupExportResources(exporter, ctx.project, group, ctx.repo)
     .then(() => ctx.logger.info('Group export completed', { id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Group export failed', { id: ctx.project.id, error: err }));
 
-  sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
+  return [accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)];
 }
 
 export async function groupExportResources(
@@ -64,7 +63,7 @@ export async function groupExportResources(
           await exporter.writeResource(resource);
         }
       } catch (err) {
-        getRequestContext().logger.warn('Unable to read patient for group export', {
+        getLogger().warn('Unable to read patient for group export', {
           reference: member.entity.reference,
         });
       }

@@ -82,18 +82,18 @@ export default function CaseStudiesPage(): JSX.Element {
               youtubeUrl="https://youtu.be/q-22Y7Ox2jY"
             />
             <ProfileCard
-              name="Titan Intake"
-              title="AI, scheduling, interop"
+              name="Rad AI"
+              title="AI, Radiology, interop"
               imgUrl="/img/blog/titan-logo.jpeg"
-              webUrl="/blog/titan-case-study"
-              youtubeUrl="https://youtu.be/sy3YKRFyPII"
+              webUrl="/blog/radai-case-study"
+              youtubeUrl="https://www.youtube.com/watch?v=N5ZocZhdPZ0"
             />
             <ProfileCard
-              name="Ensage Health"
-              title="Geriatrics, Value Based Care"
-              imgUrl="/img/blog/ensage.jpeg"
-              youtubeUrl="https://youtu.be/GIlmd7OMZ5g"
-              webUrl="/blog/ensage-case-study"
+              name="Develo"
+              title="Pediatrics, AI, Billing"
+              imgUrl="/img/blog/develo.jpeg"
+              youtubeUrl="https://www.youtube.com/watch?v=Jk5jSEiBYbQ"
+              webUrl="/blog/develo-case-study"
             />
           </CardContainer>
         </Section>
@@ -117,6 +117,31 @@ export default function CaseStudiesPage(): JSX.Element {
             ></iframe>
           </div>
         </Jumbotron>
+        <Section>
+          <CardContainer>
+            <ProfileCard
+              name="Codex Health"
+              title="EHR integrations, workflow"
+              imgUrl="/img/blog/codex-logo.jpeg"
+              webUrl="/blog/codex-and-the-power-of-g10"
+              youtubeUrl="https://www.youtube.com/watch?v=ZCmGlio07GY"
+            />
+            <ProfileCard
+              name="Titan Intake"
+              title="AI, scheduling, interop"
+              imgUrl="/img/blog/titan-logo.jpeg"
+              webUrl="/blog/titan-case-study"
+              youtubeUrl="https://youtu.be/sy3YKRFyPII"
+            />
+            <ProfileCard
+              name="Flexpa"
+              title="Claims, Billing, Interop"
+              imgUrl="/img/blog/flexpa-logo.png"
+              youtubeUrl="https://youtu.be/DsdLq6DGi-0"
+              webUrl="/blog/flexpa-case-study"
+            />
+          </CardContainer>
+        </Section>
       </Container>
     </Layout>
   );

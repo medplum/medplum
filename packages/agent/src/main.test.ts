@@ -1,3 +1,4 @@
+import { LogLevel } from '@medplum/core';
 import fs from 'fs';
 import { App } from './app';
 import { main } from './main';
@@ -61,9 +62,16 @@ describe('Main', () => {
     jest
       .spyOn(fs, 'readFileSync')
       .mockReturnValue(
-        ['baseUrl=http://example.com', 'clientId=clientId', 'clientSecret=clientSecret', 'agentId=agentId'].join('\n')
+        [
+          'baseUrl=http://example.com',
+          'clientId=clientId',
+          'clientSecret=clientSecret',
+          'agentId=agentId',
+          'logLevel=DEBUG',
+        ].join('\n')
       );
     const app = await main(['node', 'index.js']);
+    expect(app.logLevel).toEqual(LogLevel.DEBUG);
     app.stop();
     expect(process.exit).not.toHaveBeenCalled();
   });

@@ -27,9 +27,9 @@ import {
 import classes from './QuestionnaireBuilder.module.css';
 
 export interface QuestionnaireBuilderProps {
-  questionnaire: Partial<Questionnaire> | Reference<Questionnaire>;
-  onSubmit: (result: Questionnaire) => void;
-  autoSave?: boolean;
+  readonly questionnaire: Partial<Questionnaire> | Reference<Questionnaire>;
+  readonly onSubmit: (result: Questionnaire) => void;
+  readonly autoSave?: boolean;
 }
 
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Element | null {
@@ -94,16 +94,16 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
 }
 
 interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
-  item: T;
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  isFirst?: boolean;
-  isLast?: boolean;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (item: T, disableSubmit?: boolean) => void;
-  onRemove?: () => void;
-  onRepeatable?: (item: QuestionnaireItem) => void;
+  readonly item: T;
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly isFirst?: boolean;
+  readonly isLast?: boolean;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (item: T, disableSubmit?: boolean) => void;
+  readonly onRemove?: () => void;
+  readonly onRepeatable?: (item: QuestionnaireItem) => void;
   onMoveUp?(): void;
   onMoveDown?(): void;
 }
@@ -398,8 +398,8 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
 }
 
 interface AnswerBuilderProps {
-  item: QuestionnaireItem;
-  onChange: (item: QuestionnaireItem) => void;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
@@ -455,10 +455,10 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
 }
 
 interface AnswerOptionsInputProps {
-  options: QuestionnaireItemAnswerOption[];
-  property: any;
-  item: QuestionnaireItem;
-  onChange: (item: QuestionnaireItem) => void;
+  readonly options: QuestionnaireItemAnswerOption[];
+  readonly property: any;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (item: QuestionnaireItem) => void;
 }
 
 function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
@@ -484,6 +484,7 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
               <ResourcePropertyInput
                 key={option.id}
                 name="value[x]"
+                path="Questionnaire.answerOption.value[x]"
                 property={props.property}
                 defaultPropertyType={propertyType}
                 defaultValue={propertyValue}
@@ -522,8 +523,8 @@ function AnswerOptionsInput(props: AnswerOptionsInputProps): JSX.Element {
 }
 
 interface ReferenceTypeProps {
-  item: QuestionnaireItem;
-  onChange: (updatedItem: QuestionnaireItem) => void;
+  readonly item: QuestionnaireItem;
+  readonly onChange: (updatedItem: QuestionnaireItem) => void;
 }
 
 function ReferenceProfiles(props: ReferenceTypeProps): JSX.Element {

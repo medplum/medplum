@@ -176,42 +176,46 @@ class SyncSecureStorage implements Storage {
 
   constructor() {
     this.storage = new Map<string, string>();
-    this.initPromise = new Promise((resolve) => {
-      // Fetch ::keys::
-      SecureStore.getItemAsync('___keys___')
-        .then((keysStr) => {
-          if (!keysStr) {
-            // No keys currently, just resolve
-            this.initialized = true;
-            resolve();
-            return;
-          }
-          // Parse keys
-          const keys = JSON.parse(keysStr) as string[];
-          const promises = keys.map((key) => {
-            return new Promise<[string, string | null]>((resolve) => {
-              SecureStore.getItemAsync(key)
-                .then((val) => {
-                  resolve([key, val]);
-                })
-                .catch(console.error);
-            });
-          });
-          Promise.all(promises)
-            .then((values) => {
-              for (const [key, value] of values) {
-                if (!value) {
-                  continue;
-                }
-                this.storage.set(key, value);
-              }
-              this.initialized = true;
-              resolve();
-            })
-            .catch(console.error);
-        })
-        .catch(console.error);
-    });
+    this.initPromise = this.initStorage();
+  }
+
+  private async initStorage(): Promise<void> {
+    let keysStr: string | null;
+    try {
+      // We can't just get all the "keys" that currently exist as there is no such concept
+      // We need to instead store all keys we intend to restore later in a known key
+      // We've chose `___keys___` to prevent collisions
+      // Here we get the keys and attempt to restore them
+      keysStr = await SecureStore.getItemAsync('___keys___');
+    } catch (err: unknown) {
+      // If an error is thrown here, it's likely an issue with encryption...
+      // We may be unable to decrypt existing keys if the keystore itself has changed
+      // In that case we should dump the keys and start fresh
+      // We can just initialize and resolve the `initPromise`
+      console.error(err);
+      await SecureStore.deleteItemAsync('___keys___');
+      this.initialized = true;
+      return;
+    }
+    if (!keysStr) {
+      this.initialized = true;
+      return;
+    }
+    const keys = JSON.parse(keysStr) as string[];
+    await this.buildMapFromStoredKeys(keys);
+    this.initialized = true;
+  }
+
+  private async buildMapFromStoredKeys(keys: string[]): Promise<void> {
+    const promises = keys.map((key) => SecureStore.getItemAsync(key));
+    const values = await Promise.all(promises);
+    for (let i = 0; i < keys.length; i++) {
+      const val = values[i];
+      if (!val) {
+        continue;
+      }
+      this.storage.set(keys[i], val);
+    }
   }
 
   getInitPromise(): Promise<void> {

@@ -1,11 +1,11 @@
-import express from 'express';
-import { loadTestConfig } from '../../config';
-import { initApp, shutdownApp } from '../../app';
-import { initTestAuth } from '../../test.setup';
-import request from 'supertest';
-import { CodeSystem, Parameters } from '@medplum/fhirtypes';
 import { ContentType } from '@medplum/core';
-import { getClient } from '../../database';
+import { CodeSystem, Parameters } from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config';
+import { getDatabasePool } from '../../database';
+import { initTestAuth } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';
 
 const app = express();
@@ -175,30 +175,6 @@ describe('CodeSystem $import', () => {
     expect(res.body.issue[0].code).toEqual('invalid');
   });
 
-  test('Returns error on ambiguous code system', async () => {
-    // Upload another copy of the CodeSystem
-    const res = await request(app)
-      .post(`/fhir/R4/CodeSystem`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send(snomedJSON);
-    expect(res.status).toEqual(201);
-
-    const res2 = await request(app)
-      .post(`/fhir/R4/CodeSystem/$import`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'system', valueUri: snomed.url },
-          { name: 'concept', valueCoding: { code: '1', display: 'Aspirin' } },
-        ],
-      });
-    expect(res2.status).toEqual(400);
-    expect(res2.body.issue[0].code).toEqual('invalid');
-  });
-
   test('Returns error on unknown code for property', async () => {
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -265,7 +241,7 @@ describe('CodeSystem $import', () => {
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
-  const db = getClient();
+  const db = getDatabasePool();
   const coding = await new SelectQuery('Coding')
     .column('id')
     .where('system', '=', system)
@@ -281,8 +257,8 @@ async function assertPropertyExists(
   property: string,
   value: string
 ): Promise<any> {
-  const db = getClient();
-  const query = await new SelectQuery('Coding_Property');
+  const db = getDatabasePool();
+  const query = new SelectQuery('Coding_Property');
   const codingTable = query.getNextJoinAlias();
   query.innerJoin(
     'Coding',

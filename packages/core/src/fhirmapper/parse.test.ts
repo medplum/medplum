@@ -1637,7 +1637,7 @@ describe('FHIR Mapping Language parser', () => {
     foo
     `;
 
-    expect(() => parseMappingLanguage(input)).toThrowError('Unexpected token: foo');
+    expect(() => parseMappingLanguage(input)).toThrow('Unexpected token: foo');
   });
 
   test('Multiple imports', () => {

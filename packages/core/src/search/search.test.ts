@@ -1,14 +1,84 @@
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { Operator, SearchRequest, formatSearchQuery, parseSearchDefinition, parseXFhirQuery } from './search';
+import {
+  Operator,
+  SearchRequest,
+  formatSearchQuery,
+  parseSearchDefinition,
+  parseSearchRequest,
+  parseSearchUrl,
+  parseXFhirQuery,
+} from './search';
 
 describe('Search Utils', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
+  });
+
+  test('parseSearchRequest', () => {
+    expect(() => parseSearchRequest(null as unknown as string)).toThrow('Invalid search URL');
+    expect(() => parseSearchRequest(undefined as unknown as string)).toThrow('Invalid search URL');
+    expect(() => parseSearchRequest('')).toThrow('Invalid search URL');
+
+    expect(parseSearchRequest('Patient')).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest('Patient?name=alice')).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient?_fields=id,name,birthDate')).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+
+    expect(parseSearchRequest('Patient')).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest('Patient', { name: 'alice' })).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient', { name: ['alice'] })).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient', { _fields: 'id,name,birthDate' })).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+
+    expect(parseSearchRequest(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+
+    // Ignores _ query parameter in query string
+    expect(parseSearchRequest(`Patient?name=Alice&_=${new Date().getTime()}`)).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Alice' }],
+    });
+  });
+
+  test('parseSearchUrl', () => {
+    expect(() => parseSearchUrl(null as unknown as URL)).toThrow('Invalid search URL');
+    expect(() => parseSearchUrl(undefined as unknown as URL)).toThrow('Invalid search URL');
+
+    expect(parseSearchUrl(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchUrl(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchUrl(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
   });
 
   test('Parse Patient search', () => {

@@ -10,9 +10,9 @@ import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
 import { ResourceForm } from './ResourceForm';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useMemo, useState } from 'react';
-import { MedplumClient, deepClone, loadDataType } from '@medplum/core';
-import { StructureDefinition } from '@medplum/fhirtypes';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { MedplumClient, RequestProfileSchemaOptions, deepClone, loadDataType } from '@medplum/core';
+import { OperationOutcome, Resource, StructureDefinition } from '@medplum/fhirtypes';
 
 export default {
   title: 'Medplum/ResourceForm',
@@ -151,7 +151,7 @@ function useUSCoreDataTypes({ medplum }: { medplum: MedplumClient }): { loaded: 
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     (async (): Promise<boolean> => {
-      for (const sd of USCoreStructureDefinitionList as StructureDefinition[]) {
+      for (const sd of USCoreStructureDefinitionList) {
         loadDataType(sd, sd.url);
       }
       return true;
@@ -167,9 +167,32 @@ function useUSCoreDataTypes({ medplum }: { medplum: MedplumClient }): { loaded: 
   return result;
 }
 
-function useProfile(profileName: string): StructureDefinition {
+function useFakeRequestProfileSchema(medplum: MedplumClient): void {
+  useLayoutEffect(() => {
+    const realRequestProfileSchema = medplum.requestProfileSchema;
+    async function fakeRequestProfileSchema(
+      profileUrl: string,
+      options?: RequestProfileSchemaOptions
+    ): Promise<string[]> {
+      console.log(
+        'Fake medplum.requestProfileSchema invoked but not doing anything; ensure expected profiles are already loaded',
+        profileUrl,
+        options
+      );
+      return [profileUrl];
+    }
+
+    medplum.requestProfileSchema = fakeRequestProfileSchema;
+
+    return () => {
+      medplum.requestProfileSchema = realRequestProfileSchema;
+    };
+  }, [medplum]);
+}
+
+function useUSCoreProfile(profileName: string): StructureDefinition {
   const profileSD = useMemo<StructureDefinition>(() => {
-    const result = (USCoreStructureDefinitionList as StructureDefinition[]).find((sd) => sd.name === profileName);
+    const result = USCoreStructureDefinitionList.find((sd) => sd.name === profileName);
     if (!result) {
       throw new Error(`Could not find ${profileName}`);
     }
@@ -181,8 +204,9 @@ function useProfile(profileName: string): StructureDefinition {
 
 export const USCorePatient = (): JSX.Element => {
   const medplum = useMedplum();
+  useFakeRequestProfileSchema(medplum);
   const { loaded } = useUSCoreDataTypes({ medplum });
-  const profileSD = useProfile('USCorePatientProfile');
+  const profileSD = useUSCoreProfile('USCorePatientProfile');
 
   const homerSimpsonUSCorePatient = useMemo(() => {
     return deepClone(HomerSimpsonUSCorePatient);
@@ -205,10 +229,128 @@ export const USCorePatient = (): JSX.Element => {
   );
 };
 
+export const USCorePatientIssues = (): JSX.Element => {
+  const medplum = useMedplum();
+  useFakeRequestProfileSchema(medplum);
+  const { loaded } = useUSCoreDataTypes({ medplum });
+  const profileSD = useUSCoreProfile('USCorePatientProfile');
+
+  const defaultValue: Resource = {
+    resourceType: 'Patient',
+    name: [
+      {
+        prefix: ['Sir'],
+        given: ['Matt'],
+      },
+      {
+        prefix: ['Doctor'],
+      },
+    ],
+    identifier: [
+      {
+        system: 'http://identifiers.io',
+        value: 'matt',
+      },
+      {
+        value: 'value-without-system',
+      },
+    ],
+    telecom: [
+      {
+        system: 'phone',
+      },
+      {
+        value: 'matt@example.com',
+      },
+    ],
+    meta: {
+      profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+    },
+    link: [
+      {
+        other: {
+          reference: 'Patient/123',
+        },
+      } as any,
+      {
+        other: {
+          reference: 'Patient/123',
+        },
+        type: 'seealso',
+      },
+    ],
+  };
+
+  const outcome: OperationOutcome = {
+    resourceType: 'OperationOutcome',
+    issue: [
+      {
+        severity: 'error',
+        code: 'structure',
+        details: {
+          text: 'Missing required property',
+        },
+        expression: ['Patient.link[0].type'],
+      },
+
+      {
+        severity: 'error',
+        code: 'structure',
+        details: {
+          text: 'Missing required property',
+        },
+        expression: ['Patient.identifier[1].system'],
+      },
+      {
+        severity: 'error',
+        code: 'structure',
+        details: {
+          text: 'Missing required property',
+        },
+        expression: ['Patient.gender'],
+      },
+      {
+        severity: 'error',
+        code: 'structure',
+        details: {
+          text: 'Missing required property',
+        },
+        expression: ['Patient.telecom[1].system'],
+      },
+      {
+        severity: 'error',
+        code: 'structure',
+        details: {
+          text: 'Missing required property',
+        },
+        expression: ['Patient.telecom[0].value'],
+      },
+    ],
+  };
+
+  if (!loaded) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Document>
+      <ResourceForm
+        defaultValue={defaultValue}
+        outcome={outcome}
+        onSubmit={(formData: any) => {
+          console.log('submit', formData);
+        }}
+        profileUrl={profileSD.url}
+      />
+    </Document>
+  );
+};
+
 export const USCoreImplantableDevice = (): JSX.Element => {
   const medplum = useMedplum();
+  useFakeRequestProfileSchema(medplum);
   const { loaded } = useUSCoreDataTypes({ medplum });
-  const profileSD = useProfile('USCoreImplantableDeviceProfile');
+  const profileSD = useUSCoreProfile('USCoreImplantableDeviceProfile');
 
   const implantedKnee = useMemo(() => {
     return deepClone(ImplantableDeviceKnee);

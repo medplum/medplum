@@ -1,29 +1,33 @@
 import {
+  AccessPolicyInteraction,
   ContentType,
   createReference,
   getExtension,
   getExtensionValue,
+  getReferenceString,
   isGone,
   matchesSearchRequest,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
-  parseSearchUrl,
+  parseSearchRequest,
+  satisfiedAccessPolicy,
   serverError,
   stringify,
 } from '@medplum/core';
-import { Bot, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Project, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
-import { URL } from 'url';
 import { MedplumServerConfig } from '../config';
-import { getRequestContext } from '../context';
+import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createSubEventNotification } from '../subscriptions/websockets';
+import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
 import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
@@ -55,6 +59,8 @@ export interface SubscriptionJobData {
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
   readonly requestTime: string;
+  readonly requestId?: string;
+  readonly traceId?: string;
 }
 
 const queueName = 'SubscriptionQueue';
@@ -84,10 +90,14 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<SubscriptionJobData>(queueName, execSubscriptionJob, {
-    ...defaultOptions,
-    ...config.bullmq,
-  });
+  worker = new Worker<SubscriptionJobData>(
+    queueName,
+    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+    {
+      ...defaultOptions,
+      ...config.bullmq,
+    }
+  );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
@@ -119,6 +129,66 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
 }
 
 /**
+ * Checks if this resource should create a notification for this `Subscription` based on the access policy that should be applied for this `Subscription`.
+ * The `AccessPolicy` of author's `ProjectMembership` for this resource's `Project` is used when evaluating whether the `AccessPolicy` is satisfied.
+ *
+ * Currently we log if the `AccessPolicy` is not satisfied only.
+ *
+ * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied (for rest-hook subscriptions)
+ *
+ * @param resource - The resource to evaluate against the `AccessPolicy`.
+ * @param project - The project containing the resource.
+ * @param subscription - The `Subscription` to get the `AccessPolicy` for.
+ * @returns True if access policy is satisfied for this Subscription notification, otherwise returns false
+ */
+async function satisfiesAccessPolicy(
+  resource: Resource,
+  project: Project,
+  subscription: Subscription
+): Promise<boolean> {
+  let satisfied = true;
+  try {
+    // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
+    // The current Repository author, which must exist for Repository to successfully construct
+    const subAuthor = subscription.meta?.author as Reference;
+    const membership = await findProjectMembership(project.id as string, subAuthor);
+    if (membership) {
+      const accessPolicy = await buildAccessPolicy(membership);
+      satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
+      if (!satisfied) {
+        const resourceReference = getReferenceString(resource);
+        const subReference = getReferenceString(subscription);
+        const projectReference = getReferenceString(project);
+        globalLogger.warn(
+          `[Subscription Access Policy]: Access Policy not satisfied on '${resourceReference}' for '${subReference}'`,
+          { subscription: subReference, project: projectReference, accessPolicy }
+        );
+      }
+    } else {
+      const projectReference = getReferenceString(project);
+      const authorReference = getReferenceString(subAuthor);
+      const subReference = getReferenceString(subscription);
+      globalLogger.warn(
+        `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
+        { subscription: subReference, project: projectReference }
+      );
+      satisfied = false;
+    }
+  } catch (err: unknown) {
+    const projectReference = getReferenceString(project);
+    const resourceReference = getReferenceString(resource);
+    const subReference = getReferenceString(subscription);
+    globalLogger.warn(
+      `[Subscription Access Policy]: Error occurred while checking access policy for resource '${resourceReference}' against '${subReference}'`,
+      { subscription: subReference, project: projectReference, error: err }
+    );
+    satisfied = false;
+  }
+  // Always return true if channelType !== websocket for now
+  return subscription.channel.type === 'websocket' ? satisfied : true;
+}
+
+/**
  * Adds all subscription jobs for a given resource.
  *
  * There are a few important structural considerations:
@@ -134,17 +204,42 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * @param context - The background job context.
  */
 export async function addSubscriptionJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
-  const ctx = getRequestContext();
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;
   }
+
+  const ctx = tryGetRequestContext();
+  const logger = getLogger();
+  const systemRepo = getSystemRepo();
+  let project: Project | undefined;
+  try {
+    const projectId = resource.meta?.project;
+    if (projectId) {
+      project = await systemRepo.readResource<Project>('Project', projectId);
+    }
+  } catch (err: unknown) {
+    const resourceReference = getReferenceString(resource);
+    globalLogger.error(`[Subscription]: No project found for '${resourceReference}' -- something is very wrong.`, {
+      error: err,
+      resource: resourceReference,
+    });
+    return;
+  }
+  if (!project) {
+    return;
+  }
+
   const requestTime = new Date().toISOString();
-  const subscriptions = await getSubscriptions(resource);
-  ctx.logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
+  const subscriptions = await getSubscriptions(resource, project);
+  logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
+
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
+      if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
+        continue;
+      }
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
@@ -152,6 +247,8 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
+        requestId: ctx?.requestId,
+        traceId: ctx?.traceId,
       });
     }
   }
@@ -186,7 +283,7 @@ async function matchesCriteria(
     return false;
   }
 
-  const searchRequest = parseSearchUrl(new URL(subscriptionCriteria, 'https://api.medplum.com/'));
+  const searchRequest = parseSearchRequest(subscriptionCriteria);
   if (resource.resourceType !== searchRequest.resourceType) {
     ctx.logger.debug(
       `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
@@ -225,7 +322,7 @@ function matchesChannelType(subscription: Subscription): boolean {
   if (channelType === 'rest-hook') {
     const url = subscription.channel?.endpoint;
     if (!url) {
-      getRequestContext().logger.debug(`Ignore rest-hook missing URL`);
+      getLogger().debug(`Ignore rest-hook missing URL`);
       return false;
     }
 
@@ -244,25 +341,20 @@ function matchesChannelType(subscription: Subscription): boolean {
  * @param job - The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
-  const ctx = getRequestContext();
-  ctx.logger.debug(`Adding Subscription job`);
   if (queue) {
     await queue.add(jobName, job);
-  } else {
-    ctx.logger.debug(`Subscription queue not initialized`);
   }
 }
 
 /**
  * Loads the list of all subscriptions in this repository.
  * @param resource - The resource that was created or updated.
+ * @param project - The project that contains this resource.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
-  const project = resource.meta?.project;
-  if (!project) {
-    return [];
-  }
+async function getSubscriptions(resource: Resource, project: Project): Promise<Subscription[]> {
+  const projectId = project.id as string;
+  const systemRepo = getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -270,7 +362,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       {
         code: '_project',
         operator: Operator.EQUALS,
-        value: project,
+        value: projectId,
       },
       {
         code: 'status',
@@ -279,10 +371,20 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  const inMemorySubscriptionsStr = await getRedis().get(`medplum:subscriptions:r4:project:${project}`);
-  if (inMemorySubscriptionsStr) {
-    const inMemorySubscriptions = JSON.parse(inMemorySubscriptionsStr) as Subscription[];
-    subscriptions.push(...inMemorySubscriptions);
+  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
+  if (redisOnlySubRefStrs.length) {
+    const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
+    if (project.features?.includes('websocket-subscriptions')) {
+      const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
+      const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
+      for (const { resource } of inMemorySubs) {
+        subscriptions.push(resource);
+      }
+    } else {
+      globalLogger.warn(
+        `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
+      );
+    }
   }
   return subscriptions;
 }
@@ -292,9 +394,10 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
+  const systemRepo = getSystemRepo();
   const { subscriptionId, resourceType, id, versionId, interaction, requestTime } = job.data;
 
-  const subscription = await tryGetSubscription(subscriptionId);
+  const subscription = await tryGetSubscription(systemRepo, subscriptionId);
   if (!subscription) {
     // If the subscription was deleted, then stop processing it.
     return;
@@ -306,7 +409,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 
   if (interaction !== 'delete') {
-    const currentVersion = await tryGetCurrentVersion(resourceType, id);
+    const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
     if (!currentVersion) {
       // If the resource was deleted, then stop processing it.
       return;
@@ -343,7 +446,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 }
 
-async function tryGetSubscription(subscriptionId: string): Promise<Subscription | undefined> {
+async function tryGetSubscription(systemRepo: Repository, subscriptionId: string): Promise<Subscription | undefined> {
   try {
     return await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
   } catch (err) {
@@ -357,7 +460,11 @@ async function tryGetSubscription(subscriptionId: string): Promise<Subscription 
   }
 }
 
-async function tryGetCurrentVersion(resourceType: string, id: string): Promise<Resource | undefined> {
+async function tryGetCurrentVersion(
+  systemRepo: Repository,
+  resourceType: string,
+  id: string
+): Promise<Resource | undefined> {
   try {
     return await systemRepo.readResource(resourceType, id);
   } catch (err) {
@@ -397,6 +504,13 @@ async function sendRestHook(
   const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
   if (interaction === 'delete') {
     headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
+  }
+  const traceId = job.data.traceId;
+  if (traceId) {
+    headers['x-trace-id'] = traceId;
+    if (parseTraceparent(traceId)) {
+      headers['traceparent'] = traceId;
+    }
   }
 
   const body = interaction === 'delete' ? '{}' : stringify(resource);
@@ -481,14 +595,16 @@ async function execBot(
   interaction: BackgroundJobInteraction,
   requestTime: string
 ): Promise<void> {
+  const ctx = getRequestContext();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    getRequestContext().logger.debug(`Ignore rest hook missing URL`);
+    ctx.logger.debug(`Ignore rest hook missing URL`);
     return;
   }
 
   // URL should be a Bot reference string
+  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;
@@ -510,6 +626,7 @@ async function execBot(
     input: interaction === 'delete' ? { deletedResource: resource } : resource,
     contentType: ContentType.FHIR_JSON,
     requestTime,
+    traceId: ctx.traceId,
   });
 }
 

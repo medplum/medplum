@@ -62,7 +62,7 @@ export function LandingPage(): JSX.Element {
               </Card>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedCircle value={32} />
+                  <AnimatedCircle value={78} />
                 </div>
                 <h3>Elite healthcare dev contributors</h3>
                 <p>
@@ -285,8 +285,16 @@ export function LandingPage(): JSX.Element {
             </CardContainer>
             <CardContainer>
               <Card>
-                <TestimonialHeader name="Hussein" imgSrc="/img/avatars/hussein.webp" />
-                <p>Thank you so much for building such an amazing product.</p>
+                <TestimonialHeader
+                  name="Joshua Kelly"
+                  title="CTO at Flexpa"
+                  imgSrc="/img/avatars/joshuakelly.png"
+                  twitter="https://twitter.com/jdjkelly"
+                />
+                <p>
+                  Medplum is the best FHIR server implementation. Flexpa uses it to power our API and we wouldn't have
+                  nearly as good a product without it.
+                </p>
               </Card>
               <Card>
                 <TestimonialHeader name="Dima Goncharov" title="CEO Metriport" imgSrc="/img/avatars/dima.webp" />

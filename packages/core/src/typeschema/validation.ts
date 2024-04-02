@@ -1,17 +1,18 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { UCUM } from '../constants';
+import { HTTP_HL7_ORG, UCUM } from '../constants';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
   OperationOutcomeError,
   createConstraintIssue,
+  createOperationOutcomeIssue,
   createProcessingIssue,
   createStructureIssue,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, isReference } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
-import { ResourceVisitor, crawlResource, getNestedProperty } from './crawler';
+import { ResourceVisitor, TypedValueWithPath, crawlResource, getNestedProperty } from './crawler';
 import {
   Constraint,
   InternalSchemaElement,
@@ -59,13 +60,13 @@ export const fhirTypeToJsType = {
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-const validationRegexes: Record<string, RegExp> = {
+export const validationRegexes: Record<string, RegExp> = {
   base64Binary: /^([A-Za-z\d+/]{4})*([A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/,
   canonical: /^\S*$/,
   code: /^[^\s]+( [^\s]+)*$/,
   date: /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1]))?)?$/,
   dateTime:
-    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
+    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3])(:[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
   id: /^[A-Za-z0-9\-.]{1,64}$/,
   instant:
     /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00))$/,
@@ -82,10 +83,19 @@ const validationRegexes: Record<string, RegExp> = {
 /**
  * List of constraint keys that aren't to be checked in an expression.
  */
-const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
+const skippedConstraintKeys: Record<string, boolean> = {
+  'ele-1': true,
+  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'org-1': true, // The organization SHALL at least have a name or an identifier, and possibly more than one (back compat)
+  'sdf-19': true, // FHIR Specification models only use FHIR defined types
+};
 
-export function validateResource(resource: Resource, profile?: StructureDefinition): void {
-  new ResourceValidator(resource.resourceType, resource, profile).validate();
+export interface ValidatorOptions {
+  profile?: StructureDefinition;
+}
+
+export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
+  return new ResourceValidator(resource.resourceType, resource, options).validate();
 }
 
 class ResourceValidator implements ResourceVisitor {
@@ -94,44 +104,56 @@ class ResourceValidator implements ResourceVisitor {
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 
-  constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
+  constructor(resourceType: string, rootResource: Resource, options?: ValidatorOptions) {
     this.issues = [];
     this.rootResource = rootResource;
-    this.currentResource = [];
-    if (!profile) {
+    this.currentResource = [rootResource];
+    if (!options?.profile) {
       this.schema = getDataType(resourceType);
     } else {
-      this.schema = parseStructureDefinition(profile);
+      this.schema = parseStructureDefinition(options.profile);
     }
   }
 
-  validate(): void {
+  validate(): OperationOutcomeIssue[] {
     const resourceType = this.rootResource.resourceType;
     if (!resourceType) {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
+
+    // Check root constraints
+    this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
 
     checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
 
     crawlResource(this.rootResource, this, this.schema);
 
     const issues = this.issues;
-    this.issues = []; // Reset issues to allow re-using the validator for other resources
-    if (issues.length > 0) {
+
+    let foundError = false;
+    for (const issue of issues) {
+      if (issue.severity === 'error') {
+        foundError = true;
+      }
+    }
+
+    if (foundError) {
       throw new OperationOutcomeError({
         resourceType: 'OperationOutcome',
         issue: issues,
       });
     }
+
+    return issues;
   }
 
-  onExitObject(path: string, obj: TypedValue, schema: InternalTypeSchema): void {
+  onExitObject(path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
     this.checkAdditionalProperties(obj, schema.elements, path);
   }
 
-  onEnterResource(_path: string, obj: TypedValue): void {
+  onEnterResource(_path: string, obj: TypedValueWithPath): void {
     this.currentResource.push(obj.value);
   }
 
@@ -140,22 +162,23 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   visitProperty(
-    _parent: TypedValue,
+    _parent: TypedValueWithPath,
     key: string,
     path: string,
-    propertyValues: (TypedValue | TypedValue[] | undefined)[],
+    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
     schema: InternalTypeSchema
   ): void {
     const element = schema.elements[key];
     if (!element) {
       throw new Error(`Missing element validation schema for ${key}`);
     }
+
     for (const value of propertyValues) {
       if (!this.checkPresence(value, element, path)) {
         return;
       }
       // Check cardinality
-      let values: TypedValue[];
+      let values: TypedValueWithPath[];
       if (element.isArray) {
         if (!Array.isArray(value)) {
           this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
@@ -173,7 +196,7 @@ class ResourceValidator implements ResourceVisitor {
       if (values.length < element.min || values.length > element.max) {
         this.issues.push(
           createStructureIssue(
-            path,
+            element.path,
             `Invalid number of values: expected ${element.min}..${
               Number.isFinite(element.max) ? element.max : '*'
             }, but found ${values.length}`
@@ -184,36 +207,41 @@ class ResourceValidator implements ResourceVisitor {
       if (!matchesSpecifiedValue(value, element)) {
         this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
       }
+
       const sliceCounts: Record<string, number> | undefined = element.slicing
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
       for (const value of values) {
         this.constraintsCheck(value, element, path);
+        this.referenceTypeCheck(value, element, path);
         this.checkPropertyValue(value, path);
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
         }
       }
+
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
     }
   }
 
   private checkPresence(
-    value: TypedValue | TypedValue[] | undefined,
+    value: TypedValueWithPath | TypedValueWithPath[],
     field: InternalSchemaElement,
     path: string
-  ): value is TypedValue | TypedValue[] {
-    if (value === undefined) {
+  ): boolean {
+    if (!Array.isArray(value) && value.value === undefined) {
       if (field.min > 0) {
-        this.issues.push(createStructureIssue(path, 'Missing required property'));
+        this.issues.push(createStructureIssue(value.path, 'Missing required property'));
       }
       return false;
     }
+
     if (isEmpty(value)) {
       this.issues.push(createStructureIssue(path, 'Invalid empty value'));
       return false;
     }
+
     return true;
   }
 
@@ -255,21 +283,36 @@ class ResourceValidator implements ResourceVisitor {
     if (!object) {
       return;
     }
+    const choiceOfTypeElements: Record<string, boolean> = {};
     for (const key of Object.keys(object)) {
       if (key === 'resourceType') {
         continue; // Skip special resource type discriminator property in JSON
       }
-      if (
-        !(key in properties) &&
-        !(key.startsWith('_') && key.slice(1) in properties) &&
-        !isChoiceOfType(parent, key, properties)
-      ) {
+      const choiceOfTypeElementName = isChoiceOfType(parent, key, properties);
+      if (choiceOfTypeElementName) {
+        if (choiceOfTypeElements[choiceOfTypeElementName]) {
+          // Found a duplicate choice of type property
+          // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
+          // Warnings are logged, but do not cause validation to fail
+          this.issues.push(
+            createOperationOutcomeIssue(
+              'warning',
+              'structure',
+              `Duplicate choice of type property "${choiceOfTypeElementName}"`,
+              choiceOfTypeElementName
+            )
+          );
+        }
+        choiceOfTypeElements[choiceOfTypeElementName] = true;
+        continue;
+      }
+      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties)) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
     }
   }
 
-  private constraintsCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+  private constraintsCheck(value: TypedValue, field: InternalTypeSchema | InternalSchemaElement, path: string): void {
     const constraints = field.constraints;
     if (!constraints) {
       return;
@@ -283,6 +326,69 @@ class ResourceValidator implements ResourceVisitor {
         }
       }
     }
+  }
+
+  private referenceTypeCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+    if (value.type !== 'Reference') {
+      return;
+    }
+
+    const reference = value.value;
+    if (!isReference(reference)) {
+      // Silently ignore unrecognized reference types
+      return;
+    }
+
+    const referenceResourceType = reference.reference.split('/')[0];
+    if (!referenceResourceType) {
+      // Silently ignore empty references - that will get picked up by constraint validation
+      return;
+    }
+
+    const targetProfiles = field.type.find((t) => t.code === 'Reference')?.targetProfile;
+    if (!targetProfiles) {
+      // No required target profiles
+      return;
+    }
+
+    const hl7BaseUrl = HTTP_HL7_ORG + '/fhir/StructureDefinition/';
+    const hl7AllResourcesUrl = hl7BaseUrl + 'Resource';
+    const hl7ResourceTypeUrl = hl7BaseUrl + referenceResourceType;
+
+    const medplumBaseUrl = 'https://medplum.com/fhir/StructureDefinition/';
+    const medplumResourceTypeUrl = medplumBaseUrl + referenceResourceType;
+
+    for (const targetProfile of targetProfiles) {
+      if (
+        targetProfile === hl7AllResourcesUrl ||
+        targetProfile === hl7ResourceTypeUrl ||
+        targetProfile === medplumResourceTypeUrl
+      ) {
+        // Found a matching profile
+        return;
+      }
+
+      if (!targetProfile.startsWith(hl7BaseUrl) && !targetProfile.startsWith(medplumBaseUrl)) {
+        // This is an unrecognized target profile string
+        // For example, it could be US-Core or a custom profile definition
+        // Example: http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
+        // And therefore we cannot validate
+        return;
+      }
+    }
+
+    // All of the target profiles were recognized formats
+    // and we did not find a match
+    // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
+    // Warnings are logged, but do not cause validation to fail
+    this.issues.push(
+      createOperationOutcomeIssue(
+        'warning',
+        'structure',
+        `Invalid reference for "${path}", got "${referenceResourceType}", expected "${targetProfiles.join('", "')}"`,
+        path
+      )
+    );
   }
 
   private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
@@ -367,11 +473,19 @@ function isIntegerType(propertyType: string): boolean {
   );
 }
 
+/**
+ * Returns the choice-of-type element name if the key is a choice of type property.
+ * Returns undefined if the key is not a choice of type property.
+ * @param typedValue - The value to check.
+ * @param key - The object key to check. This is different than the element name, which could contain "[x]".
+ * @param propertyDefinitions - The property definitions for the object..
+ * @returns The element name if a choice of type property is present, otherwise undefined.
+ */
 function isChoiceOfType(
   typedValue: TypedValue,
   key: string,
   propertyDefinitions: Record<string, InternalSchemaElement>
-): boolean {
+): string | undefined {
   if (key.startsWith('_')) {
     key = key.slice(1);
   }
@@ -379,12 +493,13 @@ function isChoiceOfType(
   let testProperty = '';
   for (const part of parts) {
     testProperty += part;
-    if (propertyDefinitions[testProperty + '[x]']) {
+    const elementName = testProperty + '[x]';
+    if (propertyDefinitions[elementName]) {
       const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
-      return !!typedPropertyValue;
+      return typedPropertyValue ? elementName : undefined;
     }
   }
-  return false;
+  return undefined;
 }
 
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
@@ -412,10 +527,16 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
 }
 
 function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: InternalSchemaElement): boolean {
-  if (element.pattern && !deepIncludes(value, element.pattern)) {
+  // It is possible that `value` has additional keys beyond `type` and `value` (e.g. `expression` if a
+  // `TypedValueWithExpression` is being used), so ensure that only `type` and `value` are considered for comparison.
+  const typeAndValue = Array.isArray(value)
+    ? value.map((v) => ({ type: v.type, value: v.value }))
+    : { type: value.type, value: value.value };
+
+  if (element.pattern && !deepIncludes(typeAndValue, element.pattern)) {
     return false;
   }
-  if (element.fixed && !deepEquals(value, element.fixed)) {
+  if (element.fixed && !deepEquals(typeAndValue, element.fixed)) {
     return false;
   }
   return true;

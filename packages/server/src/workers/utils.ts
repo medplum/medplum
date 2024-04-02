@@ -10,11 +10,12 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { getRequestContext } from '../context';
-import { systemRepo } from '../fhir/repo';
+import { buildTracingExtension, getLogger } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -49,6 +50,7 @@ export async function createAuditEvent(
   subscription?: Subscription,
   bot?: Bot
 ): Promise<void> {
+  const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
   await systemRepo.createResource<AuditEvent>({
@@ -81,6 +83,7 @@ export async function createAuditEvent(
     entity: createAuditEventEntities(resource, subscription, bot),
     outcome,
     outcomeDesc,
+    extension: buildTracingExtension(),
   });
 }
 
@@ -114,20 +117,26 @@ export async function isFhirCriteriaMet(subscription: Subscription, currentResou
   if (!criteria?.valueString) {
     return true;
   }
-  const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
+  const previous = await getPreviousResource(currentResource);
   const evalInput = {
     '%current': toTypedValue(currentResource),
-    '%previous': toTypedValue({}),
+    '%previous': toTypedValue(previous ?? {}),
   };
-  const previousResource = history.entry?.[1]?.resource as Resource;
-  if (previousResource) {
-    evalInput['%previous'] = toTypedValue(previousResource);
-  }
   const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
-  if (evalValue?.[0]?.value === true) {
-    return true;
-  }
-  return false;
+  return evalValue?.[0]?.value === true;
+}
+
+async function getPreviousResource(currentResource: Resource): Promise<Resource | undefined> {
+  const systemRepo = getSystemRepo();
+  const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
+
+  return history.entry?.find((_, idx) => {
+    if (idx === 0) {
+      return false;
+    }
+
+    return history.entry?.[idx - 1]?.resource?.meta?.versionId === currentResource.meta?.versionId;
+  })?.resource;
 }
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
@@ -150,7 +159,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
       const lowerBound = Number(codeRange[0]);
       const upperBound = Number(codeRange[1]);
       if (!(Number.isInteger(lowerBound) && Number.isInteger(upperBound))) {
-        getRequestContext().logger.debug(
+        getLogger().debug(
           `${lowerBound} and ${upperBound} aren't an integer, configured status codes need to be changed. Resorting to default codes`
         );
         return defaultStatusCheck(status);
@@ -161,7 +170,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
     } else {
       const codeValue = Number(code);
       if (!Number.isInteger(codeValue)) {
-        getRequestContext().logger.debug(
+        getLogger().debug(
           `${code} isn't an integer, configured status codes need to be changed. Resorting to default codes`
         );
         return defaultStatusCheck(status);

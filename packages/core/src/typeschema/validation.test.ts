@@ -5,20 +5,26 @@ import {
   AppointmentParticipant,
   Binary,
   Bundle,
+  CarePlan,
   CodeSystem,
   Condition,
   DiagnosticReport,
+  DocumentReference,
+  ElementDefinition,
+  Encounter,
   Extension,
   HumanName,
   ImplementationGuide,
   Media,
   MedicationRequest,
   Observation,
+  ObservationComponent,
   Patient,
   Questionnaire,
   QuestionnaireItem,
   Resource,
   StructureDefinition,
+  StructureDefinitionSnapshot,
   SubstanceProtein,
   ValueSet,
 } from '@medplum/fhirtypes';
@@ -27,19 +33,27 @@ import { resolve } from 'path';
 import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
-import { createReference } from '../utils';
+import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle } from './types';
 import { validateResource } from './validation';
 
 describe('FHIR resource validation', () => {
+  let typesBundle: Bundle;
+  let resourcesBundle: Bundle;
+  let medplumBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+
+    typesBundle = readJson('fhir/r4/profiles-types.json') as Bundle;
+    resourcesBundle = readJson('fhir/r4/profiles-resources.json') as Bundle;
+    medplumBundle = readJson('fhir/r4/profiles-medplum.json') as Bundle;
+
+    indexStructureDefinitionBundle(typesBundle);
+    indexStructureDefinitionBundle(resourcesBundle);
+    indexStructureDefinitionBundle(medplumBundle);
 
     observationProfile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
@@ -102,14 +116,6 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(patientExtension)).toThrow();
   });
 
-  test('Invalid extraneous property', () => {
-    const invalidFormat = {
-      resourceType: 'Patient',
-      foo: 'bar',
-    } as unknown as Patient;
-    expect(() => validateResource(invalidFormat)).toThrow();
-  });
-
   test('Valid property name special cases', () => {
     const primitiveExtension = {
       resourceType: 'Patient',
@@ -153,8 +159,8 @@ describe('FHIR resource validation', () => {
     }).not.toThrow();
   });
 
-  test('Valid resource under constraining profile', () => {
-    const observation: Observation = {
+  describe('US Core Blood Pressure profile', () => {
+    const VALID_BP: Observation = {
       resourceType: 'Observation',
       status: 'final',
       category: [
@@ -218,245 +224,78 @@ describe('FHIR resource validation', () => {
         },
       ],
     };
+    test('Valid resource under constraining profile', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      expect(() => validateResource(observation, { profile: observationProfile })).not.toThrow();
+    });
 
-    expect(() => validateResource(observation, observationProfile)).not.toThrow();
-  });
+    test('Valid resource under constraining profile with additional non-constrained fields', () => {
+      const observation = deepClone(VALID_BP);
+      (observation as any).component[0].code.coding[0].display = 'this is not constrained';
+      expect(() => validateResource(observation, { profile: observationProfile })).not.toThrow();
+    });
 
-  test('Valid resource under constraining profile with additional non-constrained fields', () => {
-    const observation: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
+    test('Invalid cardinality', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      observation.component?.splice(0, 1);
+      expect(() => validateResource(observation, { profile: observationProfile })).toThrow(
+        'Invalid number of values: expected 2..*, but found 1 (Observation.component)'
+      );
+    });
+
+    test('Extra component missing required properties', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      observation.component?.push({
+        dataAbsentReason: {
           coding: [
             {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+              system: 'https://terminology.hl7.org/CodeSystem/data-absent-reason',
+              code: 'unknown',
             },
           ],
         },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: LOINC,
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        {
-          dataAbsentReason: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-                display: 'Systolic blood pressure', // This is the extra content
-              },
-            ],
-          },
-        },
-        {
-          dataAbsentReason: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-          code: {
-            coding: [
-              {
-                code: '8462-4',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
+      } as ObservationComponent);
 
-    expect(() => validateResource(observation, observationProfile)).not.toThrow();
-  });
+      try {
+        validateResource(observation, { profile: observationProfile });
+        fail('Expected error');
+      } catch (err) {
+        const outcome = (err as OperationOutcomeError).outcome;
+        expect(outcome.issue?.[0]?.details?.text).toEqual('Missing required property');
+        expect(outcome.issue?.[0]?.expression).toEqual(['Observation.component[2].code']);
+      }
+    });
 
-  test('Invalid cardinality', () => {
-    const observation: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
-          coding: [
-            {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: LOINC,
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        // Should have two components
-        {
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
+    test('Invalid resource under pattern fields profile', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      (observation as any).code.coding[0].system = 'http://incorrect.system';
 
-    expect(() => validateResource(observation, observationProfile)).toThrow(
-      'Invalid number of values: expected 2..*, but found 1 (Observation.component)'
-    );
-  });
+      try {
+        validateResource(observation, { profile: observationProfile });
+        fail('Expected error');
+      } catch (err) {
+        const outcome = (err as OperationOutcomeError).outcome;
+        expect(outcome.issue?.[0]?.details?.text).toEqual('Value did not match expected pattern');
+        expect(outcome.issue?.[0]?.expression).toEqual(['Observation.code']);
+      }
+    });
 
-  test('Invalid resource under pattern fields profile', () => {
-    const observation: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
-          coding: [
-            {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: 'http://incorrect.system',
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        {
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-        {
-          code: {
-            coding: [
-              {
-                code: '8462-4',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
+    test('Invalid slice contents', () => {
+      const observation: Observation = deepClone(VALID_BP);
+      (observation as any).component[1].code.coding[0].code = 'wrong code';
 
-    expect(() => validateResource(observation, observationProfile)).toThrow();
-  });
-
-  test('Invalid slice contents', () => {
-    const observation: Observation = {
-      resourceType: 'Observation',
-      status: 'final',
-      category: [
-        {
-          coding: [
-            {
-              code: 'vital-signs',
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
-          {
-            code: '85354-9',
-            system: LOINC,
-          },
-        ],
-      },
-      subject: {
-        reference: 'Patient/example',
-      },
-      effectiveDateTime: '2023-05-31T17:03:45-07:00',
-      component: [
-        {
-          code: {
-            coding: [
-              {
-                code: '8480-6',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-        {
-          code: {
-            coding: [
-              {
-                code: 'wrong code',
-                system: LOINC,
-              },
-            ],
-          },
-        },
-      ],
-    };
-
-    expect(() => {
-      validateResource(observation, observationProfile);
-    }).toThrow(
-      `Incorrect number of values provided for slice 'diastolic': expected 1..1, but found 0 (Observation.component)`
-    );
+      expect(() => {
+        validateResource(observation, { profile: observationProfile });
+      }).toThrow(
+        `Incorrect number of values provided for slice 'diastolic': expected 1..1, but found 0 (Observation.component)`
+      );
+    });
   });
 
   test('StructureDefinition', () => {
-    expect(() => {
-      const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-      validateResource(structureDefinition);
-    }).not.toThrow();
-    expect(() => {
-      const structureDefinition = readJson('fhir/r4/profiles-medplum.json') as Bundle;
-      validateResource(structureDefinition);
-    }).not.toThrow();
+    expect(() => validateResource(typesBundle)).not.toThrow();
+    expect(() => validateResource(resourcesBundle)).not.toThrow();
+    expect(() => validateResource(medplumBundle)).not.toThrow();
   });
 
   test('Profile with restriction on base type field', () => {
@@ -473,6 +312,10 @@ describe('FHIR resource validation', () => {
           // Missing system property
           value: '555-555-5555',
         },
+        {
+          system: 'email',
+          value: 'patient@example.com',
+        },
       ],
       gender: 'unknown',
       name: [
@@ -482,9 +325,86 @@ describe('FHIR resource validation', () => {
         },
       ],
     };
-    expect(() => validateResource(patient, patientProfile)).toThrow(
-      new Error('Missing required property (Patient.telecom.system)')
+    expect(() => validateResource(patient, { profile: patientProfile })).toThrow(
+      new Error('Missing required property (Patient.telecom[0].system)')
     );
+  });
+
+  test('Profile with restriction on base type field', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+          extension: [
+            {
+              url: 'ombCategory',
+              valueCoding: {
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+                code: '2106-3',
+                display: 'White',
+              },
+            },
+            {
+              url: 'detailed',
+              valueCoding: {
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+                code: '1006-6',
+                display: 'Abenaki',
+              },
+            },
+            {
+              url: 'detailed',
+              valueCoding: {
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+                code: '1053-8',
+                display: 'California Tribes',
+              },
+            },
+            {
+              url: 'text',
+              valueString: 'This is text',
+            },
+          ],
+        },
+        {
+          url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity',
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '446151000124109',
+                display: 'Identifies as male gender (finding)',
+              },
+            ],
+          },
+        },
+      ],
+      identifier: [
+        {
+          system: 'http://example.com',
+          value: 'foo',
+        },
+      ],
+      telecom: [
+        {
+          system: 'email',
+          value: 'patient@example.com',
+        },
+        {
+          system: 'email',
+          value: 'two@example.com',
+        },
+      ],
+      gender: 'unknown',
+      name: [
+        {
+          given: ['Test'],
+          family: 'Patient',
+        },
+      ],
+    };
+    expect(() => validateResource(patient, { profile: patientProfile })).not.toThrow();
   });
 
   test('Valid resource with nulls in primitive extension', () => {
@@ -739,15 +659,7 @@ describe('FHIR resource validation', () => {
         value: 130,
       },
     };
-    expect(() => validateResource(observation, bodyWeightProfile as StructureDefinition)).not.toThrow();
-  });
-});
-
-describe('Legacy tests for parity checking', () => {
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    expect(() => validateResource(observation, { profile: bodyWeightProfile as StructureDefinition })).not.toThrow();
   });
 
   test('validateResource', () => {
@@ -772,7 +684,7 @@ describe('Legacy tests for parity checking', () => {
 
   test('Additional properties', () => {
     expect(() => validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })).not.toThrow();
-    expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource)).toThrow(
+    expect(() => validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Patient)).toThrow(
       new Error('Invalid additional property "fakeProperty" (Patient.fakeProperty)')
     );
   });
@@ -922,12 +834,10 @@ describe('Legacy tests for parity checking', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.TEXT };
 
     binary.data = 123 as unknown as string;
-    expect(() => validateResource(binary)).toThrowError(
-      'Invalid JSON type: expected string, but got number (Binary.data)'
-    );
+    expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got number (Binary.data)');
 
     binary.data = '===';
-    expect(() => validateResource(binary)).toThrowError('Invalid base64Binary format');
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
 
     binary.data = 'aGVsbG8=';
     expect(() => validateResource(binary)).not.toThrow();
@@ -937,7 +847,7 @@ describe('Legacy tests for parity checking', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
     patient.active = 123 as unknown as boolean;
-    expect(() => validateResource(patient)).toThrowError(
+    expect(() => validateResource(patient)).toThrow(
       'Invalid JSON type: expected boolean, but got number (Patient.active)'
     );
 
@@ -952,12 +862,12 @@ describe('Legacy tests for parity checking', () => {
     const patient: Patient = { resourceType: 'Patient' };
 
     patient.birthDate = 123 as unknown as string;
-    expect(() => validateResource(patient)).toThrowError(
+    expect(() => validateResource(patient)).toThrow(
       'Invalid JSON type: expected string, but got number (Patient.birthDate)'
     );
 
     patient.birthDate = 'x';
-    expect(() => validateResource(patient)).toThrowError('Invalid date format');
+    expect(() => validateResource(patient)).toThrow('Invalid date format');
 
     patient.birthDate = '2000-01-01';
     expect(() => validateResource(patient)).not.toThrow();
@@ -967,12 +877,12 @@ describe('Legacy tests for parity checking', () => {
     const condition: Condition = { resourceType: 'Condition', subject: { reference: 'Patient/1' } };
 
     condition.recordedDate = 123 as unknown as string;
-    expect(() => validateResource(condition)).toThrowError(
+    expect(() => validateResource(condition)).toThrow(
       'Invalid JSON type: expected string, but got number (Condition.recordedDate)'
     );
 
     condition.recordedDate = 'x';
-    expect(() => validateResource(condition)).toThrowError('Invalid dateTime format');
+    expect(() => validateResource(condition)).toThrow('Invalid dateTime format');
 
     condition.recordedDate = '2022-02-02';
     expect(() => validateResource(condition)).not.toThrow();
@@ -988,15 +898,15 @@ describe('Legacy tests for parity checking', () => {
     const media: Media = { resourceType: 'Media', status: 'completed', content: { title: 'x' } };
 
     media.duration = 'x' as unknown as number;
-    expect(() => validateResource(media)).toThrowError(
+    expect(() => validateResource(media)).toThrow(
       'Invalid JSON type: expected number, but got string (Media.duration)'
     );
 
     media.duration = NaN;
-    expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
+    expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = Infinity;
-    expect(() => validateResource(media)).toThrowError('Invalid numeric value (Media.duration)');
+    expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = 123.5;
     expect(() => validateResource(media)).not.toThrow();
@@ -1012,12 +922,12 @@ describe('Legacy tests for parity checking', () => {
     } as ImplementationGuide;
 
     ig.packageId = 123 as unknown as string;
-    expect(() => validateResource(ig)).toThrowError(
+    expect(() => validateResource(ig)).toThrow(
       'Invalid JSON type: expected string, but got number (ImplementationGuide.packageId)'
     );
 
     ig.packageId = '$';
-    expect(() => validateResource(ig)).toThrowError('Invalid id format');
+    expect(() => validateResource(ig)).toThrow('Invalid id format');
 
     ig.packageId = 'foo';
     expect(() => validateResource(ig)).not.toThrow();
@@ -1027,15 +937,15 @@ describe('Legacy tests for parity checking', () => {
     const obs: Observation = { resourceType: 'Observation', status: 'final', code: { text: 'x' } };
 
     obs.issued = 123 as unknown as string;
-    expect(() => validateResource(obs)).toThrowError(
+    expect(() => validateResource(obs)).toThrow(
       'Invalid JSON type: expected string, but got number (Observation.issued)'
     );
 
     obs.issued = 'x';
-    expect(() => validateResource(obs)).toThrowError('Invalid instant format');
+    expect(() => validateResource(obs)).toThrow('Invalid instant format');
 
     obs.issued = '2022-02-02';
-    expect(() => validateResource(obs)).toThrowError('Invalid instant format');
+    expect(() => validateResource(obs)).toThrow('Invalid instant format');
 
     obs.issued = '2022-02-02T12:00:00-04:00';
     expect(() => validateResource(obs)).not.toThrow();
@@ -1048,20 +958,18 @@ describe('Legacy tests for parity checking', () => {
     const sp: SubstanceProtein = { resourceType: 'SubstanceProtein' };
 
     sp.numberOfSubunits = 'x' as unknown as number;
-    expect(() => validateResource(sp)).toThrowError(
+    expect(() => validateResource(sp)).toThrow(
       'Invalid JSON type: expected number, but got string (SubstanceProtein.numberOfSubunits)'
     );
 
     sp.numberOfSubunits = NaN;
-    expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = Infinity;
-    expect(() => validateResource(sp)).toThrowError('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
+    expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 123.5;
-    expect(() => validateResource(sp)).toThrowError(
-      'Expected number to be an integer (SubstanceProtein.numberOfSubunits)'
-    );
+    expect(() => validateResource(sp)).toThrow('Expected number to be an integer (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = 10;
     expect(() => validateResource(sp)).not.toThrow();
@@ -1071,12 +979,10 @@ describe('Legacy tests for parity checking', () => {
     const acct: Account = { resourceType: 'Account', status: 'active' };
 
     acct.name = 123 as unknown as string;
-    expect(() => validateResource(acct)).toThrowError(
-      'Invalid JSON type: expected string, but got number (Account.name)'
-    );
+    expect(() => validateResource(acct)).toThrow('Invalid JSON type: expected string, but got number (Account.name)');
 
     acct.name = '    ';
-    expect(() => validateResource(acct)).toThrowError('String must contain non-whitespace content (Account.name)');
+    expect(() => validateResource(acct)).toThrow('String must contain non-whitespace content (Account.name)');
 
     acct.name = 'test';
     expect(() => validateResource(acct)).not.toThrow();
@@ -1088,28 +994,30 @@ describe('Legacy tests for parity checking', () => {
     const appt: Appointment = {
       resourceType: 'Appointment',
       status: 'booked',
+      start: '2022-02-02T12:00:00Z',
+      end: '2022-02-02T12:30:00Z',
       participant: [{ status: 'accepted', actor: patientReference }],
     };
 
     appt.minutesDuration = 'x' as unknown as number;
-    expect(() => validateResource(appt)).toThrowError(
+    expect(() => validateResource(appt)).toThrow(
       'Invalid JSON type: expected number, but got string (Appointment.minutesDuration)'
     );
 
     appt.minutesDuration = NaN;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = Infinity;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = 123.5;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be an integer (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.minutesDuration)');
 
     appt.minutesDuration = -1;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
 
     appt.minutesDuration = 0;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be positive (Appointment.minutesDuration)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be positive (Appointment.minutesDuration)');
 
     appt.minutesDuration = 10;
     expect(() => validateResource(appt)).not.toThrow();
@@ -1121,25 +1029,27 @@ describe('Legacy tests for parity checking', () => {
     const appt: Appointment = {
       resourceType: 'Appointment',
       status: 'booked',
+      start: '2022-02-02T12:00:00Z',
+      end: '2022-02-02T12:30:00Z',
       participant: [{ status: 'accepted', actor: patientReference }],
     };
 
     appt.priority = 'x' as unknown as number;
-    expect(() => validateResource(appt)).toThrowError(
+    expect(() => validateResource(appt)).toThrow(
       'Invalid JSON type: expected number, but got string (Appointment.priority)'
     );
 
     appt.priority = NaN;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = Infinity;
-    expect(() => validateResource(appt)).toThrowError('Invalid numeric value (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = 123.5;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be an integer (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be an integer (Appointment.priority)');
 
     appt.priority = -1;
-    expect(() => validateResource(appt)).toThrowError('Expected number to be non-negative (Appointment.priority)');
+    expect(() => validateResource(appt)).toThrow('Expected number to be non-negative (Appointment.priority)');
 
     appt.priority = 0;
     expect(() => validateResource(appt)).not.toThrow();
@@ -1158,20 +1068,17 @@ describe('Legacy tests for parity checking', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue).toHaveLength(1);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing required property');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment.participant.status');
-    }
-  });
+      expect(outcome.issue).toHaveLength(2);
 
-  test('StructureDefinition', () => {
-    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
-    try {
-      validateResource(structureDefinition);
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      console.log(JSON.stringify(outcome, null, 2).substring(0, 1000));
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual(
+        'Constraint app-3 not met: Only proposed or cancelled appointments can be missing start/end dates'
+      );
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment');
+
+      expect(outcome.issue?.[1]?.severity).toEqual('error');
+      expect(outcome.issue?.[1]?.details?.text).toEqual('Missing required property');
+      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Appointment.participant[0].status');
     }
   });
 
@@ -1201,7 +1108,7 @@ describe('Legacy tests for parity checking', () => {
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthBoolean: true })).not.toThrow();
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthInteger: 2 })).not.toThrow();
     expect(() =>
-      validateResource({ resourceType: 'Patient', multipleBirthXyz: 'xyz' } as unknown as Patient)
+      validateResource({ resourceType: 'Patient', multipleBirthString: 'xyz' } as unknown as Patient)
     ).toThrow();
   });
 
@@ -1292,6 +1199,119 @@ describe('Legacy tests for parity checking', () => {
     };
 
     expect(() => validateResource(resource)).not.toThrow();
+  });
+
+  test('where identifier exists', () => {
+    const original = resourcesBundle.entry?.find((e) => e.resource?.id === 'Encounter')
+      ?.resource as StructureDefinition;
+
+    expect(original).toBeDefined();
+
+    const profile = deepClone(original);
+
+    const rootElement = (profile.snapshot as StructureDefinitionSnapshot).element?.find(
+      (e) => e.id === 'Encounter'
+    ) as ElementDefinition;
+    rootElement.constraint = [
+      {
+        key: 'where-identifier-exists',
+        expression: "identifier.where(system='http://example.com' and value='123').exists()",
+        severity: 'error',
+        human: 'Identifier must exist',
+      },
+    ];
+
+    const identifierElement = (profile.snapshot as StructureDefinitionSnapshot).element?.find(
+      (e) => e.id === 'Encounter.identifier'
+    ) as ElementDefinition;
+    identifierElement.min = 1;
+    identifierElement.constraint = [
+      {
+        key: 'where-identifier-exists',
+        expression: "where(system='http://example.com' and value='123').exists()",
+        severity: 'error',
+        human: 'Identifier must exist',
+      },
+    ];
+
+    const e1: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+    };
+    expect(() => validateResource(e1, { profile })).toThrow();
+
+    const e2: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '123' }],
+    };
+    expect(() => validateResource(e2, { profile })).not.toThrow();
+
+    const e3: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '456' }],
+    };
+    expect(() => validateResource(e3, { profile })).toThrow();
+  });
+
+  test('Multiple values for choice of type property', () => {
+    const carePlan: CarePlan = {
+      resourceType: 'CarePlan',
+      subject: {
+        reference: 'Patient/fdf33a83-08b0-4475-ae99-f5b6fec2f0f1',
+        display: 'Homer Simpson',
+      },
+      status: 'active',
+      intent: 'order',
+      activity: [
+        {
+          detail: {
+            status: 'in-progress',
+            scheduledPeriod: {
+              start: '2024-02-29T16:52:20.825Z',
+            },
+            scheduledTiming: {
+              repeat: {
+                period: 1,
+                periodUnit: 'd',
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    // TODO: Change this check from warning to error
+    // Duplicate entries for choice-of-type property is currently a warning
+    // We need to first log and track this, and notify customers of breaking changes
+    const issues = validateResource(carePlan);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain('Duplicate choice of type property');
+  });
+
+  test('Reference type check', () => {
+    const docRef: DocumentReference = {
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [{ attachment: { data: 'aGVsbG8gd29ybGQ=' } }],
+
+      // Note that "relatesTo.target" must be a Reference to a DocumentReference
+      // This reference to a Patient is invalid
+      relatesTo: [{ code: 'appends', target: { reference: 'Patient/123' } }],
+    };
+
+    // TODO: Change this check from warning to error
+    // Duplicate entries for choice-of-type property is currently a warning
+    // We need to first log and track this, and notify customers of breaking changes
+    const issues = validateResource(docRef);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain('Invalid reference for');
   });
 });
 

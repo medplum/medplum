@@ -1,64 +1,21 @@
 import {
-  InternalTypeSchema,
-  SliceDefinition,
-  SliceDiscriminator,
+  InternalSchemaElement,
+  MedplumClient,
+  SliceDefinitionWithTypes,
   SlicingRules,
-  TypedValue,
-  arrayify,
-  getElementDefinitionFromElements,
-  getTypedPropertyValueWithSchema,
+  getValueSliceName,
   isPopulated,
-  matchDiscriminant,
+  isSliceDefinitionWithTypes,
+  tryGetProfile,
 } from '@medplum/core';
-
-function isDiscriminatorComponentMatch(
-  typedValue: TypedValue,
-  discriminator: SliceDiscriminator,
-  slice: SupportedSliceDefinition
-): boolean {
-  for (const elementList of [slice.elements, slice.typeSchema?.elements]) {
-    let nestedProp: TypedValue | TypedValue[] | undefined;
-    if (isPopulated(elementList)) {
-      const ed = getElementDefinitionFromElements(elementList, discriminator.path);
-      if (ed) {
-        nestedProp = getTypedPropertyValueWithSchema(typedValue.value, discriminator.path, ed);
-      }
-    }
-
-    if (nestedProp) {
-      return arrayify(nestedProp)?.some((v: any) => matchDiscriminant(v, discriminator, slice, elementList)) ?? false;
-    }
-  }
-
-  return false;
-}
-function getValueSliceName(
-  value: any,
-  slices: SupportedSliceDefinition[],
-  discriminators: SliceDiscriminator[]
-): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  for (const slice of slices) {
-    const typedValue: TypedValue = {
-      value,
-      type: slice.typeSchema?.name ?? slice.type[0].code,
-    };
-    if (discriminators.every((d) => isDiscriminatorComponentMatch(typedValue, d, slice))) {
-      return slice.name;
-    }
-  }
-  return undefined;
-}
 
 export function assignValuesIntoSlices(
   values: any[],
-  slices: SupportedSliceDefinition[],
-  slicing: SlicingRules | undefined
+  slices: SliceDefinitionWithTypes[],
+  slicing: SlicingRules | undefined,
+  profileUrl: string | undefined
 ): any[][] {
-  if (!slicing || slicing.slices.length === 0) {
+  if (!isPopulated(slicing?.slices)) {
     return [values];
   }
 
@@ -69,29 +26,69 @@ export function assignValuesIntoSlices(
   }
 
   for (const value of values) {
-    const sliceName = getValueSliceName(value, slices, slicing.discriminator);
+    const sliceName = getValueSliceName(value, slices, slicing.discriminator, profileUrl);
+
     let sliceIndex = sliceName ? slices.findIndex((slice) => slice.name === sliceName) : -1;
+    // -1 can come from either findIndex or the ternary else
     if (sliceIndex === -1) {
-      sliceIndex = slices.length; // values not matched to a slice go in the last entry for non-slice
+      sliceIndex = slices.length;
     }
     slicedValues[sliceIndex].push(value);
-  }
-
-  // for slices without existing values, add a placeholder empty value
-  for (let i = 0; i < slices.length; i++) {
-    if (slicedValues[i].length === 0) {
-      slicedValues[i].push(undefined);
-    }
   }
 
   return slicedValues;
 }
 
-export type SupportedSliceDefinition = SliceDefinition & {
-  type: NonNullable<SliceDefinition['type']>;
-  typeSchema?: InternalTypeSchema;
-};
+export async function prepareSlices({
+  medplum,
+  property,
+}: {
+  medplum: MedplumClient;
+  property: InternalSchemaElement;
+}): Promise<SliceDefinitionWithTypes[]> {
+  return new Promise((resolve, reject) => {
+    if (!property.slicing) {
+      resolve([]);
+      return;
+    }
 
-export function isSupportedSliceDefinition(slice: SliceDefinition): slice is SupportedSliceDefinition {
-  return slice.type !== undefined && slice.type.length > 0;
+    const supportedSlices: SliceDefinitionWithTypes[] = [];
+    const profileUrls: (string | undefined)[] = [];
+    const promises: Promise<string[]>[] = [];
+    for (const slice of property.slicing.slices) {
+      if (!isSliceDefinitionWithTypes(slice)) {
+        console.debug('Unsupported slice definition', slice);
+        continue;
+      }
+
+      let profileUrl: string | undefined;
+      // If elements are not defined for the slice, look for a profile
+      if (!isPopulated(slice.elements)) {
+        profileUrl = slice.type[0]?.profile?.[0];
+      }
+
+      // important to keep these three arrays the same length;
+      supportedSlices.push(slice);
+      profileUrls.push(profileUrl);
+      if (profileUrl) {
+        promises.push(medplum.requestProfileSchema(profileUrl));
+      } else {
+        promises.push(Promise.resolve([]));
+      }
+    }
+
+    Promise.all(promises)
+      .then(() => {
+        for (let i = 0; i < supportedSlices.length; i++) {
+          const slice = supportedSlices[i];
+          const profileUrl = profileUrls[i];
+          if (profileUrl) {
+            const typeSchema = tryGetProfile(profileUrl);
+            slice.typeSchema = typeSchema;
+          }
+        }
+        resolve(supportedSlices);
+      })
+      .catch(reject);
+  });
 }

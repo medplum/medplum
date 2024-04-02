@@ -63,7 +63,7 @@ export function MyComponent() {
 ```ts
 interface MedplumContext {
   medplum: MedplumClient;
-  navigate: MepdlumNavigateFunction;
+  navigate: MedplumNavigateFunction;
   profile?: ProfileResource;
   loading: boolean;
 }

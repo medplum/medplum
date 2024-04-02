@@ -1,6 +1,6 @@
 # Medplum FHIR Type Definitions
 
-This library contains [TypeScript](https://www.typescriptlang.org/) type definitions for all [R4 types](https://www.hl7.org/fhir/valueset-resource-types.html).
+This library contains [TypeScript](https://www.typescriptlang.org/) type definitions for all [R4 types](https://hl7.org/fhir/R4/valueset-resource-types.html).
 
 ## Installation
 

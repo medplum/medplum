@@ -6,8 +6,8 @@
 }
 
 .images {
-  width: 3000px;
-  animation: bannermove 20s linear infinite;
+  width: 4000px;
+  animation: bannermove 30s linear infinite;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,6 +27,6 @@
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-1642px);
+    transform: translateX(-2170px);
   }
 }

@@ -4,12 +4,13 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 
-const app = express();
-
 describe('Method', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -63,6 +64,30 @@ describe('Method', () => {
       .type('json')
       .send({ email: 'alice@' + randomUUID() + '.com' });
     expect(res2.status).toBe(200);
+  });
+
+  test('Domain config case sensitivity', async () => {
+    const domain = randomUUID() + '.example.com';
+    await withTestContext(() =>
+      systemRepo.createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
+
+    // Domain config found
+    const res1 = await request(app)
+      .post('/auth/method')
+      .type('json')
+      .send({ email: 'alice@' + domain.toUpperCase() });
+    expect(res1.status).toBe(200);
   });
 
   test('Domain config authorize url without protocol', async () => {

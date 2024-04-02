@@ -1,7 +1,7 @@
 import { Reference } from '@medplum/fhirtypes';
 import { Atom, AtomContext } from '../fhirlexer/parse';
 import { PropertyType, TypedValue, isResource } from '../types';
-import { calculateAge } from '../utils';
+import { calculateAge, isEmpty } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import { booleanToTypedValue, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean, toTypedValue } from './utils';
@@ -34,7 +34,18 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns True if the input collection is empty ({ }) and false otherwise.
    */
   empty: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return booleanToTypedValue(input.length === 0);
+    return booleanToTypedValue(input.length === 0 || input.every((e) => isEmpty(e.value)));
+  },
+
+  /**
+   * Returns true if the input collection is not empty ({ }) and false otherwise.
+   *
+   * @param _context - The evaluation context.
+   * @param input - The input collection.
+   * @returns True if the input collection is not empty ({ }) and false otherwise.
+   */
+  hasValue: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
+    return booleanToTypedValue(input.length !== 0);
   },
 
   /**
@@ -56,7 +67,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (criteria) {
       return booleanToTypedValue(input.filter((e) => toJsBoolean(criteria.eval(context, [e]))).length > 0);
     } else {
-      return booleanToTypedValue(input.length > 0);
+      return booleanToTypedValue(input.length > 0 && input.every((e) => !isEmpty(e.value)));
     }
   },
 
@@ -251,7 +262,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   where: (context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.filter((e) => toJsBoolean(criteria.eval(context, [e])));
+    return input.filter((e) => toJsBoolean(criteria.eval({ parent: context, variables: { $this: e } }, [e])));
   },
 
   /**
@@ -1493,13 +1504,12 @@ export const functions: Record<string, FhirPathFunction> = {
    * function unchanged.
    *
    * See: https://hl7.org/fhirpath/#tracename-string-projection-expression-collection
-   * @param context - The evaluation context.
+   * @param _context - The evaluation context.
    * @param input - The input collection.
-   * @param nameAtom - The log name.
+   * @param _nameAtom - The log name.
    * @returns The input collection.
    */
-  trace: (context: AtomContext, input: TypedValue[], nameAtom: Atom): TypedValue[] => {
-    console.log('trace', input, nameAtom);
+  trace: (_context: AtomContext, input: TypedValue[], _nameAtom: Atom): TypedValue[] => {
     return input;
   },
 

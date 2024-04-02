@@ -4,7 +4,7 @@ import {
   indexStructureDefinitionBundle,
   notFound,
   OperationOutcomeError,
-  parseSearchDefinition,
+  parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation, Patient, ResourceType, SearchParameter } from '@medplum/fhirtypes';
@@ -83,21 +83,21 @@ describe('MemoryRepository', () => {
   test('searchResources helper', async () => {
     const family = randomUUID();
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
-    const resources = await repo.searchResources<Patient>(parseSearchDefinition('Patient?family=' + family));
+    const resources = await repo.searchResources<Patient>(parseSearchRequest('Patient?family=' + family));
     expect(resources).toHaveLength(1);
     expect(resources[0].id).toBe(patient.id);
 
-    const emptyResources = await repo.searchResources<Patient>(parseSearchDefinition('Patient?family=' + randomUUID()));
+    const emptyResources = await repo.searchResources<Patient>(parseSearchRequest('Patient?family=' + randomUUID()));
     expect(emptyResources).toHaveLength(0);
   });
 
   test('searchOne helper', async () => {
     const family = randomUUID();
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
-    const resource = await repo.searchOne<Patient>(parseSearchDefinition('Patient?family=' + family));
+    const resource = await repo.searchOne<Patient>(parseSearchRequest('Patient?family=' + family));
     expect(resource?.id).toBe(patient.id);
 
-    const emptyResource = await repo.searchOne<Patient>(parseSearchDefinition('Patient?family=' + randomUUID()));
+    const emptyResource = await repo.searchOne<Patient>(parseSearchRequest('Patient?family=' + randomUUID()));
     expect(emptyResource).toBeUndefined();
   });
 

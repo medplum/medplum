@@ -5,13 +5,13 @@ import { NavLink } from 'react-router-dom';
 import classes from './SideMenu.module.css';
 
 export interface SubMenuProps {
-  name: string;
-  href: string;
+  readonly name: string;
+  readonly href: string;
 }
 
 export interface SideMenuProps {
-  title: string;
-  menu: { name: string; href: string; subMenu?: SubMenuProps[] }[];
+  readonly title: string;
+  readonly menu: { name: string; href: string; subMenu?: SubMenuProps[] }[];
 }
 
 export function SideMenu(props: SideMenuProps): JSX.Element {

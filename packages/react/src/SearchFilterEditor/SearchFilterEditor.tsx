@@ -1,5 +1,5 @@
 import { Button, Group, Modal, NativeSelect } from '@mantine/core';
-import { Filter, getSearchParameters, Operator, SearchRequest, stringify } from '@medplum/core';
+import { Filter, Operator, SearchRequest, getSearchParameters, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -14,10 +14,10 @@ import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilt
 import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
 
 export interface SearchFilterEditorProps {
-  visible: boolean;
-  search: SearchRequest;
-  onOk: (search: SearchRequest) => void;
-  onCancel: () => void;
+  readonly visible: boolean;
+  readonly search: SearchRequest;
+  readonly onOk: (search: SearchRequest) => void;
+  readonly onCancel: () => void;
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
@@ -91,7 +91,6 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
                   <FilterRowDisplay
                     key={`filter-${filter.code}-${filter.operator}-${filter.value}-display`}
                     resourceType={resourceType}
-                    searchParams={searchParams}
                     filter={filter}
                     onEdit={() => setEditingIndex(index)}
                     onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
@@ -111,7 +110,6 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
 }
 
 interface FilterRowDisplayProps {
-  readonly searchParams: Record<string, SearchParameter>;
   readonly resourceType: string;
   readonly filter: Filter;
   readonly onEdit: () => void;
@@ -131,7 +129,7 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
         <Button size="compact-md" variant="outline" onClick={props.onEdit}>
           Edit
         </Button>
-        <Button size="size-md" variant="outline" onClick={props.onDelete}>
+        <Button size="compact-md" variant="outline" onClick={props.onDelete}>
           Delete
         </Button>
       </td>
@@ -140,12 +138,12 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
 }
 
 interface FilterRowInputProps {
-  resourceType: string;
-  searchParams: Record<string, SearchParameter>;
-  defaultValue?: Filter;
-  okText: string;
-  onOk: (value: Filter) => void;
-  onCancel?: () => void;
+  readonly resourceType: string;
+  readonly searchParams: Record<string, SearchParameter>;
+  readonly defaultValue?: Filter;
+  readonly okText: string;
+  readonly onOk: (value: Filter) => void;
+  readonly onCancel?: () => void;
 }
 
 function FilterRowInput(props: FilterRowInputProps): JSX.Element {

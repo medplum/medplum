@@ -1,4 +1,5 @@
-import { Operator, badRequest, created, parseSearchDefinition } from '@medplum/core';
+import { Operator, created, parseSearchRequest } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   Measure,
   MeasureGroup,
@@ -6,13 +7,13 @@ import {
   MeasureReport,
   MeasureReportGroup,
   MeasureReportGroupPopulation,
-  Resource,
 } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { isFhirJsonContentType, sendResponse } from '../response';
+import { getOperationDefinition } from './definitions';
+import { parseInputParameters } from './utils/parameters';
+
+const operation = getOperationDefinition('Measure', 'evaluate-measure');
 
 interface EvaluateMeasureParameters {
   readonly periodStart: string;
@@ -36,58 +37,16 @@ interface EvaluateMeasureParameters {
  * 4. location parameter
  *
  * See: https://hl7.org/fhir/measure-operation-evaluate-measure.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function evaluateMeasureHandler(req: Request, res: Response): Promise<void> {
+export async function evaluateMeasureHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
   const measure = await ctx.repo.readResource<Measure>('Measure', id);
-
-  const params = await validateParameters(req, res);
-  if (!params) {
-    return;
-  }
-
+  const params = parseInputParameters<EvaluateMeasureParameters>(operation, req);
   const measureReport = await evaluateMeasure(ctx.repo, params, measure);
-  await sendResponse(res, created, measureReport);
-}
-
-/**
- * Parses and validates the operation parameters.
- * See: https://hl7.org/fhir/plandefinition-operation-apply.html
- * @param req - The HTTP request.
- * @param res - The HTTP response.
- * @returns The operation parameters if available; otherwise, undefined.
- */
-async function validateParameters(req: Request, res: Response): Promise<EvaluateMeasureParameters | undefined> {
-  if (!isFhirJsonContentType(req)) {
-    res.status(400).send('Unsupported content type');
-    return undefined;
-  }
-
-  const body = req.body as Resource;
-  if (body.resourceType !== 'Parameters') {
-    sendOutcome(res, badRequest('Incorrect parameters type'));
-    return undefined;
-  }
-
-  const periodStartParam = body.parameter?.find((param) => param.name === 'periodStart');
-  if (!periodStartParam?.valueDate) {
-    sendOutcome(res, badRequest('Missing periodStart parameter'));
-    return undefined;
-  }
-
-  const periodEndParam = body.parameter?.find((param) => param.name === 'periodEnd');
-  if (!periodEndParam?.valueDate) {
-    sendOutcome(res, badRequest('Missing periodEnd parameter'));
-    return undefined;
-  }
-
-  return {
-    periodStart: periodStartParam.valueDate,
-    periodEnd: periodEndParam.valueDate,
-  };
+  return [created, measureReport];
 }
 
 /**
@@ -177,7 +136,7 @@ async function evaluateCount(
   criteria: string,
   params: EvaluateMeasureParameters
 ): Promise<number | undefined> {
-  const searchDefinition = parseSearchDefinition(criteria);
+  const searchDefinition = parseSearchRequest(criteria);
   searchDefinition.total = 'accurate';
 
   if (!searchDefinition.filters) {

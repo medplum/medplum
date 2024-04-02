@@ -90,7 +90,7 @@ Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) res
 
 - Add the values for the five elements above
 - Leave "useSubject" **unchecked**
-- Set the `domain` field to the users' email domain (e.g. "d) Once the resource has been saved, all new authentication requests from that domain will use Okta authentication.
+- Set the `domain` field to the users' email domain (e.g. "mydomain.com") **in all lower-case**. Once the resource has been saved, all new authentication requests from that domain will use Okta authentication.
 
 :::caution Note
 

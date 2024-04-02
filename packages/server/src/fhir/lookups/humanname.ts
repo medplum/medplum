@@ -1,15 +1,13 @@
-import { formatFamilyName, formatGivenName, formatHumanName, stringify } from '@medplum/core';
+import { formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
 import { HumanName, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
-import { compareArrays } from './util';
 
 /**
  * The HumanNameTable class is used to index and search "name" properties on "Person" resources.
  * Each name is represented as a separate row in the "HumanName" table.
  */
-export class HumanNameTable extends LookupTable<HumanName> {
+export class HumanNameTable extends LookupTable {
   private static readonly knownParams: Set<string> = new Set<string>([
     'individual-given',
     'individual-family',
@@ -50,9 +48,10 @@ export class HumanNameTable extends LookupTable<HumanName> {
    * Attempts to reuse existing identifiers if they are correct.
    * @param client - The database client.
    * @param resource - The resource to index.
+   * @param create - True if the resource should be created (vs updated).
    * @returns Promise on completion.
    */
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
     if (
       resource.resourceType !== 'Patient' &&
       resource.resourceType !== 'Person' &&
@@ -62,6 +61,10 @@ export class HumanNameTable extends LookupTable<HumanName> {
       return;
     }
 
+    if (!create) {
+      await this.deleteValuesForResource(client, resource);
+    }
+
     const names: HumanName[] | undefined = resource.name;
     if (!names || !Array.isArray(names)) {
       return;
@@ -69,30 +72,14 @@ export class HumanNameTable extends LookupTable<HumanName> {
 
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const existing = await this.getExistingValues(client, resourceType, resourceId);
+    const values = names.map((name) => ({
+      resourceId,
+      name: getNameString(name),
+      given: formatGivenName(name),
+      family: formatFamilyName(name),
+    }));
 
-    if (!compareArrays(names, existing)) {
-      if (existing.length > 0) {
-        await this.deleteValuesForResource(client, resource);
-      }
-
-      const values = [];
-
-      for (let i = 0; i < names.length; i++) {
-        const name = names[i];
-        values.push({
-          id: randomUUID(),
-          resourceId,
-          index: i,
-          content: stringify(name),
-          name: getNameString(name),
-          given: formatGivenName(name),
-          family: formatFamilyName(name),
-        });
-      }
-
-      await this.insertValuesForResource(client, resourceType, values);
-    }
+    await this.insertValuesForResource(client, resourceType, values);
   }
 }
 

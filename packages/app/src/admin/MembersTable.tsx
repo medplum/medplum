@@ -6,8 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { getProjectId } from '../utils';
 
 export interface MemberTableProps {
-  resourceType: ResourceType;
-  fields: string[];
+  readonly resourceType: ResourceType;
+  readonly fields: string[];
 }
 
 export function MemberTable(props: MemberTableProps): JSX.Element {

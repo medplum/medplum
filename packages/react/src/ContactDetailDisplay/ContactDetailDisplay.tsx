@@ -2,7 +2,7 @@ import { ContactDetail } from '@medplum/fhirtypes';
 import { ContactPointDisplay } from '../ContactPointDisplay/ContactPointDisplay';
 
 export interface ContactDetailDisplayProps {
-  value?: ContactDetail;
+  readonly value?: ContactDetail;
 }
 
 export function ContactDetailDisplay(props: ContactDetailDisplayProps): JSX.Element | null {

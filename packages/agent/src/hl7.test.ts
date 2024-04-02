@@ -1,4 +1,4 @@
-import { allOk, ContentType, createReference, Hl7Message, sleep } from '@medplum/core';
+import { allOk, ContentType, createReference, Hl7Message, LogLevel, sleep } from '@medplum/core';
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
@@ -74,7 +74,7 @@ describe('HL7', () => {
       ],
     } as Agent);
 
-    const app = new App(medplum, agent.id as string);
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
 
     const client = new Hl7Client({
@@ -147,7 +147,7 @@ describe('HL7', () => {
     }
 
     // Start the app
-    const app = new App(medplum, agent.id as string);
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
 
     // Wait for the WebSocket to connect

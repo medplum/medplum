@@ -3,6 +3,8 @@
  * Do not edit manually.
  */
 
+import { Bot } from './Bot';
+import { ClientApplication } from './ClientApplication';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
 import { Device } from './Device';
@@ -523,7 +525,7 @@ export interface AuditEventSource {
   /**
    * Identifier of the source where the event was detected.
    */
-  observer: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
+  observer: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson | Bot | ClientApplication>;
 
   /**
    * Code specifying the type of source where event originated.

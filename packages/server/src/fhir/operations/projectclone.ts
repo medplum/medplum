@@ -1,32 +1,30 @@
 import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
+import { buildBinaryIds } from './utils/binary';
 
 /**
  * Handles a Project clone request.
  *
  * Endpoint: [fhir base]/Project/[id]/$clone
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function projectCloneHandler(req: Request, res: Response): Promise<void> {
+export async function projectCloneHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  if (!ctx.login.superAdmin) {
-    sendOutcome(res, forbidden);
-    return;
+  if (!ctx.project.superAdmin) {
+    return [forbidden];
   }
 
   const { id } = req.params;
   const { name, resourceTypes, includeIds, excludeIds } = req.body;
   const cloner = new ProjectCloner(ctx.repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();
-  await sendResponse(res, created, result);
+  return [created, result];
 }
 
 class ProjectCloner {
@@ -45,53 +43,59 @@ class ProjectCloner {
     const project = await repo.readResource<Project>('Project', this.projectId);
     const resourceTypes = getResourceTypes();
     const allResources: Resource[] = [];
+    const binaryIds = new Set<string>();
     const maxResourcesPerResourceType = 1000;
-    let newProject: Project | undefined = undefined;
 
     for (const resourceType of resourceTypes) {
+      if (!this.isAllowedResourceType(resourceType) || resourceType === 'Binary') {
+        continue;
+      }
+
       const bundle = await repo.search({
         resourceType,
         count: maxResourcesPerResourceType,
         filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id as string }],
       });
-      if (bundle.entry) {
-        for (const entry of bundle.entry) {
-          if (entry.resource && this.isResourceAllowed(entry.resource)) {
-            this.idMap.set(entry.resource.id as string, randomUUID());
-            allResources.push(entry.resource);
-          }
+
+      if (!bundle.entry) {
+        continue;
+      }
+
+      for (const entry of bundle.entry) {
+        if (!entry.resource || !this.isAllowedResourceId(entry.resource.id as string)) {
+          continue;
+        }
+        this.idMap.set(entry.resource.id as string, randomUUID());
+        buildBinaryIds(entry.resource, binaryIds);
+        if (entry.resource.resourceType !== 'Project') {
+          allResources.push(entry.resource);
         }
       }
     }
 
+    // Get all binary resources
+    if (this.isAllowedResourceType('Binary')) {
+      for (const binaryId of binaryIds) {
+        const binary = await repo.readResource<Binary>('Binary', binaryId);
+        this.idMap.set(binary.id as string, randomUUID());
+        allResources.push(binary);
+      }
+    }
+
+    // Create the project first - otherwise project references will fail
+    const newProject = await repo.updateResource<Project>(this.rewriteIds(project));
+
+    // Then create all other resources
     for (const resource of allResources) {
       // Use updateResource to create with specified ID
       // That feature is only available to super admins
       const result = await repo.updateResource(this.rewriteIds(resource));
-      if (result.resourceType === 'Project') {
-        newProject = result;
-      }
       if (resource.resourceType === 'Binary') {
         await getBinaryStorage().copyBinary(resource, result as Binary);
       }
     }
 
-    return newProject as Project;
-  }
-
-  isResourceAllowed(resource: Resource): boolean {
-    if (resource.resourceType === 'Project') {
-      return true;
-    }
-    if (!this.isAllowedResourceType(resource.resourceType)) {
-      return false;
-    }
-
-    if (!this.isAllowedResourceId(resource.id as string)) {
-      return false;
-    }
-
-    return true;
+    return newProject;
   }
 
   isAllowedResourceId(resourceId: string): boolean {
@@ -102,13 +106,16 @@ class ProjectCloner {
   }
 
   isAllowedResourceType(resourceType: ResourceType): boolean {
+    if (resourceType === 'Project') {
+      return true;
+    }
     if (this.allowedResourceTypes.length > 0) {
       return this.allowedResourceTypes.includes(resourceType);
     }
     return true;
   }
 
-  rewriteIds(resource: Resource): Resource {
+  rewriteIds<T extends Resource>(resource: T): T {
     const resourceObj = JSON.parse(JSON.stringify(resource, (k, v) => this.rewriteKeyReplacer(k, v)));
 
     if (this.projectName) {

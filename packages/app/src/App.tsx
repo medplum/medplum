@@ -3,7 +3,6 @@ import { MEDPLUM_VERSION } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { AppShell, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react';
 import {
-  Icon,
   IconBrandAsana,
   IconBuilding,
   IconForms,
@@ -17,7 +16,7 @@ import {
   IconStar,
   IconWebhook,
 } from '@tabler/icons-react';
-import { Suspense } from 'react';
+import { FunctionComponent, Suspense } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
 
@@ -75,7 +74,7 @@ function userConfigToMenu(config: UserConfiguration | undefined): NavbarMenu[] {
   return result;
 }
 
-const resourceTypeToIcon: Record<string, Icon> = {
+const resourceTypeToIcon: Record<string, FunctionComponent> = {
   Patient: IconStar,
   Practitioner: IconId,
   Organization: IconBuilding,

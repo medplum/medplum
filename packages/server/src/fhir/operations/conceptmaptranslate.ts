@@ -1,51 +1,35 @@
 import {
   ConceptMapTranslateParameters,
+  OperationOutcomeError,
   Operator,
   allOk,
   badRequest,
   conceptMapTranslate,
-  isOperationOutcome,
-  notFound,
 } from '@medplum/core';
-import { ConceptMap, OperationOutcome } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { ConceptMap } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
 import { getOperationDefinition } from './definitions';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { findTerminologyResource } from './utils/terminology';
 
 const operation = getOperationDefinition('ConceptMap', 'translate');
 
-export async function conceptMapTranslateHandler(req: Request, res: Response): Promise<void> {
+export async function conceptMapTranslateHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ConceptMapTranslateParameters>(operation, req);
 
   const map = await lookupConceptMap(params, req.params.id);
-  if (isOperationOutcome(map)) {
-    sendOutcome(res, map);
-    return;
-  }
 
   const output = conceptMapTranslate(map, params);
-  await sendOutputParameters(operation, res, allOk, output);
+  return [allOk, buildOutputParameters(operation, output)];
 }
 
-async function lookupConceptMap(
-  params: ConceptMapTranslateParameters,
-  id?: string
-): Promise<ConceptMap | OperationOutcome> {
+async function lookupConceptMap(params: ConceptMapTranslateParameters, id?: string): Promise<ConceptMap> {
   const ctx = getAuthenticatedContext();
   if (id) {
     return ctx.repo.readResource('ConceptMap', id);
   } else if (params.url) {
-    const result = await ctx.repo.searchOne<ConceptMap>({
-      resourceType: 'ConceptMap',
-      filters: [{ code: 'url', operator: Operator.EQUALS, value: params.url }],
-      sortRules: [{ code: 'version', descending: true }],
-    });
-    if (!result) {
-      return notFound;
-    }
-    return result;
+    return findTerminologyResource<ConceptMap>('ConceptMap', params.url);
   } else if (params.source) {
     const result = await ctx.repo.searchOne<ConceptMap>({
       resourceType: 'ConceptMap',
@@ -53,10 +37,10 @@ async function lookupConceptMap(
       sortRules: [{ code: 'version', descending: true }],
     });
     if (!result) {
-      return notFound;
+      throw new OperationOutcomeError(badRequest(`ConceptMap for source ${params.source} not found`));
     }
     return result;
-  } else {
-    return badRequest('No ConceptMap specified');
   }
+
+  throw new OperationOutcomeError(badRequest('No ConceptMap specified'));
 }

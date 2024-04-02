@@ -11,7 +11,14 @@ import { adminRouter } from './admin/routes';
 import { asyncWrap } from './async';
 import { authRouter } from './auth/routes';
 import { getConfig, MedplumServerConfig } from './config';
-import { attachRequestContext, AuthenticatedRequestContext, getRequestContext, requestContextStore } from './context';
+import {
+  attachRequestContext,
+  AuthenticatedRequestContext,
+  closeRequestContext,
+  getLogger,
+  getRequestContext,
+  requestContextStore,
+} from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
@@ -25,7 +32,7 @@ import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
-import { globalLogger } from './logger';
+import { keyValueRouter } from './keyvalue/routes';
 import { initKeys } from './oauth/keys';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
@@ -94,6 +101,7 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
  * @param next - The next handler.
  */
 function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
+  closeRequestContext();
   if (res.headersSent) {
     next(err);
     return;
@@ -117,11 +125,7 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
-  try {
-    getRequestContext().logger.error('Unhandled error', err);
-  } catch {
-    globalLogger.error('Unhandled error', err);
-  }
+  getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
@@ -150,7 +154,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   );
   app.use(
     json({
-      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH],
+      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH, ContentType.SCIM_JSON],
       limit: config.maxJsonSize,
     })
   );
@@ -177,6 +181,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/fhir/R4/', fhirRouter);
   apiRouter.use('/fhircast/STU2/', fhircastSTU2Router);
   apiRouter.use('/fhircast/STU3/', fhircastSTU3Router);
+  apiRouter.use('/keyvalue/v1/', keyValueRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
@@ -191,25 +196,27 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
     loadStructureDefinitions();
     initRedis(config.redis);
-    await initDatabase(config.database);
+    await initDatabase(config);
     await seedDatabase();
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
-    initHeartbeat();
+    initHeartbeat(config);
   });
 }
 
 export async function shutdownApp(): Promise<void> {
-  await closeWorkers();
-  await closeDatabase();
   cleanupHeartbeat();
   await closeWebSockets();
-  closeRedis();
+  await closeWorkers();
+  await closeDatabase();
+  await closeRedis();
   closeRateLimiter();
 
   if (server) {
-    server.close();
+    await new Promise((resolve) => {
+      (server as http.Server).close(resolve);
+    });
     server = undefined;
   }
 
@@ -222,22 +229,25 @@ export async function shutdownApp(): Promise<void> {
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const ctx = getRequestContext();
-  const start = new Date();
+  const start = Date.now();
 
   res.on('finish', () => {
-    const duration = new Date().getTime() - start.getTime();
+    const duration = Date.now() - start;
 
     let userProfile: string | undefined;
+    let projectId: string | undefined;
     if (ctx instanceof AuthenticatedRequestContext) {
       userProfile = ctx.profile.reference;
+      projectId = ctx.project.id;
     }
 
     ctx.logger.info('Request served', {
       duration: `${duration} ms`,
       ip: req.ip,
       method: req.method,
-      path: req.path,
+      path: req.originalUrl,
       profile: userProfile,
+      projectId,
       receivedAt: start,
       status: res.statusCode,
       ua: req.get('User-Agent'),

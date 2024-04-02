@@ -1,12 +1,12 @@
-import { OperationOutcomeError, Operator, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
 import { PoolClient } from 'pg';
-import { sendOutcome } from '../outcomes';
-import { InsertQuery, SelectQuery } from '../sql';
-import { parseInputParameters, sendOutputParameters } from './utils/parameters';
 import { requireSuperAdmin } from '../../admin/super';
-import { Repository } from '../repo';
+import { getAuthenticatedContext } from '../../context';
+import { InsertQuery, SelectQuery } from '../sql';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { findTerminologyResource, parentProperty } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -20,7 +20,7 @@ const operation: OperationDefinition = {
   type: true,
   instance: false,
   parameter: [
-    { use: 'in', name: 'system', type: 'uri', min: 1, max: '1' },
+    { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
     { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
     {
       use: 'in',
@@ -44,7 +44,7 @@ export type ImportedProperty = {
 };
 
 export type CodeSystemImportParameters = {
-  system: string;
+  system?: string;
   concept?: Coding[];
   property?: ImportedProperty[];
 };
@@ -55,58 +55,54 @@ export type CodeSystemImportParameters = {
  * Endpoint - Project resource type
  *   [fhir base]/CodeSystem/$import
  *
- * @param req - The HTTP request.
- * @param res - The HTTP response.
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
  */
-export async function codeSystemImportHandler(req: Request, res: Response): Promise<void> {
+export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = requireSuperAdmin();
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
-  const codeSystems = await ctx.repo.searchResources<CodeSystem>({
-    resourceType: 'CodeSystem',
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: params.system }],
-  });
-  if (codeSystems.length === 0) {
-    sendOutcome(res, badRequest('No CodeSystem found with URL ' + params.system));
-    return;
-  } else if (codeSystems.length > 1) {
-    sendOutcome(res, badRequest('Ambiguous code system URI: ' + params.system));
-    return;
+
+  let codeSystem: CodeSystem;
+  if (req.params.id) {
+    codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+  } else if (params.system) {
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
+  } else {
+    return [badRequest('No code system specified')];
   }
-  const codeSystem = codeSystems[0];
 
   try {
-    await importCodeSystem(ctx.repo, codeSystem, params.concept, params.property);
+    await ctx.repo.withTransaction(async (db) => {
+      await importCodeSystem(db, codeSystem, params.concept, params.property);
+    });
   } catch (err) {
-    sendOutcome(res, normalizeOperationOutcome(err));
-    return;
+    return [normalizeOperationOutcome(err)];
   }
-  await sendOutputParameters(operation, res, allOk, codeSystem);
+  return [allOk, buildOutputParameters(operation, codeSystem)];
 }
 
 export async function importCodeSystem(
-  repo: Repository,
+  db: PoolClient,
   codeSystem: CodeSystem,
   concepts?: Coding[],
   properties?: ImportedProperty[]
 ): Promise<void> {
-  await repo.withTransaction(async (db) => {
-    if (concepts?.length) {
-      for (const concept of concepts) {
-        const row = {
-          system: codeSystem.id,
-          code: concept.code,
-          display: concept.display,
-        };
-        const query = new InsertQuery('Coding', [row]).mergeOnConflict(['system', 'code']);
-        await query.execute(db);
-      }
+  if (concepts?.length) {
+    for (const concept of concepts) {
+      const row = {
+        system: codeSystem.id,
+        code: concept.code,
+        display: concept.display,
+      };
+      const query = new InsertQuery('Coding', [row]).mergeOnConflict(['system', 'code']);
+      await query.execute(db);
     }
+  }
 
-    if (properties?.length) {
-      await processProperties(properties, codeSystem, db);
-    }
-  });
+  if (properties?.length) {
+    await processProperties(properties, codeSystem, db);
+  }
 }
 
 async function processProperties(
@@ -158,8 +154,6 @@ async function processProperties(
     await query.execute(db);
   }
 }
-
-export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 
 async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolClient): Promise<[number, boolean]> {
   let prop = codeSystem.property?.find((p) => p.code === code);

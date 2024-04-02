@@ -7,6 +7,7 @@ import {
   Conjunction,
   DeleteQuery,
   Disjunction,
+  Exists,
   Expression,
   InsertQuery,
   Negation,
@@ -21,7 +22,7 @@ import {
  *   2) Human Names - structured names on Patients, Practitioners, and other person resource types
  *   3) Contact Points - email addresses and phone numbers
  */
-export abstract class LookupTable<T> {
+export abstract class LookupTable {
   /**
    * Returns the unique name of the lookup table.
    * @param resourceType - The resource type.
@@ -47,35 +48,32 @@ export abstract class LookupTable<T> {
    * Indexes the resource in the lookup table.
    * @param client - The database client.
    * @param resource - The resource to index.
+   * @param create - True if the resource should be created (vs updated).
    */
-  abstract indexResource(client: PoolClient, resource: Resource): Promise<void>;
+  abstract indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void>;
 
   /**
    * Builds a "where" condition for the select query builder.
-   * @param selectQuery - The select query builder.
+   * @param _selectQuery - The select query builder.
    * @param resourceType - The FHIR resource type.
    * @param table - The resource table.
    * @param filter - The search filter details.
    * @returns The select query where expression.
    */
-  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
-    const tableName = this.getTableName(resourceType);
-    const joinName = selectQuery.getNextJoinAlias();
+  buildWhere(_selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
+    const lookupTableName = this.getTableName(resourceType);
     const columnName = this.getColumnName(filter.code);
-    const joinOnExpression = new Conjunction([
-      new Condition(new Column(table, 'id'), '=', new Column(joinName, 'resourceId')),
-    ]);
 
     const disjunction = new Disjunction([]);
     for (const option of filter.value.split(',')) {
       if (filter.operator === FhirOperator.EXACT) {
-        disjunction.expressions.push(new Condition(new Column(joinName, columnName), '=', option.trim()));
+        disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), '=', option.trim()));
       } else if (filter.operator === FhirOperator.CONTAINS) {
-        disjunction.expressions.push(new Condition(new Column(joinName, columnName), 'LIKE', `%${option}%`));
+        disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), 'LIKE', `%${option}%`));
       } else {
         disjunction.expressions.push(
           new Condition(
-            new Column(joinName, columnName),
+            new Column(lookupTableName, columnName),
             'TSVECTOR_SIMPLE',
             option
               .trim()
@@ -88,15 +86,22 @@ export abstract class LookupTable<T> {
       }
     }
 
-    if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
-      joinOnExpression.expressions.push(new Negation(disjunction));
-    } else {
-      joinOnExpression.expressions.push(disjunction);
-    }
+    const exists = new Exists(
+      new SelectQuery(lookupTableName)
+        .column('resourceId')
+        .whereExpr(
+          new Conjunction([
+            new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+            disjunction,
+          ])
+        )
+    );
 
-    selectQuery.leftJoin(tableName, joinName, joinOnExpression);
-    selectQuery.orderBy(new Column(joinName, columnName));
-    return new Condition(new Column(joinName, 'resourceId'), '!=', null);
+    if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
+      return new Negation(exists);
+    } else {
+      return exists;
+    }
   }
 
   /**
@@ -106,33 +111,16 @@ export abstract class LookupTable<T> {
    * @param sortRule - The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
-    const tableName = this.getTableName(resourceType);
+    const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
     const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
-    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
+    selectQuery.innerJoin(
+      new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
+      joinName,
+      joinOnExpression
+    );
     selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
-  }
-
-  /**
-   * Returns the existing list of indexed addresses.
-   * @param client - The database client.
-   * @param resourceType - The FHIR resource type.
-   * @param resourceId - The FHIR resource ID.
-   * @returns Promise for the list of indexed addresses.
-   */
-  protected async getExistingValues(
-    client: Pool | PoolClient,
-    resourceType: ResourceType,
-    resourceId: string
-  ): Promise<T[]> {
-    const tableName = this.getTableName(resourceType);
-    return new SelectQuery(tableName)
-      .column('content')
-      .where('resourceId', '=', resourceId)
-      .orderBy('index')
-      .execute(client)
-      .then((result) => result.map((row) => JSON.parse(row.content) as T));
   }
 
   /**

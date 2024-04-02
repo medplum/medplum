@@ -10,7 +10,10 @@ import {
   fhirPathIs,
   getTypedPropertyValue,
   getTypedPropertyValueWithSchema,
+  isDateString,
+  isDateTimeString,
   toJsBoolean,
+  toPeriod,
   toTypedValue,
 } from './utils';
 
@@ -227,7 +230,7 @@ describe('FHIRPath utils', () => {
   });
 
   test('getTypedPropertyValueWithSchema', () => {
-    const value = { active: true };
+    const typedValue: TypedValue = { type: 'Patient', value: { active: true } };
     const path = 'active';
     const goodElement: InternalSchemaElement = {
       description: '',
@@ -236,8 +239,9 @@ describe('FHIRPath utils', () => {
       max: 0,
       type: [{ code: 'boolean' }],
     };
-    expect(getTypedPropertyValueWithSchema(value, path, goodElement)).toEqual({ type: 'boolean', value: true });
+    expect(getTypedPropertyValueWithSchema(typedValue, path, goodElement)).toEqual({ type: 'boolean', value: true });
 
+    const choiceOfTypeTypedValue: TypedValue = { type: 'Extension', value: { valueBoolean: true } };
     const extensionValueX: InternalSchemaElement = {
       description: '',
       path: 'Extension.value[x]',
@@ -245,9 +249,76 @@ describe('FHIRPath utils', () => {
       max: 1,
       type: [{ code: 'boolean' }],
     };
-    expect(getTypedPropertyValueWithSchema({ valueBoolean: true }, 'value[x]', extensionValueX)).toEqual({
+    expect(getTypedPropertyValueWithSchema(choiceOfTypeTypedValue, 'value[x]', extensionValueX)).toEqual({
       type: 'boolean',
       value: true,
+    });
+  });
+
+  test('getTypedPropertyValueWithSchema with primitive extensions', () => {
+    const humanName = {
+      given: ['John', 'Johnny'],
+      _given: [{ extension: [{ url: 'http://example.com', valueBoolean: true }] }],
+    };
+    const given: InternalSchemaElement = {
+      description: '',
+      path: 'HumanName.given',
+      min: 0,
+      max: 2,
+      isArray: true,
+      type: [{ code: 'string' }],
+    };
+    getTypedPropertyValueWithSchema({ type: 'HumanName', value: humanName }, 'given', given);
+    expect(humanName.given).toEqual(expect.arrayContaining(['John', 'Johnny']));
+    // with primitive extensions, array values can be changed into a `String` type which has a typeof 'object'
+    // ensure the original input array values is not mutated as such
+    expect(humanName.given.every((g) => typeof g === 'string')).toBe(true);
+  });
+
+  test('isDateString', () => {
+    expect(isDateString(undefined)).toBe(false);
+    expect(isDateString(null)).toBe(false);
+    expect(isDateString('')).toBe(false);
+    expect(isDateString('x')).toBe(false);
+    expect(isDateString('2020')).toBe(true);
+    expect(isDateString('2020-01')).toBe(true);
+    expect(isDateString('2020-01-01')).toBe(true);
+    expect(isDateString('2020-01-01T')).toBe(false);
+  });
+
+  test('isDateTimeString', () => {
+    expect(isDateTimeString(undefined)).toBe(false);
+    expect(isDateTimeString(null)).toBe(false);
+    expect(isDateTimeString('')).toBe(false);
+    expect(isDateTimeString('x')).toBe(false);
+    expect(isDateTimeString('2020')).toBe(true);
+    expect(isDateTimeString('2020-01')).toBe(true);
+    expect(isDateTimeString('2020-01-01')).toBe(true);
+    expect(isDateTimeString('2020-01-01T12:34:56Z')).toBe(true);
+  });
+
+  test('toPeriod', () => {
+    expect(toPeriod(undefined)).toBeUndefined();
+    expect(toPeriod(null)).toBeUndefined();
+    expect(toPeriod('')).toBeUndefined();
+    expect(toPeriod('x')).toBeUndefined();
+    expect(toPeriod({})).toBeUndefined();
+    expect(toPeriod('2020-01-01')).toMatchObject({
+      start: '2020-01-01T00:00:00.000Z',
+      end: '2020-01-01T23:59:59.999Z',
+    });
+    expect(toPeriod('2020-01-01T12:34:56.000Z')).toMatchObject({
+      start: '2020-01-01T12:34:56.000Z',
+      end: '2020-01-01T12:34:56.000Z',
+    });
+    expect(
+      toPeriod({
+        start: '2020-01-01T12:34:56.000Z',
+        end: '2020-01-01T12:34:56.999Z',
+      })
+    ).toMatchObject({
+      start: '2020-01-01T12:34:56.000Z',
+      end: '2020-01-01T12:34:56.999Z',
     });
   });
 });

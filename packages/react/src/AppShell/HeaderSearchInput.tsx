@@ -27,8 +27,8 @@ function toOption(resource: HeaderSearchTypes): AsyncAutocompleteOption<HeaderSe
 }
 
 export interface HeaderSearchInputProps {
-  pathname?: string;
-  searchParams?: URLSearchParams;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
 }
 
 export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {

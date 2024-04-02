@@ -1,5 +1,4 @@
 import { CodeSystem, CodeSystemConcept, Resource, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 
@@ -8,7 +7,7 @@ import { LookupTable } from './lookuptable';
  * Each element is represented as a separate row in the "ValueSetElementTable" table.
  * Elements can be found in ValueSet and CodeSystem resources.
  */
-export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains> {
+export class ValueSetElementTable extends LookupTable {
   getTableName(): string {
     return 'ValueSetElement';
   }
@@ -26,7 +25,11 @@ export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains>
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+    if (!create) {
+      await this.deleteValuesForResource(client, resource);
+    }
+
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
     let elements: ValueSetExpansionContains[] | undefined = undefined;
@@ -41,21 +44,12 @@ export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains>
       return;
     }
 
-    await this.deleteValuesForResource(client, resource);
-
-    const values = [];
-
-    for (let i = 0; i < elements.length; i++) {
-      const element = elements[i];
-      values.push({
-        id: randomUUID(),
-        resourceId,
-        index: i,
-        system: element.system,
-        code: element.code,
-        display: element.display,
-      });
-    }
+    const values = elements.map((element) => ({
+      resourceId,
+      system: element.system,
+      code: element.code,
+      display: element.display,
+    }));
 
     await this.insertValuesForResource(client, resourceType, values);
   }

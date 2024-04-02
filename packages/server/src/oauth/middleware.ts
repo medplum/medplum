@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 import { AuthenticatedRequestContext, getRequestContext, requestContextStore } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
 
 export interface AuthState {
@@ -18,13 +18,7 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
   return authenticateTokenImpl(req)
     .then(async ({ login, project, membership, accessToken }) => {
       const ctx = getRequestContext();
-      const repo = await getRepoForLogin(
-        login,
-        membership,
-        project.strictMode,
-        isExtendedMode(req),
-        project.checkReferencesOnWrite
-      );
+      const repo = await getRepoForLogin(login, membership, project, isExtendedMode(req));
       requestContextStore.run(
         new AuthenticatedRequestContext(ctx, login, project, membership, repo, undefined, accessToken),
         () => next()
@@ -61,6 +55,7 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
     throw new OperationOutcomeError(unauthorized);
   }
 
+  const systemRepo = getSystemRepo();
   let client = undefined;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
@@ -86,7 +81,6 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
     user: createReference(client),
     authMethod: 'client',
     authTime: new Date().toISOString(),
-    superAdmin: project.superAdmin,
   };
 
   return { login, project, membership };

@@ -1,14 +1,25 @@
 import { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useState } from 'react';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
-export interface CodeableConceptInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {
-  defaultValue?: CodeableConcept;
-  onChange?: (value: CodeableConcept | undefined) => void;
+export interface CodeableConceptInputProps
+  extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange'>,
+    ComplexTypeInputProps<CodeableConcept> {
+  readonly onChange: ((value: CodeableConcept | undefined) => void) | undefined;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
-  const { defaultValue, onChange, ...rest } = props;
+  const {
+    defaultValue,
+    onChange,
+    withHelpText,
+    // spread these unused props so they don't get passed to ValueSetAutocomplete in `rest`
+    outcome: _outcome,
+    path: _path,
+    valuePath: _valuePath,
+    ...rest
+  } = props;
   const [value, setValue] = useState<CodeableConcept | undefined>(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
@@ -23,6 +34,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
     <ValueSetAutocomplete
       defaultValue={value && codeableConceptToValueSetElement(value)}
       onChange={handleChange}
+      withHelpText={withHelpText ?? true}
       {...rest}
     />
   );

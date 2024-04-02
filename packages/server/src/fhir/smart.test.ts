@@ -89,7 +89,9 @@ describe('SMART on FHIR', () => {
   });
 
   test('Generate access policy', () => {
-    expect(applySmartScopes(undefined, 'patient/Observation.cruds patient/Patient.cruds')).toMatchObject({
+    expect(
+      applySmartScopes({ resourceType: 'AccessPolicy' }, 'patient/Observation.cruds patient/Patient.cruds')
+    ).toMatchObject({
       resourceType: 'AccessPolicy',
       resource: [
         {

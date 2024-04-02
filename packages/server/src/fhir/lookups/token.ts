@@ -8,6 +8,7 @@ import {
   OperationOutcomeError,
   PropertyType,
   SortRule,
+  splitN,
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
@@ -21,9 +22,10 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
+import { getLogger } from '../../context';
+import { Column, Condition, Conjunction, Disjunction, Exists, Expression, Negation, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
-import { compareArrays, deriveIdentifierSearchParameter } from './util';
+import { deriveIdentifierSearchParameter } from './util';
 
 interface Token {
   readonly code: string;
@@ -37,7 +39,7 @@ interface Token {
  * The common case for tokens is a "system" and "value" key/value pair.
  * Each token is represented as a separate row in the "Token" table.
  */
-export class TokenTable extends LookupTable<Token> {
+export class TokenTable extends LookupTable {
   /**
    * Returns the table name.
    * @param resourceType - The resource type.
@@ -70,60 +72,55 @@ export class TokenTable extends LookupTable<Token> {
    * Attempts to reuse existing tokens if they are correct.
    * @param client - The database client.
    * @param resource - The resource to index.
+   * @param create - True if the resource should be created (vs updated).
    * @returns Promise on completion.
    */
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+    if (!create) {
+      await this.deleteValuesForResource(client, resource);
+    }
+
     const tokens = getTokens(resource);
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const existing = await getExistingValues(client, resourceType, resourceId);
+    const values = tokens.map((token) => ({
+      resourceId,
+      code: token.code,
+      system: token.system?.trim(),
+      value: token.value?.trim?.(),
+    }));
 
-    if (!compareArrays(tokens, existing)) {
-      if (existing.length > 0) {
-        await this.deleteValuesForResource(client, resource);
-      }
-
-      const values = [];
-
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        values.push({
-          resourceId,
-          code: token.code,
-          index: i,
-          system: token.system?.trim(),
-          value: token.value?.trim?.(),
-        });
-      }
-
-      await this.insertValuesForResource(client, resourceType, values);
-    }
+    await this.insertValuesForResource(client, resourceType, values);
   }
 
   /**
    * Builds a "where" condition for the select query builder.
-   * @param selectQuery - The select query builder.
+   * @param _selectQuery - The select query builder.
    * @param resourceType - The resource type.
    * @param table - The resource table.
    * @param filter - The search filter details.
    * @returns The select query where expression.
    */
-  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
-    const tableName = getTableName(resourceType);
-    const joinName = selectQuery.getNextJoinAlias();
-    const joinOnExpression = new Conjunction([
-      new Condition(new Column(table, 'id'), '=', new Column(joinName, 'resourceId')),
-      new Condition(new Column(joinName, 'code'), '=', filter.code),
+  buildWhere(_selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
+    const lookupTableName = this.getTableName(resourceType);
+
+    const conjunction = new Conjunction([
+      new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+      new Condition(new Column(lookupTableName, 'code'), '=', filter.code),
     ]);
-    const whereExpression = buildWhereExpression(joinName, filter);
+
+    const whereExpression = buildWhereExpression(lookupTableName, filter);
     if (whereExpression) {
-      joinOnExpression.expressions.push(whereExpression);
+      conjunction.expressions.push(whereExpression);
     }
 
-    selectQuery.leftJoin(tableName, joinName, joinOnExpression);
+    const exists = new Exists(new SelectQuery(lookupTableName).column('resourceId').whereExpr(conjunction));
 
-    const sqlOperator = shouldTokenRowExist(filter) ? '!=' : '=';
-    return new Condition(new Column(joinName, 'resourceId'), sqlOperator, null);
+    if (shouldTokenRowExist(filter)) {
+      return exists;
+    } else {
+      return new Negation(exists);
+    }
   }
 
   /**
@@ -133,14 +130,18 @@ export class TokenTable extends LookupTable<Token> {
    * @param sortRule - The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
-    const tableName = getTableName(resourceType);
+    const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
-    const joinOnExpression = new Conjunction([
-      new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId')),
-      new Condition(new Column(joinName, 'code'), '=', sortRule.code),
-    ]);
-    joinOnExpression.expressions.push(new Condition(new Column(joinName, 'code'), '=', sortRule.code));
-    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
+    const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
+    selectQuery.innerJoin(
+      new SelectQuery(lookupTableName)
+        .distinctOn('resourceId')
+        .column('resourceId')
+        .column('value')
+        .whereExpr(new Condition(new Column(lookupTableName, 'code'), '=', sortRule.code)),
+      joinName,
+      joinOnExpression
+    );
     selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
   }
 }
@@ -390,31 +391,6 @@ function buildSimpleToken(
 }
 
 /**
- * Returns the existing list of indexed tokens.
- * @param client - The current database client.
- * @param resourceType - The FHIR resource type.
- * @param resourceId - The FHIR resource ID.
- * @returns Promise for the list of indexed tokens  .
- */
-async function getExistingValues(client: PoolClient, resourceType: ResourceType, resourceId: string): Promise<Token[]> {
-  const tableName = getTableName(resourceType);
-  return new SelectQuery(tableName)
-    .column('code')
-    .column('system')
-    .column('value')
-    .where('resourceId', '=', resourceId)
-    .orderBy('index')
-    .execute(client)
-    .then((result) =>
-      result.map((row) => ({
-        code: row.code,
-        system: row.system,
-        value: row.value,
-      }))
-    );
-}
-
-/**
  *
  * Returns a Disjunction of filters on the token table based on `filter.operator`, or `undefined` if no filters are required.
  * The Disjunction will contain one filter for each specified query value.
@@ -449,7 +425,7 @@ function buildWhereExpression(tableName: string, filter: Filter): Expression | u
  * @returns A WHERE Condition on the token table, if applicable, else undefined
  */
 function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression | undefined {
-  const parts = query.split('|');
+  const parts = splitN(query, '|', 2);
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const systemCondition = new Condition(new Column(tableName, 'system'), '=', parts[0]);
@@ -457,7 +433,7 @@ function buildWhereCondition(tableName: string, operator: FhirOperator, query: s
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, parts[1])])
       : systemCondition;
   } else {
-    // If using the :in operator, build the condition for joining to the Valueset table specified by `query`
+    // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
     if (operator === FhirOperator.IN) {
       return buildInValueSetCondition(tableName, query);
     }
@@ -475,11 +451,13 @@ function buildWhereCondition(tableName: string, operator: FhirOperator, query: s
 function buildValueCondition(tableName: string, operator: FhirOperator, value: string): Expression {
   const column = new Column(tableName, 'value');
   if (operator === FhirOperator.TEXT) {
+    getLogger().warn('Potentially expensive token lookup query', { operator });
     return new Conjunction([
       new Condition(new Column(tableName, 'system'), '=', 'text'),
-      new Condition(column, 'LIKE', value.trim() + '%'),
+      new Condition(column, 'TSVECTOR_SIMPLE', value.trim() + ':*'),
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
+    getLogger().warn('Potentially expensive token lookup query', { operator });
     return new Condition(column, 'LIKE', value.trim() + '%');
   } else {
     return new Condition(column, '=', value.trim());

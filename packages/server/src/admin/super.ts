@@ -12,18 +12,18 @@ import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config';
-import { getClient } from '../database';
+import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
+import { getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { authenticateRequest } from '../oauth/middleware';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import * as dataMigrations from '../migrations/data';
+import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -37,7 +37,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4ValueSets());
+    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets());
   })
 );
 
@@ -80,6 +80,7 @@ superAdminRouter.post(
     validateResourceType(resourceType);
 
     await sendAsyncResponse(req, res, async () => {
+      const systemRepo = getSystemRepo();
       await systemRepo.reindexResourceType(resourceType);
     });
   })
@@ -98,6 +99,7 @@ superAdminRouter.post(
     validateResourceType(resourceType);
 
     await sendAsyncResponse(req, res, async () => {
+      const systemRepo = getSystemRepo();
       await systemRepo.rebuildCompartmentsForResourceType(resourceType);
     });
   })
@@ -184,7 +186,7 @@ superAdminRouter.post(
     await sendAsyncResponse(req, res, async () => {
       const resourceTypes = getResourceTypes();
       for (const resourceType of resourceTypes) {
-        await getClient().query(
+        await getDatabasePool().query(
           `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
         );
       }
@@ -203,14 +205,16 @@ superAdminRouter.post(
     requireAsync(req);
 
     await sendAsyncResponse(req, res, async () => {
-      const client = getClient();
+      const systemRepo = getSystemRepo();
+      const client = getDatabasePool();
       const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
       const version = result.rows[0]?.dataVersion as number;
       const migrationKeys = Object.keys(dataMigrations);
       for (let i = version + 1; i <= migrationKeys.length; i++) {
         const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        ctx.logger.info('Running data migration', { version: `v${i}` });
+        const start = Date.now();
         await migration.run(systemRepo);
+        ctx.logger.info('Data migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
         await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
     });
@@ -219,7 +223,7 @@ superAdminRouter.post(
 
 export function requireSuperAdmin(): AuthenticatedRequestContext {
   const ctx = getAuthenticatedContext();
-  if (!ctx.login.superAdmin) {
+  if (!ctx.project.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
   return ctx;

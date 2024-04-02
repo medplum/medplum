@@ -2,7 +2,7 @@ import { createReference, ProfileResource } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { createProject } from '../fhir/operations/projectinit';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { bcryptHashPassword } from './utils';
 
@@ -45,6 +45,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   let user = await getUserByEmailWithoutProject(email);
   if (!user) {
+    const systemRepo = getSystemRepo();
     user = await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName,
@@ -70,9 +71,9 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const token = await getAuthTokens(
     {
       ...login,
-      membership: createReference(membership),
+      membership: createReference(membership as ProjectMembership),
     },
-    createReference(profile)
+    createReference(profile as ProfileResource)
   );
 
   return {
@@ -80,8 +81,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     project,
     login,
-    membership,
-    profile,
+    membership: membership as ProjectMembership,
+    profile: profile as ProfileResource,
     client,
   };
 }

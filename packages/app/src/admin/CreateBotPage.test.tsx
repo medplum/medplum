@@ -2,7 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -45,15 +45,12 @@ describe('CreateBotPage', () => {
 
   test('Renders', async () => {
     await setup('/admin/bots/new');
-    await waitFor(() => screen.getByText('Create Bot'));
-    expect(screen.getByText('Create Bot')).toBeInTheDocument();
+    expect(await screen.findByText('Create Bot')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
     await setup('/admin/bots/new');
-    await waitFor(() => screen.getByText('Create Bot'));
-
-    expect(screen.getByText('Create Bot')).toBeInTheDocument();
+    expect(await screen.findByText('Create Bot')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Name'), {
@@ -73,9 +70,7 @@ describe('CreateBotPage', () => {
 
   test('Submit with access policy', async () => {
     await setup('/admin/bots/new');
-    await waitFor(() => screen.getByText('Create Bot'));
-
-    expect(screen.getByText('Create Bot')).toBeInTheDocument();
+    expect(await screen.findByText('Create Bot')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Name'), {

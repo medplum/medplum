@@ -10,7 +10,7 @@ import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
@@ -32,7 +32,7 @@ describe('Login', () => {
       await initApp(app, config);
 
       // Create a test project
-      ({ project, client } = await createTestProject());
+      ({ project, client } = await createTestProject({ withClient: true }));
 
       // Create a test user
       const { user } = await inviteUser({
@@ -343,6 +343,7 @@ describe('Login', () => {
       });
 
       // As a super admin, update the project to require Google auth
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         features: ['google-auth-required'],

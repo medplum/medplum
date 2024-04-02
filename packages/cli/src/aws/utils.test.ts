@@ -31,7 +31,7 @@ describe('Utils', () => {
 
     await printConfigNotFound('dev');
 
-    expect(console.log).toHaveBeenCalledWith('Config not found: dev');
+    expect(console.log).toHaveBeenCalledWith('Config not found: dev (medplum.dev.config.json)');
     expect(console.log).toHaveBeenCalledWith('No configs found');
   });
 
@@ -46,7 +46,7 @@ describe('Utils', () => {
 
     await printConfigNotFound('dev');
 
-    expect(console.log).toHaveBeenCalledWith('Config not found: dev');
+    expect(console.log).toHaveBeenCalledWith('Config not found: dev (medplum.dev.config.json)');
     expect(console.log).toHaveBeenCalledWith('Available configs:');
   });
 

@@ -151,12 +151,12 @@ export interface Login {
   revoked?: boolean;
 
   /**
-   * DEPRECATED
+   * @deprecated
    */
   admin?: boolean;
 
   /**
-   * Whether this login has super administrator privileges.
+   * @deprecated
    */
   superAdmin?: boolean;
 

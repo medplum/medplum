@@ -1,10 +1,10 @@
 import styles from './HomepageCallout.module.css';
 
 type HomepageCalloutProps = {
-  title: string;
-  body: string;
-  linkText: string;
-  linkRef: string;
+  readonly title: string;
+  readonly body: string;
+  readonly linkText: string;
+  readonly linkRef: string;
 };
 export default function HomepageCallout(props: HomepageCalloutProps): JSX.Element {
   return (

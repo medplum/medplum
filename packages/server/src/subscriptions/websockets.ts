@@ -1,11 +1,13 @@
 import { badRequest, createReference } from '@medplum/core';
-import { Bundle, Resource } from '@medplum/fhirtypes';
+import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
 import ws from 'ws';
 import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
+import { CacheEntry } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
+import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { verifyJwt } from '../oauth/keys';
 import { getRedis } from '../redis';
@@ -22,10 +24,21 @@ export interface BindWithTokenMsg extends BaseSubscriptionClientMsg {
 
 export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
   const redis = getRedis();
-  let redisSubscriber: Redis;
+  const subscriptionIds = [] as string[];
+  let redisSubscriber: Redis | undefined;
+  let onDisconnect: (() => Promise<void>) | undefined;
+  let heartbeatHandler: (() => void) | undefined;
 
-  let onDisconnect: (() => void) | undefined;
-  const onBind = async (tokenPayload: JWTPayload): Promise<void> => {
+  const onBind = async (tokenPayload: JWTPayload & Partial<AdditionalWsBindingClaims>): Promise<void> => {
+    const subscriptionId = tokenPayload?.subscription_id;
+    if (!subscriptionId) {
+      socket.send(
+        JSON.stringify(badRequest('Token claims missing subscription_id. Make sure you are sending the correct token.'))
+      );
+      socket.terminate();
+      return;
+    }
+
     if (!redisSubscriber) {
       // Create a redis client for this connection.
       // According to Redis documentation: http://redis.io/commands/subscribe
@@ -38,16 +51,29 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
         socket.send(message, { binary: false });
       });
 
-      onDisconnect = () => redisSubscriber.disconnect();
+      onDisconnect = async (): Promise<void> => {
+        redisSubscriber?.disconnect();
+        const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
+        if (!cacheEntryStr) {
+          globalLogger.error('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect.');
+          return;
+        }
+        const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+        await markInMemorySubscriptionsInactive(cacheEntry.projectId, subscriptionIds);
+      };
     }
 
-    if (!tokenPayload.subscription_id) {
-      socket.send(
-        JSON.stringify(badRequest('Token claims missing subscription_id. Make sure you are sending the correct token.'))
-      );
+    if (!subscriptionIds.includes(subscriptionId)) {
+      subscriptionIds.push(subscriptionId);
     }
+    await redisSubscriber.subscribe(subscriptionId);
 
-    await redisSubscriber.subscribe((tokenPayload as AdditionalWsBindingClaims)?.subscription_id);
+    if (!heartbeatHandler) {
+      heartbeatHandler = (): void => {
+        socket.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
+      };
+      heartbeat.addEventListener('heartbeat', heartbeatHandler);
+    }
   };
 
   socket.on('message', async (data: ws.RawData) => {
@@ -77,15 +103,37 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     }
   });
 
-  socket.on('close', async () => {
+  socket.on('close', () => {
     if (onDisconnect) {
-      onDisconnect();
+      onDisconnect().catch(console.error);
+    }
+    if (heartbeatHandler) {
+      heartbeat.removeEventListener('heartbeat', heartbeatHandler);
     }
   });
 }
 
 export type SubStatus = 'requested' | 'active' | 'error' | 'off';
 export type SubEventsOptions = { status?: SubStatus; includeResource?: boolean };
+
+export function createSubHeartbeatEvent(subscriptionIds: string[]): Bundle {
+  const timestamp = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    resourceType: 'Bundle',
+    type: 'history',
+    timestamp,
+    entry: subscriptionIds.map((subscriptionId) => ({
+      resource: {
+        resourceType: 'SubscriptionStatus',
+        id: crypto.randomUUID(),
+        status: 'active',
+        type: 'heartbeat',
+        subscription: { reference: `Subscription/${subscriptionId}` },
+      },
+    })),
+  };
+}
 
 export function createSubEventNotification<ResourceType extends Resource = Resource>(
   resource: ResourceType,
@@ -124,4 +172,13 @@ export function createSubEventNotification<ResourceType extends Resource = Resou
         : []),
     ],
   };
+}
+
+export async function markInMemorySubscriptionsInactive(projectId: string, subscriptionIds: string[]): Promise<void> {
+  const refStrs = [];
+  for (const subscriptionId of subscriptionIds) {
+    refStrs.push(`Subscription/${subscriptionId}`);
+  }
+  const redis = getRedis();
+  await redis.multi().srem(`medplum:subscriptions:r4:project:${projectId}:active`, refStrs).del(refStrs).exec();
 }

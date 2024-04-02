@@ -122,7 +122,13 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    const input = screen.getAllByRole('searchbox')[1] as HTMLInputElement;
+    // Clear the existing value
+    const clearButton = screen.getByTitle('Clear all');
+    await act(async () => {
+      fireEvent.click(clearButton);
+    });
+
+    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
@@ -381,9 +387,7 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('6'));
-    });
+    expect(await screen.findByText('6')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));

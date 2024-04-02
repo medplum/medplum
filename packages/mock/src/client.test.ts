@@ -7,17 +7,19 @@ import {
   NewProjectRequest,
   NewUserRequest,
   OperationOutcomeError,
+  SubscriptionEmitter,
   allOk,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
+import { Agent, Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
+import { MockSubscriptionManager } from './subscription-manager';
 
 describe('MockClient', () => {
   beforeAll(() => {
@@ -295,12 +297,12 @@ describe('MockClient', () => {
 
   test('Create PDF', async () => {
     const client = new MockClient();
-    const result = await client.createPdf({ content: ['Hello World'] });
+    const result = await client.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result).toBeDefined();
 
     console.log = jest.fn();
     const client2 = new MockClient({ debug: true });
-    const result2 = await client2.createPdf({ content: ['Hello World'] });
+    const result2 = await client2.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result2).toBeDefined();
     expect(console.log).toHaveBeenCalled();
   });
@@ -668,6 +670,86 @@ describe('MockClient', () => {
     expect(homer).toBeDefined();
     expect(homer.name[0].given[0]).toEqual('Homer');
     expect(homer.name[0].family).toEqual('Simpson');
+  });
+
+  test('setProfile()', async () => {
+    const medplum = new MockClient({ profile: null });
+    expect(medplum.getProfile()).toBeUndefined();
+    const callback = jest.fn();
+    medplum.addEventListener('change', callback);
+    medplum.setProfile(DrAliceSmith);
+    expect(medplum.getProfile()).toEqual(DrAliceSmith);
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  test('pushToAgent() -- Valid IP', async () => {
+    const medplum = new MockClient();
+    const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
+    await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toMatch(
+      /8.8.8.8 ping statistics/
+    );
+  });
+
+  test('pushToAgent() - Valid IP other than 8.8.8.8', async () => {
+    const medplum = new MockClient();
+    const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
+    const oldWarn = console.warn;
+    console.warn = jest.fn();
+    await expect(medplum.pushToAgent(agent, '127.0.0.1', 'PING', ContentType.PING, true)).rejects.toThrow(
+      OperationOutcomeError
+    );
+    expect(console.warn).toHaveBeenCalled();
+    console.warn = oldWarn;
+  });
+
+  test('pushToAgent() -- Invalid IP', async () => {
+    const medplum = new MockClient();
+    const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
+    await expect(medplum.pushToAgent(agent, 'abc123', 'PING', ContentType.PING, true)).rejects.toThrow(
+      OperationOutcomeError
+    );
+  });
+
+  test('pushToAgent() -- Agent Timeout', async () => {
+    const medplum = new MockClient();
+    const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
+    await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
+    medplum.setAgentAvailable(false);
+    await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).rejects.toThrow(
+      OperationOutcomeError
+    );
+    medplum.setAgentAvailable(true);
+    await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
+  });
+
+  test('getSubscriptionManager()', () => {
+    const medplum = new MockClient();
+    expect(medplum.getSubscriptionManager()).toBeInstanceOf(MockSubscriptionManager);
+  });
+
+  test('getMasterSubscriptionEmitter()', () => {
+    const medplum = new MockClient();
+    expect(medplum.getMasterSubscriptionEmitter()).toBeInstanceOf(SubscriptionEmitter);
+  });
+
+  test('subscribeToCriteria()', () => {
+    const medplum = new MockClient();
+    const emitter1 = medplum.subscribeToCriteria('Communication');
+    expect(emitter1).toBeInstanceOf(SubscriptionEmitter);
+    const emitter2 = medplum.subscribeToCriteria('Communication');
+    expect(emitter1).toEqual(emitter2);
+  });
+
+  test('unsubscribeFromCriteria()', () => {
+    const medplum = new MockClient();
+
+    medplum.subscribeToCriteria('Communication');
+    medplum.subscribeToCriteria('Communication');
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+
+    medplum.unsubscribeFromCriteria('Communication');
+    medplum.unsubscribeFromCriteria('Communication');
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 });
 

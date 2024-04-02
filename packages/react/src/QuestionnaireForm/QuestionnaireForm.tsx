@@ -16,11 +16,11 @@ import { QuestionnaireFormContext } from './QuestionnaireForm.context';
 import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
 export interface QuestionnaireFormProps {
-  questionnaire: Questionnaire | Reference<Questionnaire>;
-  subject?: Reference;
-  encounter?: Reference<Encounter>;
-  submitButtonText?: string;
-  onSubmit: (response: QuestionnaireResponse) => void;
+  readonly questionnaire: Questionnaire | Reference<Questionnaire>;
+  readonly subject?: Reference;
+  readonly encounter?: Reference<Encounter>;
+  readonly submitButtonText?: string;
+  readonly onSubmit: (response: QuestionnaireResponse) => void;
 }
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
@@ -63,7 +63,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     return isQuestionEnabled(item, response?.item ?? []);
   }
 
-  if (!schemaLoaded || !questionnaire) {
+  if (!schemaLoaded || !questionnaire || !response) {
     return null;
   }
 

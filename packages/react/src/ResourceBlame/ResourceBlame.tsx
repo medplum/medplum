@@ -8,9 +8,9 @@ import classes from './ResourceBlame.module.css';
 import { getTimeString, getVersionUrl } from './ResourceBlame.utils';
 
 export interface ResourceBlameProps {
-  history?: Bundle;
-  resourceType?: ResourceType;
-  id?: string;
+  readonly history?: Bundle;
+  readonly resourceType?: ResourceType;
+  readonly id?: string;
 }
 
 export function ResourceBlame(props: ResourceBlameProps): JSX.Element | null {

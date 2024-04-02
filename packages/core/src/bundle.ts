@@ -17,7 +17,13 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
   const idToUuid: Record<string, string> = {};
   bundle = deepClone(bundle);
   for (const entry of bundle.entry || []) {
-    delete entry.resource?.meta;
+    if (entry.resource?.meta !== undefined) {
+      delete entry.resource.meta.author;
+      delete entry.resource.meta.compartment;
+      delete entry.resource.meta.lastUpdated;
+      delete entry.resource.meta.project;
+      delete entry.resource.meta.versionId;
+    }
     const id = entry.resource?.id;
     if (id) {
       idToUuid[id] = generateId();

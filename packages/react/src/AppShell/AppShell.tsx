@@ -9,15 +9,16 @@ import { Header } from './Header';
 import { Navbar, NavbarMenu } from './Navbar';
 
 export interface AppShellProps {
-  logo: ReactNode;
-  pathname?: string;
-  searchParams?: URLSearchParams;
-  headerSearchDisabled?: boolean;
-  version?: string;
-  menus?: NavbarMenu[];
-  children: ReactNode;
-  displayAddBookmark?: boolean;
-  resourceTypeSearchDisabled?: boolean;
+  readonly logo: ReactNode;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
+  readonly headerSearchDisabled?: boolean;
+  readonly version?: string;
+  readonly menus?: NavbarMenu[];
+  readonly children: ReactNode;
+  readonly displayAddBookmark?: boolean;
+  readonly resourceTypeSearchDisabled?: boolean;
+  readonly notifications?: ReactNode;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -71,6 +72,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           logo={props.logo}
           version={props.version}
           navbarToggle={toggleNavbar}
+          notifications={props.notifications}
         />
       )}
       {profile && navbarOpen ? (

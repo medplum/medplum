@@ -34,10 +34,10 @@ import {
 import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
 
 export interface QuestionnaireFormItemProps {
-  item: QuestionnaireItem;
-  index: number;
-  response: QuestionnaireResponseItem;
-  onChange: (newResponseItem: QuestionnaireResponseItem) => void;
+  readonly item: QuestionnaireItem;
+  readonly index: number;
+  readonly response: QuestionnaireResponseItem;
+  readonly onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
 export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
@@ -235,11 +235,13 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 }
 
 interface QuestionnaireChoiceInputProps {
-  name: string;
-  item: QuestionnaireItem;
-  initial: QuestionnaireItemInitial | undefined;
-  response: QuestionnaireResponseItem;
-  onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]) => void;
+  readonly name: string;
+  readonly item: QuestionnaireItem;
+  readonly initial: QuestionnaireItemInitial | undefined;
+  readonly response: QuestionnaireResponseItem;
+  readonly onChangeAnswer: (
+    newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]
+  ) => void;
 }
 
 function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
@@ -320,6 +322,7 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
         name={name}
         binding={item.answerValueSet}
         onChange={(code) => onChangeAnswer({ valueCoding: code })}
+        creatable={item.type === QuestionnaireItemType.openChoice}
       />
     );
   }
@@ -450,13 +453,13 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
 }
 
 interface MultiSelect {
-  value: any;
-  label: any;
+  readonly value: any;
+  readonly label: any;
 }
 
 interface FormattedData {
-  propertyName: string;
-  data: MultiSelect[];
+  readonly propertyName: string;
+  readonly data: MultiSelect[];
 }
 
 function formatSelectData(item: QuestionnaireItem): FormattedData {

@@ -26,9 +26,9 @@ A common application is for organizations to build **task queue systems** to rou
 
 ## Task type
 
-The `Task.code` element is used to represent the task type, equivalent to the task title. This can either be different from task to task, or selected from an standard set of task types. Using the latter approach helps enable querying across all `Tasks` of the same type.
+The `Task.code` element is used to represent the task type, equivalent to the task title. This can either be different from task to task, or selected from a standard set of task types. Using the latter approach helps enable querying across all `Tasks` of the same type.
 
-While using SNOMED or LOINC codes are preferred, many implementations simply use the `Task.code.text ` element, as task types are often implementation-specific.
+While using SNOMED or LOINC codes are preferred, many implementations simply use the `Task.code.text` element, as task types are often implementation-specific.
 
 `Task.description` can be used to add additional descriptive text to the specific [`Task`](/docs/api/fhir/resources/task) instance.
 
@@ -54,13 +54,13 @@ While using SNOMED or LOINC codes are preferred, many implementations simply use
 
 Designing status codes for tasks varies from implementation to implementation, and requires a good understanding of your operations.
 
-[`Task`](/docs/api/fhir/resources/task) provides three fields fields, `status` , `businessStatus`, and `statusReason`.
+[`Task`](/docs/api/fhir/resources/task) provides three fields: `status`, `businessStatus`, and `statusReason`.
 
-`Task.status` maps to a the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a [`Task`](/docs/api/fhir/resources/task) and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remains stable as your implementation scales. (**Note**: in the diagram below, the codes `requested`, `received`, `accepted`, `rejected` only apply when `Tasks` are shared between systems. Most implementations will just use `ready` to indicate a `Task` can be actioned)
+`Task.status` maps to the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a [`Task`](/docs/api/fhir/resources/task) and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remain stable as your implementation scales. (**Note**: in the diagram below, the codes `requested`, `received`, `accepted`, and `rejected` only apply when `Tasks` are shared between systems. Most implementations will just use `ready` to indicate a `Task` can be actioned.)
 
 ![Task lifecyle](./task-state-machine.svg)
 
-`Task.businessStatus` should map to your implementation's specific operational funnel. It provides fine-grained information for customer-service and operations teams to troubleshoot tasks and monitor progress. It is also useful for analytics teams to compute conversion metrics between pipeline stages.
+`Task.businessStatus` should map to your implementation's specific operational funnel. It provides fine-grained information to help customer service and operations teams troubleshoot tasks and monitor progress. It is also useful for analytics teams to compute conversion metrics between pipeline stages.
 
 `Task.statusReason` describes _why_ the [`Task`](/docs/api/fhir/resources/task) has the current status, and is most commonly used when `status` is set to `"on-hold"` or `"cancelled"`. Using an orthogonal `statusReason` allows operations teams to efficiently query for all tasks at the same point in the funnel, while analytics teams can further break down by all the reasons they may be on hold.
 
@@ -68,12 +68,12 @@ Designing status codes for tasks varies from implementation to implementation, a
 
 `Task.priority` can be used to indicate the urgency of the task. This field uses a fixed set of codes that are borrowed from acute in-patient care settings.
 
-| **Code**                                                                                       | **Definition**                                                                             |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [`routine`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                                                           |
-| [`urgent`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent)   | The request should be actioned promptly - higher priority than routine.                    |
-| [`asap`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap)       | The request should be actioned as soon as possible - higher priority than urgent.          |
-| [`stat`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat)       | The request should be actioned immediately - highest possible priority. E.g. an emergency. |
+| **Code**                                                                                       | **Definition**                                                                               |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [`routine`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-routine) | The request has normal priority.                                                             |
+| [`urgent`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-urgent)   | The request should be actioned promptly - higher priority than `routine`.                    |
+| [`asap`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-asap)       | The request should be actioned as soon as possible - higher priority than `urgent`.          |
+| [`stat`](https://hl7.org/fhir/R4/codesystem-request-priority.html#request-priority-stat)       | The request should be actioned immediately - highest possible priority (i.e., an emergency). |
 
 While these terms might feel awkward in a digital health setting, Medplum recommends that implementations use these codes rather than create their own extensions in order to maintain interoperability with the ecosystem.
 
@@ -81,12 +81,12 @@ While these terms might feel awkward in a digital health setting, Medplum recomm
 
 `Task.for` indicates who _benefits_ from the task, and is most commonly the patient for whom care is being delivered.
 
-`Task.owner` indicates the party responsible for _performing_ the task. This can either:
+`Task.owner` indicates the party responsible for _performing_ the task. This can be either:
 
-- An individual: [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson)
+- An individual: [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson), or
 - A group: [`Organization`](/docs/api/fhir/resources/organization), [`HealthcareService`](/docs/api/fhir/resources/healthcareservice), [`CareTeam`](/docs/api/fhir/resources/careteam)
 
-You can search for all unassigned tasks, using the [`:missing`](/docs/search/basic-search#missing) search modifier.
+You can search for all unassigned tasks using the [`:missing`](/docs/search/basic-search#missing) search modifier.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -108,13 +108,13 @@ You can search for all unassigned tasks, using the [`:missing`](/docs/search/bas
 
 :::tip Assigning tasks to roles
 
-A common pattern is telehealth practices to assign to assign tasks to all practitioners with a given role (e.g. clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
+A common pattern in telehealth practices is the assignment of tasks to all practitioners with a given role (e.g., clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
 
 It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`.
 
-In rare instances, SNOMED might not contain an appropriate code for a given role (e.g. Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
+In rare instances, SNOMED might not contain an appropriate code for a given role (e.g., Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
 
-The table below contains SNOMED code for the common roles used in digital healthcare. Use can use the [SNOMED online browser](https://browser.ihtsdotools.org/?perspective=full&conceptId1=223366009&edition=MAIN/2023-06-30&release=&languages=en) to search for additional codes.
+The table below contains SNOMED codes for common roles used in digital healthcare. Use the [SNOMED online browser](https://browser.ihtsdotools.org/?perspective=full&conceptId1=223366009&edition=MAIN/2023-06-30&release=&languages=en) to search for additional codes.
 
 | Name                       | SNOMED Code                                                                                                                                                    | SOC Code                                                  |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -160,7 +160,7 @@ Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basic
 
 The `Task.focus` element tracks the FHIR resource being _operated on_ by this task, known as the "focal resource". See the [Examples](#examples) section below for examples of focal resources in common scenarios.
 
-Well maintained `Task.focus` elements are critical data hygiene that streamlines operations and analytics . Making sure that every [`Task`](/docs/api/fhir/resources/task) has a populated`focus` reference will make it easier to find all touch points for a given clinical resource, spot operational bottlenecks and calculate turn-around-times, conversions, and care quality metrics as your implementation scales.
+Well maintained `Task.focus` elements are critical for data hygiene and streamlining operations and analytics . Ensuring that every [`Task`](/docs/api/fhir/resources/task) has a populated `focus` reference will make it easier to find all touchpoints for a given clinical resource, spot operational bottlenecks, and calculate turnaround-times, conversions, and care quality metrics as your implementation scales.
 
 ## Task start / due dates
 
@@ -178,15 +178,15 @@ The `Task.executionPeriod` field describes the time period over which the [`Task
 
 `Task.note` can be used to capture narrative text that is not represented elsewhere in the resource.
 
-The most common usage for this field is to record comments from the task assignee as they work on the task. When used this way, it is a best practice to include the `author` and `time` fields in the [`Annotation`](/docs/api/fhir/datatypes/annotation).
+The most common use for this field is to record comments from the task assignee as they work on the task. When used this way, it is a best practice to include the `author` and `time` fields in the [`Annotation`](/docs/api/fhir/datatypes/annotation).
 
 ## Subtasks
 
-`Tasks` can be organized into a hierarchical structure to create subtasks, sub-tasks, etc. To represent this hierarchy, subtasks should reference their parent using the using the `Task.partOf` element. `Task.partOf` is a searchable field, which can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire [`Task`](/docs/api/fhir/resources/task) tree.
+`Tasks` can be organized into a hierarchical structure to create subtasks. To represent this hierarchy, subtasks should reference their parent using the using the `Task.partOf` element. `Task.partOf` is a searchable field that can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire [`Task`](/docs/api/fhir/resources/task) tree.
 
 :::caution
 
-While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy, and gradually add depth over time.
+While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy and gradually add depth over time.
 
 :::
 
@@ -204,4 +204,4 @@ While task hierarchy functionality is powerful, it can be complex to maintain an
 - The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
 - [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
 - [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
-- [Charting Data Model](/docs/charting#data-model)
+- [Charting Data Model](/docs/charting#encounter-charting)

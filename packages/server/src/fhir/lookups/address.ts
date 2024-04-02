@@ -1,15 +1,13 @@
-import { formatAddress, stringify } from '@medplum/core';
+import { formatAddress } from '@medplum/core';
 import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
-import { compareArrays } from './util';
 
 /**
  * The AddressTable class is used to index and search Address properties.
  * Each Address is represented as a separate row in the "Address" table.
  */
-export class AddressTable extends LookupTable<Address> {
+export class AddressTable extends LookupTable {
   private static readonly knownParams: Set<string> = new Set<string>([
     'individual-address',
     'individual-address-city',
@@ -83,9 +81,14 @@ export class AddressTable extends LookupTable<Address> {
    * Attempts to reuse existing Addresses if they are correct.
    * @param client - The database client.
    * @param resource - The resource to index.
+   * @param create - True if the resource should be created (vs updated).
    * @returns Promise on completion.
    */
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+    if (!create) {
+      await this.deleteValuesForResource(client, resource);
+    }
+
     const addresses = this.getIncomingAddresses(resource);
     if (!addresses || !Array.isArray(addresses)) {
       return;
@@ -93,33 +96,17 @@ export class AddressTable extends LookupTable<Address> {
 
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const existing = await this.getExistingValues(client, resourceType, resourceId);
+    const values = addresses.map((address) => ({
+      resourceId,
+      address: formatAddress(address),
+      city: address.city?.trim(),
+      country: address.country?.trim(),
+      postalCode: address.postalCode?.trim(),
+      state: address.state?.trim(),
+      use: address.use?.trim(),
+    }));
 
-    if (!compareArrays(addresses, existing)) {
-      if (existing.length > 0) {
-        await this.deleteValuesForResource(client, resource);
-      }
-
-      const values = [];
-
-      for (let i = 0; i < addresses.length; i++) {
-        const address = addresses[i];
-        values.push({
-          id: randomUUID(),
-          resourceId,
-          index: i,
-          content: stringify(address),
-          address: formatAddress(address),
-          city: address.city?.trim(),
-          country: address.country?.trim(),
-          postalCode: address.postalCode?.trim(),
-          state: address.state?.trim(),
-          use: address.use?.trim(),
-        });
-      }
-
-      await this.insertValuesForResource(client, resourceType, values);
-    }
+    await this.insertValuesForResource(client, resourceType, values);
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {

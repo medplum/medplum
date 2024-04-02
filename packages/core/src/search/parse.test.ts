@@ -2,7 +2,7 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { Operator, parseSearchRequest, parseSearchUrl, SearchRequest } from './search';
+import { Operator, SearchRequest, parseSearchRequest, parseSearchUrl } from './search';
 
 describe('Search parser', () => {
   beforeAll(() => {
@@ -652,5 +652,33 @@ describe('Search parser', () => {
     expect(() => {
       parseSearchRequest('Patient', { _revinclude: 'Patient:*' });
     }).toThrow();
+  });
+
+  test('_format', () => {
+    expect(parseSearchRequest('Patient', { _format: 'json' })).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      format: 'json',
+    });
+  });
+
+  test('_pretty=true', () => {
+    expect(parseSearchRequest('Patient', { _pretty: 'true' })).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      pretty: true,
+    });
+  });
+
+  test('_pretty=false', () => {
+    expect(parseSearchRequest('Patient', { _pretty: 'false' })).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      pretty: false,
+    });
+  });
+
+  test('_type', () => {
+    expect(parseSearchRequest('Patient', { _type: 'Patient,Observation' })).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      types: ['Patient', 'Observation'],
+    });
   });
 });

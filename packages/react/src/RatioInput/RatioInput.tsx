@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 
 export interface RatioInputProps {
-  name: string;
-  defaultValue?: Ratio;
-  onChange?: (value: Ratio) => void;
+  readonly name: string;
+  readonly defaultValue?: Ratio;
+  readonly onChange?: (value: Ratio) => void;
 }
 
 /**

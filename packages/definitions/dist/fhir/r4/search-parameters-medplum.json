@@ -4,6 +4,23 @@
   "type": "collection",
   "entry": [
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Project-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Project-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the project",
+        "code": "identifier",
+        "base": ["Project"],
+        "type": "token",
+        "expression": "Project.identifier"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-name",
       "resource": {
         "resourceType": "SearchParameter",
@@ -144,6 +161,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-user-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-user-name",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-user-name",
+        "version": "4.0.1",
+        "name": "user-name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The SCIM userName of the user",
+        "code": "user-name",
+        "base": ["ProjectMembership"],
+        "type": "string",
+        "expression": "ProjectMembership.userName"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-external-id",
       "resource": {
         "resourceType": "SearchParameter",
@@ -210,6 +244,23 @@
         "base": ["JsonWebKey"],
         "type": "token",
         "expression": "JsonWebKey.active"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/User-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "User-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/User-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the user",
+        "code": "identifier",
+        "base": ["User"],
+        "type": "token",
+        "expression": "User.identifier"
       }
     },
     {
@@ -489,6 +540,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/UserSecurityRequest-user",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "UserSecurityRequest-user",
+        "url": "https://medplum.com/fhir/SearchParameter/UserSecurityRequest-user",
+        "version": "4.0.1",
+        "name": "user",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The user for the security request.",
+        "code": "user",
+        "base": ["UserSecurityRequest"],
+        "type": "reference",
+        "expression": "UserSecurityRequest.user",
+        "target": ["User"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Task-due-date",
       "resource": {
         "resourceType": "SearchParameter",
@@ -572,6 +641,57 @@
         "base": ["CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
         "type": "number",
         "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/CareTeam-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "CareTeam-name",
+        "url": "https://medplum.com/fhir/SearchParameter/CareTeam-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the care team",
+        "code": "name",
+        "base": ["CareTeam"],
+        "type": "string",
+        "expression": "CareTeam.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Group-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Group-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Group-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the group",
+        "code": "name",
+        "base": ["Group"],
+        "type": "string",
+        "expression": "Group.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Communication-topic",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Communication-topic",
+        "url": "https://medplum.com/fhir/SearchParameter/Communication-topic",
+        "version": "4.0.1",
+        "name": "topic",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Description of the purpose/content",
+        "code": "topic",
+        "base": ["Communication"],
+        "type": "token",
+        "expression": "Communication.topic"
       }
     }
   ]

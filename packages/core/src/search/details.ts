@@ -12,7 +12,7 @@ import {
 import { parseFhirPath } from '../fhirpath/parse';
 import { PropertyType, getElementDefinition, globalSchema } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
-import { capitalize } from '../utils';
+import { capitalize, lazy } from '../utils';
 
 export enum SearchParameterType {
   BOOLEAN = 'BOOLEAN',
@@ -63,7 +63,11 @@ export function getSearchParameterDetails(resourceType: string, searchParam: Sea
 }
 
 function setSearchParameterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
-  const typeSchema = globalSchema.types[resourceType];
+  let typeSchema = globalSchema.types[resourceType];
+  if (!typeSchema) {
+    typeSchema = {};
+    globalSchema.types[resourceType] = typeSchema;
+  }
   if (!typeSchema.searchParamsDetails) {
     typeSchema.searchParamsDetails = {};
   }
@@ -83,10 +87,31 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
 
   for (const expression of expressions) {
     const atomArray = flattenAtom(expression);
+    const flattenedExpression = lazy(() => atomArray.join('.'));
+
     if (atomArray.length === 1 && atomArray[0] instanceof BooleanInfixOperatorAtom) {
       builder.propertyTypes.add('boolean');
+    } else if (
+      // To support US Core Patient search parameters without needing profile-aware logic,
+      // assume expressions for `Extension.value[x].code` and `Extension.value[x].coding.code`
+      // are of type `code`. Otherwise, crawling the Extension.value[x] element definition without
+      // access to the type narrowing specified in the profiles would be inconclusive.
+      flattenedExpression().endsWith('extension.value.code') ||
+      flattenedExpression().endsWith('extension.value.coding.code')
+    ) {
+      builder.array = true;
+      builder.propertyTypes.add('code');
     } else {
       crawlSearchParameterDetails(builder, flattenAtom(expression), resourceType, 1);
+    }
+
+    // To support US Core "us-core-condition-asserted-date" search parameter without
+    // needing profile-aware logic, ensure extensions with a dateTime value are not
+    // treated as arrays since Mepdlum search functionality does not yet support datetime arrays.
+    // This would be the result if the http://hl7.org/fhir/StructureDefinition/condition-assertedDate
+    // extension were parsed since it specifies a cardinality of 0..1.
+    if (flattenedExpression().endsWith('extension.valueDateTime')) {
+      builder.array = false;
     }
   }
 

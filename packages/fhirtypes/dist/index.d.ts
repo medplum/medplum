@@ -209,6 +209,7 @@ export * from './TriggerDefinition';
 export * from './UsageContext';
 export * from './User';
 export * from './UserConfiguration';
+export * from './UserSecurityRequest';
 export * from './ValueSet';
 export * from './VerificationResult';
 export * from './VisionPrescription';

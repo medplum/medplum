@@ -1,14 +1,21 @@
 import { Button, Group, Modal, MultiSelect, Stack } from '@mantine/core';
-import { InternalTypeSchema, SearchRequest, getDataType, getSearchParameters, stringify } from '@medplum/core';
+import {
+  InternalTypeSchema,
+  SearchRequest,
+  getDataType,
+  getSearchParameters,
+  sortStringArray,
+  stringify,
+} from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {
-  visible: boolean;
-  search: SearchRequest;
-  onOk: (search: SearchRequest) => void;
-  onCancel: () => void;
+  readonly visible: boolean;
+  readonly search: SearchRequest;
+  readonly onOk: (search: SearchRequest) => void;
+  readonly onCancel: () => void;
 }
 
 export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | null {
@@ -31,11 +38,9 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
     const resourceType = props.search.resourceType;
     const typeSchema = getDataType(resourceType);
     const searchParams = getSearchParameters(resourceType);
-    return getFieldsList(typeSchema, searchParams)
-      .sort((a, b) => a.localeCompare(b))
-      .map((field) => {
-        return { value: field, label: buildFieldNameString(field) };
-      });
+    return sortStringArray(getFieldsList(typeSchema, searchParams)).map((field) => {
+      return { value: field, label: buildFieldNameString(field) };
+    });
   }, [props.visible, props.search.resourceType]);
 
   if (!props.visible) {

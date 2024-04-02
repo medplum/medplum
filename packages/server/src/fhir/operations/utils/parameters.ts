@@ -1,23 +1,7 @@
-import {
-  OperationOutcomeError,
-  badRequest,
-  capitalize,
-  getStatus,
-  isEmpty,
-  isResource,
-  serverError,
-  validateResource,
-} from '@medplum/core';
-import {
-  OperationDefinition,
-  OperationDefinitionParameter,
-  OperationOutcome,
-  Parameters,
-  ParametersParameter,
-} from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { sendOutcome } from '../../outcomes';
-import { sendResponse } from '../../response';
+import { OperationOutcomeError, badRequest, capitalize, isEmpty, isResource, validateResource } from '@medplum/core';
+import { FhirRequest } from '@medplum/fhir-router';
+import { OperationDefinition, OperationDefinitionParameter, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import { Request } from 'express';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -36,13 +20,16 @@ export function parseParameters<T>(input: T | Parameters): T {
  * @param req - The incoming request.
  * @returns A dictionary of parameter names to values.
  */
-export function parseInputParameters<T>(operation: OperationDefinition, req: Request): T {
+export function parseInputParameters<T>(operation: OperationDefinition, req: Request | FhirRequest): T {
   if (!operation.parameter) {
     return {} as any;
   }
-
-  const input = req.body;
   const inputParameters = operation.parameter.filter((p) => p.use === 'in');
+
+  // If the request is a GET request, use the query parameters
+  // Otherwise, use the body
+  const input = req.method === 'GET' ? parseQueryString(req.query, inputParameters) : req.body;
+
   if (input.resourceType === 'Parameters') {
     if (!input.parameter) {
       return {} as any;
@@ -54,6 +41,58 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
       inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name as string])])
     ) as any;
   }
+}
+
+function parseQueryString(
+  query: Record<string, any>,
+  inputParams: OperationDefinitionParameter[]
+): Record<string, any> {
+  const parsed = Object.create(null);
+  for (const param of inputParams) {
+    const value = query[param.name];
+    if (!value) {
+      continue;
+    }
+    if (param.part || param.type?.match(/^[A-Z]/)) {
+      // Query parameters cannot contain complex types
+      throw new OperationOutcomeError(
+        badRequest(`Complex parameter ${param.name} (${param.type}) cannot be passed via query string`)
+      );
+    }
+
+    switch (param.type) {
+      case 'integer':
+      case 'positiveInt':
+      case 'unsignedInt': {
+        const n = parseInt(value, 10);
+        if (isNaN(n)) {
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+        }
+        parsed[param.name] = n;
+        break;
+      }
+      case 'decimal': {
+        const n = parseFloat(value);
+        if (isNaN(n)) {
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+        }
+        parsed[param.name] = n;
+        break;
+      }
+      case 'boolean':
+        if (value === 'true') {
+          parsed[param.name] = true;
+        } else if (value === 'false') {
+          parsed[param.name] = false;
+        } else {
+          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+        }
+        break;
+      default:
+        parsed[param.name] = value;
+    }
+  }
+  return parsed;
 }
 
 function validateInputParam(param: OperationDefinitionParameter, value: any): any {
@@ -101,33 +140,23 @@ function parseParams(
   return parsed;
 }
 
-export async function sendOutputParameters(
-  operation: OperationDefinition,
-  res: Response,
-  outcome: OperationOutcome,
-  output: any
-): Promise<void> {
+export function buildOutputParameters(operation: OperationDefinition, output: any): Parameters {
   const outputParameters = operation.parameter?.filter((p) => p.use === 'out');
   const param1 = outputParameters?.[0];
   if (outputParameters?.length === 1 && param1 && param1.name === 'return') {
     if (!isResource(output) || (param1.type && output.resourceType !== param1.type)) {
-      sendOutcome(
-        res,
-        serverError(new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`))
-      );
+      throw new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`);
     } else {
       // Send Resource as output directly, instead of using Parameters format
-      await sendResponse(res, outcome, output);
+      return output as Parameters;
     }
-    return;
   }
   const response: Parameters = {
     resourceType: 'Parameters',
   };
   if (!outputParameters?.length) {
     // Send empty Parameters as response
-    res.status(getStatus(outcome)).json(response);
-    return;
+    return response;
   }
 
   response.parameter = [];
@@ -137,17 +166,9 @@ export async function sendOutputParameters(
     const count = Array.isArray(value) ? value.length : +(value !== undefined);
 
     if (param.min && param.min > 0 && count < param.min) {
-      sendOutcome(
-        res,
-        serverError(new Error(`Expected ${param.min} or more values for output parameter '${key}', got ${count}`))
-      );
-      return;
+      throw new Error(`Expected ${param.min} or more values for output parameter '${key}', got ${count}`);
     } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
-      sendOutcome(
-        res,
-        serverError(new Error(`Expected at most ${param.max} values for output parameter '${key}', got ${count}`))
-      );
-      return;
+      throw new Error(`Expected at most ${param.max} values for output parameter '${key}', got ${count}`);
     } else if (isEmpty(value)) {
       continue;
     }
@@ -166,12 +187,8 @@ export async function sendOutputParameters(
     }
   }
 
-  try {
-    validateResource(response);
-    res.status(getStatus(outcome)).json(response);
-  } catch (err: any) {
-    sendOutcome(res, serverError(err));
-  }
+  validateResource(response);
+  return response;
 }
 
 function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter | undefined {
@@ -205,4 +222,8 @@ function makeParameter(param: OperationDefinitionParameter, value: any): Paramet
     }
   }
   return undefined;
+}
+
+export function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
 }

@@ -9,23 +9,23 @@ import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import classes from './Navbar.module.css';
 
 export interface NavbarLink {
-  icon?: JSX.Element;
-  label?: string;
-  href: string;
+  readonly icon?: JSX.Element;
+  readonly label?: string;
+  readonly href: string;
 }
 
 export interface NavbarMenu {
-  title?: string;
-  links?: NavbarLink[];
+  readonly title?: string;
+  readonly links?: NavbarLink[];
 }
 
 export interface NavbarProps {
-  pathname?: string;
-  searchParams?: URLSearchParams;
-  menus?: NavbarMenu[];
-  closeNavbar: () => void;
-  displayAddBookmark?: boolean;
-  resourceTypeSearchDisabled?: boolean;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
+  readonly menus?: NavbarMenu[];
+  readonly closeNavbar: () => void;
+  readonly displayAddBookmark?: boolean;
+  readonly resourceTypeSearchDisabled?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -58,6 +58,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 key={window.location.pathname}
                 name="resourceType"
                 placeholder="Resource Type"
+                maxValues={0}
                 onChange={(newValue) => navigateResourceType(newValue)}
               />
             </MantineAppShell.Section>
@@ -107,10 +108,10 @@ export function Navbar(props: NavbarProps): JSX.Element {
 }
 
 interface NavbarLinkProps {
-  to: string;
-  active: boolean;
-  onClick: MouseEventHandler;
-  children: ReactNode;
+  readonly to: string;
+  readonly active: boolean;
+  readonly onClick: MouseEventHandler;
+  readonly children: ReactNode;
 }
 
 function NavbarLink(props: NavbarLinkProps): JSX.Element {
@@ -126,8 +127,8 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
 }
 
 interface NavLinkIconProps {
-  to: string;
-  icon?: JSX.Element;
+  readonly to: string;
+  readonly icon?: JSX.Element;
 }
 
 function NavLinkIcon(props: NavLinkIconProps): JSX.Element {

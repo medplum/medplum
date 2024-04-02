@@ -1,5 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Encounter, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath, evalFhirPathTyped, parseFhirPath } from './parse';
@@ -32,17 +32,15 @@ describe('FHIRPath parser', () => {
   });
 
   test('Parser throws on missing closing parentheses', () => {
-    expect(() => parseFhirPath('(2 + 1')).toThrowError('Parse error: expected `)`');
+    expect(() => parseFhirPath('(2 + 1')).toThrow('Parse error: expected `)`');
   });
 
   test('Parser throws on unexpected symbol', () => {
-    expect(() => parseFhirPath('*')).toThrowError(
-      'Parse error at "*" (line 1, column 0). No matching prefix parselet.'
-    );
+    expect(() => parseFhirPath('*')).toThrow('Parse error at "*" (line 1, column 0). No matching prefix parselet.');
   });
 
   test('Parser throws on missing tokens', () => {
-    expect(() => parseFhirPath('1 * ')).toThrowError('Cant consume unknown more tokens.');
+    expect(() => parseFhirPath('1 * ')).toThrow('Cant consume unknown more tokens.');
   });
 
   test('Function minus number', () => {
@@ -305,11 +303,11 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate fails on function parentheses after non-symbol', () => {
-    expect(() => evalFhirPath('1()', [])).toThrowError('Unexpected parentheses');
+    expect(() => evalFhirPath('1()', [])).toThrow('Unexpected parentheses');
   });
 
   test('Evaluate fails on unrecognized function', () => {
-    expect(() => evalFhirPath('asdf()', [])).toThrowError('Unrecognized function');
+    expect(() => evalFhirPath('asdf()', [])).toThrow('Unrecognized function');
   });
 
   test('Evaluate FHIRPath where function', () => {
@@ -481,6 +479,36 @@ describe('FHIRPath parser', () => {
     ]);
   });
 
+  test('%previous.empty() returns true for an empty %previous value', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+    };
+    const result = evalFhirPathTyped('%previous.empty()', [toTypedValue(patient)], { '%previous': toTypedValue({}) });
+
+    expect(result).toEqual([
+      {
+        type: PropertyType.boolean,
+        value: true,
+      },
+    ]);
+  });
+
+  test('%previous.exists().not() returns true for an empty %previous value', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+    };
+    const result = evalFhirPathTyped('%previous.exists().not()', [toTypedValue(patient)], {
+      '%previous': toTypedValue({}),
+    });
+
+    expect(result).toEqual([
+      {
+        type: PropertyType.boolean,
+        value: true,
+      },
+    ]);
+  });
+
   test('Context type comparison false', () => {
     const patient: Patient = {
       resourceType: 'Patient',
@@ -526,7 +554,7 @@ describe('FHIRPath parser', () => {
     };
     const variables = { '%current': toTypedValue(patient2) };
 
-    expect(() => evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables)).toThrowError(
+    expect(() => evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables)).toThrow(
       `Undefined variable %previous`
     );
   });
@@ -600,5 +628,65 @@ describe('FHIRPath parser', () => {
     expect(evalFhirPath(expr, { filter })).toEqual([false]);
     expect(evalFhirPath(expr, { concept, system })).toEqual([true]);
     expect(evalFhirPath(expr, { concept, filter, system })).toEqual([true]);
+  });
+
+  test('where and', () => {
+    const expr = "identifier.where(system='http://example.com' and value='123').exists()";
+
+    const e1: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '123' }],
+    };
+    expect(evalFhirPath(expr, e1)).toEqual([true]);
+
+    const e2: Encounter = {
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'foo' },
+      identifier: [{ system: 'http://example.com', value: '456' }],
+    };
+    expect(evalFhirPath(expr, e2)).toEqual([false]);
+  });
+
+  test('Bundle bdl-3', () => {
+    // entry.request mandatory for batch/transaction/history, otherwise prohibited
+    const expr =
+      "entry.all(request.exists() = (%resource.type = 'batch' or %resource.type = 'transaction' or %resource.type = 'history'))";
+
+    const b1: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+          },
+        },
+      ],
+    };
+    const tb1 = toTypedValue(b1);
+    expect(evalFhirPathTyped(expr, [tb1], { '%resource': tb1 })).toEqual([toTypedValue(true)]);
+
+    const b2: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+          },
+        },
+      ],
+    };
+    const tb2 = toTypedValue(b2);
+    expect(evalFhirPathTyped(expr, [tb2], { '%resource': tb2 })).toEqual([toTypedValue(true)]);
   });
 });

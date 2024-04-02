@@ -102,6 +102,7 @@ describe('Type Utils', () => {
     expect(isReference({})).toBe(false);
     expect(isReference({ resourceType: 'Patient' })).toBe(false);
     expect(isReference({ reference: 'Patient/123' })).toBe(true);
+    expect(isReference({ reference: { value: '123' } })).toBe(false);
   });
 
   test.each<[TypedValue, string]>([

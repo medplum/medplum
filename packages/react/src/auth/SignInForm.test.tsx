@@ -1,10 +1,10 @@
 import { Title } from '@mantine/core';
 import { allOk, badRequest, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
-import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SignInForm, SignInFormProps } from './SignInForm';
 
 function mockFetch(url: string, options: any): Promise<any> {
@@ -78,11 +78,17 @@ function mockFetch(url: string, options: any): Promise<any> {
       };
     }
   } else if (options.method === 'POST' && url.endsWith('auth/google')) {
-    status = 200;
-    result = {
-      login: '1',
-      code: '1',
-    };
+    const { googleClientId } = JSON.parse(options.body);
+    if (googleClientId === 'user-not-found') {
+      status = 400;
+      result = badRequest('User not found');
+    } else {
+      status = 200;
+      result = {
+        login: '1',
+        code: '1',
+      };
+    }
   } else if (options.method === 'POST' && url.endsWith('auth/newproject')) {
     status = 200;
     result = {
@@ -322,7 +328,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => expect(screen.getByText('Choose profile')).toBeDefined());
+    expect(await screen.findByText('Choose profile')).toBeInTheDocument();
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
     expect(screen.getByText('Bob Jones')).toBeInTheDocument();
 
@@ -362,7 +368,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => expect(screen.getByText('Choose profile')).toBeDefined());
+    expect(await screen.findByText('Choose profile')).toBeInTheDocument();
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
     expect(screen.getByText('Bob Jones')).toBeInTheDocument();
 
@@ -370,7 +376,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Bob Jones'));
     });
 
-    await waitFor(() => screen.getByText('Invalid IP address'));
+    expect(await screen.findByText('Invalid IP address')).toBeInTheDocument();
 
     expect(success).toBe(false);
   });
@@ -404,7 +410,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => expect(screen.getByText('Choose scope')).toBeDefined());
+    expect(await screen.findByText('Choose scope')).toBeInTheDocument();
     expect(screen.getByText('openid')).toBeInTheDocument();
     expect(screen.getByText('profile')).toBeInTheDocument();
 
@@ -441,7 +447,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => screen.getByLabelText('Project Name', { exact: false }));
+    expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Project Name', { exact: false }), { target: { value: 'My Project' } });
@@ -477,7 +483,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => screen.getByTestId('text-field-error'));
+    expect(await screen.findByTestId('text-field-error')).toBeInTheDocument();
 
     expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
     expect(screen.getByText('Email or password is invalid')).toBeInTheDocument();
@@ -506,9 +512,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => expect(screen.getByTestId('text-field-error')).toBeInTheDocument());
-
-    expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
+    expect(await screen.findByTestId('text-field-error')).toBeInTheDocument();
     expect(screen.getByText('Email or password is invalid')).toBeInTheDocument();
   });
 
@@ -534,7 +538,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Forgot password'));
     });
 
-    expect(props.onForgotPassword).toBeCalled();
+    expect(props.onForgotPassword).toHaveBeenCalled();
   });
 
   test('Register', async () => {
@@ -549,7 +553,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Register'));
     });
 
-    expect(props.onRegister).toBeCalled();
+    expect(props.onRegister).toHaveBeenCalled();
   });
 
   test('Disable Email', async () => {
@@ -590,7 +594,7 @@ describe('SignInForm', () => {
       });
     });
 
-    await waitFor(() => screen.getByLabelText('Email', { exact: false }));
+    expect(await screen.findByLabelText('Email', { exact: false })).toBeInTheDocument();
     expect(screen.queryByText('Sign in with Google')).toBeNull();
     expect(google.accounts.id.initialize).not.toHaveBeenCalled();
     expect(google.accounts.id.renderButton).not.toHaveBeenCalled();
@@ -635,15 +639,66 @@ describe('SignInForm', () => {
       });
     });
 
-    await waitFor(() => expect(screen.getByText('Sign in with Google')).toBeInTheDocument());
+    expect(await screen.findByText('Sign in with Google')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sign in with Google'));
     });
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText('Success')).toBeInTheDocument());
+    expect(await screen.findByText('Success')).toBeInTheDocument();
+    expect(google.accounts.id.initialize).toHaveBeenCalled();
+    expect(google.accounts.id.renderButton).toHaveBeenCalled();
+    expect(google.accounts.id.prompt).toHaveBeenCalled();
+  });
 
+  test('Google user not found', async () => {
+    const clientId = 'user-not-found';
+    let callback: ((response: GoogleCredentialResponse) => void) | undefined = undefined;
+
+    const google = {
+      accounts: {
+        id: {
+          initialize: jest.fn((args: any) => {
+            callback = args.callback;
+          }),
+          renderButton: jest.fn((parent: HTMLElement) => {
+            const button = document.createElement('div');
+            button.innerHTML = 'Sign in with Google';
+            button.addEventListener('click', () => google.accounts.id.prompt());
+            parent.appendChild(button);
+          }),
+          prompt: jest.fn(() => {
+            if (callback) {
+              callback({
+                clientId,
+                credential: '123123123',
+              });
+            }
+          }),
+        },
+      },
+    };
+
+    (window as any).google = google;
+
+    const onSuccess = jest.fn();
+
+    await act(async () => {
+      await setup({
+        onSuccess,
+        googleClientId: clientId,
+      });
+    });
+
+    expect(await screen.findByText('Sign in with Google')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in with Google'));
+    });
+
+    expect(await screen.findByText('User not found')).toBeInTheDocument();
+    expect(onSuccess).not.toHaveBeenCalled();
     expect(google.accounts.id.initialize).toHaveBeenCalled();
     expect(google.accounts.id.renderButton).toHaveBeenCalled();
     expect(google.accounts.id.prompt).toHaveBeenCalled();
@@ -680,7 +735,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Next'));
     });
 
-    await waitFor(() => expect(window.location.assign).toBeCalled());
-    expect(window.location.assign).toBeCalled();
+    await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
+    expect(window.location.assign).toHaveBeenCalled();
   });
 });

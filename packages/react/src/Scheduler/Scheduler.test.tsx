@@ -1,9 +1,9 @@
 import { createReference } from '@medplum/core';
 import { Reference, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmithSchedule, ExampleQuestionnaire, MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Scheduler } from './Scheduler';
 
 const medplum = new MockClient();
@@ -36,12 +36,7 @@ describe('Scheduler', () => {
       setup(DrAliceSmithSchedule);
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('scheduler'));
-    });
-
-    const control = screen.getByTestId('scheduler');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
 
     // Move forward one month
     await act(async () => {

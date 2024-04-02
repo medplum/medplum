@@ -5,13 +5,14 @@ import { getErrorsForInput } from '../utils/outcomes';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
 
 export interface DateTimeInputProps {
-  name?: string;
-  placeholder?: string;
-  defaultValue?: string;
-  autoFocus?: boolean;
-  required?: boolean;
-  outcome?: OperationOutcome;
-  onChange?: (value: string) => void;
+  readonly name?: string;
+  readonly label?: string;
+  readonly placeholder?: string;
+  readonly defaultValue?: string;
+  readonly autoFocus?: boolean;
+  readonly required?: boolean;
+  readonly outcome?: OperationOutcome;
+  readonly onChange?: (value: string) => void;
 }
 
 /**
@@ -27,6 +28,7 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
     <TextInput
       id={props.name}
       name={props.name}
+      label={props.label}
       data-autofocus={props.autoFocus}
       data-testid={props.name}
       placeholder={props.placeholder}

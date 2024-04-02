@@ -42,8 +42,10 @@ export interface MedplumSourceInfraConfig {
   maxAzs: ValueOrExternalSecret<number>;
   rdsInstances: ValueOrExternalSecret<number>;
   rdsInstanceType: ValueOrExternalSecret<string>;
-  rdsInstanceVersion: ValueOrExternalSecret<string>;
+  rdsInstanceVersion?: ValueOrExternalSecret<string>;
   rdsSecretsArn?: ValueOrExternalSecret<string>;
+  rdsReaderInstanceType?: ValueOrExternalSecret<string>;
+  rdsProxyEnabled?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   desiredServerCount: ValueOrExternalSecret<number>;
   serverImage: ValueOrExternalSecret<string>;
@@ -72,6 +74,13 @@ export interface MedplumSourceInfraConfig {
     logGroupCreate?: ValueOrExternalSecret<boolean>;
     snsTopicArn?: ValueOrExternalSecret<string>;
     snsTopicName?: ValueOrExternalSecret<string>;
+  };
+  fargateAutoScaling?: {
+    minCapacity: ValueOrExternalSecret<number>;
+    maxCapacity: ValueOrExternalSecret<number>;
+    targetUtilizationPercent: ValueOrExternalSecret<number>;
+    scaleInCooldown: ValueOrExternalSecret<number>;
+    scaleOutCooldown: ValueOrExternalSecret<number>;
   };
   environment?: StringMap;
 }
@@ -105,6 +114,8 @@ export interface MedplumInfraConfig {
   rdsInstanceType: string;
   rdsInstanceVersion?: string;
   rdsSecretsArn?: string;
+  rdsReaderInstanceType?: string;
+  rdsProxyEnabled?: boolean;
   cacheNodeType?: string;
   desiredServerCount: number;
   serverImage: string;
@@ -133,6 +144,13 @@ export interface MedplumInfraConfig {
     logGroupCreate?: boolean;
     snsTopicArn?: string;
     snsTopicName?: string;
+  };
+  fargateAutoScaling?: {
+    minCapacity: number;
+    maxCapacity: number;
+    targetUtilizationPercent: number;
+    scaleInCooldown: number;
+    scaleOutCooldown: number;
   };
   environment?: StringMap;
 }

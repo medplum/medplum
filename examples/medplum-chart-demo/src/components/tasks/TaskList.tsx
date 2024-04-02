@@ -24,15 +24,15 @@ const focusIcons: Record<string, JSX.Element> = {
 };
 
 export interface TaskCellProps {
-  task: Task;
-  resource: Resource;
+  readonly task: Task;
+  readonly resource: Resource;
 }
 
 interface TaskItemProps {
-  task: Task;
-  resource: Resource;
-  profile?: Reference;
-  children?: ReactNode;
+  readonly task: Task;
+  readonly resource: Resource;
+  readonly profile?: Reference;
+  readonly children?: ReactNode;
 }
 
 export function TaskList(): JSX.Element | null {
@@ -174,7 +174,7 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
     } else if (props.resource.resourceType === 'QuestionnaireResponse') {
       fetchQuestionnaireTitle().catch(console.error);
     } else {
-      setTitle(<>{props.task.code}</>);
+      setTitle(<CodeableConceptDisplay value={props.task.code} />);
     }
   }, [props.resource, props.task, medplum]);
 

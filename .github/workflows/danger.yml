@@ -1,0 +1,47 @@
+name: Danger
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+jobs:
+  danger:
+    name: Danger
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+      - id: stats
+        name: Log branch stats
+        run: |
+          BRANCH_NAME=$(git branch --show-current)
+          COMMIT_HASH=$(git rev-parse HEAD)
+
+          echo "Current branch: $BRANCH_NAME"
+          echo "Commit hash: $COMMIT_HASH"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Install deps
+        run: npm ci --maxsockets 1
+      - name: Build
+        run: npm run build:fast
+      - name: Danger
+        run: npx danger ci --failOnErrors
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
