@@ -5,6 +5,7 @@ import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
+import { prependPatientPath } from './PatientPage.utils';
 
 export function PatientSearchPage(): JSX.Element {
   const medplum = useMedplum();
@@ -42,6 +43,9 @@ export function PatientSearchPage(): JSX.Element {
         search={search}
         onClick={(e) => navigate(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
+        onNew={() => {
+          navigate(prependPatientPath(patient, `/${search.resourceType}/new`));
+        }}
         onChange={(e) => {
           navigate(`/Patient/${patient.id}/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}

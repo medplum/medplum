@@ -1,7 +1,6 @@
 import { ProfileResource, getReferenceString } from '@medplum/core';
 import {
   AppShell,
-  ErrorBoundary,
   Loading,
   Logo,
   NotificationIcon,
@@ -105,38 +104,37 @@ export function App(): JSX.Element | null {
         )
       }
     >
-      <ErrorBoundary>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            {profile ? (
-              <>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/Patient/:patientId" element={<PatientPage />}>
-                  <Route path="edit" element={<EditTab />} />
-                  <Route path="encounter" element={<EncounterTab />} />
-                  <Route path="labs" element={<LabsTab />} />
-                  <Route path="meds" element={<MedsTab />} />
-                  <Route path="tasks" element={<TasksTab />} />
-                  <Route path="timeline" element={<TimelineTab />} />
-                  <Route path=":resourceType/:id" element={<ResourcePage />} />
-                  <Route path=":resourceType" element={<PatientSearchPage />} />
-                  <Route path="" element={<TimelineTab />} />
-                </Route>
-                <Route path="/onboarding" element={<OnboardingPage />} />
-                <Route path="/:resourceType/new" element={<CreateResourcePage />} />
-                <Route path="/:resourceType/:id" element={<ResourcePage />} />
-                <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
-                <Route path="/:resourceType" element={<SearchPage />} />
-              </>
-            ) : (
-              <>
-                <Route path="/signin" element={<SignInPage />} />
-                <Route path="*" element={<Navigate to="/signin" replace />} />
-              </>
-            )}
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          {profile ? (
+            <>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/Patient/:patientId" element={<PatientPage />}>
+                <Route path="edit" element={<EditTab />} />
+                <Route path="encounter" element={<EncounterTab />} />
+                <Route path="labs" element={<LabsTab />} />
+                <Route path="meds" element={<MedsTab />} />
+                <Route path="tasks" element={<TasksTab />} />
+                <Route path="timeline" element={<TimelineTab />} />
+                <Route path=":resourceType/new" element={<CreateResourcePage />} />
+                <Route path=":resourceType/:id" element={<ResourcePage />} />
+                <Route path=":resourceType" element={<PatientSearchPage />} />
+                <Route path="" element={<TimelineTab />} />
+              </Route>
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+              <Route path="/:resourceType/:id" element={<ResourcePage />} />
+              <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+              <Route path="/:resourceType" element={<SearchPage />} />
+            </>
+          ) : (
+            <>
+              <Route path="/signin" element={<SignInPage />} />
+              <Route path="*" element={<Navigate to="/signin" replace />} />
+            </>
+          )}
+        </Routes>
+      </Suspense>
     </AppShell>
   );
 }
