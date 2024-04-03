@@ -1400,7 +1400,7 @@ describe('Client', () => {
   test('Upsert resource', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const result = await client.upsert(
+    const result = await client.upsertResource(
       {
         resourceType: 'Patient',
         identifier: [{ system: 'http://example.com/mrn', value: '24601' }],

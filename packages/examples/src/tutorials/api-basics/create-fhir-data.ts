@@ -38,7 +38,7 @@ await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
 
 // start-block create-patient
 // Generate an example MRN (Medical Record Number)
-// We will use this in the "upsert"
+// We will use this in the "conditional create" and "upsert"
 const exampleMrn = randomUUID();
 const patientData: Patient = {
   resourceType: 'Patient',
@@ -55,10 +55,19 @@ const patientData: Patient = {
 
 // When creating an order, and if you don't know if the patient exists,
 // you can use this MRN to check. Use the 'identifier=' search criterion for a
-// conditional create or update
-const patient = await medplum.upsert(patientData, 'identifier=' + exampleMrn);
-console.log('Patient record created/updated', patient);
+// conditional create: if a resource with the given `identifier` already exists,
+// that resource will be returned instead.
+const patient = await medplum.createResourceIfNoneExist(patientData, 'identifier=' + exampleMrn);
+console.log('Patient record created', patient);
 // end-block create-patient
+
+// start-block upsert
+// An "upsert" (i.e. update/insert) will either update the resource in place if it
+// already exists, otherwise is will be created.  This is performed in a single,
+// transactional request to guarantee data consistency.
+const updatedPatient = medplum.upsertResource(patient, 'identifier=' + exampleMrn);
+console.log('Patient record updated', updatedPatient);
+// end-block upsert
 
 // start-block create-service-request
 const serviceRequestData: ServiceRequest = {

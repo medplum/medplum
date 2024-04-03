@@ -8,7 +8,7 @@ import {
   preconditionFailed,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, OperationOutcome, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, OperationOutcome, SearchParameter, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { FhirRequest, FhirRouter } from './fhirrouter';
 import { FhirRepository, MemoryRepository } from './repo';
@@ -223,5 +223,27 @@ describe('FHIR Router', () => {
     );
     expect(res).toMatchObject(allOk);
     expect(bundle).toBeDefined();
+  });
+
+  test('Conditional update', async () => {
+    const mrn = randomUUID();
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ system: 'http://example.com/mrn', value: mrn }],
+    };
+    const [res, resource] = await router.handleRequest(
+      {
+        method: 'PUT',
+        pathname: '/Patient',
+        body: patient,
+        params: {},
+        query: {
+          identifier: 'http://example.com/mrn|' + mrn,
+        },
+      },
+      repo
+    );
+    expect(res).toMatchObject(created);
+    expect(resource).toMatchObject(patient);
   });
 });

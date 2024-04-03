@@ -1959,7 +1959,6 @@ export class MedplumClient extends EventTarget {
    * @param query - The search query for an equivalent resource (should not include resource type or "?").
    * @param options - Optional fetch options.
    * @returns The result of the create operation.
-   * @deprecated Use `upsert(resource, query)` for transactional guarantees.
    */
   async createResourceIfNoneExist<T extends Resource>(
     resource: T,
@@ -1978,7 +1977,7 @@ export class MedplumClient extends EventTarget {
    * @param options  - Optional fetch options.
    * @returns The updated/created resource.
    */
-  async upsert<T extends Resource>(resource: T, query: string, options?: MedplumRequestOptions): Promise<T> {
+  async upsertResource<T extends Resource>(resource: T, query: string, options?: MedplumRequestOptions): Promise<T> {
     // Build conditional update URL, e.g. `PUT /ResourceType?search-param=value`
     const url = this.fhirUrl(resource.resourceType);
     url.search = '?' + query;
