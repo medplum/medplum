@@ -42,9 +42,7 @@ export function UploadDataPage(): JSX.Element {
 }
 
 async function uploadData(medplum: MedplumClient, dataType?: string): Promise<void> {
-  if (dataType === 'core') {
-    console.log('no core data');
-  } else if (dataType === 'example') {
+  if (dataType === 'example') {
     await medplum.executeBatch(exampleDataSet as Bundle);
     showNotification({
       icon: <IconCircleCheck />,

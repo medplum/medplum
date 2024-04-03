@@ -45,10 +45,7 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'Upload Data',
-          links: [
-            { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: 'upload/core' },
-            { icon: <IconFileImport />, label: 'Upload Example Data', href: 'upload/example' },
-          ],
+          links: [{ icon: <IconFileImport />, label: 'Upload Example Data', href: 'upload/example' }],
         },
       ]}
     >
