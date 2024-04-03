@@ -291,7 +291,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     resource: T,
     search: SearchRequest
   ): Promise<{ resource: T; outcome: OperationOutcome }> {
-    const existing = await this.searchResources(search);
+    const existing = await this.searchResources({ resourceType: search.resourceType, filters: search.filters });
     if (existing.length === 1) {
       resource.id = existing[0].id;
       return { resource: await this.updateResource(resource), outcome: allOk };

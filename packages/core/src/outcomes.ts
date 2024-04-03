@@ -281,6 +281,7 @@ export function getStatus(outcome: OperationOutcome): number {
     case GONE_ID:
       return 410;
     case PRECONDITION_FAILED_ID:
+    case MULTIPLE_MATCHES_ID:
       return 412;
     case TOO_MANY_REQUESTS_ID:
       return 429;

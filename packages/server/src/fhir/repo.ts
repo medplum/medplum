@@ -470,19 +470,32 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resource: T,
     search: SearchRequest
   ): Promise<{ resource: T; outcome: OperationOutcome }> {
+    if (search.resourceType !== resource.resourceType) {
+      throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
+    }
+
     return this.withTransaction(async () => {
-      const existing = await this.searchResources(search);
-      if (existing.length === 0) {
+      const matches = await this.searchResources(search);
+      if (matches.length === 0) {
         if (resource.id) {
-          throw new OperationOutcomeError(badRequest('Cannot specify ID in conditional update'));
+          throw new OperationOutcomeError(
+            badRequest('Cannot perform create as update with client-assigned ID', resource.resourceType + '.id')
+          );
         }
         resource = await this.createResource(resource);
         return { resource, outcome: created };
-      } else if (existing.length > 1) {
+      } else if (matches.length > 1) {
         throw new OperationOutcomeError(multipleMatches);
       }
 
-      resource.id = existing[0].id;
+      const existing = matches[0];
+      if (resource.id && resource.id !== existing.id) {
+        throw new OperationOutcomeError(
+          badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+        );
+      }
+
+      resource.id = existing.id;
       resource = await this.updateResource(resource);
       return { resource, outcome: allOk };
     });
