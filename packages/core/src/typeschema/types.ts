@@ -411,10 +411,10 @@ class StructureDefinitionParser {
           path: element.path,
           min: element.min ?? ref.min,
           max: element.max ?? ref.max,
-          base: ref.base ?? {
-            path: contentRefPath,
-            min: ref.min as number,
-            max: ref.max as string,
+          base: {
+            path: ref.base?.path ?? contentRefPath,
+            min: element.base?.min ?? ref.base?.min ?? (ref.min as number),
+            max: element.base?.max ?? ref.base?.max ?? (ref.max as string),
           },
           contentReference: element.contentReference,
           definition: element.definition,
