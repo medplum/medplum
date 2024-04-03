@@ -984,7 +984,6 @@ describe('FHIR Repo', () => {
   test('Conditional update', () =>
     withTestContext(async () => {
       const mrn = randomUUID();
-
       const patient: Patient = {
         resourceType: 'Patient',
         identifier: [{ system: 'http://example.com/mrn', value: mrn }],
@@ -1014,7 +1013,6 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com/mrn|' + mrn }],
       });
-
       expect(create.resource.id).toBeDefined();
       const existing = create.resource;
       expect(create.outcome.id).toEqual(created.id);
@@ -1037,5 +1035,17 @@ describe('FHIR Repo', () => {
           filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com/mrn|' + mrn }],
         })
       ).rejects.toThrow('Resource ID did not match resolved ID (Patient.id)');
+
+      // Create duplicate resource
+      const duplicate = await systemRepo.createResource(patient);
+      expect(duplicate.id).not.toEqual(existing.id);
+
+      // Invalid update with ambiguous target
+      await expect(
+        systemRepo.conditionalUpdate(patient, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com/mrn|' + mrn }],
+        })
+      ).rejects.toThrow('Multiple resources found matching condition');
     }));
 });
