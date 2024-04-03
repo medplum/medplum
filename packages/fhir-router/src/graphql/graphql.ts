@@ -350,17 +350,13 @@ async function resolveByCreate(
   info: GraphQLResolveInfo
 ): Promise<any> {
   const fieldName = info.fieldName;
-  // 'Create.length'=== 6 && 'Update.length' === 6
-  const resourceType = fieldName.substring(0, fieldName.length - 6) as ResourceType;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Create'.length) as ResourceType;
   const resourceArgs = args.res;
   if (resourceArgs.resourceType !== resourceType) {
-    return [badRequest('Invalid resourceType')];
+    throw new OperationOutcomeError(badRequest('Invalid resourceType'));
   }
-  const resource = await ctx.repo.createResource(resourceArgs as Resource);
-  return resource;
+  return ctx.repo.createResource(resourceArgs as Resource);
 }
-
-// Mutation Resolvers
 
 /**
  * GraphQL resolver function for update requests.
@@ -379,18 +375,16 @@ async function resolveByUpdate(
   info: GraphQLResolveInfo
 ): Promise<any> {
   const fieldName = info.fieldName;
-  // 'Create.length'=== 6 && 'Update.length' === 6
-  const resourceType = fieldName.substring(0, fieldName.length - 6) as ResourceType;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
   const resourceArgs = args.res;
   const resourceId = args.id;
   if (resourceArgs.resourceType !== resourceType) {
-    return [badRequest('Invalid resourceType')];
+    throw new OperationOutcomeError(badRequest('Invalid resourceType'));
   }
   if (resourceId !== resourceArgs.id) {
-    return [badRequest('Incorrect ID')];
+    throw new OperationOutcomeError(badRequest('Invalid ID'));
   }
-  const resource = await ctx.repo.updateResource(resourceArgs as Resource);
-  return resource;
+  return ctx.repo.updateResource(resourceArgs as Resource);
 }
 
 /**
