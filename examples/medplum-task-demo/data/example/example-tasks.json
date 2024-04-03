@@ -614,6 +614,7 @@
             }
           ]
         },
+        "restriction": { "period": { "end": "2024-04-01T16:30:00.000Z" } },
         "code": {
           "coding": [
             {
@@ -1229,6 +1230,7 @@
       "resource": {
         "resourceType": "Task",
         "status": "ready",
+        "priority": "asap",
         "focus": {
           "reference": "urn:uuid:569781a7-6ee9-42f1-88ac-ac4cacf721b8"
         },
@@ -1257,6 +1259,7 @@
             }
           ]
         },
+        "restriction": { "period": { "end": "2024-04-01T17:30:00.000Z" } },
         "code": {
           "coding": [
             {

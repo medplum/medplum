@@ -15,6 +15,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
     },
     status: 'ready',
     intent: 'order',
+    priority: 'asap',
     focus: {
       // The focus of the resource will be the DiagnosticReport
       reference: getReferenceString(report),
