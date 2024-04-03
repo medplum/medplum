@@ -25,6 +25,7 @@ export interface MedplumServerConfig {
   signingKeyPassphrase: string;
   supportEmail: string;
   database: MedplumDatabaseConfig;
+  databaseRequireSsl?: boolean;
   databaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
   smtp?: MedplumSmtpConfig;
@@ -316,6 +317,7 @@ function isIntegerConfig(key: string): boolean {
 function isBooleanConfig(key: string): boolean {
   return (
     key === 'botCustomFunctionsEnabled' ||
+    key === 'databaseRequireSsl' ||
     key === 'logRequests' ||
     key === 'logAuditEvents' ||
     key === 'registerEnabled' ||
