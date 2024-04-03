@@ -1397,6 +1397,30 @@ describe('Client', () => {
     );
   });
 
+  test('Upsert resource', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.upsert(
+      {
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com/mrn', value: '24601' }],
+      },
+      'identifier=http://example.com/mrn|24601'
+    );
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient?identifier=http://example.com/mrn|24601',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.FHIR_JSON,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+  });
+
   test('Update resource validation', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
