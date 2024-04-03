@@ -35,6 +35,10 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
   if (serverConfig.databaseRequireSsl || serverConfig.databaseProxyEndpoint) {
     poolConfig.ssl = poolConfig.ssl ?? {};
     poolConfig.ssl.require = true;
+
+    if (poolConfig.ssl.rejectUnauthorized === undefined) {
+      poolConfig.ssl.rejectUnauthorized = false;
+    }
   }
 
   pool = new Pool(poolConfig);

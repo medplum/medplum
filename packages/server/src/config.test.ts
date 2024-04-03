@@ -20,6 +20,7 @@ describe('Config', () => {
     mockSSMClient.on(GetParametersByPathCommand).resolves({
       Parameters: [
         { Name: 'baseUrl', Value: 'https://www.example.com/' },
+        { Name: 'database/ssl/ca', Value: 'DatabaseSslCa' },
         { Name: 'DatabaseSecrets', Value: 'DatabaseSecretsArn' },
         { Name: 'RedisSecrets', Value: 'RedisSecretsArn' },
         { Name: 'port', Value: '8080' },
@@ -58,6 +59,9 @@ describe('Config', () => {
     expect(config.botCustomFunctionsEnabled).toEqual(true);
     expect(config.logAuditEvents).toEqual(true);
     expect(config.registerEnabled).toEqual(false);
+    expect(config.database).toBeDefined();
+    expect(config.database.ssl).toBeDefined();
+    expect(config.database.ssl?.ca).toEqual('DatabaseSslCa');
     expect(getConfig()).toBe(config);
     expect(mockSSMClient).toReceiveCommand(GetParametersByPathCommand);
   });
