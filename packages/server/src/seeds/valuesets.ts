@@ -17,7 +17,12 @@ export async function rebuildR4ValueSets(): Promise<void> {
       await deleteExisting(systemRepo, resource, r4ProjectId);
       await systemRepo.createResource({
         ...resource,
-        meta: { ...resource.meta, project: r4ProjectId },
+        meta: {
+          ...resource.meta,
+          project: r4ProjectId,
+          lastUpdated: undefined,
+          versionId: undefined,
+        },
       });
     }
   }

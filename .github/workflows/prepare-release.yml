@@ -1,6 +1,11 @@
 name: Prepare release
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version (leave blank for automatic)'
+        type: string
 
 jobs:
   prepare-release:
@@ -20,6 +25,6 @@ jobs:
           git config --global user.email "${{ secrets.MEDPLUM_BOT_EMAIL }}"
           git config --global user.name "${{ secrets.MEDPLUM_BOT_NAME }}"
       - name: Prepare release
-        run: ./scripts/prepare-release.sh
+        run: ./scripts/prepare-release.sh ${{ inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}

@@ -258,7 +258,6 @@ export function saveProfile(profileName: string, options: Profile): Profile {
   const storage = new FileSystemStorage(profileName);
   const optionsObject = { name: profileName, ...options };
   storage.setObject('options', optionsObject);
-  console.log(`${profileName} profile created`);
   return optionsObject;
 }
 

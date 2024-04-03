@@ -8,7 +8,6 @@ import {
   isEmpty,
   isPopulated,
 } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
@@ -18,14 +17,13 @@ import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
 import classes from '../ResourceArrayInput/ResourceArrayInput.module.css';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface SliceInputProps {
-  readonly path: string;
+export interface SliceInputProps extends BaseInputProps {
   readonly slice: SliceDefinitionWithTypes;
   readonly property: InternalSchemaElement;
   readonly defaultValue: any[];
   readonly onChange: (newValue: any[]) => void;
-  readonly outcome?: OperationOutcome;
   readonly testId?: string;
 }
 
@@ -91,6 +89,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                   max={slice.max}
                   binding={slice.binding}
                   path={props.path}
+                  valuePath={undefined /* `valuePath` not supported in slices */}
                 />
               </div>
               {values.length > slice.min && (

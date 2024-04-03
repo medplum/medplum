@@ -2,9 +2,13 @@ import { Patient } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 
-export function usePatient(): Patient | undefined {
+type Options = {
+  ignoreMissingPatientId?: boolean;
+};
+
+export function usePatient(options?: Options): Patient | undefined {
   const { patientId } = useParams();
-  if (!patientId) {
+  if (!patientId && !options?.ignoreMissingPatientId) {
     throw new Error('Patient ID not found');
   }
   return useResource<Patient>({ reference: `Patient/${patientId}` });

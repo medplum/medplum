@@ -137,14 +137,13 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     membership: createReference(membership),
     authTime: new Date().toISOString(),
     granted: true,
-    superAdmin: project.superAdmin,
     scope,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
 
   try {
-    const accessPolicy = await getAccessPolicyForLogin(login, membership);
+    const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
     await checkIpAccessRules(login, accessPolicy);
   } catch (err) {
     sendTokenError(res, 'invalid_request', normalizeErrorString(err));
@@ -214,15 +213,15 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   let client: ClientApplication | undefined;
-  if (clientId) {
-    try {
+  try {
+    if (clientId) {
       client = await getClientApplication(clientId);
-    } catch (err) {
-      sendTokenError(res, 'invalid_request', 'Invalid client');
-      return;
+    } else if (login.client) {
+      client = await getClientApplication(resolveId(login.client) as string);
     }
-  } else if (login.client) {
-    client = await systemRepo.readReference(login.client);
+  } catch (err) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
   }
 
   if (clientSecret) {

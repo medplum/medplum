@@ -70,3 +70,6 @@ export * as v61 from './v61';
 export * as v62 from './v62';
 export * as v63 from './v63';
 export * as v64 from './v64';
+export * as v65 from './v65';
+export * as v66 from './v66';
+export * as v67 from './v67';

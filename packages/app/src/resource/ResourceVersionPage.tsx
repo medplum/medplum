@@ -58,53 +58,51 @@ export function ResourceVersionPage(): JSX.Element {
   const prev = index < entries.length - 1 ? entries[index + 1].resource : undefined;
   const defaultTab = 'diff';
   return (
-    <>
-      <Tabs
-        value={tab || defaultTab}
-        onChange={(name) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)}
-      >
-        <Paper>
-          <Container fluid p="md">
-            <Text>{`${resourceType} ${id}`}</Text>
-          </Container>
-          <Tabs.List>
-            <Tabs.Tab value="diff">Diff</Tabs.Tab>
-            <Tabs.Tab value="raw">Raw</Tabs.Tab>
-          </Tabs.List>
-        </Paper>
+    <Tabs
+      value={tab || defaultTab}
+      onChange={(name) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)}
+    >
+      <Paper>
+        <Container fluid p="md">
+          <Text>{`${resourceType} ${id}`}</Text>
+        </Container>
+        <Tabs.List>
+          <Tabs.Tab value="diff">Diff</Tabs.Tab>
+          <Tabs.Tab value="raw">Raw</Tabs.Tab>
+        </Tabs.List>
+      </Paper>
 
-        <Document>
-          {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
-          <Tabs.Panel value="diff">
-            {prev ? (
-              <>
-                <ul>
-                  <li>Current: {value.meta?.versionId}</li>
-                  <li>
-                    Previous:{' '}
-                    <MedplumLink to={`/${resourceType}/${id}/_history/${prev.meta?.versionId}`}>
-                      {prev.meta?.versionId}
-                    </MedplumLink>
-                  </li>
-                </ul>
-                <ResourceDiff original={prev} revised={value} />
-              </>
-            ) : (
-              <>
-                <ul>
-                  <li>Current: {value.meta?.versionId}</li>
-                  <li>Previous: (none)</li>
-                </ul>
-                <pre>{JSON.stringify(value, undefined, 2)}</pre>
-              </>
-            )}
-          </Tabs.Panel>
+      <Document>
+        {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
+        <Tabs.Panel value="diff">
+          {prev ? (
+            <>
+              <ul>
+                <li>Current: {value.meta?.versionId}</li>
+                <li>
+                  Previous:{' '}
+                  <MedplumLink to={`/${resourceType}/${id}/_history/${prev.meta?.versionId}`}>
+                    {prev.meta?.versionId}
+                  </MedplumLink>
+                </li>
+              </ul>
+              <ResourceDiff original={prev} revised={value} />
+            </>
+          ) : (
+            <>
+              <ul>
+                <li>Current: {value.meta?.versionId}</li>
+                <li>Previous: (none)</li>
+              </ul>
+              <pre>{JSON.stringify(value, undefined, 2)}</pre>
+            </>
+          )}
+        </Tabs.Panel>
 
-          <Tabs.Panel value="raw">
-            <pre>{JSON.stringify(value, undefined, 2)}</pre>
-          </Tabs.Panel>
-        </Document>
-      </Tabs>
-    </>
+        <Tabs.Panel value="raw">
+          <pre>{JSON.stringify(value, undefined, 2)}</pre>
+        </Tabs.Panel>
+      </Document>
+    </Tabs>
   );
 }

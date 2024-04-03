@@ -2,7 +2,7 @@ import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
-import { append } from '../utils';
+import { append, sortStringArray } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -518,7 +518,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
     return '';
   }
 
-  params.sort((a, b) => a.localeCompare(b));
+  sortStringArray(params);
   return '?' + params.join('&');
 }
 

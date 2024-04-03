@@ -29,7 +29,12 @@ async function createStructureDefinitionsForBundle(
       globalLogger.debug('StructureDefinition: ' + resource.name);
       const result = await systemRepo.createResource<StructureDefinition>({
         ...resource,
-        meta: { ...resource.meta, project: r4ProjectId },
+        meta: {
+          ...resource.meta,
+          project: r4ProjectId,
+          lastUpdated: undefined,
+          versionId: undefined,
+        },
         text: undefined,
         differential: undefined,
       });

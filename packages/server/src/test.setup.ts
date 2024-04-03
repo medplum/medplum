@@ -108,7 +108,6 @@ export async function createTestProject<T extends TestProjectOptions = TestProje
           client: createReference(client),
           membership: createReference(membership),
           authTime: new Date().toISOString(),
-          superAdmin: options?.superAdmin,
           scope,
         });
 

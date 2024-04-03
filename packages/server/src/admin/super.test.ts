@@ -1,5 +1,5 @@
 import { createReference, getReferenceString } from '@medplum/core';
-import { ClientApplication, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -20,7 +20,6 @@ jest.mock('../seeds/searchparameters');
 
 const app = express();
 let project: Project;
-let client: ClientApplication;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
 
@@ -30,7 +29,9 @@ describe('Super Admin routes', () => {
     await initApp(app, config);
 
     requestContextStore.enterWith(AuthenticatedRequestContext.system());
-    ({ project, client } = await createTestProject({ withClient: true, superAdmin: true }));
+    ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
+
+    const normalProject = await createTestProject();
 
     const systemRepo = getSystemRepo();
 
@@ -48,9 +49,9 @@ describe('Super Admin routes', () => {
 
     const user2 = await systemRepo.createResource<User>({
       resourceType: 'User',
-      firstName: 'Super',
-      lastName: 'Admin',
-      email: `normie${randomUUID()}@example.com`,
+      firstName: 'Normal',
+      lastName: 'User',
+      email: `normal${randomUUID()}@example.com`,
       passwordHash: 'abc',
     });
 
@@ -63,7 +64,7 @@ describe('Super Admin routes', () => {
 
     const membership2 = await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
-      project: createReference(project),
+      project: createReference(normalProject.project),
       user: createReference(user2),
       profile: createReference(practitioner2),
     });
@@ -71,30 +72,25 @@ describe('Super Admin routes', () => {
     const login1 = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       authMethod: 'client',
-      client: createReference(client),
       user: createReference(user1),
       membership: createReference(membership1),
       authTime: new Date().toISOString(),
       scope: 'openid',
-      superAdmin: true,
     });
 
     const login2 = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       authMethod: 'client',
-      client: createReference(client),
       user: createReference(user2),
       membership: createReference(membership2),
       authTime: new Date().toISOString(),
       scope: 'openid',
-      superAdmin: false,
     });
 
     adminAccessToken = await generateAccessToken({
       login_id: login1.id as string,
       sub: user1.id as string,
       username: user1.id as string,
-      client_id: client.id as string,
       profile: getReferenceString(practitioner1 as Practitioner),
       scope: 'openid',
     });
@@ -103,7 +99,6 @@ describe('Super Admin routes', () => {
       login_id: login2.id as string,
       sub: user2.id as string,
       username: user2.id as string,
-      client_id: client.id as string,
       profile: getReferenceString(practitioner2 as Practitioner),
       scope: 'openid',
     });

@@ -27,7 +27,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   const { login, project, membership, profile: profileRef } = getAuthenticatedContext();
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(systemRepo, project, membership);
-  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+  const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {

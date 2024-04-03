@@ -67,6 +67,7 @@ const searchParams = [
   'Observation-value-string',
   'Encounter-length',
   'Communication-encounter',
+  'Communication-part-of',
   'Media-encounter',
   'Questionnaire-name',
   'ActivityDefinition-name',
@@ -74,6 +75,7 @@ const searchParams = [
   'Task-identifier',
   'Slot-schedule',
   'Slot-start',
+  'Measure-url',
 ];
 
 const USCoreStructureDefinitionFiles = [
@@ -120,7 +122,21 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
   for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
+      removeBaseFromElements(resource);
       output.push(resource);
+    }
+  }
+}
+
+function removeBaseFromElements(sd: StructureDefinition): void {
+  for (const element of sd.snapshot?.element ?? []) {
+    if (
+      element.base &&
+      element.path === element.base.path &&
+      element.min === element.base.min &&
+      element.max === element.base.max
+    ) {
+      element.base = undefined;
     }
   }
 }
@@ -153,18 +169,18 @@ function keyReplacer(key: string, value: any): any {
   return value;
 }
 
-if (process.argv[1].endsWith('storybook.ts')) {
+if (process.argv[1].endsWith('.ts')) {
   main();
 }
 
 // or with jq: jq 'del(.text, .differential, .mapping, .snapshot.element[].mapping)' <input-file.json>
 function cleanStructureDefinition(sd: StructureDefinition): void {
-  delete sd.text;
-  delete sd.differential;
-  delete sd.mapping;
+  sd.text = undefined;
+  sd.differential = undefined;
+  sd.mapping = undefined;
   if (sd?.snapshot?.element) {
     for (const element of sd.snapshot.element) {
-      delete element.mapping;
+      element.mapping = undefined;
     }
   }
 }

@@ -5,6 +5,7 @@ import {
   Filter,
   getDateProperty,
   getReferenceString,
+  MEDPLUM_CLI_CLIENT_ID,
   OperationOutcomeError,
   Operator,
   ProfileResource,
@@ -111,10 +112,10 @@ export interface GoogleCredentialClaims extends JWTPayload {
  * @returns The client application.
  */
 export async function getClientApplication(clientId: string): Promise<ClientApplication> {
-  if (clientId === 'medplum-cli') {
+  if (clientId === MEDPLUM_CLI_CLIENT_ID) {
     return {
       resourceType: 'ClientApplication',
-      id: 'medplum-cli',
+      id: MEDPLUM_CLI_CLIENT_ID,
       redirectUri: 'http://localhost:9615',
       pkceOptional: true,
     };
@@ -404,7 +405,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   }
 
   // Get the access policy
-  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+  const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
 
   // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
@@ -415,7 +416,6 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   return systemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership),
-    superAdmin: project.superAdmin,
   });
 }
 

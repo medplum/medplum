@@ -37,10 +37,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => {
-      await rebuildR4ValueSets();
-      await getSystemRepo().reindexResourceType('CodeSystem');
-    });
+    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets());
   })
 );
 
@@ -226,7 +223,7 @@ superAdminRouter.post(
 
 export function requireSuperAdmin(): AuthenticatedRequestContext {
   const ctx = getAuthenticatedContext();
-  if (!ctx.login.superAdmin) {
+  if (!ctx.project.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
   return ctx;

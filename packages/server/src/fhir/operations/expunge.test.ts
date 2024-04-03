@@ -193,6 +193,9 @@ async function existsInDatabase(tableName: string, id: string | undefined): Prom
 }
 
 async function existsInLookupTable(tableName: string, id: string | undefined): Promise<boolean> {
-  const rows = await new SelectQuery(tableName).column('id').where('resourceId', '=', id).execute(getDatabasePool());
+  const rows = await new SelectQuery(tableName)
+    .column('resourceId')
+    .where('resourceId', '=', id)
+    .execute(getDatabasePool());
   return rows.length > 0;
 }

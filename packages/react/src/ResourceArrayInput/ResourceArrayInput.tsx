@@ -1,6 +1,5 @@
 import { Group, Stack } from '@mantine/core';
 import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { MouseEvent, useContext, useEffect, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -11,14 +10,13 @@ import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
 import classes from './ResourceArrayInput.module.css';
 import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
+import { BaseInputProps, getValuePath } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface ResourceArrayInputProps {
+export interface ResourceArrayInputProps extends BaseInputProps {
   readonly property: InternalSchemaElement;
   readonly name: string;
-  readonly path: string;
   readonly defaultValue?: any[];
   readonly indent?: boolean;
-  readonly outcome: OperationOutcome | undefined;
   readonly onChange?: (value: any[]) => void;
   readonly hideNonSliceValues?: boolean;
 }
@@ -82,6 +80,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             slice={slice}
             key={slice.name}
             path={props.path}
+            valuePath={props.valuePath}
             property={property}
             defaultValue={slicedValues[sliceIndex]}
             onChange={(newValue: any[]) => {
@@ -101,6 +100,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
                 property={props.property}
                 name={props.name + '.' + valueIndex}
                 path={props.path}
+                valuePath={getValuePath(props.path, props.valuePath, valueIndex)}
                 defaultValue={value}
                 onChange={(newValue: any) => {
                   const newNonSliceValues = [...nonSliceValues];

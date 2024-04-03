@@ -61,18 +61,28 @@ describe('CLI auth', () => {
     const handler = (http.createServer as unknown as jest.Mock).mock.calls[0][0];
 
     // Simulate a favicon.ico request, don't crash
-    const req1 = { url: '/favicon.ico' };
+    const req1 = { method: 'GET', url: '/favicon.ico' };
     const res1 = { writeHead: jest.fn(), end: jest.fn() };
     await handler(req1, res1);
     expect(res1.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': ContentType.TEXT });
     expect(res1.end).toHaveBeenCalledWith('Not found');
 
-    // Simulate the redirect
-    const req2 = { url: '/?code=123' };
+    // Simulate an OPTIONS request, don't process the code
+    const req2 = { method: 'OPTIONS', url: '/?code=123' };
     const res2 = { writeHead: jest.fn(), end: jest.fn() };
     await handler(req2, res2);
-    expect(res2.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': ContentType.TEXT });
-    expect(res2.end).toHaveBeenCalledWith('Signed in as Alice Smith. You may close this window.');
+    expect(res2.writeHead).toHaveBeenCalledWith(200, {
+      Allow: 'GET, POST',
+      'Content-Type': ContentType.TEXT,
+    });
+    expect(res2.end).toHaveBeenCalledWith('OK');
+
+    // Simulate the redirect
+    const req3 = { method: 'GET', url: '/?code=123' };
+    const res3 = { writeHead: jest.fn(), end: jest.fn() };
+    await handler(req3, res3);
+    expect(res3.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': ContentType.TEXT });
+    expect(res3.end).toHaveBeenCalledWith('Signed in as Alice Smith. You may close this window.');
     expect(medplum.getActiveLogin()).toBeDefined();
   });
 
@@ -84,7 +94,7 @@ describe('CLI auth', () => {
   test('Login basic auth', async () => {
     expect(medplum.getActiveLogin()).toBeUndefined();
     await main(['node', 'index.js', 'login', '--auth-type', 'basic']);
-    expect(console.log).toHaveBeenCalledWith('Login successful');
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   test('Login client credentials', async () => {
@@ -100,7 +110,7 @@ describe('CLI auth', () => {
       '--client-secret',
       'abc',
     ]);
-    expect(console.log).toHaveBeenCalledWith('Login successful');
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   test('Load credentials from disk', async () => {

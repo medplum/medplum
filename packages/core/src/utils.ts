@@ -205,7 +205,7 @@ export function getImageSrc(resource: Resource): string | undefined {
 }
 
 function getPhotoImageSrc(photo: Attachment): string | undefined {
-  if (photo.url && photo.contentType && photo.contentType.startsWith('image/')) {
+  if (photo.url && photo.contentType?.startsWith('image/')) {
     return photo.url;
   }
   return undefined;
@@ -1055,4 +1055,16 @@ export function append<T>(array: T[] | undefined, value: T): T[] {
 
 export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
   return new URL(path, baseUrl).toString().replace('http://', 'ws://').replace('https://', 'wss://');
+}
+
+/**
+ * Sorts an array of strings in place using the localeCompare method.
+ *
+ * This method will mutate the input array.
+ *
+ * @param array - The array of strings to sort.
+ * @returns The sorted array of strings.
+ */
+export function sortStringArray(array: string[]): string[] {
+  return array.sort((a, b) => a.localeCompare(b));
 }

@@ -13,6 +13,7 @@ export interface FormSectionProps {
   readonly children?: ReactNode;
   readonly testId?: string;
   readonly fhirPath?: string;
+  readonly errorExpression?: string;
 }
 
 export function FormSection(props: FormSectionProps): JSX.Element {
@@ -30,7 +31,7 @@ export function FormSection(props: FormSectionProps): JSX.Element {
       label={label}
       description={props.description}
       withAsterisk={props.withAsterisk}
-      error={getErrorsForInput(props.outcome, props.htmlFor)}
+      error={getErrorsForInput(props.outcome, props.errorExpression ?? props.htmlFor)}
       data-testid={props.testId}
     >
       {props.children}

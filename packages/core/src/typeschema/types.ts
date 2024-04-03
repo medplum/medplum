@@ -373,7 +373,7 @@ class StructureDefinitionParser {
         } while (this.backboneContext && !pathsCompatible(this.backboneContext.path, element?.path));
       } else {
         this.innerTypes.push(this.backboneContext.type);
-        delete this.backboneContext;
+        this.backboneContext = undefined;
       }
     }
     if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path as string)) {
@@ -382,7 +382,7 @@ class StructureDefinitionParser {
       if (this.slicingContext?.current) {
         this.slicingContext.field.slices.push(this.slicingContext.current);
       }
-      delete this.slicingContext;
+      this.slicingContext = undefined;
     }
   }
 
@@ -400,7 +400,8 @@ class StructureDefinitionParser {
     if (element) {
       this.elementIndex[element.path ?? ''] = element;
       if (element.contentReference) {
-        const ref = this.elementIndex[element.contentReference.slice(element.contentReference.indexOf('#') + 1)];
+        const contentRefPath = element.contentReference.slice(element.contentReference.indexOf('#') + 1);
+        const ref = this.elementIndex[contentRefPath];
         if (!ref) {
           return undefined;
         }
@@ -410,6 +411,11 @@ class StructureDefinitionParser {
           path: element.path,
           min: element.min ?? ref.min,
           max: element.max ?? ref.max,
+          base: {
+            path: ref.base?.path ?? contentRefPath,
+            min: element.base?.min ?? ref.base?.min ?? (ref.min as number),
+            max: element.base?.max ?? ref.base?.max ?? (ref.max as string),
+          },
           contentReference: element.contentReference,
           definition: element.definition,
         };
@@ -464,7 +470,7 @@ class StructureDefinitionParser {
       }
 
       return {
-        code: code satisfies string,
+        code,
         targetProfile: type.targetProfile,
         profile: type.profile,
       };

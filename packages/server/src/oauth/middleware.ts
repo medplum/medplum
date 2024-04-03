@@ -81,7 +81,6 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
     user: createReference(client),
     authMethod: 'client',
     authTime: new Date().toISOString(),
-    superAdmin: project.superAdmin,
   };
 
   return { login, project, membership };

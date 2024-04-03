@@ -21,6 +21,7 @@ jobs:
       matrix:
         node-version: [18, 20]
     env:
+      NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
@@ -53,8 +54,14 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+      - name: Log npm stats
+        run: |
+          echo "node version: $(node --version)"
+          echo "npm version: $(npm --version)"
+      - name: Install
+        run: npm ci --maxsockets 1
       - name: Build Project
-        run: ./scripts/build.sh
+        run: npm run build
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
@@ -149,6 +156,7 @@ jobs:
         pg-version: [12, 14, 16]
         redis-version: [6, 7]
     env:
+      NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
@@ -228,6 +236,7 @@ jobs:
     permissions:
       pull-requests: write
     env:
+      NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: 20
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 

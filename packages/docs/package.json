@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "3.0.11",
+  "version": "3.1.0",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -40,16 +40,16 @@
     ]
   },
   "devDependencies": {
-    "@docusaurus/core": "3.1.1",
-    "@docusaurus/module-type-aliases": "3.1.1",
-    "@docusaurus/preset-classic": "3.1.1",
-    "@docusaurus/theme-mermaid": "3.1.1",
-    "@docusaurus/tsconfig": "3.1.1",
-    "@docusaurus/types": "3.1.1",
+    "@docusaurus/core": "3.2.0",
+    "@docusaurus/module-type-aliases": "3.2.0",
+    "@docusaurus/preset-classic": "3.2.0",
+    "@docusaurus/theme-mermaid": "3.2.0",
+    "@docusaurus/tsconfig": "3.2.0",
+    "@docusaurus/types": "3.2.0",
     "@mdx-js/react": "3.0.1",
-    "@medplum/core": "3.0.11",
-    "@medplum/fhirtypes": "3.0.11",
-    "@medplum/mock": "3.0.11",
+    "@medplum/core": "3.1.0",
+    "@medplum/fhirtypes": "3.1.0",
+    "@medplum/mock": "3.1.0",
     "@svgr/webpack": "8.1.0",
     "clsx": "2.1.0",
     "file-loader": "6.2.0",
@@ -59,7 +59,7 @@
     "react-dom": "18.2.0",
     "react-intersection-observer": "9.8.1",
     "react-router-dom": "6.22.3",
-    "typescript": "5.4.2",
+    "typescript": "5.4.3",
     "url-loader": "4.1.1"
   },
   "engines": {

@@ -53,6 +53,7 @@ import {
   resolveId,
   setCodeBySystem,
   setIdentifier,
+  sortStringArray,
   splitN,
   stringify,
 } from './utils';
@@ -1183,5 +1184,14 @@ describe('Core Utils', () => {
     // Call the lazy function for the second time, wrapped fn still only called once
     expect(lazyFn()).toBe('test result');
     expect(mockFn).toHaveBeenCalledTimes(1);
+  });
+
+  test('sortStringArray', () => {
+    expect(sortStringArray(['a', 'c', 'b'])).toEqual(['a', 'b', 'c']);
+
+    const code1 = '\u00e9\u0394'; // "éΔ"
+    const code2 = '\u0065\u0301\u0394'; // "éΔ" using Unicode combining marks
+    const code3 = '\u0065\u0394'; // "eΔ"
+    expect(sortStringArray([code1, code2, code3])).toEqual([code3, code1, code2]);
   });
 });

@@ -792,23 +792,15 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * This is only available to super admins.
    * @param resourceType - The resource type.
    */
-  async rebuildCompartmentsForResourceType(resourceType: string): Promise<void> {
+  async rebuildCompartmentsForResourceType(resourceType: ResourceType): Promise<void> {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
-    // Do not use this.getDatabaseClient() for the cursor!
-    // That would cause a deadlock.
-    // Instead, use getDatabasePool() directly over a separate connection.
-    const client = getDatabasePool();
-    const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
-    this.addDeletedFilter(builder);
-
-    await builder.executeCursor(client, async (row: any) => {
+    await this.forAllResources(resourceType, async (resource) => {
       try {
-        const resource = JSON.parse(row.content) as Resource;
         (resource.meta as Meta).compartment = this.getCompartments(resource);
-        await this.updateResourceImpl(JSON.parse(row.content) as Resource, false);
+        await this.updateResourceImpl(resource, false);
       } catch (err) {
         getLogger().error('Failed to rebuild compartments for resource', {
           error: normalizeErrorString(err),
@@ -823,25 +815,69 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * This should not result in any change to resources or history.
    * @param resourceType - The resource type.
    */
-  async reindexResourceType(resourceType: string): Promise<void> {
+  async reindexResourceType(resourceType: ResourceType): Promise<void> {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
-    // Do not use this.getDatabaseClient() for the cursor!
-    // That would cause a deadlock.
-    // Instead, use getDatabasePool() directly over a separate connection.
-    const client = getDatabasePool();
-    const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
-    this.addDeletedFilter(builder);
-
-    await builder.executeCursor(client, async (row: any) => {
+    await this.forAllResources(resourceType, async (resource) => {
       try {
-        await this.reindexResourceImpl(JSON.parse(row.content) as Resource);
+        await this.reindexResourceImpl(resource);
       } catch (err) {
         getLogger().error('Failed to reindex resource', { error: normalizeErrorString(err) });
       }
     });
+  }
+
+  /**
+   * Loops over all resources of the specified type and executes the callback function.
+   *
+   * Search for all resources of the specified type.
+   * Order by lastUpdated ascending to process oldest resources first.
+   *
+   * Historically, we used database cursors for this functionality.
+   * However, for large tables (1 million+ rows), the cursor approach caused performance issues.
+   *
+   * Instead, this implementation uses a search query with a sort by lastUpdated.
+   * This will be slower than the cursor approach, but it is more reliable.
+   *
+   * @param resourceType - The resource type.
+   * @param callback - The callback function to be executed for each resource of the specified type.
+   */
+  async forAllResources<T extends Resource>(
+    resourceType: T['resourceType'],
+    callback: (resource: T) => Promise<void>
+  ): Promise<void> {
+    const batchSize = 1000;
+    let hasMore = true;
+    let currentTimestamp: string | undefined = undefined;
+
+    while (hasMore) {
+      const searchRequest: SearchRequest<T> = {
+        resourceType,
+        count: batchSize,
+        sortRules: [{ code: '_lastUpdated', descending: false }],
+      };
+
+      if (currentTimestamp) {
+        searchRequest.filters = [
+          { code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: currentTimestamp },
+        ];
+      }
+
+      const bundle = await this.search(searchRequest);
+      if (bundle.entry) {
+        for (const entry of bundle.entry) {
+          const resource = entry.resource as T;
+          await callback(resource);
+
+          const lastUpdated = resource.meta?.lastUpdated as string;
+          currentTimestamp = lastUpdated;
+        }
+      }
+
+      hasMore = !!bundle.link?.find((link) => link.relation === 'next');
+    }
   }
 
   /**

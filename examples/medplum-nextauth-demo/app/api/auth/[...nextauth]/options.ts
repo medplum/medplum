@@ -21,7 +21,7 @@ export const options: NextAuthOptions = {
         },
       },
       clientId: process.env.MEDPLUM_CLIENT_ID,
-      clientSecret: process.env.MEDPLUM_SECRET_ID,
+      clientSecret: process.env.MEDPLUM_CLIENT_SECRET,
       profile: (profile) => {
         return {
           id: profile.login_id,

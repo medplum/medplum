@@ -29,7 +29,7 @@ export async function getRepoForLogin(
   project: Project,
   extendedMode?: boolean
 ): Promise<Repository> {
-  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+  const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
 
   let allowedProjects: string[] | undefined;
   if (project.id) {
@@ -45,7 +45,7 @@ export async function getRepoForLogin(
     projects: allowedProjects,
     author: membership.profile as Reference,
     remoteAddress: login.remoteAddress,
-    superAdmin: login.superAdmin,
+    superAdmin: project.superAdmin,
     projectAdmin: membership.admin,
     accessPolicy,
     strictMode: project.strictMode,
@@ -56,11 +56,13 @@ export async function getRepoForLogin(
 
 /**
  * Returns the access policy for the login.
+ * @param project - The project.
  * @param login - The user login.
  * @param membership - The user membership.
  * @returns The finalized access policy.
  */
 export async function getAccessPolicyForLogin(
+  project: Project,
   login: Login,
   membership: ProjectMembership
 ): Promise<AccessPolicy | undefined> {
@@ -75,7 +77,7 @@ export async function getAccessPolicyForLogin(
   // Apply project admin access policies
   // This includes ensuring no admin rights for non-admins
   // and restricted access for admins
-  accessPolicy = applyProjectAdminAccessPolicy(login, membership, accessPolicy);
+  accessPolicy = applyProjectAdminAccessPolicy(project, login, membership, accessPolicy);
 
   return accessPolicy;
 }
@@ -113,7 +115,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     }
   }
 
-  if (!membership.access && !membership.accessPolicy) {
+  if ((!membership.access || membership.access.length === 0) && !membership.accessPolicy) {
     // Preserve legacy behavior of null access policy
     // TODO: This should be removed in future release when access policies are required
     resourcePolicies.push({ resourceType: '*' });
@@ -181,17 +183,19 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
 /**
  * Updates the access policy to include project admin rules.
  * This includes ensuring no admin rights for non-admins and restricted access for admins.
+ * @param project - The project.
  * @param login - The user login.
  * @param membership - The active project membership.
  * @param accessPolicy - The existing access policy.
  * @returns Updated access policy with all project admin rules applied.
  */
 function applyProjectAdminAccessPolicy(
+  project: Project,
   login: Login,
   membership: ProjectMembership,
   accessPolicy: AccessPolicy
 ): AccessPolicy {
-  if (login.superAdmin) {
+  if (project.superAdmin) {
     // If the user is a super admin, then do not apply any additional access policy rules.
     return accessPolicy;
   }
@@ -229,6 +233,11 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'PasswordChangeRequest',
+      readonly: true,
+    });
+
+    accessPolicy.resource.push({
+      resourceType: 'UserSecurityRequest',
       readonly: true,
     });
 
