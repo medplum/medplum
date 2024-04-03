@@ -1,7 +1,7 @@
 import { Grid, GridCol, Paper } from '@mantine/core';
 import { resolveId } from '@medplum/core';
 import { Communication, Patient } from '@medplum/fhirtypes';
-import { PatientSummary, useMedplum, ThreadChat } from '@medplum/react';
+import { PatientSummary, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { CommunicationActions } from '../components/actions/CommunicationActions';
 import { CommunicationDetails } from '../components/CommunicationDetails';
@@ -14,9 +14,6 @@ interface ThreadPageProps {
 export function ThreadPage(props: ThreadPageProps): JSX.Element {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
-
-  // Get the topic to display on the chat
-  const topic = props.thread.topic?.coding?.[0].display ?? 'Thread';
 
   const patientReference = props.thread.subject;
 
