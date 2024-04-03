@@ -1959,6 +1959,7 @@ export class MedplumClient extends EventTarget {
    * @param query - The search query for an equivalent resource (should not include resource type or "?").
    * @param options - Optional fetch options.
    * @returns The result of the create operation.
+   * @deprecated Use `upsert(resource, query)` for transactional guarantees.
    */
   async createResourceIfNoneExist<T extends Resource>(
     resource: T,
