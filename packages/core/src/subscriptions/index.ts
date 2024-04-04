@@ -9,6 +9,7 @@ export type SubscriptionEventMap = {
   disconnect: { type: 'disconnect'; payload: { subscriptionId: string } };
   error: { type: 'error'; payload: Error };
   message: { type: 'message'; payload: Bundle };
+  open: { type: 'open' };
   close: { type: 'close' };
   heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
@@ -101,6 +102,7 @@ export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> i
  * - `disconnect` - The specified subscription is no longer being monitored by the `SubscriptionManager`.
  * - `error` - An error has occurred.
  * - `message` - A message containing a notification `Bundle` has been received.
+ * - `open` - The WebSocket has been opened.
  * - `close` - The WebSocket has been closed.
  * - `heartbeat` - A `heartbeat` message has been received.
  */
@@ -259,7 +261,7 @@ export class SubscriptionManager {
 
     // Get binding token
     const { parameter } = (await this.medplum.get(
-      `/fhir/R4/Subscription/${subscriptionId}/$get-ws-binding-token`
+      `fhir/R4/Subscription/${subscriptionId}/$get-ws-binding-token`
     )) as Parameters;
     const token = parameter?.find((param) => param.name === 'token')?.valueString;
     const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
@@ -290,7 +292,6 @@ export class SubscriptionManager {
       .then(([subscriptionId, token]) => {
         newCriteriaEntry.subscriptionId = subscriptionId;
         this.criteriaEntriesBySubscriptionId.set(subscriptionId, newCriteriaEntry);
-
         // Emit connect event
         this.emitConnect(subscriptionId);
         // Send binding message

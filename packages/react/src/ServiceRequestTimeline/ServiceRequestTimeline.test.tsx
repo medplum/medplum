@@ -1,8 +1,7 @@
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference, generateId, getReferenceString } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { randomUUID } from 'crypto';
 import { MemoryRouter } from 'react-router-dom';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { ServiceRequestTimeline, ServiceRequestTimelineProps } from './ServiceRequestTimeline';
@@ -89,19 +88,24 @@ describe('ServiceRequestTimeline', () => {
   });
 
   test('Pin comment', async () => {
+    const randomText = generateId();
+
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
-      payload: [{ contentString: randomUUID() }],
+      payload: [{ contentString: randomText }],
     });
 
     await setup({ serviceRequest: HomerServiceRequest });
 
-    // Wait for initial load
-    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
+    // See if the Communication timeline item is loaded
+    expect(await screen.findByText(randomText)).toBeInTheDocument();
+
+    // Check for the Actions menu icon
+    expect(screen.getByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -127,19 +131,24 @@ describe('ServiceRequestTimeline', () => {
   });
 
   test('Comment details', async () => {
+    const randomText = generateId();
+
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
-      payload: [{ contentString: randomUUID() }],
+      payload: [{ contentString: randomText }],
     });
 
     await setup({ serviceRequest: HomerServiceRequest });
 
-    // Wait for initial load
-    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
+    // See if the Communication timeline item is loaded
+    expect(await screen.findByText(randomText)).toBeInTheDocument();
+
+    // Check for the Actions menu icon
+    expect(screen.getByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -154,19 +163,24 @@ describe('ServiceRequestTimeline', () => {
   });
 
   test('Edit comment', async () => {
+    const randomText = generateId();
+
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
-      payload: [{ contentString: randomUUID() }],
+      payload: [{ contentString: randomText }],
     });
 
     await setup({ serviceRequest: HomerServiceRequest });
 
-    // Wait for initial load
-    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
+    // See if the Communication timeline item is loaded
+    expect(await screen.findByText(randomText)).toBeInTheDocument();
+
+    // Check for the Actions menu icon
+    expect(screen.getByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
@@ -181,19 +195,24 @@ describe('ServiceRequestTimeline', () => {
   });
 
   test('Delete comment', async () => {
+    const randomText = generateId();
+
     // Create a comment
     const comment = await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'completed',
       basedOn: [createReference(HomerServiceRequest)],
       subject: createReference(HomerSimpson),
-      payload: [{ contentString: randomUUID() }],
+      payload: [{ contentString: randomText }],
     });
 
     await setup({ serviceRequest: HomerServiceRequest });
 
-    // Wait for initial load
-    expect(await screen.findByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
+    // See if the Communication timeline item is loaded
+    expect(await screen.findByText(randomText)).toBeInTheDocument();
+
+    // Check for the Actions menu icon
+    expect(screen.getByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
 
     // Click on the actions link
     await act(async () => {
