@@ -34,8 +34,6 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
     poolConfig.ssl.require = true;
   }
 
-  console.log('CODY database config', JSON.stringify(poolConfig, null, 2));
-
   pool = new Pool(poolConfig);
 
   pool.on('error', (err) => {

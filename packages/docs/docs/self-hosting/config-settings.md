@@ -281,17 +281,18 @@ Example using JSON configuration file:
 
 Example using AWS Parameter Store configuration:
 
-| Key                                             | Value  |
-| ----------------------------------------------- | ------ |
-| `/medplum/prod/database.ssl.require`            | `true` |
-| `/medplum/prod/database.ssl.rejectUnauthorized` | `true` |
+| Key                                             | Value                     |
+| ----------------------------------------------- | ------------------------- |
+| `/medplum/prod/database.ssl.require`            | `true`                    |
+| `/medplum/prod/database.ssl.rejectUnauthorized` | `true`                    |
+| `/medplum/prod/database.ssl.ca`                 | Certificate in PEM format |
 
-When using SSL with AWS RDS, you may need to add the RDS CA certificate to the `ca` setting. The RDS CA certificate can be downloaded from the [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html).
+When using SSL with AWS RDS, you must add the RDS CA certificate to the `ca` setting. The RDS CA certificate can be downloaded from the [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html).
 
-Note that AWS Parameter Store parameters have a 4096 character limit. A 2048 bit CA certificate is typically around 1.5KB, so it should fit within the limit.
-
-To find your RDS CA certificate within a bundle, use the `keytool` command to inspect the bundle:
+Note that AWS Parameter Store parameters have a 4096 character limit. The RDS CA bundle is larger than the 4096 character limit, so you must find the individual certificate. To find your RDS CA certificate within a bundle, use the `keytool` command to inspect the bundle:
 
 ```sh
 keytool -list -keystore rds-combined-ca-bundle.pem
 ```
+
+Alternatively, you can use `rejectUnauthorized` = `false` to disable SSL verification. This will still use SSL encryption, but will not verify the certificate.
