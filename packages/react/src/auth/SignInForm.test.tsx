@@ -705,17 +705,6 @@ describe('SignInForm', () => {
   });
 
   test('Redirect to external auth', async () => {
-    Object.defineProperty(window, 'sessionStorage', {
-      value: {
-        getItem: function (key: string): string {
-          return this[key];
-        },
-        setItem: function (key: string, value: string): void {
-          this[key] = value;
-        },
-      },
-      writable: true,
-    });
     Object.defineProperty(window, 'location', {
       value: {
         assign: jest.fn(),
