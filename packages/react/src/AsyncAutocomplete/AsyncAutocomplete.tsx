@@ -62,7 +62,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     placeholder,
     leftSection,
     maxValues,
-    optionsDropdownMaxHeight = 300,
+    optionsDropdownMaxHeight = 320,
     ...rest
   } = props;
   const defaultItems = toDefaultItems(defaultValue);
