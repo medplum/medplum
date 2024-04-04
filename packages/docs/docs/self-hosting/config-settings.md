@@ -136,9 +136,9 @@ Optionally override the trusted CA certificates. Default is to trust the well-kn
 | `botLambdaRoleArn`                | If using Medplum Bots, this is the ARN of the [Lambda execution role](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html).                                                                                                                             |          | `cdk`      |                                     |
 | `botLambdaLayerName`              | If using Medplum Bots, this is the name of the [Lambda layer](https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html). For example, `medplum-bot-layer`.                                                                                                             |          |            | `medplum-bot-layer`                 |
 | `database`                        | The database connection details as a JSON object. Only available when using JSON config file.                                                                                                                                                                                     |          |            |                                     |
-| `database/ssl/ca`                 | Optional trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla. This can be used with `DatabaseSecrets`.                                                                                                                                             |          |            |                                     |
-| `database/ssl/rejectUnauthorized` | Optional boolean flag to reject any connection which is not authorized with the list of supplied CAs. This can be used with `DatabaseSecrets`.                                                                                                                                    |          |            | `true`                              |
-| `database/ssl/require`            | Optional boolean flag to require SSL when connecting to the database. This can be used with `DatabaseSecrets`.                                                                                                                                                                    |          |            | `false`                             |
+| `database.ssl.ca`                 | Optional trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla. This can be used with `DatabaseSecrets`.                                                                                                                                             |          |            |                                     |
+| `database.ssl.rejectUnauthorized` | Optional boolean flag to reject any connection which is not authorized with the list of supplied CAs. This can be used with `DatabaseSecrets`.                                                                                                                                    |          |            | `true`                              |
+| `database.ssl.require`            | Optional boolean flag to require SSL when connecting to the database. This can be used with `DatabaseSecrets`.                                                                                                                                                                    |          |            | `false`                             |
 | `databaseProxyEndpoint`           | Optional database proxy URL, for example to use AWS RDS Proxy. This can be used with `DatabaseSecrets`.                                                                                                                                                                           |          |            |                                     |
 | `DatabaseSecrets`                 | The AWS Secret ID containing database connection details (created automatically by CDK). Only available when using AWS Parameter Store config. See [AWS Secrets](#aws-secrets).                                                                                                   |          | `cdk`      |                                     |
 | `redis`                           | The redis connection details as a JSON object. Only available when using JSON config file.                                                                                                                                                                                        |          |            |                                     |
@@ -255,9 +255,9 @@ Any parameter specified in the `external secrets` format will automatically be f
 
 Medplum server can be configured to require an SSL connection to the database. There are three notable configuration settings for this:
 
-1. `database/ssl/require` - Optional boolean flag to require SSL when connecting to the database.
-2. `database/ssl/ca` - Optional trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla.
-3. `database/ssl/rejectUnauthorized` - Optional boolean flag to reject any connection which is not authorized with the list of supplied CAs.
+1. `database.ssl.require` - Optional boolean flag to require SSL when connecting to the database.
+2. `database.ssl.ca` - Optional trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla.
+3. `database.ssl.rejectUnauthorized` - Optional boolean flag to reject any connection which is not authorized with the list of supplied CAs.
 
 In general, the `require` flag should be set to `true` to ensure that all connections to the database are encrypted. The `ca` and `rejectUnauthorized` flags are optional and can be used to further secure the connection.
 
@@ -283,8 +283,8 @@ Example using AWS Parameter Store configuration:
 
 | Key                                             | Value  |
 | ----------------------------------------------- | ------ |
-| `/medplum/prod/database/ssl/require`            | `true` |
-| `/medplum/prod/database/ssl/rejectUnauthorized` | `true` |
+| `/medplum/prod/database.ssl.require`            | `true` |
+| `/medplum/prod/database.ssl.rejectUnauthorized` | `true` |
 
 When using SSL with AWS RDS, you may need to add the RDS CA certificate to the `ca` setting. The RDS CA certificate can be downloaded from the [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html).
 

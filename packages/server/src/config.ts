@@ -290,19 +290,14 @@ async function loadAwsSecrets(region: string, secretId: string): Promise<Record<
 }
 
 function setValue(config: MedplumDatabaseConfig, key: string, value: string): void {
-  const keySegments = key.split('/');
+  const keySegments = key.split('.');
   let obj = config as Record<string, unknown>;
 
   while (keySegments.length > 1) {
-    const segment = keySegments.shift();
-    if (!segment) {
-      break;
-    }
-
+    const segment = keySegments.shift() as string;
     if (!obj[segment]) {
       obj[segment] = {};
     }
-
     obj = obj[segment] as Record<string, unknown>;
   }
 
@@ -349,8 +344,8 @@ function isIntegerConfig(key: string): boolean {
 function isBooleanConfig(key: string): boolean {
   return (
     key === 'botCustomFunctionsEnabled' ||
-    key === 'database/ssl/rejectUnauthorized' ||
-    key === 'database/ssl/require' ||
+    key === 'database.ssl.rejectUnauthorized' ||
+    key === 'database.ssl.require' ||
     key === 'logRequests' ||
     key === 'logAuditEvents' ||
     key === 'registerEnabled' ||
