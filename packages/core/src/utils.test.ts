@@ -1197,7 +1197,7 @@ describe('Core Utils', () => {
     expect(sortStringArray([code1, code2, code3])).toEqual([code3, code1, code2]);
   });
 
-  test('concatUrls', () => {
+  test('concatUrls -- Valid URLs', () => {
     // String base path with no trailing slash, relative path
     expect(concatUrls('https://foo.com', 'ws/subscriptions-r4')).toEqual('https://foo.com/ws/subscriptions-r4');
     // String base path with no trailing slash, absolute path
@@ -1254,6 +1254,13 @@ describe('Core Utils', () => {
     expect(concatUrls(new URL('https://foo.com/foo/bar/'), '/ws/subscriptions-r4')).toEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
+    // Concatenating two full urls (return latter)
+    expect(concatUrls('https://foo.com/bar', 'https://bar.org/foo')).toEqual('https://bar.org/foo');
+  });
+
+  test('concatUrls -- Invalid URLs', () => {
+    expect(() => concatUrls('foo', '/bar')).toThrow();
+    expect(() => concatUrls('foo.com', '/bar')).toThrow();
   });
 
   test('getWebSocketUrl', () => {
