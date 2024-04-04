@@ -1196,7 +1196,7 @@ describe('Core Utils', () => {
     expect(sortStringArray([code1, code2, code3])).toEqual([code3, code1, code2]);
   });
 
-  describe('getWebSocketUrl', () => {
+  test('getWebSocketUrl', () => {
     // String base path with no trailing slash, relative path
     expect(getWebSocketUrl('https://foo.com', 'ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
     // String base path with no trailing slash, absolute path
