@@ -1053,10 +1053,6 @@ export function append<T>(array: T[] | undefined, value: T): T[] {
   return array;
 }
 
-export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
-  return new URL(path, baseUrl).toString().replace('http://', 'ws://').replace('https://', 'wss://');
-}
-
 /**
  * Sorts an array of strings in place using the localeCompare method.
  *
@@ -1067,4 +1063,39 @@ export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
  */
 export function sortStringArray(array: string[]): string[] {
   return array.sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Ensures the given URL has a trailing slash.
+ * @param url - The URL to ensure has a trailing slash.
+ * @returns The URL with a trailing slash.
+ */
+export function ensureTrailingSlash(url: string): string {
+  return url.endsWith('/') ? url : url + '/';
+}
+
+/**
+ * Ensures the given URL has no leading slash.
+ * @param url - The URL to ensure has no leading slash.
+ * @returns The URL string with no slash.
+ */
+export function ensureNoLeadingSlash(url: string): string {
+  return url.startsWith('/') ? url.slice(1) : url;
+}
+
+/**
+ * Concatenates the given base URL and URL.
+ *
+ * If the URL is absolute, it is returned as-is.
+ *
+ * @param baseUrl - The base URL.
+ * @param path - The URL to concat. Can be relative or absolute.
+ * @returns The concatenated URL.
+ */
+export function concatUrls(baseUrl: string | URL, path: string): string {
+  return new URL(ensureNoLeadingSlash(path), ensureTrailingSlash(baseUrl.toString())).toString();
+}
+
+export function getWebSocketUrl(baseUrl: URL | string, path: string): string {
+  return concatUrls(baseUrl, path).toString().replace('http://', 'ws://').replace('https://', 'wss://');
 }

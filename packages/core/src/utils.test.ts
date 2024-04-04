@@ -36,6 +36,7 @@ import {
   getPathDifference,
   getQuestionnaireAnswers,
   getReferenceString,
+  getWebSocketUrl,
   isComplexTypeCode,
   isEmpty,
   isLowerCase,
@@ -1193,5 +1194,64 @@ describe('Core Utils', () => {
     const code2 = '\u0065\u0301\u0394'; // "éΔ" using Unicode combining marks
     const code3 = '\u0065\u0394'; // "eΔ"
     expect(sortStringArray([code1, code2, code3])).toEqual([code3, code1, code2]);
+  });
+
+  describe('getWebSocketUrl', () => {
+    // String base path with no trailing slash, relative path
+    expect(getWebSocketUrl('https://foo.com', 'ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
+    // String base path with no trailing slash, absolute path
+    expect(getWebSocketUrl('https://foo.com', '/ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
+    // String base path with trailing slash, relative path
+    expect(getWebSocketUrl('https://foo.com/', 'ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
+    // String base path with trailing slash, absolute path
+    expect(getWebSocketUrl('https://foo.com/', '/ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
+    // String base path with path after domain and no trailing slash, relative path
+    expect(getWebSocketUrl('https://foo.com/foo/bar', 'ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/foo/bar/ws/subscriptions-r4'
+    );
+    // String base path with path after domain and no trailing slash, absolute path
+    expect(getWebSocketUrl('https://foo.com/foo/bar', '/ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/foo/bar/ws/subscriptions-r4'
+    );
+    // String base path with path after domain and WITH trailing slash, relative path
+    expect(getWebSocketUrl('https://foo.com/foo/bar/', 'ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/foo/bar/ws/subscriptions-r4'
+    );
+    // String base path with path after domain and WITH trailing slash, absolute path
+    expect(getWebSocketUrl('https://foo.com/foo/bar/', '/ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/foo/bar/ws/subscriptions-r4'
+    );
+    // URL base path with no trailing slash, relative path
+    expect(getWebSocketUrl(new URL('https://foo.com'), 'ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/ws/subscriptions-r4'
+    );
+    // URL base path with no trailing slash, absolute path
+    expect(getWebSocketUrl(new URL('https://foo.com'), '/ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/ws/subscriptions-r4'
+    );
+    // URL base path with trailing slash, relative path
+    expect(getWebSocketUrl(new URL('https://foo.com/'), 'ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/ws/subscriptions-r4'
+    );
+    // URL base path with trailing slash, absolute path
+    expect(getWebSocketUrl(new URL('https://foo.com/'), '/ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/ws/subscriptions-r4'
+    );
+    // URL base path with path after domain and no trailing slash, relative path
+    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar'), 'ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/foo/bar/ws/subscriptions-r4'
+    );
+    // URL base path with path after domain and no trailing slash, absolute path
+    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar'), '/ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/foo/bar/ws/subscriptions-r4'
+    );
+    // URL base path with path after domain and WITH trailing slash, relative path
+    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar/'), 'ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/foo/bar/ws/subscriptions-r4'
+    );
+    // URL base path with path after domain and WITH trailing slash, absolute path
+    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar/'), '/ws/subscriptions-r4')).toEqual(
+      'wss://foo.com/foo/bar/ws/subscriptions-r4'
+    );
   });
 });
