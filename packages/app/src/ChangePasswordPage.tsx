@@ -12,7 +12,6 @@ export function ChangePasswordPage(): JSX.Element {
   return (
     <Document width={450}>
       <Form
-      
         onSubmit={(formData: Record<string, string>) => {
           setOutcome(undefined);
           medplum
