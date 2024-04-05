@@ -125,6 +125,7 @@ describe('Read from Partner Lab', () => {
 
   test.skip('Test Connection', async (ctx: any) => {
     await handler(ctx.medplum, {
+      bot: { resourceType: 'Bot' },
       input: { resourceType: 'QuestionnaireResponse', status: 'completed' },
       contentType: 'string',
       secrets: { ...CONNECTION_DETAILS },
@@ -378,6 +379,7 @@ describe('Read from Partner Lab', () => {
     });
 
     await handler(medplum, {
+      bot: { resourceType: 'Bot' },
       input: { resourceType: 'QuestionnaireResponse', status: 'completed' },
       contentType: 'string',
       secrets: { ...CONNECTION_DETAILS },

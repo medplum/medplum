@@ -109,6 +109,11 @@ test('Success', async () => {
     authored: new Date().toISOString(),
     status: 'completed',
   };
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, {
+    bot: { resourceType: 'Bot' },
+    input,
+    contentType,
+    secrets: {},
+  });
   expect(result).toBe(true);
 });
