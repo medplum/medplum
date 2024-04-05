@@ -25,7 +25,6 @@ export function SetPasswordPage(): JSX.Element {
     <Document width={450}>
       <OperationOutcomeAlert issues={issues} />
       <Form
-        style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
           if (formData.password !== formData.confirmPassword) {
             setOutcome(badRequest('Passwords do not match', 'confirmPassword'));
