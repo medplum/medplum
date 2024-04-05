@@ -13,6 +13,54 @@
       }
     },
     {
+      "fullUrl": "urn:uuid:6ac7de0c-4f35-4024-8942-639d761caa44",
+      "request": { "method": "POST", "url": "Condition" },
+      "resource": {
+        "resourceType": "Condition",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "code": "Obesity",
+              "display": "Obesity"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4",
+          "display": "Homer Simpson"
+        }
+      }
+    },
+    {
       "fullUrl": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111",
       "request": { "method": "POST", "url": "Practitioner" },
       "resource": {
@@ -42,13 +90,13 @@
         "resourceType": "Communication",
         "status": "in-progress",
         "recipient": [
-          { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
-          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" }
+          { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" },
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" }
         ],
-        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
+        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" },
         "topic": { "text": "Blood Test for Peanut Allergy" },
         "category": [{ "coding": [{ "display": "Lab Tests" }] }],
-        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" }
       }
     },
     {
@@ -58,8 +106,8 @@
         "resourceType": "Communication",
         "status": "in-progress",
         "partOf": [{ "reference": "urn:uuid:5e18d560-9223-4f43-a133-76a30200315d" }],
-        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
-        "recipient": [{ "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }],
+        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" },
+        "recipient": [{ "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" }],
         "topic": { "coding": [{ "display": "Blood Test for Peanut Allergy" }] },
         "category": [{ "coding": [{ "display": "Lab Tests" }] }],
         "sent": "2024-03-21T20:28:42.148Z",
@@ -75,8 +123,8 @@
         "resourceType": "Communication",
         "status": "in-progress",
         "partOf": [{ "reference": "urn:uuid:5e18d560-9223-4f43-a133-76a30200315d" }],
-        "recipient": [{ "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" }],
-        "sender": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+        "recipient": [{ "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" }],
+        "sender": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" },
         "topic": { "coding": [{ "display": "Blood Test for Peanut Allergy" }] },
         "category": [{ "coding": [{ "display": "Lab Tests" }] }],
         "sent": "2024-03-21T20:38:42.148Z",
@@ -91,8 +139,8 @@
         "resourceType": "Communication",
         "status": "in-progress",
         "partOf": [{ "reference": "urn:uuid:5e18d560-9223-4f43-a133-76a30200315d" }],
-        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
-        "recipient": [{ "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }],
+        "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" },
+        "recipient": [{ "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" }],
         "topic": { "coding": [{ "display": "Blood Test for Peanut Allergy" }] },
         "category": [{ "coding": [{ "display": "Lab Tests" }] }],
         "sent": "2024-03-21T20:40:42.148Z",
@@ -156,15 +204,15 @@
       "resource": {
         "resourceType": "Communication",
         "status": "in-progress",
-        "sender": { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" },
+        "sender": { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944", "display": "Dr. Gregory House" },
         "recipient": [
-          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
-          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
-          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" }
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" },
+          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6", "display": "Nurse Jackie" },
+          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944", "display": "Dr. Gregory House" }
         ],
         "topic": { "coding": [{ "display": "Capturing Homer's vitals" }] },
         "category": [{ "coding": [{ "display": "Vital Signs" }] }],
-        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" }
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" }
       }
     },
     {
@@ -173,17 +221,17 @@
       "resource": {
         "resourceType": "Communication",
         "status": "in-progress",
-        "sender": { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" },
+        "sender": { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944", "display": "Dr. Gregory House" },
         "sent": "2024-03-22T20:28:42.148Z",
         "recipient": [
-          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
-          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
-          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" }
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" },
+          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6", "display": "Nurse Jackie" },
+          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944", "display": "Dr. Gregory House" }
         ],
         "partOf": [{ "reference": "urn:uuid:d2fe5b7d-98f5-4126-bd25-0dbb2ade1ff2" }],
         "topic": { "coding": [{ "display": "Capturing Homer's vitals" }] },
         "category": [{ "coding": [{ "display": "Vital Signs" }] }],
-        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" },
         "payload": [
           { "contentString": "Are either of available to take Homer's vital signs before his physical tomorrow?" }
         ]
@@ -198,15 +246,15 @@
         "sender": { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
         "sent": "2024-03-22T20:55:18.148Z",
         "recipient": [
-          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
-          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
-          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" }
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" },
+          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6", "display": "Nurse Jackie" },
+          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944", "display": "Dr. Gregory House" }
         ],
         "partOf": [{ "reference": "urn:uuid:d2fe5b7d-98f5-4126-bd25-0dbb2ade1ff2" }],
         "inResponseTo": [{ "reference": "urn:uuid:b82f3090-82bb-4102-9081-f9113fe81ff9" }],
         "topic": { "coding": [{ "display": "Capturing Homer's vitals" }] },
         "category": [{ "coding": [{ "display": "Vital Signs" }] }],
-        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" },
         "payload": [{ "contentString": "I have the day off tomorrow, so I cannot." }]
       }
     },
@@ -219,15 +267,15 @@
         "sender": { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
         "sent": "2024-03-22T21:13:33.148Z",
         "recipient": [
-          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111" },
-          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6" },
-          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944" }
+          { "reference": "urn:uuid:3bf50fa0-9c13-48ca-9cd7-1379dbf5f111", "display": "Dr. Alice Smith" },
+          { "reference": "urn:uuid:5be59c7f-7b82-49d3-9183-46d1a9c385c6", "display": "Nurse Jackie" },
+          { "reference": "urn:uuid:6bcf025a-c8b0-483e-8399-e3e9f43bd944", "display": "Dr. Gregory House" }
         ],
         "partOf": [{ "reference": "urn:uuid:d2fe5b7d-98f5-4126-bd25-0dbb2ade1ff2" }],
         "inResponseTo": [{ "reference": "urn:uuid:f7c6f976-edf9-4081-b179-f1dbb5347f13" }],
         "topic": { "coding": [{ "display": "Capturing Homer's vitals" }] },
         "category": [{ "coding": [{ "display": "Vital Signs" }] }],
-        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4" },
+        "subject": { "reference": "urn:uuid:ec42014b-63af-407e-ba31-c5b080c527a4", "display": "Homer Simpson" },
         "payload": [{ "contentString": "I can do it, but it will have to be quick and he must be on time." }]
       }
     },
@@ -268,28 +316,7 @@
                 { "code": "722164000", "display": "Dietetics and nutrition" },
                 { "code": "710081004", "display": "Smoking cessation therapy" },
                 { "code": "91193004", "display": "Hearing therapy" },
-                { "code": "722166003", "display": "Podiatry" }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
-      "fullUrl": "urn:uuid:e4ca02c1-0de5-4b04-8ab9-6634c93f4001",
-      "request": { "method": "POST", "url": "ValueSet" },
-      "resource": {
-        "resourceType": "ValueSet",
-        "status": "active",
-        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1099.30",
-        "name": "care-team-member-function",
-        "title": "Care Team Member Function",
-        "description": "This set of concepts describes the function performed on a patient-centered care team. This value set contains concepts that describe a functional role played by a member of a care team on a particular care team.",
-        "compose": {
-          "include": [
-            {
-              "system": "http://snomed.info.ct",
-              "concept": [
+                { "code": "722166003", "display": "Podiatry" },
                 {
                   "code": "106289002",
                   "display": "Dentist (occupation)"
