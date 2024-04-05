@@ -34,7 +34,6 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
 
   return (
     <Form
-      style={{ maxWidth: 400 }}
       onSubmit={async (formData: Record<string, string>) => {
         try {
           let recaptchaToken = '';

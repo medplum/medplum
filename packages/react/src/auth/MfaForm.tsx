@@ -1,10 +1,10 @@
 import { Alert, Button, Center, Group, Stack, TextInput, Title } from '@mantine/core';
 import { LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
+import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '@medplum/react-hooks';
 
 export interface MfaFormProps {
   readonly login: string;
@@ -16,7 +16,6 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
   const [errorMessage, setErrorMessage] = useState<string>();
   return (
     <Form
-      style={{ maxWidth: 400 }}
       onSubmit={(formData: Record<string, string>) => {
         setErrorMessage(undefined);
         medplum
