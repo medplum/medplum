@@ -1,4 +1,14 @@
-import { Combobox, ComboboxItem, ComboboxProps, Group, Loader, Pill, PillsInput, useCombobox } from '@mantine/core';
+import {
+  Combobox,
+  ComboboxItem,
+  ComboboxProps,
+  Group,
+  Loader,
+  Pill,
+  PillsInput,
+  ScrollAreaAutosize,
+  useCombobox,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
@@ -27,6 +37,7 @@ export interface AsyncAutocompleteProps<T>
   readonly placeholder?: string;
   readonly leftSection?: ReactNode;
   readonly maxValues?: number;
+  readonly optionsDropdownMaxHeight?: number;
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
@@ -51,6 +62,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     placeholder,
     leftSection,
     maxValues,
+    optionsDropdownMaxHeight = 320,
     ...rest
   } = props;
   const defaultItems = toDefaultItems(defaultValue);
@@ -278,19 +290,21 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
       <Combobox.Dropdown>
         <Combobox.Options>
-          {options.map((item) => (
-            <Combobox.Option value={item.value} key={item.value} active={selected.includes(item)}>
-              <ItemComponent {...item} />
-            </Combobox.Option>
-          ))}
+          <ScrollAreaAutosize type="scroll" mah={optionsDropdownMaxHeight}>
+            {options.map((item) => (
+              <Combobox.Option value={item.value} key={item.value} active={selected.includes(item)}>
+                <ItemComponent {...item} />
+              </Combobox.Option>
+            ))}
 
-          {creatable && search.trim().length > 0 && (
-            <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
-          )}
+            {creatable && search.trim().length > 0 && (
+              <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
+            )}
 
-          {!creatable && search.trim().length > 0 && options.length === 0 && (
-            <Combobox.Empty>Nothing found</Combobox.Empty>
-          )}
+            {!creatable && search.trim().length > 0 && options.length === 0 && (
+              <Combobox.Empty>Nothing found</Combobox.Empty>
+            )}
+          </ScrollAreaAutosize>
         </Combobox.Options>
       </Combobox.Dropdown>
     </Combobox>
