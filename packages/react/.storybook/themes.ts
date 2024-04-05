@@ -21,7 +21,7 @@ const medplumDefault = createTheme({
 });
 
 const fooMedical = createTheme({
-  // colorScheme: 'light',
+  colorScheme: 'light',
   colors: {
     // Replace or adjust with the exact colors used for your design
     primary: [
@@ -289,7 +289,7 @@ const materialUi = createTheme({
   },
 });
 
-const example1 = createTheme({
+const sciFi = createTheme({
   components: {},
   fontFamily: '"Gill Sans", arial, "sans-serif"',
   colors: {
@@ -337,7 +337,7 @@ const example1 = createTheme({
   },
 });
 
-const example2 = createTheme({
+const monospace = createTheme({
   fontFamily: '"Courier New", monospace',
   fontSizes: {
     xs: '1rem',
@@ -385,7 +385,7 @@ const example2 = createTheme({
   },
 });
 
-const example3 = createTheme({
+const cursive = createTheme({
   fontFamily: '"Brush Script MT", serif',
   colors: {
     primary: [
@@ -447,19 +447,19 @@ export const themes = withMantineThemes({
       ...materialUi,
     },
     {
-      id: 'example-1',
-      name: 'Example 1',
-      ...example1,
+      id: 'sci-fi',
+      name: 'SciFi',
+      ...sciFi,
     },
     {
-      id: 'example-2',
-      name: 'Example 2',
-      ...example2,
+      id: 'monospace',
+      name: 'Monospace',
+      ...monospace,
     },
     {
-      id: 'example-3',
-      name: 'Example 3',
-      ...example3,
+      id: 'cursive',
+      name: 'Cursive',
+      ...cursive,
     },
   ],
 });
