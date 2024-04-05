@@ -76,7 +76,7 @@ describe('Finalize Report', async () => {
     // Invoke the Bot
     const contentType = 'application/fhir+json';
     await handler(medplum, {
-      bot: { resourceType: 'Bot' },
+      bot: { reference: 'Bot/123' },
       input: report,
       contentType,
       secrets: {},
@@ -145,7 +145,7 @@ describe('Finalize Report', async () => {
     // Invoke the Bot for the first time
     const contentType = 'application/fhir+json';
     await handler(medplum, {
-      bot: { resourceType: 'Bot' },
+      bot: { reference: 'Bot/123' },
       input: report,
       contentType,
       secrets: {},
@@ -161,7 +161,7 @@ describe('Finalize Report', async () => {
 
     // Invoke the bot a second time
     await handler(medplum, {
-      bot: { resourceType: 'Bot' },
+      bot: { reference: 'Bot/123' },
       input: updatedReport,
       contentType,
       secrets: {},

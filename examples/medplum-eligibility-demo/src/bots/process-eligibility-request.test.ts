@@ -1,6 +1,6 @@
 import { ContentType, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bot, Bundle, CoverageEligibilityRequest, SearchParameter } from '@medplum/fhirtypes';
+import { Bot, Bundle, CoverageEligibilityRequest, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 import {
@@ -12,7 +12,7 @@ import {
 import { handler } from './process-eligibility-request';
 
 describe('Process Eligibility Request', async () => {
-  const bot: Bot = { resourceType: 'Bot' };
+  const bot: Reference<Bot> = { reference: 'Bot/123' };
   const contentType = ContentType.FHIR_JSON;
   const secrets = {};
 

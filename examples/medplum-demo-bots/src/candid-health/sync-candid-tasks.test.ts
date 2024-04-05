@@ -13,7 +13,7 @@ test.skip('Sync Tasks', async () => {
   const contentType = 'application/json';
 
   const result = await handler(medplum, {
-    bot: { resourceType: 'Bot' },
+    bot: { reference: 'Bot/123' },
     input,
     contentType,
     secrets: {},

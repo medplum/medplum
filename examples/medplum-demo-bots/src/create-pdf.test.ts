@@ -6,7 +6,7 @@ const medplum = new MockClient();
 
 test('Create PDF', async () => {
   const media = await handler(medplum, {
-    bot: { resourceType: 'Bot' },
+    bot: { reference: 'Bot/123' },
     input: 'Hello',
     contentType: 'text/plain',
     secrets: {},

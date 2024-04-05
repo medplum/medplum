@@ -289,7 +289,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   const client = new LambdaClient({ region: config.awsRegion });
   const name = getLambdaFunctionName(bot);
   const payload = {
-    bot,
+    bot: createReference(bot),
     baseUrl: config.baseUrl,
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
@@ -418,7 +418,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
     fetch,
     console: botConsole,
     event: {
-      bot,
+      bot: createReference(bot),
       baseUrl: config.baseUrl,
       accessToken,
       input: input instanceof Hl7Message ? input.toString() : input,

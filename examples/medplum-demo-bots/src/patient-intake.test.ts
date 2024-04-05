@@ -1,11 +1,11 @@
 import { ContentType } from '@medplum/core';
-import { Bot, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Bot, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test, vi } from 'vitest';
 import { handler } from './patient-intake';
 
 const contentType = ContentType.FHIR_JSON;
-const bot: Bot = { resourceType: 'Bot' };
+const bot: Reference<Bot> = { reference: 'Bot/123' };
 const secrets = {};
 
 test('Success', async () => {

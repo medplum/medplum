@@ -51,7 +51,7 @@ describe('Send to Partner Lab', () => {
     const medplum = ctx.medplum as MedplumClient;
     const message: Hl7Message = Hl7Message.parse(TEST_MESSAGE);
     await handler(medplum, {
-      bot: { resourceType: 'Bot' },
+      bot: { reference: 'Bot/123' },
       input: message,
       contentType: ContentType.HL7_V2,
       secrets: {},

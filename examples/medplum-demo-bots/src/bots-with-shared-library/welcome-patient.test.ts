@@ -17,7 +17,7 @@ test('Welcome Patient', async () => {
   });
 
   const welcomeMessage = await handler(medplum, {
-    bot: { resourceType: 'Bot' },
+    bot: { reference: 'Bot/123' },
     input: patient,
     secrets: {},
     contentType: 'text/plain',

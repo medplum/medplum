@@ -17,7 +17,7 @@ test('Say goodbye', async () => {
   });
 
   const goodbyeMessage = await handler(medplum, {
-    bot: { resourceType: 'Bot' },
+    bot: { reference: 'Bot/123' },
     input: patient,
     contentType: 'text/plain',
     secrets: {},

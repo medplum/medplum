@@ -28,7 +28,7 @@ describe('Sample Account Setup', async () => {
     });
 
     const event: BotEvent = {
-      bot: { resourceType: 'Bot' },
+      bot: { reference: 'Bot/123' },
       contentType: ContentType.FHIR_JSON,
       input: patient,
       secrets: {},

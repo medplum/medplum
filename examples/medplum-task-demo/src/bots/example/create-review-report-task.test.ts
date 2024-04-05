@@ -31,7 +31,7 @@ describe('Create Review Report Task', async () => {
 
     const contentType = 'appliation/fhir+json';
     await handler(medplum, {
-      bot: { resourceType: 'Bot' },
+      bot: { reference: 'Bot/123' },
       input: diagnosticReport,
       contentType,
       secrets: {},
@@ -59,7 +59,7 @@ describe('Create Review Report Task', async () => {
 
     const contentType = 'appliation/fhir+json';
     await expect(
-      handler(medplum, { bot: { resourceType: 'Bot' }, input: diagnosticReport, contentType, secrets: {} })
+      handler(medplum, { bot: { reference: 'Bot/123' }, input: diagnosticReport, contentType, secrets: {} })
     ).rejects.toThrow('Unexpected input. DiagnosticReport not in preliminary status');
   });
 });

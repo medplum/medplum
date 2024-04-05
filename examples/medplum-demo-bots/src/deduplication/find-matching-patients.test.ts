@@ -44,7 +44,7 @@ describe('Link Patient', async () => {
     const patients = await medplum.searchResources('Patient', { given: 'Alex' });
 
     await handler(medplum, {
-      bot: { resourceType: 'Bot' },
+      bot: { reference: 'Bot/123' },
       input: patients?.[0] as Patient,
       contentType: ContentType.FHIR_JSON,
       secrets: {},
@@ -75,7 +75,7 @@ describe('Link Patient', async () => {
     await medplum.updateResource(doNotMatchAlexis);
 
     await handler(medplum, {
-      bot: { resourceType: 'Bot' },
+      bot: { reference: 'Bot/123' },
       input: alexSmith,
       contentType: ContentType.FHIR_JSON,
       secrets: {},

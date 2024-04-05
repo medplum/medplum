@@ -123,7 +123,7 @@ describe('Send to Partner Lab', () => {
   test.skip('Test Connection', async (ctx: any) => {
     try {
       await handler(ctx.medplum, {
-        bot: { resourceType: 'Bot' },
+        bot: { reference: 'Bot/123' },
         input: ctx.order,
         contentType: 'string',
         secrets: { ...CONNECTION_DETAILS },
