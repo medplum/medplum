@@ -1,6 +1,6 @@
 {
   "name": "medplum-demo-bots",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -29,11 +29,11 @@
     "root": true
   },
   "devDependencies": {
-    "@medplum/cli": "3.1.0",
-    "@medplum/core": "3.1.0",
-    "@medplum/eslint-config": "3.1.0",
-    "@medplum/fhirtypes": "3.1.0",
-    "@medplum/mock": "3.1.0",
+    "@medplum/cli": "3.1.1",
+    "@medplum/core": "3.1.1",
+    "@medplum/eslint-config": "3.1.1",
+    "@medplum/fhirtypes": "3.1.1",
+    "@medplum/mock": "3.1.1",
     "@types/node": "20.12.2",
     "@types/node-fetch": "2.6.11",
     "@types/ssh2-sftp-client": "9.0.3",
