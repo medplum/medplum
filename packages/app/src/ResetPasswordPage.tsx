@@ -32,7 +32,7 @@ export function ResetPasswordPage(): JSX.Element {
   return (
     <Document width={450}>
       <Form
-        style={{ maxWidth: 400 }}
+      
         onSubmit={async (formData: Record<string, string>) => {
           let recaptchaToken = '';
           if (recaptchaSiteKey) {
