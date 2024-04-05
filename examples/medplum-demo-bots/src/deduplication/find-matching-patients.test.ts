@@ -43,7 +43,12 @@ describe('Link Patient', async () => {
     // Read the patient. The `medplum` mock client has already been pre-populated with test data in `beforeEach`
     const patients = await medplum.searchResources('Patient', { given: 'Alex' });
 
-    await handler(medplum, { input: patients?.[0] as Patient, contentType: ContentType.FHIR_JSON, secrets: {} });
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: patients?.[0] as Patient,
+      contentType: ContentType.FHIR_JSON,
+      secrets: {},
+    });
 
     // We expect two risk assessments to be created for the two candidate matches
     const riskAssessments = await medplum.searchResources('RiskAssessment');
@@ -69,7 +74,12 @@ describe('Link Patient', async () => {
     await medplum.updateResource(doNotMatchAlex);
     await medplum.updateResource(doNotMatchAlexis);
 
-    await handler(medplum, { input: alexSmith, contentType: ContentType.FHIR_JSON, secrets: {} });
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: alexSmith,
+      contentType: ContentType.FHIR_JSON,
+      secrets: {},
+    });
 
     const riskAssessment = await medplum.searchResources('RiskAssessment');
     expect(riskAssessment.length).toBe(1);

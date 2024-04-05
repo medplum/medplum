@@ -133,6 +133,11 @@ test('Success', async () => {
     authored: '2023-03-19T18:07:45.750Z',
     status: 'completed',
   };
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
+    input,
+    contentType,
+    secrets: {},
+  });
   expect(result).toBe(true);
 });

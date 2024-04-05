@@ -122,7 +122,12 @@ describe('Send to Partner Lab', () => {
 
   test.skip('Test Connection', async (ctx: any) => {
     try {
-      await handler(ctx.medplum, { input: ctx.order, contentType: 'string', secrets: { ...CONNECTION_DETAILS } });
+      await handler(ctx.medplum, {
+        bot: { reference: 'Bot/123' },
+        input: ctx.order,
+        contentType: 'string',
+        secrets: { ...CONNECTION_DETAILS },
+      });
     } catch {
       console.error('Here');
     }

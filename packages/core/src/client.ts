@@ -6,6 +6,7 @@ import {
   Agent,
   Attachment,
   Binary,
+  Bot,
   BulkDataExport,
   Bundle,
   BundleEntry,
@@ -435,6 +436,7 @@ export interface TokenResponse {
 }
 
 export interface BotEvent<T = Resource | Hl7Message | string | Record<string, any>> {
+  readonly bot: Reference<Bot>;
   readonly contentType: string;
   readonly input: T;
   readonly secrets: Record<string, ProjectSecret>;
