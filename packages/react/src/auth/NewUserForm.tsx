@@ -72,6 +72,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
                     await medplum.startGoogleLogin({
                       googleClientId: response.clientId,
                       googleCredential: response.credential,
+                      projectId: props.projectId,
                       createUser: true,
                     })
                   );
