@@ -289,6 +289,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   const client = new LambdaClient({ region: config.awsRegion });
   const name = getLambdaFunctionName(bot);
   const payload = {
+    bot,
     baseUrl: config.baseUrl,
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
@@ -324,7 +325,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   } catch (err) {
     return {
       success: false,
-      logResult: (err as Error).message,
+      logResult: normalizeErrorString(err),
     };
   }
 }
@@ -417,6 +418,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
     fetch,
     console: botConsole,
     event: {
+      bot,
       baseUrl: config.baseUrl,
       accessToken,
       input: input instanceof Hl7Message ? input.toString() : input,
@@ -440,7 +442,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   // End user code
 
   (async () => {
-    const { baseUrl, accessToken, contentType, secrets, traceId } = event;
+    const { bot, baseUrl, accessToken, contentType, secrets, traceId } = event;
     const medplum = new MedplumClient({
       baseUrl,
       fetch: function(url, options = {}) {
@@ -456,7 +458,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { input, contentType, secrets, traceId });
+      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }
@@ -483,7 +485,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       returnValue,
     };
   } catch (err) {
-    botConsole.log('Error', (err as Error).message);
+    botConsole.log('Error', normalizeErrorString(err));
     return {
       success: false,
       logResult: botConsole.toString(),

@@ -354,8 +354,11 @@ describe('Execute', () => {
       .send({
         code: `
           const { getReferenceString } = require("@medplum/core");
-          exports.handler = async function () {
-            return { msg: getReferenceString({ resourceType: 'Patient', id: '123' }) }
+          exports.handler = async function (_medplum, event) {
+            return {
+              patient: getReferenceString({ resourceType: 'Patient', id: '123' }),
+              bot: getReferenceString(event.bot),
+            }
           };
       `,
       });
@@ -368,7 +371,10 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res6.status).toBe(200);
-    expect(res6.body).toMatchObject({ msg: 'Patient/123' });
+    expect(res6.body).toMatchObject({
+      patient: 'Patient/123',
+      bot: 'Bot/' + bot.id,
+    });
 
     // Disable VM context bots
     getConfig().vmContextBotsEnabled = false;
