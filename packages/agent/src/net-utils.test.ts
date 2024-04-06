@@ -1,7 +1,17 @@
-import { AgentMessage, allOk, ContentType, LogLevel, sleep } from '@medplum/core';
+import {
+  AgentMessage,
+  AgentTransmitRequest,
+  AgentTransmitResponse,
+  allOk,
+  ContentType,
+  generateId,
+  LogLevel,
+  sleep,
+} from '@medplum/core';
 import { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
+import child_process from 'node:child_process';
 import { App } from './app';
 
 jest.mock('node-windows');
@@ -9,120 +19,327 @@ jest.mock('node-windows');
 const medplum = new MockClient();
 
 describe('Agent Net Utils', () => {
-  let mockServer: Server;
-  let mySocket: Client | undefined = undefined;
-  let wsClient: Client;
-  let app: App;
-  let onMessage: (command: AgentMessage) => void;
+  describe('Ping -- Within One App Instance', () => {
+    let mockServer: Server;
+    let wsClient: Client | undefined = undefined;
+    let app: App;
+    let onMessage: (command: AgentMessage) => void;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let originalLog: typeof console.log;
 
-  beforeAll(async () => {
-    console.log = jest.fn();
+    beforeAll(async () => {
+      originalLog = console.log;
+      console.log = jest.fn();
 
-    medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
-      return [allOk, {} as Resource];
+      medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
+        return [allOk, {} as Resource];
+      });
+
+      mockServer = new Server('wss://example.com/ws/agent');
+
+      mockServer.on('connection', (socket) => {
+        wsClient = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          } else {
+            onMessage(command);
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+      } as Agent);
+
+      // Start the app
+      app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to connect
+      // eslint-disable-next-line no-unmodified-loop-condition
+      while (!wsClient) {
+        await sleep(100);
+      }
     });
 
-    mockServer = new Server('wss://example.com/ws/agent');
+    afterAll(async () => {
+      app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+      console.log = originalLog;
+      wsClient = undefined;
+    });
 
-    mockServer.on('connection', (socket) => {
-      mySocket = socket;
-      socket.on('message', (data) => {
-        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
-        if (command.type === 'agent:connect:request') {
-          socket.send(
-            Buffer.from(
-              JSON.stringify({
-                type: 'agent:connect:response',
-              })
-            )
-          );
-        } else {
-          onMessage(command);
-        }
+    afterEach(() => {
+      clearTimeout(timer);
+    });
+
+    test('Valid ping', async () => {
+      let resolve: (value: AgentMessage) => void;
+      let reject: (error: Error) => void;
+
+      const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      onMessage = (command) => resolve(command);
+      expect(wsClient).toBeDefined();
+
+      const callback = generateId();
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            contentType: ContentType.PING,
+            remote: '127.0.0.1',
+            callback,
+            body: 'PING',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 3500);
+
+      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+        type: 'agent:transmit:response',
+        callback,
+        status: 'ok',
+        body: expect.stringMatching(/ping statistics/),
       });
     });
 
-    const agent = await medplum.createResource<Agent>({
-      resourceType: 'Agent',
-    } as Agent);
+    test('Non-IP remote', async () => {
+      let resolve: (value: AgentMessage) => void;
+      let reject: (error: Error) => void;
 
-    // Start the app
-    app = new App(medplum, agent.id as string, LogLevel.INFO);
-    await app.start();
+      const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
 
-    // Wait for the WebSocket to connect
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
-      await sleep(100);
-    }
+      onMessage = (command) => resolve(command);
 
-    wsClient = mySocket as unknown as Client;
+      expect(wsClient).toBeDefined();
+
+      const callback = generateId();
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            contentType: ContentType.PING,
+            remote: 'https://localhost:3001',
+            callback,
+            body: 'PING',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 3500);
+
+      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+        type: 'agent:transmit:response',
+        contentType: ContentType.TEXT,
+        status: 'error',
+        callback,
+        body: expect.any(String),
+      });
+    });
   });
 
-  afterAll(() => {
-    app.stop();
-    mockServer.stop();
-  });
+  describe('Ping -- Edge Cases', () => {
+    let mockServer: Server;
+    let wsClient: Client | undefined = undefined;
+    let app: App;
+    let onMessage: (command: AgentMessage) => void;
+    let timer: ReturnType<typeof setTimeout>;
 
-  test('Ping -- valid', async () => {
-    let resolve: (value: AgentMessage) => void;
-    let reject: (error: Error) => void;
+    beforeEach(async () => {
+      // console.log = jest.fn();
 
-    const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
-      resolve = _resolve;
-      reject = _reject;
+      medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
+        return [allOk, {} as Resource];
+      });
+
+      mockServer = new Server('wss://example.com/ws/agent');
+
+      mockServer.on('connection', (socket) => {
+        wsClient = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(
+              Buffer.from(
+                JSON.stringify({
+                  type: 'agent:connect:response',
+                })
+              )
+            );
+          } else {
+            onMessage(command);
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+      } as Agent);
+
+      // Start the app
+      app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to connect
+      // eslint-disable-next-line no-unmodified-loop-condition
+      while (!wsClient) {
+        await sleep(100);
+      }
     });
 
-    onMessage = (command) => resolve(command);
-
-    expect(wsClient).toBeDefined();
-    wsClient.send(
-      Buffer.from(
-        JSON.stringify({
-          type: 'agent:transmit:request',
-          contentType: ContentType.PING,
-          remote: '127.0.0.1',
-          body: 'PING',
-        })
-      )
-    );
-
-    const timer = setTimeout(() => {
-      reject(new Error('Timeout'));
-    }, 3500);
-
-    await expect(messageReceived).resolves.toMatchObject({ type: 'agent:transmit:response', body: expect.any(String) });
-    clearTimeout(timer);
-  });
-
-  test('Ping -- non-IP remote', async () => {
-    let resolve: (value: AgentMessage) => void;
-    let reject: (error: Error) => void;
-
-    const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
-      resolve = _resolve;
-      reject = _reject;
+    afterEach(async () => {
+      app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+      clearTimeout(timer);
+      wsClient = undefined;
     });
 
-    onMessage = (command) => resolve(command);
+    test('Ping times out', async () => {
+      let resolve: (value: AgentMessage) => void;
+      let reject: (error: Error) => void;
 
-    expect(wsClient).toBeDefined();
-    wsClient.send(
-      Buffer.from(
-        JSON.stringify({
-          type: 'agent:transmit:request',
-          contentType: ContentType.PING,
-          remote: 'https://localhost:3001',
-          body: 'PING',
-        })
-      )
-    );
+      let messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
 
-    const timer = setTimeout(() => {
-      reject(new Error('Timeout'));
-    }, 3500);
+      onMessage = (command) => resolve(command);
 
-    await expect(messageReceived).resolves.toMatchObject({ type: 'agent:error', body: expect.any(String) });
-    clearTimeout(timer);
+      expect(wsClient).toBeDefined();
+
+      let callback = generateId();
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            contentType: ContentType.PING,
+            remote: '127.0.0.1',
+            callback,
+            body: 'PING',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 3500);
+
+      // We can ping localhost, woohoo
+      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+        type: 'agent:transmit:response',
+        body: expect.any(String),
+        contentType: ContentType.PING,
+        callback,
+        status: 'ok',
+      });
+
+      // Setup for a ping that will timeout
+      messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 3500);
+
+      onMessage = (command) => resolve(command);
+
+      // We are gonna make ping fail after a timeout
+      jest.spyOn(child_process, 'exec').mockImplementationOnce((command, opts, cb) => {
+        setTimeout(() => {
+          cb(new Error('Ping command timeout'));
+        }, 100);
+      });
+
+      callback = generateId();
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            contentType: ContentType.PING,
+            remote: '127.0.0.1',
+            callback,
+            body: 'PING',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // We should get a timeout error
+      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+        type: 'agent:transmit:response',
+        contentType: ContentType.TEXT,
+        callback,
+        status: 'error',
+        body: expect.stringMatching(/Ping command timeout/i),
+      });
+    });
+
+    test('No ping command available', async () => {
+      jest.spyOn(child_process, 'exec').mockImplementationOnce((_cmd: string, _opts, cb: (err: Error) => void) => {
+        cb(new Error('No ping command!'));
+      });
+
+      let resolve: (value: AgentMessage) => void;
+      let reject: (error: Error) => void;
+
+      const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      onMessage = (command) => resolve(command);
+      expect(wsClient).toBeDefined();
+
+      const callback = generateId();
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            contentType: ContentType.PING,
+            remote: '127.0.0.1',
+            callback,
+            body: 'PING',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 3500);
+
+      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+        type: 'agent:transmit:response',
+        contentType: ContentType.TEXT,
+        status: 'error',
+        callback,
+        body: expect.stringMatching(/Ping utility not available/),
+      });
+    });
   });
 });

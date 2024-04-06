@@ -1,5 +1,4 @@
 import {
-  AgentError,
   AgentMessage,
   AgentTransmitRequest,
   AgentTransmitResponse,
@@ -12,16 +11,26 @@ import {
 } from '@medplum/core';
 import { Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { exec as _exec } from 'node:child_process';
+import { ExecException, ExecOptions, exec } from 'node:child_process';
 import { isIPv4, isIPv6 } from 'node:net';
-import { promisify } from 'node:util';
-import { platform } from 'os';
+import { platform } from 'node:os';
 import WebSocket from 'ws';
 import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 
-const exec = promisify(_exec);
+async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    exec(command, options, (err: ExecException | null, stdout: string, stderr: string) => {
+      if (err) {
+        reject(err);
+      }
+      resolve({ stdout, stderr });
+    });
+  });
+}
+
+export const DEFAULT_PING_TIMEOUT = 3600;
 
 export class App {
   static instance: App;
@@ -266,40 +275,47 @@ export class App {
     }
   }
 
+  private getPingHelpCommand(): string {
+    switch (platform()) {
+      case 'darwin':
+        return 'ping -c 1 -t 150 127.0.0.1';
+      case 'win32':
+        return 'ping';
+      case 'linux':
+        return 'ping --help';
+      default:
+        return 'ping --help';
+    }
+  }
+
   // This covers Windows, Linux, and Mac
-  // Regarding `reqTimeout` - this is timeout per request... max time to wait before exiting if not received a request
-  private getPingCommand(ip: string, count = 4, deadline = 3600): string {
-    return platform() === 'win32'
-      ? `ping /n ${count} /w ${Math.ceil(deadline / count)} ${ip}`
-      : `ping -c ${count} ${platform() === 'darwin' ? '-t' : '-w'} ${deadline} ${ip}`;
+  private getPingCommand(ip: string, count = 4): string {
+    return platform() === 'win32' ? `ping /n ${count} ${ip}` : `ping -c ${count} ${ip}`;
   }
 
   private async isPingUtilAvailable(): Promise<boolean> {
-    let pingUtilAvailable = this.pingUtilAvailable;
-    if (pingUtilAvailable === undefined) {
-      return new Promise((resolve) => {
-        exec(this.getPingCommand('localhost', 1, 800))
-          .then(() => {
-            pingUtilAvailable = true;
-            resolve(true);
-          })
-          .catch((err) => {
-            this.log.error(normalizeErrorString(err));
-            pingUtilAvailable = false;
-            resolve(false);
-          })
-          .finally(() => {
-            this.pingUtilAvailable = pingUtilAvailable;
-          });
-      });
+    if (this.pingUtilAvailable !== undefined) {
+      return Promise.resolve(this.pingUtilAvailable);
     }
-    return Promise.resolve(pingUtilAvailable);
+    return new Promise((resolve) => {
+      exec(this.getPingHelpCommand(), { timeout: 200 }, (err) => {
+        if (err) {
+          this.log.error(normalizeErrorString(err));
+          this.pingUtilAvailable = false;
+        } else {
+          this.pingUtilAvailable = true;
+        }
+        resolve(this.pingUtilAvailable);
+      });
+    });
   }
 
   private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
     try {
       if (!(await this.isPingUtilAvailable())) {
-        throw new Error('Ping utility not available. Make sure your environment has the `ping` command available.');
+        const errMsg = 'Ping utility not available. Make sure your environment has the `ping` command available.';
+        this.log.error(errMsg);
+        throw new Error(errMsg);
       }
       if (message.body && message.body !== 'PING') {
         const warnMsg = 'Message body present but unused. Body should be empty for a ping request.';
@@ -314,19 +330,19 @@ export class App {
         throw new Error(errMsg);
       }
 
-      let stderr: string;
       let stdout: string;
+      let stderr: string;
+
       try {
-        const { stderr: _stderr, stdout: _stdout } = await exec(this.getPingCommand(message.remote));
-        stdout = _stdout;
-        stderr = _stderr;
+        ({ stdout, stderr } = await execAsync(this.getPingCommand(message.remote), { timeout: DEFAULT_PING_TIMEOUT }));
       } catch (err: unknown) {
         throw new Error(`Unable to ping ${message.remote}. Error: ${normalizeErrorString(err)}`);
       }
 
       if (stderr) {
-        throw new Error(`Received on stderr:\n\n${stderr}`);
+        throw new Error(`Received on stderr:\n\n${stderr.trim()}`);
       }
+
       const result = stdout.trim();
       this.log.info(`Ping result for ${message.remote}:\n\n${result}`);
       this.addToWebSocketQueue({
@@ -335,14 +351,20 @@ export class App {
         contentType: ContentType.PING,
         remote: message.remote,
         callback: message.callback,
+        status: 'ok',
         body: result,
       } satisfies AgentTransmitResponse);
     } catch (err) {
       this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_IP_GIVEN'}: ${normalizeErrorString(err)}`);
       this.addToWebSocketQueue({
-        type: 'agent:error',
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        contentType: ContentType.TEXT,
+        remote: message.remote,
+        callback: message.callback,
+        status: 'error',
         body: normalizeErrorString(err),
-      } satisfies AgentError);
+      } satisfies AgentTransmitResponse);
     }
   }
 
@@ -381,11 +403,21 @@ export class App {
           remote: message.remote,
           callback: message.callback,
           contentType: ContentType.HL7_V2,
+          status: 'ok',
           body: response.toString(),
-        });
+        } satisfies AgentTransmitResponse);
       })
       .catch((err) => {
         this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+        this.addToWebSocketQueue({
+          type: 'agent:transmit:response',
+          channel: message.channel,
+          remote: message.remote,
+          callback: message.callback,
+          contentType: ContentType.TEXT,
+          status: 'ok',
+          body: normalizeErrorString(err),
+        } satisfies AgentTransmitResponse);
       })
       .finally(() => {
         client.close();
