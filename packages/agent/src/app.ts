@@ -297,17 +297,14 @@ export class App {
     if (this.pingUtilAvailable !== undefined) {
       return Promise.resolve(this.pingUtilAvailable);
     }
-    return new Promise((resolve) => {
-      exec(this.getPingHelpCommand(), { timeout: 200 }, (err) => {
-        if (err) {
-          this.log.error(normalizeErrorString(err));
-          this.pingUtilAvailable = false;
-        } else {
-          this.pingUtilAvailable = true;
-        }
-        resolve(this.pingUtilAvailable);
-      });
-    });
+    try {
+      await execAsync(this.getPingHelpCommand(), { timeout: 200 });
+      this.pingUtilAvailable = true;
+    } catch (err: unknown) {
+      this.log.error(normalizeErrorString(err));
+      this.pingUtilAvailable = false;
+    }
+    return this.pingUtilAvailable;
   }
 
   private async tryPingIp(message: AgentTransmitRequest): Promise<void> {

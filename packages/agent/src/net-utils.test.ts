@@ -296,7 +296,7 @@ describe('Agent Net Utils', () => {
         contentType: ContentType.TEXT,
         callback,
         status: 'error',
-        body: expect.stringMatching(/Ping command timeout/i),
+        body: expect.stringMatching(/Ping command timeout/),
       });
     });
 
