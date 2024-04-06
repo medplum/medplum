@@ -314,8 +314,9 @@ export class App {
         this.log.error(errMsg);
         throw new Error(errMsg);
       }
-      if (message.body && message.body !== 'PING') {
-        const warnMsg = 'Message body present but unused. Body should be empty for a ping request.';
+      if (message.body && !message.body.startsWith('PING')) {
+        const warnMsg =
+          'Message body present but unused. Body for a ping request should be empty or a message formatted as `PING[ count]`.';
         this.log.warn(warnMsg);
       }
       if (!isIPv4(message.remote)) {
@@ -327,11 +328,25 @@ export class App {
         throw new Error(errMsg);
       }
 
+      const pingCountAsStr = message.body.split(' ')?.[1] ?? '';
+      let pingCount: number | undefined = undefined;
+
+      if (pingCountAsStr !== '') {
+        pingCount = Number.parseInt(pingCountAsStr, 10);
+        if (Number.isNaN(pingCount)) {
+          throw new Error(
+            `Unable to ping ${message.remote} "${pingCountAsStr}" times. "${pingCountAsStr}" is not a number.`
+          );
+        }
+      }
+
       let stdout: string;
       let stderr: string;
 
       try {
-        ({ stdout, stderr } = await execAsync(this.getPingCommand(message.remote), { timeout: DEFAULT_PING_TIMEOUT }));
+        ({ stdout, stderr } = await execAsync(this.getPingCommand(message.remote, pingCount), {
+          timeout: DEFAULT_PING_TIMEOUT,
+        }));
       } catch (err: unknown) {
         throw new Error(`Unable to ping ${message.remote}. Error: ${normalizeErrorString(err)}`);
       }

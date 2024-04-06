@@ -100,12 +100,12 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
     const response = JSON.parse(message) as AgentTransmitResponse;
     if (response.statusCode && response.statusCode >= 400) {
       sendOutcome(res, serverError(new Error(response.body)));
-      return;
+    } else {
+      res
+        .status(response.statusCode ?? 200)
+        .type(response.contentType)
+        .send(response.body);
     }
-    res
-      .status(response.statusCode ?? 200)
-      .type(response.contentType)
-      .send(response.body);
     cleanup();
   });
 

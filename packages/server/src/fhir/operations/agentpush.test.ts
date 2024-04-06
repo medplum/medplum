@@ -248,4 +248,7 @@ describe('Agent Push', () => {
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Invalid wait timeout');
   });
+
+  // test('Ping -- Successful');
+  // test('Ping -- Error');
 });

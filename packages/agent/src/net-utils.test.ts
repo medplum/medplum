@@ -11,7 +11,7 @@ import {
 import { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
-import child_process from 'node:child_process';
+import child_process, { ChildProcess } from 'node:child_process';
 import { App } from './app';
 
 jest.mock('node-windows');
@@ -19,18 +19,25 @@ jest.mock('node-windows');
 const medplum = new MockClient();
 
 describe('Agent Net Utils', () => {
+  let originalLog: typeof console.log;
+
+  beforeAll(() => {
+    originalLog = console.log;
+    console.log = jest.fn();
+  });
+
+  afterAll(() => {
+    console.log = originalLog;
+  });
+
   describe('Ping -- Within One App Instance', () => {
     let mockServer: Server;
-    let wsClient: Client | undefined = undefined;
+    let wsClient: Client;
     let app: App;
     let onMessage: (command: AgentMessage) => void;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let originalLog: typeof console.log;
 
     beforeAll(async () => {
-      originalLog = console.log;
-      console.log = jest.fn();
-
       medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
         return [allOk, {} as Resource];
       });
@@ -75,7 +82,7 @@ describe('Agent Net Utils', () => {
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
-      console.log = originalLog;
+      // @ts-expect-error We know by the time it's used again this will be redefined
       wsClient = undefined;
     });
 
@@ -141,7 +148,7 @@ describe('Agent Net Utils', () => {
             contentType: ContentType.PING,
             remote: 'https://localhost:3001',
             callback,
-            body: 'PING',
+            body: 'PING 1',
           } satisfies AgentTransmitRequest)
         )
       );
@@ -162,7 +169,7 @@ describe('Agent Net Utils', () => {
 
   describe('Ping -- Edge Cases', () => {
     let mockServer: Server;
-    let wsClient: Client | undefined = undefined;
+    let wsClient: Client;
     let app: App;
     let onMessage: (command: AgentMessage) => void;
     let timer: ReturnType<typeof setTimeout>;
@@ -215,6 +222,7 @@ describe('Agent Net Utils', () => {
         mockServer.stop(resolve);
       });
       clearTimeout(timer);
+      // @ts-expect-error We know that in each beforeEach this is redefined
       wsClient = undefined;
     });
 
@@ -239,7 +247,7 @@ describe('Agent Net Utils', () => {
             contentType: ContentType.PING,
             remote: '127.0.0.1',
             callback,
-            body: 'PING',
+            body: 'PING 1',
           } satisfies AgentTransmitRequest)
         )
       );
@@ -271,10 +279,11 @@ describe('Agent Net Utils', () => {
       onMessage = (command) => resolve(command);
 
       // We are gonna make ping fail after a timeout
-      jest.spyOn(child_process, 'exec').mockImplementationOnce((command, opts, cb) => {
+      jest.spyOn(child_process, 'exec').mockImplementationOnce((_command, _options, callback): ChildProcess => {
         setTimeout(() => {
-          cb(new Error('Ping command timeout'));
-        }, 100);
+          callback?.(new Error('Ping command timeout'), '', '');
+        }, 50);
+        return new ChildProcess();
       });
 
       callback = generateId();
@@ -285,7 +294,7 @@ describe('Agent Net Utils', () => {
             contentType: ContentType.PING,
             remote: '127.0.0.1',
             callback,
-            body: 'PING',
+            body: 'PING 1',
           } satisfies AgentTransmitRequest)
         )
       );
@@ -301,8 +310,12 @@ describe('Agent Net Utils', () => {
     });
 
     test('No ping command available', async () => {
-      jest.spyOn(child_process, 'exec').mockImplementationOnce((_cmd: string, _opts, cb: (err: Error) => void) => {
-        cb(new Error('No ping command!'));
+      // We are gonna make ping fail after a timeout
+      jest.spyOn(child_process, 'exec').mockImplementationOnce((_command, _options, callback): ChildProcess => {
+        setTimeout(() => {
+          callback?.(new Error('Ping not found'), '', '');
+        }, 50);
+        return new ChildProcess();
       });
 
       let resolve: (value: AgentMessage) => void;
@@ -324,7 +337,7 @@ describe('Agent Net Utils', () => {
             contentType: ContentType.PING,
             remote: '127.0.0.1',
             callback,
-            body: 'PING',
+            body: 'PING 1',
           } satisfies AgentTransmitRequest)
         )
       );
