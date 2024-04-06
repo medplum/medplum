@@ -275,16 +275,16 @@ export class App {
     }
   }
 
-  private getPingHelpCommand(): string {
+  private getPingTestCommand(): string {
     switch (platform()) {
       case 'darwin':
         return 'ping -c 1 -t 150 127.0.0.1';
+      case 'linux':
+        return 'ping -c 1 -w 150 127.0.0.1';
       case 'win32':
         return 'ping';
-      case 'linux':
-        return 'ping -h';
       default:
-        return 'ping -h';
+        throw new Error('Unsupported platform');
     }
   }
 
@@ -298,7 +298,7 @@ export class App {
       return Promise.resolve(this.pingUtilAvailable);
     }
     try {
-      await execAsync(this.getPingHelpCommand(), { timeout: 200 });
+      await execAsync(this.getPingTestCommand(), { timeout: 200 });
       this.pingUtilAvailable = true;
     } catch (err: unknown) {
       this.log.error(normalizeErrorString(err));
