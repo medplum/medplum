@@ -186,10 +186,8 @@ jobs:
           - 6379:6379
 
     steps:
-      - name: Install ping command
-        run: |
-          sudo apt-get update && \
-          sudo apt-get install -y iputils-ping
+      - name: Check where ping is
+        run: dpkg -L iputils-ping
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
