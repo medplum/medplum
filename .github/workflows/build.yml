@@ -186,6 +186,10 @@ jobs:
           - 6379:6379
 
     steps:
+      - name: Install ping command
+        run: |
+          apt-get update && \
+          apt-get install -y iputils-ping
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
