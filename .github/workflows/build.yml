@@ -186,10 +186,6 @@ jobs:
           - 6379:6379
 
     steps:
-      - name: Test ping
-        run: |
-          /bin/ping --help
-          ping --help
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

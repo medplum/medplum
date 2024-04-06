@@ -282,9 +282,9 @@ export class App {
       case 'win32':
         return 'ping';
       case 'linux':
-        return 'ping --help';
+        return 'ping -h';
       default:
-        return 'ping --help';
+        return 'ping -h';
     }
   }
 
