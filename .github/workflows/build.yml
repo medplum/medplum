@@ -186,6 +186,9 @@ jobs:
           - 6379:6379
 
     steps:
+      - name: Test raw ping command
+        run: ping -h
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
