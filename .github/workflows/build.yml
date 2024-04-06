@@ -188,8 +188,8 @@ jobs:
     steps:
       - name: Install ping command
         run: |
-          apt-get update && \
-          apt-get install -y iputils-ping
+          sudo apt-get update && \
+          sudo apt-get install -y iputils-ping
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
