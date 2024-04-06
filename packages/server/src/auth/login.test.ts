@@ -29,6 +29,7 @@ describe('Login', () => {
   beforeAll(() =>
     withTestContext(async () => {
       const config = await loadTestConfig();
+      config.emailProvider = 'awsses';
       await initApp(app, config);
 
       // Create a test project

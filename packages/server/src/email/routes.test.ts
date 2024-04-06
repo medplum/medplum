@@ -14,6 +14,7 @@ const app = express();
 describe('Email API Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.emailProvider = 'awsses';
     await initApp(app, config);
   });
 

@@ -4,9 +4,8 @@ import {
   CreateLogStreamCommand,
   PutLogEventsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
-import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-
 import { loadTestConfig } from '../config';
 import { waitFor } from '../test.setup';
 import { CloudWatchLogger } from './cloudwatch';

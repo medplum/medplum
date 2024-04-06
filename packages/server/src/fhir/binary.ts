@@ -8,7 +8,6 @@ import { getAuthenticatedContext, getLogger } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { sendOutcome } from './outcomes';
 import { sendResponse, sendResponseHeaders } from './response';
-import { getPresignedUrl } from './signer';
 import { BinarySource, getBinaryStorage } from './storage';
 
 export const binaryRouter = Router().use(authenticateRequest);
@@ -119,7 +118,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
 
   await sendResponse(req, res, outcome, {
     ...binary,
-    url: getPresignedUrl(binary),
+    url: getBinaryStorage().getPresignedUrl(binary),
   });
 }
 

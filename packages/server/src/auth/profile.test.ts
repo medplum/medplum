@@ -9,8 +9,6 @@ import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('@aws-sdk/client-sesv2');
-
 const app = express();
 const email = `multi${randomUUID()}@example.com`;
 const password = randomUUID();

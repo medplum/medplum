@@ -9,8 +9,6 @@ import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
 
-jest.mock('@aws-sdk/client-sesv2');
-
 const app = express();
 
 describe('Revoke', () => {
