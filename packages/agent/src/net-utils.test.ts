@@ -115,7 +115,7 @@ describe('Agent Net Utils', () => {
       await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
         type: 'agent:transmit:response',
         callback,
-        status: 'ok',
+        statusCode: 200,
         body: expect.stringMatching(/ping statistics/),
       });
     });
@@ -153,7 +153,7 @@ describe('Agent Net Utils', () => {
       await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
-        status: 'error',
+        statusCode: 500,
         callback,
         body: expect.any(String),
       });
@@ -254,7 +254,7 @@ describe('Agent Net Utils', () => {
         body: expect.any(String),
         contentType: ContentType.PING,
         callback,
-        status: 'ok',
+        statusCode: 200,
       });
 
       // Setup for a ping that will timeout
@@ -295,7 +295,7 @@ describe('Agent Net Utils', () => {
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
         callback,
-        status: 'error',
+        statusCode: 500,
         body: expect.stringMatching(/Ping command timeout/),
       });
     });
@@ -336,7 +336,7 @@ describe('Agent Net Utils', () => {
       await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
-        status: 'error',
+        statusCode: 500,
         callback,
         body: expect.stringMatching(/Ping utility not available/),
       });

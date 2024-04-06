@@ -348,7 +348,7 @@ export class App {
         contentType: ContentType.PING,
         remote: message.remote,
         callback: message.callback,
-        status: 'ok',
+        statusCode: 200,
         body: result,
       } satisfies AgentTransmitResponse);
     } catch (err) {
@@ -359,7 +359,7 @@ export class App {
         contentType: ContentType.TEXT,
         remote: message.remote,
         callback: message.callback,
-        status: 'error',
+        statusCode: 500,
         body: normalizeErrorString(err),
       } satisfies AgentTransmitResponse);
     }
@@ -400,7 +400,7 @@ export class App {
           remote: message.remote,
           callback: message.callback,
           contentType: ContentType.HL7_V2,
-          status: 'ok',
+          statusCode: 200,
           body: response.toString(),
         } satisfies AgentTransmitResponse);
       })
@@ -412,7 +412,7 @@ export class App {
           remote: message.remote,
           callback: message.callback,
           contentType: ContentType.TEXT,
-          status: 'ok',
+          statusCode: 500,
           body: normalizeErrorString(err),
         } satisfies AgentTransmitResponse);
       })

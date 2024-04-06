@@ -42,7 +42,7 @@ export interface AgentTransmitResponse extends BaseAgentMessage {
   channel?: string;
   remote: string;
   contentType: string;
-  status?: 'ok' | 'error';
+  statusCode?: number;
   body: string;
 }
 
