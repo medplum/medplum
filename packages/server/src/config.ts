@@ -52,6 +52,7 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
+  defaultProjectFeatures?: ("email" | "bots" | "cron" | "google-auth-required" | "graphql-introspection" | "terminology" | "websocket-subscriptions")[] | undefined;
 
   /** Temporary feature flag, to be removed */
   chainedSearchWithReferenceTables?: boolean;
@@ -334,6 +335,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
   config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
+  config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
   return config;
 }
 
