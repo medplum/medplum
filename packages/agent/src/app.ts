@@ -21,8 +21,9 @@ import { AgentHl7Channel } from './hl7';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-    exec(command, options, (err: ExecException | null, stdout: string, stderr: string) => {
-      if (err) {
+    exec(command, options, (ex: ExecException | null, stdout: string, stderr: string) => {
+      if (ex) {
+        const err = ex as Error;
         reject(err);
       }
       resolve({ stdout, stderr });
