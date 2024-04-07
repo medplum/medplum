@@ -162,7 +162,87 @@ describe('Agent Net Utils', () => {
         contentType: ContentType.TEXT,
         statusCode: 500,
         callback,
-        body: expect.any(String),
+        body: expect.stringMatching(/invalid ip/i),
+      });
+    });
+
+    test('Invalid ping body -- Random message', async () => {
+      let resolve: (value: AgentMessage) => void;
+      let reject: (error: Error) => void;
+
+      const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      onMessage = (command) => resolve(command);
+
+      expect(wsClient).toBeDefined();
+
+      const callback = generateId();
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            contentType: ContentType.PING,
+            remote: '127.0.0.1',
+            callback,
+            body: 'Hello, Medplum!',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 3500);
+
+      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+        type: 'agent:transmit:response',
+        contentType: ContentType.PING,
+        statusCode: 200,
+        callback,
+        body: expect.stringMatching(/ping statistics/i),
+      });
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/message body present but unused/i));
+    });
+
+    test('Invalid ping body -- non-numeric first arg', async () => {
+      let resolve: (value: AgentMessage) => void;
+      let reject: (error: Error) => void;
+
+      const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      onMessage = (command) => resolve(command);
+
+      expect(wsClient).toBeDefined();
+
+      const callback = generateId();
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            contentType: ContentType.PING,
+            remote: '127.0.0.1',
+            callback,
+            body: 'PING JOHN',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 3500);
+
+      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+        type: 'agent:transmit:response',
+        contentType: ContentType.TEXT,
+        statusCode: 500,
+        callback,
+        body: expect.stringMatching(/is not a number/i),
       });
     });
   });
@@ -175,8 +255,6 @@ describe('Agent Net Utils', () => {
     let timer: ReturnType<typeof setTimeout>;
 
     beforeEach(async () => {
-      // console.log = jest.fn();
-
       medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
         return [allOk, {} as Resource];
       });
@@ -259,7 +337,7 @@ describe('Agent Net Utils', () => {
       // We can ping localhost, woohoo
       await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
         type: 'agent:transmit:response',
-        body: expect.any(String),
+        body: expect.stringMatching(/ping statistics/i),
         contentType: ContentType.PING,
         callback,
         statusCode: 200,

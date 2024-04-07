@@ -289,7 +289,7 @@ export class App {
   }
 
   // This covers Windows, Linux, and Mac
-  private getPingCommand(ip: string, count = 4): string {
+  private getPingCommand(ip: string, count = 1): string {
     return platform() === 'win32' ? `ping /n ${count} ${ip}` : `ping -c ${count} ${ip}`;
   }
 
@@ -328,7 +328,7 @@ export class App {
         throw new Error(errMsg);
       }
 
-      const pingCountAsStr = message.body.split(' ')?.[1] ?? '';
+      const pingCountAsStr = message.body.startsWith('PING') ? message.body.split(' ')?.[1] ?? '' : '';
       let pingCount: number | undefined = undefined;
 
       if (pingCountAsStr !== '') {
