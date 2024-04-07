@@ -35,6 +35,7 @@ import {
   getIdentifier,
   getImageSrc,
   getPathDifference,
+  getQueryString,
   getQuestionnaireAnswers,
   getReferenceString,
   getWebSocketUrl,
@@ -1320,5 +1321,22 @@ describe('Core Utils', () => {
     expect(getWebSocketUrl(new URL('https://foo.com/foo/bar/'), '/ws/subscriptions-r4')).toEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
+  });
+
+  test('getQueryString', () => {
+    expect(getQueryString('?bestEhr=medplum')).toEqual('bestEhr=medplum');
+    expect(
+      getQueryString([
+        ['bestEhr', 'medplum'],
+        ['foo', 'bar'],
+      ])
+    ).toEqual('bestEhr=medplum&foo=bar');
+    expect(getQueryString({ bestEhr: 'medplum', numberOne: true, medplumRanking: 1 })).toEqual(
+      'bestEhr=medplum&numberOne=true&medplumRanking=1'
+    );
+    expect(getQueryString(new URLSearchParams({ bestEhr: 'medplum', numberOne: 'true', medplumRanking: '1' }))).toEqual(
+      'bestEhr=medplum&numberOne=true&medplumRanking=1'
+    );
+    expect(getQueryString(undefined)).toEqual('');
   });
 });
