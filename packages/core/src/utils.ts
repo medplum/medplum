@@ -32,7 +32,12 @@ import { isReference } from './types';
  * Web browsers and Node.js automatically coerce values to strings.
  * See: https://github.com/microsoft/TypeScript/issues/32951
  */
-export type QueryTypes = URLSearchParams | string[][] | Record<string, string | number | boolean> | string | undefined;
+export type QueryTypes =
+  | URLSearchParams
+  | string[][]
+  | Record<string, string | number | boolean | undefined>
+  | string
+  | undefined;
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
@@ -1126,6 +1131,9 @@ export function getWebSocketUrl(baseUrl: URL | string, path: string): string {
  * @returns The query as a string.
  */
 export function getQueryString(query: QueryTypes): string {
+  if (typeof query === 'object' && !Array.isArray(query) && !(query instanceof URLSearchParams)) {
+    query = Object.fromEntries(Object.entries(query).filter((entry) => entry[1] !== undefined));
+  }
   // @ts-expect-error Technically `Record<string, string, number, boolean>` is not valid to pass into `URLSearchParams` constructor since `boolean` and `number`
   // are not considered to be valid values based on the WebIDL definition from WhatWG. The current runtime behavior relies on implementation-specific coercion to string under the hood.
   // Source: https://url.spec.whatwg.org/#dom-urlsearchparams-urlsearchparams:~:text=6.2.%20URLSearchParams,)%20init%20%3D%20%22%22)%3B

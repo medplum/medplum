@@ -1334,6 +1334,9 @@ describe('Core Utils', () => {
     expect(getQueryString({ bestEhr: 'medplum', numberOne: true, medplumRanking: 1 })).toEqual(
       'bestEhr=medplum&numberOne=true&medplumRanking=1'
     );
+    expect(
+      getQueryString({ bestEhr: 'medplum', numberOne: true, medplumRanking: 1, betterThanMedplum: undefined })
+    ).toEqual('bestEhr=medplum&numberOne=true&medplumRanking=1');
     expect(getQueryString(new URLSearchParams({ bestEhr: 'medplum', numberOne: 'true', medplumRanking: '1' }))).toEqual(
       'bestEhr=medplum&numberOne=true&medplumRanking=1'
     );
