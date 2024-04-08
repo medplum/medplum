@@ -32,7 +32,7 @@ export function ToolsPage(): JSX.Element | null {
   const handlePing = useCallback(
     (formData: Record<string, string>) => {
       const ip = formData.ip;
-      const pingCount = formData.pingCount ?? 1;
+      const pingCount = formData.pingCount || 1;
       if (!ip) {
         return;
       }

@@ -141,5 +141,32 @@ describe('ToolsPage', () => {
       ContentType.PING,
       true
     );
+    pushToAgentSpy.mockRestore();
+  });
+
+  test('No IP entered for ping', async () => {
+    const pushToAgentSpy = jest.spyOn(medplum, 'pushToAgent');
+
+    // load agent page
+    await act(async () => {
+      setup(`/${getReferenceString(agent)}`);
+    });
+
+    const toolsTab = screen.getByRole('tab', { name: 'Tools' });
+
+    // click on Tools tab
+    await act(async () => {
+      fireEvent.click(toolsTab);
+    });
+
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Ping'));
+    });
+
+    await expect(screen.findByText('statistics', { exact: false })).rejects.toThrow();
+    expect(pushToAgentSpy).not.toHaveBeenCalled();
+    pushToAgentSpy.mockRestore();
   });
 });
