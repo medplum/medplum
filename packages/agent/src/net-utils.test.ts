@@ -429,7 +429,7 @@ describe('Agent Net Utils', () => {
         contentType: ContentType.TEXT,
         statusCode: 500,
         callback,
-        body: expect.stringMatching(/Ping utility not available/),
+        body: expect.stringMatching(/Ping not found/),
       });
     });
   });

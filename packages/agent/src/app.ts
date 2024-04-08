@@ -46,7 +46,6 @@ export class App {
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
-  private pingUtilAvailable: boolean | undefined = undefined;
 
   constructor(
     readonly medplum: MedplumClient,
@@ -276,45 +275,13 @@ export class App {
     }
   }
 
-  private getPingTestCommand(): string {
-    switch (platform()) {
-      case 'darwin':
-        return 'ping -c 1 -t 150 127.0.0.1';
-      case 'linux':
-        return 'ping -c 1 -w 150 127.0.0.1';
-      case 'win32':
-        return 'ping';
-      default:
-        throw new Error('Unsupported platform');
-    }
-  }
-
   // This covers Windows, Linux, and Mac
   private getPingCommand(ip: string, count = 1): string {
     return platform() === 'win32' ? `ping /n ${count} ${ip}` : `ping -c ${count} ${ip}`;
   }
 
-  private async isPingUtilAvailable(): Promise<boolean> {
-    if (this.pingUtilAvailable !== undefined) {
-      return Promise.resolve(this.pingUtilAvailable);
-    }
-    try {
-      await execAsync(this.getPingTestCommand(), { timeout: 200 });
-      this.pingUtilAvailable = true;
-    } catch (err: unknown) {
-      this.log.error(normalizeErrorString(err));
-      this.pingUtilAvailable = false;
-    }
-    return this.pingUtilAvailable;
-  }
-
   private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
     try {
-      if (!(await this.isPingUtilAvailable())) {
-        const errMsg = 'Ping utility not available. Make sure your environment has the `ping` command available.';
-        this.log.error(errMsg);
-        throw new Error(errMsg);
-      }
       if (message.body && !message.body.startsWith('PING')) {
         const warnMsg =
           'Message body present but unused. Body for a ping request should be empty or a message formatted as `PING[ count]`.';
@@ -341,16 +308,9 @@ export class App {
         }
       }
 
-      let stdout: string;
-      let stderr: string;
-
-      try {
-        ({ stdout, stderr } = await execAsync(this.getPingCommand(message.remote, pingCount), {
-          timeout: DEFAULT_PING_TIMEOUT,
-        }));
-      } catch (err: unknown) {
-        throw new Error(`Unable to ping ${message.remote}. Error: ${normalizeErrorString(err)}`);
-      }
+      const { stdout, stderr } = await execAsync(this.getPingCommand(message.remote, pingCount), {
+        timeout: DEFAULT_PING_TIMEOUT,
+      });
 
       if (stderr) {
         throw new Error(`Received on stderr:\n\n${stderr.trim()}`);
