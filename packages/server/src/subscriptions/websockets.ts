@@ -10,7 +10,7 @@ import { getFullUrl } from '../fhir/response';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { verifyJwt } from '../oauth/keys';
-import { getRedis } from '../redis';
+import { getRedis, getRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -44,7 +44,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
       // According to Redis documentation: http://redis.io/commands/subscribe
       // Once the client enters the subscribed state it is not supposed to issue any other commands,
       // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-      redisSubscriber = redis.duplicate();
+      redisSubscriber = getRedisSubscriber();
 
       redisSubscriber.on('message', (channel: string, message: string) => {
         globalLogger.debug('[WS] redis message', { channel, message });

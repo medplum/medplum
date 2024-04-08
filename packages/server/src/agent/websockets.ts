@@ -16,7 +16,7 @@ import { getRepoForLogin } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { heartbeat } from '../heartbeat';
 import { getLoginForAccessToken } from '../oauth/utils';
-import { getRedis } from '../redis';
+import { getRedis, getRedisSubscriber } from '../redis';
 
 const STATUS_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
@@ -115,7 +115,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
-    redisSubscriber = getRedis().duplicate();
+    redisSubscriber = getRedisSubscriber();
     await redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent

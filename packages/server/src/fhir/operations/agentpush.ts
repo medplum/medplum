@@ -12,7 +12,7 @@ import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
-import { getRedis } from '../../redis';
+import { getRedis, getRedisSubscriber } from '../../redis';
 import { sendOutcome } from '../outcomes';
 import { getAgentForRequest, getDevice } from './agentutils';
 import { parseParameters } from './utils/parameters';
@@ -94,7 +94,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // Otherwise, open a new redis connection in "subscribe" state
   message.callback = getReferenceString(agent) + '-' + randomUUID();
 
-  const redisSubscriber = getRedis().duplicate();
+  const redisSubscriber = getRedisSubscriber();
   await redisSubscriber.subscribe(message.callback);
   redisSubscriber.on('message', (_channel: string, message: string) => {
     const response = JSON.parse(message) as AgentTransmitResponse;
