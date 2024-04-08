@@ -9,7 +9,15 @@
         "resourceType": "Patient",
         "active": true,
         "name": [{ "family": "Simpson", "given": ["Homer"] }],
-        "gender": "male"
+        "gender": "male",
+        "birthdate": "1956-05-12",
+        "address": [
+          {
+            "use": "home",
+            "line": ["742 Evergreen Terrace"],
+            "city": "Springfield"
+          }
+        ]
       }
     },
     {
