@@ -70,9 +70,11 @@ export async function seedDatabase(): Promise<void> {
     admin: true,
   });
 
+  globalLogger.info('Starting rebuilds', performance.mark('Starting rebuilds').toJSON());
   await rebuildR4StructureDefinitions();
   await rebuildR4ValueSets();
   await rebuildR4SearchParameters();
+  globalLogger.info('Finished with rebuilds', performance.measure('Rebuild time', 'Starting rebuilds').toJSON());
 }
 
 /**

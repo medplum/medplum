@@ -73,7 +73,7 @@ export async function closeDatabase(): Promise<void> {
   }
 }
 
-async function migrate(client: PoolClient): Promise<void> {
+async function migrate(client: PoolClient, forceAllSteps = false): Promise<void> {
   await client.query(`CREATE TABLE IF NOT EXISTS "DatabaseMigration" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "version" INTEGER NOT NULL,
@@ -81,20 +81,32 @@ async function migrate(client: PoolClient): Promise<void> {
   )`);
 
   const result = await client.query('SELECT "version" FROM "DatabaseMigration"');
-  const version = result.rows[0]?.version ?? -1;
+  const version = result.rows[0]?.version ?? 0; // First version starts at v1
 
-  if (version < 0) {
+  const migrationKeys = Object.keys(migrations).filter((key) => key.startsWith('v'));
+  const migrationVersions = migrationKeys.map((key) => Number.parseInt(key.slice(1), 10)).sort((a, b) => a - b);
+  if (version === 0) {
     await client.query('INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, 0)');
   }
-
-  const migrationKeys = Object.keys(migrations);
-  for (let i = version + 1; i <= migrationKeys.length; i++) {
-    const migration = (migrations as Record<string, migrations.Migration>)['v' + i];
-    if (migration) {
-      const start = Date.now();
-      await migration.run(client);
-      globalLogger.info('Database schema migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
-      await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
+  if (version === 0 && !forceAllSteps) {
+    const start = Date.now();
+    await migrations.latest.run(client);
+    const latestVersion = migrationVersions[migrationVersions.length - 1];
+    globalLogger.info('Database schema migration', {
+      version: `v${latestVersion}`,
+      duration: `${Date.now() - start} ms`,
+    });
+    await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [latestVersion]);
+  } else {
+    globalLogger.info(`migrationKeys length: ${migrationKeys.length}`);
+    for (let i = version + 1; i <= migrationKeys.length; i++) {
+      const migration = (migrations as Record<string, migrations.Migration>)[`v${i}`];
+      if (migration) {
+        const start = Date.now();
+        await migration.run(client);
+        globalLogger.info('Database schema migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
+        await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
+      }
     }
   }
 }
