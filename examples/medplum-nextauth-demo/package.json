@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "next dev",
+    "lint": "next lint",
+    "start": "next start"
   },
   "prettier": {
     "printWidth": 120,
@@ -32,11 +32,11 @@
   },
   "devDependencies": {
     "@medplum/fhirtypes": "3.1.2",
-    "@types/node": "20.12.2",
-    "@types/react": "18.2.73",
-    "@types/react-dom": "18.2.23",
+    "@types/node": "20.12.5",
+    "@types/react": "18.2.74",
+    "@types/react-dom": "18.2.24",
     "eslint": "8.57.0",
     "eslint-config-next": "14.1.4",
-    "typescript": "5.4.3"
+    "typescript": "5.4.4"
   }
 }
