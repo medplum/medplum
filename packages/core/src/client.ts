@@ -3292,7 +3292,7 @@ export class MedplumClient extends EventTarget {
     if (this.refresh()) {
       return this.request(method, url, options);
     }
-    this.clearActiveLogin();
+    this.clear();
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }
