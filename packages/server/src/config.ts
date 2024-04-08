@@ -52,7 +52,17 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
-  defaultProjectFeatures?: ("email" | "bots" | "cron" | "google-auth-required" | "graphql-introspection" | "terminology" | "websocket-subscriptions")[] | undefined;
+  defaultProjectFeatures?:
+    | (
+        | 'email'
+        | 'bots'
+        | 'cron'
+        | 'google-auth-required'
+        | 'graphql-introspection'
+        | 'terminology'
+        | 'websocket-subscriptions'
+      )[]
+    | undefined;
 
   /** Temporary feature flag, to be removed */
   chainedSearchWithReferenceTables?: boolean;
