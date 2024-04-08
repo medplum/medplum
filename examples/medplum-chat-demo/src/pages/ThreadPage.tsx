@@ -1,10 +1,10 @@
-import { Grid, GridCol, Paper } from '@mantine/core';
+import { Anchor, Grid, GridCol, List, Paper, Stack, Title } from '@mantine/core';
 import { resolveId } from '@medplum/core';
 import { Communication, Patient } from '@medplum/fhirtypes';
-import { PatientSummary, useMedplum } from '@medplum/react';
+import { PatientSummary, ThreadChat, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CommunicationActions } from '../components/actions/CommunicationActions';
-import { CommunicationDetails } from '../components/CommunicationDetails';
 
 interface ThreadPageProps {
   readonly thread: Communication;
@@ -13,6 +13,7 @@ interface ThreadPageProps {
 
 export function ThreadPage(props: ThreadPageProps): JSX.Element {
   const medplum = useMedplum();
+  const navigate = useNavigate();
   const [patient, setPatient] = useState<Patient>();
 
   const patientReference = props.thread.subject;
@@ -34,22 +35,52 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
             <PatientSummary patient={patient} m="md" />
           </GridCol>
           <GridCol span={5}>
-            <CommunicationDetails communication={props.thread} />
+            <Paper m="md" h="600px">
+              <ThreadChat thread={props.thread} />
+            </Paper>
           </GridCol>
           <GridCol span={3}>
             <Paper>
               <CommunicationActions communication={props.thread} onChange={props.onChange} />
+            </Paper>
+            <Paper>
+              <Stack m="md" p="md">
+                <Title>Participants</Title>
+                <List>
+                  {props.thread.recipient?.map((participant, index) => (
+                    <List.Item key={index}>
+                      <Anchor onClick={() => navigate(`/${participant.reference}`)}>
+                        {participant.display ?? participant.reference}
+                      </Anchor>
+                    </List.Item>
+                  ))}
+                </List>
+              </Stack>
             </Paper>
           </GridCol>
         </Grid>
       ) : (
         <Grid gutter="xs">
           <GridCol span={8}>
-            <CommunicationDetails communication={props.thread} />
+            <ThreadChat thread={props.thread} />
           </GridCol>
           <GridCol span={4}>
             <Paper m="md">
               <CommunicationActions communication={props.thread} onChange={props.onChange} />
+              <Paper>
+                <Stack m="md" p="md">
+                  <Title>Participants</Title>
+                  <List>
+                    {props.thread.recipient?.map((participant, index) => (
+                      <List.Item key={index}>
+                        <Anchor onClick={() => navigate(`/${participant.reference}`)}>
+                          {participant.display ?? participant.reference}
+                        </Anchor>
+                      </List.Item>
+                    ))}
+                  </List>
+                </Stack>
+              </Paper>
             </Paper>
           </GridCol>
         </Grid>
