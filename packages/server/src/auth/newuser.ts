@@ -63,7 +63,6 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     existingUser = await getUserByEmailInProject(email, req.body.projectId);
   } else {
     existingUser = await getUserByEmailWithoutProject(email);
-    req.body.projectId = null; // if req.body.projectId is 'new', set it to null
   }
   if (existingUser) {
     sendOutcome(res, badRequest('Email already registered', 'email'));
@@ -112,7 +111,7 @@ export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>
     lastName,
     email,
     passwordHash,
-    project: projectId ? { reference: `Project/${projectId}` } : undefined,
+    project: projectId && projectId !== 'new' ? { reference: `Project/${projectId}` } : undefined,
   });
   globalLogger.info('User created', { id: result.id, email });
   return result;
