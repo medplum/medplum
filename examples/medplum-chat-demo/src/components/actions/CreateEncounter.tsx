@@ -5,8 +5,7 @@ import { createReference, getReferenceString, normalizeErrorString, PatchOperati
 import { Communication, Encounter, EncounterParticipant, Period, Practitioner, Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 interface CreateEncounterProps {
   readonly communication: Communication;
