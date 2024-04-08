@@ -1974,6 +1974,34 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Upsert a resource: update it in place if it exists, otherwise create it.  This is done in a single, transactional
+   * request to guarantee data consistency.
+   * @param resource - The resource to update or create.
+   * @param query - A FHIR search query to uniquely identify the resource if it already exists.
+   * @param options  - Optional fetch options.
+   * @returns The updated/created resource.
+   */
+  async upsertResource<T extends Resource>(
+    resource: T,
+    query: QueryTypes,
+    options?: MedplumRequestOptions
+  ): Promise<T> {
+    // Build conditional update URL, e.g. `PUT /ResourceType?search-param=value`
+    const url = this.fhirSearchUrl(resource.resourceType, query);
+
+    let result = await this.put(url, resource, undefined, options);
+    if (!result) {
+      // On 304 not modified, result will be undefined
+      // Return the user input instead
+      result = resource;
+    }
+    this.cacheResource(result);
+    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
+    this.invalidateSearches(resource.resourceType);
+    return result;
+  }
+
+  /**
    * Creates a FHIR `Attachment` with the provided data content.
    *
    * This is a convenience method for creating a `Binary` resource and then creating an `Attachment` element.
