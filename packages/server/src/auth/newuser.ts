@@ -63,6 +63,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     existingUser = await getUserByEmailInProject(email, req.body.projectId);
   } else {
     existingUser = await getUserByEmailWithoutProject(email);
+    req.body.projectId = null; // if req.body.projectId is 'new', set it to null
   }
   if (existingUser) {
     sendOutcome(res, badRequest('Email already registered', 'email'));
