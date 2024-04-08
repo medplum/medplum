@@ -14,11 +14,13 @@ export async function rebuildR4SearchParameters(): Promise<void> {
 
   const systemRepo = getSystemRepo();
 
+  const promises = [];
   for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
     for (const entry of readJson(filename).entry as BundleEntry[]) {
-      await createParameter(systemRepo, entry.resource as SearchParameter);
+      promises.push(createParameter(systemRepo, entry.resource as SearchParameter));
     }
   }
+  await Promise.all(promises);
 }
 
 async function createParameter(systemRepo: Repository, param: SearchParameter): Promise<void> {

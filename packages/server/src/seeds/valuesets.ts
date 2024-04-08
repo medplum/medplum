@@ -8,24 +8,30 @@ import { r4ProjectId } from '../seed';
  * Imports all built-in ValueSets and CodeSystems into the database.
  */
 export async function rebuildR4ValueSets(): Promise<void> {
+  performance.mark('Start rebuildR4ValueSets');
   const systemRepo = getSystemRepo();
   const files = ['v2-tables.json', 'v3-codesystems.json', 'valuesets.json', 'valuesets-medplum.json'];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
+    const promises = [];
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
-      const resource = entry.resource as CodeSystem | ValueSet;
-      await deleteExisting(systemRepo, resource, r4ProjectId);
-      await systemRepo.createResource({
-        ...resource,
-        meta: {
-          ...resource.meta,
-          project: r4ProjectId,
-          lastUpdated: undefined,
-          versionId: undefined,
-        },
-      });
+      promises.push(overwriteResource(systemRepo, entry.resource as CodeSystem | ValueSet));
     }
+    await Promise.all(promises);
   }
+}
+
+async function overwriteResource(systemRepo: Repository, resource: CodeSystem | ValueSet): Promise<void> {
+  await deleteExisting(systemRepo, resource, r4ProjectId);
+  await systemRepo.createResource({
+    ...resource,
+    meta: {
+      ...resource.meta,
+      project: r4ProjectId,
+      lastUpdated: undefined,
+      versionId: undefined,
+    },
+  });
 }
 
 async function deleteExisting(
@@ -40,10 +46,12 @@ async function deleteExisting(
       { code: '_project', operator: Operator.EQUALS, value: projectId },
     ],
   });
+  const promises = [];
   if (bundle.entry && bundle.entry.length > 0) {
     for (const entry of bundle.entry) {
       const existing = entry.resource as CodeSystem | ValueSet;
-      await systemRepo.deleteResource(existing.resourceType, existing.id as string);
+      promises.push(systemRepo.deleteResource(existing.resourceType, existing.id as string));
     }
   }
+  await Promise.all(promises);
 }

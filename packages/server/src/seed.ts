@@ -16,6 +16,9 @@ export async function seedDatabase(): Promise<void> {
     return;
   }
 
+  performance.mark('Starting to seed');
+  globalLogger.info('Seeding database...');
+
   const systemRepo = getSystemRepo();
 
   const [firstName, lastName, email] = ['Medplum', 'Admin', 'admin@example.com'];
@@ -70,9 +73,38 @@ export async function seedDatabase(): Promise<void> {
     admin: true,
   });
 
+  globalLogger.info('Rebuilding system resources...');
+  performance.mark('Starting rebuilds');
+
+  performance.mark('Starting rebuildR4StructureDefinitions');
   await rebuildR4StructureDefinitions();
+  const sdStats = performance.measure(
+    'Finished rebuildR4StructureDefinitions',
+    'Starting rebuildR4StructureDefinitions'
+  );
+  globalLogger.info('Finished rebuildR4StructureDefinitions', {
+    duration: `${Math.ceil(sdStats.duration)} ms`,
+  });
+
+  performance.mark('Starting rebuildR4ValueSets');
   await rebuildR4ValueSets();
+  const valueSetsStats = performance.measure('Finished rebuildR4ValueSets', 'Starting rebuildR4ValueSets');
+  globalLogger.info('Finished rebuildR4ValueSets', { duration: `${Math.ceil(valueSetsStats.duration)} ms` });
+
+  performance.mark('Starting rebuildR4SearchParameters');
   await rebuildR4SearchParameters();
+  const searchParamsStats = performance.measure(
+    'Finished rebuildR4SearchParameters',
+    'Starting rebuildR4SearchParameters'
+  );
+  globalLogger.info('Finished rebuildR4SearchParameters', {
+    duration: `${Math.ceil(searchParamsStats.duration)} ms`,
+  });
+
+  const rebuildStats = performance.measure('Finished rebuilds', 'Starting rebuilds');
+  globalLogger.info('Finished rebuilds', { duration: `${Math.ceil(rebuildStats.duration)} ms` });
+  const seedingStats = performance.measure('Finished seeding', 'Starting to seed');
+  globalLogger.info('Finished seeding', { duration: `${Math.ceil(seedingStats.duration)} ms` });
 }
 
 /**
