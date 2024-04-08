@@ -15,6 +15,11 @@ import {
 import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
 
+export type CreateResourceOptions = {
+  assignedId?: boolean;
+  ifNoneExist?: string;
+};
+
 /**
  * The FhirRepository interface defines the methods that are required to implement a FHIR repository.
  * A FHIR repository is responsible for storing and retrieving FHIR resources.
@@ -31,7 +36,7 @@ export interface FhirRepository<TClient = unknown> {
    * @param resource - The FHIR resource to create.
    * @returns The created resource.
    */
-  createResource<T extends Resource>(resource: T): Promise<T>;
+  createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<T>;
 
   /**
    * Reads a FHIR resource by ID.

@@ -2,24 +2,24 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 
 
 export type PathSegment = { value: string; param?: boolean };
 
-export type Route<T> = { method: HttpMethod; path: PathSegment[]; handler: T };
+export type Route<Handler, Metadata> = { method: HttpMethod; path: PathSegment[]; handler: Handler; data?: Metadata };
 
-export type RouteResult<T> = { handler: T; params: Record<string, string> };
+export type RouteResult<Handler, Metadata> = { handler: Handler; params: Record<string, string>; data?: Metadata };
 
-export class Router<T> {
-  readonly routes: Route<T>[] = [];
+export class Router<Handler, Metadata> {
+  readonly routes: Route<Handler, Metadata>[] = [];
 
-  add(method: HttpMethod, pathStr: string, handler: T): void {
+  add(method: HttpMethod, pathStr: string, handler: Handler, data?: Metadata): void {
     const path = pathStr
       .split('/')
       .filter((e) => !!e)
       .map((value) => (value.startsWith(':') ? { value: value.substring(1), param: true } : { value }));
-    this.routes.push({ method, path, handler });
+    this.routes.push({ method, path, handler, data });
   }
 
-  find(method: HttpMethod, pathStr: string): RouteResult<T> | undefined {
+  find(method: HttpMethod, pathStr: string): RouteResult<Handler, Metadata> | undefined {
     const path = pathStr.split('/').filter((e) => !!e);
-    let bestRoute: Route<T> | undefined = undefined;
+    let bestRoute: Route<Handler, Metadata> | undefined = undefined;
     let bestScore = -1;
     for (const route of this.routes) {
       const score = tryMatch(route, method, path);
@@ -35,7 +35,7 @@ export class Router<T> {
   }
 }
 
-function tryMatch<T>(route: Route<T>, method: HttpMethod, path: string[]): number {
+function tryMatch<T, U>(route: Route<T, U>, method: HttpMethod, path: string[]): number {
   if (method !== route.method || path.length !== route.path.length) {
     return -1;
   }
@@ -51,7 +51,7 @@ function tryMatch<T>(route: Route<T>, method: HttpMethod, path: string[]): numbe
   return score;
 }
 
-function buildParams<T>(route: Route<T>, path: string[]): Record<string, string> {
+function buildParams<T, U>(route: Route<T, U>, path: string[]): Record<string, string> {
   const params: Record<string, string> = Object.create(null);
   for (let i = 0; i < path.length; i++) {
     if (route.path[i].param) {

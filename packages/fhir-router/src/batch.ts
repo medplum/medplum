@@ -1,5 +1,5 @@
 import {
-  allOk,
+  // allOk,
   badRequest,
   getReferenceString,
   getStatus,
@@ -9,11 +9,13 @@ import {
   Event,
   generateRandomId,
   normalizeOperationOutcome,
+  created,
+  allOk,
+  notFound,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { FhirRouter } from './fhirrouter';
+import { FhirResponse, FhirRouter, RestInteraction } from './fhirrouter';
 import { FhirRepository } from './repo';
-import { HttpMethod } from './urlrouter';
 
 /**
  * Processes a FHIR batch request.
@@ -184,7 +186,9 @@ class BatchProcessor {
               )
             );
           }
-          return { placeholder: entry.request.url, reference: getReferenceString(resolved[0]) };
+          const reference = getReferenceString(resolved[0]);
+          entry.request.url = reference;
+          return { placeholder: entry.request.url, reference };
         } else if (entry.request?.url.includes('/')) {
           return { placeholder: entry.request.url, reference: entry.request.url };
         }
@@ -207,43 +211,91 @@ class BatchProcessor {
    * @returns The bundle entry response.
    */
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
-    const request = entry.request as BundleEntryRequest;
+    // const request = entry.request as BundleEntryRequest;
 
-    if (entry.resource?.resourceType && request.ifNoneExist) {
-      const searchBundle = await this.repo.search(
-        parseSearchRequest(`${entry.resource.resourceType}?${request.ifNoneExist}`)
-      );
-      const entries = searchBundle.entry as BundleEntry[];
-      if (entries.length > 1) {
-        return buildBundleResponse(badRequest('Multiple matches'));
+    // if (entry.resource?.resourceType && request.ifNoneExist) {
+    //   const searchBundle = await this.repo.search(
+    //     parseSearchRequest(`${entry.resource.resourceType}?${request.ifNoneExist}`)
+    //   );
+    //   const entries = searchBundle.entry as BundleEntry[];
+    //   if (entries.length > 1) {
+    //     return buildBundleResponse(badRequest('Multiple matches'));
+    //   }
+    //   if (entries.length === 1) {
+    //     const matchingResource = entries[0].resource as Resource;
+    //     return buildBundleResponse(allOk, matchingResource);
+    //   }
+    // }
+
+    // let body = entry.resource;
+    // if (request.method === 'PATCH') {
+    //   body = this.parsePatchBody(entry);
+    // }
+
+    // // Pass in dummy host for parsing purposes.
+    // // The host is ignored.
+    // const url = new URL(request.url as string, 'https://example.com/');
+
+    // const headers = Object.create(null);
+    // if (request.ifNoneExist) {
+    //   headers['If-None-Exist'] = request.ifNoneExist;
+    // }
+    // if (request.ifMatch) {
+    //   headers['If-Match'] = request.ifMatch;
+    // }
+    // if (request.ifNoneMatch) {
+    //   headers['If-None-Match'] = request.ifNoneMatch;
+    // }
+    // if (request.ifModifiedSince) {
+    //   headers['If-Modified-Since'] = request.ifModifiedSince;
+    // }
+
+    // const result = await this.router.handleRequest(
+    //   {
+    //     method: request.method as HttpMethod,
+    //     pathname: url.pathname,
+    //     params: Object.create(null),
+    //     query: Object.fromEntries(url.searchParams),
+    //     headers,
+    //     body,
+    //   },
+    //   this.repo
+    // );
+
+    const [outcome, resource] = await this.performBatchOperation(entry);
+    return buildBundleResponse(outcome, resource);
+  }
+
+  private async performBatchOperation(entry: BundleEntry): Promise<FhirResponse> {
+    switch (entry.request?.method) {
+      case 'POST': {
+        if (!entry.resource) {
+          throw new OperationOutcomeError(badRequest('Missing resource'));
+        }
+        const resource = await this.repo.createResource(entry.resource, {
+          assignedId: true,
+          ifNoneExist: entry.request.ifNoneExist,
+        });
+        return [created, resource];
       }
-      if (entries.length === 1) {
-        const matchingResource = entries[0].resource as Resource;
-        return buildBundleResponse(allOk, matchingResource);
+      case 'PUT':
+        {
+          const params = this.router.find('PUT', entry.request.url)?.params;
+          if (!params?.id) {
+            throw new OperationOutcomeError(notFound);
+          }
+        }
+        break; //
+      case 'PATCH': {
+        const patch = this.parsePatchBody(entry);
+        const params = this.router.find(entry.request.method, entry.request.url)?.params;
+        if (!params) {
+          throw new OperationOutcomeError(badRequest('Invalid URL for PATCH operation'));
+        }
+        const resource = await this.repo.patchResource(params.resourceType, params.id, patch);
+        return [allOk, resource];
       }
     }
-
-    let body = entry.resource;
-    if (request.method === 'PATCH') {
-      body = this.parsePatchBody(entry);
-    }
-
-    // Pass in dummy host for parsing purposes.
-    // The host is ignored.
-    const url = new URL(request.url as string, 'https://example.com/');
-
-    const result = await this.router.handleRequest(
-      {
-        method: request.method as HttpMethod,
-        pathname: url.pathname,
-        params: Object.create(null),
-        query: Object.fromEntries(url.searchParams),
-        body,
-      },
-      this.repo
-    );
-
-    return buildBundleResponse(result[0], result[1]);
   }
 
   private parsePatchBody(entry: BundleEntry): any {

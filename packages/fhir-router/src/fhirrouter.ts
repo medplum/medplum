@@ -7,13 +7,18 @@ import {
   notFound,
   parseSearchRequest,
 } from '@medplum/core';
-import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import {
+  CapabilityStatementRestResourceInteraction,
+  OperationOutcome,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
 import { Operation } from 'rfc6902';
 import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
-import { FhirRepository } from './repo';
-import { HttpMethod, Router } from './urlrouter';
+import { CreateResourceOptions, FhirRepository } from './repo';
+import { HttpMethod, RouteResult, Router } from './urlrouter';
 
 export type FhirRequest = {
   method: HttpMethod;
@@ -78,7 +83,17 @@ async function createResource(req: FhirRequest, repo: FhirRepository): Promise<F
       badRequest(`Incorrect resource type: expected ${resourceType}, but found ${resource.resourceType || '<EMPTY>'}`),
     ];
   }
-  const result = await repo.createResource(resource);
+
+  let options: CreateResourceOptions | undefined;
+  if (req.headers?.['if-none-exist']) {
+    let ifNoneExist = req.headers['if-none-exist'];
+    if (Array.isArray(ifNoneExist)) {
+      ifNoneExist = ifNoneExist[0];
+    }
+    options = { ifNoneExist };
+  }
+
+  const result = await repo.createResource(resource, options);
   return [created, result];
 }
 
@@ -132,8 +147,13 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
+export type RestInteraction = CapabilityStatementRestResourceInteraction['code'] | 'execute';
+type RouteMetadata = {
+  interaction: RestInteraction;
+};
+
 export class FhirRouter extends EventTarget {
-  readonly router = new Router<FhirRouteHandler>();
+  readonly router = new Router<FhirRouteHandler, RouteMetadata>();
   readonly options: FhirOptions;
 
   constructor(options = {}) {
@@ -156,6 +176,10 @@ export class FhirRouter extends EventTarget {
 
   add(method: HttpMethod, path: string, handler: FhirRouteHandler): void {
     this.router.add(method, path, handler);
+  }
+
+  find(method: HttpMethod, path: string): RouteResult<FhirRouteHandler, RouteMetadata> | undefined {
+    return this.router.find(method, path);
   }
 
   async handleRequest(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
