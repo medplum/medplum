@@ -40,12 +40,12 @@
     ]
   },
   "devDependencies": {
-    "@docusaurus/core": "3.2.0",
-    "@docusaurus/module-type-aliases": "3.2.0",
-    "@docusaurus/preset-classic": "3.2.0",
-    "@docusaurus/theme-mermaid": "3.2.0",
-    "@docusaurus/tsconfig": "3.2.0",
-    "@docusaurus/types": "3.2.0",
+    "@docusaurus/core": "3.2.1",
+    "@docusaurus/module-type-aliases": "3.2.1",
+    "@docusaurus/preset-classic": "3.2.1",
+    "@docusaurus/theme-mermaid": "3.2.1",
+    "@docusaurus/tsconfig": "3.2.1",
+    "@docusaurus/types": "3.2.1",
     "@mdx-js/react": "3.0.1",
     "@medplum/core": "3.1.2",
     "@medplum/fhirtypes": "3.1.2",
@@ -59,7 +59,7 @@
     "react-dom": "18.2.0",
     "react-intersection-observer": "9.8.1",
     "react-router-dom": "6.22.3",
-    "typescript": "5.4.3",
+    "typescript": "5.4.4",
     "url-loader": "4.1.1"
   },
   "engines": {
