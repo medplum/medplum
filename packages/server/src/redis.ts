@@ -23,9 +23,7 @@ export async function closeRedis(): Promise<void> {
  * The `duplicate` method is intentionally omitted to prevent accidental calling of `Redis.quit`
  * which can cause the global instance to fail to shutdown gracefully later on.
  *
- * Instead duplicate instances for `subscriber` mode `redis` clients should only be obtained by calling
- *
- * See: {@link getRedisSubscriber}
+ * Instead {@link getRedisSubscriber} should be called to obtain a `Redis` instance for use as a subscriber-mode client.
  *
  * @returns The global `Redis` instance.
  */
@@ -39,7 +37,7 @@ export function getRedis(): Redis & { duplicate: never } {
 }
 
 /**
- * Gets a `Redis` instance for use in client mode.
+ * Gets a `Redis` instance for use in subscriber mode.
  *
  * The synchronous `.disconnect()` on this instance should be called instead of `.quit()` when you want to disconnect.
  *
