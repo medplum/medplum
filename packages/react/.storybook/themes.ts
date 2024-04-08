@@ -21,7 +21,6 @@ const medplumDefault = createTheme({
 });
 
 const fooMedical = createTheme({
-  colorScheme: 'light',
   colors: {
     // Replace or adjust with the exact colors used for your design
     primary: [
@@ -174,11 +173,6 @@ const oneMedical = createTheme({
         my: '0',
       },
     },
-    Text: {
-      defaultProps: {
-        // color: '#005450',
-      },
-    },
   },
   colors: {
     primary: [
@@ -290,7 +284,6 @@ const materialUi = createTheme({
 });
 
 const sciFi = createTheme({
-  components: {},
   fontFamily: '"Gill Sans", arial, "sans-serif"',
   colors: {
     primary: [
@@ -337,54 +330,6 @@ const sciFi = createTheme({
   },
 });
 
-const monospace = createTheme({
-  fontFamily: '"Courier New", monospace',
-  fontSizes: {
-    xs: '1rem',
-    sm: '1.25rem',
-    md: '1.5rem',
-    lg: '1.75rem',
-    xl: '2rem',
-  },
-  colors: {
-    primary: [
-      '#d7ff9a',
-      '#b6ff76',
-      '#94ff52',
-      '#73fa2e',
-      '#52f609',
-      '#34cb00',
-      '#1d9e00',
-      '#0d7000',
-      '#035700',
-      '#003303',
-    ],
-  },
-  primaryColor: 'primary',
-  primaryShade: 6,
-  shadows: {
-    xs: '1px 2px 0px -1px #f2ffe0',
-    sm: '1px 2px 0px -1px #f2ffe0',
-    md: '2px 3px 2px #f2ffe0',
-    lg: '2px 3px 2px #f2ffe0',
-    xl: '2px 4px 4px 1px #f2ffe0',
-  },
-  spacing: {
-    xs: '12px 4px',
-    sm: '18px 6px',
-    md: '24px 8px',
-    lg: '30px 10px',
-    xl: '36px 12px',
-  },
-  radius: {
-    xs: '10px',
-    sm: '20px',
-    md: '30px',
-    lg: '40px',
-    xl: '50px',
-  },
-});
-
 const cursive = createTheme({
   fontFamily: '"Brush Script MT", serif',
   colors: {
@@ -416,6 +361,49 @@ const cursive = createTheme({
     md: '12px 12px 3px grey',
     lg: '16px 16px 3px grey',
     xl: '20px 20px 3px grey',
+  },
+});
+
+const caesar = createTheme({
+  fontFamily: '"Caesar Dressing", serif',
+  fontSizes: {
+    xs: '.8rem',
+    sm: '.9rem',
+    md: '1rem',
+    lg: '1.1rem',
+    xl: '1.2rem',
+  },
+  colors: {
+    primary: [
+      '#fd5d6b',
+      '#fb3737',
+      '#f81b1b',
+      '#d70909',
+      '#a00808',
+      '#810e0e',
+      '#601410',
+      '#4b1711',
+      '#34150f',
+      '#25120e',
+    ],
+  },
+  primaryColor: 'primary',
+  primaryShade: 4,
+  shadows: {
+    xs: '3px 3px 2px grey',
+    xl: '5px 5px 2px grey',
+  },
+});
+
+const wordArt = createTheme({
+  fontFamily: '"Bungee Spice", "sans-serif"',
+  defaultRadius: '0px',
+  shadows: {
+    xs: '0px 0px 0px',
+    sm: '0px 0px 0px',
+    md: '0px 0px 0px',
+    lg: '0px 0px 0px',
+    xl: '0px 0px 0px',
   },
 });
 
@@ -452,14 +440,19 @@ export const themes = withMantineThemes({
       ...sciFi,
     },
     {
-      id: 'monospace',
-      name: 'Monospace',
-      ...monospace,
-    },
-    {
       id: 'cursive',
       name: 'Cursive',
       ...cursive,
+    },
+    {
+      id: 'caesar',
+      name: 'Caesar',
+      ...caesar,
+    },
+    {
+      id: 'word-art',
+      name: 'Word Art',
+      ...wordArt,
     },
   ],
 });
