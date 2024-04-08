@@ -15,8 +15,9 @@ BRANCH_NAME="dep-upgrades-$DATE"
 git checkout -b "$BRANCH_NAME"
 
 # Exclude known problem packages
+# eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-EXCLUDE="node-fetch chromatic"
+EXCLUDE="eslint node-fetch chromatic"
 
 npx npm-check-updates -u -x "$EXCLUDE" --packageFile package.json
 
@@ -32,17 +33,17 @@ for dir in `ls examples`; do
   fi
 done
 
+# Commit and push before running NPM install
+git add -u .
+git commit -m "Dependency upgrades - step 1"
+git push origin "$BRANCH_NAME"
+gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades" --draft
+
 # Reinstall all dependencies
 ./scripts/reinstall.sh
 
-# Add changes to the staging area
+# Commit and push after running NPM install
 git add -u .
-
-# Commit the changes with the release notes
-git commit -m "Dependency upgrades"
-
-# Push the changes to the remote branch
+git commit -m "Dependency upgrades - step 2"
 git push origin "$BRANCH_NAME"
-
-# Create pull request
-gh pr create --title "Dependency upgrades" --body "Dependency upgrades"
+gh pr ready
