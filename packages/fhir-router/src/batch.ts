@@ -14,7 +14,7 @@ import {
   notFound,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { FhirResponse, FhirRouter, RestInteraction } from './fhirrouter';
+import { FhirResponse, FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
 
 /**

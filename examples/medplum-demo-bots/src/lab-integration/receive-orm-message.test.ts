@@ -50,7 +50,12 @@ describe('Send to Partner Lab', () => {
   test(`New Patient`, async (ctx: any) => {
     const medplum = ctx.medplum as MedplumClient;
     const message: Hl7Message = Hl7Message.parse(TEST_MESSAGE);
-    await handler(medplum, { input: message, contentType: ContentType.HL7_V2, secrets: {} });
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: message,
+      contentType: ContentType.HL7_V2,
+      secrets: {},
+    });
     const checkServiceRequests = await medplum.searchResources('ServiceRequest', {
       requisition: `${FACILITY_ORDER_ID}|FGT6228`,
     });

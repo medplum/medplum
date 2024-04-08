@@ -1,10 +1,10 @@
 import { Anchor, Button, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
 import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '@medplum/react-hooks';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export interface NewProjectFormProps {
@@ -17,7 +17,6 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   return (
     <Form
-      style={{ maxWidth: 400 }}
       onSubmit={async (formData: Record<string, string>) => {
         try {
           props.handleAuthResponse(

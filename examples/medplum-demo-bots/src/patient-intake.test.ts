@@ -1,9 +1,12 @@
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+import { ContentType } from '@medplum/core';
+import { Bot, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test, vi } from 'vitest';
 import { handler } from './patient-intake';
 
-const contentType = 'application/fhir+json';
+const contentType = ContentType.FHIR_JSON;
+const bot: Reference<Bot> = { reference: 'Bot/123' };
+const secrets = {};
 
 test('Success', async () => {
   const medplum = new MockClient();
@@ -16,7 +19,7 @@ test('Success', async () => {
       { linkId: 'comment', answer: [{ valueString: 'Please review urgently' }] },
     ],
   };
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, { bot, input, contentType, secrets });
   expect(result).toBe(true);
 });
 
@@ -31,7 +34,7 @@ test('Missing first name', async () => {
       { linkId: 'lastName', answer: [{ valueString: 'Smith' }] },
     ],
   };
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, { bot, input, contentType, secrets });
   expect(result).toBe(false);
   expect(console.log).toHaveBeenCalledWith('Missing first name');
 });
@@ -47,7 +50,7 @@ test('Missing last name', async () => {
       { linkId: 'lastName', answer: [{ valueString: '' }] },
     ],
   };
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, { bot, input, contentType, secrets });
   expect(result).toBe(false);
   expect(console.log).toHaveBeenCalledWith('Missing last name');
 });

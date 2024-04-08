@@ -1,8 +1,8 @@
 import { Button, Center, Checkbox, Group, Stack, Title } from '@mantine/core';
 import { LoginAuthenticationResponse } from '@medplum/core';
+import { useMedplum } from '@medplum/react-hooks';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '@medplum/react-hooks';
 
 export interface ChooseScopeFormProps {
   readonly login: string;
@@ -14,7 +14,6 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
   const medplum = useMedplum();
   return (
     <Form
-      style={{ maxWidth: 400 }}
       onSubmit={(formData: Record<string, string>) => {
         medplum
           .post('auth/scope', {

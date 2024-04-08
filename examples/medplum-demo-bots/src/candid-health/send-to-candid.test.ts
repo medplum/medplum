@@ -443,6 +443,7 @@ describe('Candid Health Tests', () => {
   test('Send to Candid', async (ctx: any) => {
     const { medplum, patient, encounter } = ctx as { medplum: MedplumClient; patient: Patient; encounter: Encounter };
     await handler(medplum, {
+      bot: { reference: 'Bot/123' },
       input: encounter,
       contentType: 'application/fhir+json',
       secrets: {

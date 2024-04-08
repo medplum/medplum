@@ -2,7 +2,9 @@ import {
   OperationOutcomeError,
   SearchRequest,
   SortRule,
+  allOk,
   badRequest,
+  created,
   deepClone,
   evalFhirPath,
   generateId,
@@ -12,7 +14,7 @@ import {
   notFound,
   preconditionFailed,
 } from '@medplum/core';
-import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
 
 export type CreateResourceOptions = {
@@ -96,6 +98,19 @@ export interface FhirRepository<TClient = unknown> {
    * @returns The updated resource.
    */
   updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T>;
+
+  /**
+   * Creates or updates a resource based on a search criteria.
+   *
+   * See: https://www.hl7.org/fhir/http.html#cond-update
+   * @param resource - The FHIR resource to create or update.
+   * @param search - The search criteria to find an existing resource to update.
+   * @returns The updated resource.
+   */
+  conditionalUpdate<T extends Resource>(
+    resource: T,
+    search: SearchRequest
+  ): Promise<{ resource: T; outcome: OperationOutcome }>;
 
   /**
    * Deletes a FHIR resource.
@@ -275,6 +290,22 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
       }
     }
     return this.createResource(result);
+  }
+
+  async conditionalUpdate<T extends Resource>(
+    resource: T,
+    search: SearchRequest
+  ): Promise<{ resource: T; outcome: OperationOutcome }> {
+    const existing = await this.searchResources({ resourceType: search.resourceType, filters: search.filters });
+    if (existing.length === 1) {
+      resource.id = existing[0].id;
+      return { resource: await this.updateResource(resource), outcome: allOk };
+    } else if (existing.length === 0) {
+      delete resource.id;
+      return { resource: await this.createResource(resource), outcome: created };
+    } else {
+      throw new OperationOutcomeError(badRequest('Multiple matches for resource'));
+    }
   }
 
   async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {

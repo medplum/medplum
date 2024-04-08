@@ -33,7 +33,7 @@ const PdfPrinter = require("pdfmake");
 const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
-  const { baseUrl, accessToken, contentType, secrets, traceId } = event;
+  const { bot, baseUrl, accessToken, contentType, secrets, traceId } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch: function(url, options = {}) {
@@ -50,7 +50,7 @@ exports.handler = async (event, context) => {
     if (contentType === ContentType.HL7_V2 && input) {
       input = Hl7Message.parse(input);
     }
-    let result = await userCode.handler(medplum, { input, contentType, secrets, traceId });
+    let result = await userCode.handler(medplum, { bot, input, contentType, secrets, traceId });
     if (contentType === ContentType.HL7_V2 && result) {
       result = result.toString();
     }

@@ -179,6 +179,11 @@ test('Create Invoice', async () => {
   };
   const contentType = 'application/json';
 
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
+    input,
+    contentType,
+    secrets: {},
+  });
   expect(result).toBeDefined();
 });

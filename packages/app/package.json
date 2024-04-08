@@ -1,6 +1,6 @@
 {
   "name": "@medplum/app",
-  "version": "3.1.0",
+  "version": "3.1.2",
   "description": "Medplum App",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -33,16 +33,16 @@
     "@mantine/dropzone": "7.7.1",
     "@mantine/hooks": "7.7.1",
     "@mantine/notifications": "7.7.1",
-    "@medplum/core": "3.1.0",
-    "@medplum/definitions": "3.1.0",
-    "@medplum/fhirtypes": "3.1.0",
-    "@medplum/mock": "3.1.0",
-    "@medplum/react": "3.1.0",
+    "@medplum/core": "3.1.2",
+    "@medplum/definitions": "3.1.2",
+    "@medplum/fhirtypes": "3.1.2",
+    "@medplum/mock": "3.1.2",
+    "@medplum/react": "3.1.2",
     "@tabler/icons-react": "3.1.0",
     "@testing-library/jest-dom": "6.4.2",
-    "@testing-library/react": "14.2.2",
-    "@types/react": "18.2.73",
-    "@types/react-dom": "18.2.23",
+    "@testing-library/react": "14.3.0",
+    "@types/react": "18.2.74",
+    "@types/react-dom": "18.2.24",
     "@vitejs/plugin-react": "4.2.1",
     "postcss": "8.4.38",
     "postcss-preset-mantine": "1.13.0",
@@ -50,7 +50,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.22.3",
     "rfc6902": "5.1.1",
-    "vite": "5.2.7"
+    "vite": "5.2.8"
   },
   "engines": {
     "node": ">=18.0.0"

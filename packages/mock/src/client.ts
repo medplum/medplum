@@ -103,10 +103,12 @@ export class MockClient extends MedplumClient {
   constructor(clientOptions?: MockClientOptions) {
     const router = new FhirRouter();
     const repo = new MemoryRepository();
-    const client = new MockFetchClient(router, repo, clientOptions?.debug);
+
+    const baseUrl = clientOptions?.baseUrl ?? 'https://example.com/';
+    const client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
 
     super({
-      baseUrl: clientOptions?.baseUrl ?? 'https://example.com/',
+      baseUrl,
       clientId: clientOptions?.clientId,
       storage: clientOptions?.storage,
       createPdf: (
@@ -274,6 +276,7 @@ export class MockFetchClient {
   constructor(
     readonly router: FhirRouter,
     readonly repo: MemoryRepository,
+    readonly baseUrl: string,
     readonly debug = false
   ) {}
 
@@ -287,7 +290,7 @@ export class MockFetchClient {
     }
 
     const method = options.method ?? 'GET';
-    const path = url.replace('https://example.com/', '');
+    const path = url.replace(this.baseUrl, '');
 
     if (this.debug) {
       console.log('MockClient', method, path);

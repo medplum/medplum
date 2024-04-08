@@ -1,52 +1,61 @@
 import { Parameters, Patient } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
-import { MedplumClient } from './client';
+import { FetchLike, MedplumClient } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
 import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from './subscriptions';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
 
-const fetch = mockFetchWithStatus((url: string, options?: { body: string }) => {
-  switch (url) {
-    // createResource<Subscription>
-    case 'https://api.medplum.com/fhir/R4/Subscription':
-      return [
-        201,
-        {
-          ...(options?.body ? JSON.parse(options?.body) : {}),
-          id: MOCK_SUBSCRIPTION_ID,
-        },
-      ] as [number, string];
-    // $get-ws-binding-token
-    case `https://api.medplum.com/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`:
-      return [
-        200,
-        {
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'token',
-              valueString: 'token-123',
-            },
-            {
-              name: 'expiration',
-              valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
-            },
-            {
-              name: 'websocket-url',
-              valueUrl: 'wss://example.com/ws/subscriptions-r4',
-            },
-          ],
-        } as Parameters,
-      ];
-    // Get profile
-    case 'https://api.medplum.com/auth/me':
-      return [200, { profile: { resourceType: 'Patient', id: '123' } as Patient }];
-    default:
-      throw new Error('Invalid URL');
-  }
-});
+function createMockFetchWithStatus(baseUrl = 'https://api.medplum.com/'): FetchLike {
+  return mockFetchWithStatus((url: string, options?: { body: string }) => {
+    if (!url.startsWith(baseUrl)) {
+      return [400, 'Invalid base URL'];
+    }
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
+    const pathToEval = url.replace(baseUrl, '');
+    switch (pathToEval) {
+      // createResource<Subscription>
+      case '/fhir/R4/Subscription':
+        return [
+          201,
+          {
+            ...(options?.body ? JSON.parse(options?.body) : {}),
+            id: MOCK_SUBSCRIPTION_ID,
+          },
+        ];
+      // $get-ws-binding-token
+      case `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`:
+        return [
+          200,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'token',
+                valueString: 'token-123',
+              },
+              {
+                name: 'expiration',
+                valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+              },
+              {
+                name: 'websocket-url',
+                valueUrl: 'wss://example.com/ws/subscriptions-r4',
+              },
+            ],
+          } as Parameters,
+        ];
+      // Get profile
+      case '/auth/me':
+        return [200, { profile: { resourceType: 'Patient', id: '123' } as Patient }];
+      default:
+        throw new Error('Invalid URL');
+    }
+  });
+}
 
 describe('MedplumClient -- Subscriptions', () => {
   let medplum: MedplumClient;
@@ -65,11 +74,15 @@ describe('MedplumClient -- Subscriptions', () => {
   afterAll(async () => {
     console.warn = originalWarn;
     jest.useRealTimers();
+    WS.clean();
   });
 
   beforeEach(async () => {
     warnMockFn.mockClear();
-    medplum = new MedplumClient({ fetch, accessToken: createFakeJwt({ client_id: '123', login_id: '123' }) });
+    medplum = new MedplumClient({
+      fetch: createMockFetchWithStatus(),
+      accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
+    });
     await medplum.getProfileAsync();
   });
 
@@ -125,5 +138,35 @@ describe('MedplumClient -- Subscriptions', () => {
 
     expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
     expect(console.warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('MedplumClient -- More Subscription Tests', () => {
+  beforeAll(async () => {
+    jest.useFakeTimers();
+  });
+
+  afterAll(async () => {
+    jest.useRealTimers();
+  });
+
+  test('should be able to use `baseUrl` w/ a slash path', async () => {
+    // @ts-expect-error This is needed to receive server side WS requests
+    const _wsServer = new WS('https://example.com/foo/bar/ws/subscriptions-r4', { jsonProtocol: true });
+    const medplum = new MedplumClient({
+      baseUrl: 'https://example.com/foo/bar/',
+      fetch: createMockFetchWithStatus('https://example.com/foo/bar/'),
+      accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
+    });
+    await medplum.getProfileAsync();
+    const emitter = medplum.subscribeToCriteria('Communication');
+    const connectEvent = await new Promise<SubscriptionEventMap['connect']>((resolve) => {
+      emitter.addEventListener('connect', (event) => {
+        resolve(event);
+      });
+    });
+
+    expect(connectEvent?.type).toEqual('connect');
+    expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
   });
 });

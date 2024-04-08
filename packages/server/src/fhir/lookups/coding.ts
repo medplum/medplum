@@ -1,7 +1,7 @@
 import { append } from '@medplum/core';
+import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
 import { CodeSystem, CodeSystemConcept, CodeSystemConceptProperty, Coding, Resource } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
 import { DeleteQuery } from '../sql';
 import { LookupTable } from './lookuptable';

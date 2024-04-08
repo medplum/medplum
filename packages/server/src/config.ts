@@ -1,5 +1,5 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
-import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetParametersByPathCommand, Parameter, SSMClient } from '@aws-sdk/client-ssm';
 import { splitN } from '@medplum/core';
 import { KeepJobs } from 'bullmq';
 import { mkdtempSync, readFileSync } from 'fs';
@@ -235,7 +235,7 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
 
   const client = new SSMClient({ region });
   const config: Record<string, any> = {};
-
+  const parameters = [] as Parameter[];
   let nextToken: string | undefined;
   do {
     const response = await client.send(
@@ -246,24 +246,28 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
       })
     );
     if (response.Parameters) {
-      for (const param of response.Parameters) {
-        const key = (param.Name as string).replace(path, '');
-        const value = param.Value as string;
-        if (key === 'DatabaseSecrets') {
-          config['database'] = await loadAwsSecrets(region, value);
-        } else if (key === 'RedisSecrets') {
-          config['redis'] = await loadAwsSecrets(region, value);
-        } else if (isIntegerConfig(key)) {
-          config[key] = parseInt(value, 10);
-        } else if (isBooleanConfig(key)) {
-          config[key] = value === 'true';
-        } else {
-          config[key] = value;
-        }
-      }
+      parameters.push(...response.Parameters);
     }
     nextToken = response.NextToken;
   } while (nextToken);
+
+  // Load special AWS Secrets Manager secrets first
+  for (const param of parameters) {
+    const key = (param.Name as string).replace(path, '');
+    const value = param.Value as string;
+    if (key === 'DatabaseSecrets') {
+      config['database'] = await loadAwsSecrets(region, value);
+    } else if (key === 'RedisSecrets') {
+      config['redis'] = await loadAwsSecrets(region, value);
+    }
+  }
+
+  // Then load other parameters, which may override the secrets
+  for (const param of parameters) {
+    const key = (param.Name as string).replace(path, '');
+    const value = param.Value as string;
+    setValue(config, key, value);
+  }
 
   return config as MedplumServerConfig;
 }
@@ -283,6 +287,30 @@ async function loadAwsSecrets(region: string, secretId: string): Promise<Record<
   }
 
   return JSON.parse(result.SecretString);
+}
+
+function setValue(config: MedplumDatabaseConfig, key: string, value: string): void {
+  const keySegments = key.split('.');
+  let obj = config as Record<string, unknown>;
+
+  while (keySegments.length > 1) {
+    const segment = keySegments.shift() as string;
+    if (!obj[segment]) {
+      obj[segment] = {};
+    }
+    obj = obj[segment] as Record<string, unknown>;
+  }
+
+  let parsedValue: any = value;
+  if (isIntegerConfig(key)) {
+    parsedValue = parseInt(value, 10);
+  } else if (isBooleanConfig(key)) {
+    parsedValue = value === 'true';
+  } else if (isObjectConfig(key)) {
+    parsedValue = JSON.parse(value);
+  }
+
+  obj[keySegments[0]] = parsedValue;
 }
 
 /**
@@ -316,6 +344,8 @@ function isIntegerConfig(key: string): boolean {
 function isBooleanConfig(key: string): boolean {
   return (
     key === 'botCustomFunctionsEnabled' ||
+    key === 'database.ssl.rejectUnauthorized' ||
+    key === 'database.ssl.require' ||
     key === 'logRequests' ||
     key === 'logAuditEvents' ||
     key === 'registerEnabled' ||

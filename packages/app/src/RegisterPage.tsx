@@ -29,6 +29,7 @@ export function RegisterPage(): JSX.Element | null {
   return (
     <RegisterForm
       type="project"
+      projectId="new"
       onSuccess={() => navigate('/')}
       googleClientId={config.googleClientId}
       recaptchaSiteKey={config.recaptchaSiteKey}

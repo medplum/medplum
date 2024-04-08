@@ -1,13 +1,13 @@
 {
   "name": "medplum-nextauth-demo",
-  "version": "3.1.0",
+  "version": "3.1.2",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "next dev",
+    "lint": "next lint",
+    "start": "next start"
   },
   "prettier": {
     "printWidth": 120,
@@ -23,20 +23,20 @@
     "@mantine/core": "7.7.1",
     "@mantine/hooks": "7.7.1",
     "@mantine/notifications": "7.7.1",
-    "@medplum/core": "3.1.0",
-    "@medplum/eslint-config": "3.1.0",
+    "@medplum/core": "3.1.2",
+    "@medplum/eslint-config": "3.1.2",
     "next": "14.1.4",
     "next-auth": "4.24.7",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "3.1.0",
-    "@types/node": "20.12.2",
-    "@types/react": "18.2.73",
-    "@types/react-dom": "18.2.23",
+    "@medplum/fhirtypes": "3.1.2",
+    "@types/node": "20.12.5",
+    "@types/react": "18.2.74",
+    "@types/react-dom": "18.2.24",
     "eslint": "8.57.0",
     "eslint-config-next": "14.1.4",
-    "typescript": "5.4.3"
+    "typescript": "5.4.4"
   }
 }

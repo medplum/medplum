@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "3.1.0",
+  "version": "3.1.2",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -11,22 +11,22 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "fhirtypes": "ts-node src/index.ts",
     "baseschema": "ts-node src/baseschema.ts && npx prettier ../core/src/base-schema.json --write",
-    "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
     "benchmark": "ts-node src/benchmarks.ts",
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
     "docs": "ts-node src/docs.ts",
+    "fhirtypes": "ts-node src/index.ts",
     "generate": "npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient",
+    "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
     "migrate": "ts-node src/migrate.ts",
     "mockclient": "ts-node src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "3.1.0",
-    "@medplum/definitions": "3.1.0",
-    "@medplum/fhirtypes": "3.1.0",
+    "@medplum/core": "3.1.2",
+    "@medplum/definitions": "3.1.2",
+    "@medplum/fhirtypes": "3.1.2",
     "@types/json-schema": "7.0.15",
     "@types/pg": "8.11.4",
     "@types/unzipper": "0.10.9",
@@ -34,7 +34,7 @@
     "fhirpath": "3.11.0",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
-    "pg": "8.11.4",
+    "pg": "8.11.5",
     "tinybench": "2.6.0",
     "unzipper": "0.10.14"
   },
