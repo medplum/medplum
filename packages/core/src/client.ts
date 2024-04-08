@@ -1977,10 +1977,13 @@ export class MedplumClient extends EventTarget {
    * @param options  - Optional fetch options.
    * @returns The updated/created resource.
    */
-  async upsertResource<T extends Resource>(resource: T, query: string, options?: MedplumRequestOptions): Promise<T> {
+  async upsertResource<T extends Resource>(
+    resource: T,
+    query: QueryTypes,
+    options?: MedplumRequestOptions
+  ): Promise<T> {
     // Build conditional update URL, e.g. `PUT /ResourceType?search-param=value`
-    const url = this.fhirUrl(resource.resourceType);
-    url.search = '?' + query;
+    const url = this.fhirSearchUrl(resource.resourceType, query);
 
     let result = await this.put(url, resource, undefined, options);
     if (!result) {

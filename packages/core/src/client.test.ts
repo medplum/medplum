@@ -1409,7 +1409,7 @@ describe('Client', () => {
     );
     expect(result).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Patient?identifier=http://example.com/mrn|24601',
+      'https://api.medplum.com/fhir/R4/Patient?identifier=http%3A%2F%2Fexample.com%2Fmrn%7C24601',
       expect.objectContaining({
         method: 'PUT',
         headers: {
