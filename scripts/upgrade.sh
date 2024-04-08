@@ -37,7 +37,7 @@ done
 git add -u .
 git commit -m "Dependency upgrades - step 1"
 git push origin "$BRANCH_NAME"
-gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades"
+gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades" --draft
 
 # Reinstall all dependencies
 ./scripts/reinstall.sh
@@ -46,3 +46,4 @@ gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades"
 git add -u .
 git commit -m "Dependency upgrades - step 2"
 git push origin "$BRANCH_NAME"
+gh pr ready
