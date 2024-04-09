@@ -55,7 +55,7 @@ export function HomePage(): JSX.Element {
           recipient: [meReference, createReference(homerSimpson)],
           status: 'in-progress',
         },
-        `part-of:missing=true&recipient=${getReferenceString(profile)},${getReferenceString(homerSimpson)}&topic:text='Demo Thread'`
+        `part-of:missing=true&recipient=${getReferenceString(profile)}&recipient=${getReferenceString(homerSimpson)}&topic:text='Demo Thread'`
       )
       .then((thread) => {
         setThread(thread);
