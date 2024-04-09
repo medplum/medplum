@@ -166,7 +166,7 @@ const bonFoo = createTheme({
   },
 });
 
-const oneMedical = createTheme({
+const plumMedical = createTheme({
   components: {
     Divider: {
       defaultProps: {
@@ -448,9 +448,9 @@ export const themes = withMantineThemes({
       ...bonFoo,
     },
     {
-      id: 'oneMedical',
-      name: 'OneMedical',
-      ...oneMedical,
+      id: 'plumMedical',
+      name: 'PlumMedical',
+      ...plumMedical,
     },
     {
       id: 'materialUi',
