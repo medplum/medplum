@@ -4,23 +4,34 @@ import { getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { r4ProjectId } from '../seed';
+import { RebuildOptions, buildRebuildOptions } from './common';
 
 /**
  * Creates all SearchParameter resources.
+ * @param options - Optional options for how rebuild should be done.
  */
-export async function rebuildR4SearchParameters(): Promise<void> {
+export async function rebuildR4SearchParameters(options?: Partial<RebuildOptions>): Promise<void> {
+  const finalOptions = buildRebuildOptions(options);
   const client = getDatabasePool();
   await client.query('DELETE FROM "SearchParameter" WHERE "projectId" = $1', [r4ProjectId]);
 
   const systemRepo = getSystemRepo();
 
-  const promises = [];
-  for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-    for (const entry of readJson(filename).entry as BundleEntry[]) {
-      promises.push(createParameter(systemRepo, entry.resource as SearchParameter));
+  if (finalOptions.parallel) {
+    const promises = [];
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      for (const entry of readJson(filename).entry as BundleEntry[]) {
+        promises.push(createParameter(systemRepo, entry.resource as SearchParameter));
+      }
+    }
+    await Promise.all(promises);
+  } else {
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      for (const entry of readJson(filename).entry as BundleEntry[]) {
+        await createParameter(systemRepo, entry.resource as SearchParameter);
+      }
     }
   }
-  await Promise.all(promises);
 }
 
 async function createParameter(systemRepo: Repository, param: SearchParameter): Promise<void> {
