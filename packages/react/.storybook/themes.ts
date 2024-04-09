@@ -405,6 +405,29 @@ const wordArt = createTheme({
     lg: '0px 0px 0px',
     xl: '0px 0px 0px',
   },
+  colors: {
+    primary: [
+      '#bcfeae',
+      '#90fa85',
+      '#64f55c',
+      '#34ed31',
+      '#1acf17',
+      '#1da21a',
+      '#1c7e1b',
+      '#1d5e20',
+      '#183f1c',
+      '#122b17',
+    ],
+  },
+  primaryColor: 'primary',
+  primaryShade: 4,
+  spacing: {
+    xs: '12px',
+    sm: '16px',
+    md: '20px',
+    lg: '24px',
+    xl: '30px',
+  },
 });
 
 export const themes = withMantineThemes({
