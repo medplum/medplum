@@ -1,4 +1,12 @@
-import { AgentTransmitRequest, allOk, badRequest, BaseAgentRequestMessage, getReferenceString } from '@medplum/core';
+import {
+  AgentTransmitRequest,
+  AgentTransmitResponse,
+  allOk,
+  badRequest,
+  BaseAgentRequestMessage,
+  getReferenceString,
+  serverError,
+} from '@medplum/core';
 import { Agent } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
@@ -89,8 +97,15 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   const redisSubscriber = getRedis().duplicate();
   await redisSubscriber.subscribe(message.callback);
   redisSubscriber.on('message', (_channel: string, message: string) => {
-    const response = JSON.parse(message);
-    res.status(200).type(response.contentType).send(response.body);
+    const response = JSON.parse(message) as AgentTransmitResponse;
+    if (response.statusCode && response.statusCode >= 400) {
+      sendOutcome(res, serverError(new Error(response.body)));
+    } else {
+      res
+        .status(response.statusCode ?? 200)
+        .type(response.contentType)
+        .send(response.body);
+    }
     cleanup();
   });
 

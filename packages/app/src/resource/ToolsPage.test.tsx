@@ -1,5 +1,5 @@
 import { Notifications } from '@mantine/notifications';
-import { allOk, getReferenceString } from '@medplum/core';
+import { ContentType, allOk, getReferenceString } from '@medplum/core';
 import { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -64,7 +64,7 @@ describe('ToolsPage', () => {
     expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('IP Address'), { target: { value: '8.8.8.8' } });
+      fireEvent.change(screen.getByLabelText('IP Address'), { target: { value: '8.8.8.8' } });
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
@@ -80,7 +80,7 @@ describe('ToolsPage', () => {
     expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('IP Address'), { target: { value: 'abc123' } });
+      fireEvent.change(screen.getByLabelText('IP Address'), { target: { value: 'abc123' } });
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
@@ -98,12 +98,75 @@ describe('ToolsPage', () => {
     expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('IP Address'), { target: { value: '8.8.8.8' } });
+      fireEvent.change(screen.getByLabelText('IP Address'), { target: { value: '8.8.8.8' } });
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
     await expect(screen.findByText('Timeout')).resolves.toBeInTheDocument();
 
     medplum.setAgentAvailable(true);
+  });
+
+  test('Setting count for ping', async () => {
+    const pushToAgentSpy = jest.spyOn(medplum, 'pushToAgent');
+
+    // load agent page
+    await act(async () => {
+      setup(`/${getReferenceString(agent)}`);
+    });
+
+    const toolsTab = screen.getByRole('tab', { name: 'Tools' });
+
+    // click on Tools tab
+    await act(async () => {
+      fireEvent.click(toolsTab);
+    });
+
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('IP Address'), { target: { value: '8.8.8.8' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Ping Count'), { target: { value: '2' } });
+      fireEvent.click(screen.getByLabelText('Ping'));
+    });
+
+    await expect(screen.findByText('statistics', { exact: false })).resolves.toBeInTheDocument();
+    expect(pushToAgentSpy).toHaveBeenLastCalledWith(
+      { reference: getReferenceString(agent) },
+      '8.8.8.8',
+      'PING 2',
+      ContentType.PING,
+      true
+    );
+    pushToAgentSpy.mockRestore();
+  });
+
+  test('No IP entered for ping', async () => {
+    const pushToAgentSpy = jest.spyOn(medplum, 'pushToAgent');
+
+    // load agent page
+    await act(async () => {
+      setup(`/${getReferenceString(agent)}`);
+    });
+
+    const toolsTab = screen.getByRole('tab', { name: 'Tools' });
+
+    // click on Tools tab
+    await act(async () => {
+      fireEvent.click(toolsTab);
+    });
+
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Ping'));
+    });
+
+    await expect(screen.findByText('statistics', { exact: false })).rejects.toThrow();
+    expect(pushToAgentSpy).not.toHaveBeenCalled();
+    pushToAgentSpy.mockRestore();
   });
 });
