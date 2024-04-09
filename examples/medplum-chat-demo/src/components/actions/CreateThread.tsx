@@ -151,30 +151,18 @@ const createThreadQuestionnaire: Questionnaire = {
                 code: 'Practitioner',
               },
               {
-                code: 'Device',
-              },
-              {
-                code: 'Organization',
-              },
-              {
-                code: 'PractitionerRole',
-              },
-              {
                 code: 'RelatedPerson',
-              },
-              {
-                code: 'Group',
-              },
-              {
-                code: 'CareTeam',
-              },
-              {
-                code: 'HealthCareService',
               },
             ],
           },
         },
       ],
+    },
+    {
+      linkId: 'category',
+      type: 'choice',
+      text: 'Thread Category',
+      answerValueSet: 'https://example.org/thread-categories',
     },
     {
       linkId: 'subject',
@@ -187,9 +175,6 @@ const createThreadQuestionnaire: Questionnaire = {
             coding: [
               {
                 code: 'Patient',
-              },
-              {
-                code: 'Group',
               },
             ],
           },

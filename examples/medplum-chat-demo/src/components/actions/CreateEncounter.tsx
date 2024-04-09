@@ -1,11 +1,18 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, getReferenceString, normalizeErrorString, PatchOperation } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  normalizeErrorString,
+  parseReference,
+  PatchOperation,
+} from '@medplum/core';
 import { Communication, Encounter, EncounterParticipant, Period, Practitioner, Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
+import { getAttenders } from '../../utils';
 
 interface CreateEncounterProps {
   readonly communication: Communication;
@@ -16,7 +23,6 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
   const [opened, handlers] = useDisclosure(false);
-  let currentUserIsRecipient = false;
   const [period, setPeriod] = useState<Period>();
 
   const onEncounterSubmit = async (resource: Resource): Promise<void> => {
@@ -66,6 +72,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
   };
 
   useEffect(() => {
+    // When creating an encounter, the period should be from the time the first message in the thread was sent until the last message was sent
     const getEncounterPeriod = async (thread: Communication): Promise<Period> => {
       const messages = await medplum.searchResources('Communication', {
         'part-of': `Communication/${thread.id}`,
@@ -83,48 +90,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
     getEncounterPeriod(props.communication).then(setPeriod).catch(console.error);
   }, [props.communication]);
 
-  const attenders: EncounterParticipant[] = props.communication.recipient
-    ? props.communication.recipient?.map((recipient) => {
-        if (getReferenceString(profile) === getReferenceString(recipient)) {
-          currentUserIsRecipient = true;
-        }
-        return {
-          type: [
-            {
-              coding: [
-                {
-                  system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
-                  code: 'ATND',
-                  display: 'attender',
-                },
-              ],
-            },
-          ],
-          individual: {
-            reference: getReferenceString(recipient),
-          },
-        };
-      })
-    : [];
-
-  if (!currentUserIsRecipient) {
-    attenders.push({
-      type: [
-        {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
-              code: 'ATND',
-              display: 'attender',
-            },
-          ],
-        },
-      ],
-      individual: {
-        reference: getReferenceString(profile),
-      },
-    });
-  }
+  const attenders = getAttenders(props.communication.recipient, profile, false);
 
   // A default encounter to pre-fill the form with
   const defaultEncounter: Encounter = {

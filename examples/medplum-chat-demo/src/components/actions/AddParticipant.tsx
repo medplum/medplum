@@ -118,25 +118,7 @@ const addParticipantQuestionnaire: Questionnaire = {
                 code: 'Practitioner',
               },
               {
-                code: 'Device',
-              },
-              {
-                code: 'Organization',
-              },
-              {
-                code: 'PractitionerRole',
-              },
-              {
                 code: 'RelatedPerson',
-              },
-              {
-                code: 'Group',
-              },
-              {
-                code: 'CareTeam',
-              },
-              {
-                code: 'HealthCareService',
               },
             ],
           },
