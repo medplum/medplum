@@ -4,7 +4,7 @@ import { IncomingMessage } from 'http';
 import ws from 'ws';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
-import { getRedis } from '../redis';
+import { getRedis, getRedisSubscriber } from '../redis';
 
 /**
  * Handles a new WebSocket connection to the FHIRCast hub.
@@ -20,7 +20,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   const redis = getRedis();
-  const redisSubscriber = redis.duplicate();
+  const redisSubscriber = getRedisSubscriber();
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(topic);
