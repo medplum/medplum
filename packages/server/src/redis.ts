@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import { MedplumRedisConfig } from './config';
 
 let redis: Redis | undefined = undefined;
+let redisSubscribers: Set<Redis> | undefined = undefined;
 
 export function initRedis(config: MedplumRedisConfig): void {
   redis = new Redis(config);
@@ -11,7 +12,14 @@ export function initRedis(config: MedplumRedisConfig): void {
 export async function closeRedis(): Promise<void> {
   if (redis) {
     const tmpRedis = redis;
+    const tmpSubscribers = redisSubscribers;
     redis = undefined;
+    redisSubscribers = undefined;
+    if (tmpSubscribers) {
+      for (const subscriber of tmpSubscribers) {
+        subscriber.disconnect();
+      }
+    }
     await tmpRedis.quit();
     await sleep(100);
   }
@@ -47,7 +55,23 @@ export function getRedisSubscriber(): Redis & { quit: never } {
   if (!redis) {
     throw new Error('Redis not initialized');
   }
-  // @ts-expect-error We don't want anyone to call `.quit()` on duplicate clients
-  // because it can lead to being unable to gracefully quit the global instance client later
-  return redis.duplicate();
+  if (!redisSubscribers) {
+    redisSubscribers = new Set();
+  }
+
+  const subscriber = redis.duplicate();
+  redisSubscribers.add(subscriber);
+
+  subscriber.on('end', () => {
+    redisSubscribers?.delete(subscriber);
+  });
+
+  return subscriber as Redis & { quit: never };
+}
+
+/**
+ * @returns The amount of active `Redis` subscriber instances.
+ */
+export function getRedisSubscriberCount(): number {
+  return redisSubscribers?.size ?? 0;
 }
