@@ -94,7 +94,11 @@ describe('FHIR Routes', () => {
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Bundle', type: 'batch', entry: [] });
+      .send({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [{ resource: { resourceType: 'Patient' }, request: { method: 'POST', url: 'Patient' } }],
+      });
     expect(res.status).toBe(200);
   });
 

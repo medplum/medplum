@@ -8,6 +8,7 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import {
+  CapabilityStatementRestInteraction,
   CapabilityStatementRestResourceInteraction,
   OperationOutcome,
   Resource,
@@ -17,7 +18,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 import { Operation } from 'rfc6902';
 import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
-import { CreateResourceOptions, FhirRepository } from './repo';
+import { CreateResourceOptions, FhirRepository, UpdateResourceOptions } from './repo';
 import { HttpMethod, RouteResult, Router } from './urlrouter';
 
 export type FhirRequest = {
@@ -78,11 +79,6 @@ async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<Fhi
 async function createResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
   const resource = req.body as Resource;
-  if (resource.resourceType !== resourceType) {
-    return [
-      badRequest(`Incorrect resource type: expected ${resourceType}, but found ${resource.resourceType || '<EMPTY>'}`),
-    ];
-  }
 
   let options: CreateResourceOptions | undefined;
   if (req.headers?.['if-none-exist']) {
@@ -90,7 +86,24 @@ async function createResource(req: FhirRequest, repo: FhirRepository): Promise<F
     if (Array.isArray(ifNoneExist)) {
       ifNoneExist = ifNoneExist[0];
     }
-    options = { ifNoneExist };
+
+    const result = await repo.conditionalCreate(resource, parseSearchRequest(ifNoneExist));
+    return [result.outcome, result.resource];
+  }
+
+  return createResourceImpl(resourceType as ResourceType, resource, repo, options);
+}
+
+export async function createResourceImpl<T extends Resource>(
+  resourceType: T['resourceType'],
+  resource: T,
+  repo: FhirRepository,
+  options?: CreateResourceOptions
+): Promise<FhirResponse> {
+  if (resource.resourceType !== resourceType) {
+    return [
+      badRequest(`Incorrect resource type: expected ${resourceType}, but found ${resource.resourceType || '<EMPTY>'}`),
+    ];
   }
 
   const result = await repo.createResource(resource, options);
@@ -122,13 +135,25 @@ async function readVersion(req: FhirRequest, repo: FhirRepository): Promise<Fhir
 async function updateResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
   const resource = req.body;
+  return updateResourceImpl(resourceType, id, resource, repo, {
+    ifMatch: parseIfMatchHeader(req.headers?.['if-match']),
+  });
+}
+
+export async function updateResourceImpl<T extends Resource>(
+  resourceType: T['resourceType'],
+  id: string,
+  resource: T,
+  repo: FhirRepository,
+  options?: UpdateResourceOptions
+): Promise<FhirResponse> {
   if (resource.resourceType !== resourceType) {
     return [badRequest('Incorrect resource type')];
   }
   if (resource.id !== id) {
     return [badRequest('Incorrect ID')];
   }
-  const result = await repo.updateResource(resource, parseIfMatchHeader(req.headers?.['if-match']));
+  const result = await repo.updateResource(resource, options);
   return [allOk, result];
 }
 
@@ -158,7 +183,10 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
-export type RestInteraction = CapabilityStatementRestResourceInteraction['code'] | 'execute';
+export type RestInteraction =
+  | CapabilityStatementRestInteraction['code']
+  | CapabilityStatementRestResourceInteraction['code']
+  | 'execute';
 type RouteMetadata = {
   interaction: RestInteraction;
 };
@@ -171,23 +199,23 @@ export class FhirRouter extends EventTarget {
     super();
     this.options = options;
 
-    this.router.add('GET', '', searchMultipleTypes);
-    this.router.add('POST', '', batch);
-    this.router.add('GET', ':resourceType', search);
-    this.router.add('POST', ':resourceType/_search', searchByPost);
-    this.router.add('POST', ':resourceType', createResource);
-    this.router.add('GET', ':resourceType/:id', readResourceById);
-    this.router.add('GET', ':resourceType/:id/_history', readHistory);
-    this.router.add('GET', ':resourceType/:id/_history/:vid', readVersion);
-    this.router.add('PUT', ':resourceType', conditionalUpdate);
-    this.router.add('PUT', ':resourceType/:id', updateResource);
-    this.router.add('DELETE', ':resourceType/:id', deleteResource);
-    this.router.add('PATCH', ':resourceType/:id', patchResource);
-    this.router.add('POST', '$graphql', graphqlHandler);
+    this.router.add('GET', '', searchMultipleTypes, { interaction: 'search-system' });
+    this.router.add('POST', '', batch, { interaction: 'batch' });
+    this.router.add('GET', ':resourceType', search, { interaction: 'search-type' });
+    this.router.add('POST', ':resourceType/_search', searchByPost, { interaction: 'search-type' });
+    this.router.add('POST', ':resourceType', createResource, { interaction: 'create' });
+    this.router.add('GET', ':resourceType/:id', readResourceById, { interaction: 'read' });
+    this.router.add('GET', ':resourceType/:id/_history', readHistory, { interaction: 'history-instance' });
+    this.router.add('GET', ':resourceType/:id/_history/:vid', readVersion, { interaction: 'vread' });
+    this.router.add('PUT', ':resourceType/:id', updateResource, { interaction: 'update' });
+    this.router.add('PUT', ':resourceType', conditionalUpdate, { interaction: 'update' });
+    this.router.add('DELETE', ':resourceType/:id', deleteResource, { interaction: 'delete' });
+    this.router.add('PATCH', ':resourceType/:id', patchResource, { interaction: 'patch' });
+    this.router.add('POST', '$graphql', graphqlHandler, { interaction: 'execute' });
   }
 
-  add(method: HttpMethod, path: string, handler: FhirRouteHandler): void {
-    this.router.add(method, path, handler);
+  add(method: HttpMethod, path: string, handler: FhirRouteHandler, interaction?: RestInteraction): void {
+    this.router.add(method, path, handler, { interaction: interaction ?? 'execute' });
   }
 
   find(method: HttpMethod, path: string): RouteResult<FhirRouteHandler, RouteMetadata> | undefined {

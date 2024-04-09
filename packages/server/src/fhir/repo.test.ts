@@ -444,8 +444,7 @@ describe('FHIR Repo', () => {
 
       (patient as Patient).name = [{ family: 'TestUpdated' }];
 
-      const versionId = patient.meta?.versionId;
-      await systemRepo.updateResource<Patient>(patient, versionId);
+      await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
       expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
     }));
 
@@ -457,7 +456,7 @@ describe('FHIR Repo', () => {
       });
 
       try {
-        await systemRepo.updateResource<Patient>(patient1, 'bad-id');
+        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);

@@ -174,17 +174,15 @@ describe('FHIR Router', () => {
   });
 
   test('Update incorrect precondition', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
     const [res] = await router.handleRequest(
       {
         method: 'PUT',
-        pathname: '/Patient/123',
-        body: {
-          resourceType: 'Patient',
-          id: '123',
-        },
+        pathname: '/Patient/' + patient.id,
+        body: patient,
         params: {},
         query: {},
-        headers: { 'if-match': 'W/"test"' },
+        headers: { 'if-match': 'W/"incorrect"' },
       },
       repo
     );

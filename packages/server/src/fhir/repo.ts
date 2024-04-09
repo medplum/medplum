@@ -9,7 +9,6 @@ import {
   badRequest,
   canReadResourceType,
   canWriteResourceType,
-  created,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
@@ -22,7 +21,6 @@ import {
   isGone,
   isNotFound,
   isOk,
-  multipleMatches,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -38,7 +36,7 @@ import {
   validateResource,
   validateResourceType,
 } from '@medplum/core';
-import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
+import { FhirRepository, UpdateResourceOptions, CreateResourceOptions } from '@medplum/fhir-router';
 import {
   AccessPolicy,
   Binary,
@@ -187,7 +185,7 @@ const lookupTables: LookupTable[] = [
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends BaseRepository implements FhirRepository<PoolClient>, Disposable {
+export class Repository extends FhirRepository<PoolClient> implements Disposable {
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
   private transactionDepth = 0;
@@ -206,10 +204,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     return new Repository(this.context);
   }
 
-  async createResource<T extends Resource>(resource: T): Promise<T> {
+  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<T> {
     const resourceWithId = {
       ...resource,
-      id: randomUUID(),
+      id: options?.assignedId && resource.id ? resource.id : randomUUID(),
     };
     try {
       const result = await this.updateResourceImpl(resourceWithId, true);
@@ -456,50 +454,15 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  async updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T> {
+  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
     try {
-      const result = await this.updateResourceImpl(resource, false, versionId);
+      const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
       this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
       this.logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err, resource);
       throw err;
     }
-  }
-
-  async conditionalUpdate<T extends Resource>(
-    resource: T,
-    search: SearchRequest
-  ): Promise<{ resource: T; outcome: OperationOutcome }> {
-    if (search.resourceType !== resource.resourceType) {
-      throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
-    }
-
-    return this.withTransaction(async () => {
-      const matches = await this.searchResources(search);
-      if (matches.length === 0) {
-        if (resource.id) {
-          throw new OperationOutcomeError(
-            badRequest('Cannot perform create as update with client-assigned ID', resource.resourceType + '.id')
-          );
-        }
-        resource = await this.createResource(resource);
-        return { resource, outcome: created };
-      } else if (matches.length > 1) {
-        throw new OperationOutcomeError(multipleMatches);
-      }
-
-      const existing = matches[0];
-      if (resource.id && resource.id !== existing.id) {
-        throw new OperationOutcomeError(
-          badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
-        );
-      }
-
-      resource.id = existing.id;
-      resource = await this.updateResource(resource);
-      return { resource, outcome: allOk };
-    });
   }
 
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean, versionId?: string): Promise<T> {

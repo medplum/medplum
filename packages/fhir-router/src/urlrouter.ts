@@ -31,7 +31,7 @@ export class Router<Handler, Metadata> {
     if (!bestRoute) {
       return undefined;
     }
-    return { handler: bestRoute.handler, params: buildParams(bestRoute, path) };
+    return { handler: bestRoute.handler, params: buildParams(bestRoute, path), data: bestRoute.data };
   }
 }
 

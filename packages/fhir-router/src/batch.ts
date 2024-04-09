@@ -1,5 +1,4 @@
 import {
-  // allOk,
   badRequest,
   getReferenceString,
   getStatus,
@@ -9,13 +8,13 @@ import {
   Event,
   generateRandomId,
   normalizeOperationOutcome,
-  created,
   allOk,
   notFound,
 } from '@medplum/core';
-import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { FhirResponse, FhirRouter } from './fhirrouter';
+import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import { FhirResponse, FhirRouter, createResourceImpl, updateResourceImpl } from './fhirrouter';
 import { FhirRepository } from './repo';
+import { HttpMethod } from './urlrouter';
 
 /**
  * Processes a FHIR batch request.
@@ -27,10 +26,16 @@ import { FhirRepository } from './repo';
  * @returns The bundle response.
  */
 export async function processBatch(router: FhirRouter, repo: FhirRepository, bundle: Bundle): Promise<Bundle> {
-  return new BatchProcessor(router, repo, bundle).processBatch();
+  const bundleType = bundle.type;
+  if (bundleType !== 'batch' && bundleType !== 'transaction') {
+    throw new OperationOutcomeError(badRequest('Unrecognized bundle type: ' + bundleType));
+  }
+  const processor = new BatchProcessor(router, repo, bundle);
+  return bundleType === 'transaction' ? repo.withTransaction(() => processor.processBatch()) : processor.processBatch();
 }
 
 const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+const uuidUriPrefix = 'urn:uuid';
 
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
@@ -59,14 +64,6 @@ class BatchProcessor {
    */
   async processBatch(): Promise<Bundle> {
     const bundleType = this.bundle.type;
-
-    if (!bundleType) {
-      throw new OperationOutcomeError(badRequest('Missing bundle type'));
-    }
-    if (bundleType !== 'batch' && bundleType !== 'transaction') {
-      throw new OperationOutcomeError(badRequest('Unrecognized bundle type'));
-    }
-
     const resultEntries: (BundleEntry | OperationOutcome)[] = new Array(this.bundle.entry?.length ?? 0);
     let count = 0;
     let errors = 0;
@@ -95,7 +92,7 @@ class BatchProcessor {
 
     return {
       resourceType: 'Bundle',
-      type: `${bundleType}-response`,
+      type: `${bundleType}-response` as any,
       entry: resultEntries,
     };
   }
@@ -164,7 +161,15 @@ class BatchProcessor {
   ): Promise<{ placeholder: string; reference: string } | undefined> {
     switch (entry.request?.method) {
       case 'POST':
-        if (entry.resource && entry.fullUrl?.startsWith('urn:uuid:')) {
+        if (entry.request.ifNoneExist) {
+          const existing = await this.repo.searchResources(
+            parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
+          );
+          if (existing.length === 1 && entry.fullUrl?.startsWith(uuidUriPrefix)) {
+            return { placeholder: entry.fullUrl, reference: getReferenceString(existing[0]) };
+          }
+        }
+        if (entry.resource && entry.fullUrl?.startsWith(uuidUriPrefix)) {
           entry.resource.id = generateRandomId();
           return {
             placeholder: entry.fullUrl,
@@ -211,90 +216,75 @@ class BatchProcessor {
    * @returns The bundle entry response.
    */
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
-    // const request = entry.request as BundleEntryRequest;
-
-    // if (entry.resource?.resourceType && request.ifNoneExist) {
-    //   const searchBundle = await this.repo.search(
-    //     parseSearchRequest(`${entry.resource.resourceType}?${request.ifNoneExist}`)
-    //   );
-    //   const entries = searchBundle.entry as BundleEntry[];
-    //   if (entries.length > 1) {
-    //     return buildBundleResponse(badRequest('Multiple matches'));
-    //   }
-    //   if (entries.length === 1) {
-    //     const matchingResource = entries[0].resource as Resource;
-    //     return buildBundleResponse(allOk, matchingResource);
-    //   }
-    // }
-
-    // let body = entry.resource;
-    // if (request.method === 'PATCH') {
-    //   body = this.parsePatchBody(entry);
-    // }
-
-    // // Pass in dummy host for parsing purposes.
-    // // The host is ignored.
-    // const url = new URL(request.url as string, 'https://example.com/');
-
-    // const headers = Object.create(null);
-    // if (request.ifNoneExist) {
-    //   headers['If-None-Exist'] = request.ifNoneExist;
-    // }
-    // if (request.ifMatch) {
-    //   headers['If-Match'] = request.ifMatch;
-    // }
-    // if (request.ifNoneMatch) {
-    //   headers['If-None-Match'] = request.ifNoneMatch;
-    // }
-    // if (request.ifModifiedSince) {
-    //   headers['If-Modified-Since'] = request.ifModifiedSince;
-    // }
-
-    // const result = await this.router.handleRequest(
-    //   {
-    //     method: request.method as HttpMethod,
-    //     pathname: url.pathname,
-    //     params: Object.create(null),
-    //     query: Object.fromEntries(url.searchParams),
-    //     headers,
-    //     body,
-    //   },
-    //   this.repo
-    // );
-
     const [outcome, resource] = await this.performBatchOperation(entry);
     return buildBundleResponse(outcome, resource);
   }
 
   private async performBatchOperation(entry: BundleEntry): Promise<FhirResponse> {
-    switch (entry.request?.method) {
-      case 'POST': {
+    const route = this.router.find(entry.request?.method as HttpMethod, entry.request?.url as string);
+    const params = route?.params;
+    switch (route?.data?.interaction) {
+      case 'delete': {
+        if (!params?.id) {
+          throw new OperationOutcomeError(notFound);
+        }
+        await this.repo.deleteResource(params.resourceType, params.id);
+        return [allOk];
+      }
+      case 'create': {
+        if (!params?.resourceType) {
+          throw new OperationOutcomeError(notFound);
+        }
         if (!entry.resource) {
           throw new OperationOutcomeError(badRequest('Missing resource'));
         }
-        const resource = await this.repo.createResource(entry.resource, {
-          assignedId: true,
-          ifNoneExist: entry.request.ifNoneExist,
-        });
-        return [created, resource];
-      }
-      case 'PUT':
-        {
-          const params = this.router.find('PUT', entry.request.url)?.params;
-          if (!params?.id) {
-            throw new OperationOutcomeError(notFound);
-          }
+        if (entry.request?.ifNoneExist) {
+          const { outcome, resource } = await this.repo.conditionalCreate(
+            entry.resource,
+            parseSearchRequest(params.resourceType + '?' + entry.request.ifNoneExist),
+            { assignedId: true }
+          );
+          return [outcome, resource];
         }
-        break; //
-      case 'PATCH': {
+        return createResourceImpl(params.resourceType as ResourceType, entry.resource, this.repo, {
+          assignedId: true,
+        });
+      }
+      case 'update': {
+        if (!params?.id) {
+          throw new OperationOutcomeError(notFound);
+        }
+        if (!entry.resource) {
+          throw new OperationOutcomeError(badRequest('Missing resource'));
+        }
+        return updateResourceImpl(params.resourceType as ResourceType, params.id, entry.resource, this.repo, {
+          ifMatch: entry.request?.ifMatch,
+        });
+      }
+      case 'patch': {
         const patch = this.parsePatchBody(entry);
-        const params = this.router.find(entry.request.method, entry.request.url)?.params;
         if (!params) {
           throw new OperationOutcomeError(badRequest('Invalid URL for PATCH operation'));
         }
         const resource = await this.repo.patchResource(params.resourceType, params.id, patch);
         return [allOk, resource];
       }
+      case 'read': {
+        if (!params?.id) {
+          throw new OperationOutcomeError(notFound);
+        }
+        const resource = await this.repo.readResource(params.resourceType, params.id);
+        return [allOk, resource];
+      }
+      case 'search-type': {
+        if (!params?.resourceType) {
+          throw new OperationOutcomeError(notFound);
+        }
+        const results = await this.repo.search(parseSearchRequest(entry.request?.url as string));
+        return [allOk, results];
+      }
+      default:
+        throw new OperationOutcomeError(notFound); // TODO
     }
   }
 
