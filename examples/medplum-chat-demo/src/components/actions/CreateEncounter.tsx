@@ -1,14 +1,8 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import {
-  createReference,
-  getReferenceString,
-  normalizeErrorString,
-  parseReference,
-  PatchOperation,
-} from '@medplum/core';
-import { Communication, Encounter, EncounterParticipant, Period, Practitioner, Resource } from '@medplum/fhirtypes';
+import { createReference, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { Communication, Encounter, Period, Practitioner, Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
