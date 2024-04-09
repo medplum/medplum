@@ -30,10 +30,8 @@ describe('Redis', () => {
       initRedis(config.redis);
       const subscriber = getRedisSubscriber();
       expect(subscriber).toBeInstanceOf(Redis);
-
-      // @ts-expect-error Normally we shouldn't call quit from subscriber but we're in a test
-      // This expected TS error is actually sort of a test too
-      await subscriber.quit();
+      subscriber.disconnect();
+      await closeRedis();
     });
   });
 });
