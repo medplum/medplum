@@ -1,13 +1,18 @@
-import express from 'express';
-import { loadTestConfig } from '../../config';
-import { initApp, shutdownApp } from '../../app';
-import { initTestAuth, withTestContext } from '../../test.setup';
-import request from 'supertest';
 import { ContentType, createReference, isUUID } from '@medplum/core';
-import { randomUUID } from 'crypto';
-import { createUser } from '../../auth/newuser';
 import { Practitioner, Project } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import express from 'express';
+import { pwnedPassword } from 'hibp';
+import fetch from 'node-fetch';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../../app';
+import { createUser } from '../../auth/newuser';
+import { loadTestConfig } from '../../config';
+import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
+
+jest.mock('hibp');
+jest.mock('node-fetch');
 
 const app = express();
 
@@ -19,6 +24,13 @@ describe('Project $init', () => {
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  beforeEach(() => {
+    (fetch as unknown as jest.Mock).mockClear();
+    (pwnedPassword as unknown as jest.Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
+    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
   });
 
   test('Success', async () => {
