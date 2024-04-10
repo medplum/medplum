@@ -24,6 +24,7 @@ export interface MedplumServerConfig {
   signingKeyId: string;
   signingKeyPassphrase: string;
   supportEmail: string;
+  approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
   databaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
@@ -178,6 +179,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.dbname = 'medplum_test';
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
+  config.approvedSenderEmails = 'no-reply@example.com';
   return config;
 }
 
