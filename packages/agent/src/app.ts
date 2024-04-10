@@ -41,8 +41,8 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
-  healthcheckPeriod = 10 * 1000;
-  private healthcheckTimer?: NodeJS.Timeout;
+  heartbeatPeriod = 10 * 1000;
+  private heartbeatTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
   private webSocket?: WebSocket;
   private webSocketWorker?: Promise<void>;
@@ -78,11 +78,11 @@ export class App {
 
   private startWebSocket(): void {
     this.connectWebSocket();
-    this.healthcheckTimer = setInterval(() => this.healthcheck(), this.healthcheckPeriod);
+    this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatPeriod);
   }
 
-  private async healthcheck(): Promise<void> {
-    if (!this.webSocket && !this.reconnectTimer) {
+  private async heartbeat(): Promise<void> {
+    if (!(this.webSocket || this.reconnectTimer)) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket();
       return;
@@ -205,9 +205,9 @@ export class App {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
 
-    if (this.healthcheckTimer) {
-      clearInterval(this.healthcheckTimer);
-      this.healthcheckTimer = undefined;
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = undefined;
     }
 
     if (this.reconnectTimer) {
