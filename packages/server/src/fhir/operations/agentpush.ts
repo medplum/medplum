@@ -66,7 +66,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
     return;
   }
 
-  const device = await getDevice(repo, params.destination);
+  const device = await getDevice(repo, params);
   if (!device) {
     sendOutcome(res, badRequest('Destination device not found'));
     return;

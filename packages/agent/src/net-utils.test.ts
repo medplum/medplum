@@ -90,7 +90,7 @@ describe('Agent Net Utils', () => {
       clearTimeout(timer);
     });
 
-    test('Valid ping', async () => {
+    test('Valid ping to IP', async () => {
       let resolve: (value: AgentMessage) => void;
       let reject: (error: Error) => void;
 
@@ -127,7 +127,44 @@ describe('Agent Net Utils', () => {
       });
     });
 
-    test('Non-IP remote', async () => {
+    test('Valid ping to domain name', async () => {
+      let resolve: (value: AgentMessage) => void;
+      let reject: (error: Error) => void;
+
+      const messageReceived = new Promise<AgentMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      onMessage = (command) => resolve(command);
+      expect(wsClient).toBeDefined();
+
+      const callback = generateId();
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            contentType: ContentType.PING,
+            remote: 'localhost',
+            callback,
+            body: 'PING',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      timer = setTimeout(() => {
+        reject(new Error('Timeout'));
+      }, 3500);
+
+      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+        type: 'agent:transmit:response',
+        callback,
+        statusCode: 200,
+        body: expect.stringMatching(/ping statistics/),
+      });
+    });
+
+    test('Invalid remote', async () => {
       let resolve: (value: AgentMessage) => void;
       let reject: (error: Error) => void;
 
@@ -162,7 +199,7 @@ describe('Agent Net Utils', () => {
         contentType: ContentType.TEXT,
         statusCode: 500,
         callback,
-        body: expect.stringMatching(/invalid ip/i),
+        body: expect.stringMatching(/invalid host/i),
       });
     });
 
