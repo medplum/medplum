@@ -906,7 +906,9 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
-    sessionStorage.clear();
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+    }
     this.clearActiveLogin();
   }
 
@@ -3310,7 +3312,7 @@ export class MedplumClient extends EventTarget {
     if (this.refresh()) {
       return this.request(method, url, options);
     }
-    this.clearActiveLogin();
+    this.clear();
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }

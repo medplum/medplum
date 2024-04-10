@@ -114,6 +114,7 @@ All three implementations types will have tokens or client credentials with syst
 - Consider disabling local storage on device for shared workstations or in accordance with institution policy.
 - Organizations with mobile devices or laptops should enable a Mobile Device Management (MDM) solution for workstations
 - [IP restrictions](/docs/access/ip-access-rules) can be enabled when especially sensitive data, such as personal health information (PHI), is being accessed.
+- Reusing the same `MedplumClient` instance for different users is discouraged. Consider creating new instances of `MedplumClient` instead.
 
 ### Server Authentication
 
@@ -122,6 +123,7 @@ All three implementations types will have tokens or client credentials with syst
 - Restrict access to host via VPC or other mechanism - do not allow access from general internet.
 - Use a secrets management to store access keys - do not store credentials on disk.
 - Ensure host is patched and has security updates applied regularly.
+- Consider creating a new instance of `MedplumClient`, particularly when switching to another user.
 
 ### Host authentication
 
