@@ -64,7 +64,7 @@ describe('ToolsPage', () => {
     expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('IP Address'), { target: { value: '8.8.8.8' } });
+      fireEvent.change(screen.getByLabelText('IP Address / Hostname'), { target: { value: '8.8.8.8' } });
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
@@ -80,7 +80,7 @@ describe('ToolsPage', () => {
     expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('IP Address'), { target: { value: 'abc123' } });
+      fireEvent.change(screen.getByLabelText('IP Address / Hostname'), { target: { value: 'abc123' } });
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
@@ -98,7 +98,7 @@ describe('ToolsPage', () => {
     expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('IP Address'), { target: { value: '8.8.8.8' } });
+      fireEvent.change(screen.getByLabelText('IP Address / Hostname'), { target: { value: '8.8.8.8' } });
       fireEvent.click(screen.getByLabelText('Ping'));
     });
 
@@ -125,7 +125,7 @@ describe('ToolsPage', () => {
     expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('IP Address'), { target: { value: '8.8.8.8' } });
+      fireEvent.change(screen.getByLabelText('IP Address / Hostname'), { target: { value: '8.8.8.8' } });
     });
 
     await act(async () => {
@@ -144,7 +144,7 @@ describe('ToolsPage', () => {
     pushToAgentSpy.mockRestore();
   });
 
-  test('No IP entered for ping', async () => {
+  test('No host entered for ping', async () => {
     const pushToAgentSpy = jest.spyOn(medplum, 'pushToAgent');
 
     // load agent page
