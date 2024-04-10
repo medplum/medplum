@@ -10,7 +10,7 @@
         "active": true,
         "name": [{ "family": "Simpson", "given": ["Homer"] }],
         "gender": "male",
-        "birthdate": "1956-05-12",
+        "birthDate": "1956-05-12",
         "address": [
           {
             "use": "home",

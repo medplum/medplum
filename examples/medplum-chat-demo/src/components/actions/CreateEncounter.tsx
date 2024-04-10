@@ -95,7 +95,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
       code: 'VR',
       display: 'virtual',
     },
-    subject: props.communication.subject,
+    subject: props.communication.subject ?? undefined,
     participant: attenders,
     period: period,
   };
@@ -105,11 +105,9 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
       <Button fullWidth onClick={handlers.toggle}>
         Create Encounter
       </Button>
-      <Modal opened={opened} onClose={handlers.close} title="Create a linked Encounter">
+      <Modal opened={opened} onClose={handlers.close} title="Create a linked Encounter" size="lg">
         <ResourceForm defaultValue={defaultEncounter} onSubmit={onEncounterSubmit} />
       </Modal>
     </div>
   );
 }
-
-// A function that links a Communication to an Encounter using the Communication.encounter field. For more details see https://www.medplum.com/docs/communications/async-encounters

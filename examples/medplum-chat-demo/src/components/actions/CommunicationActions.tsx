@@ -17,7 +17,7 @@ export function CommunicationActions(props: CommunicationActionsProps): JSX.Elem
       <EditThreadTopic communication={props.communication} onChange={props.onChange} />
       <AddParticipant communication={props.communication} onChange={props.onChange} />
       <CloseOpenThread communication={props.communication} onChange={props.onChange} />
-      {props.communication.status === 'completed' ? (
+      {props.communication.status === 'completed' && props.communication.subject ? (
         <CreateEncounter communication={props.communication} onChange={props.onChange} />
       ) : null}
     </Stack>

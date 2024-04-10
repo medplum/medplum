@@ -36,7 +36,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
           </GridCol>
           <GridCol span={5}>
             <Paper m="md" h="600px">
-              <ThreadChat thread={props.thread} />
+              <ThreadChat thread={props.thread} inputDisabled={props.thread.status === 'completed'} />
             </Paper>
           </GridCol>
           <GridCol span={3}>
@@ -61,26 +61,28 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
         </Grid>
       ) : (
         <Grid gutter="xs">
-          <GridCol span={8}>
-            <ThreadChat thread={props.thread} />
+          <GridCol span={6}>
+            <Paper h="480px" m="md">
+              <ThreadChat thread={props.thread} inputDisabled={props.thread.status === 'completed'} />
+            </Paper>
           </GridCol>
-          <GridCol span={4}>
-            <Paper m="md">
+          <GridCol span={6}>
+            <Paper>
               <CommunicationActions communication={props.thread} onChange={props.onChange} />
-              <Paper>
-                <Stack m="md" p="md">
-                  <Title>Participants</Title>
-                  <List>
-                    {props.thread.recipient?.map((participant, index) => (
-                      <List.Item key={index}>
-                        <Anchor onClick={() => navigate(`/${participant.reference}`)}>
-                          {participant.display ?? participant.reference}
-                        </Anchor>
-                      </List.Item>
-                    ))}
-                  </List>
-                </Stack>
-              </Paper>
+            </Paper>
+            <Paper>
+              <Stack m="md" p="md">
+                <Title>Participants</Title>
+                <List>
+                  {props.thread.recipient?.map((participant, index) => (
+                    <List.Item key={index}>
+                      <Anchor onClick={() => navigate(`/${participant.reference}`)}>
+                        {participant.display ?? participant.reference}
+                      </Anchor>
+                    </List.Item>
+                  ))}
+                </List>
+              </Stack>
             </Paper>
           </GridCol>
         </Grid>
