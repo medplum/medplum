@@ -1,11 +1,21 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Communication, Encounter, Period, Practitioner, Resource } from '@medplum/fhirtypes';
+import { createReference, normalizeErrorString, parseReference, PatchOperation } from '@medplum/core';
+import {
+  Communication,
+  Encounter,
+  Group,
+  Patient,
+  Period,
+  Practitioner,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAttenders } from '../../utils';
 
 interface CreateEncounterProps {
@@ -15,26 +25,26 @@ interface CreateEncounterProps {
 
 export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
   const medplum = useMedplum();
+  const navigate = useNavigate();
   const profile = useMedplumProfile() as Practitioner;
   const [opened, handlers] = useDisclosure(false);
   const [period, setPeriod] = useState<Period>();
 
   const onEncounterSubmit = async (resource: Resource): Promise<void> => {
-    const encounter = resource as Encounter;
-    encounter.period = period;
+    const encounterData = resource as Encounter;
+    encounterData.period = period;
 
     try {
       // Create the encounter and update the communication to be linked to it. For more details see https://www.medplum.com/docs/communications/async-encounters
-      await medplum
-        .createResource(encounter)
-        .then((encounter) => linkEncounterToCommunication(encounter, props.communication));
-
+      const encounter = await medplum.createResource(encounterData);
+      linkEncounterToCommunication(encounter, props.communication);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Encounter created.',
       });
       handlers.close();
+      navigate(`/Encounter/${encounter.id}`);
     } catch (err) {
       showNotification({
         icon: <IconCircleOff />,
@@ -85,6 +95,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
   }, [props.communication]);
 
   const attenders = getAttenders(props.communication.recipient, profile, false);
+  const subject = getEncounterSubject(props.communication);
 
   // A default encounter to pre-fill the form with
   const defaultEncounter: Encounter = {
@@ -95,7 +106,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
       code: 'VR',
       display: 'virtual',
     },
-    subject: props.communication.subject ?? undefined,
+    subject: subject,
     participant: attenders,
     period: period,
   };
@@ -110,4 +121,28 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
       </Modal>
     </div>
   );
+}
+
+function getEncounterSubject(thread: Communication): Reference<Patient | Group> | undefined {
+  // If the thread has a subject, this will be the Encounter subject
+  if (thread.subject) {
+    return thread.subject;
+  }
+
+  if (!thread.recipient || thread.recipient.length === 0) {
+    return undefined;
+  }
+
+  // Filter for only the recipients that are patients
+  const patients = thread.recipient.filter(
+    (recipient) => parseReference(recipient)[0] === 'Patient'
+  ) as Reference<Patient>[];
+
+  // If there are none, or more than one do not return a subject
+  if (patients.length !== 1) {
+    return undefined;
+  }
+
+  // Return a the patient if there is only one
+  return patients[0];
 }

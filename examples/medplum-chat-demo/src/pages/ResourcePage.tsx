@@ -1,12 +1,19 @@
-import { Tabs, Title } from '@mantine/core';
+import { Grid, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
+import { getDisplayString, getReferenceString, normalizeErrorString, parseReference } from '@medplum/core';
+import { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import {
+  Document,
+  PatientSummary,
+  ResourceForm,
+  ResourceHistoryTable,
+  ResourceTable,
+  useMedplum,
+} from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { cleanResource } from '../utils';
+import { cleanResource, shouldShowPatientSummary } from '../utils';
 
 /**
  * This is an example of a generic "Resource Display" page.
@@ -60,26 +67,37 @@ export function ResourcePage(): JSX.Element | null {
   }
 
   return (
-    <Document key={getReferenceString(resource)}>
-      <Title>{getDisplayString(resource)}</Title>
-      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
-        <Tabs.List>
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab} value={tab.toLowerCase()}>
-              {tab}
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panel value="details">
-          <ResourceTable value={resource} />
-        </Tabs.Panel>
-        <Tabs.Panel value="edit">
-          <ResourceForm defaultValue={resource} onSubmit={handleResourceEdit} />
-        </Tabs.Panel>
-        <Tabs.Panel value="history">
-          <ResourceHistoryTable resourceType={resourceType} id={id} />
-        </Tabs.Panel>
-      </Tabs>
-    </Document>
+    <div>
+      <Grid>
+        {resource.resourceType === 'Encounter' && shouldShowPatientSummary(resource) ? (
+          <Grid.Col span={4}>
+            <PatientSummary patient={resource.subject as Reference<Patient>} m="sm" />
+          </Grid.Col>
+        ) : null}
+        <Grid.Col span={resource.resourceType === 'Encounter' && shouldShowPatientSummary(resource) ? 8 : 12}>
+          <Document m="sm">
+            <Title>{getDisplayString(resource)}</Title>
+            <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
+              <Tabs.List>
+                {tabs.map((tab) => (
+                  <Tabs.Tab key={tab} value={tab.toLowerCase()}>
+                    {tab}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+              <Tabs.Panel value="details">
+                <ResourceTable value={resource} />
+              </Tabs.Panel>
+              <Tabs.Panel value="edit">
+                <ResourceForm defaultValue={resource} onSubmit={handleResourceEdit} />
+              </Tabs.Panel>
+              <Tabs.Panel value="history">
+                <ResourceHistoryTable resourceType={resourceType} id={id} />
+              </Tabs.Panel>
+            </Tabs>
+          </Document>
+        </Grid.Col>
+      </Grid>
+    </div>
   );
 }

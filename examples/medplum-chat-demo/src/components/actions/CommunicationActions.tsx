@@ -1,4 +1,5 @@
 import { Stack, Title } from '@mantine/core';
+import { parseReference } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { AddParticipant } from './AddParticipant';
 import { CloseOpenThread } from './CloseOpenThread';
@@ -17,9 +18,24 @@ export function CommunicationActions(props: CommunicationActionsProps): JSX.Elem
       <EditThreadTopic communication={props.communication} onChange={props.onChange} />
       <AddParticipant communication={props.communication} onChange={props.onChange} />
       <CloseOpenThread communication={props.communication} onChange={props.onChange} />
-      {props.communication.status === 'completed' && props.communication.subject ? (
+      {props.communication.status === 'completed' && checkThreadForPatient(props.communication) ? (
         <CreateEncounter communication={props.communication} onChange={props.onChange} />
       ) : null}
     </Stack>
   );
+}
+
+function checkThreadForPatient(thread: Communication): boolean {
+  const recipients = thread.recipient;
+  if (!recipients || recipients.length === 0) {
+    return false;
+  }
+
+  for (const recipient of recipients) {
+    if (parseReference(recipient)[0] === 'Patient') {
+      return true;
+    }
+  }
+
+  return false;
 }

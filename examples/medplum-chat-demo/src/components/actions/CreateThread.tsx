@@ -57,7 +57,9 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
     // The suggested way to handle threads is by including all participants in the `recipients` field. This gets all people that are a entered as a recipient
     const profileReference = createReference(profile);
 
-    const recipients = participants?.map((participant) => participant.valueReference) as Communication['recipient'];
+    const recipients = participants
+      ?.filter((participant) => participant.valueReference?.reference !== profileReference.reference)
+      .map((participant) => participant.valueReference) as Communication['recipient'];
 
     if (!topic || !recipients) {
       throw new Error('Please ensure a valid input.');
