@@ -1,6 +1,6 @@
 import { Grid, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getDisplayString, getReferenceString, normalizeErrorString, parseReference } from '@medplum/core';
+import { getDisplayString, normalizeErrorString } from '@medplum/core';
 import { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   Document,

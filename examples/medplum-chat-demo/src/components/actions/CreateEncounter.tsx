@@ -37,7 +37,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
     try {
       // Create the encounter and update the communication to be linked to it. For more details see https://www.medplum.com/docs/communications/async-encounters
       const encounter = await medplum.createResource(encounterData);
-      linkEncounterToCommunication(encounter, props.communication);
+      linkEncounterToCommunication(encounter, props.communication).catch(console.error);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
