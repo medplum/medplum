@@ -18,10 +18,9 @@ import { globalLogger } from '../logger';
  */
 export async function sendEmail(repo: Repository, options: Mail.Options): Promise<void> {
   const config = getConfig();
-  const fromAddress = config.supportEmail;
+  const fromAddress = getFromAddress(options);
   const toAddresses = buildAddresses(options.to);
 
-  // Always set the from and sender to the support email address
   options.from = fromAddress;
   options.sender = fromAddress;
 
@@ -40,6 +39,26 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
   } else {
     await sendEmailViaSes(options);
   }
+}
+
+/**
+ * Returns the from address to use.
+ * If the user specified a from address, it must be an approved sender.
+ * Otherwise uses the support email address.
+ * @param options - The user specified nodemailer options.
+ * @returns The from address to use.
+ */
+function getFromAddress(options: Mail.Options): string {
+  const config = getConfig();
+
+  if (options.from) {
+    const fromAddress = addressToString(options.from);
+    if (fromAddress && config.approvedSenderEmails?.split(',')?.includes(fromAddress)) {
+      return fromAddress;
+    }
+  }
+
+  return config.supportEmail;
 }
 
 /**
@@ -158,7 +177,7 @@ async function sendEmailViaSmpt(smtpConfig: MedplumSmtpConfig, options: Mail.Opt
  */
 async function sendEmailViaSes(options: Mail.Options): Promise<void> {
   const config = getConfig();
-  const fromAddress = config.supportEmail;
+  const fromAddress = addressToString(options.from);
   const toAddresses = buildAddresses(options.to);
   const ccAddresses = buildAddresses(options.cc);
   const bccAddresses = buildAddresses(options.bcc);
