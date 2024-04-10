@@ -7,6 +7,7 @@ import {
   LogLevel,
   Logger,
   MedplumClient,
+  isValidHostname,
   normalizeErrorString,
 } from '@medplum/core';
 import { Endpoint, Reference } from '@medplum/fhirtypes';
@@ -157,7 +158,7 @@ export class App {
           case 'push':
           case 'agent:transmit:request':
             if (command.contentType === ContentType.PING) {
-              await this.tryPingIp(command);
+              await this.tryPingHost(command);
             } else {
               this.pushMessage(command);
             }
@@ -279,22 +280,26 @@ export class App {
   }
 
   // This covers Windows, Linux, and Mac
-  private getPingCommand(ip: string, count = 1): string {
-    return platform() === 'win32' ? `ping /n ${count} ${ip}` : `ping -c ${count} ${ip}`;
+  private getPingCommand(host: string, count = 1): string {
+    return platform() === 'win32' ? `ping /n ${count} ${host}` : `ping -c ${count} ${host}`;
   }
 
-  private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
+  private async tryPingHost(message: AgentTransmitRequest): Promise<void> {
     try {
       if (message.body && !message.body.startsWith('PING')) {
         const warnMsg =
           'Message body present but unused. Body for a ping request should be empty or a message formatted as `PING[ count]`.';
         this.log.warn(warnMsg);
       }
-      if (!isIPv4(message.remote)) {
-        let errMsg = `Attempted to ping invalid IP: ${message.remote}`;
-        if (isIPv6(message.remote)) {
-          errMsg = `Attempted to ping an IPv6 address: ${message.remote}\n\nIPv6 is currently unsupported.`;
-        }
+
+      if (isIPv6(message.remote)) {
+        const errMsg = `Attempted to ping an IPv6 address: ${message.remote}\n\nIPv6 is currently unsupported.`;
+        this.log.error(errMsg);
+        throw new Error(errMsg);
+      }
+
+      if (!(isIPv4(message.remote) || isValidHostname(message.remote))) {
+        const errMsg = `Attempted to ping an invalid host.\n\n"${message.remote}" is not a valid IPv4 address or a resolvable hostname.`;
         this.log.error(errMsg);
         throw new Error(errMsg);
       }
@@ -331,7 +336,7 @@ export class App {
         body: result,
       } satisfies AgentTransmitResponse);
     } catch (err) {
-      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_IP_GIVEN'}: ${normalizeErrorString(err)}`);
+      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_HOST_GIVEN'}: ${normalizeErrorString(err)}`);
       this.addToWebSocketQueue({
         type: 'agent:transmit:response',
         channel: message.channel,

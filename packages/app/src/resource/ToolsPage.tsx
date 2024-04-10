@@ -31,14 +31,14 @@ export function ToolsPage(): JSX.Element | null {
 
   const handlePing = useCallback(
     (formData: Record<string, string>) => {
-      const ip = formData.ip;
+      const host = formData.host;
       const pingCount = formData.pingCount || 1;
-      if (!ip) {
+      if (!host) {
         return;
       }
       setPinging(true);
       medplum
-        .pushToAgent(reference, ip, `PING ${pingCount}`, ContentType.PING, true)
+        .pushToAgent(reference, host, `PING ${pingCount}`, ContentType.PING, true)
         .then((pingResult: string) => setLastPing(pingResult))
         .catch((err: unknown) => showError(normalizeErrorString(err)))
         .finally(() => setPinging(false));
@@ -89,15 +89,16 @@ export function ToolsPage(): JSX.Element | null {
       <Divider my="lg" />
       <Title order={2}>Ping from Agent</Title>
       <p>
-        Send a ping command from the agent to an IP address. Use this tool to troubleshoot local network connectivity.
+        Send a ping command from the agent to a valid IP address or hostname. Use this tool to troubleshoot local
+        network connectivity.
       </p>
       <Form onSubmit={handlePing}>
         <Group>
           <TextInput
-            id="ip"
-            name="ip"
+            id="host"
+            name="host"
             placeholder="ex. 127.0.0.1"
-            label="IP Address"
+            label="IP Address / Hostname"
             rightSection={
               <ActionIcon size={24} radius="xl" variant="filled" type="submit" aria-label="Ping" loading={pinging}>
                 <IconRouter style={{ width: '1rem', height: '1rem' }} stroke={1.5} />

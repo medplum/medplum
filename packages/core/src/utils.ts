@@ -1139,3 +1139,36 @@ export function getQueryString(query: QueryTypes): string {
   // Source: https://url.spec.whatwg.org/#dom-urlsearchparams-urlsearchparams:~:text=6.2.%20URLSearchParams,)%20init%20%3D%20%22%22)%3B
   return new URLSearchParams(query).toString();
 }
+
+export const VALID_HOSTNAME_REGEX =
+  /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-_]*[A-Za-z0-9])$/;
+
+/**
+ * Tests whether a given input is a valid hostname.
+ *
+ * __NOTE: Does not validate that the input is a valid domain name, only a valid hostname.__
+ *
+ * @param input - The input to test.
+ * @returns True if `input` is a valid hostname, otherwise returns false.
+ *
+ * ### Valid matches:
+ * - foo
+ * - foo.com
+ * - foo.bar.com
+ * - foo.org
+ * - foo.bar.co.uk
+ * - localhost
+ * - LOCALHOST
+ * - foo-bar-baz
+ * - foo_bar
+ * - foobar123
+ *
+ * ### Invalid matches:
+ * - foo.com/bar
+ * - https://foo.com
+ * - foo_-bar_-
+ * - foo | rm -rf /
+ */
+export function isValidHostname(input: string): boolean {
+  return VALID_HOSTNAME_REGEX.test(input);
+}
