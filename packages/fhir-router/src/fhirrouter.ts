@@ -151,7 +151,7 @@ export async function updateResourceImpl<T extends Resource>(
     return [badRequest('Incorrect resource type')];
   }
   if (resource.id !== id) {
-    return [badRequest('Incorrect ID')];
+    return [badRequest('Incorrect resource ID')];
   }
   const result = await repo.updateResource(resource, options);
   return [allOk, result];

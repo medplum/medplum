@@ -222,6 +222,9 @@ class BatchProcessor {
    */
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
     const [outcome, resource] = await this.performBatchOperation(entry);
+    if (!isOk(outcome) && this.bundle.type === 'transaction') {
+      throw new OperationOutcomeError(outcome);
+    }
     return buildBundleResponse(outcome, resource);
   }
 
