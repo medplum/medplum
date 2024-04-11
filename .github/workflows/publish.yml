@@ -8,6 +8,7 @@ jobs:
   build_and_check:
     name: publish
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       NODE_VERSION: '20'
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -93,6 +94,7 @@ jobs:
 
   build_agent_win64:
     runs-on: windows-latest
+    timeout-minutes: 45
     env:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -168,6 +170,7 @@ jobs:
 
   build_agent_linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
