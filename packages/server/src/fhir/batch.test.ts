@@ -293,7 +293,6 @@ describe('Batch and Transaction processing', () => {
       ],
     });
 
-    console.log(results.entry?.[6]?.response?.outcome?.issue);
     expect(results.entry?.[6]?.response?.status).toEqual('200');
     expect(results.entry?.[6]?.resource).toMatchObject<Partial<RelatedPerson>>({
       resourceType: 'RelatedPerson',

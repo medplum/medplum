@@ -170,7 +170,7 @@ describe('FHIR Router', () => {
       },
       repo
     );
-    expect(res).toMatchObject(badRequest('Incorrect ID'));
+    expect(res).toMatchObject(badRequest('Incorrect resource ID'));
   });
 
   test('Update incorrect precondition', async () => {
