@@ -10,6 +10,7 @@ import {
   normalizeOperationOutcome,
   allOk,
   notFound,
+  splitN,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { FhirResponse, FhirRouter, createResourceImpl, updateResourceImpl } from './fhirrouter';
@@ -76,8 +77,12 @@ class BatchProcessor {
         count++;
         resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
       } catch (err) {
-        errors++;
-        resultEntries[entryIndex] = buildBundleResponse(normalizeOperationOutcome(err));
+        if (bundleType !== 'transaction') {
+          errors++;
+          resultEntries[entryIndex] = buildBundleResponse(normalizeOperationOutcome(err));
+          continue;
+        }
+        throw err;
       }
     }
 
@@ -221,8 +226,10 @@ class BatchProcessor {
   }
 
   private async performBatchOperation(entry: BundleEntry): Promise<FhirResponse> {
-    const route = this.router.find(entry.request?.method as HttpMethod, entry.request?.url as string);
+    const requestPath = splitN(entry.request?.url as string, '?', 2)[0];
+    const route = this.router.find(entry.request?.method as HttpMethod, requestPath);
     const params = route?.params;
+
     switch (route?.data?.interaction) {
       case 'delete': {
         if (!params?.id) {
