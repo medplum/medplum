@@ -241,6 +241,63 @@ describe('FHIR Repo', () => {
       expect(patient2.name?.[1]?.family).toEqual('Jones');
     }));
 
+  test('Patch patient', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Suzy'], family: 'Smith' }],
+      });
+      const result = await systemRepo.patchResource('Patient', patient.id as string, [
+        {
+          op: 'add',
+          path: '/active',
+          value: true,
+        },
+      ]);
+
+      expect(result.id).toEqual(patient.id);
+      expect(result.meta?.versionId).not.toEqual(patient.meta?.versionId);
+      expect((result as Patient).active).toEqual(true);
+    }));
+
+  test('Patch patient updating ID field', () =>
+    withTestContext(async () => {
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Suzy'], family: 'Smith' }],
+      });
+      try {
+        await systemRepo.patchResource('Patient', patient1.id as string, [
+          {
+            op: 'replace',
+            path: '/id',
+            value: randomUUID(),
+          },
+        ]);
+      } catch (err) {
+        expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Incorrect Id'));
+      }
+    }));
+
+  test('Patch patient updating resourceType field', () =>
+    withTestContext(async () => {
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Suzy'], family: 'Smith' }],
+      });
+      try {
+        await systemRepo.patchResource('Patient', patient1.id as string, [
+          {
+            op: 'replace',
+            path: '/resourceType',
+            value: 'Appointment',
+          },
+        ]);
+      } catch (err) {
+        expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Incorrect Resource Type'));
+      }
+    }));
+
   test('Create Patient with custom ID', async () => {
     const { repo } = await createTestProject({ withRepo: true });
 

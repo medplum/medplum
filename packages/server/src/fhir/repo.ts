@@ -1019,6 +1019,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     try {
       const resource = await this.readResourceImpl(resourceType, id);
 
+      if (patch.find((operation) => operation.path === '/resourceType')) {
+        throw new OperationOutcomeError(badRequest('Incorrect Resource Type'));
+      }
+      if (patch.find((operation) => operation.path === '/id')) {
+        throw new OperationOutcomeError(badRequest('Incorrect Id'));
+      }
+
       try {
         const patchResult = applyPatch(resource, patch).filter(Boolean);
         if (patchResult.length > 0) {
