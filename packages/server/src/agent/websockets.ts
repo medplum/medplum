@@ -17,8 +17,9 @@ import { executeBot } from '../fhir/operations/execute';
 import { heartbeat } from '../heartbeat';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis, getRedisSubscriber } from '../redis';
+import { AgentConnectionState, AgentInfo } from './utils';
 
-const STATUS_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
+const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
 /**
  * Handles a new WebSocket connection to the agent service.
@@ -51,11 +52,11 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
             break;
 
           case 'agent:heartbeat:request':
-            sendMessage({ type: 'agent:heartbeat:response' });
+            sendMessage({ type: 'agent:heartbeat:response', version: 'TODO' });
             break;
 
           case 'agent:heartbeat:response':
-            await updateStatus('connected');
+            await updateAgentInfo({ status: AgentConnectionState.CONNECTED, version: command.version });
             break;
 
           // @ts-expect-error - Deprecated message type
@@ -83,7 +84,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   socket.on(
     'close',
     AsyncLocalStorage.bind(async () => {
-      await updateStatus('disconnected');
+      await updateAgentStatus(AgentConnectionState.DISCONNECTED);
       heartbeat.removeEventListener('heartbeat', heartbeatHandler);
       redisSubscriber?.disconnect();
       redisSubscriber = undefined;
@@ -129,7 +130,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     sendMessage({ type: 'agent:connect:response' });
 
     // Update the agent status in Redis
-    await updateStatus('connected');
+    await updateAgentStatus(AgentConnectionState.CONNECTED);
   }
 
   /**
@@ -204,23 +205,36 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   }
 
   /**
-   * Updates the agent status in Redis.
-   * This is used by the Agent "$status" operation to monitor agent status.
+   * Updates the agent info in Redis.
+   * This is used by the Agent "$status" operation to monitor agent status and other info.
    * See packages/server/src/fhir/operations/agentstatus.ts for more details.
-   * @param status - The new status.
+   * @param info - The latest info received from the Agent.
    */
-  async function updateStatus(status: string): Promise<void> {
+  async function updateAgentInfo(info: AgentInfo): Promise<void> {
     if (!agentId) {
       // Not connected
     }
     await getRedis().set(
-      `medplum:agent:${agentId}:status`,
+      `medplum:agent:${agentId}:info`,
       JSON.stringify({
-        status,
+        ...info,
         lastUpdated: new Date().toISOString(),
-      }),
+      } satisfies AgentInfo),
       'EX',
-      STATUS_EX_SECONDS
+      INFO_EX_SECONDS
     );
+  }
+
+  async function updateAgentStatus(status: AgentConnectionState): Promise<void> {
+    if (!agentId) {
+      // Not connected
+    }
+    const redis = getRedis();
+    const lastInfo = await redis.get(`medplum:agent:${agentId}:info`);
+    if (!lastInfo) {
+      await updateAgentInfo({ status, version: 'unknown', lastUpdated: new Date().toISOString() });
+      return;
+    }
+    await updateAgentInfo({ ...(JSON.parse(lastInfo) as AgentInfo), status });
   }
 }

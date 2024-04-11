@@ -21,12 +21,16 @@ import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { AgentSerialPortChannel } from './serialport';
 
+// The value gets replaced at build time via esbuild `define`
+const MEDPLUM_VERSION = process.env.__MEDPLUM_VERSION__ ?? 'unknown';
+
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     exec(command, options, (ex: ExecException | null, stdout: string, stderr: string) => {
       if (ex) {
         const err = ex as Error;
         reject(err);
+        return;
       }
       resolve({ stdout, stderr });
     });
@@ -144,7 +148,7 @@ export class App {
             this.startWebSocketWorker();
             break;
           case 'agent:heartbeat:request':
-            await this.sendToWebSocket({ type: 'agent:heartbeat:response' });
+            await this.sendToWebSocket({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION });
             break;
           case 'agent:heartbeat:response':
             // Do nothing
