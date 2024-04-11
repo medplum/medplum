@@ -24,7 +24,7 @@ export function AddSubject(props: AddSubjectProps): JSX.Element {
     if (!subjectData) {
       throw new Error('Invalid subject');
     }
-    addSubjectToThread(subjectData);
+    addSubjectToThread(subjectData).catch(console.error);
     handlers.close();
   };
 
