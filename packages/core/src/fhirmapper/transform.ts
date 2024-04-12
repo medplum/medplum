@@ -13,7 +13,7 @@ import { generateId } from '../crypto';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toJsBoolean, toTypedValue } from '../fhirpath/utils';
 import { TypedValue } from '../types';
-import { tryGetDataType } from '../typeschema/types';
+import { InternalSchemaElement, tryGetDataType } from '../typeschema/types';
 import { conceptMapTranslate } from './conceptmaptranslate';
 
 interface TransformContext {
@@ -346,7 +346,12 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
 
   if (!target.transform) {
     if (isArray || originalValue === undefined) {
-      targetValue = [toTypedValue({})];
+      const types = tryGetPropertySchema(targetContext, target.element as string)?.type;
+      if (types?.length === 1) {
+        targetValue = [{ type: types[0].code, value: {} }];
+      } else {
+        targetValue = [toTypedValue({})];
+      }
     } else {
       targetValue = [toTypedValue(originalValue)];
     }
@@ -408,9 +413,18 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
  * @internal
  */
 function isArrayProperty(targetContext: TypedValue, element: string): boolean | undefined {
-  const targetContextTypeDefinition = tryGetDataType(targetContext.type);
-  const targetPropertyTypeDefinition = targetContextTypeDefinition?.elements?.[element];
-  return targetPropertyTypeDefinition?.isArray;
+  return tryGetPropertySchema(targetContext, element)?.isArray;
+}
+
+/**
+ * Returns the type schema
+ * @param targetContext - The target context.
+ * @param element - The element to check (i.e., the property name).
+ * @returns the type schema for the target element, if it is loeaded
+ * @internal
+ */
+function tryGetPropertySchema(targetContext: TypedValue, element: string): InternalSchemaElement | undefined {
+  return tryGetDataType(targetContext.type)?.elements?.[element];
 }
 
 /**
