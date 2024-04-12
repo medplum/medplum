@@ -6,6 +6,7 @@ import {
   Hl7Message,
   LogLevel,
   Logger,
+  MEDPLUM_VERSION,
   MedplumClient,
   isValidHostname,
   normalizeErrorString,
@@ -20,9 +21,6 @@ import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { AgentSerialPortChannel } from './serialport';
-
-// The value gets replaced at build time via esbuild `define`
-const MEDPLUM_VERSION = process.env.__MEDPLUM_VERSION__ ?? 'unknown';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
