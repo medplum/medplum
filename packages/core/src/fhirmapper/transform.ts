@@ -345,15 +345,12 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
   const isArray = isArrayProperty(targetContext, target.element as string) || Array.isArray(originalValue);
 
   if (!target.transform) {
+    const elementTypes = tryGetPropertySchema(targetContext, target.element as string)?.type;
+    const elementType = elementTypes?.length === 1 ? elementTypes[0].code : undefined;
     if (isArray || originalValue === undefined) {
-      const types = tryGetPropertySchema(targetContext, target.element as string)?.type;
-      if (types?.length === 1) {
-        targetValue = [{ type: types[0].code, value: {} }];
-      } else {
-        targetValue = [toTypedValue({})];
-      }
+      targetValue = [elementType ? { type: elementType, value: {} } : toTypedValue({})];
     } else {
-      targetValue = [toTypedValue(originalValue)];
+      targetValue = [elementType ? { type: elementType, value: originalValue } : toTypedValue(originalValue)];
     }
   } else {
     switch (target.transform) {
