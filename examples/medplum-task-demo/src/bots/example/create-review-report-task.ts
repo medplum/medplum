@@ -15,10 +15,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
     },
     status: 'ready',
     intent: 'order',
+    priority: 'asap',
     focus: {
       // The focus of the resource will be the DiagnosticReport
       reference: getReferenceString(report),
     },
+    for: report.subject,
     // The performer type is a medical practitioner. This will ensure it is assigned to the correct queue so a doctor can review it.
     performerType: [
       {
@@ -26,7 +28,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
           {
             system: 'http://snomed.info/sct',
             code: '158965000',
-            display: 'Medical practitioner (occupation)',
+            display: 'Doctor',
           },
         ],
       },
