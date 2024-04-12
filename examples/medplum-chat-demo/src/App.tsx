@@ -1,8 +1,8 @@
-import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
-import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconFileImport, IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
+import { formatSearchQuery, getReferenceString, Operator, ProfileResource } from '@medplum/core';
+import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconClipboardCheck, IconFileImport, IconMail, IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 import { CommunicationPage } from './pages/CommunicationPage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
@@ -14,6 +14,7 @@ import { UploadDataPage } from './pages/UploadDataPage';
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const navigate = useNavigate();
 
   const profileReference = (profile && getReferenceString(profile)) as string;
   const userLinks = [
@@ -48,6 +49,36 @@ export function App(): JSX.Element | null {
           links: [{ icon: <IconFileImport />, label: 'Upload Example Data', href: 'upload/example' }],
         },
       ]}
+      notifications={
+        profile && (
+          <>
+            <NotificationIcon
+              label="Mail"
+              resourceType="Communication"
+              countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
+              subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
+              iconComponent={<IconMail />}
+              onClick={() =>
+                navigate(
+                  `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`
+                )
+              }
+            />
+            <NotificationIcon
+              label="Tasks"
+              resourceType="Task"
+              countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
+              subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
+              iconComponent={<IconClipboardCheck />}
+              onClick={() =>
+                navigate(
+                  `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
+                )
+              }
+            />
+          </>
+        )
+      }
     >
       <Suspense fallback={<Loading />}>
         <Routes>
