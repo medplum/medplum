@@ -12,11 +12,6 @@ const tabs = [
   { id: 'history', url: 'history', label: 'History' },
 ];
 
-/**
- * This is an example of a generic "Resource Display" page.
- * It uses the Medplum `<ResourceTable>` component to display a resource.
- * @returns A React component that displays a resource.
- */
 export function ResourcePage(): JSX.Element | null {
   const navigate = useNavigate();
   const medplum = useMedplum();
@@ -37,10 +32,6 @@ export function ResourcePage(): JSX.Element | null {
     }
   }, [medplum, resourceType, id]);
 
-  /**
-   * Handles a tab change event.
-   * @param newTabName - The new tab name.
-   */
   const onTabChange = useCallback(
     (newTabName: string | null): void => {
       if (!newTabName) {
