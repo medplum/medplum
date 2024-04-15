@@ -51,7 +51,8 @@ describe('Get WebSocket binding token', () => {
 
       const params = res2.body as Parameters;
       expect(params.resourceType).toEqual('Parameters');
-      expect(params.parameter?.length).toBeGreaterThanOrEqual(3);
+      expect(params.parameter?.length).toBeDefined();
+      expect([3, 4]).toContain(params.parameter?.length);
       expect(params.parameter?.[0]).toBeDefined();
       expect(params.parameter?.[0]?.name).toEqual('token');
 
