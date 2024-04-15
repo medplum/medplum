@@ -4,7 +4,6 @@ import { createHmac, createPrivateKey, randomBytes } from 'crypto';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { SignJWT } from 'jose';
 import { basename, extname, resolve } from 'path';
-import internal from 'stream';
 import tar from 'tar';
 import { FileSystemStorage } from './storage';
 
@@ -211,7 +210,7 @@ function escapeRegex(str: string): string {
  * @param destinationDir - The destination directory where all files will be extracted.
  * @returns A tar file extractor.
  */
-export function safeTarExtractor(destinationDir: string): internal.Writable {
+export function safeTarExtractor(destinationDir: string): NodeJS.WritableStream {
   const MAX_FILES = 100;
   const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -233,7 +232,9 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
 
       return true;
     },
-  });
+
+    // Temporary cast for tar issue: https://github.com/isaacs/node-tar/issues/409
+  }) as ReturnType<typeof tar.x> & NodeJS.WritableStream;
 }
 
 export function getUnsupportedExtension(): Extension {
