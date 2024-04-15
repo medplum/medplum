@@ -16,7 +16,6 @@ export function App(): JSX.Element | null {
   const profile = useMedplumProfile();
   const navigate = useNavigate();
 
-  const profileReference = (profile && getReferenceString(profile)) as string;
   // Create an array of links and add a link to all active threads in the project
   const userLinks = [
     { icon: <IconMessage />, label: 'All Threads', href: '/Communication?part-of:missing=true&status:not=completed' },
@@ -27,7 +26,7 @@ export function App(): JSX.Element | null {
     resourceType: 'Communication',
     filters: [
       { code: 'part-of:missing', operator: Operator.EQUALS, value: 'true' },
-      { code: 'recipient', operator: Operator.EQUALS, value: profileReference },
+      { code: 'recipient', operator: Operator.EQUALS, value: (profile && getReferenceString(profile)) as string },
       { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
     ],
   });
@@ -91,12 +90,12 @@ function MessageNotification({ profile, navigate }: NotificationProps): JSX.Elem
     <NotificationIcon
       label="Mail"
       resourceType="Communication"
-      countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
+      countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count&part-of:missing=false`}
       subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
       iconComponent={<IconMail />}
       onClick={() =>
         navigate(
-          `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`
+          `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&part-of:missing=false&_fields=sender,recipient,subject,status,_lastUpdated`
         )
       }
     />
