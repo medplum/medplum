@@ -158,6 +158,7 @@ module.exports = {
     'babel.config.cjs',
     'jest.sequencer.js',
     'package-lock.json',
+    'postcss.config.cjs',
     'rollup.config.mjs',
     'webpack.config.js',
   ],
