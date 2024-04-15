@@ -2,11 +2,11 @@ import { allOk, ContentType, forbidden } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, check } from 'express-validator';
 import { asyncWrap } from '../async';
+import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
-import { sendEmail } from './email';
-import { getAuthenticatedContext } from '../context';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendEmail } from './email';
 
 export const emailRouter = Router();
 emailRouter.use(authenticateRequest);
@@ -24,7 +24,7 @@ emailRouter.post(
     const ctx = getAuthenticatedContext();
 
     // Make sure the user project has the email feature enabled
-    if (!ctx.project.features?.includes('email')) {
+    if (!ctx.project.features?.includes('email') || !ctx.membership.admin) {
       sendOutcome(res, forbidden);
       return;
     }
