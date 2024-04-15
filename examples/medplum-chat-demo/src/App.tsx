@@ -2,7 +2,7 @@ import { formatSearchQuery, getReferenceString, Operator, ProfileResource } from
 import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconClipboardCheck, IconFileImport, IconMail, IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes, useNavigate } from 'react-router-dom';
+import { NavigateFunction, Route, Routes, useNavigate } from 'react-router-dom';
 import { CommunicationPage } from './pages/CommunicationPage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
@@ -17,10 +17,12 @@ export function App(): JSX.Element | null {
   const navigate = useNavigate();
 
   const profileReference = (profile && getReferenceString(profile)) as string;
+  // Create an array of links and add a link to all active threads in the project
   const userLinks = [
     { icon: <IconMessage />, label: 'All Threads', href: '/Communication?part-of:missing=true&status:not=completed' },
   ];
 
+  // Format a search query to get all active threads assigned to the current user
   const myThreadsQuery = formatSearchQuery({
     resourceType: 'Communication',
     filters: [
@@ -30,6 +32,7 @@ export function App(): JSX.Element | null {
     ],
   });
 
+  // Add this link to the link array
   userLinks.push({ icon: <IconMessage2Bolt />, label: 'My Threads', href: `/Communication${myThreadsQuery}` });
 
   if (medplum.isLoading()) {
@@ -41,41 +44,22 @@ export function App(): JSX.Element | null {
       logo={<Logo size={24} />}
       menus={[
         {
+          // A section of the sidebar that displays the links defined above
           title: 'My Links',
           links: userLinks,
         },
         {
+          // A section of the sidebar that links to a page to upload example data for the app
           title: 'Upload Data',
           links: [{ icon: <IconFileImport />, label: 'Upload Example Data', href: 'upload/example' }],
         },
       ]}
+      // This adds notification icons for unread messages and active tasks for the current user
       notifications={
         profile && (
           <>
-            <NotificationIcon
-              label="Mail"
-              resourceType="Communication"
-              countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-              subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
-              iconComponent={<IconMail />}
-              onClick={() =>
-                navigate(
-                  `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`
-                )
-              }
-            />
-            <NotificationIcon
-              label="Tasks"
-              resourceType="Task"
-              countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-              subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
-              iconComponent={<IconClipboardCheck />}
-              onClick={() =>
-                navigate(
-                  `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
-                )
-              }
-            />
+            <MessageNotification profile={profile} navigate={navigate} />
+            <TaskNotification profile={profile} navigate={navigate} />
           </>
         )
       }
@@ -94,5 +78,44 @@ export function App(): JSX.Element | null {
         </Routes>
       </Suspense>
     </AppShell>
+  );
+}
+
+interface NotificationProps {
+  profile: ProfileResource;
+  navigate: NavigateFunction;
+}
+
+function MessageNotification({ profile, navigate }: NotificationProps): JSX.Element {
+  return (
+    <NotificationIcon
+      label="Mail"
+      resourceType="Communication"
+      countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
+      subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
+      iconComponent={<IconMail />}
+      onClick={() =>
+        navigate(
+          `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`
+        )
+      }
+    />
+  );
+}
+
+function TaskNotification({ profile, navigate }: NotificationProps): JSX.Element {
+  return (
+    <NotificationIcon
+      label="Tasks"
+      resourceType="Task"
+      countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
+      subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
+      iconComponent={<IconClipboardCheck />}
+      onClick={() =>
+        navigate(
+          `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
+        )
+      }
+    />
   );
 }
