@@ -17,10 +17,6 @@ export type AdditionalWsBindingClaims = {
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   id: 'backport-subscription-get-ws-binding-token',
-  text: {
-    status: 'extensions',
-    div: '<div xmlns="http://www.w3.org/1999/xhtml"><p>URL: [base]/Subscription/$get-ws-binding-token</p><p>URL: [base]/Subscription/[id]/$get-ws-binding-token</p><p>Parameters</p><table class="grid"><tr><td><b>Use</b></td><td><b>Name</b></td><td><b>Scope</b></td><td><b>Cardinality</b></td><td><b>Type</b></td><td><b>Binding</b></td><td><b>Documentation</b></td></tr><tr><td>IN</td><td>id</td><td/><td>0..*</td><td><a href="http://hl7.org/fhir/R4B/datatypes.html#id">id</a></td><td/><td><div><p>At the Instance level, this parameter is ignored. At the Resource level, one or more parameters containing a FHIR id for a Subscription to get a token for. In the absense of any specified ids, the server may either return a token for all Subscriptions available to the caller with a channel-type of websocket or fail the request.</p>\n</div></td></tr><tr><td>OUT</td><td>token</td><td/><td>1..1</td><td><a href="http://hl7.org/fhir/R4B/datatypes.html#string">string</a></td><td/><td><div><p>An access token that a client may use to show authorization during a websocket connection.</p>\n</div></td></tr><tr><td>OUT</td><td>expiration</td><td/><td>1..1</td><td><a href="http://hl7.org/fhir/R4B/datatypes.html#dateTime">dateTime</a></td><td/><td><div><p>The date and time this token is valid until.</p>\n</div></td></tr><tr><td>OUT</td><td>subscription</td><td/><td>0..*</td><td><a href="http://hl7.org/fhir/R4B/datatypes.html#string">string</a></td><td/><td><div><p>The subscriptions this token is valid for.</p>\n</div></td></tr><tr><td>OUT</td><td>websocket-url</td><td/><td>1..1</td><td><a href="http://hl7.org/fhir/R4B/datatypes.html#url">url</a></td><td/><td><div><p>The URL the client should use to connect to Websockets.</p>\n</div></td></tr></table></div>',
-  },
   extension: [
     {
       url: 'http://hl7.org/fhir/StructureDefinition/structuredefinition-fmm',
