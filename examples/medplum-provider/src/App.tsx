@@ -123,6 +123,7 @@ export function App(): JSX.Element | null {
                 <Route path="" element={<TimelineTab />} />
               </Route>
               <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/signin" element={<SignInPage />} />
               <Route path="/:resourceType/new" element={<CreateResourcePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
                 <Route path="" element={<ResourceDetailPage />} />
