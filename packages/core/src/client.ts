@@ -74,10 +74,12 @@ import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, load
 import {
   CodeChallengeMethod,
   ProfileResource,
+  QueryTypes,
   arrayBufferToBase64,
   concatUrls,
   createReference,
   ensureTrailingSlash,
+  getQueryString,
   getReferenceString,
   getWebSocketUrl,
   isObject,
@@ -320,18 +322,6 @@ export interface MedplumRequestOptions extends RequestInit {
 }
 
 export type FetchLike = (url: string, options?: any) => Promise<any>;
-
-/**
- * QueryTypes defines the different ways to specify FHIR search parameters.
- *
- * Can be any valid input to the URLSearchParams() constructor.
- *
- * TypeScript definitions for URLSearchParams do not match runtime behavior.
- * The official spec only accepts string values.
- * Web browsers and Node.js automatically coerce values to strings.
- * See: https://github.com/microsoft/TypeScript/issues/32951
- */
-export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | string | undefined;
 
 /**
  * ResourceArray is an array of resources with a bundle property.
@@ -916,7 +906,9 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
-    sessionStorage.clear();
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+    }
     this.clearActiveLogin();
   }
 
@@ -1363,7 +1355,7 @@ export class MedplumClient extends EventTarget {
   fhirSearchUrl(resourceType: ResourceType, query: QueryTypes): URL {
     const url = this.fhirUrl(resourceType);
     if (query) {
-      url.search = new URLSearchParams(query).toString();
+      url.search = getQueryString(query);
     }
     return url;
   }
@@ -3320,7 +3312,7 @@ export class MedplumClient extends EventTarget {
     if (this.refresh()) {
       return this.request(method, url, options);
     }
-    this.clearActiveLogin();
+    this.clear();
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }

@@ -222,20 +222,23 @@ export class MockClient extends MedplumClient {
       if (!this.agentAvailable) {
         throw new OperationOutcomeError(badRequest('Timeout'));
       }
-      if (typeof destination === 'string' && destination !== '8.8.8.8') {
+      if (typeof destination !== 'string' || (destination !== '8.8.8.8' && destination !== 'localhost')) {
         // Exception for test case
         if (destination !== 'abc123') {
-          console.warn('IPs other than 8.8.8.8 will always throw an error in MockClient');
+          console.warn(
+            'IPs other than 8.8.8.8 and hostnames other than `localhost` will always throw an error in MockClient'
+          );
         }
         throw new OperationOutcomeError(badRequest('Destination device not found'));
       }
-      return `PING 8.8.8.8 (8.8.8.8): 56 data bytes
-64 bytes from 8.8.8.8: icmp_seq=0 ttl=115 time=10.977 ms
-64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=13.037 ms
-64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=23.159 ms
-64 bytes from 8.8.8.8: icmp_seq=3 ttl=115 time=12.725 ms
+      const ip = destination === 'localhost' ? '127.0.0.1' : destination;
+      return `PING ${destination} (${ip}): 56 data bytes
+64 bytes from ${ip}: icmp_seq=0 ttl=115 time=10.977 ms
+64 bytes from ${ip}: icmp_seq=1 ttl=115 time=13.037 ms
+64 bytes from ${ip}: icmp_seq=2 ttl=115 time=23.159 ms
+64 bytes from ${ip}: icmp_seq=3 ttl=115 time=12.725 ms
 
---- 8.8.8.8 ping statistics ---
+--- ${destination} ping statistics ---
 4 packets transmitted, 4 packets received, 0.0% packet loss
 round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 `;

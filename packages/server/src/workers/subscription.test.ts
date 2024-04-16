@@ -26,7 +26,7 @@ import { loadTestConfig } from '../config';
 import { getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { getRedis } from '../redis';
+import { getRedisSubscriber } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
@@ -1517,7 +1517,7 @@ describe('Subscription Worker', () => {
       expect(subscription.id).toBeDefined();
 
       // Subscribe to the topic
-      const subscriber = getRedis().duplicate();
+      const subscriber = getRedisSubscriber();
       await subscriber.subscribe(subscription.id as string);
 
       let resolve: () => void;
@@ -1564,6 +1564,7 @@ describe('Subscription Worker', () => {
       expect(queue.add).toHaveBeenCalled();
 
       await deferredPromise;
+      // @ts-expect-error Okay to await quit in tests
       await subscriber.quit();
     }));
 
@@ -1591,7 +1592,7 @@ describe('Subscription Worker', () => {
       expect(subscription.id).toBeDefined();
 
       // Subscribe to the topic
-      const subscriber = getRedis().duplicate();
+      const subscriber = getRedisSubscriber();
       await subscriber.subscribe(subscription.id as string);
 
       let resolve: () => void;
@@ -1622,6 +1623,7 @@ describe('Subscription Worker', () => {
       }, 150);
 
       await deferredPromise;
+      // @ts-expect-error Okay to await quit in tests
       await subscriber.quit();
       expect(console.log).toHaveBeenLastCalledWith(expect.stringMatching(/WebSocket Subscriptions/));
 
@@ -1670,7 +1672,7 @@ describe('Subscription Worker', () => {
       expect(subscription.id).toBeDefined();
 
       // Subscribe to the topic
-      const subscriber = getRedis().duplicate();
+      const subscriber = getRedisSubscriber();
       await subscriber.subscribe(subscription.id as string);
 
       let resolve: () => void;
@@ -1698,6 +1700,7 @@ describe('Subscription Worker', () => {
 
       setTimeout(() => resolve(), 300);
       await deferredPromise;
+      // @ts-expect-error Okay to await quit in tests
       await subscriber.quit();
 
       expect(console.log).toHaveBeenCalledWith(
@@ -1748,7 +1751,7 @@ describe('Subscription Worker', () => {
       await superAdminRepo.deleteResource('ProjectMembership', membership.id as string);
 
       // Subscribe to the topic
-      const subscriber = getRedis().duplicate();
+      const subscriber = getRedisSubscriber();
       await subscriber.subscribe(subscription.id as string);
 
       let resolve: () => void;
@@ -1776,6 +1779,7 @@ describe('Subscription Worker', () => {
 
       setTimeout(() => resolve(), 300);
       await deferredPromise;
+      // @ts-expect-error Okay to await quit in tests
       await subscriber.quit();
 
       expect(console.log).toHaveBeenCalledWith(
@@ -1826,7 +1830,7 @@ describe('Subscription Worker', () => {
       await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
 
       // Subscribe to the topic
-      const subscriber = getRedis().duplicate();
+      const subscriber = getRedisSubscriber();
       await subscriber.subscribe(subscription.id as string);
 
       let resolve: () => void;
@@ -1854,6 +1858,7 @@ describe('Subscription Worker', () => {
 
       setTimeout(() => resolve(), 300);
       await deferredPromise;
+      // @ts-expect-error Okay to await quit in test
       await subscriber.quit();
 
       expect(console.log).toHaveBeenCalledWith(

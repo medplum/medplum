@@ -30,7 +30,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   // Search for potential active duplicate patients by matching first name, last name, birthdate, and postal code.
   const candidateMatches = await medplum.searchResources('Patient', {
     'family:exact': srcPatient.name?.[0]?.family,
-    'given:exact': srcPatient.name?.[0]?.given,
+    'given:exact': srcPatient.name?.[0]?.given?.join(' '),
     birthdate: srcPatient.birthDate,
     'address-postalcode': srcPatient.address?.[0]?.postalCode,
     // only search for patients that are 'active' (have not already been)

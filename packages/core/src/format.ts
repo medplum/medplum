@@ -439,24 +439,24 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
     return '';
   }
 
-  if ('component' in obs) {
-    return (obs.component as ObservationComponent[]).map((c) => formatObservationValue(c)).join(' / ');
-  }
+  const result = [];
 
   if (obs.valueQuantity) {
-    return formatQuantity(obs.valueQuantity);
+    result.push(formatQuantity(obs.valueQuantity));
+  } else if (obs.valueCodeableConcept) {
+    result.push(formatCodeableConcept(obs.valueCodeableConcept));
+  } else {
+    const valueString = ensureString(obs.valueString);
+    if (valueString) {
+      result.push(valueString);
+    }
   }
 
-  if (obs.valueCodeableConcept) {
-    return formatCodeableConcept(obs.valueCodeableConcept);
+  if ('component' in obs) {
+    result.push((obs.component as ObservationComponent[]).map((c) => formatObservationValue(c)).join(' / '));
   }
 
-  const valueString = ensureString(obs.valueString);
-  if (valueString) {
-    return valueString;
-  }
-
-  return '';
+  return result.join(' / ').trim();
 }
 
 /**

@@ -35,6 +35,7 @@ import {
   getIdentifier,
   getImageSrc,
   getPathDifference,
+  getQueryString,
   getQuestionnaireAnswers,
   getReferenceString,
   getWebSocketUrl,
@@ -44,6 +45,7 @@ import {
   isPopulated,
   isProfileResource,
   isUUID,
+  isValidHostname,
   lazy,
   parseReference,
   preciseEquals,
@@ -1320,5 +1322,43 @@ describe('Core Utils', () => {
     expect(getWebSocketUrl(new URL('https://foo.com/foo/bar/'), '/ws/subscriptions-r4')).toEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
+  });
+
+  test('getQueryString', () => {
+    expect(getQueryString('?bestEhr=medplum')).toEqual('bestEhr=medplum');
+    expect(
+      getQueryString([
+        ['bestEhr', 'medplum'],
+        ['foo', 'bar'],
+      ])
+    ).toEqual('bestEhr=medplum&foo=bar');
+    expect(getQueryString({ bestEhr: 'medplum', numberOne: true, medplumRanking: 1 })).toEqual(
+      'bestEhr=medplum&numberOne=true&medplumRanking=1'
+    );
+    expect(
+      getQueryString({ bestEhr: 'medplum', numberOne: true, medplumRanking: 1, betterThanMedplum: undefined })
+    ).toEqual('bestEhr=medplum&numberOne=true&medplumRanking=1');
+    expect(getQueryString(new URLSearchParams({ bestEhr: 'medplum', numberOne: 'true', medplumRanking: '1' }))).toEqual(
+      'bestEhr=medplum&numberOne=true&medplumRanking=1'
+    );
+    expect(getQueryString(undefined)).toEqual('');
+  });
+
+  test('isValidHostname', () => {
+    expect(isValidHostname('foo')).toEqual(true);
+    expect(isValidHostname('foo.com')).toEqual(true);
+    expect(isValidHostname('foo.bar.com')).toEqual(true);
+    expect(isValidHostname('foo.org')).toEqual(true);
+    expect(isValidHostname('foo.bar.co.uk')).toEqual(true);
+    expect(isValidHostname('localhost')).toEqual(true);
+    expect(isValidHostname('LOCALHOST')).toEqual(true);
+    expect(isValidHostname('foo-bar-baz')).toEqual(true);
+    expect(isValidHostname('foo_bar')).toEqual(true);
+    expect(isValidHostname('foobar123')).toEqual(true);
+
+    expect(isValidHostname('foo.com/bar')).toEqual(false);
+    expect(isValidHostname('https://foo.com')).toEqual(false);
+    expect(isValidHostname('foo_-bar_-')).toEqual(false);
+    expect(isValidHostname('foo | rm -rf /')).toEqual(false);
   });
 });

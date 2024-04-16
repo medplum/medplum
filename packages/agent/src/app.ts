@@ -1,5 +1,4 @@
 import {
-  AgentError,
   AgentMessage,
   AgentTransmitRequest,
   AgentTransmitResponse,
@@ -8,20 +7,33 @@ import {
   LogLevel,
   Logger,
   MedplumClient,
+  isValidHostname,
   normalizeErrorString,
 } from '@medplum/core';
 import { Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { exec as _exec } from 'node:child_process';
+import { ExecException, ExecOptions, exec } from 'node:child_process';
 import { isIPv4, isIPv6 } from 'node:net';
-import { promisify } from 'node:util';
-import { platform } from 'os';
+import { platform } from 'node:os';
 import WebSocket from 'ws';
 import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { AgentSerialPortChannel } from './serialport';
 
-const exec = promisify(_exec);
+async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    exec(command, options, (ex: ExecException | null, stdout: string, stderr: string) => {
+      if (ex) {
+        const err = ex as Error;
+        reject(err);
+      }
+      resolve({ stdout, stderr });
+    });
+  });
+}
+
+export const DEFAULT_PING_TIMEOUT = 3600;
 
 export class App {
   static instance: App;
@@ -146,7 +158,7 @@ export class App {
           case 'push':
           case 'agent:transmit:request':
             if (command.contentType === ContentType.PING) {
-              await this.tryPingIp(command);
+              await this.tryPingHost(command);
             } else {
               this.pushMessage(command);
             }
@@ -176,6 +188,8 @@ export class App {
         channel = new AgentDicomChannel(this, definition, endpoint);
       } else if (endpoint.address.startsWith('mllp')) {
         channel = new AgentHl7Channel(this, definition, endpoint);
+      } else if (endpoint.address.startsWith('serial')) {
+        channel = new AgentSerialPortChannel(this, definition, endpoint);
       } else {
         this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
       }
@@ -265,27 +279,51 @@ export class App {
     }
   }
 
-  private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
+  // This covers Windows, Linux, and Mac
+  private getPingCommand(host: string, count = 1): string {
+    return platform() === 'win32' ? `ping /n ${count} ${host}` : `ping -c ${count} ${host}`;
+  }
+
+  private async tryPingHost(message: AgentTransmitRequest): Promise<void> {
     try {
-      if (message.body && message.body !== 'PING') {
-        const warnMsg = 'Message body present but unused. Body should be empty for a ping request.';
+      if (message.body && !message.body.startsWith('PING')) {
+        const warnMsg =
+          'Message body present but unused. Body for a ping request should be empty or a message formatted as `PING[ count]`.';
         this.log.warn(warnMsg);
       }
-      if (!isIPv4(message.remote)) {
-        let errMsg = `Attempted to ping invalid IP: ${message.remote}`;
-        if (isIPv6(message.remote)) {
-          errMsg = `Attempted to ping an IPv6 address: ${message.remote}\n\nIPv6 is currently unsupported.`;
-        }
+
+      if (isIPv6(message.remote)) {
+        const errMsg = `Attempted to ping an IPv6 address: ${message.remote}\n\nIPv6 is currently unsupported.`;
         this.log.error(errMsg);
         throw new Error(errMsg);
       }
-      // This covers Windows, Linux, and Mac
-      const { stderr, stdout } = await exec(
-        platform() === 'win32' ? `ping ${message.remote}` : `ping -c 4 ${message.remote}`
-      );
-      if (stderr) {
-        throw new Error(`Received on stderr:\n\n${stderr}`);
+
+      if (!(isIPv4(message.remote) || isValidHostname(message.remote))) {
+        const errMsg = `Attempted to ping an invalid host.\n\n"${message.remote}" is not a valid IPv4 address or a resolvable hostname.`;
+        this.log.error(errMsg);
+        throw new Error(errMsg);
       }
+
+      const pingCountAsStr = message.body.startsWith('PING') ? message.body.split(' ')?.[1] ?? '' : '';
+      let pingCount: number | undefined = undefined;
+
+      if (pingCountAsStr !== '') {
+        pingCount = Number.parseInt(pingCountAsStr, 10);
+        if (Number.isNaN(pingCount)) {
+          throw new Error(
+            `Unable to ping ${message.remote} "${pingCountAsStr}" times. "${pingCountAsStr}" is not a number.`
+          );
+        }
+      }
+
+      const { stdout, stderr } = await execAsync(this.getPingCommand(message.remote, pingCount), {
+        timeout: DEFAULT_PING_TIMEOUT,
+      });
+
+      if (stderr) {
+        throw new Error(`Received on stderr:\n\n${stderr.trim()}`);
+      }
+
       const result = stdout.trim();
       this.log.info(`Ping result for ${message.remote}:\n\n${result}`);
       this.addToWebSocketQueue({
@@ -294,14 +332,20 @@ export class App {
         contentType: ContentType.PING,
         remote: message.remote,
         callback: message.callback,
+        statusCode: 200,
         body: result,
       } satisfies AgentTransmitResponse);
     } catch (err) {
-      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_IP_GIVEN'}: ${normalizeErrorString(err)}`);
+      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_HOST_GIVEN'}: ${normalizeErrorString(err)}`);
       this.addToWebSocketQueue({
-        type: 'agent:error',
-        body: (err as Error).message,
-      } satisfies AgentError);
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        contentType: ContentType.TEXT,
+        remote: message.remote,
+        callback: message.callback,
+        statusCode: 500,
+        body: normalizeErrorString(err),
+      } satisfies AgentTransmitResponse);
     }
   }
 
@@ -327,7 +371,7 @@ export class App {
     const address = new URL(message.remote);
     const client = new Hl7Client({
       host: address.hostname,
-      port: parseInt(address.port, 10),
+      port: Number.parseInt(address.port, 10),
     });
 
     client
@@ -340,11 +384,21 @@ export class App {
           remote: message.remote,
           callback: message.callback,
           contentType: ContentType.HL7_V2,
+          statusCode: 200,
           body: response.toString(),
-        });
+        } satisfies AgentTransmitResponse);
       })
       .catch((err) => {
         this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+        this.addToWebSocketQueue({
+          type: 'agent:transmit:response',
+          channel: message.channel,
+          remote: message.remote,
+          callback: message.callback,
+          contentType: ContentType.TEXT,
+          statusCode: 500,
+          body: normalizeErrorString(err),
+        } satisfies AgentTransmitResponse);
       })
       .finally(() => {
         client.close();

@@ -1,11 +1,20 @@
-import { allOk, ContentType, getReferenceString } from '@medplum/core';
-import { Agent, Device } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import {
+  AgentTransmitRequest,
+  AgentTransmitResponse,
+  allOk,
+  ContentType,
+  getReferenceString,
+  sleep,
+} from '@medplum/core';
+import { Agent, Device, OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
+import { getRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+import { AgentPushParameters } from './agentpush';
 
 const app = express();
 let accessToken: string;
@@ -247,5 +256,202 @@ describe('Agent Push', () => {
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Invalid wait timeout');
+  });
+
+  test('Ping -- Successful ping to IP', async () => {
+    const redis = getRedis();
+    const publishSpy = jest.spyOn(redis, 'publish');
+
+    let resolve!: (value: request.Response) => void | PromiseLike<void>;
+    let reject!: (err: Error) => void;
+
+    const deferredResponse = new Promise<request.Response>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.PING,
+        body: 'PING',
+        destination: '8.8.8.8',
+        waitForResponse: true,
+      } satisfies AgentPushParameters)
+      .then(resolve)
+      .catch(reject);
+
+    let shouldThrow = false;
+    const timer = setTimeout(() => {
+      shouldThrow = true;
+    }, 3500);
+
+    while (!publishSpy.mock.lastCall) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(50);
+    }
+    clearTimeout(timer);
+
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    expect(transmitRequestStr).toBeDefined();
+    const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
+
+    await getRedis().publish(
+      transmitRequest.callback as string,
+      JSON.stringify({
+        ...transmitRequest,
+        type: 'agent:transmit:response',
+        statusCode: 200,
+        contentType: ContentType.TEXT,
+        body: `
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=115 time=10.316 ms
+        
+--- 8.8.8.8 ping statistics ---
+1 packets transmitted, 1 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
+      } satisfies AgentTransmitResponse)
+    );
+
+    const res = await deferredResponse;
+    expect(res.status).toEqual(200);
+    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+
+    publishSpy.mockRestore();
+  });
+
+  test('Ping -- Successful ping to hostname', async () => {
+    const redis = getRedis();
+    const publishSpy = jest.spyOn(redis, 'publish');
+
+    let resolve!: (value: request.Response) => void | PromiseLike<void>;
+    let reject!: (err: Error) => void;
+
+    const deferredResponse = new Promise<request.Response>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.PING,
+        body: 'PING',
+        destination: 'localhost',
+        waitForResponse: true,
+      } satisfies AgentPushParameters)
+      .then(resolve)
+      .catch(reject);
+
+    let shouldThrow = false;
+    const timer = setTimeout(() => {
+      shouldThrow = true;
+    }, 3500);
+
+    while (!publishSpy.mock.lastCall) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(50);
+    }
+    clearTimeout(timer);
+
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    expect(transmitRequestStr).toBeDefined();
+    const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
+
+    await getRedis().publish(
+      transmitRequest.callback as string,
+      JSON.stringify({
+        ...transmitRequest,
+        type: 'agent:transmit:response',
+        statusCode: 200,
+        contentType: ContentType.TEXT,
+        body: `
+PING localhost (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.081 ms
+        
+--- localhost ping statistics ---
+1 packets transmitted, 1 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
+      } satisfies AgentTransmitResponse)
+    );
+
+    const res = await deferredResponse;
+    expect(res.status).toEqual(200);
+    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+
+    publishSpy.mockRestore();
+  });
+
+  test('Ping -- Error', async () => {
+    const redis = getRedis();
+    const publishSpy = jest.spyOn(redis, 'publish');
+
+    let resolve!: (value: request.Response) => void | PromiseLike<void>;
+    let reject!: (err: Error) => void;
+
+    const deferredResponse = new Promise<request.Response>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.PING,
+        body: 'PING',
+        destination: '8.8.8.8',
+        waitForResponse: true,
+      } satisfies AgentPushParameters)
+      .then(resolve)
+      .catch(reject);
+
+    let shouldThrow = false;
+    const timer = setTimeout(() => {
+      shouldThrow = true;
+    }, 3500);
+
+    while (!publishSpy.mock.lastCall) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(50);
+    }
+    clearTimeout(timer);
+
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    expect(transmitRequestStr).toBeDefined();
+    const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
+
+    await getRedis().publish(
+      transmitRequest.callback as string,
+      JSON.stringify({
+        ...transmitRequest,
+        type: 'agent:transmit:response',
+        statusCode: 500,
+        contentType: ContentType.TEXT,
+        body: 'Error: Unable to ping "8.8.8.8"',
+      } satisfies AgentTransmitResponse)
+    );
+
+    const res = await deferredResponse;
+    expect(res.status).toEqual(500);
+
+    const body = res.body as OperationOutcome;
+    expect(body).toBeDefined();
+    expect(body.issue[0].severity).toEqual('error');
+    expect(body.issue[0]?.details?.text).toEqual(expect.stringMatching(/internal server error/i));
+    expect(body.issue[0]?.diagnostics).toEqual(expect.stringMatching(/unable to ping/i));
+
+    publishSpy.mockRestore();
   });
 });

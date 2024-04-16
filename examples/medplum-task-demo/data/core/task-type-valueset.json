@@ -1,0 +1,32 @@
+{
+  "resourceType": "ValueSet",
+  "url": "https://medplum.com/medplum-task-demo/task-type",
+  "name": "Example Task Type Value Set",
+  "title": "Example Task Type Value Set",
+  "status": "active",
+  "compose": {
+    "include": [
+      {
+        "system": "https://medplum.com/medplum-task-demo/task-type",
+        "concept": [
+          {
+            "code": "respond-to-message",
+            "display": "Respond to Patient Message"
+          },
+          {
+            "code": "schedule-appointment",
+            "display": "Schedule Appointment"
+          },
+          {
+            "code": "review-diagnostic-report",
+            "display": "Review Diagnostic Report"
+          },
+          {
+            "code": "verify-drivers-license",
+            "display": "Verify Drivers License"
+          }
+        ]
+      }
+    ]
+  }
+}

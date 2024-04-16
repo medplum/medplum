@@ -24,6 +24,7 @@ export interface MedplumServerConfig {
   signingKeyId: string;
   signingKeyPassphrase: string;
   supportEmail: string;
+  approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
   databaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
@@ -52,6 +53,17 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
+  defaultProjectFeatures?:
+    | (
+        | 'email'
+        | 'bots'
+        | 'cron'
+        | 'google-auth-required'
+        | 'graphql-introspection'
+        | 'terminology'
+        | 'websocket-subscriptions'
+      )[]
+    | undefined;
 
   /** Temporary feature flag, to be removed */
   chainedSearchWithReferenceTables?: boolean;
@@ -167,6 +179,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.dbname = 'medplum_test';
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
+  config.approvedSenderEmails = 'no-reply@example.com';
   return config;
 }
 
@@ -334,6 +347,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
   config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
+  config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
   return config;
 }
 

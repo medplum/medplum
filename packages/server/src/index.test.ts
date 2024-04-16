@@ -1,4 +1,4 @@
-import http from 'http';
+import http from 'node:http';
 import { shutdownApp } from './app';
 import { main } from './index';
 
@@ -19,7 +19,7 @@ jest.mock('express', () => {
 });
 
 jest.mock('pg', () => {
-  const original = jest.requireActual('express');
+  const original = jest.requireActual('pg');
 
   class MockPoolClient {
     async query(sql: string): Promise<any> {

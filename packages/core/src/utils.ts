@@ -22,6 +22,23 @@ import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference } from './types';
 
+/**
+ * QueryTypes defines the different ways to specify FHIR search parameters.
+ *
+ * Can be any valid input to the URLSearchParams() constructor.
+ *
+ * TypeScript definitions for URLSearchParams do not match runtime behavior.
+ * The official spec only accepts string values.
+ * Web browsers and Node.js automatically coerce values to strings.
+ * See: https://github.com/microsoft/TypeScript/issues/32951
+ */
+export type QueryTypes =
+  | URLSearchParams
+  | string[][]
+  | Record<string, string | number | boolean | undefined>
+  | string
+  | undefined;
+
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
 /**
@@ -1096,6 +1113,62 @@ export function concatUrls(baseUrl: string | URL, path: string): string {
   return new URL(ensureNoLeadingSlash(path), ensureTrailingSlash(baseUrl.toString())).toString();
 }
 
+/**
+ * Concatenates a given base URL and path, ensuring the URL has the appropriate `ws://` or `wss://` protocol instead of `http://` or `https://`.
+ *
+ * @param baseUrl - The base URL.
+ * @param path - The URL to concat. Can be relative or absolute.
+ * @returns The concatenated WebSocket URL.
+ */
 export function getWebSocketUrl(baseUrl: URL | string, path: string): string {
   return concatUrls(baseUrl, path).toString().replace('http://', 'ws://').replace('https://', 'wss://');
+}
+
+/**
+ * Converts the given `query` to a string.
+ *
+ * @param query - The query to convert. The type can be any member of `QueryTypes`.
+ * @returns The query as a string.
+ */
+export function getQueryString(query: QueryTypes): string {
+  if (typeof query === 'object' && !Array.isArray(query) && !(query instanceof URLSearchParams)) {
+    query = Object.fromEntries(Object.entries(query).filter((entry) => entry[1] !== undefined));
+  }
+  // @ts-expect-error Technically `Record<string, string, number, boolean>` is not valid to pass into `URLSearchParams` constructor since `boolean` and `number`
+  // are not considered to be valid values based on the WebIDL definition from WhatWG. The current runtime behavior relies on implementation-specific coercion to string under the hood.
+  // Source: https://url.spec.whatwg.org/#dom-urlsearchparams-urlsearchparams:~:text=6.2.%20URLSearchParams,)%20init%20%3D%20%22%22)%3B
+  return new URLSearchParams(query).toString();
+}
+
+export const VALID_HOSTNAME_REGEX =
+  /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-_]*[A-Za-z0-9])$/;
+
+/**
+ * Tests whether a given input is a valid hostname.
+ *
+ * __NOTE: Does not validate that the input is a valid domain name, only a valid hostname.__
+ *
+ * @param input - The input to test.
+ * @returns True if `input` is a valid hostname, otherwise returns false.
+ *
+ * ### Valid matches:
+ * - foo
+ * - foo.com
+ * - foo.bar.com
+ * - foo.org
+ * - foo.bar.co.uk
+ * - localhost
+ * - LOCALHOST
+ * - foo-bar-baz
+ * - foo_bar
+ * - foobar123
+ *
+ * ### Invalid matches:
+ * - foo.com/bar
+ * - https://foo.com
+ * - foo_-bar_-
+ * - foo | rm -rf /
+ */
+export function isValidHostname(input: string): boolean {
+  return VALID_HOSTNAME_REGEX.test(input);
 }

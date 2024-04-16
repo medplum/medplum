@@ -1,9 +1,9 @@
-import { MantineProvider, MantineThemeOverride } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { BrowserRouter } from 'react-router-dom';
 import { createGlobalTimer } from '../src/stories/MockDateWrapper.utils';
+import { themes } from './themes';
 
 export const parameters = {
   layout: 'fullscreen',
@@ -26,32 +26,12 @@ medplum.get('/').then(() => {
   clock.restore();
 });
 
-const theme: MantineThemeOverride = {
-  headings: {
-    sizes: {
-      h1: {
-        fontSize: '1.125rem',
-        fontWeight: '500',
-        lineHeight: '2.0',
-      },
-    },
-  },
-  fontSizes: {
-    xs: '0.6875rem',
-    sm: '0.875rem',
-    md: '0.875rem',
-    lg: '1.0rem',
-    xl: '1.125rem',
-  },
-};
-
 export const decorators = [
+  themes,
   (Story) => (
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
-        <MantineProvider theme={theme}>
-          <Story />
-        </MantineProvider>
+        <Story />
       </MedplumProvider>
     </BrowserRouter>
   ),

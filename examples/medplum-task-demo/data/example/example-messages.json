@@ -1,15 +1,55 @@
 {
   "resourceType": "Bundle",
-  "type": "batch",
+  "type": "transaction",
   "entry": [
+    {
+      "fullUrl": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "SS"
+                }
+              ]
+            },
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "333222222"
+          }
+        ],
+        "name": [
+          {
+            "given": ["John"],
+            "family": "Smith "
+          }
+        ],
+        "birthDate": "1970-01-01",
+        "address": [
+          {
+            "use": "home",
+            "line": ["123 Main St."],
+            "city": "Springfiled",
+            "state": "IL",
+            "postalCode": "98732"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
     {
       "fullUrl": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002",
       "resource": {
         "resourceType": "Communication",
         "status": "in-progress",
         "subject": {
-          "reference": "Patient/8f0d3209-0ee0-487f-b186-4328a949190f",
-          "display": "Mr. Lucien408 Bosco882 PharmD"
+          "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543",
+          "display": "John Smith"
         },
         "topic": { "coding": [{ "code": "Lab test results", "display": "Lab test results" }] }
       },
@@ -22,7 +62,7 @@
         "payload": [{ "contentString": "Do you have the results of my lab tests yet?" }],
         "topic": { "text": "December 15th lab tests." },
         "partOf": [{ "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002" }],
-        "sender": { "reference": "Patient/8f0d3209-0ee0-487f-b186-4328a949190f" },
+        "sender": { "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543" },
         "sent": "2023-12-18T14:26:06.531Z"
       },
       "request": { "method": "POST", "url": "Communication" }
@@ -46,7 +86,7 @@
         "payload": [{ "contentString": "Yes, it is 12345" }],
         "topic": { "text": "December 15th lab tests." },
         "partOf": [{ "reference": "urn:uuid:d9d3cba2-9db5-11ee-8c90-0242ac120002" }],
-        "sender": { "reference": "Patient/8f0d3209-0ee0-487f-b186-4328a949190f" },
+        "sender": { "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543" },
         "sent": "2023-12-18T14:46:06.531Z"
       },
       "request": { "method": "POST", "url": "Communication" }
@@ -88,7 +128,8 @@
           }
         ],
         "sender": {
-          "reference": "Patient/8f0d3209-0ee0-487f-b186-4328a949190f"
+          "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543",
+          "display": "John Smith"
         },
         "sent": "2023-12-18T14:01:15.175Z"
       },
@@ -103,7 +144,7 @@
         "resourceType": "Communication",
         "status": "in-progress",
         "subject": {
-          "reference": "Patient/8f0d3209-0ee0-487f-b186-4328a949190f",
+          "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543",
           "display": "Mr. Lucien408 Bosco882 PharmD"
         },
         "topic": { "coding": [{ "code": "Prescription Refill", "display": "Prescription Refill" }] }
@@ -117,19 +158,10 @@
         "payload": [{ "contentString": "My prescription ran out, can I come in to refill it?" }],
         "topic": { "text": "December 15th lab tests." },
         "partOf": [{ "reference": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac120002" }],
-        "sender": { "reference": "Patient/8f0d3209-0ee0-487f-b186-4328a949190f" },
+        "sender": { "reference": "urn:uuid:93e4cba2-9db5-11ee-8c90-0242ac876543" },
         "sent": "2023-12-18T14:26:06.531Z"
       },
       "request": { "method": "POST", "url": "Communication" }
-    },
-    {
-      "resource": {
-        "resourceType": "Task",
-        "status": "in-progress",
-        "focus": { "reference": "urn:uuid:ab308536-9e07-11ee-8c90-0242ac120002" },
-        "code": { "text": "Respond to Message" }
-      },
-      "request": { "method": "POST", "url": "Task" }
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Divider, Table, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Button, Divider, Group, NumberInput, Table, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { ContentType, formatDateTime, normalizeErrorString } from '@medplum/core';
 import { Agent, Parameters, Reference } from '@medplum/fhirtypes';
@@ -31,13 +31,14 @@ export function ToolsPage(): JSX.Element | null {
 
   const handlePing = useCallback(
     (formData: Record<string, string>) => {
-      const ip = formData.ip;
-      if (!ip) {
+      const host = formData.host;
+      const pingCount = formData.pingCount || 1;
+      if (!host) {
         return;
       }
       setPinging(true);
       medplum
-        .pushToAgent(reference, ip, 'PING', ContentType.PING, true)
+        .pushToAgent(reference, host, `PING ${pingCount}`, ContentType.PING, true)
         .then((pingResult: string) => setLastPing(pingResult))
         .catch((err: unknown) => showError(normalizeErrorString(err)))
         .finally(() => setPinging(false));
@@ -88,19 +89,24 @@ export function ToolsPage(): JSX.Element | null {
       <Divider my="lg" />
       <Title order={2}>Ping from Agent</Title>
       <p>
-        Send a ping command from the agent to an IP address. Use this tool to troubleshoot local network connectivity.
+        Send a ping command from the agent to a valid IP address or hostname. Use this tool to troubleshoot local
+        network connectivity.
       </p>
       <Form onSubmit={handlePing}>
-        <TextInput
-          id="ip"
-          name="ip"
-          placeholder="IP Address"
-          rightSection={
-            <ActionIcon size={24} radius="xl" variant="filled" type="submit" aria-label="Ping" loading={pinging}>
-              <IconRouter style={{ width: '1rem', height: '1rem' }} stroke={1.5} />
-            </ActionIcon>
-          }
-        />
+        <Group>
+          <TextInput
+            id="host"
+            name="host"
+            placeholder="ex. 127.0.0.1"
+            label="IP Address / Hostname"
+            rightSection={
+              <ActionIcon size={24} radius="xl" variant="filled" type="submit" aria-label="Ping" loading={pinging}>
+                <IconRouter style={{ width: '1rem', height: '1rem' }} stroke={1.5} />
+              </ActionIcon>
+            }
+          />
+          <NumberInput id="pingCount" name="pingCount" placeholder="1" label="Ping Count" />
+        </Group>
       </Form>
       {!pinging && lastPing && (
         <>

@@ -1,9 +1,10 @@
-import { Operator, parseSearchRequest } from '@medplum/core';
+import { ContentType, Operator, isValidHostname, parseSearchRequest } from '@medplum/core';
 import { FhirRequest } from '@medplum/fhir-router';
 import { Agent, Device } from '@medplum/fhirtypes';
 import { Request } from 'express';
 import { isIPv4 } from 'node:net';
 import { Repository } from '../repo';
+import { AgentPushParameters } from './agentpush';
 
 /**
  * Returns the Agent for a request.
@@ -40,7 +41,8 @@ export async function getAgentForRequest(req: Request | FhirRequest, repo: Repos
   return undefined;
 }
 
-export async function getDevice(repo: Repository, destination: string): Promise<Device | undefined> {
+export async function getDevice(repo: Repository, params: AgentPushParameters): Promise<Device | undefined> {
+  const { destination, contentType } = params;
   if (destination.startsWith('Device/')) {
     try {
       return await repo.readReference<Device>({ reference: destination });
@@ -51,7 +53,7 @@ export async function getDevice(repo: Repository, destination: string): Promise<
   if (destination.startsWith('Device?')) {
     return repo.searchOne<Device>(parseSearchRequest(destination));
   }
-  if (isIPv4(destination)) {
+  if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };
   }
   return undefined;

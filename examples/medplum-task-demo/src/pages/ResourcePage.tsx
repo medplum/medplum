@@ -1,8 +1,16 @@
 import { Paper, Tabs, Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import { DefaultResourceTimeline, Document, ResourceTable, useMedplumNavigate, useResource } from '@medplum/react';
+import {
+  DefaultResourceTimeline,
+  DiagnosticReportDisplay,
+  Document,
+  ResourceTable,
+  useMedplumNavigate,
+  useResource,
+} from '@medplum/react';
 import { useParams } from 'react-router-dom';
 import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
+import { DiagnosticReport } from '@medplum/fhirtypes';
 
 /**
  * This is an example of a generic "Resource Display" page.
@@ -14,7 +22,11 @@ export function ResourcePage(): JSX.Element | null {
   const navigate = useMedplumNavigate();
   const reference = { reference: resourceType + '/' + id };
   const resource = useResource(reference);
-  const tabs = ['Details', 'Timeline', 'History'];
+  let tabs = ['Details', 'Timeline', 'History'];
+  // Special Case for Diagnostic Reporets
+  if (resourceType === 'DiagnosticReport') {
+    tabs = ['Report', ...tabs];
+  }
 
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
@@ -41,7 +53,7 @@ export function ResourcePage(): JSX.Element | null {
         </Tabs.List>
         <Tabs.Panel value="details">
           <Paper mt={'lg'}>
-            <ResourceTable key={`${resourceType}/${id}`} value={resource} />
+            <ResourceTable key={`${resourceType}/${id}`} value={resource} ignoreMissingValues />
           </Paper>
         </Tabs.Panel>
         <Tabs.Panel value="timeline">
@@ -49,6 +61,11 @@ export function ResourcePage(): JSX.Element | null {
         </Tabs.Panel>
         <Tabs.Panel value="history">
           <ResourceHistoryTab />
+        </Tabs.Panel>
+        <Tabs.Panel value="report">
+          <Document>
+            <DiagnosticReportDisplay value={resource as DiagnosticReport} />
+          </Document>
         </Tabs.Panel>
       </Tabs>
     </Document>
