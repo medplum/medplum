@@ -26,13 +26,13 @@ cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-se
 
 for dir in `ls packages`; do
   if test -f "packages/$dir/package.json" && grep -q "\"test\":" "packages/$dir/package.json"; then
-    npx turbo run test --filter=./packages/$dir -- --coverage
+    npx turbo run test --filter=./packages/$dir --force -- --coverage 
   fi
 done
 
 for dir in `ls examples`; do
   if test -f "examples/$dir/package.json" && grep -q "\"test\":" "examples/$dir/package.json"; then
-    npx turbo run test --filter=./examples/$dir
+    npx turbo run test --filter=./packages/$dir --force
   fi
 done
 
