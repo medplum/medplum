@@ -20,23 +20,23 @@
     ]
   },
   "dependencies": {
-    "@mantine/core": "7.7.1",
-    "@mantine/hooks": "7.7.1",
-    "@mantine/notifications": "7.7.1",
+    "@mantine/core": "7.8.0",
+    "@mantine/hooks": "7.8.0",
+    "@mantine/notifications": "7.8.0",
     "@medplum/core": "3.1.2",
     "@medplum/eslint-config": "3.1.2",
-    "next": "14.1.4",
+    "next": "14.2.1",
     "next-auth": "4.24.7",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "3.1.2",
-    "@types/node": "20.12.5",
-    "@types/react": "18.2.74",
-    "@types/react-dom": "18.2.24",
+    "@types/node": "20.12.7",
+    "@types/react": "18.2.78",
+    "@types/react-dom": "18.2.25",
     "eslint": "8.57.0",
-    "eslint-config-next": "14.1.4",
-    "typescript": "5.4.4"
+    "eslint-config-next": "14.2.1",
+    "typescript": "5.4.5"
   }
 }

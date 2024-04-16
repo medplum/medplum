@@ -41,13 +41,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.549.0",
-    "@aws-sdk/client-cloudformation": "3.549.0",
-    "@aws-sdk/client-cloudfront": "3.549.0",
-    "@aws-sdk/client-ecs": "3.549.0",
-    "@aws-sdk/client-s3": "3.550.0",
-    "@aws-sdk/client-ssm": "3.549.0",
-    "@aws-sdk/client-sts": "3.549.0",
+    "@aws-sdk/client-acm": "3.554.0",
+    "@aws-sdk/client-cloudformation": "3.555.0",
+    "@aws-sdk/client-cloudfront": "3.554.0",
+    "@aws-sdk/client-ecs": "3.554.0",
+    "@aws-sdk/client-s3": "3.554.0",
+    "@aws-sdk/client-ssm": "3.554.0",
+    "@aws-sdk/client-sts": "3.554.0",
     "@aws-sdk/types": "3.535.0",
     "@medplum/core": "3.1.2",
     "@medplum/hl7": "3.1.2",
@@ -56,13 +56,12 @@
     "dotenv": "16.4.5",
     "fast-glob": "3.3.2",
     "node-fetch": "2.7.0",
-    "tar": "6.2.1"
+    "tar": "7.0.1"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "3.1.2",
     "@medplum/mock": "3.1.2",
-    "@types/node-fetch": "2.6.11",
-    "@types/tar": "6.1.12"
+    "@types/node-fetch": "2.6.11"
   },
   "engines": {
     "node": ">=18.0.0"

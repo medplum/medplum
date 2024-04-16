@@ -1,6 +1,7 @@
 import { ContentType } from '@medplum/core';
+import { Stats } from 'fs';
 import { Writable } from 'stream';
-import tar from 'tar';
+import tar, { Unpack } from 'tar';
 import { getCodeContentType, safeTarExtractor } from './utils';
 
 jest.mock('tar', () => ({
@@ -12,10 +13,10 @@ describe('CLI utils', () => {
     (tar as jest.Mocked<typeof tar>).x.mockImplementationOnce((options) => {
       const writable = new Writable({
         write(chunk, _, callback) {
-          options.filter?.(chunk.toString(), { size: 1 } as tar.FileStat);
+          options.filter?.(chunk.toString(), { size: 1 } as Stats);
           callback();
         },
-      });
+      }) as unknown as Unpack;
       return writable;
     });
 
@@ -35,10 +36,10 @@ describe('CLI utils', () => {
     (tar as jest.Mocked<typeof tar>).x.mockImplementationOnce((options) => {
       const writable = new Writable({
         write(chunk, _, callback) {
-          options.filter?.(chunk.toString(), { size: 1024 * 1024 } as tar.FileStat);
+          options.filter?.(chunk.toString(), { size: 1024 * 1024 } as Stats);
           callback();
         },
-      });
+      }) as unknown as Unpack;
       return writable;
     });
 
