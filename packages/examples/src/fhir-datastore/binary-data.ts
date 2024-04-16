@@ -1,6 +1,6 @@
 // start-block imports
+import { MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
 // end-block imports
 
 // start-block downloadBinary
@@ -14,7 +14,8 @@ const patient: Patient = {
   ],
 };
 
-const medplum = useMedplum();
+const medplum = new MedplumClient();
+
 // A function to return the url in 'Binary/{id}' format
 const binaryUrl = parsePresignedUrl(patient.photo?.[0].url);
 // Download the binary
