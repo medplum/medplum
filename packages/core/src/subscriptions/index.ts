@@ -18,6 +18,7 @@ export type RobustWebSocketEventMap = {
   open: { type: 'open' };
   message: MessageEvent;
   error: Event;
+  foo: Event;
   close: CloseEvent;
 };
 
@@ -66,6 +67,8 @@ export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> i
     });
 
     this.ws = ws;
+
+    this.dispatchEvent(new Event('foo'));
   }
 
   get readyState(): number {
