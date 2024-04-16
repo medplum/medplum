@@ -2,7 +2,7 @@ import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
 import { Repository } from './repo';
-import { getPresignedUrl } from './signer';
+import { getBinaryStorage } from './storage';
 
 /**
  * The target type of the attachment rewrite.
@@ -164,7 +164,8 @@ class Rewriter {
       getLogger().debug('Error reading binary to generate presigned URL', err);
       return `Binary/${id}`;
     }
-    return getPresignedUrl(binary);
+
+    return getBinaryStorage().getPresignedUrl(binary);
   }
 }
 

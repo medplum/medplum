@@ -1,4 +1,3 @@
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -10,7 +9,6 @@ import { loadTestConfig } from '../config';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
@@ -27,8 +25,6 @@ describe('Change Password', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
     (fetch as unknown as jest.Mock).mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);

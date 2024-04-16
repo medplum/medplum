@@ -24,6 +24,7 @@ describe('Reset Password', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.emailProvider = 'awsses';
     await initApp(app, config);
   });
 

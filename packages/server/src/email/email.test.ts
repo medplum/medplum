@@ -21,6 +21,7 @@ describe('Email', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.emailProvider = 'awsses';
     config.storageBaseUrl = 'https://storage.example.com/';
     await initAppServices(config);
   });
