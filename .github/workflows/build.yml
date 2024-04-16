@@ -114,7 +114,7 @@ jobs:
           echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
       - id: build
         name: Build
-        run: npm run build
+        run: npm run build -- --force
       - name: Run eslint
         id: fmt
         run: |
