@@ -9,6 +9,7 @@ import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
+import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
 import { agentStatusHandler } from './operations/agentstatus';
 import { codeSystemImportHandler } from './operations/codesystemimport';
@@ -184,6 +185,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);
   router.add('GET', '/Agent/:id/$status', agentStatusHandler);
+
+  // Agent $bulk-status operation
+  router.add('GET', '/Agent/$bulk-status', agentBulkStatusHandler);
 
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
