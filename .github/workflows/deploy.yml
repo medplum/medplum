@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Deploy
-    runs-on: ubuntu-latest
+    runs-on: Larger-runner-test
     timeout-minutes: 45
     if: github.repository == 'medplum/medplum'
     env:
