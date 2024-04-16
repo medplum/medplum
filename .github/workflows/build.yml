@@ -62,7 +62,7 @@ jobs:
       - name: Install
         run: npm ci
       - name: Build Project
-        run: npm run build
+        run: npm run build -- --force
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
