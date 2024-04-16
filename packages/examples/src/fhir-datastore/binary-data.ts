@@ -19,9 +19,9 @@ const medplum = new MedplumClient();
 // A function to return the url in 'Binary/{id}' format
 const binaryUrl = parsePresignedUrl(patient.photo?.[0].url);
 // Download the binary
-medplum.download(binaryUrl);
+await medplum.download(binaryUrl);
 // end-block downloadBinary
 
 function parsePresignedUrl(url?: string): string {
-  return 'Binary/example-id';
+  return `Binary/${url ?? 'example-id'}`;
 }
