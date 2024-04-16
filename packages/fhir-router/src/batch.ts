@@ -294,6 +294,14 @@ class BatchProcessor {
         return [allOk, results];
       }
       default:
+        if (route?.data?.interaction) {
+          const event: LogEvent = {
+            message: 'Unsupported batch entry interaction type',
+            type: 'warn',
+            data: { interaction: route.data.interaction, url: entry.request?.url },
+          };
+          this.router.dispatchEvent(event);
+        }
         throw new OperationOutcomeError(notFound); // TODO
     }
   }
