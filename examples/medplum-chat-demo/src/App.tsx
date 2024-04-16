@@ -16,11 +16,6 @@ export function App(): JSX.Element | null {
   const profile = useMedplumProfile();
   const navigate = useNavigate();
 
-  // Create an array of links and add a link to all active threads in the project
-  const userLinks = [
-    { icon: <IconMessage />, label: 'All Threads', href: '/Communication?part-of:missing=true&status:not=completed' },
-  ];
-
   // Format a search query to get all active threads assigned to the current user
   const myThreadsQuery = formatSearchQuery({
     resourceType: 'Communication',
@@ -31,9 +26,6 @@ export function App(): JSX.Element | null {
     ],
   });
 
-  // Add this link to the link array
-  userLinks.push({ icon: <IconMessage2Bolt />, label: 'My Threads', href: `/Communication${myThreadsQuery}` });
-
   if (medplum.isLoading()) {
     return null;
   }
@@ -43,9 +35,16 @@ export function App(): JSX.Element | null {
       logo={<Logo size={24} />}
       menus={[
         {
-          // A section of the sidebar that displays the links defined above
+          // A section of the sidebar that displays links to see all threads and threads the user is a part of
           title: 'My Links',
-          links: userLinks,
+          links: [
+            {
+              icon: <IconMessage />,
+              label: 'All Threads',
+              href: '/Communication?part-of:missing=true&status:not=completed',
+            },
+            { icon: <IconMessage2Bolt />, label: 'My Threads', href: `/Communication${myThreadsQuery}` },
+          ],
         },
         {
           // A section of the sidebar that links to a page to upload example data for the app

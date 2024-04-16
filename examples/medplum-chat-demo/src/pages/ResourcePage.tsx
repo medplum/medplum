@@ -39,7 +39,7 @@ export function ResourcePage(): JSX.Element | null {
     }
   }, [medplum, resourceType, id]);
 
-  const handleResourceEdit = async (newResource: Resource): Promise<void> => {
+  async function handleResourceEdit(newResource: Resource): Promise<void> {
     try {
       const updatedResource = await medplum.updateResource(cleanResource(newResource));
       setResource(updatedResource);
@@ -56,11 +56,11 @@ export function ResourcePage(): JSX.Element | null {
         message: normalizeErrorString(err),
       });
     }
-  };
+  }
 
-  const handleTabChange = (newTab: string | null): void => {
+  function handleTabChange(newTab: string | null): void {
     navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
-  };
+  }
 
   if (!resource) {
     return null;

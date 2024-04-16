@@ -11,9 +11,9 @@ export function CommunicationPage(): JSX.Element {
   const [communication, setCommunication] = useState<Communication>();
   const [isThread, setIsThread] = useState<boolean>();
 
-  const onCommunicationChange = (newCommunication: Communication): void => {
+  function onCommunicationChange(newCommunication: Communication): void {
     setCommunication(newCommunication);
-  };
+  }
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {

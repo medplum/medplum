@@ -15,7 +15,7 @@ export function AddSubject(props: AddSubjectProps): JSX.Element {
   const medplum = useMedplum();
   const [opened, handlers] = useDisclosure(false);
 
-  const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
+  function onQuestionnaireSubmit(formData: QuestionnaireResponse): void {
     // Throw an error if there is already a subject on the thread
     if (props.communication.subject) {
       throw new Error('Thread already has a subject.');
@@ -26,9 +26,9 @@ export function AddSubject(props: AddSubjectProps): JSX.Element {
     }
     addSubjectToThread(subjectData).catch(console.error);
     handlers.close();
-  };
+  }
 
-  const addSubjectToThread = async (subjectData: Reference<Patient>): Promise<void> => {
+  async function addSubjectToThread(subjectData: Reference<Patient>): Promise<void> {
     const communicationId = props.communication.id as string;
     const ops: PatchOperation[] = [
       // Test to prevent race conditions
@@ -53,7 +53,7 @@ export function AddSubject(props: AddSubjectProps): JSX.Element {
         message: normalizeErrorString(err),
       });
     }
-  };
+  }
 
   return (
     <div>

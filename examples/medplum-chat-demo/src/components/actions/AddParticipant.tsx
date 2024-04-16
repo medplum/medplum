@@ -16,7 +16,7 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
   const medplum = useMedplum();
   const [opened, handlers] = useDisclosure(false);
 
-  const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
+  function onQuestionnaireSubmit(formData: QuestionnaireResponse): void {
     const newParticipantsData = getRecipients(formData);
     if (!newParticipantsData) {
       throw new Error('Please select a valid person to add to this thread.');
@@ -41,11 +41,11 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
       throw new Error('Invalid recipient type');
     }
 
-    handleNewParticipant(newParticipants).catch(console.error);
+    addNewParticipant(newParticipants).catch(console.error);
     handlers.close();
-  };
+  }
 
-  const handleNewParticipant = async (newParticipant: Communication['recipient']): Promise<void> => {
+  async function addNewParticipant(newParticipant: Communication['recipient']): Promise<void> {
     if (!newParticipant) {
       return;
     }
@@ -82,7 +82,7 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
         message: normalizeErrorString(err),
       });
     }
-  };
+  }
 
   return (
     <div>

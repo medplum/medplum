@@ -16,9 +16,9 @@ export function CommunicationDetails({ communication }: CommunicationDetailsProp
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
-  const handleTabChange = (newTab: string | null): void => {
+  function handleTabChange(newTab: string | null): void {
     navigate(`/Communication/${id}/${newTab ?? ''}`);
-  };
+  }
 
   return (
     <Paper m="md" p="md">

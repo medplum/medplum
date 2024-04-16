@@ -53,7 +53,7 @@ export function SearchPage(): JSX.Element {
     }
   }, [medplum, navigate, location]);
 
-  const handleTabChange = (newTab: string | null): void => {
+  function handleTabChange(newTab: string | null): void {
     if (!search) {
       throw new Error('Error: No valid search');
     }
@@ -61,7 +61,7 @@ export function SearchPage(): JSX.Element {
     const updatedSearch = updateSearch(newTab ?? 'active', search);
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
     navigate(`/Communication${updatedSearchQuery}`);
-  };
+  }
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;

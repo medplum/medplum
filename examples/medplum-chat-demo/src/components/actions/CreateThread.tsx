@@ -29,7 +29,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
   const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
 
-  const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
+  function onQuestionnaireSubmit(formData: QuestionnaireResponse): void {
     const participants = getRecipients(formData) as QuestionnaireResponseItemAnswer[];
     const answers = getQuestionnaireAnswers(formData);
     const topic = answers.topic.valueString as string;
@@ -47,13 +47,13 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
 
     handleCreateThread(topic, participants, subject).catch(console.error);
     handlers.close();
-  };
+  }
 
-  const handleCreateThread = async (
+  async function handleCreateThread(
     topic: string,
     participants: QuestionnaireResponseItemAnswer[],
     subject?: Reference<Patient>
-  ): Promise<void> => {
+  ): Promise<void> {
     // The suggested way to handle threads is by including all participants in the `recipients` field. This gets all people that are a entered as a recipient
     const profileReference = createReference(profile);
 
@@ -114,7 +114,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
         message: normalizeErrorString(err),
       });
     }
-  };
+  }
 
   return (
     <Modal opened={opened} onClose={handlers.close}>

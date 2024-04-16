@@ -30,7 +30,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
   const [opened, handlers] = useDisclosure(false);
   const [period, setPeriod] = useState<Period>();
 
-  const onEncounterSubmit = async (resource: Resource): Promise<void> => {
+  async function onEncounterSubmit(resource: Resource): Promise<void> {
     const encounterData = resource as Encounter;
     encounterData.period = period;
 
@@ -52,10 +52,10 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
         message: normalizeErrorString(err),
       });
     }
-  };
+  }
 
   // A function that links a Communication to an Encounter using the Communication.encounter field. For more details see https://www.medplum.com/docs/communications/async-encounters
-  const linkEncounterToCommunication = async (encounter: Encounter, communication: Communication): Promise<void> => {
+  async function linkEncounterToCommunication(encounter: Encounter, communication: Communication): Promise<void> {
     const communicationId = communication.id as string;
     const encounterReference = createReference(encounter);
 
@@ -73,7 +73,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
     } catch (err) {
       console.error(err);
     }
-  };
+  }
 
   useEffect(() => {
     // When creating an encounter, the period should be from the time the first message in the thread was sent until the last message was sent

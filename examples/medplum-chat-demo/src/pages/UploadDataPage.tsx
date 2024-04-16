@@ -17,7 +17,7 @@ export function UploadDataPage(): JSX.Element {
   const { dataType } = useParams();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
 
-  const handleDataUpload = (): void => {
+  function handleDataUpload(): void {
     setButtonDisabled(true);
     uploadData(medplum, dataType)
       .then(() => navigate('/'))
@@ -30,7 +30,7 @@ export function UploadDataPage(): JSX.Element {
         });
       })
       .finally(() => setButtonDisabled(false));
-  };
+  }
 
   return (
     <Document>

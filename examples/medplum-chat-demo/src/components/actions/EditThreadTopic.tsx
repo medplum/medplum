@@ -15,7 +15,7 @@ export function EditThreadTopic({ communication, onChange }: EditTopicThreadProp
   const medplum = useMedplum();
   const [opened, handlers] = useDisclosure(false);
 
-  const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
+  function onQuestionnaireSubmit(formData: QuestionnaireResponse): void {
     const newTopic = getQuestionnaireAnswers(formData)['edit-topic'].valueString;
 
     if (!newTopic) {
@@ -24,9 +24,9 @@ export function EditThreadTopic({ communication, onChange }: EditTopicThreadProp
 
     handleTopicUpdate(newTopic).catch(console.error);
     handlers.close();
-  };
+  }
 
-  const handleTopicUpdate = async (newTopic: string): Promise<void> => {
+  async function handleTopicUpdate(newTopic: string): Promise<void> {
     const communicationId = communication.id as string;
     // Create a codeable concept for the topic
     const topicCodeable: CodeableConcept = {
@@ -59,7 +59,7 @@ export function EditThreadTopic({ communication, onChange }: EditTopicThreadProp
         message: normalizeErrorString(err),
       });
     }
-  };
+  }
 
   return (
     <div>
