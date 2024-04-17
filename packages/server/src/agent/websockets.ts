@@ -4,17 +4,19 @@ import {
   AgentTransmitRequest,
   ContentType,
   Hl7Message,
+  MEDPLUM_VERSION,
   getReferenceString,
   normalizeErrorString,
 } from '@medplum/core';
 import { Agent, Bot, Reference } from '@medplum/fhirtypes';
-import { AsyncLocalStorage } from 'async_hooks';
-import { IncomingMessage } from 'http';
 import { Redis } from 'ioredis';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { IncomingMessage } from 'node:http';
 import ws from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { heartbeat } from '../heartbeat';
+import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { getRedis, getRedisSubscriber } from '../redis';
 import { AgentConnectionState, AgentInfo } from './utils';
@@ -52,7 +54,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
             break;
 
           case 'agent:heartbeat:request':
-            sendMessage({ type: 'agent:heartbeat:response', version: 'TODO' });
+            sendMessage({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION });
             break;
 
           case 'agent:heartbeat:response':
@@ -214,7 +216,16 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     if (!agentId) {
       // Not connected
     }
-    await getRedis().set(
+
+    let redis: Redis;
+    try {
+      redis = getRedis();
+    } catch (err) {
+      globalLogger.warn(`[Agent]: Attempted to update agent info after server closed. ${normalizeErrorString(err)}`);
+      return;
+    }
+
+    await redis.set(
       `medplum:agent:${agentId}:info`,
       JSON.stringify({
         ...info,
@@ -229,7 +240,15 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     if (!agentId) {
       // Not connected
     }
-    const redis = getRedis();
+
+    let redis: Redis;
+    try {
+      redis = getRedis();
+    } catch (err) {
+      globalLogger.warn(`[Agent]: Attempted to update agent status after server closed. ${normalizeErrorString(err)}`);
+      return;
+    }
+
     const lastInfo = await redis.get(`medplum:agent:${agentId}:info`);
     if (!lastInfo) {
       await updateAgentInfo({ status, version: 'unknown', lastUpdated: new Date().toISOString() });
