@@ -1,6 +1,6 @@
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Binary } from '@medplum/fhirtypes';
-import { getConfig } from '../config';
+import { getConfig } from '../../config';
 
 /**
  * Returns a presigned URL for the Binary resource content.

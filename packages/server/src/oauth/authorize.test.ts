@@ -13,8 +13,6 @@ import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
 
-jest.mock('@aws-sdk/client-sesv2');
-
 describe('OAuth Authorize', () => {
   const app = express();
   const systemRepo = getSystemRepo();

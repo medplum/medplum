@@ -1,10 +1,9 @@
-import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
-import { GetParametersByPathCommand, Parameter, SSMClient } from '@aws-sdk/client-ssm';
 import { splitN } from '@medplum/core';
 import { KeepJobs } from 'bullmq';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
+import { loadAwsConfig } from './cloud/aws/config';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -28,6 +27,7 @@ export interface MedplumServerConfig {
   database: MedplumDatabaseConfig;
   databaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
+  emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
   bullmq?: MedplumBullmqConfig;
   googleClientId?: string;
@@ -180,6 +180,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   config.approvedSenderEmails = 'no-reply@example.com';
+  config.emailProvider = 'none';
   return config;
 }
 
@@ -236,97 +237,6 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
 }
 
 /**
- * Loads configuration settings from AWS SSM Parameter Store.
- * @param path - The AWS SSM Parameter Store path prefix.
- * @returns The loaded configuration.
- */
-async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
-  let region = DEFAULT_AWS_REGION;
-  if (path.includes(':')) {
-    [region, path] = splitN(path, ':', 2);
-  }
-
-  const client = new SSMClient({ region });
-  const config: Record<string, any> = {};
-  const parameters = [] as Parameter[];
-  let nextToken: string | undefined;
-  do {
-    const response = await client.send(
-      new GetParametersByPathCommand({
-        Path: path,
-        NextToken: nextToken,
-        WithDecryption: true,
-      })
-    );
-    if (response.Parameters) {
-      parameters.push(...response.Parameters);
-    }
-    nextToken = response.NextToken;
-  } while (nextToken);
-
-  // Load special AWS Secrets Manager secrets first
-  for (const param of parameters) {
-    const key = (param.Name as string).replace(path, '');
-    const value = param.Value as string;
-    if (key === 'DatabaseSecrets') {
-      config['database'] = await loadAwsSecrets(region, value);
-    } else if (key === 'RedisSecrets') {
-      config['redis'] = await loadAwsSecrets(region, value);
-    }
-  }
-
-  // Then load other parameters, which may override the secrets
-  for (const param of parameters) {
-    const key = (param.Name as string).replace(path, '');
-    const value = param.Value as string;
-    setValue(config, key, value);
-  }
-
-  return config as MedplumServerConfig;
-}
-
-/**
- * Returns the AWS Database Secret data as a JSON map.
- * @param region - The AWS region.
- * @param secretId - Secret ARN
- * @returns The secret data as a JSON map.
- */
-async function loadAwsSecrets(region: string, secretId: string): Promise<Record<string, any> | undefined> {
-  const client = new SecretsManagerClient({ region });
-  const result = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
-
-  if (!result.SecretString) {
-    return undefined;
-  }
-
-  return JSON.parse(result.SecretString);
-}
-
-function setValue(config: MedplumDatabaseConfig, key: string, value: string): void {
-  const keySegments = key.split('.');
-  let obj = config as Record<string, unknown>;
-
-  while (keySegments.length > 1) {
-    const segment = keySegments.shift() as string;
-    if (!obj[segment]) {
-      obj[segment] = {};
-    }
-    obj = obj[segment] as Record<string, unknown>;
-  }
-
-  let parsedValue: any = value;
-  if (isIntegerConfig(key)) {
-    parsedValue = parseInt(value, 10);
-  } else if (isBooleanConfig(key)) {
-    parsedValue = value === 'true';
-  } else if (isObjectConfig(key)) {
-    parsedValue = JSON.parse(value);
-  }
-
-  obj[keySegments[0]] = parsedValue;
-}
-
-/**
  * Adds default values to the config.
  * @param config - The input config as loaded from the config file.
  * @returns The config with default values added.
@@ -348,6 +258,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
   config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
+  config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
   return config;
 }
 

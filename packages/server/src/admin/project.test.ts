@@ -1,4 +1,3 @@
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { createReference } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -7,12 +6,11 @@ import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew, RegisterResponse } from '../auth/register';
+import { RegisterResponse, registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
 
-jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
@@ -43,8 +41,6 @@ describe('Project Admin routes', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
     (fetch as unknown as jest.Mock).mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);

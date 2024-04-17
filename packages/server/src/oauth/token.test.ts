@@ -22,7 +22,6 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret } from './keys';
 import { hashCode } from './token';
 
-jest.mock('@aws-sdk/client-sesv2');
 jest.mock('jose', () => {
   const core = jest.requireActual('@medplum/core');
   const original = jest.requireActual('jose');

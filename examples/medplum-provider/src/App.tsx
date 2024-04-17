@@ -22,7 +22,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { CreateResourcePage } from './pages/CreateResourcePage';
 import { HomePage } from './pages/HomePage';
 import { OnboardingPage } from './pages/OnboardingPage';
-import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { EditTab } from './pages/patient/EditTab';
@@ -33,6 +32,10 @@ import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
+import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
+import { ResourceEditPage } from './pages/resource/ResourceEditPage';
+import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
+import { ResourcePage } from './pages/resource/ResourcePage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -117,14 +120,21 @@ export function App(): JSX.Element | null {
                 <Route path="tasks" element={<TasksTab />} />
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path=":resourceType/new" element={<CreateResourcePage />} />
-                <Route path=":resourceType/:id" element={<ResourcePage />} />
+                <Route path=":resourceType/:id" element={<ResourcePage />}>
+                  <Route path="" element={<ResourceDetailPage />} />
+                  <Route path="edit" element={<ResourceEditPage />} />
+                  <Route path="history" element={<ResourceHistoryPage />} />
+                </Route>
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path="" element={<TimelineTab />} />
               </Route>
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route path="/:resourceType/new" element={<CreateResourcePage />} />
-              <Route path="/:resourceType/:id" element={<ResourcePage />} />
-              <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+              <Route path="/:resourceType/:id" element={<ResourcePage />}>
+                <Route path="" element={<ResourceDetailPage />} />
+                <Route path="edit" element={<ResourceEditPage />} />
+                <Route path="history" element={<ResourceHistoryPage />} />
+              </Route>
               <Route path="/:resourceType" element={<SearchPage />} />
             </>
           ) : (

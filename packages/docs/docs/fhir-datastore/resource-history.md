@@ -65,3 +65,18 @@ These requests return a `Bundle` resource with the different versions stored as 
 :::note Resource Creation Time
 There is currently no support for directly accessing the time and date that a resource was initially created. To do this use the `/_history` endpoint to retrieve all versions and view the `lastUpdated` field of the original version. Note that the GraphQL endpoint does not currently have a spec for the history API.
 :::
+
+## Reverting Changes to a Resource
+
+While there is no direct method to revert changes made to a resource, it can be easily done using the `readHistory` and `readVersion` helper functions provided by Medplum.
+
+The `readHistory` function is used to get the entire history of the resource. You can then choose the version and use `readVersion` to return the complete details of that version of the resource. The current resource can then be updated to the historic details.
+
+<details>
+  <summary>Example: Revert resource to a previous version</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="revertChanges">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+This method does not actually revert the resources to the previous version, but it creates a new entry in the resource's history with all of the same details as the historic version.

@@ -1,7 +1,5 @@
-import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
 import { ContentType } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -10,49 +8,19 @@ import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import { getBinaryStorage } from '../storage';
-import { getLambdaFunctionName } from './execute';
 
 const app = express();
 let accessToken: string;
 let bot: Bot;
 
 describe('Execute', () => {
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
-
-  beforeEach(() => {
-    mockLambdaClient = mockClient(LambdaClient);
-
-    mockLambdaClient.on(ListLayerVersionsCommand).resolves({
-      LayerVersions: [
-        {
-          LayerVersionArn: 'xyz',
-        },
-      ],
-    });
-
-    mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
-      const decoder = new TextDecoder();
-      const event = JSON.parse(decoder.decode(Payload));
-      const output = JSON.stringify(event.input);
-      const encoder = new TextEncoder();
-
-      return {
-        LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
-        Payload: encoder.encode(output),
-      };
-    });
-  });
-
-  afterEach(() => {
-    mockLambdaClient.restore();
-  });
-
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.vmContextBotsEnabled = true;
     await initApp(app, config);
     accessToken = await initTestAuth();
 
-    const res = await request(app)
+    const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -60,7 +28,7 @@ describe('Execute', () => {
         resourceType: 'Bot',
         identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
         name: 'Test Bot',
-        runtimeVersion: 'awslambda',
+        runtimeVersion: 'vmcontext',
         code: `
           export async function handler(medplum, event) {
             console.log('input', event.input);
@@ -68,8 +36,22 @@ describe('Execute', () => {
           }
         `,
       });
-    expect(res.status).toBe(201);
-    bot = res.body as Bot;
+    expect(res1.status).toBe(201);
+    bot = res1.body as Bot;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          exports.handler = async function (medplum, event) {
+            console.log('input', event.input);
+            return event.input;
+          };
+      `,
+      });
+    expect(res2.status).toBe(200);
   });
 
   afterAll(async () => {
@@ -235,64 +217,6 @@ describe('Execute', () => {
       .send({});
     expect(res3.status).toBe(400);
     expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
-  });
-
-  test('Get function name', async () => {
-    const config = getConfig();
-    const normalBot: Bot = { resourceType: 'Bot', id: '123' };
-    const customBot: Bot = {
-      resourceType: 'Bot',
-      id: '456',
-      identifier: [{ system: 'https://medplum.com/bot-external-function-id', value: 'custom' }],
-    };
-
-    expect(getLambdaFunctionName(normalBot)).toEqual('medplum-bot-lambda-123');
-    expect(getLambdaFunctionName(customBot)).toEqual('medplum-bot-lambda-456');
-
-    // Temporarily enable custom bot support
-    config.botCustomFunctionsEnabled = true;
-    expect(getLambdaFunctionName(normalBot)).toEqual('medplum-bot-lambda-123');
-    expect(getLambdaFunctionName(customBot)).toEqual('custom');
-    config.botCustomFunctionsEnabled = false;
-  });
-
-  test('Execute by identifier', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Bot/$execute?identifier=${bot.identifier?.[0]?.system}|${bot.identifier?.[0]?.value}`)
-      .set('Content-Type', ContentType.TEXT)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send('input');
-    expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
-    expect(res.text).toEqual('input');
-  });
-
-  test('Missing parameters', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Bot/$execute`)
-      .set('Content-Type', ContentType.TEXT)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send('input');
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Must specify bot ID or identifier.');
-  });
-
-  test('GET request with query params', async () => {
-    const res = await request(app)
-      .get(`/fhir/R4/Bot/${bot.id}/$execute?foo=bar`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-    expect(res.body.foo).toBe('bar');
-  });
-
-  test('POST request with extra path', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$execute/RequestGroup`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ foo: 'bar' });
-    expect(res.status).toBe(200);
-    expect(res.body.foo).toBe('bar');
   });
 
   test('VM context bot success', async () => {
