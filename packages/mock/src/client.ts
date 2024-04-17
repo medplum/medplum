@@ -659,10 +659,34 @@ export class MockFetchClient {
 
     const result = await this.router.handleRequest(request, this.repo);
     if (result.length === 1) {
+      this.logSearchParameterError(request);
       return result[0];
     } else {
       return result[1];
     }
+  }
+
+  private async logSearchParameterError(request: FhirRequest) {
+    const {
+      method,
+      params: { resourceType },
+      query,
+    } = request;
+    const codes = Object.keys(query);
+    if (method !== 'GET' || codes.length === 0) {
+      return;
+    }
+    const searchParameters = await this.repo.searchResources<SearchParameter>({
+      resourceType: 'SearchParameter',
+    });
+    codes.forEach((code) => {
+      const isMatch = searchParameters.some((searchParameter) => searchParameter.code === code);
+      if (!isMatch) {
+        console.error(
+          `Unknown search parameter ${code} for resource type ${resourceType}. Please check whether it is defined in searchparameters.json.`
+        );
+      }
+    });
   }
 }
 
