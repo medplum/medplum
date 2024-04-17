@@ -10,7 +10,7 @@ import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Document, Loading, ResourceForm, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { addProfileToResource, removeProfileFromResource } from '../../utils';
+import { addProfileToResource } from '../../utils';
 import { Alert, Anchor } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 
