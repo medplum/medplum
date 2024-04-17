@@ -13,6 +13,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
+import { IconCheck } from '@tabler/icons-react';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
   readonly resource: T;
@@ -27,7 +28,7 @@ export interface AsyncAutocompleteProps<T>
   readonly defaultValue?: T | T[];
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
-  readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
+  readonly itemComponent?: (props: AsyncAutocompleteOption<T> & { active: boolean }) => JSX.Element | ReactNode;
   readonly onChange: (item: T[]) => void;
   readonly onCreate?: (input: string) => T;
   readonly creatable?: boolean;
@@ -154,8 +155,8 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const addSelected = useCallback(
     (newValue: string): void => {
-      const result: T[] = [];
-      const newSelected: AsyncAutocompleteOption<T>[] = [...selected];
+      const newSelected: AsyncAutocompleteOption<T>[] = selected.filter((v) => v.value !== newValue);
+      const alreadySelected = selected.some((v) => v.value === newValue);
 
       let option = options?.find((option) => option.value === newValue);
       let item = option?.resource;
@@ -164,11 +165,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         option = toOption(item);
       }
 
-      if (item) {
-        result.push(item);
-      }
-
-      if (option) {
+      if (!alreadySelected && option) {
         newSelected.push(option);
       }
 
@@ -179,16 +176,18 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       }
 
-      onChange(result);
+      onChange(newSelected.map((v) => v.resource));
       setSelected(newSelected);
     },
     [creatable, options, selected, maxValues, onChange, onCreate, toOption]
   );
 
   const handleValueSelect = (val: string): void => {
-    setSearch('');
-    setOptions([]);
-    combobox.closeDropdown();
+    if (maxValues === 1) {
+      setSearch('');
+      setOptions([]);
+      combobox.closeDropdown();
+    }
     lastValueRef.current = undefined;
     if (val === '$create') {
       addSelected(search);
@@ -278,7 +277,10 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
                   value={search}
                   placeholder={placeholder}
                   onFocus={handleSearchChange}
-                  onBlur={() => combobox.closeDropdown()}
+                  onBlur={() => {
+                    combobox.closeDropdown();
+                    setSearch('');
+                  }}
                   onKeyDown={handleKeyDown}
                   onChange={handleSearchChange}
                 />
@@ -291,11 +293,14 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       <Combobox.Dropdown>
         <Combobox.Options>
           <ScrollAreaAutosize type="scroll" mah={optionsDropdownMaxHeight}>
-            {options.map((item) => (
-              <Combobox.Option value={item.value} key={item.value} active={selected.includes(item)}>
-                <ItemComponent {...item} />
-              </Combobox.Option>
-            ))}
+            {options.map((item) => {
+              const active = selected.some((v) => v.value === item.value);
+              return (
+                <Combobox.Option value={item.value} key={item.value} active={active}>
+                  <ItemComponent {...item} active={active} />
+                </Combobox.Option>
+              );
+            })}
 
             {creatable && search.trim().length > 0 && (
               <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
@@ -321,9 +326,10 @@ function toDefaultItems<T>(defaultValue: T | T[] | undefined): T[] {
   return [defaultValue];
 }
 
-function DefaultItemComponent(props: ComboboxItem): JSX.Element {
+function DefaultItemComponent(props: ComboboxItem & { active: boolean }): JSX.Element {
   return (
-    <Group gap="sm">
+    <Group gap="xs">
+      {props.active && <IconCheck size={12} />}
       <span>{props.label}</span>
     </Group>
   );
