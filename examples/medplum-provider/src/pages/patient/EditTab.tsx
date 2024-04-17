@@ -55,11 +55,7 @@ export function EditTab(): JSX.Element | null {
   const handleSubmit = useCallback(
     (newResource: Resource): void => {
       setOutcome(undefined);
-      if (profile) {
-        addProfileToResource(newResource, PATIENT_PROFILE_URL);
-      } else {
-        removeProfileFromResource(newResource, PATIENT_PROFILE_URL);
-      }
+      addProfileToResource(newResource, PATIENT_PROFILE_URL);
       medplum
         .updateResource(newResource)
         .then(() => {
@@ -71,7 +67,7 @@ export function EditTab(): JSX.Element | null {
           showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
         });
     },
-    [profile, medplum, navigate, patientId]
+    [medplum, navigate, patientId]
   );
 
   if (loadingProfile) {
