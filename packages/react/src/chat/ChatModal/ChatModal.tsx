@@ -1,12 +1,12 @@
 import { ActionIcon } from '@mantine/core';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import classes from './ChatModal.module.css';
 
 export interface ChatModalProps {
   readonly open?: boolean;
-  readonly children: React.ReactNode;
+  readonly children: ReactNode;
 }
 
 export function ChatModal(props: ChatModalProps): JSX.Element | null {

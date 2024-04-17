@@ -179,7 +179,7 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
             data-testid={`remove-group-button-${intervalGroup.id}`}
             key={`remove-group-button-${intervalGroup.id}`}
             size="sm"
-            onClick={(e: React.MouseEvent) => {
+            onClick={(e: MouseEvent) => {
               killEvent(e);
               props.onRemoveGroup(intervalGroup);
             }}
@@ -209,7 +209,7 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
                 size="sm"
                 key={`remove-interval-${interval.id}`}
                 data-testid={`remove-interval-${interval.id}`}
-                onClick={(e: React.MouseEvent) => {
+                onClick={(e: MouseEvent) => {
                   killEvent(e);
                   props.onRemove(intervalGroup.id, interval);
                 }}
@@ -232,7 +232,7 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
           title="Add Interval"
           variant="subtle"
           size="sm"
-          onClick={(e: React.MouseEvent) => {
+          onClick={(e: MouseEvent) => {
             killEvent(e);
             props.onAdd(intervalGroup.id, {
               range: {

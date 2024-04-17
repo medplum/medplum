@@ -11,7 +11,7 @@ import {
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { KeyboardEvent, ReactNode, SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
@@ -129,7 +129,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   }, [combobox, loadOptions, onChange, toOption]);
 
   const handleSearchChange = useCallback(
-    (e: React.SyntheticEvent): void => {
+    (e: SyntheticEvent): void => {
       if ((options && options.length > 0) || creatable) {
         combobox.openDropdown();
       }

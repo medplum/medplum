@@ -15,6 +15,7 @@
     "@mantine/notifications": "7.8.0",
     "@medplum/core": "3.1.2",
     "@medplum/react": "3.1.2",
+    "@next/bundle-analyzer": "14.2.1",
     "next": "14.2.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
