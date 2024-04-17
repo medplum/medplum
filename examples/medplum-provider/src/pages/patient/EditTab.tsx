@@ -14,7 +14,7 @@ import { addProfileToResource, removeProfileFromResource } from '../../utils';
 import { Alert, Anchor } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 
-const PATIENT_PROFILE_URL = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patientX';
+const PATIENT_PROFILE_URL = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
 
 export function EditTab(): JSX.Element | null {
   const medplum = useMedplum();
@@ -79,22 +79,21 @@ export function EditTab(): JSX.Element | null {
   }
 
   if (!profile) {
-    let displayString: React.ReactNode;
-    if (profileError) {
-      displayString = normalizeErrorString(profileError);
-    } else {
-      displayString = (
-        <>
+    const errorContent = (
+      <>
+        <p>
           Could not find the{' '}
           <Anchor href={PATIENT_PROFILE_URL} target="_blank">
             US Core Patient Profile
           </Anchor>
-        </>
-      );
-    }
+        </p>
+        {profileError && <p>Server error: {normalizeErrorString(profileError)}</p>}
+      </>
+    );
+
     return (
       <Alert icon={<IconAlertCircle size={16} />} title="Not found" color="red">
-        {displayString}
+        {errorContent}
       </Alert>
     );
   }
