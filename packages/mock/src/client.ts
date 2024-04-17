@@ -745,10 +745,23 @@ export class MockFetchClient {
 
     const result = await this.router.handleRequest(request, this.repo);
     if (result.length === 1) {
+      this.logStructureDefinitionError(request.params.resourceType);
       this.logSearchParameterError(request);
       return result[0];
     } else {
       return result[1];
+    }
+  }
+
+  private async logStructureDefinitionError(resourceType: string) {
+    const structureDefinitions = await this.repo.searchResources<StructureDefinition>({
+      resourceType: 'StructureDefinition',
+    });
+    const isMatch = structureDefinitions.some((sd) => sd.id === resourceType);
+    if (!isMatch) {
+      console.error(
+        `Unknown resource type: ${resourceType}. Please check whether it is defined in structuredefinitions.json.`
+      );
     }
   }
 

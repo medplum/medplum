@@ -455,6 +455,9 @@ export class MemoryRepository extends FhirRepository<undefined> {
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
+    if (!this.resources.has(resourceType)) {
+      throw new Error(`Unknown resource type: ${resourceType}`);
+    }
     const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
     for (const resource of resources.values()) {
