@@ -58,7 +58,7 @@ export default function PricingPage(): JSX.Element {
                   </sup>
                 </th>
                 <th>
-                <a href="https://www.medplum.com/enterprise">Enterprise</a>
+                  <a href="https://www.medplum.com/enterprise">Enterprise</a>
                 </th>
               </tr>
             </thead>
@@ -171,7 +171,7 @@ export default function PricingPage(): JSX.Element {
                 <td></td>
                 <td></td>
               </tr>
-               <tr>
+              <tr>
                 <td>
                   <b>Communications</b>
                 </td>
@@ -181,8 +181,8 @@ export default function PricingPage(): JSX.Element {
                 <td></td>
                 <td></td>
                 <td></td>
-               </tr>
-               <tr>
+              </tr>
+              <tr>
                 <td>
                   Websocket Subscriptions
                   <sup>
@@ -195,19 +195,17 @@ export default function PricingPage(): JSX.Element {
                 <td>✔️</td>
                 <td></td>
                 <td>✔️</td>
-               </tr>
-               <tr>
-                <td>
-                  Concurrent Connections
-                </td>
+              </tr>
+              <tr>
+                <td>Concurrent Connections</td>
                 <td></td>
                 <td></td>
                 <td>2000</td>
                 <td>Contact Us</td>
                 <td></td>
                 <td>Contact Us</td>
-               </tr>
-               <tr>
+              </tr>
+              <tr>
                 <td>
                   <b>Integrations</b>
                 </td>
@@ -217,8 +215,8 @@ export default function PricingPage(): JSX.Element {
                 <td></td>
                 <td></td>
                 <td></td>
-               </tr>
-               <tr>
+              </tr>
+              <tr>
                 <td>Lab/Diagnostics</td>
                 <td></td>
                 <td></td>
@@ -246,7 +244,9 @@ export default function PricingPage(): JSX.Element {
                 <td>✔️</td>
               </tr>
               <tr>
-                <td><b>Support</b></td>
+                <td>
+                  <b>Support</b>
+                </td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -373,7 +373,9 @@ export default function PricingPage(): JSX.Element {
                 <td>Contact us</td>
               </tr>
               <tr>
-                <td><strong>Observability</strong></td>
+                <td>
+                  <strong>Observability</strong>
+                </td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -441,9 +443,12 @@ export default function PricingPage(): JSX.Element {
                 <td>Contact us</td>
               </tr>
               <tr>
-                <td>Audit Support<sup>
+                <td>
+                  Audit Support
+                  <sup>
                     <a href="#note12">12</a>
-                  </sup></td>
+                  </sup>
+                </td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -496,32 +501,40 @@ export default function PricingPage(): JSX.Element {
                 <a href="https://github.com/medplum/medplum">Medplum application</a>.
               </li>
               <li id="note6">
-                <strong>Enterprise Self-Hosted</strong>: recommended for those who must host the application on their own
-                cloud infrastructure.
+                <strong>Enterprise Self-Hosted</strong>: recommended for those who must host the application on their
+                own cloud infrastructure.
               </li>
               <li id="note7">
-              <strong>FHIR Resources Stored</strong>: Data usage refers to the creation of{' '}
+                <strong>FHIR Resources Stored</strong>: Data usage refers to the creation of{' '}
                 <a href="https://www.medplum.com/docs/fhir-datastore/create-fhir-data">FHIR Resources</a>. This figure
-                is cumulative.  For Premium, Communication resources that are generated as part of messaging are not included in the resource cap shown.
+                is cumulative. For Premium, Communication resources that are generated as part of messaging are not
+                included in the resource cap shown.
               </li>
               <li id="note8">
                 <strong>Bot Invocations</strong>: refers to custom logic written by customers to execute their workflow.{' '}
                 <a href="https://www.medplum.com/products/bots">Automation</a> documentation and{' '}
                 <a href="https://www.medplum.com/products/integration">integration</a> are a good place to learn more.
               </li>
-              <li id="note9"><strong>Required authentication methods</strong>: Organizations can require that all logins at their domain go through their identity provider of choice.</li>
+              <li id="note9">
+                <strong>Required authentication methods</strong>: Organizations can require that all logins at their
+                domain go through their identity provider of choice.
+              </li>
               <li id="note10">
-                <strong>Compliance</strong>: Many complex compliance scenarios can be supported with this infrastructure. You can read more on the{' '}
+                <strong>Compliance</strong>: Many complex compliance scenarios can be supported with this
+                infrastructure. You can read more on the{' '}
                 <a href="https://www.medplum.com/docs/compliance">compliance page</a>.
               </li>
               <li id="note11">
-                <strong>Websocket Subscriptions</strong>: maximal number of concurrent websocket <a href="https://www.medplum.com/docs/subscriptions">subscriptions</a> available.
+                <strong>Websocket Subscriptions</strong>: maximal number of concurrent websocket{' '}
+                <a href="https://www.medplum.com/docs/subscriptions">subscriptions</a> available.
               </li>
               <li id="note12">
-                <strong>Audit Support</strong>: receive support during common audits common in health system and payor partnerships.
+                <strong>Audit Support</strong>: receive support during common audits common in health system and payor
+                partnerships.
               </li>
               <li id="note13">
-                <strong>External Identity Providers</strong>: connect your Okta, Azure SSO, Auth0 or other oAuth based identity provider.
+                <strong>External Identity Providers</strong>: connect your Okta, Azure SSO, Auth0 or other oAuth based
+                identity provider.
               </li>
             </ol>
           </div>

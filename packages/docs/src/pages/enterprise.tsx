@@ -93,7 +93,8 @@ export default function EnterprisePage(): JSX.Element {
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Enterprise Identity Management</h1>
             <p className={styles.heroText}>
-              Connect multiplie identity prociders and provision identities programmatically across your health record system.  Use SCM administration for robust and compliant identity administration.
+              Connect multiplie identity prociders and provision identities programmatically across your health record
+              system. Use SCM administration for robust and compliant identity administration.
             </p>
           </div>
         </Jumbotron>
@@ -118,19 +119,20 @@ export default function EnterprisePage(): JSX.Element {
               webUrl="/docs/auth/methods/google-auth"
             />
           </CardContainer>
-          </Section>
-          <Jumbotron>
+        </Section>
+        <Jumbotron>
           <div className={styles.heroImage}>
             <img src="/img/infrastructure-jumbotron.svg" alt="Medplum robot coding" width="488" height="384" />
           </div>
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Enterprise Observability</h1>
             <p className={styles.heroText}>
-            Gain deep insights into systems performance and health. Enables proactive issue detection, efficient troubleshooting, and improved system reliability. 
+              Gain deep insights into systems performance and health. Enables proactive issue detection, efficient
+              troubleshooting, and improved system reliability.
             </p>
           </div>
         </Jumbotron>
-          <Section>
+        <Section>
           <CardContainer>
             <ProfileCard
               name="Datadog"
@@ -152,16 +154,16 @@ export default function EnterprisePage(): JSX.Element {
             />
           </CardContainer>
           <Jumbotron>
-          <div className={styles.heroImage}>
-            <img src="/img/infrastructure-jumbotron.svg" alt="Medplum robot coding" width="488" height="384" />
-          </div>
-          <div className={styles.heroContent}>
-            <h1 className={styles.heroTitle}>Enterprise Integrations</h1>
-            <p className={styles.heroText}>
-            Enable reliable, compliant and auditable connectivity to service providers and partners. 
-            </p>
-          </div>
-        </Jumbotron>
+            <div className={styles.heroImage}>
+              <img src="/img/infrastructure-jumbotron.svg" alt="Medplum robot coding" width="488" height="384" />
+            </div>
+            <div className={styles.heroContent}>
+              <h1 className={styles.heroTitle}>Enterprise Integrations</h1>
+              <p className={styles.heroText}>
+                Enable reliable, compliant and auditable connectivity to service providers and partners.
+              </p>
+            </div>
+          </Jumbotron>
           <CardContainer>
             <ProfileCard
               name="Labcorp"
