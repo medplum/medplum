@@ -509,6 +509,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
+    if (resource.resourceType !== resourceType) {
+      throw new OperationOutcomeError(badRequest('Incorrect resource type'));
+    }
+    if (resource.id !== id) {
+      throw new OperationOutcomeError(badRequest('Incorrect ID'));
+    }
     await this.validateResource(resource);
 
     if (!this.canWriteResourceType(resourceType)) {
