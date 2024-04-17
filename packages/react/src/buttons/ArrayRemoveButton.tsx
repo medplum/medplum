@@ -1,9 +1,10 @@
 import { ActionIcon } from '@mantine/core';
 import { IconCircleMinus } from '@tabler/icons-react';
+import { MouseEventHandler } from 'react';
 
 export interface ArrayRemoveButtonProps {
   readonly propertyDisplayName?: string;
-  readonly onClick: React.MouseEventHandler;
+  readonly onClick: MouseEventHandler;
   readonly testId?: string;
 }
 

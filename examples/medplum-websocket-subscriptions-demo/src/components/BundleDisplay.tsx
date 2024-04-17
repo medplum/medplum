@@ -2,7 +2,7 @@ import { Accordion, ActionIcon, Chip, Group } from '@mantine/core';
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconArrowNarrowRight, IconCheck } from '@tabler/icons-react';
-import { useCallback } from 'react';
+import { SyntheticEvent, useCallback } from 'react';
 
 export interface BundleDisplayProps {
   readonly bundle: Bundle;
@@ -16,7 +16,7 @@ export function BundleDisplay(props: BundleDisplayProps): JSX.Element {
   const [recipientType, recipientId] = ((communication.recipient?.[0] as Reference).reference as string).split('/');
 
   const markAsCompleted = useCallback(
-    (e: React.SyntheticEvent) => {
+    (e: SyntheticEvent) => {
       e.stopPropagation();
       e.preventDefault();
       medplum

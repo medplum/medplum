@@ -1,5 +1,7 @@
+import { Context } from 'react';
+
 export function maybeWrapWithContext<T>(
-  ContextProvider: React.Context<T>['Provider'],
+  ContextProvider: Context<T>['Provider'],
   contextValue: T | undefined,
   contents: JSX.Element
 ): JSX.Element {

@@ -1,8 +1,8 @@
 import { ElementsContextType, InternalSchemaElement, isPopulated } from '@medplum/core';
-import React from 'react';
+import { createContext } from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 
-export const ElementsContext = React.createContext<ElementsContextType>({
+export const ElementsContext = createContext<ElementsContextType>({
   path: '',
   profileUrl: undefined,
   elements: Object.create(null),

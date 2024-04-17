@@ -1,10 +1,12 @@
+import { SyntheticEvent } from 'react';
+
 /**
  * Kills a browser event.
  * Prevents default behavior.
  * Stops event propagation.
  * @param e - The event.
  */
-export function killEvent(e: Event | React.SyntheticEvent): void {
+export function killEvent(e: Event | SyntheticEvent): void {
   e.preventDefault();
   e.stopPropagation();
 }

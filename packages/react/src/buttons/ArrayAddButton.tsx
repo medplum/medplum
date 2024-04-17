@@ -1,9 +1,10 @@
-import { Button, ActionIcon } from '@mantine/core';
+import { ActionIcon, Button } from '@mantine/core';
 import { IconCirclePlus } from '@tabler/icons-react';
+import { MouseEventHandler } from 'react';
 
 export interface ArrayAddButtonProps {
   readonly propertyDisplayName?: string;
-  readonly onClick: React.MouseEventHandler;
+  readonly onClick: MouseEventHandler;
   readonly testId?: string;
 }
 

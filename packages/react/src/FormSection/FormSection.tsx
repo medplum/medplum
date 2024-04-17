@@ -1,8 +1,8 @@
 import { Input } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { ReactNode, useContext } from 'react';
-import { getErrorsForInput } from '../utils/outcomes';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { getErrorsForInput } from '../utils/outcomes';
 
 export interface FormSectionProps {
   readonly title?: string;
@@ -19,7 +19,7 @@ export interface FormSectionProps {
 export function FormSection(props: FormSectionProps): JSX.Element {
   const { debugMode } = useContext(ElementsContext);
 
-  let label: React.ReactNode;
+  let label: ReactNode;
   if (debugMode && props.fhirPath) {
     label = `${props.title} - ${props.fhirPath}`;
   } else {
