@@ -4,6 +4,9 @@ toc_max_heading_level: 5
 sidebar_position: 6
 ---
 
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/profiles.ts';
+
 # Profiles
 
 FHIR provides a broad variety of resources types to cover as many different types of healthcare data as possible, favoring generality over specificity. For example, the `Observation` resource type is used to record many different kinds of data: a patient's smoking status might be recorded using the `valueCodeableConcept` field, while the measurement data for blood pressure would exist as two separate entries under `component.valueQuantity`.
@@ -12,7 +15,7 @@ To meet more specific use cases, FHIR allows developers to author [resource prof
 
 Medplum developers can take advantage of FHIR profiles in the following ways:
 
-1. Complying to an certain data quality standard. In the United States,
+1. Complying to a certain data quality standard. In the United States,
    the [US Core profiles][us-core] specify a minimum set of required data (called [USCDI][uscdi]) for interoperating with
    other US healthcare entities.
 2. Enforcing an internal schema (i.e. an organization's own data quality rules),
@@ -30,18 +33,18 @@ server. This helps ensure data quality by preventing data that does not match th
 
 ## Creating Profiles
 
-The schema for each FHIR resource type is defined by a [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource. By default, Medplum ships with [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) for each FHIR base resource type and for Medplum defined resource types. The source data for these [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) can be found the [@medplum/definitions](https://github.com/medplum/medplum/tree/main/packages/definitions) package. 
+The schema for each FHIR resource type is defined by a [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource. By default, Medplum ships with [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) for each FHIR base resource type and for Medplum defined resource types. The source data for these [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) can be found the [@medplum/definitions](https://github.com/medplum/medplum/tree/main/packages/definitions) package.
 
-FHIR profiles are also stored as [`StructureDefinÏition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project. 
+FHIR profiles are also stored as [`StructureDefinÏition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project.
 
-Authoring profiles from scratch can be complicated and time consuming. Many organizations publish **implementation guides** with collections for FHIR profiles, tailored to specific healthcare domains. 
+Authoring profiles from scratch can be complicated and time consuming. Many organizations publish **implementation guides** with collections for FHIR profiles, tailored to specific healthcare domains.
 
-For example: 
+For example:
 
-* [US Core](http://hl7.org/fhir/us/core/index.html): Establishing the “floor” of standards to promote interoperability throughout the US healthcare system.
-* [PDex Payer Networks](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/):  Health insurers' insurance plans, their associated networks, and the organizations and providers that participate in these networks.
-* [US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/):  Health insurers' drug formulary information for patients/consumers.
-* [Dental Data Exchange](http://hl7.org/fhir/us/dental-data-exchange/): Standards for bi-directional information exchange  dental providers.
+- [US Core](http://hl7.org/fhir/us/core/index.html): Establishing the “floor” of standards to promote interoperability throughout the US healthcare system.
+- [PDex Payer Networks](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/): Health insurers' insurance plans, their associated networks, and the organizations and providers that participate in these networks.
+- [US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/): Health insurers' drug formulary information for patients/consumers.
+- [Dental Data Exchange](http://hl7.org/fhir/us/dental-data-exchange/): Standards for bi-directional information exchange dental providers.
 
 ## Profile adoption
 
@@ -122,7 +125,7 @@ plan to use.
 
 ## Searching by Profile
 
-You can use the `_profile` search parameter to retrieve all resources of a given type that conform to a certain FHIR profile. 
+You can use the `_profile` search parameter to retrieve all resources of a given type that conform to a certain FHIR profile.
 
 Refer to the [Advanced Search Parameters](/docs/search/advanced-search-parameters#_profile) guide for more information.
 
@@ -168,3 +171,22 @@ to satisfy the field presence requirement, while also denoting why the data is m
 ```
 
 [data-absent-ext]: http://hl7.org/fhir/StructureDefinition/data-absent-reason
+
+## Updating Profiles
+
+Updating FHIR profiles is different than updating other resources in FHIR. The process is more similar to a database migration, and the profiled resources will need to be revalidated once the update is complete. This revalidation does not happen automatically, but will be checked the next time the resource is written to.
+
+This section offers some best practices to make updating profiles as smooth and painless as possible when using Mepdlum.
+
+When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as a new `version` field. The `version` element is defined by the author of the [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) and is not expected to be globally unique.
+
+Using the `version` element allows resources to attest to different versions of the profile, so you will need to update the profile extension on the resources before the changes are enforced. To make this easier, you can use the [$validate operation](/docs/api/fhir/operations/validate-a-resource). This allows you to avoid system errors by ensuring that the resource is valid before applying the new extension version.
+
+When you update a profile, you can loop over each resource, validate it, and update the profile if it passes. To help with this, Mepdlum provides the `validateResource` helper function.
+
+<details>
+<summary>Example: Validate a new profile against all Patient resources in the system</summary>
+  <MedplumCodeBlock language="bash" selectBlocks="profileMigration">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
