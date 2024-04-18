@@ -9,7 +9,7 @@ const patient: Patient = {
   photo: [
     {
       contentType: 'image/jpeg',
-      url: 'https://storage.medplum.com/12345?token=...',
+      url: 'https://storage.medplum.com/binary/12345',
     },
   ],
 };
