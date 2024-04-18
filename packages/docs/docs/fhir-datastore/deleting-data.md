@@ -46,3 +46,9 @@ The Medplum `$expunge` operation supports an optional `everything` flag to syste
 ```
 POST [base]/[resourceType]/[id]/$expunge?everything=true
 ```
+
+:::warning Expunging a Project
+
+If you expunge a [`Project`](/docs/api/fhir/medplum/project), it will be _permanently_ deleted and you will no longer be able to sign in or access it in any way.
+
+:::
