@@ -9,21 +9,22 @@ import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 
-const NUM_AGENTS = 4;
-
-const app = express();
-let accessToken: string;
-let agents: Agent[];
+const NUM_DEFAULT_AGENTS = 2;
 
 describe('Agent/$bulk-status', () => {
+  const app = express();
+  let accessToken: string;
+  const agents: Agent[] = [];
+  let connectedAgent: Agent;
+  let disabledAgent: Agent;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth();
-    agents = [];
 
-    const promises = Array.from({ length: NUM_AGENTS }) as Promise<Response>[];
-    for (let i = 0; i < NUM_AGENTS; i++) {
+    const promises = Array.from({ length: NUM_DEFAULT_AGENTS }) as Promise<Response>[];
+    for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
       promises[i] = request(app)
         .post('/fhir/R4/Agent')
         .set('Content-Type', ContentType.FHIR_JSON)
@@ -37,10 +38,61 @@ describe('Agent/$bulk-status', () => {
     }
 
     const responses = await Promise.all(promises);
-    for (let i = 0; i < NUM_AGENTS; i++) {
+    for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
       expect(responses[i].status).toBe(201);
       agents[i] = responses[i].body;
     }
+
+    const agent1Res = await request(app)
+      .post('/fhir/R4/Agent')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        identifier: [{ system: 'https://example.com/agent', value: randomUUID() }],
+        resourceType: 'Agent',
+        name: 'Medplum Agent',
+        status: 'active',
+      } satisfies Agent);
+    expect(agent1Res.status).toEqual(201);
+
+    const agent2Res = await request(app)
+      .post('/fhir/R4/Agent')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        identifier: [{ system: 'https://example.com/agent', value: randomUUID() }],
+        resourceType: 'Agent',
+        name: 'Old Medplum Agent',
+        status: 'off',
+      } satisfies Agent);
+    expect(agent2Res.status).toEqual(201);
+
+    connectedAgent = agent1Res.body;
+    disabledAgent = agent2Res.body;
+
+    // Emulate a connection
+    await getRedis().set(
+      `medplum:agent:${connectedAgent.id}:info`,
+      JSON.stringify({
+        status: AgentConnectionState.CONNECTED,
+        version: '3.1.4',
+        lastUpdated: new Date().toISOString(),
+      }),
+      'EX',
+      60
+    );
+
+    // Emulate a disconnected agent
+    await getRedis().set(
+      `medplum:agent:${disabledAgent.id}:info`,
+      JSON.stringify({
+        status: AgentConnectionState.DISCONNECTED,
+        version: '3.1.2',
+        lastUpdated: new Date().toISOString(),
+      }),
+      'EX',
+      60
+    );
   });
 
   afterAll(async () => {
@@ -62,35 +114,7 @@ describe('Agent/$bulk-status', () => {
       expect(parameters).toBeDefined();
       expect(parameters.resourceType).toEqual('Parameters');
       expect([2, 3]).toContain(parameters.parameter?.length);
-      expect(parameters.parameter?.find((param) => param.name === 'status')?.valueCode).toEqual(
-        AgentConnectionState.UNKNOWN
-      );
-      expect(parameters.parameter?.find((param) => param.name === 'version')?.valueString).toEqual('unknown');
     }
-
-    // Emulate a connection
-    await getRedis().set(
-      `medplum:agent:${agents[0].id}:info`,
-      JSON.stringify({
-        status: AgentConnectionState.CONNECTED,
-        version: '3.1.4',
-        lastUpdated: new Date().toISOString(),
-      }),
-      'EX',
-      60
-    );
-
-    // Emulate a connection
-    await getRedis().set(
-      `medplum:agent:${agents[3].id}:info`,
-      JSON.stringify({
-        status: AgentConnectionState.DISCONNECTED,
-        version: '3.1.2',
-        lastUpdated: new Date().toISOString(),
-      }),
-      'EX',
-      60
-    );
 
     const res2 = await request(app)
       .get('/fhir/R4/Agent/$bulk-status')
@@ -102,8 +126,8 @@ describe('Agent/$bulk-status', () => {
     expect(bundle2.entry).toHaveLength(4);
 
     const bundle2Entries = bundle2.entry as BundleEntry<Parameters>[];
-    for (let i = 0; i < NUM_AGENTS; i++) {
-      const parameters = bundle2Entries[i].resource as Parameters;
+    for (const entry of bundle2Entries) {
+      const parameters = entry.resource as Parameters;
       expect(parameters).toBeDefined();
       expect(parameters.resourceType).toEqual('Parameters');
       expect([2, 3]).toContain(parameters.parameter?.length);
@@ -160,6 +184,106 @@ describe('Agent/$bulk-status', () => {
           expect.objectContaining<ParametersParameter>({
             name: 'version',
             valueString: 'unknown',
+          }),
+        ]),
+      }),
+    });
+  });
+
+  test('Get agent statuses for agent with name containing Medplum', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$bulk-status')
+      .query({ 'name:contains': 'Medplum' })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+
+    const bundle = res.body as Bundle<Parameters>;
+    expect(bundle.resourceType).toBe('Bundle');
+    expect(bundle.entry).toHaveLength(2);
+
+    const bundleEntries = bundle.entry as BundleEntry<Parameters>[];
+    for (let i = 0; i < 2; i++) {
+      const parameters = bundleEntries[i].resource as Parameters;
+      expect(parameters).toBeDefined();
+      expect(parameters.resourceType).toEqual('Parameters');
+      expect([2, 3]).toContain(parameters.parameter?.length);
+    }
+
+    expect(bundleEntries).toContainEqual({
+      resource: expect.objectContaining<Parameters>({
+        resourceType: 'Parameters',
+        parameter: expect.arrayContaining<ParametersParameter>([
+          expect.objectContaining<ParametersParameter>({
+            name: 'status',
+            valueCode: AgentConnectionState.CONNECTED,
+          }),
+          expect.objectContaining<ParametersParameter>({
+            name: 'version',
+            valueString: '3.1.4',
+          }),
+          expect.objectContaining<ParametersParameter>({
+            name: 'lastUpdated',
+            valueInstant: expect.any(String),
+          }),
+        ]),
+      }),
+    });
+
+    expect(bundleEntries).toContainEqual({
+      resource: expect.objectContaining<Parameters>({
+        resourceType: 'Parameters',
+        parameter: expect.arrayContaining<ParametersParameter>([
+          expect.objectContaining<ParametersParameter>({
+            name: 'status',
+            valueCode: AgentConnectionState.DISCONNECTED,
+          }),
+          expect.objectContaining<ParametersParameter>({
+            name: 'version',
+            valueString: '3.1.2',
+          }),
+          expect.objectContaining<ParametersParameter>({
+            name: 'lastUpdated',
+            valueInstant: expect.any(String),
+          }),
+        ]),
+      }),
+    });
+  });
+
+  test('Get agent statuses for ACTIVE agents with name containing Medplum', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$bulk-status')
+      .query({ 'name:contains': 'Medplum', status: 'active' })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+
+    const bundle = res.body as Bundle<Parameters>;
+    expect(bundle.resourceType).toBe('Bundle');
+    expect(bundle.entry).toHaveLength(1);
+
+    const bundleEntries = bundle.entry as BundleEntry<Parameters>[];
+    for (let i = 0; i < 1; i++) {
+      const parameters = bundleEntries[i].resource as Parameters;
+      expect(parameters).toBeDefined();
+      expect(parameters.resourceType).toEqual('Parameters');
+      expect([2, 3]).toContain(parameters.parameter?.length);
+    }
+
+    expect(bundleEntries).toContainEqual({
+      resource: expect.objectContaining<Parameters>({
+        resourceType: 'Parameters',
+        parameter: expect.arrayContaining<ParametersParameter>([
+          expect.objectContaining<ParametersParameter>({
+            name: 'status',
+            valueCode: AgentConnectionState.CONNECTED,
+          }),
+          expect.objectContaining<ParametersParameter>({
+            name: 'version',
+            valueString: '3.1.4',
+          }),
+          expect.objectContaining<ParametersParameter>({
+            name: 'lastUpdated',
+            valueInstant: expect.any(String),
           }),
         ]),
       }),

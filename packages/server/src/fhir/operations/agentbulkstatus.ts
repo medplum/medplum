@@ -35,21 +35,20 @@ export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResp
     return [badRequest('No agent(s) for given query')];
   }
 
-  // TODO: Deal with param in body
   const promises = agents.map((agent) => agentStatusHandler({ ...req, params: { id: agent.id as string } }));
   const results = await Promise.allSettled(promises);
   const entries = [] as BundleEntry<Parameters | OperationOutcome>[];
   for (const result of results) {
     if (result.status === 'rejected') {
       entries.push({ resource: serverError(result.reason as Error) });
-    } else {
-      const [outcome, params] = result.value;
-      if (!isOk(outcome)) {
-        entries.push({ resource: outcome });
-      } else {
-        entries.push({ resource: params as Parameters });
-      }
+      continue;
     }
+    const [outcome, params] = result.value;
+    if (!isOk(outcome)) {
+      entries.push({ resource: outcome });
+      continue;
+    }
+    entries.push({ resource: params as Parameters });
   }
 
   return [
