@@ -928,9 +928,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
+    let resource: Resource;
     try {
-      const resource = await this.readResourceImpl(resourceType, id);
+      resource = await this.readResourceImpl(resourceType, id);
+    } catch (err) {
+      const outcomeErr = err as OperationOutcomeError;
+      if (isGone(outcomeErr.outcome)) {
+        return; // Resource is already deleted, return successfully
+      }
+      throw err;
+    }
 
+    try {
       if (!this.canWriteResourceType(resourceType) || !this.isResourceWriteable(undefined, resource)) {
         throw new OperationOutcomeError(forbidden);
       }

@@ -1047,4 +1047,11 @@ describe('FHIR Repo', () => {
         })
       ).rejects.toThrow('Multiple resources found matching condition');
     }));
+
+  test('Double DELETE', async () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await systemRepo.deleteResource(patient.resourceType, patient.id as string);
+      await expect(systemRepo.deleteResource(patient.resourceType, patient.id as string)).resolves.toBeUndefined();
+    }));
 });
