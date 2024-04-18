@@ -22,8 +22,14 @@ for (const patient of allPatients) {
   // Run the validation operation on each patient
   const res = validateResource(patient, { profile: updatedProfile });
   // If the patient passes validation, update the profile and the patient
-  if (res.length === 0) {
-    patient.meta ? (patient.meta.profile = [updatedProfile.url]) : (patient.meta = { profile: [updatedProfile.url] });
+  if (res.length !== 0) {
+    if (patient.meta) {
+      patient.meta.profile = [updatedProfile.url];
+    } else {
+      patient.meta = {
+        profile: [updatedProfile.url],
+      };
+    }
     await medplum.updateResource(patient);
   } else {
     // If the patient does not pass validation, implement custom logic to notify the relevant users to update.
