@@ -19,7 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { CreateResourcePage } from './pages/CreateResourcePage';
+import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
 import { HomePage } from './pages/HomePage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { SearchPage } from './pages/SearchPage';
@@ -113,7 +113,7 @@ export function App(): JSX.Element | null {
                 <Route path="edit" element={<EditTab />} />
                 <Route path="encounter" element={<EncounterTab />} />
                 <Route path="timeline" element={<TimelineTab />} />
-                <Route path=":resourceType/new" element={<CreateResourcePage />} />
+                <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>
                   <Route path="" element={<ResourceDetailPage />} />
                   <Route path="edit" element={<ResourceEditPage />} />
@@ -124,7 +124,7 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route path="/signin" element={<SignInPage />} />
-              <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+              <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
                 <Route path="" element={<ResourceDetailPage />} />
                 <Route path="edit" element={<ResourceEditPage />} />

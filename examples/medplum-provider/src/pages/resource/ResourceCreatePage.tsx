@@ -5,10 +5,10 @@ import { OperationOutcome, Patient, Resource, ResourceType } from '@medplum/fhir
 import { Document, Loading, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { usePatient } from '../hooks/usePatient';
-import { prependPatientPath } from './patient/PatientPage.utils';
-import { ResourceFormWithRequiredProfile } from '../components/ResourceFormWithRequiredProfile';
-import { RESOURCE_PROFILE_URLS } from './resource/utils';
+import { usePatient } from '../../hooks/usePatient';
+import { prependPatientPath } from '../patient/PatientPage.utils';
+import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
+import { RESOURCE_PROFILE_URLS } from './utils';
 
 const PatientReferencesElements: Partial<Record<ResourceType, string[]>> = {
   Task: ['for'],
@@ -41,7 +41,7 @@ function getDefaultValue(resourceType: ResourceType, patient: Patient | undefine
   return dv;
 }
 
-export function CreateResourcePage(): JSX.Element {
+export function ResourceCreatePage(): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const patient = usePatient({ ignoreMissingPatientId: true, setOutcome });
