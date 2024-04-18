@@ -38,9 +38,13 @@ To set up your [Subscription](https://app.medplum.com/Subscription) page in Medp
 - The `Criteria` section in the setup is what determines the triggering event for notifications. For example you put "ServiceRequest" in the `Criteria` section, all changes to ServiceRequests will generate a notification.
 - The `Endpoint` is the place where the subscribing web application URL should be placed. A full JSON representation of the object will be posted to the URL provided.
 
-:::warning Subscriptions on `AuditEvents`
+:::warning Subscription Limitations
 
-The `Criteria` of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir/resources/auditevent) resource. When a subscription is triggered it creates an [`AuditEvent`](/docs/api/fhir/resources/auditevent), so using it as criteria would create a notification spiral.
+The `Criteria` of a subscription cannot be set to [`AuditEvent`](/docs/api/fhir/resources/auditevent) or [`Practitioner`](/docs/api/fhir/resources/practitioner) resources.
+
+When a subscription is triggered it creates an [`AuditEvent`](/docs/api/fhir/resources/auditevent), so using it as criteria would create a notification spiral.
+
+[`Practitioner`](/docs/api/fhir/resources/practitioner) resources are server-scoped, meaning they can be a part of multiple projects on the same server. Setting a server-scoped resource as a `Criteria` would mean that subscriptions in one project could be triggered by changes in another.
 
 :::
 
