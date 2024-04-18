@@ -2,14 +2,19 @@ import { Alert } from '@mantine/core';
 import { InternalTypeSchema, normalizeErrorString, tryGetProfile } from '@medplum/core';
 import { Loading, ResourceForm, ResourceFormProps, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { addProfileToResource } from '../utils';
+import { Resource } from '@medplum/fhirtypes';
 
 interface ResourceFormWithRequiredProfileProps extends ResourceFormProps {
+  /** (optional) If specified, an error is shown in place of `ResourceForm` if the profile cannot be loaded.  */
+  profileUrl?: string; // Also part of ResourceFormProps, but list here incase its type changes in the future
+  /** (optiona) A short error message to show if `profileUrl` cannot be found. */
   missingProfileMessage?: ReactNode;
 }
 
 export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredProfileProps): JSX.Element {
-  const { missingProfileMessage, ...resourceFormProps } = props;
+  const { missingProfileMessage, onSubmit, ...resourceFormProps } = props;
   const profileUrl = props.profileUrl;
 
   const medplum = useMedplum();
@@ -37,6 +42,19 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
       });
   }, [medplum, profileUrl]);
 
+  const handleSubmit = useCallback(
+    (newResource: Resource): void => {
+      if (!onSubmit) {
+        return;
+      }
+      if (profileUrl) {
+        addProfileToResource(newResource, profileUrl);
+      }
+      onSubmit(newResource);
+    },
+    [onSubmit, profileUrl]
+  );
+
   if (profileUrl && loadingProfile) {
     return <Loading />;
   }
@@ -45,7 +63,6 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
     const errorContent = (
       <>
         {missingProfileMessage && <p>{missingProfileMessage}</p>}
-
         {profileError && <p>Server error: {normalizeErrorString(profileError)}</p>}
       </>
     );
@@ -57,5 +74,5 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
     );
   }
 
-  return <ResourceForm {...resourceFormProps} />;
+  return <ResourceForm onSubmit={handleSubmit} {...resourceFormProps} />;
 }

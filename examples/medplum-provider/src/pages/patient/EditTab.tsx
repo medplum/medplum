@@ -6,7 +6,6 @@ import { Document, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
-import { addProfileToResource } from '../../utils';
 
 const PATIENT_PROFILE_URL = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
 
@@ -39,7 +38,6 @@ export function EditTab(): JSX.Element | null {
   const handleSubmit = useCallback(
     (newResource: Resource): void => {
       setOutcome(undefined);
-      addProfileToResource(newResource, PATIENT_PROFILE_URL);
       medplum
         .updateResource(newResource)
         .then(() => {
