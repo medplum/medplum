@@ -745,15 +745,15 @@ export class MockFetchClient {
 
     const result = await this.router.handleRequest(request, this.repo);
     if (result.length === 1) {
-      this.logStructureDefinitionError(request.params.resourceType);
-      this.logSearchParameterError(request);
+      await this.logStructureDefinitionError(request.params.resourceType);
+      await this.logSearchParameterError(request);
       return result[0];
     } else {
       return result[1];
     }
   }
 
-  private async logStructureDefinitionError(resourceType: string) {
+  private async logStructureDefinitionError(resourceType: string): Promise<void> {
     const structureDefinitions = await this.repo.searchResources<StructureDefinition>({
       resourceType: 'StructureDefinition',
     });
@@ -765,7 +765,7 @@ export class MockFetchClient {
     }
   }
 
-  private async logSearchParameterError(request: FhirRequest) {
+  private async logSearchParameterError(request: FhirRequest): Promise<void> {
     const {
       method,
       params: { resourceType },
