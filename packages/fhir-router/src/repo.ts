@@ -185,16 +185,15 @@ export abstract class FhirRepository<TClient = unknown> {
     return this.withTransaction(async () => {
       const matches = await this.searchResources(search);
       if (matches.length === 1) {
+        const existing = matches[0];
+        if (resource.id && resource.id !== existing.id) {
+          throw new OperationOutcomeError(
+            badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+          );
+        }
         return { resource: matches[0], outcome: allOk };
       } else if (matches.length > 1) {
         throw new OperationOutcomeError(multipleMatches);
-      }
-
-      const existing = matches[0];
-      if (resource.id && resource.id !== existing.id) {
-        throw new OperationOutcomeError(
-          badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
-        );
       }
 
       resource = await this.createResource(resource, options);

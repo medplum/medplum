@@ -164,6 +164,7 @@ class BatchProcessor {
     entry: BundleEntry,
     path: string
   ): Promise<{ placeholder: string; reference: string } | undefined> {
+    const method = entry.request?.method;
     switch (entry.request?.method) {
       case 'POST':
         if (entry.request.ifNoneExist) {
@@ -189,6 +190,12 @@ class BatchProcessor {
           // Resolve conditional update via search
           const resolved = await this.repo.searchResources(parseSearchRequest(entry.request.url));
           if (resolved.length !== 1) {
+            if (resolved.length === 0 && method === 'DELETE') {
+              return undefined;
+            }
+            if (resolved.length === 0 && method === 'PUT' && !entry.resource?.id) {
+              return undefined; // create by update for conditional PUT
+            }
             throw new OperationOutcomeError(
               badRequest(
                 `Conditional ${entry.request.method} matched ${resolved.length} resources`,
@@ -229,7 +236,9 @@ class BatchProcessor {
   }
 
   private async performBatchOperation(entry: BundleEntry): Promise<FhirResponse> {
-    const requestPath = splitN(entry.request?.url as string, '?', 2)[0];
+    const urlParts = splitN(entry.request?.url as string, '?', 2);
+    const requestPath = urlParts[0];
+    const queryParams = urlParts[1];
     const route = this.router.find(entry.request?.method as HttpMethod, requestPath);
     const params = route?.params;
 
@@ -261,11 +270,18 @@ class BatchProcessor {
         });
       }
       case 'update': {
-        if (!params?.id) {
-          throw new OperationOutcomeError(notFound);
-        }
         if (!entry.resource) {
           throw new OperationOutcomeError(badRequest('Missing resource'));
+        }
+        if (queryParams) {
+          const { outcome, resource } = await this.repo.conditionalUpdate(
+            entry.resource,
+            parseSearchRequest(entry.resource.resourceType + '?' + queryParams)
+          );
+          return [outcome, resource];
+        }
+        if (!params?.id) {
+          throw new OperationOutcomeError(notFound);
         }
         return updateResourceImpl(params.resourceType as ResourceType, params.id, entry.resource, this.repo, {
           ifMatch: entry.request?.ifMatch,
