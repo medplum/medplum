@@ -66,14 +66,11 @@ export async function main(): Promise<void> {
 
   const startDefinition = await buildStartDefinition();
   const targetDefinition = buildTargetDefinition();
-  const b1 = new FileBuilder();
-  const b2 = new FileBuilder();
-  writeMigrations(b1, startDefinition, targetDefinition);
-  writeMigrations(b2, { tables: [] }, targetDefinition);
-  if (b1.getLineCount() > 20) {
-    writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b1.toString(), 'utf8');
+  const b = new FileBuilder();
+  writeMigrations(b, startDefinition, targetDefinition);
+  if (b.getLineCount() > 20) {
+    writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
   }
-  writeFileSync(`${SCHEMA_DIR}/latest.ts`, b2.toString(), 'utf8');
   rewriteMigrationExports();
 }
 
