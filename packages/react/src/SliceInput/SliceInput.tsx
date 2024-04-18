@@ -8,16 +8,16 @@ import {
   isEmpty,
   isPopulated,
 } from '@medplum/core';
-import { useContext, useMemo, useState } from 'react';
+import { MouseEvent, useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
+import classes from '../ResourceArrayInput/ResourceArrayInput.module.css';
 import { ElementDefinitionTypeInput } from '../ResourcePropertyInput/ResourcePropertyInput';
+import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { killEvent } from '../utils/dom';
-import classes from '../ResourceArrayInput/ResourceArrayInput.module.css';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
-import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface SliceInputProps extends BaseInputProps {
   readonly slice: SliceDefinitionWithTypes;
@@ -96,7 +96,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                 <ArrayRemoveButton
                   propertyDisplayName={propertyDisplayName}
                   testId={props.testId && `${props.testId}-remove-${valueIndex}`}
-                  onClick={(e: React.MouseEvent) => {
+                  onClick={(e: MouseEvent) => {
                     killEvent(e);
                     const newValues = [...values];
                     newValues.splice(valueIndex, 1);
@@ -111,7 +111,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
           <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
             <ArrayAddButton
               propertyDisplayName={propertyDisplayName}
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e: MouseEvent) => {
                 killEvent(e);
                 const newValues = [...values, undefined];
                 setValuesWrapper(newValues);

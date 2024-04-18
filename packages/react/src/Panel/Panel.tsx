@@ -1,11 +1,12 @@
 import { Paper, PaperProps } from '@mantine/core';
 import cx from 'clsx';
+import { ReactNode } from 'react';
 import classes from './Panel.module.css';
 
 export interface PanelProps extends PaperProps {
   readonly width?: number;
   readonly fill?: boolean;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function Panel(props: PanelProps): JSX.Element {
