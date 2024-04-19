@@ -109,51 +109,36 @@ describe('Agent/$bulk-status', () => {
   });
 
   test('Get all agent statuses', async () => {
-    const res1 = await request(app)
+    const res = await request(app)
       .get('/fhir/R4/Agent/$bulk-status')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res1.status).toBe(200);
+    expect(res.status).toBe(200);
 
-    const bundle1 = res1.body as Bundle<Parameters>;
-    expect(bundle1.resourceType).toBe('Bundle');
-    expect(bundle1.entry).toHaveLength(4);
+    const bundle = res.body as Bundle<Parameters>;
+    expect(bundle.resourceType).toBe('Bundle');
+    expect(bundle.entry).toHaveLength(4);
 
-    for (const entry of bundle1.entry as BundleEntry<Parameters>[]) {
+    const bundleEntries = bundle.entry as BundleEntry<Parameters>[];
+    for (const entry of bundleEntries) {
       const parameters = entry.resource as Parameters;
       expect(parameters).toBeDefined();
       expect(parameters.resourceType).toEqual('Parameters');
       expect(parameters.parameter?.length).toEqual(2);
     }
 
-    const res2 = await request(app)
-      .get('/fhir/R4/Agent/$bulk-status')
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
-
-    const bundle2 = res2.body as Bundle<Parameters>;
-    expect(bundle2.resourceType).toBe('Bundle');
-    expect(bundle2.entry).toHaveLength(4);
-
-    const bundle2Entries = bundle2.entry as BundleEntry<Parameters>[];
-    for (const entry of bundle2Entries) {
-      const parameters = entry.resource as Parameters;
-      expect(parameters).toBeDefined();
-      expect(parameters.resourceType).toEqual('Parameters');
-    }
-
-    expectBundleToContainStatusEntry(bundle2, connectedAgent, {
+    expectBundleToContainStatusEntry(bundle, connectedAgent, {
       status: AgentConnectionState.CONNECTED,
       version: '3.1.4',
       lastUpdated: expect.any(String),
     });
 
-    expectBundleToContainStatusEntry(bundle2, disabledAgent, {
+    expectBundleToContainStatusEntry(bundle, disabledAgent, {
       status: AgentConnectionState.DISCONNECTED,
       version: '3.1.2',
       lastUpdated: expect.any(String),
     });
 
-    expectBundleToContainStatusEntry(bundle2, agents[0], {
+    expectBundleToContainStatusEntry(bundle, agents[0], {
       status: AgentConnectionState.UNKNOWN,
       version: 'unknown',
     });
