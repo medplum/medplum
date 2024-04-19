@@ -1,9 +1,17 @@
 import { ContentType } from '@medplum/core';
-import { Agent, Bundle, BundleEntry, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import {
+  Agent,
+  Bundle,
+  BundleEntry,
+  OperationOutcome,
+  OperationOutcomeIssue,
+  Parameters,
+  ParametersParameter,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request, { Response } from 'supertest';
-import { AgentConnectionState } from '../../agent/utils';
+import { AgentConnectionState, AgentInfo } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
@@ -288,5 +296,78 @@ describe('Agent/$bulk-status', () => {
         ]),
       }),
     });
+  });
+
+  test('Get agent statuses -- no matching agents', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$bulk-status')
+      .query({ name: 'INVALID_AGENT', status: 'active' })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: expect.arrayContaining<OperationOutcomeIssue>([
+        expect.objectContaining<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' }),
+      ]),
+    });
+  });
+
+  test('Get agent statuses -- no matching agents', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$bulk-status')
+      .query({ name: 'INVALID_AGENT', status: 'active' })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: expect.arrayContaining<OperationOutcomeIssue>([
+        expect.objectContaining<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' }),
+      ]),
+    });
+  });
+
+  test('Get agent statuses -- invalid AgentInfo from Redis', async () => {
+    await getRedis().set(
+      `medplum:agent:${agents[1].id as string}:info`,
+      JSON.stringify({
+        version: '3.1.4',
+        lastUpdated: new Date().toISOString(),
+      }),
+      'EX',
+      60
+    );
+
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$bulk-status')
+      .query({ name: 'Test Agent 2' })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+
+    const bundle = res.body as Bundle;
+    expect(bundle.resourceType).toBe('Bundle');
+    expect(bundle.entry).toHaveLength(1);
+
+    const bundleEntries = bundle.entry as BundleEntry<Parameters>[];
+    expect(bundleEntries).toContainEqual({
+      resource: expect.objectContaining<OperationOutcome>({
+        resourceType: 'OperationOutcome',
+        issue: expect.arrayContaining<OperationOutcomeIssue>([
+          expect.objectContaining<OperationOutcomeIssue>({ severity: 'error', code: 'exception' }),
+        ]),
+      }),
+    });
+
+    await getRedis().set(
+      `medplum:agent:${agents[1].id as string}:info`,
+      JSON.stringify({
+        status: AgentConnectionState.UNKNOWN,
+        version: 'unknown',
+        lastUpdated: new Date().toISOString(),
+      } satisfies AgentInfo),
+      'EX',
+      60
+    );
   });
 });
