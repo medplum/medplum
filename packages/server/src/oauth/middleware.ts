@@ -19,9 +19,8 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
     .then(async ({ login, project, membership, accessToken }) => {
       const ctx = getRequestContext();
       const repo = await getRepoForLogin(login, membership, project, isExtendedMode(req));
-      requestContextStore.run(
-        new AuthenticatedRequestContext(ctx, login, project, membership, repo, undefined, accessToken),
-        () => next()
+      requestContextStore.run(new AuthenticatedRequestContext(ctx, login, project, membership, repo, accessToken), () =>
+        next()
       );
     })
     .catch(next);

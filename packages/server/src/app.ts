@@ -135,7 +135,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   initWebSockets(server);
 
   app.set('etag', false);
-  app.set('trust proxy', true);
+  app.set('trust proxy', 1);
   app.set('x-powered-by', false);
   app.use(standardHeaders);
   app.use(cors(corsOptions));

@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { loadTestConfig } from './config';
 import {
   RequestContext,
   buildTracingExtension,
@@ -12,6 +13,10 @@ import {
 import { withTestContext } from './test.setup';
 
 describe('RequestContext', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
+  });
+
   test('tryGetRequestContext', async () => {
     expect(tryGetRequestContext()).toBeUndefined();
     withTestContext(() => expect(tryGetRequestContext()).toBeDefined());
