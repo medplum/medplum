@@ -41,6 +41,17 @@ export async function getAgentForRequest(req: Request | FhirRequest, repo: Repos
   return undefined;
 }
 
+/**
+ * Returns the Agents for a request.
+ *
+ * @param req - The HTTP request.
+ * @param repo - The repository.
+ * @returns The agent, or undefined if not found.
+ */
+export async function getAgentsForRequest(req: FhirRequest, repo: Repository): Promise<Agent[] | undefined> {
+  return repo.searchResources(parseSearchRequest('Agent', req.query));
+}
+
 export async function getDevice(repo: Repository, params: AgentPushParameters): Promise<Device | undefined> {
   const { destination, contentType } = params;
   if (destination.startsWith('Device/')) {
