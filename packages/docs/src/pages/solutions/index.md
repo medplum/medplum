@@ -40,7 +40,7 @@ Run and maintain an EMPI including patient identification, data accuracy/risk sc
 
 ## Interoperability Service
 
-Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Available hosted or self-hosted. [Learn More](/products/integration)
+Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Can also be used as a system of record between multiple integrations. Available hosted or self-hosted. [Learn More](/products/integration)
 
 ## Remote Patient Monitoring
 
