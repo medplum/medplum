@@ -41,10 +41,10 @@ function getDefaultValue(resourceType: ResourceType, patient: Patient | undefine
 
 export function CreateResourcePage(): JSX.Element {
   const medplum = useMedplum();
-  const patient = usePatient({ ignoreMissingPatientId: true });
+  const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
+  const patient = usePatient({ ignoreMissingPatientId: true, setOutcome });
   const navigate = useNavigate();
   const { patientId, resourceType } = useParams() as { patientId: string | undefined; resourceType: ResourceType };
-  const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const [loadingPatient, setLoadingPatient] = useState(patientId !== undefined);
   const [defaultValue, setDefaultValue] = useState<Partial<Resource>>(() => getDefaultValue(resourceType, patient));
 
