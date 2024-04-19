@@ -1,6 +1,6 @@
 import { allOk, badRequest, isOk, serverError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Bundle, BundleEntry, OperationDefinition, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { Agent, Bundle, BundleEntry, OperationDefinition, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { agentStatusHandler } from './agentstatus';
 import { getAgentsForRequest } from './agentutils';
@@ -37,18 +37,19 @@ export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResp
 
   const promises = agents.map((agent) => agentStatusHandler({ ...req, params: { id: agent.id as string } }));
   const results = await Promise.allSettled(promises);
-  const entries = [] as BundleEntry<Parameters | OperationOutcome>[];
-  for (const result of results) {
+  const entries = [] as BundleEntry<Parameters>[];
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
     if (result.status === 'rejected') {
-      entries.push({ resource: serverError(result.reason as Error) });
+      entries.push(makeResultWrapperParams(serverError(result.reason as Error), agents[i]));
       continue;
     }
     const [outcome, params] = result.value;
     if (!isOk(outcome)) {
-      entries.push({ resource: outcome });
+      entries.push(makeResultWrapperParams(outcome, agents[i]));
       continue;
     }
-    entries.push({ resource: params as Parameters });
+    entries.push(makeResultWrapperParams(params as Parameters, agents[i]));
   }
 
   return [
@@ -57,6 +58,16 @@ export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResp
       resourceType: 'Bundle',
       type: 'collection',
       entry: entries,
-    } satisfies Bundle<Parameters | OperationOutcome>,
+    } satisfies Bundle<Parameters>,
   ];
+}
+
+function makeResultWrapperParams(result: Parameters | OperationOutcome, agent: Agent): Parameters {
+  return {
+    resourceType: 'Parameters',
+    parameter: [
+      { name: 'agent', resource: agent },
+      { name: 'result', resource: result },
+    ],
+  };
 }
