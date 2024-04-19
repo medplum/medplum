@@ -45,7 +45,7 @@ export function CreateResourcePage(): JSX.Element {
   const patient = usePatient({ ignoreMissingPatientId: true, setOutcome });
   const navigate = useNavigate();
   const { patientId, resourceType } = useParams() as { patientId: string | undefined; resourceType: ResourceType };
-  const [loadingPatient, setLoadingPatient] = useState(patientId !== undefined);
+  const [loadingPatient, setLoadingPatient] = useState(Boolean(patientId));
   const [defaultValue, setDefaultValue] = useState<Partial<Resource>>(() => getDefaultValue(resourceType, patient));
 
   useEffect(() => {
