@@ -88,7 +88,7 @@ import {
   sortStringArray,
 } from './utils';
 
-export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 

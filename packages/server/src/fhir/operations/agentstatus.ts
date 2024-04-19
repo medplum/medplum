@@ -1,15 +1,11 @@
 import { allOk, badRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition } from '@medplum/fhirtypes';
+import { AgentConnectionState, AgentInfo } from '../../agent/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
 import { getAgentForRequest } from './agentutils';
 import { buildOutputParameters } from './utils/parameters';
-
-interface AgentStatusOutput {
-  status: string;
-  lastUpdated?: string;
-}
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -24,6 +20,7 @@ const operation: OperationDefinition = {
   instance: false,
   parameter: [
     { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
+    { use: 'out', name: 'version', type: 'string', min: 1, max: '1' },
     { use: 'out', name: 'lastUpdated', type: 'instant', min: 0, max: '1' },
   ],
 };
@@ -46,16 +43,16 @@ export async function agentStatusHandler(req: FhirRequest): Promise<FhirResponse
     return [badRequest('Must specify agent ID or identifier')];
   }
 
-  let output: AgentStatusOutput;
+  let output: AgentInfo;
 
   // Get the agent status details from Redis
   // This is set by the agent websocket connection
   // See: packages/server/src/agent/websockets.ts
-  const statusStr = await getRedis().get(`medplum:agent:${agent.id}:status`);
+  const statusStr = await getRedis().get(`medplum:agent:${agent.id}:info`);
   if (statusStr) {
     output = JSON.parse(statusStr);
   } else {
-    output = { status: 'unknown' };
+    output = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
   }
 
   return [allOk, buildOutputParameters(operation, output)];

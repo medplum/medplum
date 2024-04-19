@@ -1,5 +1,5 @@
 import { Notifications } from '@mantine/notifications';
-import { ContentType, allOk, getReferenceString } from '@medplum/core';
+import { ContentType, MEDPLUM_VERSION, allOk, getReferenceString } from '@medplum/core';
 import { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -10,7 +10,13 @@ import { act, fireEvent, render, screen } from '../test-utils/render';
 const medplum = new MockClient();
 medplum.router.router.add('GET', 'Agent/:id/$status', async () => [
   allOk,
-  { resourceType: 'Parameters', parameter: [{ name: 'status', valueCode: 'disconnected' }] },
+  {
+    resourceType: 'Parameters',
+    parameter: [
+      { name: 'status', valueCode: 'disconnected' },
+      { name: 'version', valueString: MEDPLUM_VERSION },
+    ],
+  },
 ]);
 
 describe('ToolsPage', () => {
@@ -46,6 +52,7 @@ describe('ToolsPage', () => {
     });
 
     await expect(screen.findByText('disconnected', { exact: false })).resolves.toBeInTheDocument();
+    expect(screen.getByText(MEDPLUM_VERSION)).toBeInTheDocument();
   });
 
   test('Renders last ping', async () => {
