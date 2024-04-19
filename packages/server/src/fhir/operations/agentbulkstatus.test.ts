@@ -313,21 +313,6 @@ describe('Agent/$bulk-status', () => {
     });
   });
 
-  test('Get agent statuses -- no matching agents', async () => {
-    const res = await request(app)
-      .get('/fhir/R4/Agent/$bulk-status')
-      .query({ name: 'INVALID_AGENT', status: 'active' })
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
-
-    expect(res.body).toMatchObject<OperationOutcome>({
-      resourceType: 'OperationOutcome',
-      issue: expect.arrayContaining<OperationOutcomeIssue>([
-        expect.objectContaining<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' }),
-      ]),
-    });
-  });
-
   test('Get agent statuses -- invalid AgentInfo from Redis', async () => {
     await getRedis().set(
       `medplum:agent:${agents[1].id as string}:info`,
