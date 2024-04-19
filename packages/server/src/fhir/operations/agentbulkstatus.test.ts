@@ -16,6 +16,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+import { MAX_AGENTS_PER_PAGE } from './agentbulkstatus';
 
 const NUM_DEFAULT_AGENTS = 2;
 
@@ -121,7 +122,7 @@ describe('Agent/$bulk-status', () => {
       const parameters = entry.resource as Parameters;
       expect(parameters).toBeDefined();
       expect(parameters.resourceType).toEqual('Parameters');
-      expect([2, 3]).toContain(parameters.parameter?.length);
+      expect(parameters.parameter?.length).toEqual(2);
     }
 
     const res2 = await request(app)
@@ -138,63 +139,23 @@ describe('Agent/$bulk-status', () => {
       const parameters = entry.resource as Parameters;
       expect(parameters).toBeDefined();
       expect(parameters.resourceType).toEqual('Parameters');
-      expect([2, 3]).toContain(parameters.parameter?.length);
     }
 
-    expect(bundle2Entries).toContainEqual({
-      resource: expect.objectContaining<Parameters>({
-        resourceType: 'Parameters',
-        parameter: expect.arrayContaining<ParametersParameter>([
-          expect.objectContaining<ParametersParameter>({
-            name: 'status',
-            valueCode: AgentConnectionState.CONNECTED,
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'version',
-            valueString: '3.1.4',
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'lastUpdated',
-            valueInstant: expect.any(String),
-          }),
-        ]),
-      }),
+    expectBundleToContainStatusEntry(bundle2, connectedAgent, {
+      status: AgentConnectionState.CONNECTED,
+      version: '3.1.4',
+      lastUpdated: expect.any(String),
     });
 
-    expect(bundle2Entries).toContainEqual({
-      resource: expect.objectContaining<Parameters>({
-        resourceType: 'Parameters',
-        parameter: expect.arrayContaining<ParametersParameter>([
-          expect.objectContaining<ParametersParameter>({
-            name: 'status',
-            valueCode: AgentConnectionState.DISCONNECTED,
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'version',
-            valueString: '3.1.2',
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'lastUpdated',
-            valueInstant: expect.any(String),
-          }),
-        ]),
-      }),
+    expectBundleToContainStatusEntry(bundle2, disabledAgent, {
+      status: AgentConnectionState.DISCONNECTED,
+      version: '3.1.2',
+      lastUpdated: expect.any(String),
     });
 
-    expect(bundle2Entries).toContainEqual({
-      resource: expect.objectContaining<Parameters>({
-        resourceType: 'Parameters',
-        parameter: expect.arrayContaining<ParametersParameter>([
-          expect.objectContaining<ParametersParameter>({
-            name: 'status',
-            valueCode: AgentConnectionState.UNKNOWN,
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'version',
-            valueString: 'unknown',
-          }),
-        ]),
-      }),
+    expectBundleToContainStatusEntry(bundle2, agents[0], {
+      status: AgentConnectionState.UNKNOWN,
+      version: 'unknown',
     });
   });
 
@@ -214,47 +175,19 @@ describe('Agent/$bulk-status', () => {
       const parameters = bundleEntries[i].resource as Parameters;
       expect(parameters).toBeDefined();
       expect(parameters.resourceType).toEqual('Parameters');
-      expect([2, 3]).toContain(parameters.parameter?.length);
+      expect(parameters.parameter?.length).toEqual(2);
     }
 
-    expect(bundleEntries).toContainEqual({
-      resource: expect.objectContaining<Parameters>({
-        resourceType: 'Parameters',
-        parameter: expect.arrayContaining<ParametersParameter>([
-          expect.objectContaining<ParametersParameter>({
-            name: 'status',
-            valueCode: AgentConnectionState.CONNECTED,
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'version',
-            valueString: '3.1.4',
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'lastUpdated',
-            valueInstant: expect.any(String),
-          }),
-        ]),
-      }),
+    expectBundleToContainStatusEntry(bundle, connectedAgent, {
+      status: AgentConnectionState.CONNECTED,
+      version: '3.1.4',
+      lastUpdated: expect.any(String),
     });
 
-    expect(bundleEntries).toContainEqual({
-      resource: expect.objectContaining<Parameters>({
-        resourceType: 'Parameters',
-        parameter: expect.arrayContaining<ParametersParameter>([
-          expect.objectContaining<ParametersParameter>({
-            name: 'status',
-            valueCode: AgentConnectionState.DISCONNECTED,
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'version',
-            valueString: '3.1.2',
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'lastUpdated',
-            valueInstant: expect.any(String),
-          }),
-        ]),
-      }),
+    expectBundleToContainStatusEntry(bundle, disabledAgent, {
+      status: AgentConnectionState.DISCONNECTED,
+      version: '3.1.2',
+      lastUpdated: expect.any(String),
     });
   });
 
@@ -274,27 +207,13 @@ describe('Agent/$bulk-status', () => {
       const parameters = bundleEntries[i].resource as Parameters;
       expect(parameters).toBeDefined();
       expect(parameters.resourceType).toEqual('Parameters');
-      expect([2, 3]).toContain(parameters.parameter?.length);
+      expect(parameters.parameter?.length).toEqual(2);
     }
 
-    expect(bundleEntries).toContainEqual({
-      resource: expect.objectContaining<Parameters>({
-        resourceType: 'Parameters',
-        parameter: expect.arrayContaining<ParametersParameter>([
-          expect.objectContaining<ParametersParameter>({
-            name: 'status',
-            valueCode: AgentConnectionState.CONNECTED,
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'version',
-            valueString: '3.1.4',
-          }),
-          expect.objectContaining<ParametersParameter>({
-            name: 'lastUpdated',
-            valueInstant: expect.any(String),
-          }),
-        ]),
-      }),
+    expectBundleToContainStatusEntry(bundle, connectedAgent, {
+      status: AgentConnectionState.CONNECTED,
+      version: '3.1.4',
+      lastUpdated: expect.any(String),
     });
   });
 
@@ -330,18 +249,12 @@ describe('Agent/$bulk-status', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
 
-    const bundle = res.body as Bundle;
+    const bundle = res.body as Bundle<Parameters>;
     expect(bundle.resourceType).toBe('Bundle');
     expect(bundle.entry).toHaveLength(1);
 
-    const bundleEntries = bundle.entry as BundleEntry<Parameters>[];
-    expect(bundleEntries).toContainEqual({
-      resource: expect.objectContaining<OperationOutcome>({
-        resourceType: 'OperationOutcome',
-        issue: expect.arrayContaining<OperationOutcomeIssue>([
-          expect.objectContaining<OperationOutcomeIssue>({ severity: 'error', code: 'exception' }),
-        ]),
-      }),
+    expectBundleToContainOutcomeError(bundle, agents[1], {
+      issue: [expect.objectContaining({ severity: 'error', code: 'exception' })],
     });
 
     await getRedis().set(
@@ -355,4 +268,81 @@ describe('Agent/$bulk-status', () => {
       60
     );
   });
+
+  test('Get agent statuses -- `_count` exceeding max page size', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$bulk-status')
+      .query({ 'name:contains': 'Medplum', _count: MAX_AGENTS_PER_PAGE + 1 })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: expect.arrayContaining<OperationOutcomeIssue>([
+        expect.objectContaining<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' }),
+      ]),
+    });
+  });
 });
+
+function expectBundleToContainStatusEntry(bundle: Bundle<Parameters>, agent: Agent, info: AgentInfo): void {
+  const entries = bundle.entry as BundleEntry<Parameters>[];
+  expect(entries).toContainEqual({
+    resource: expect.objectContaining<Parameters>({
+      resourceType: 'Parameters',
+      parameter: expect.arrayContaining<ParametersParameter>([
+        expect.objectContaining<ParametersParameter>({
+          name: 'agent',
+          resource: expect.objectContaining<Agent>(agent),
+        }),
+        expect.objectContaining<ParametersParameter>({
+          name: 'result',
+          resource: expect.objectContaining<Parameters>({
+            resourceType: 'Parameters',
+            parameter: expect.arrayContaining<ParametersParameter>([
+              expect.objectContaining<ParametersParameter>({
+                name: 'status',
+                valueCode: info.status,
+              }),
+              expect.objectContaining<ParametersParameter>({
+                name: 'version',
+                valueString: info.version,
+              }),
+              ...(info.lastUpdated !== undefined
+                ? [
+                    expect.objectContaining<ParametersParameter>({
+                      name: 'lastUpdated',
+                      valueInstant: info.lastUpdated,
+                    }),
+                  ]
+                : []),
+            ]),
+          }),
+        }),
+      ]),
+    }),
+  });
+}
+
+function expectBundleToContainOutcomeError(
+  bundle: Bundle<Parameters>,
+  agent: Agent,
+  outcome: Partial<OperationOutcome> & { issue: OperationOutcomeIssue[] }
+): void {
+  const entries = bundle.entry as BundleEntry<Parameters>[];
+  expect(entries).toContainEqual({
+    resource: expect.objectContaining<Parameters>({
+      resourceType: 'Parameters',
+      parameter: expect.arrayContaining<ParametersParameter>([
+        expect.objectContaining<ParametersParameter>({
+          name: 'agent',
+          resource: expect.objectContaining<Agent>(agent),
+        }),
+        expect.objectContaining<ParametersParameter>({
+          name: 'result',
+          resource: expect.objectContaining<Partial<OperationOutcome>>(outcome),
+        }),
+      ]),
+    }),
+  });
+}

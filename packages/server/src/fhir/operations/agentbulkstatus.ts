@@ -5,6 +5,8 @@ import { getAuthenticatedContext } from '../../context';
 import { agentStatusHandler } from './agentstatus';
 import { getAgentsForRequest } from './agentutils';
 
+export const MAX_AGENTS_PER_PAGE = 100;
+
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   name: 'agent-bulk-status',
@@ -30,6 +32,11 @@ export const operation: OperationDefinition = {
  */
 export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
+
+  if (req.query._count && Number.parseInt(req.query._count, 10) > MAX_AGENTS_PER_PAGE) {
+    return [badRequest(`'_count' of ${req.query._count} is greater than max of ${MAX_AGENTS_PER_PAGE}`)];
+  }
+
   const agents = await getAgentsForRequest(req, repo);
   if (!agents?.length) {
     return [badRequest('No agent(s) for given query')];
@@ -41,15 +48,15 @@ export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResp
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
     if (result.status === 'rejected') {
-      entries.push(makeResultWrapperParams(serverError(result.reason as Error), agents[i]));
+      entries.push(makeResultWrapperEntry(serverError(result.reason as Error), agents[i]));
       continue;
     }
     const [outcome, params] = result.value;
     if (!isOk(outcome)) {
-      entries.push(makeResultWrapperParams(outcome, agents[i]));
+      entries.push(makeResultWrapperEntry(outcome, agents[i]));
       continue;
     }
-    entries.push(makeResultWrapperParams(params as Parameters, agents[i]));
+    entries.push(makeResultWrapperEntry(params as Parameters, agents[i]));
   }
 
   return [
@@ -62,12 +69,14 @@ export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResp
   ];
 }
 
-function makeResultWrapperParams(result: Parameters | OperationOutcome, agent: Agent): Parameters {
+function makeResultWrapperEntry(result: Parameters | OperationOutcome, agent: Agent): BundleEntry<Parameters> {
   return {
-    resourceType: 'Parameters',
-    parameter: [
-      { name: 'agent', resource: agent },
-      { name: 'result', resource: result },
-    ],
+    resource: {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'agent', resource: agent },
+        { name: 'result', resource: result },
+      ],
+    },
   };
 }
