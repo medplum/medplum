@@ -46,6 +46,6 @@ async function getRateLimitForRequest(req: Request): Promise<number> {
   if (enterprise) {
     return authUrl ? 600 : 10000;
   } else {
-    return authUrl ? 10 : 100;
+    return authUrl ? 600 : 10000;
   }
 }
