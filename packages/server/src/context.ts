@@ -4,7 +4,9 @@ import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config';
+import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
+import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { parseTraceparent } from './traceparent';
 
 export class RequestContext {
@@ -94,7 +96,17 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { requestId, traceId } = requestIds(req);
-  requestContextStore.run(new RequestContext(requestId, traceId), () => next());
+
+  let ctx = new RequestContext(requestId, traceId);
+
+  const authState = await authenticateTokenImpl(req);
+  if (authState) {
+    const { login, membership, project, accessToken } = authState;
+    const repo = await getRepoForLogin(login, membership, project, isExtendedMode(req));
+    ctx = new AuthenticatedRequestContext(ctx, login, project, membership, repo, accessToken);
+  }
+
+  requestContextStore.run(ctx, () => next());
 }
 
 export function closeRequestContext(): void {

@@ -1,7 +1,8 @@
+import { badRequest } from '@medplum/core';
+import { OperationOutcome, Project } from '@medplum/fhirtypes';
 import { Router } from 'express';
 import { asyncWrap } from '../async';
 import { authenticateRequest } from '../oauth/middleware';
-import { getRateLimiter } from '../ratelimit';
 import { changePasswordHandler, changePasswordValidator } from './changepassword';
 import { exchangeHandler, exchangeValidator } from './exchange';
 import { externalCallbackHandler } from './external';
@@ -18,14 +19,11 @@ import { resetPasswordHandler, resetPasswordValidator } from './resetpassword';
 import { revokeHandler, revokeValidator } from './revoke';
 import { scopeHandler, scopeValidator } from './scope';
 import { setPasswordHandler, setPasswordValidator } from './setpassword';
-import { verifyEmailHandler, verifyEmailValidator } from './verifyemail';
 import { statusHandler, statusValidator } from './status';
-import { badRequest } from '@medplum/core';
-import { OperationOutcome, Project } from '@medplum/fhirtypes';
 import { validateRecaptcha } from './utils';
+import { verifyEmailHandler, verifyEmailValidator } from './verifyemail';
 
 export const authRouter = Router();
-authRouter.use(getRateLimiter());
 authRouter.use('/mfa', mfaRouter);
 authRouter.post('/method', methodValidator, asyncWrap(methodHandler));
 authRouter.get('/external', asyncWrap(externalCallbackHandler));

@@ -1,5 +1,7 @@
+import { tooManyRequests } from '@medplum/core';
+import { Request } from 'express';
 import rateLimit, { MemoryStore, RateLimitRequestHandler } from 'express-rate-limit';
-import { OperationOutcomeError, tooManyRequests } from '@medplum/core';
+import { AuthenticatedRequestContext, getRequestContext } from './context';
 
 /*
  * MemoryStore must be shutdown to cleanly stop the server.
@@ -13,12 +15,10 @@ export function getRateLimiter(): RateLimitRequestHandler {
     store = new MemoryStore();
     handler = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 600, // limit each IP to 600 requests per windowMs
-      validate: false, // Ignore X-Forwarded-For warnings
+      limit: getRateLimitForRequest,
+      validate: true,
       store,
-      handler: (_, __, next) => {
-        next(new OperationOutcomeError(tooManyRequests));
-      },
+      message: tooManyRequests,
     });
   }
   return handler;
@@ -29,5 +29,23 @@ export function closeRateLimiter(): void {
     store?.shutdown();
     store = undefined;
     handler = undefined;
+  }
+}
+
+async function getRateLimitForRequest(req: Request): Promise<number> {
+  const authUrl = req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
+
+  // TODO: Update this logic to use Project.systemSetting instead of features
+
+  let enterprise = false;
+  const ctx = getRequestContext();
+  if (ctx instanceof AuthenticatedRequestContext) {
+    enterprise = !!ctx.project.features?.includes('bots');
+  }
+
+  if (enterprise) {
+    return authUrl ? 600 : 10000;
+  } else {
+    return authUrl ? 10 : 100;
   }
 }

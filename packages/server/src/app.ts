@@ -36,7 +36,7 @@ import { keyValueRouter } from './keyvalue/routes';
 import { initKeys } from './oauth/keys';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
-import { closeRateLimiter } from './ratelimit';
+import { closeRateLimiter, getRateLimiter } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
@@ -141,6 +141,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(attachRequestContext);
+  app.use(getRateLimiter());
   app.use('/fhir/R4/Binary', binaryRouter);
   app.use(
     urlencoded({
