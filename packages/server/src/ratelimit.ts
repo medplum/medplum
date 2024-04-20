@@ -7,6 +7,9 @@ import { AuthenticatedRequestContext, getRequestContext } from './context';
  * MemoryStore must be shutdown to cleanly stop the server.
  */
 
+const DEFAULT_RATE_LIMIT_PER_15_MINUTES = 10000;
+const DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES = 600;
+
 let handler: RateLimitRequestHandler | undefined = undefined;
 let store: MemoryStore | undefined = undefined;
 
@@ -33,19 +36,20 @@ export function closeRateLimiter(): void {
 }
 
 async function getRateLimitForRequest(req: Request): Promise<number> {
+  // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
+  // These URLs have a different rate limit than the rest of the API
   const authUrl = req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
 
-  // TODO: Update this logic to use Project.systemSetting instead of features
+  let limit = authUrl ? DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES : DEFAULT_RATE_LIMIT_PER_15_MINUTES;
 
-  let enterprise = false;
   const ctx = getRequestContext();
   if (ctx instanceof AuthenticatedRequestContext) {
-    enterprise = !!ctx.project.features?.includes('bots');
+    const systemSettingName = authUrl ? 'authRateLimit' : 'rateLimit';
+    const systemSetting = ctx.project.systemSetting?.find((s) => s.name === systemSettingName);
+    if (systemSetting?.valueInteger) {
+      limit = systemSetting.valueInteger;
+    }
   }
 
-  if (enterprise) {
-    return authUrl ? 600 : 10000;
-  } else {
-    return authUrl ? 600 : 10000;
-  }
+  return limit;
 }
