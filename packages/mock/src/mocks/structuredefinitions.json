@@ -12065,8 +12065,8 @@
           ]
         },
         {
-          "id": "Project.secret",
-          "path": "Project.secret",
+          "id": "Project.setting",
+          "path": "Project.setting",
           "min": 0,
           "max": "*",
           "type": [
@@ -12076,8 +12076,8 @@
           ]
         },
         {
-          "id": "Project.secret.name",
-          "path": "Project.secret.name",
+          "id": "Project.setting.name",
+          "path": "Project.setting.name",
           "min": 1,
           "max": "1",
           "type": [
@@ -12087,8 +12087,8 @@
           ]
         },
         {
-          "id": "Project.secret.value[x]",
-          "path": "Project.secret.value[x]",
+          "id": "Project.setting.value[x]",
+          "path": "Project.setting.value[x]",
           "min": 1,
           "max": "1",
           "type": [
@@ -12105,6 +12105,27 @@
               "code": "integer"
             }
           ]
+        },
+        {
+          "id": "Project.secret",
+          "path": "Project.secret",
+          "min": 0,
+          "max": "*",
+          "contentReference": "#Project.setting"
+        },
+        {
+          "id": "Project.systemSetting",
+          "path": "Project.systemSetting",
+          "min": 0,
+          "max": "*",
+          "contentReference": "#Project.setting"
+        },
+        {
+          "id": "Project.systemSecret",
+          "path": "Project.systemSecret",
+          "min": 0,
+          "max": "*",
+          "contentReference": "#Project.setting"
         },
         {
           "id": "Project.site",

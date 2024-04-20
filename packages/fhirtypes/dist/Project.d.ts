@@ -94,10 +94,28 @@ export interface Project {
   defaultPatientAccessPolicy?: Reference<AccessPolicy>;
 
   /**
-   * Secure environment variable that can be used to store secrets for
-   * bots.
+   * Option or parameter that can be adjusted within the Medplum Project to
+   * customize its behavior.
    */
-  secret?: ProjectSecret[];
+  setting?: ProjectSetting[];
+
+  /**
+   * Option or parameter that can be adjusted within the Medplum Project to
+   * customize its behavior, only visible to project administrators.
+   */
+  secret?: ProjectSetting[];
+
+  /**
+   * Option or parameter that can be adjusted within the Medplum Project to
+   * customize its behavior, only modifiable by system administrators.
+   */
+  systemSetting?: ProjectSetting[];
+
+  /**
+   * Option or parameter that can be adjusted within the Medplum Project to
+   * customize its behavior, only visible to system administrators.
+   */
+  systemSecret?: ProjectSetting[];
 
   /**
    * Web application or web site that is associated with the project.
@@ -122,10 +140,10 @@ export interface ProjectLink {
 }
 
 /**
- * Secure environment variable that can be used to store secrets for
- * bots.
+ * Option or parameter that can be adjusted within the Medplum Project to
+ * customize its behavior.
  */
-export interface ProjectSecret {
+export interface ProjectSetting {
 
   /**
    * The secret name.
