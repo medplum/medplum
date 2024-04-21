@@ -21,7 +21,7 @@ describe('Agent WebSockets', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     config.vmContextBotsEnabled = true;
-    config.heartbeatMilliseconds = 100000;
+    config.heartbeatMilliseconds = 5000;
 
     server = await initApp(app, config);
     accessToken = await initTestAuth({ membership: { admin: true } });
