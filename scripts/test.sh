@@ -9,6 +9,11 @@ set -x
 # Set node options
 export NODE_OPTIONS='--max-old-space-size=5120'
 
+# Clear old code coverage data
+rm -rf coverage
+mkdir -p coverage/packages
+mkdir -p coverage/combined
+
 # Seed the database
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
 # On a normal developer machine, this is run only rarely when setting up a new database
@@ -33,10 +38,6 @@ done
 
 
 # Combine test coverage
-rm -rf coverage
-mkdir -p coverage/packages
-mkdir -p coverage/combined
-
 PACKAGES=(
   "agent"
   "app"
