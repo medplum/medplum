@@ -22,7 +22,7 @@ import { execSubscriptionJob, getSubscriptionQueue } from '../workers/subscripti
 
 jest.mock('hibp');
 
-describe.skip('WebSockets Subscriptions', () => {
+describe('WebSockets Subscriptions', () => {
   let app: Express;
   let config: MedplumServerConfig;
   let server: Server;
