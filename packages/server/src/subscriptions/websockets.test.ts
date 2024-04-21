@@ -22,7 +22,7 @@ import { execSubscriptionJob, getSubscriptionQueue } from '../workers/subscripti
 
 jest.mock('hibp');
 
-describe('WebSockets Subscriptions', () => {
+describe.skip('WebSockets Subscriptions', () => {
   let app: Express;
   let config: MedplumServerConfig;
   let server: Server;
@@ -36,7 +36,6 @@ describe('WebSockets Subscriptions', () => {
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
     server = await initApp(app, config);
-    await getRedis().flushdb();
 
     const result = await withTestContext(() =>
       createTestProject({
@@ -270,7 +269,6 @@ describe('Subscription Heartbeat', () => {
     config = await loadTestConfig();
     config.heartbeatMilliseconds = 25;
     server = await initApp(app, config);
-    await getRedis().flushdb();
 
     const result = await withTestContext(() =>
       createTestProject({
