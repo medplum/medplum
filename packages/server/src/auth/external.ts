@@ -47,7 +47,13 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     return;
   }
 
-  const body = JSON.parse(state) as ExternalAuthState;
+  let body: ExternalAuthState;
+  try {
+    body = JSON.parse(state);
+  } catch (err) {
+    sendOutcome(res, badRequest('Invalid state'));
+    return;
+  }
 
   const { idp, client } = await getIdentityProvider(body);
   if (!idp) {
