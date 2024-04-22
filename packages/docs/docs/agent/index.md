@@ -173,6 +173,12 @@ npm run agent <base_url> <client_id> <client_secret> <agent_id>
 
 Keep the terminal open so that you can see the logs. At this point you can start sending messages to the agent.
 
+## Supported Protocols
+
+- [HL7 v2](https://www.hl7.org): A low-level transfer protocol for HL7 content.
+- [DICOM C-Store](https://dicom.nema.org/dicom/2013/output/chtml/part07/sect_9.3.html): A protocol used for storing medical imaging data.
+- [ASTM](https://www.astm.org/): Used to transfer data between clinical instruments and computer systems.
+
 ## See also
 
 - [Medplum Agent design discussion](https://github.com/medplum/medplum/discussions/2012)
