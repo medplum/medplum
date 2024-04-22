@@ -77,7 +77,7 @@ export class FrontEnd extends Construct {
               `form-action 'self' *.gstatic.com *.google.com`,
               `frame-ancestors 'none'`,
               `frame-src 'self' ${config.storageDomainName} *.medplum.com *.gstatic.com *.google.com`,
-              `img-src 'self' data: ${config.storageDomainName} *.gstatic.com *.google.com *.googleapis.com`,
+              `img-src 'self' data: ${config.storageDomainName} *.gstatic.com *.google.com *.googleapis.com gravatar.com`,
               `manifest-src 'self'`,
               `media-src 'self' ${config.storageDomainName}`,
               `script-src 'self' *.medplum.com *.gstatic.com *.google.com`,
