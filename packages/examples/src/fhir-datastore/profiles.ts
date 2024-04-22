@@ -16,7 +16,7 @@ const patient: Patient =
 // Update your StructureDefinition
 const updatedProfile: StructureDefinition = {
   resourceType: 'StructureDefinition',
-  url: 'http://www.example.com/profile/foo-patient/2.0.0',
+  url: 'http://www.example.com/profiles/foo-patient/2.0.0',
   name: 'Patient Profile',
   status: 'active',
   kind: 'resource',
