@@ -11,7 +11,7 @@ The Medplum API uses a number of safeguards against bursts of incoming traffic t
 
 All rate limits are calculated per IP address on a 15 minute window.
 
-Rate limits can be increased for paid plans. Please [contact us](/contact) for more information.
+Rate limits can be increased for paid plans. Please [contact us](mailto:info+rate-limits@medplum.com?subject=Increase%20rate%20limits) for more information.
 
 ## HTTP Headers
 
