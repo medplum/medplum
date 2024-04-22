@@ -18,7 +18,7 @@
     "clean": "rimraf dist",
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
-    "test": "jest --runInBand"
+    "test": "jest"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "3.554.0",

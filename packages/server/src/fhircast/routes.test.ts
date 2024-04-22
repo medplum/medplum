@@ -13,22 +13,24 @@ import { loadTestConfig } from '../config';
 import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 
-const app = express();
-let accessToken: string;
-
 const STU2_BASE_ROUTE = '/fhircast/STU2/';
 const STU3_BASE_ROUTE = '/fhircast/STU3/';
 
 describe('FHIRCast routes', () => {
+  const app = express();
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    await getRedis().flushdb();
-    accessToken = await initTestAuth();
   });
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  beforeEach(async () => {
+    accessToken = await initTestAuth();
   });
 
   test('Get well known', async () => {
@@ -150,16 +152,17 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get context', async () => {
+    const topic = randomUUID();
     let res;
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     res = await request(app)
-      .get(`${STU2_BASE_ROUTE}my-topic`)
+      .get(`${STU2_BASE_ROUTE}${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
 
     res = await request(app)
-      .get(`${STU3_BASE_ROUTE}my-topic`)
+      .get(`${STU3_BASE_ROUTE}${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ 'context.type': '', context: [] });

@@ -5,7 +5,6 @@ import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
-import { getRedis } from '../redis';
 import { initTestAuth, withTestContext } from '../test.setup';
 
 describe('FHIRcast WebSocket', () => {
@@ -20,7 +19,6 @@ describe('FHIRcast WebSocket', () => {
       config = await loadTestConfig();
       config.heartbeatEnabled = false;
       server = await initApp(app, config);
-      await getRedis().flushdb();
       accessToken = await initTestAuth({ membership: { admin: true } });
       await new Promise<void>((resolve) => {
         server.listen(0, 'localhost', 511, resolve);
@@ -88,7 +86,6 @@ describe('FHIRcast WebSocket', () => {
       config = await loadTestConfig();
       config.heartbeatMilliseconds = 25;
       server = await initApp(app, config);
-      await getRedis().flushdb();
       await new Promise<void>((resolve) => {
         server.listen(0, 'localhost', 511, resolve);
       });
