@@ -1,8 +1,19 @@
 import { MedplumClient, validateResource } from '@medplum/core';
-import { StructureDefinition } from '@medplum/fhirtypes';
+import { Patient, StructureDefinition } from '@medplum/fhirtypes';
 
-// start-block profileMigration
-// Version 2.0.0 of the profile
+const medplum = new MedplumClient();
+
+const patient: Patient =
+  // start-block updateProfile
+  // The initial profile represented on a patient resource
+  {
+    resourceType: 'Patient',
+    meta: {
+      profile: ['https://example.com/profiles/foo-patient/1.0.0'],
+    },
+  };
+
+// Update your StructureDefinition
 const updatedProfile: StructureDefinition = {
   resourceType: 'StructureDefinition',
   url: 'http://www.example.com/profile/foo-patient/2.0.0',
@@ -13,7 +24,11 @@ const updatedProfile: StructureDefinition = {
   abstract: false,
 };
 
-const medplum = new MedplumClient();
+// Create the new profile
+await medplum.createResource(updatedProfile);
+// end-block updateProfile
+
+// start-block profileMigration
 // Get all the patients in the system
 const allPatients = await medplum.searchResources('Patient');
 
@@ -37,3 +52,5 @@ for (const patient of allPatients) {
   }
 }
 // end-block profileMigration
+
+console.log(patient);

@@ -176,15 +176,30 @@ to satisfy the field presence requirement, while also denoting why the data is m
 
 Updating FHIR profiles is different than updating other resources in FHIR. The process is more similar to a database migration, and the profiled resources will need to be revalidated once the update is complete. This revalidation does not happen automatically, but will be checked the next time the resource is written to.
 
-This section offers some best practices to make updating profiles as smooth and painless as possible when using Mepdlum.
+This section offers some best practices to make updating profiles as smooth and painless as possible when using Medplum.
 
-When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as an udpated `version` field. The `version` element is used to track changes to profile over time.
+When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as an udpated `url` field.
 
-Medplum does not currently fully implement versioning per the FHIR spec. Because of this, when updating a profile the version should also be included as a part of the url. This allows you to make changes to your profile without invalidating resources that do not yet comply to the updated profile.
+Medplum does not currently fully implement versioning per the FHIR spec. Because of this, when updating a profile the version should also be included as a part of the url. This allows you to make changes to your profile without invalidating resources that do not yet comply to the new profile.
 
-For example, say you have a patient profile that requires patients to have an associated email address. The url for this profile would be `https://example.com/profiles/foo-patient/1.0.0`. In this example `foo-patient` is the name of the profile and `1.0.0` is the version.
+For example, say you have a patient profile that requires patients to have an associated email address and you want to update it so that they must also have an associated phone number. The steps for this would be the following:
 
-You may want to update this profile to ensure that all patients also have an associated phone number. To do so, you would create a new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) with the necessary changes. Additionally, you would update the url to `https://example.com/profile/foo-patient/2.0.0`. This is the same profile, but with the version updated to `2.0.0`.
+- Check the `url` of the current profile and note the version.
+- Define a new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource with the desired changes to the profile.
+- Update the `url` on the new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) with an appropriate new version number.
+- Create the updated [`StructureDefinition](/docs/api/fhir/resources/structuredefinition).
+- Validate and update your [`Patient`](/docs/api/fhir/resources/patient) resources to adhere to the new profile.
+
+<details>
+<summary>Example: Update your profile</summary>
+  <MedplumCodeBlock language="bash" selectBlocks="updateProfile">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+In the above example, we have a [`Patient`](/docs/api/fhir/resources/patient) with an initial profile. In the url, the profile name is `foo-patient` and the version is `1.0.0`.
+
+We then define the new [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition). Here you would add any changes to the profile you want. Note that the `url` field is the same, except we have updated the version to `2.0.0.`.
 
 :::note Semantic Versioning in Profiles
 
