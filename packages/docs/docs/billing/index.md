@@ -14,7 +14,7 @@ For billing insurance, the [Coverage](/docs/api/fhir/resources/diagnosticreport.
 
 For resources to be billed appropriately, they often need to be tagged with CPT Codes, LOINC or SNOMED ontologies. To accomplish this, resources are often tagged with a [Codeable Concept](/docs/fhir-basics#standardizing-data-codeable-concepts). Coding will be determined by the service provided.
 
-Through automation and integration, more complex scenarios like determining authorization or checking whether insurance is active can be automated via [bots](/docs/bots/insurance-eligibility-check.md).
+Through automation and integration, more complex scenarios like determining authorization or checking whether insurance is active can be automated via bots.
 
 ## Sample Integrations
 
