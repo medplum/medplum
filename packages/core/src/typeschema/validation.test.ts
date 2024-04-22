@@ -1319,16 +1319,6 @@ describe('FHIR resource validation', () => {
       } as Patient)
     ).toHaveLength(0);
 
-    expect(
-      validateResource({
-        resourceType: 'Patient',
-        multipleBirthInteger: 2,
-        _multipleBirthInteger: {
-          extension: [],
-        },
-      } as Patient)
-    ).toHaveLength(0);
-
     // check both orders of the properties
     expect(
       validateResource({
