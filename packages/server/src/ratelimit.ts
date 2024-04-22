@@ -7,7 +7,7 @@ import { AuthenticatedRequestContext, getRequestContext } from './context';
  * MemoryStore must be shutdown to cleanly stop the server.
  */
 
-const DEFAULT_RATE_LIMIT_PER_15_MINUTES = 10000;
+const DEFAULT_RATE_LIMIT_PER_15_MINUTES = 15 * 60 * 1000; // 1000 requests per second
 const DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES = 600;
 
 let handler: RateLimitRequestHandler | undefined = undefined;

@@ -218,3 +218,8 @@ export interface ProjectSite {
    */
   recaptchaSecretKey?: string;
 }
+
+/**
+ * @deprecated Use ProjectSetting instead
+ */
+export type ProjectSecret = ProjectSetting;
