@@ -15,8 +15,8 @@
     "@mantine/notifications": "7.8.0",
     "@medplum/core": "3.1.2",
     "@medplum/react": "3.1.2",
-    "@next/bundle-analyzer": "14.2.1",
-    "next": "14.2.1",
+    "@next/bundle-analyzer": "14.2.2",
+    "next": "14.2.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rfc6902": "5.1.1"
@@ -24,10 +24,10 @@
   "devDependencies": {
     "@medplum/fhirtypes": "3.1.2",
     "@types/node": "20.12.7",
-    "@types/react": "18.2.78",
+    "@types/react": "18.2.79",
     "@types/react-dom": "18.2.25",
     "eslint": "8.57.0",
-    "eslint-config-next": "14.2.1",
+    "eslint-config-next": "14.2.2",
     "postcss": "8.4.38",
     "postcss-preset-mantine": "1.14.4",
     "typescript": "5.4.5"

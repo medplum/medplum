@@ -31,12 +31,12 @@
     "@types/pg": "8.11.5",
     "@types/unzipper": "0.10.9",
     "fast-xml-parser": "4.3.6",
-    "fhirpath": "3.11.0",
+    "fhirpath": "3.13.0",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.11.5",
-    "tinybench": "2.7.0",
-    "unzipper": "0.11.2"
+    "tinybench": "2.8.0",
+    "unzipper": "0.11.3"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -41,7 +41,7 @@
     "@tabler/icons-react": "3.2.0",
     "@testing-library/jest-dom": "6.4.2",
     "@testing-library/react": "15.0.2",
-    "@types/react": "18.2.78",
+    "@types/react": "18.2.79",
     "@types/react-dom": "18.2.25",
     "@vitejs/plugin-react": "4.2.1",
     "postcss": "8.4.38",
@@ -50,7 +50,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.22.3",
     "rfc6902": "5.1.1",
-    "vite": "5.2.8"
+    "vite": "5.2.10"
   },
   "engines": {
     "node": ">=18.0.0"
