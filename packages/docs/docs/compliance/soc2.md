@@ -2,9 +2,9 @@
 sidebar_position: 3
 ---
 
-# SOC2 Type 2 Certification
+# SOC2 Type II Certification
 
-Medplum has achieved SOC2 Type 2 certification. Customers can request materials in this section to support their own business needs our audit.
+Medplum has achieved SOC2 Type II certification. Customers can request materials in this section to support their own business needs our audit.
 
 ## Materials and Usage
 
