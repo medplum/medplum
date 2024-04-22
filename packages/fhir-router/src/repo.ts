@@ -186,7 +186,7 @@ export abstract class FhirRepository<TClient = unknown> {
       const matches = await this.searchResources(search);
       if (matches.length === 1) {
         const existing = matches[0];
-        if (resource.id && resource.id !== existing.id) {
+        if (!options?.assignedId && resource.id && resource.id !== existing.id) {
           throw new OperationOutcomeError(
             badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
           );

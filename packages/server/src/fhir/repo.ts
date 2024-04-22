@@ -191,6 +191,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private transactionDepth = 0;
   private closed = false;
 
+  private postCommitCallbacks: (() => Promise<void>)[] = [];
+
   constructor(context: RepositoryContext) {
     super();
     this.context = context;
@@ -211,7 +213,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     };
     try {
       const result = await this.updateResourceImpl(resourceWithId, true);
-      this.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, result);
+      await this.postCommit(async () => {
+        this.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, result);
+      });
       return result;
     } catch (err) {
       this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, resourceWithId);
@@ -457,7 +461,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
     try {
       const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
-      this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
+      await this.postCommit(async () => {
+        this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
+      });
       return result;
     } catch (err) {
       this.logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err, resource);
@@ -529,10 +535,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.handleBinaryUpdate(existing, result);
     await this.handleMaybeCacheOnly(result, create);
-    await setCacheEntry(result);
-    await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
+    await this.postCommit(async () => {
+      await this.handleBinaryUpdate(existing, result);
+      await setCacheEntry(result);
+      await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
+    });
     this.removeHiddenFields(result);
     return result;
   }
@@ -978,7 +986,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         await this.deleteFromLookupTables(conn, resource);
 
-        this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+        await this.postCommit(async () => {
+          this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+        });
       });
 
       await addSubscriptionJobs(resource, { interaction: 'delete' });
@@ -1002,7 +1012,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       const result = await this.updateResourceImpl(resource, false);
-      this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
+      await this.postCommit(async () => {
+        this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
+      });
       return result;
     } catch (err) {
       this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err);
@@ -1949,6 +1961,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
       await conn.query('COMMIT');
+      await this.processPostCommit();
     } else {
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
     }
@@ -1977,6 +1990,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth <= 0) {
       throw new Error('Not in transaction');
     }
+  }
+
+  private async postCommit(fn: () => Promise<void>): Promise<void> {
+    if (this.transactionDepth) {
+      this.postCommitCallbacks.push(fn);
+    } else {
+      await fn();
+    }
+  }
+
+  private async processPostCommit(): Promise<void> {
+    const callbacks = this.postCommitCallbacks;
+    this.postCommitCallbacks = [];
+    await Promise.allSettled(callbacks.map((fn) => fn()));
   }
 
   close(): void {
