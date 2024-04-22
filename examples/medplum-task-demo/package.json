@@ -8,6 +8,7 @@
     "build:bots": "npm run clean && npm run lint && tsc --project tsconfig-bots.json && node --loader ts-node/esm src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
     "dev": "npm run build:bots && vite",
+    "test": "vitest run",
     "lint": "eslint src/",
     "preview": "vite preview"
   },
@@ -17,6 +18,9 @@
     "trailingComma": "es5"
   },
   "eslintConfig": {
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
     "extends": [
       "@medplum/eslint-config"
     ]
@@ -30,6 +34,7 @@
     "@medplum/eslint-config": "3.1.4",
     "@medplum/fhirtypes": "3.1.4",
     "@medplum/react": "3.1.4",
+    "@medplum/mock": "3.1.4",
     "@tabler/icons-react": "3.2.0",
     "@types/node": "20.12.7",
     "@types/react": "18.3.1",
@@ -42,5 +47,8 @@
     "react-router-dom": "6.23.0",
     "typescript": "5.4.5",
     "vite": "5.2.10"
+    "rimraf": "5.0.5",
+    "ts-node": "10.9.2",
+    "vitest": "1.5.2"
   }
 }

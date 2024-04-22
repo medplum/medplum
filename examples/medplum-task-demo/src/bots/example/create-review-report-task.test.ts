@@ -2,6 +2,7 @@ import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitio
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, DiagnosticReport, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { beforeAll, describe, expect, test } from 'vitest';
 import { handler } from './create-review-report-task';
 
 describe('Create Review Report Task', async () => {
