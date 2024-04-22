@@ -1,20 +1,59 @@
 import { Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, ResourceForm, useMedplum } from '@medplum/react';
-import { useState } from 'react';
+import { createReference, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcome, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Document, Loading, ResourceForm, useMedplum } from '@medplum/react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePatient } from '../hooks/usePatient';
 import { prependPatientPath } from './patient/PatientPage.utils';
 
+const PatientReferencesElements: Partial<Record<ResourceType, string[]>> = {
+  Task: ['for'],
+  MedicationRequest: ['subject'],
+  ServiceRequest: ['subject'],
+  Device: ['patient'],
+  DiagnosticReport: ['subject'],
+  DocumentReference: ['subject'],
+  Appointment: ['participant.actor'],
+  CarePlan: ['subject'],
+};
+
+function getDefaultValue(resourceType: ResourceType, patient: Patient | undefined): Partial<Resource> {
+  const dv = { resourceType } as Partial<Resource>;
+  const refKeys = PatientReferencesElements[resourceType];
+  if (patient && refKeys) {
+    for (const key of refKeys) {
+      const keyParts = key.split('.');
+      if (keyParts.length === 1) {
+        (dv as any)[key] = createReference(patient);
+      } else if (keyParts.length === 2) {
+        const [first, second] = keyParts;
+        (dv as any)[first] = [{ [second]: createReference(patient) }];
+      } else {
+        throw new Error('Can only process keys with one or two parts');
+      }
+    }
+  }
+
+  return dv;
+}
+
 export function CreateResourcePage(): JSX.Element {
   const medplum = useMedplum();
-  const patient = usePatient({ ignoreMissingPatientId: true });
-  const navigate = useNavigate();
-  const { resourceType } = useParams() as { resourceType: ResourceType };
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
-  const defaultValue = { resourceType } as Partial<Resource>;
+  const patient = usePatient({ ignoreMissingPatientId: true, setOutcome });
+  const navigate = useNavigate();
+  const { patientId, resourceType } = useParams() as { patientId: string | undefined; resourceType: ResourceType };
+  const [loadingPatient, setLoadingPatient] = useState(Boolean(patientId));
+  const [defaultValue, setDefaultValue] = useState<Partial<Resource>>(() => getDefaultValue(resourceType, patient));
+
+  useEffect(() => {
+    if (patient) {
+      setDefaultValue(getDefaultValue(resourceType, patient));
+    }
+    setLoadingPatient(false);
+  }, [patient, resourceType]);
 
   const handleSubmit = (newResource: Resource): void => {
     if (outcome) {
@@ -35,6 +74,10 @@ export function CreateResourcePage(): JSX.Element {
         });
       });
   };
+
+  if (loadingPatient) {
+    return <Loading />;
+  }
 
   return (
     <Document shadow="xs">
