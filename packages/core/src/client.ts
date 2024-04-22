@@ -22,7 +22,7 @@ import {
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
-  ProjectSecret,
+  ProjectSetting,
   Reference,
   Resource,
   ResourceType,
@@ -429,7 +429,7 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly bot: Reference<Bot>;
   readonly contentType: string;
   readonly input: T;
-  readonly secrets: Record<string, ProjectSecret>;
+  readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
 }
 

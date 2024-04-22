@@ -2,8 +2,7 @@ import { OperationOutcomeError, createReference, unauthorized } from '@medplum/c
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
-import { AuthenticatedRequestContext, getRequestContext, requestContextStore } from '../context';
-import { getRepoForLogin } from '../fhir/accesspolicy';
+import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
 
@@ -14,64 +13,59 @@ export interface AuthState {
   accessToken?: string;
 }
 
-export function authenticateRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
-  return authenticateTokenImpl(req)
-    .then(async ({ login, project, membership, accessToken }) => {
-      const ctx = getRequestContext();
-      const repo = await getRepoForLogin(login, membership, project, isExtendedMode(req));
-      requestContextStore.run(new AuthenticatedRequestContext(ctx, login, project, membership, repo, accessToken), () =>
-        next()
-      );
-    })
-    .catch(next);
+export function authenticateRequest(req: Request, res: Response, next: NextFunction): void {
+  const ctx = getRequestContext();
+  if (ctx instanceof AuthenticatedRequestContext) {
+    next();
+  } else {
+    next(new OperationOutcomeError(unauthorized));
+  }
 }
 
-export async function authenticateTokenImpl(req: IncomingMessage): Promise<AuthState> {
-  const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
+export async function authenticateTokenImpl(req: IncomingMessage): Promise<AuthState | undefined> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return undefined;
+  }
+
+  const [tokenType, token] = authHeader.split(' ');
   if (!tokenType || !token) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   if (tokenType === 'Bearer') {
-    return authenticateBearerToken(req, token);
+    return getLoginForAccessToken(token);
   }
+
   if (tokenType === 'Basic') {
     return authenticateBasicAuth(req, token);
   }
-  throw new OperationOutcomeError(unauthorized);
+
+  return undefined;
 }
 
-function authenticateBearerToken(req: IncomingMessage, token: string): Promise<AuthState> {
-  return getLoginForAccessToken(token).catch(() => {
-    throw new OperationOutcomeError(unauthorized);
-  });
-}
-
-async function authenticateBasicAuth(req: IncomingMessage, token: string): Promise<AuthState> {
+async function authenticateBasicAuth(req: IncomingMessage, token: string): Promise<AuthState | undefined> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   const systemRepo = getSystemRepo();
-  let client = undefined;
+  let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
   } catch (err) {
-    throw new OperationOutcomeError(unauthorized);
-  }
-  if (!client) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   if (!timingSafeEqualStr(client.secret as string, password)) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   const membership = await getClientApplicationMembership(client);
   if (!membership) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
@@ -85,6 +79,6 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
   return { login, project, membership };
 }
 
-function isExtendedMode(req: Request): boolean {
+export function isExtendedMode(req: Request): boolean {
   return req.headers['x-medplum'] === 'extended';
 }
