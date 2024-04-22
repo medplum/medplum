@@ -163,7 +163,7 @@ To make changes to the server config after your first deploy, you must the edit 
 
 To make changes to settings that affect your deployed Medplum App, you must _also_ make these changes to your local configuration json file.
 
-Once you have made these changes, you will need to restart your server for them to take effect. The easiest way to do this in a 0-downtime manner is by using the `aws-update-server` command. For more details on this command see the [Upgrade the Server docs](/docs/self-hosting/install-on-aws#upgrade-the-server).
+Once you have made these changes, you will need to restart your server for them to take effect. The easiest way to do this in a zero-downtime manner is by using the `medplum aws update-server` command. For more details on this command see the [Upgrade the Server docs](/docs/self-hosting/install-on-aws#upgrade-the-server).
 :::
 
 ### AWS Secrets
