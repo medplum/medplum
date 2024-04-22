@@ -4,12 +4,12 @@ The Medplum API uses a number of safeguards against bursts of incoming traffic t
 
 ## Default Rate Limits
 
-| Category                      | Free tier      | Paid tier       |
-| ----------------------------- | -------------- | --------------- |
-| Auth (`/auth/*`, `/oauth2/*`) | 1 per second   | 100 per second  |
-| Others                        | 100 per second | 1000 per second |
+| Category                      | Free tier                      | Paid tier                       |
+| ----------------------------- | ------------------------------ | ------------------------------- |
+| Auth (`/auth/*`, `/oauth2/*`) | 1 request per IP per second    | 1 request per IP per second     |
+| Others                        | 100 requests per IP per second | 1000 requests per IP per second |
 
-All rate limits are calculated on a 15 minute window.
+All rate limits are calculated per IP address on a 15 minute window.
 
 Rate limits can be increased for paid plans. Please [contact us](/contact) for more information.
 
