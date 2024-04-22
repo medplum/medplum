@@ -53,9 +53,13 @@ describe('Medplum polyfills', () => {
         expect(() => new Event('foo')).toThrow();
         polyfillMedplumWebAPIs();
 
-        const event = new Event('foo');
-        expect(event).toBeInstanceOf(Event);
-        expect(event.type).toEqual('foo');
+        const event1 = new Event('foo');
+        expect(event1).toBeInstanceOf(Event);
+        expect(event1.type).toEqual('foo');
+
+        const event2 = new Event('foo', { bubbles: true, cancelable: true, composed: true });
+        expect(event2).toBeInstanceOf(Event);
+        expect(event2.type).toEqual('foo');
       });
     });
 
