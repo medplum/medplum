@@ -292,7 +292,7 @@ class ResourceValidator implements ResourceVisitor {
       if (choiceOfTypeElementName) {
         // check that the type of the primitive extension matches the type of the property
         let relatedElementName: string;
-        let requiredRelatedElementName: string | undefined;
+        let requiredRelatedElementName: string;
         if (choiceOfTypeElementName.startsWith('_')) {
           relatedElementName = choiceOfTypeElementName.slice(1);
           requiredRelatedElementName = key.slice(1);
