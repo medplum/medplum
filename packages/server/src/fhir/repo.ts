@@ -1992,7 +1992,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async postCommit(fn: () => Promise<void>): Promise<void> {
+  async postCommit(fn: () => Promise<void>): Promise<void> {
     if (this.transactionDepth) {
       this.postCommitCallbacks.push(fn);
     } else {

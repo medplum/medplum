@@ -253,4 +253,55 @@ describe('FHIR Repo', () => {
         expect(searchCheck4.entry).toHaveLength(0);
       });
     }));
+
+  test('Post-commit callback', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+      await repo.withTransaction(async () => {
+        await repo.postCommit(async () => {
+          callback();
+        });
+        expect(callback).not.toHaveBeenCalled();
+      });
+      expect(callback).toHaveBeenCalledTimes(1);
+    }));
+
+  test('Post-commit callback with rollback', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+      try {
+        await repo.withTransaction(async () => {
+          await repo.postCommit(async () => {
+            callback();
+          });
+          expect(callback).not.toHaveBeenCalled();
+          throw new Error('Roll it back!');
+        });
+        fail('Expected transaction to abort');
+      } catch (err) {
+        expect(err).toBeDefined();
+        expect(callback).not.toHaveBeenCalled();
+      }
+    }));
+
+  test('Nested transaction post-commit', () =>
+    withTestContext(async () => {
+      const cb1 = jest.fn();
+      const cb2 = jest.fn();
+      await repo.withTransaction(async () => {
+        await repo.postCommit(async () => {
+          cb1();
+        });
+        await repo.withTransaction(async () => {
+          await repo.postCommit(async () => {
+            cb2();
+          });
+          expect(cb1).not.toHaveBeenCalled();
+        });
+        expect(cb1).not.toHaveBeenCalled();
+        expect(cb2).not.toHaveBeenCalled();
+      });
+      expect(cb1).toHaveBeenCalledTimes(1);
+      expect(cb2).toHaveBeenCalledTimes(1);
+    }));
 });
