@@ -22,7 +22,6 @@ import {
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
-  ProjectSecret,
   ProjectSetting,
   Reference,
   Resource,
