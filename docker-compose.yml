@@ -17,19 +17,6 @@ services:
     command: postgres -c config_file=/usr/local/etc/postgres/postgres.conf
     ports:
       - '5432:5432'
-  postgres-seed:
-    image: postgres:12
-    restart: always
-    environment:
-      - POSTGRES_USER=medplum
-      - POSTGRES_PASSWORD=medplum
-
-    volumes:
-      - ./postgres/postgres.conf:/usr/local/etc/postgres/postgres.conf
-      - ./postgres/:/docker-entrypoint-initdb.d/
-    command: postgres -c config_file=/usr/local/etc/postgres/postgres.conf
-    ports:
-      - '5433:5432'
   redis:
     image: redis:7
     restart: always
