@@ -1,5 +1,6 @@
 import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
 import {
+  AuthMethodResponse,
   BaseLoginRequest,
   GoogleCredentialResponse,
   GoogleLoginRequest,
@@ -51,15 +52,17 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
   const issues = getIssuesForExpression(outcome, undefined);
 
   const isExternalAuth = useCallback(
-    async (authMethod: any): Promise<boolean> => {
+    async (authMethod: AuthMethodResponse): Promise<boolean> => {
       if (!authMethod.authorizeUrl) {
         return false;
       }
 
-      const state = JSON.stringify({
-        ...(await medplum.ensureCodeChallenge(baseLoginRequest)),
-        domain: authMethod.domain,
-      });
+      let loginRequest: BaseLoginRequest = baseLoginRequest;
+      if (authMethod.usePkce) {
+        loginRequest = await medplum.ensureCodeChallenge(baseLoginRequest);
+      }
+
+      const state = JSON.stringify({ ...loginRequest, domain: authMethod.domain });
       const url = new URL(authMethod.authorizeUrl);
       url.searchParams.set('state', state);
       window.location.assign(url.toString());
@@ -70,7 +73,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   const handleSubmit = useCallback(
     async (formData: Record<string, string>) => {
-      const authMethod = await medplum.post('auth/method', { email: formData.email });
+      const authMethod = await medplum.checkAuthMethod(formData.email);
       if (!(await isExternalAuth(authMethod))) {
         setEmail(formData.email);
       }
@@ -85,8 +88,8 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           ...baseLoginRequest,
           googleCredential: response.credential,
         } as GoogleLoginRequest);
-        if (!(await isExternalAuth(authResponse))) {
-          handleAuthResponse(authResponse);
+        if (!(await isExternalAuth(authResponse as AuthMethodResponse))) {
+          handleAuthResponse(authResponse as LoginAuthenticationResponse);
         }
       } catch (err) {
         setOutcome(normalizeOperationOutcome(err));

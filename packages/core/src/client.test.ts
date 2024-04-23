@@ -8,6 +8,7 @@ import {
   DEFAULT_ACCEPT,
   FetchLike,
   InviteRequest,
+  LoginAuthenticationResponse,
   MedplumClient,
   NewPatientRequest,
   NewProjectRequest,
@@ -357,7 +358,7 @@ describe('Client', () => {
       googleCredential: 'google-credential',
     });
     expect(result1).toBeDefined();
-    expect(result1.login).toBeDefined();
+    expect((result1 as LoginAuthenticationResponse).login).toBeDefined();
   });
 
   test('SignInWithRedirect', async () => {
