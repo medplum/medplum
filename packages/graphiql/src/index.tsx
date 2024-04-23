@@ -156,7 +156,11 @@ export function App(): JSX.Element {
       onEditOperationName={onEditOperationName}
     />
   ) : (
-    <SignInForm googleClientId={import.meta.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
+    <SignInForm
+      login={searchParams.get('login') || undefined}
+      googleClientId={import.meta.env.GOOGLE_CLIENT_ID}
+      onSuccess={() => undefined}
+    >
       <Logo size={32} />
       <Title>Sign in to Medplum</Title>
     </SignInForm>
