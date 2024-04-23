@@ -39,7 +39,7 @@ Super administrators can enable bots via the Medplum App:
 
 ## Drive workflow
 
-1. [Checking Insurance Eligibility for a specific medical service](insurance-eligibility-check.md)
+1. Checking Insurance Eligibility for a specific medical service
 2. Coming Soon: Order Medication through an Online Pharmacy
 3. [Creating and FHIR Objects on Questionnaire submissions](./bot-for-questionnaire-response/bot-for-questionnaire-response.md)
 4. Coming Soon: Send email notifications when critical lab values are received
