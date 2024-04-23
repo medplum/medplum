@@ -1,10 +1,10 @@
 import { Project } from '@medplum/fhirtypes';
-import { initAppServices, shutdownApp } from './app';
-import { loadTestConfig } from './config';
-import { getDatabasePool } from './database';
-import { SelectQuery } from './fhir/sql';
-import { seedDatabase } from './seed';
-import { withTestContext } from './test.setup';
+import { initAppServices, shutdownApp } from '../src/app';
+import { loadTestConfig } from '../src/config';
+import { getDatabasePool } from '../src/database';
+import { SelectQuery } from '../src/fhir/sql';
+import { seedDatabase } from '../src/seed';
+import { withTestContext } from '../src/test.setup';
 
 describe('Seed', () => {
   beforeAll(async () => {

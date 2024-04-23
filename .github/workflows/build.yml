@@ -178,6 +178,19 @@ jobs:
           --health-retries 5
         ports:
           - 5432/tcp
+      postgres-seed:
+        image: postgres:${{ matrix.pg-version }}
+        env:
+          POSTGRES_DB: medplum_test
+          POSTGRES_USER: medplum
+          POSTGRES_PASSWORD: medplum
+        options: >-
+          --health-cmd pg_isready
+          --health-retries 5
+          --health-interval 10s
+          --health-timeout 5s
+        ports:
+          - 5433/tcp:5432/tcp
       redis:
         image: redis:${{ matrix.redis-version }}
         options: >-
@@ -225,6 +238,7 @@ jobs:
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
+          POSTGRES_SEED_PORT: ${{ job.services.postgres.ports[5433] }}
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Upload code coverage
         if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}

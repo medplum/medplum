@@ -1,4 +1,4 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "seed-tests/seed-serial.test.ts", "seed-tests/seed.test.ts"]
 }
