@@ -19,8 +19,8 @@
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest",
-    "test:seed:serial": "jest seed-serial.test.ts --config jest.seed.config.ts --coverageDirectory \"<rootDir>/coverage-seed/serial\"",
-    "test:seed:parallel": "jest seed.test.ts --config jest.seed.config.ts --coverageDirectory \"<rootDir>/coverage-seed/parallel\""
+    "test:seed:serial": "jest seed-serial.test.ts --config jest.seed.config.ts --coverageDirectory \"<rootDir>/coverage/seed/serial\"",
+    "test:seed:parallel": "jest seed.test.ts --config jest.seed.config.ts --coverageDirectory \"<rootDir>/coverage/seed/parallel\""
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "3.569.0",
