@@ -10,4 +10,4 @@ set -x
 # On a normal developer machine, this is run only rarely when setting up a new database
 # We execute this in parallel with the main line of tests
 time npx turbo run test:seed:serial --filter=./packages/server -- --coverage
-cp "packages/server/coverage-seed/serial/coverage-final.json" "coverage/packages/coverage-server-seed-serial.json"
+cp "packages/server/coverage/seed/serial/coverage-final.json" "coverage/packages/coverage-server-seed-serial.json"

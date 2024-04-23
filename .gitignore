@@ -45,7 +45,6 @@ packages/react/build-storybook.log
 
 # Jest code coverage
 coverage/
-packages/server/coverage-seed/
 
 # TypeScript incremental build
 tsconfig.tsbuildinfo
