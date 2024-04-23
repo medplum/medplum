@@ -10,7 +10,7 @@ import { RebuildOptions, buildRebuildOptions } from './common';
  * @param options - Optional options for how rebuild should be done.
  */
 export async function rebuildR4ValueSets(options?: Partial<RebuildOptions>): Promise<void> {
-  const finalOptions = buildRebuildOptions(options) as RebuildOptions;
+  const finalOptions = buildRebuildOptions(options);
   const systemRepo = getSystemRepo();
   const files = ['v2-tables.json', 'v3-codesystems.json', 'valuesets.json', 'valuesets-medplum.json'];
   for (const file of files) {

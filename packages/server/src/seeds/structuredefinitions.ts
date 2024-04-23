@@ -11,7 +11,7 @@ import { RebuildOptions, buildRebuildOptions } from './common';
  * @param options - Optional options for how rebuild should be done.
  */
 export async function rebuildR4StructureDefinitions(options?: Partial<RebuildOptions>): Promise<void> {
-  const finalOptions = buildRebuildOptions(options) as RebuildOptions;
+  const finalOptions = buildRebuildOptions(options);
   const client = getDatabasePool();
   await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
 
