@@ -190,7 +190,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
         ports:
-          - 5433/tcp:5432/tcp
+          - 5433:5432/tcp
       redis:
         image: redis:${{ matrix.redis-version }}
         options: >-
