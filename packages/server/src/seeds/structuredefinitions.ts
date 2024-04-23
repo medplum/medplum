@@ -11,12 +11,12 @@ import { RebuildOptions, buildRebuildOptions } from './common';
  * @param options - Optional options for how rebuild should be done.
  */
 export async function rebuildR4StructureDefinitions(options?: Partial<RebuildOptions>): Promise<void> {
-  const finalOptions = buildRebuildOptions(options);
+  const rebuildOptions = buildRebuildOptions(options);
   const client = getDatabasePool();
   await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
 
   const systemRepo = getSystemRepo();
-  if (finalOptions.parallel) {
+  if (rebuildOptions.parallel) {
     await Promise.all([
       createStructureDefinitionsForBundleParallel(systemRepo, readJson('fhir/r4/profiles-resources.json') as Bundle),
       createStructureDefinitionsForBundleParallel(systemRepo, readJson('fhir/r4/profiles-medplum.json') as Bundle),

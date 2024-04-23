@@ -11,25 +11,24 @@ import { RebuildOptions, buildRebuildOptions } from './common';
  * @param options - Optional options for how rebuild should be done.
  */
 export async function rebuildR4SearchParameters(options?: Partial<RebuildOptions>): Promise<void> {
-  const finalOptions = buildRebuildOptions(options);
+  const rebuildOptions = buildRebuildOptions(options);
   const client = getDatabasePool();
   await client.query('DELETE FROM "SearchParameter" WHERE "projectId" = $1', [r4ProjectId]);
 
   const systemRepo = getSystemRepo();
 
-  if (finalOptions.parallel) {
-    const promises = [];
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      for (const entry of readJson(filename).entry as BundleEntry[]) {
-        promises.push(createParameter(systemRepo, entry.resource as SearchParameter));
-      }
+  const promises = [];
+  for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+    for (const entry of readJson(filename).entry as BundleEntry[]) {
+      promises.push(createParameter(systemRepo, entry.resource as SearchParameter));
     }
+  }
+
+  if (rebuildOptions.parallel) {
     await Promise.all(promises);
   } else {
-    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      for (const entry of readJson(filename).entry as BundleEntry[]) {
-        await createParameter(systemRepo, entry.resource as SearchParameter);
-      }
+    for (const promise of promises) {
+      await promise;
     }
   }
 }

@@ -10,20 +10,20 @@ import { RebuildOptions, buildRebuildOptions } from './common';
  * @param options - Optional options for how rebuild should be done.
  */
 export async function rebuildR4ValueSets(options?: Partial<RebuildOptions>): Promise<void> {
-  const finalOptions = buildRebuildOptions(options);
+  const rebuildOptions = buildRebuildOptions(options);
   const systemRepo = getSystemRepo();
   const files = ['v2-tables.json', 'v3-codesystems.json', 'valuesets.json', 'valuesets-medplum.json'];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
-    if (finalOptions.parallel) {
-      const promises = [];
-      for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
-        promises.push(overwriteResource(systemRepo, entry.resource as CodeSystem | ValueSet, finalOptions));
-      }
+    const promises = [];
+    for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
+      promises.push(overwriteResource(systemRepo, entry.resource as CodeSystem | ValueSet, rebuildOptions));
+    }
+    if (rebuildOptions.parallel) {
       await Promise.all(promises);
     } else {
-      for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
-        await overwriteResource(systemRepo, entry.resource as CodeSystem | ValueSet, finalOptions);
+      for (const promise of promises) {
+        await promise;
       }
     }
   }
