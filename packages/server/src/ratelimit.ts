@@ -6,7 +6,7 @@ import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRedis } from './redis';
 
 const DEFAULT_RATE_LIMIT_PER_15_MINUTES = 15 * 60 * 1000; // 1000 requests per second
-const DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES = 600;
+const DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES = 1200;
 
 let handler: RateLimitRequestHandler | undefined = undefined;
 let store: RedisStore | undefined = undefined;
@@ -15,7 +15,7 @@ export function getRateLimiter(): RateLimitRequestHandler {
   if (!handler) {
     const client = getRedis();
     store = new RedisStore({
-      // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
+      // @ts-expect-error - Pass string args direct to ioredis
       sendCommand: (...args: string[]): unknown => client.call(...args),
     });
     handler = rateLimit({
