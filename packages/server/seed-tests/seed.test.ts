@@ -1,8 +1,11 @@
 import { Project } from '@medplum/fhirtypes';
-import { initAppServices, shutdownApp } from '../src/app';
+import { shutdownApp } from '../src/app';
 import { loadTestConfig } from '../src/config';
-import { getDatabasePool } from '../src/database';
+import { AuthenticatedRequestContext, requestContextStore } from '../src/context';
+import { getDatabasePool, initDatabase } from '../src/database';
 import { SelectQuery } from '../src/fhir/sql';
+import { loadStructureDefinitions } from '../src/fhir/structure';
+import { initRedis } from '../src/redis';
 import { seedDatabase } from '../src/seed';
 import { withTestContext } from '../src/test.setup';
 
@@ -12,7 +15,15 @@ describe('Seed', () => {
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;
-    return withTestContext(() => initAppServices(config));
+
+    // We load the minimal required to get things running so this actually tests seeding the database
+    return withTestContext(() =>
+      requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
+        loadStructureDefinitions();
+        initRedis(config.redis);
+        await initDatabase(config);
+      })
+    );
   });
 
   afterAll(async () => {

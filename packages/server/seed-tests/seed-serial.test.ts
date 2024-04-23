@@ -1,12 +1,15 @@
 import { Project } from '@medplum/fhirtypes';
-import { initAppServices, shutdownApp } from '../src/app';
+import { shutdownApp } from '../src/app';
 import { loadTestConfig } from '../src/config';
-import { getDatabasePool } from '../src/database';
+import { AuthenticatedRequestContext, requestContextStore } from '../src/context';
+import { getDatabasePool, initDatabase } from '../src/database';
 import { SelectQuery } from '../src/fhir/sql';
+import { loadStructureDefinitions } from '../src/fhir/structure';
+import { initRedis } from '../src/redis';
 import { seedDatabase } from '../src/seed';
 import { withTestContext } from '../src/test.setup';
 
-describe('Seed', () => {
+describe('Seed Serial', () => {
   beforeAll(async () => {
     console.log = jest.fn();
 
@@ -14,7 +17,17 @@ describe('Seed', () => {
     config.database.port = process.env['POSTGRES_SEED_PORT']
       ? Number.parseInt(process.env['POSTGRES_SEED_PORT'], 10)
       : 5433;
-    return withTestContext(() => initAppServices(config));
+    // Keep Redis separate so caches between main test suite and this are separate
+    config.redis.db = 8;
+
+    // We load the minimal required to get things running so this actually tests seeding the database
+    return withTestContext(() =>
+      requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
+        loadStructureDefinitions();
+        initRedis(config.redis);
+        await initDatabase(config);
+      })
+    );
   });
 
   afterAll(async () => {

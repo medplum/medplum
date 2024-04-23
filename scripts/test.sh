@@ -13,8 +13,6 @@ export NODE_OPTIONS='--max-old-space-size=8192'
 rm -rf coverage
 mkdir -p coverage/packages
 mkdir -p coverage/combined
-mkdir -p coverage/seed/serial
-mkdir -p coverage/seed/parallel
 
 npx concurrently -n seed,main --kill-others-on-fail "scripts/test-seed.sh" "scripts/test-main.sh"
 
