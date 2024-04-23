@@ -18,6 +18,13 @@ function mockFetch(url: string, options: any): Promise<any> {
       result = {
         authorizeUrl: 'https://external.example.com/authorize',
         domain: 'external.example.com',
+        usePkce: true,
+      };
+    } else if (email === 'bob@external.example.com') {
+      result = {
+        authorizeUrl: 'https://external.example.com/authorize',
+        domain: 'external.example.com',
+        usePkce: false,
       };
     } else {
       result = {};
@@ -704,7 +711,7 @@ describe('SignInForm', () => {
     expect(google.accounts.id.prompt).toHaveBeenCalled();
   });
 
-  test('Redirect to external auth', async () => {
+  test('Redirect to external auth with PKCE', async () => {
     Object.defineProperty(window, 'location', {
       value: {
         assign: jest.fn(),
@@ -726,5 +733,41 @@ describe('SignInForm', () => {
 
     await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
     expect(window.location.assign).toHaveBeenCalled();
+
+    const url = (window.location.assign as jest.Mock).mock.calls[0][0];
+    expect(url).toContain('state=');
+
+    const state = JSON.parse(new URL(url).searchParams.get('state') as string);
+    expect(state.codeChallenge).toBeDefined();
+  });
+
+  test('Redirect to external auth without PKCE', async () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        assign: jest.fn(),
+      },
+      writable: true,
+    });
+
+    await setup({});
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'bob@external.example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
+    expect(window.location.assign).toHaveBeenCalled();
+
+    const url = (window.location.assign as jest.Mock).mock.calls[0][0];
+    expect(url).toContain('state=');
+
+    const state = JSON.parse(new URL(url).searchParams.get('state') as string);
+    expect(state.codeChallenge).not.toBeDefined();
   });
 });
