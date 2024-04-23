@@ -15,7 +15,8 @@ export function getRateLimiter(): RateLimitRequestHandler {
   if (!handler) {
     const client = getRedis();
     store = new RedisStore({
-      // @ts-expect-error - Pass string args direct to ioredis
+      // See: https://www.npmjs.com/package/rate-limit-redis#:~:text=//%20%40ts%2Dexpect%2Derror%20%2D%20Known%20issue%3A
+      // @ts-expect-error - Known issue: the `call` function is not present in @types/ioredis
       sendCommand: (...args: string[]): unknown => client.call(...args),
     });
     handler = rateLimit({
