@@ -67,15 +67,13 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
               googleClientId={googleClientId}
               handleGoogleCredential={async (response: GoogleCredentialResponse) => {
                 try {
-                  // New user registration currently not supported with external auth
-                  // See: https://github.com/medplum/medplum/issues/1450
                   props.handleAuthResponse(
-                    (await medplum.startGoogleLogin({
+                    await medplum.startGoogleLogin({
                       googleClientId: response.clientId,
                       googleCredential: response.credential,
                       projectId: props.projectId,
                       createUser: true,
-                    })) as LoginAuthenticationResponse
+                    })
                   );
                 } catch (err) {
                   setOutcome(normalizeOperationOutcome(err));

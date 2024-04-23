@@ -1,4 +1,4 @@
-import { AuthMethodResponse, OperationOutcomeError, Operator, badRequest } from '@medplum/core';
+import { OperationOutcomeError, Operator, badRequest } from '@medplum/core';
 import { DomainConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -37,7 +37,7 @@ export async function methodHandler(req: Request, res: Response): Promise<void> 
  * @param email - The user email address.
  * @returns External auth url if available. Otherwise undefined.
  */
-export async function isExternalAuth(email: string): Promise<AuthMethodResponse | undefined> {
+export async function isExternalAuth(email: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
   const domain = email.split('@')[1];
   const domainConfig = await getDomainConfiguration(domain);
   if (!domainConfig) {
@@ -55,11 +55,7 @@ export async function isExternalAuth(email: string): Promise<AuthMethodResponse 
     url.searchParams.set('redirect_uri', getConfig().baseUrl + 'auth/external');
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', 'openid profile email');
-    return {
-      domain,
-      authorizeUrl: url.toString(),
-      usePkce: !!idp.usePkce,
-    };
+    return { domain, authorizeUrl: url.toString() };
   } catch (error: any) {
     globalLogger.error(`Error constructing URL for domain ${domain}:`);
     throw new OperationOutcomeError(badRequest('Failed to construct URL for the domain'));

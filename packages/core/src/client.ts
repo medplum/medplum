@@ -351,12 +351,6 @@ export interface BaseLoginRequest {
   readonly redirectUri?: string;
 }
 
-export interface AuthMethodResponse {
-  readonly domain?: string;
-  readonly authorizeUrl?: string;
-  readonly usePkce?: boolean;
-}
-
 export interface EmailPasswordLoginRequest extends BaseLoginRequest {
   readonly email: string;
   readonly password: string;
@@ -1080,6 +1074,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Makes an HTTP DELETE request to the specified URL.
    *
+   *
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `deleteResource()`.
@@ -1092,20 +1087,6 @@ export class MedplumClient extends EventTarget {
     url = url.toString();
     this.invalidateUrl(url);
     return this.request('DELETE', url, options);
-  }
-
-  /**
-   * Checks the authentication method for the given email address.
-   *
-   * Some enterprise systems may require different authentication methods for different email domains.
-   * This method can be used to determine the appropriate authentication method for a given email address.
-   * If the response includes an `authorizeUrl`, the client should redirect the user to that URL.
-   *
-   * @param email - The email address to check.
-   * @returns Promise to the authentication method response.
-   */
-  async checkAuthMethod(email: string): Promise<AuthMethodResponse> {
-    return this.post('auth/method', { email }) as Promise<AuthMethodResponse>;
   }
 
   /**
@@ -1202,7 +1183,7 @@ export class MedplumClient extends EventTarget {
   async startGoogleLogin(
     loginRequest: GoogleLoginRequest,
     options?: MedplumRequestOptions
-  ): Promise<LoginAuthenticationResponse | AuthMethodResponse> {
+  ): Promise<LoginAuthenticationResponse> {
     return this.post(
       'auth/google',
       {
@@ -1212,7 +1193,7 @@ export class MedplumClient extends EventTarget {
       },
       undefined,
       options
-    ) as Promise<LoginAuthenticationResponse | AuthMethodResponse>;
+    ) as Promise<LoginAuthenticationResponse>;
   }
 
   /**

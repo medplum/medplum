@@ -8,7 +8,6 @@ import {
   DEFAULT_ACCEPT,
   FetchLike,
   InviteRequest,
-  LoginAuthenticationResponse,
   MedplumClient,
   NewPatientRequest,
   NewProjectRequest,
@@ -341,22 +340,6 @@ describe('Client', () => {
     expect(client.getProfile()).toBeUndefined();
   });
 
-  test('checkAuthMethod', async () => {
-    const fetch = mockFetch(200, {
-      authorizeUrl: 'https://example.com/authorize',
-      domain: 'example.com',
-      usePkce: true,
-    });
-
-    const client = new MedplumClient({ fetch });
-    const result = await client.checkAuthMethod('alice@example.com');
-    expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
-      'https://api.medplum.com/auth/method',
-      expect.objectContaining({ method: 'POST', body: '{"email":"alice@example.com"}' })
-    );
-  });
-
   test('Sign in direct', async () => {
     const fetch = mockFetch(200, { login: '123', code: 'abc' });
     const client = new MedplumClient({ fetch });
@@ -374,7 +357,7 @@ describe('Client', () => {
       googleCredential: 'google-credential',
     });
     expect(result1).toBeDefined();
-    expect((result1 as LoginAuthenticationResponse).login).toBeDefined();
+    expect(result1.login).toBeDefined();
   });
 
   test('SignInWithRedirect', async () => {
