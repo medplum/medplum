@@ -17,18 +17,19 @@ export async function rebuildR4SearchParameters(options?: Partial<RebuildOptions
 
   const systemRepo = getSystemRepo();
 
-  const promises = [];
-  for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-    for (const entry of readJson(filename).entry as BundleEntry[]) {
-      promises.push(createParameter(systemRepo, entry.resource as SearchParameter));
-    }
-  }
-
   if (rebuildOptions.parallel) {
+    const promises = [];
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      for (const entry of readJson(filename).entry as BundleEntry[]) {
+        promises.push(createParameter(systemRepo, entry.resource as SearchParameter));
+      }
+    }
     await Promise.all(promises);
   } else {
-    for (const promise of promises) {
-      await promise;
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      for (const entry of readJson(filename).entry as BundleEntry[]) {
+        await createParameter(systemRepo, entry.resource as SearchParameter);
+      }
     }
   }
 }

@@ -15,15 +15,15 @@ export async function rebuildR4ValueSets(options?: Partial<RebuildOptions>): Pro
   const files = ['v2-tables.json', 'v3-codesystems.json', 'valuesets.json', 'valuesets-medplum.json'];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
-    const promises = [];
-    for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
-      promises.push(overwriteResource(systemRepo, entry.resource as CodeSystem | ValueSet, rebuildOptions));
-    }
     if (rebuildOptions.parallel) {
+      const promises = [];
+      for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
+        promises.push(overwriteResource(systemRepo, entry.resource as CodeSystem | ValueSet, rebuildOptions));
+      }
       await Promise.all(promises);
     } else {
-      for (const promise of promises) {
-        await promise;
+      for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
+        await overwriteResource(systemRepo, entry.resource as CodeSystem | ValueSet, rebuildOptions);
       }
     }
   }
