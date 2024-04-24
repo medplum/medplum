@@ -22,7 +22,7 @@ import {
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
-  ProjectSecret,
+  ProjectSetting,
   Reference,
   Resource,
   ResourceType,
@@ -88,7 +88,7 @@ import {
   sortStringArray,
 } from './utils';
 
-export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
@@ -429,7 +429,7 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly bot: Reference<Bot>;
   readonly contentType: string;
   readonly input: T;
-  readonly secrets: Record<string, ProjectSecret>;
+  readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
 }
 

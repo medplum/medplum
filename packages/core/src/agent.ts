@@ -27,6 +27,7 @@ export interface AgentHeartbeatRequest extends BaseAgentRequestMessage {
 
 export interface AgentHeartbeatResponse extends BaseAgentMessage {
   type: 'agent:heartbeat:response';
+  version: string;
 }
 
 export interface AgentTransmitRequest extends BaseAgentRequestMessage {

@@ -40,7 +40,7 @@ git push origin "$BRANCH_NAME"
 gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades" --draft
 
 # Reinstall all dependencies
-./scripts/reinstall.sh
+./scripts/reinstall.sh --update
 
 # Commit and push after running NPM install
 git add -u .

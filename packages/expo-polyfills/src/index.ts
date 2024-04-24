@@ -6,6 +6,7 @@ import expoWebCrypto from 'expo-standard-web-crypto';
 import { Platform } from 'react-native';
 import { setupURLPolyfill } from 'react-native-url-polyfill';
 import { TextDecoder, TextEncoder } from 'text-encoding';
+import { polyfillEvent } from './polyfills/event';
 
 let polyfilled = false;
 let originalCryptoIsSet = false;
@@ -23,6 +24,7 @@ export type PolyfillEnabledConfig = {
   sessionStorage?: boolean;
   textEncoder?: boolean;
   btoa?: boolean;
+  event?: boolean;
 };
 
 export function cleanupMedplumWebAPIs(): void {
@@ -74,6 +76,10 @@ export function cleanupMedplumWebAPIs(): void {
   // @ts-expect-error Typescript thinks `atob` is always defined
   if (window.atob) {
     Object.defineProperty(window, 'atob', { configurable: true, enumerable: true, value: undefined });
+  }
+
+  if (window.Event) {
+    Object.defineProperty(window, 'Event', { configurable: true, enumerable: true, value: undefined });
   }
 
   polyfilled = false;
@@ -164,6 +170,10 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
       enumerable: true,
       get: () => decode,
     });
+  }
+
+  if (config?.event !== false && typeof window.Event === 'undefined') {
+    polyfillEvent();
   }
 
   polyfilled = true;

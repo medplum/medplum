@@ -23,7 +23,6 @@ import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedisSubscriber } from '../redis';
@@ -40,28 +39,18 @@ describe('Subscription Worker', () => {
   let mockLambdaClient: AwsClientStub<LambdaClient>;
   let superAdminRepo: Repository;
 
-  beforeEach(() => {
-    mockLambdaClient = mockClient(LambdaClient);
-    mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
-      const decoder = new TextDecoder();
-      const event = JSON.parse(decoder.decode(Payload));
-      const output = typeof event.input === 'string' ? event.input : JSON.stringify(event.input);
-      const encoder = new TextEncoder();
-
-      return {
-        LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
-        Payload: encoder.encode(output),
-      };
-    });
-  });
-
-  afterEach(() => {
-    mockLambdaClient.restore();
-  });
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+    await closeSubscriptionWorker(); // Double close to ensure quite ignore
+  });
+
+  beforeEach(async () => {
+    (fetch as unknown as jest.Mock).mockClear();
 
     // Create one simple project with no advanced features enabled
     const { client, repo: _repo } = await withTestContext(() =>
@@ -85,16 +74,23 @@ describe('Subscription Worker', () => {
       projects: [botProjectDetails.project.id as string],
       author: createReference(botProjectDetails.client),
     });
+
+    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
+      const decoder = new TextDecoder();
+      const event = JSON.parse(decoder.decode(Payload));
+      const output = typeof event.input === 'string' ? event.input : JSON.stringify(event.input);
+      const encoder = new TextEncoder();
+
+      return {
+        LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
+        Payload: encoder.encode(output),
+      };
+    });
   });
 
-  afterAll(async () => {
-    await shutdownApp();
-    await closeSubscriptionWorker(); // Double close to ensure quite ignore
-  });
-
-  beforeEach(async () => {
-    await getDatabasePool().query('DELETE FROM "Subscription"');
-    (fetch as unknown as jest.Mock).mockClear();
+  afterEach(() => {
+    mockLambdaClient.restore();
   });
 
   test('Send subscriptions', () =>

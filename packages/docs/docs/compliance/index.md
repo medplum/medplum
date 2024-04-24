@@ -14,7 +14,7 @@ This is a living document, and we continually update our resources. We welcome f
 
 - [ONC Certification](onc.md)
 - [CLIA/CAP](clia-cap.md)
-- [SOC2 Type 2](soc2.md)
+- [SOC2 Type II](soc2.md)
 - [HIPAA compliance](hipaa.md)
 - [CFR Part 11](cfr11.md)
 - [ISO 9001](iso9001.md)

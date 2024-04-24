@@ -63,6 +63,28 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test('X-Forwarded-For spoofing', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.logLevel = 'info';
+    config.logRequests = true;
+
+    const originalWrite = process.stdout.write;
+    process.stdout.write = jest.fn();
+
+    await initApp(app, config);
+    const res = await request(app).get('/').set('X-Forwarded-For', '1.1.1.1, 2.2.2.2');
+    expect(res.status).toBe(200);
+    expect(process.stdout.write).toHaveBeenCalledTimes(1);
+
+    const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+    const logObj = JSON.parse(logLine);
+    expect(logObj.ip).toBe('2.2.2.2');
+
+    expect(await shutdownApp()).toBeUndefined();
+    process.stdout.write = originalWrite;
+  });
+
   test('Internal Server Error', async () => {
     const app = express();
     app.get('/throw', () => {

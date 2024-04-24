@@ -283,13 +283,38 @@ class ResourceValidator implements ResourceVisitor {
     if (!object) {
       return;
     }
-    const choiceOfTypeElements: Record<string, boolean> = {};
+    const choiceOfTypeElements: Record<string, string> = {};
     for (const key of Object.keys(object)) {
       if (key === 'resourceType') {
         continue; // Skip special resource type discriminator property in JSON
       }
       const choiceOfTypeElementName = isChoiceOfType(parent, key, properties);
       if (choiceOfTypeElementName) {
+        // check that the type of the primitive extension matches the type of the property
+        let relatedElementName: string;
+        let requiredRelatedElementName: string;
+        if (choiceOfTypeElementName.startsWith('_')) {
+          relatedElementName = choiceOfTypeElementName.slice(1);
+          requiredRelatedElementName = key.slice(1);
+        } else {
+          relatedElementName = '_' + choiceOfTypeElementName;
+          requiredRelatedElementName = '_' + key;
+        }
+
+        if (
+          relatedElementName in choiceOfTypeElements &&
+          choiceOfTypeElements[relatedElementName] !== requiredRelatedElementName
+        ) {
+          this.issues.push(
+            createOperationOutcomeIssue(
+              'warning',
+              'structure',
+              `Type of primitive extension does not match the type of property "${choiceOfTypeElementName.startsWith('_') ? choiceOfTypeElementName.slice(1) : choiceOfTypeElementName}"`,
+              choiceOfTypeElementName
+            )
+          );
+        }
+
         if (choiceOfTypeElements[choiceOfTypeElementName]) {
           // Found a duplicate choice of type property
           // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
@@ -303,7 +328,7 @@ class ResourceValidator implements ResourceVisitor {
             )
           );
         }
-        choiceOfTypeElements[choiceOfTypeElementName] = true;
+        choiceOfTypeElements[choiceOfTypeElementName] = key;
         continue;
       }
       if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties)) {
@@ -486,8 +511,10 @@ function isChoiceOfType(
   key: string,
   propertyDefinitions: Record<string, InternalSchemaElement>
 ): string | undefined {
+  let prefix = '';
   if (key.startsWith('_')) {
     key = key.slice(1);
+    prefix = '_';
   }
   const parts = key.split(/(?=[A-Z])/g); // Split before capital letters
   let testProperty = '';
@@ -496,7 +523,7 @@ function isChoiceOfType(
     const elementName = testProperty + '[x]';
     if (propertyDefinitions[elementName]) {
       const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
-      return typedPropertyValue ? elementName : undefined;
+      return typedPropertyValue ? prefix + elementName : undefined;
     }
   }
   return undefined;

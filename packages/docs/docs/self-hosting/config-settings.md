@@ -161,7 +161,9 @@ Optionally override the trusted CA certificates. Default is to trust the well-kn
 :::tip Local Config
 To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
 
-To make changes to settings that affect your deployed Medplum App, you must _also_ make this change to your local configuration json file.
+To make changes to settings that affect your deployed Medplum App, you must _also_ make these changes to your local configuration json file.
+
+Once you have made these changes, you will need to restart your server for them to take effect. The easiest way to do this in a zero-downtime manner is by using the `medplum aws update-server` command. For more details on this command see the [Upgrade the Server docs](/docs/self-hosting/install-on-aws#upgrade-the-server).
 :::
 
 ### AWS Secrets

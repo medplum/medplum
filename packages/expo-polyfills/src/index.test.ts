@@ -5,20 +5,6 @@ import { Platform } from 'react-native';
 import { TextDecoder, TextEncoder } from 'text-encoding';
 import { ExpoClientStorage, cleanupMedplumWebAPIs, polyfillMedplumWebAPIs } from '.';
 
-const originalWindow = window;
-
-beforeAll(() => {
-  Object.defineProperty(globalThis, 'window', {
-    value: { ...originalWindow },
-  });
-});
-
-afterAll(() => {
-  Object.defineProperty(globalThis, 'window', {
-    value: originalWindow,
-  });
-});
-
 jest.mock('expo-secure-store', () => {
   const store = new Map<string, string>();
   let getKeysShouldThrow = false;
@@ -58,11 +44,19 @@ if (Platform.OS === 'web') {
 }
 
 describe('polyfillMedplumWebAPIs', () => {
+  const originalWindow = globalThis.window;
+
   beforeAll(() => {
+    Object.defineProperty(globalThis, 'window', {
+      value: { ...originalWindow },
+    });
     polyfillMedplumWebAPIs();
   });
 
   afterAll(() => {
+    Object.defineProperty(globalThis, 'window', {
+      value: originalWindow,
+    });
     cleanupMedplumWebAPIs();
   });
 
@@ -110,8 +104,6 @@ describe('polyfillMedplumWebAPIs', () => {
       expect(window.crypto.subtle).toBeDefined();
       expect(window.crypto.subtle.digest).toBeDefined();
     });
-
-    // TODO: Add a test for `digest`
   });
 
   describe('Location', () => {

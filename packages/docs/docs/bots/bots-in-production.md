@@ -11,6 +11,12 @@ Editing bots in the web editor is good for getting started quickly, but as Bots 
 - Writing unit tests for your bots
 - Deploying your bots as part of your CI/CD pipeline.
 
+:::note Bots in Local Development
+
+If you want to run bots locally, you should use a VM Context. For more details see the [VM Context Bots docs](/docs/bots/vm-context-bots).
+
+:::
+
 ## This Guide will show you
 
 - How to set up a repository to host the source code for your Bots.

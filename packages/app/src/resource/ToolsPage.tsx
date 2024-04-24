@@ -13,6 +13,7 @@ export function ToolsPage(): JSX.Element | null {
   const reference = useMemo(() => ({ reference: 'Agent/' + id }) as Reference<Agent>, [id]);
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [status, setStatus] = useState<string>();
+  const [version, setVersion] = useState<string>();
   const [lastUpdated, setLastUpdated] = useState<string>();
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
@@ -23,6 +24,7 @@ export function ToolsPage(): JSX.Element | null {
       .get(medplum.fhirUrl('Agent', id, '$status'), { cache: 'reload' })
       .then((result: Parameters) => {
         setStatus(result.parameter?.find((p) => p.name === 'status')?.valueCode);
+        setVersion(result.parameter?.find((p) => p.name === 'version')?.valueString);
         setLastUpdated(result.parameter?.find((p) => p.name === 'lastUpdated')?.valueInstant);
       })
       .catch((err) => showError(normalizeErrorString(err)))
@@ -78,6 +80,10 @@ export function ToolsPage(): JSX.Element | null {
               <Table.Td>
                 <StatusBadge status={status} />
               </Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td>Version</Table.Td>
+              <Table.Td>{version}</Table.Td>
             </Table.Tr>
             <Table.Tr>
               <Table.Td>Last Updated</Table.Td>

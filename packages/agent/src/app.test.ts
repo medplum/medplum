@@ -50,7 +50,7 @@ describe('App', () => {
     });
 
     const app = new App(medplum, agent.id as string, LogLevel.INFO);
-    app.healthcheckPeriod = 1000;
+    app.heartbeatPeriod = 1000;
     await app.start();
 
     // Wait for the WebSocket to connect
@@ -108,7 +108,7 @@ describe('App', () => {
     });
 
     const app = new App(medplum, agent.id as string, LogLevel.INFO);
-    app.healthcheckPeriod = 100;
+    app.heartbeatPeriod = 100;
     await app.start();
 
     // Wait for the WebSocket to connect

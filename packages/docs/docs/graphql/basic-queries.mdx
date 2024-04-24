@@ -175,6 +175,10 @@ In the example below, we first search for a `Patient` by id, and then find all t
 
 See the "[Reverse References](https://hl7.org/fhir/r4/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
 
+:::note Chained Search in GraphQL
+When searching on references in GraphQL, you _cannot_ filter on the parameters of the referenced resources. This is called chained search and it is not supported by the FHIR GraphQL spec. However, it is supported in the FHIR Rest API. For more details see the [Chained Search docs](/docs/search/chained-search).
+:::
+
 ## Filtering lists with field arguments
 
 FHIR GraphQL supports filtering array properties using field arguments. For example, you can filter the `Patient.name` array by the `use` field:

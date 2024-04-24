@@ -163,7 +163,7 @@ HL7 Feeds can be extremely high volume, and before you go live with a high-volum
 
 ## Running from source
 
-Testing the setup end-to-end on localhost can be done by doing the following steps. This assumes you are [running MØedplum on localhost](/docs/contributing/run-the-stack) as a prerequisite.
+Testing the setup end-to-end on localhost can be done by doing the following steps. This assumes you are [running Medplum on localhost](/docs/contributing/run-the-stack) as a prerequisite.
 
 Navigate to the `medplum/packages/agent`` folder on your drive and run the following command in your terminal
 
