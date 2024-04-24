@@ -161,6 +161,11 @@ export interface RepositoryContext {
    * 3) "account" - Optional reference to a subaccount that owns the resource.
    */
   extendedMode?: boolean;
+
+  /**
+   * Optional flag determining whether database transactions should be used to isolate statements.
+   */
+  dbTransactions?: boolean;
 }
 
 export interface CacheEntry<T extends Resource = Resource> {
@@ -1931,16 +1936,28 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async withTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
     try {
-      const client = await this.beginTransaction();
+      const client = await (this.context.dbTransactions ? this.beginTransaction() : this.getConnection());
       const result = await callback(client);
-      await this.commitTransaction();
+      if (this.context.dbTransactions) {
+        await this.commitTransaction();
+      } else {
+        this.releaseConnection();
+      }
       return result;
     } catch (err) {
       const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(err), err);
-      await this.rollbackTransaction(operationOutcomeError);
+      if (this.context.dbTransactions) {
+        await this.rollbackTransaction(operationOutcomeError);
+      } else {
+        this.releaseConnection(operationOutcomeError);
+      }
       throw operationOutcomeError;
     } finally {
-      this.endTransaction();
+      if (this.context.dbTransactions) {
+        this.endTransaction();
+      } else {
+        this.releaseConnection();
+      }
     }
   }
 
