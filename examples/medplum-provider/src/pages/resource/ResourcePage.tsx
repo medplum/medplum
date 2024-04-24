@@ -1,5 +1,5 @@
 import { Stack, Tabs } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, isResourceType } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
@@ -24,13 +24,18 @@ export function ResourcePage(): JSX.Element | null {
   });
 
   useEffect(() => {
+    if (resourceType && !isResourceType(resourceType)) {
+      navigate('/');
+      return;
+    }
+
     if (resourceType && id) {
       medplum
         .readResource(resourceType as ResourceType, id)
         .then(setResource)
         .catch(console.error);
     }
-  }, [medplum, resourceType, id]);
+  }, [medplum, resourceType, id, navigate]);
 
   const onTabChange = useCallback(
     (newTabName: string | null): void => {
