@@ -13,6 +13,7 @@ export class RequestContext {
   readonly requestId: string;
   readonly traceId: string;
   readonly logger: Logger;
+  readonly projectId?: string;
 
   constructor(requestId: string, traceId: string, logger?: Logger) {
     this.requestId = requestId;
