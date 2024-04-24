@@ -3,11 +3,6 @@ import defaultConfig from './jest.config';
 
 export default {
   ...defaultConfig,
-  testMatch: ['<rootDir>/seed-tests/**/*.test.ts'],
-  collectCoverageFrom: [
-    '<rootDir>/seed-tests/**/*',
-    '<rootDir>/src/**/*',
-    '!**/src/__mocks__/**/*.ts',
-    '!**/src/migrations/**/*.ts',
-  ],
+  testMatch: ['<rootDir>/src/seed*.test.ts'],
+  collectCoverageFrom: ['<rootDir>/src/**/*', '!**/src/__mocks__/**/*.ts', '!**/src/migrations/**/*.ts'],
 } satisfies Config;

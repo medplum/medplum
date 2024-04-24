@@ -1,13 +1,13 @@
 import { Project } from '@medplum/fhirtypes';
-import { shutdownApp } from '../src/app';
-import { loadTestConfig } from '../src/config';
-import { AuthenticatedRequestContext, requestContextStore } from '../src/context';
-import { getDatabasePool, initDatabase } from '../src/database';
-import { SelectQuery } from '../src/fhir/sql';
-import { loadStructureDefinitions } from '../src/fhir/structure';
-import { initRedis } from '../src/redis';
-import { seedDatabase } from '../src/seed';
-import { withTestContext } from '../src/test.setup';
+import { shutdownApp } from './app';
+import { loadTestConfig } from './config';
+import { AuthenticatedRequestContext, requestContextStore } from './context';
+import { getDatabasePool, initDatabase } from './database';
+import { SelectQuery } from './fhir/sql';
+import { loadStructureDefinitions } from './fhir/structure';
+import { initRedis } from './redis';
+import { seedDatabase } from './seed';
+import { withTestContext } from './test.setup';
 
 describe('Seed Serial', () => {
   beforeAll(async () => {

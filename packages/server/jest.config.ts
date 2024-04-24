@@ -7,7 +7,7 @@ export default {
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
-  testMatch: ['<rootDir>/src/**/*.test.ts'],
+  testMatch: ['<rootDir>/src/**/*.test.ts', '!**/src/seed*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   coverageDirectory: 'coverage',
   coverageReporters: ['json', 'text'],
