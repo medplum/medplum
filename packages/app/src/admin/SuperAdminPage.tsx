@@ -60,6 +60,10 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
+  function getDatabaseStats(): void {
+    startAsyncJob(medplum, 'Get Database Stats', 'admin/super/dbstats', {});
+  }
+
   return (
     <Document width={600}>
       <Title order={1}>Super Admin</Title>
@@ -158,6 +162,12 @@ export function SuperAdminPage(): JSX.Element {
           <TextInput name="projectId" label="Project ID" />
           <Button type="submit">Force Set Password</Button>
         </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Stats</Title>
+      <p>Query current table statistics from the database.</p>
+      <Form onSubmit={getDatabaseStats}>
+        <Button type="submit">Get Database Stats</Button>
       </Form>
     </Document>
   );
