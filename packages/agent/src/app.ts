@@ -11,7 +11,7 @@ import {
   isValidHostname,
   normalizeErrorString,
 } from '@medplum/core';
-import { Endpoint, Reference } from '@medplum/fhirtypes';
+import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ExecException, ExecOptions, exec } from 'node:child_process';
 import { isIPv4, isIPv6 } from 'node:net';
@@ -176,27 +176,37 @@ export class App {
     });
   }
 
+  private createOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Channel | undefined {
+    let channel: Channel | undefined = this.channels.get(definition.name);
+
+    if (channel) {
+      channel.reloadConfig();
+      return channel;
+    }
+
+    if (endpoint.address.startsWith('dicom')) {
+      channel = new AgentDicomChannel(this, definition, endpoint);
+    } else if (endpoint.address.startsWith('mllp')) {
+      channel = new AgentHl7Channel(this, definition, endpoint);
+    } else {
+      this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
+    }
+
+    return channel;
+  }
+
   private async startListeners(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
+    const pendingRemoval = new Set(this.channels.keys());
 
     for (const definition of agent.channel ?? []) {
       const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
-      let channel: Channel | undefined = undefined;
 
       if (!endpoint.address) {
         this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
-      } else if (endpoint.address.startsWith('dicom')) {
-        channel = new AgentDicomChannel(this, definition, endpoint);
-      } else if (endpoint.address.startsWith('mllp')) {
-        channel = new AgentHl7Channel(this, definition, endpoint);
-      } else {
-        this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
       }
 
-      if (channel) {
-        channel.start();
-        this.channels.set(definition.name as string, channel);
-      }
+      pendingRemoval.delete(definition.name);
     }
   }
 

@@ -19,7 +19,7 @@ export class AgentHl7Channel implements Channel {
   start(): void {
     const address = new URL(this.endpoint.address as string);
     this.app.log.info(`Channel starting on ${address}`);
-    this.server.start(parseInt(address.port, 10));
+    this.server.start(Number.parseInt(address.port, 10));
     this.app.log.info('Channel started successfully');
   }
 
@@ -36,6 +36,11 @@ export class AgentHl7Channel implements Channel {
       connection.hl7Connection.send(Hl7Message.parse(msg.body));
     }
   }
+
+  reloadConfig(definition: AgentChannel, endpoint: Endpoint): void {
+    if (endpoint)
+  }
+
 
   private handleNewConnection(connection: Hl7Connection): void {
     const c = new AgentHl7ChannelConnection(this, connection);

@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
-import { Channel } from './channel';
+import { Channel, areDifferentEndpoints } from './channel';
 
 export class AgentDicomChannel implements Channel {
   static instance: AgentDicomChannel;
@@ -28,7 +28,7 @@ export class AgentDicomChannel implements Channel {
     const address = new URL(this.endpoint.address as string);
     this.app.log.info(`Channel starting on ${address}`);
     this.server.on('networkError', (e) => console.log('Network error: ', e));
-    this.server.listen(parseInt(address.port, 10));
+    this.server.listen(Number.parseInt(address.port, 10));
     this.app.log.info('Channel started successfully');
   }
 
@@ -40,6 +40,11 @@ export class AgentDicomChannel implements Channel {
 
   sendToRemote(msg: AgentTransmitResponse): void {
     throw new Error(`sendToRemote not implemented (${JSON.stringify(msg)})`);
+  }
+
+  reloadConfig(definition: AgentChannel, endpoint: Endpoint): void {
+    if (areDifferentEndpoints(this.endpoint, endpoint)) {
+    }
   }
 }
 
