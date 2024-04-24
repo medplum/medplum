@@ -16,6 +16,18 @@ We use the following tools for testing:
 
 Every pull request is analyzed by [Sonarcloud](https://sonarcloud.io/project/overview?id=medplum_medplum) and [Coveralls](https://coveralls.io/github/medplum/medplum?branch=main) for code coverage and other static analysis.
 
+## Before testing
+When you are testing for the first time with a fresh database, you first need to seed and migrate the database.
+You can accomplish this by running the following command:
+
+```bash
+npx turbo run test:seed:parallel --filter=@medplum/server
+```
+
+This process can take a minute or two as it migrates the database and then creates many FHIR resources required for Medplum to operate correctly.
+
+After the test passes and the database is migrated and seeded, you won't need to run it again unless the database schema changes or you destroy the volume attached to your `postgres` Docker container. Now you should be able to run the rest of the tests.
+
 ## How to test
 
 To run all tests for all packages, use the build script:
