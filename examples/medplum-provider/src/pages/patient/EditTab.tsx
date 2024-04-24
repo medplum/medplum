@@ -6,17 +6,16 @@ import { Document, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
+import { RESOURCE_PROFILE_URLS } from '../resource/utils';
 
-const PATIENT_PROFILE_URL = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
-
-const missingProfileMessage = (
+const missingProfileMessage = RESOURCE_PROFILE_URLS.Patient ? (
   <p>
     Could not find the{' '}
-    <Anchor href={PATIENT_PROFILE_URL} target="_blank">
+    <Anchor href={RESOURCE_PROFILE_URLS.Patient} target="_blank">
       US Core Patient Profile
     </Anchor>
   </p>
-);
+) : undefined;
 
 export function EditTab(): JSX.Element | null {
   const medplum = useMedplum();
@@ -63,7 +62,7 @@ export function EditTab(): JSX.Element | null {
         defaultValue={value}
         onSubmit={handleSubmit}
         outcome={outcome}
-        profileUrl={PATIENT_PROFILE_URL}
+        profileUrl={RESOURCE_PROFILE_URLS.Patient}
       />
     </Document>
   );
