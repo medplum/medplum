@@ -1961,6 +1961,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
       await conn.query('COMMIT');
+      this.releaseConnection();
       await this.processPostCommit();
     } else {
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
@@ -2003,7 +2004,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async processPostCommit(): Promise<void> {
     const callbacks = this.postCommitCallbacks;
     this.postCommitCallbacks = [];
-    await Promise.allSettled(callbacks.map((fn) => fn()));
+    for (const cb of callbacks) {
+      await cb();
+    }
   }
 
   close(): void {

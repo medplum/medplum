@@ -527,7 +527,7 @@ describe('Batch and Transaction processing', () => {
     };
 
     const requests = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       const req = request(app)
         .post(`/fhir/R4/`)
         .set('Authorization', 'Bearer ' + accessToken)

@@ -26,6 +26,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
     user: config.username,
     password: config.password,
     ssl: config.ssl,
+    max: config.maxInstanceConnections ?? 50,
   };
 
   if (serverConfig.databaseProxyEndpoint) {
