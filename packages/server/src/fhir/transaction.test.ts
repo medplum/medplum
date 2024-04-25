@@ -5,14 +5,14 @@ import { loadTestConfig } from '../config';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository } from './repo';
 
-describe('FHIR Repo', () => {
+describe('Repository transactions', () => {
   let repo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    repo = (await createTestProject({ withRepo: true })).repo;
+    repo = (await createTestProject({ withRepo: true, project: { features: ['transactions'] } })).repo;
   });
 
   afterAll(async () => {

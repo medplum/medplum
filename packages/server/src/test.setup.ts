@@ -131,6 +131,7 @@ export async function createTestProject<T extends TestProjectOptions = TestProje
           strictMode: project.strictMode,
           extendedMode: true,
           checkReferencesOnWrite: project.checkReferencesOnWrite,
+          dbTransactions: project.features?.includes('transactions'),
         });
       }
     }
