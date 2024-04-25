@@ -14,7 +14,7 @@ export async function main(argv: string[]): Promise<App> {
   let args: Args;
   if (argv.length >= 6) {
     args = readCommandLineArgs(argv);
-  } else if ((argv.length === 3 && argv[2] === '-h') || argv[2] === '--help') {
+  } else if (argv.length === 3 && (argv[2] === '-h' || argv[2] === '--help')) {
     console.log('Expected arguments:');
     console.log('    baseUrl: The Medplum server base URL.');
     console.log('    clientId: The OAuth client ID.');
