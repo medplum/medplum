@@ -20,7 +20,6 @@ import WebSocket from 'ws';
 import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { AgentSerialPortChannel } from './serialport';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -190,8 +189,6 @@ export class App {
         channel = new AgentDicomChannel(this, definition, endpoint);
       } else if (endpoint.address.startsWith('mllp')) {
         channel = new AgentHl7Channel(this, definition, endpoint);
-      } else if (endpoint.address.startsWith('serial')) {
-        channel = new AgentSerialPortChannel(this, definition, endpoint);
       } else {
         this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
       }
