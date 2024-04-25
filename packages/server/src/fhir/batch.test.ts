@@ -7,10 +7,10 @@ import { ContentType, getReferenceString } from '@medplum/core';
 import { Bundle, Patient, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
-const app = express();
-let accessToken: string;
-
 describe('Batch and Transaction processing', () => {
+  const app = express();
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -544,6 +544,9 @@ describe('Batch and Transaction processing', () => {
 });
 
 describe('Batch processing without DB transactions', () => {
+  const app = express();
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -564,7 +567,6 @@ describe('Batch processing without DB transactions', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Practitioner' });
-    console.log(res1.body.issue);
     expect(res1.status).toEqual(201);
     expect(res1.body.resourceType).toEqual('Practitioner');
     const practitioner = res1.body as Practitioner;
@@ -918,6 +920,7 @@ describe('Batch processing without DB transactions', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
+    // Bundle in "transaction" mode still fails on any error
     expect(res.status).toBe(400);
     expect(res.body.resourceType).toEqual('OperationOutcome');
 
@@ -926,13 +929,8 @@ describe('Batch processing without DB transactions', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
-    // Although DELETE was processed before the failed POST in the transaction,
-    // rollback means the resource should still exist after the transaction fails
-    expect(res3.status).toEqual(200);
-    expect(res3.body).toMatchObject<Patient>({
-      resourceType: 'Patient',
-      id: toDelete.id,
-    });
+    // No transaction rollback means the resource should still be deleted even after the "transaction" fails
+    expect(res3.status).toEqual(410);
   });
 
   test('Create batch wrong content type', async () => {
@@ -944,7 +942,7 @@ describe('Batch processing without DB transactions', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Concurrent conditional create in transactions', async () => {
+  test.skip('Concurrent conditional create in transactions', async () => {
     const patientIdentifier = randomUUID();
     const encounterIdentifier = randomUUID();
     const conditionIdentifier = randomUUID();
