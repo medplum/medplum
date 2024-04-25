@@ -96,7 +96,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     env:
-      NODE_VERSION: '20'
+      NODE_VERSION: '18'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
@@ -122,7 +122,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
@@ -172,7 +172,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      NODE_VERSION: '20'
+      NODE_VERSION: '18'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
@@ -186,7 +186,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
