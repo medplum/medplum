@@ -67,7 +67,7 @@ pushd packages/agent
 npm run build
 
 # Build the executable
-npx pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe" --options no-warnings
+npx pkg ./dist/cjs/index.cjs --targets node20-win-x64 --output "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe" --options no-warnings
 
 # Download JSign
 if [ ! -f "jsign-5.0.jar" ]; then
