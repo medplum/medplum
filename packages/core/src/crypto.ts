@@ -1,5 +1,8 @@
 import { arrayBufferToHex } from './utils';
 
+//eslint-disable-next-line @typescript-eslint/no-var-requires
+const crypto = globalThis.crypto ?? require('node:crypto').webcrypto;
+
 /**
  * Returns a cryptographically secure random string.
  * @returns A cryptographically secure random string.
