@@ -8,9 +8,9 @@ import { Resource } from '@medplum/fhirtypes';
 
 interface ResourceFormWithRequiredProfileProps extends ResourceFormProps {
   /** (optional) If specified, an error is shown in place of `ResourceForm` if the profile cannot be loaded.  */
-  profileUrl?: string; // Also part of ResourceFormProps, but list here incase its type changes in the future
+  readonly profileUrl?: string; // Also part of ResourceFormProps, but list here incase its type changes in the future
   /** (optiona) A short error message to show if `profileUrl` cannot be found. */
-  missingProfileMessage?: ReactNode;
+  readonly missingProfileMessage?: ReactNode;
 }
 
 export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredProfileProps): JSX.Element {
