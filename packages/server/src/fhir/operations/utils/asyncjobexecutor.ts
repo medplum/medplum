@@ -38,7 +38,7 @@ export class AsyncJobExecutor {
       );
   }
 
-  async run(callback: () => Promise<Parameters | undefined>): Promise<void> {
+  async run(callback: (() => Promise<Parameters>) | (() => Promise<void>)): Promise<void> {
     callback = AsyncLocalStorage.bind(callback);
     if (!this.resource) {
       throw new Error('AsyncJob missing');
@@ -50,7 +50,7 @@ export class AsyncJobExecutor {
         ...this.resource,
         status: 'completed',
         transactionTime: new Date().toISOString(),
-        output,
+        output: output ?? undefined,
       });
     } catch (err) {
       await systemRepo.updateResource<AsyncJob>({
@@ -76,7 +76,7 @@ export class AsyncJobExecutor {
 export async function sendAsyncResponse(
   req: Request,
   res: Response,
-  callback: () => Promise<Parameters | undefined>
+  callback: (() => Promise<Parameters>) | (() => Promise<void>)
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
