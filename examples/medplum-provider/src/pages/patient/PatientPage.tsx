@@ -51,6 +51,7 @@ const tabs = [
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
   },
+  { id: 'communication', url: 'communication', label: 'Communications' },
 ];
 
 export function PatientPage(): JSX.Element {
