@@ -222,6 +222,9 @@ export class App {
     for (const leftover of pendingRemoval.keys()) {
       const channel = this.channels.get(leftover) as Channel;
       channel.stop();
+
+      pendingRemoval.delete(leftover);
+      this.channels.delete(leftover);
     }
   }
 
