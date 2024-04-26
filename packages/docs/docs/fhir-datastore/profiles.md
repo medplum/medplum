@@ -180,7 +180,7 @@ This section offers some best practices to make updating profiles as smooth and 
 
 When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as an udpated `url` field.
 
-Medplum does not currently fully implement versioning per the FHIR spec. Because of this, when updating a profile the version should also be included as a part of the url. This allows you to make changes to your profile without invalidating resources that do not yet comply to the new profile.
+This allows you to make changes to your profile without invalidating resources that do not yet comply to the new profile.
 
 For example, say you have a patient profile that requires patients to have an associated email address and you want to update it so that they must also have an associated phone number. The steps for this would be the following:
 
@@ -203,7 +203,7 @@ We then define the new [`StructureDefinition`](/docs/api/fhir/resources/structur
 
 :::note Semantic Versioning in Profiles
 
-When updating FHIR profiles, you should use semantic versioning to assign values to your versions. This means the first number represents major changes, the second number represents minor changes, and the third number represents patches. In the above example, requiring a phone number is a breaking change as it may cause some resources to fail validation. Any breaking changes should be considered major changes. For more details, see the [Semver docs](https://semver.org/).
+When updating FHIR profiles, you should use semantic versioning to assign values to your versions. In the above example, requiring a phone number is a breaking change as it may cause some resources to fail validation. Any backwards-incompatible changes should be considered major changes.
 
 :::
 
