@@ -178,9 +178,7 @@ Updating FHIR profiles is different than updating other resources in FHIR. The p
 
 This section offers some best practices to make updating profiles as smooth and painless as possible when using Medplum.
 
-When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as an udpated `url` field.
-
-This allows you to make changes to your profile without invalidating resources that do not yet comply to the new profile.
+When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as an udpated `url` field. This allows you to make changes to your profile without invalidating resources that do not yet comply to the new profile.
 
 For example, say you have a patient profile that requires patients to have an associated email address and you want to update it so that they must also have an associated phone number. The steps for this would be the following:
 
