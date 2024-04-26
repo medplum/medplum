@@ -2,6 +2,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .chatTitle {
@@ -10,7 +11,6 @@
   font-size: var(--mantine-font-size-sm);
   font-weight: 500;
   padding: var(--mantine-spacing-sm);
-  border-radius: 8px 8px 0 0;
   user-select: none;
 }
 
@@ -24,9 +24,8 @@
 }
 
 .chatInputContainer {
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
-  border-radius: 0 0 var(--mantine-radius-md) var(--mantine-radius-md);
-  padding: 4px 4px;
+  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  padding: 6px 8px;
 }
 
 .chatBubbleOuterWrap {
