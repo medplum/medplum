@@ -2,18 +2,22 @@ import { AgentTransmitResponse, ContentType, Hl7Message, normalizeErrorString } 
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { App } from './app';
-import { Channel } from './channel';
+import { Channel, needToRebindToPort } from './channel';
 
 export class AgentHl7Channel implements Channel {
   readonly server: Hl7Server;
+  protected definition: AgentChannel;
+  private endpoint: Endpoint;
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
 
   constructor(
     readonly app: App,
-    readonly definition: AgentChannel,
-    readonly endpoint: Endpoint
+    definition: AgentChannel,
+    endpoint: Endpoint
   ) {
     this.server = new Hl7Server((connection) => this.handleNewConnection(connection));
+    this.definition = definition;
+    this.endpoint = endpoint;
   }
 
   start(): void {
@@ -38,9 +42,23 @@ export class AgentHl7Channel implements Channel {
   }
 
   reloadConfig(definition: AgentChannel, endpoint: Endpoint): void {
-    if (endpoint)
+    const previousEndpoint = this.endpoint;
+    this.definition = definition;
+    this.endpoint = endpoint;
+
+    if (needToRebindToPort(previousEndpoint, endpoint)) {
+      this.stop();
+      this.start();
+    }
   }
 
+  getDefinition(): AgentChannel {
+    return this.definition;
+  }
+
+  getEndpoint(): Endpoint {
+    return this.endpoint;
+  }
 
   private handleNewConnection(connection: Hl7Connection): void {
     const c = new AgentHl7ChannelConnection(this, connection);
@@ -69,7 +87,7 @@ export class AgentHl7ChannelConnection {
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
         accessToken: 'placeholder',
-        channel: this.channel.definition.name as string,
+        channel: this.channel.getDefinition().name as string,
         remote: this.remote,
         contentType: ContentType.HL7_V2,
         body: event.message.toString(),

@@ -6,7 +6,11 @@ export interface Channel {
   stop(): void;
   sendToRemote(message: AgentTransmitResponse): void;
   reloadConfig(definition: AgentChannel, endpoint: Endpoint): void;
+  getDefinition(): AgentChannel;
+  getEndpoint(): Endpoint;
 }
+
+// build list of addresses available
 
 export function needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
   if (firstEndpoint.address === secondEndpoint.address) {

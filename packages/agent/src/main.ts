@@ -1,5 +1,5 @@
 import { MedplumClient, parseLogLevel } from '@medplum/core';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
 
 interface Args {

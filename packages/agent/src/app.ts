@@ -64,7 +64,7 @@ export class App {
 
     this.startWebSocket();
 
-    await this.startListeners();
+    await this.hydrateListeners();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -164,6 +164,9 @@ export class App {
               this.pushMessage(command);
             }
             break;
+          case 'agent:reloadconfig:request':
+            await this.hydrateListeners();
+            break;
           case 'agent:error':
             this.log.error(command.body);
             break;
@@ -180,7 +183,7 @@ export class App {
     let channel: Channel | undefined = this.channels.get(definition.name);
 
     if (channel) {
-      channel.reloadConfig();
+      channel.reloadConfig(definition, endpoint);
       return channel;
     }
 
@@ -189,13 +192,14 @@ export class App {
     } else if (endpoint.address.startsWith('mllp')) {
       channel = new AgentHl7Channel(this, definition, endpoint);
     } else {
-      this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
+      throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
     }
 
+    this.channels.set(definition.name, channel);
     return channel;
   }
 
-  private async startListeners(): Promise<void> {
+  private async hydrateListeners(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
     const pendingRemoval = new Set(this.channels.keys());
 
@@ -207,6 +211,17 @@ export class App {
       }
 
       pendingRemoval.delete(definition.name);
+      try {
+        this.createOrReloadChannel(definition, endpoint);
+      } catch (err) {
+        this.log.error(normalizeErrorString(err));
+      }
+    }
+
+    // Now iterate leftover channels and stop any that were not reloaded
+    for (const leftover of pendingRemoval.keys()) {
+      const channel = this.channels.get(leftover) as Channel;
+      channel.stop();
     }
   }
 
