@@ -7,6 +7,7 @@ import {
   allOk,
   badRequest,
   createReference,
+  isOk,
   isOperationOutcome,
   normalizeErrorString,
   resolveId,
@@ -86,12 +87,8 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     await sendAsyncResponse(req, res, async () => {
       return new Promise<Parameters>((resolve, reject) => {
         executeOperation(req, res, (result) => {
-          if (isOperationOutcome(result)) {
-            resolve({
-              resourceType: 'Parameters',
-              parameter: [{ name: 'outcome', resource: result }],
-            });
-            return;
+          if (isOperationOutcome(result) && !isOk(result)) {
+            throw new OperationOutcomeError(result);
           }
           try {
             const outParams = getOutParametersFromResult(result);
@@ -110,6 +107,8 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
       }
 
       const responseBody = getResponseBodyFromResult(result);
+      // Send the response
+      // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
       res
         .status(result.success ? 200 : 400)
         .type(getResponseContentType(req))
@@ -127,7 +126,7 @@ async function executeOperation(
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
   if (!userBot) {
-    sendOutcome(res, badRequest('Must specify bot ID or identifier.'));
+    sendResponse(badRequest('Must specify bot ID or identifier.'));
     return;
   }
 
@@ -236,11 +235,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   return result;
 }
 
-function getResponseBodyFromResult(
-  result: BotExecutionResult
-): Buffer | string | { [key: string]: any } | any[] | boolean {
-  // Send the response
-  // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
+function getResponseBodyFromResult(result: BotExecutionResult): string | { [key: string]: any } | any[] | boolean {
   let responseBody = result.returnValue;
   if (responseBody === undefined) {
     // If the bot did not return a value, then return an OperationOutcome
@@ -254,8 +249,8 @@ function getResponseBodyFromResult(
   return responseBody;
 }
 
-function getOutParametersFromResult(result: BotExecutionResult): Parameters {
-  const responseBody = getResponseBodyFromResult(result);
+function getOutParametersFromResult(result: OperationOutcome | BotExecutionResult): Parameters {
+  const responseBody = isOperationOutcome(result) ? result : getResponseBodyFromResult(result);
   switch (typeof responseBody) {
     case 'string':
       return {
@@ -263,10 +258,10 @@ function getOutParametersFromResult(result: BotExecutionResult): Parameters {
         parameter: [{ name: 'responseBody', valueString: responseBody }],
       };
     case 'object':
-      if (responseBody instanceof Buffer) {
+      if (isOperationOutcome(responseBody)) {
         return {
           resourceType: 'Parameters',
-          parameter: [{ name: 'responseBody', valueString: responseBody.toString() }],
+          parameter: [{ name: 'outcome', resource: responseBody }],
         };
       }
       return {
