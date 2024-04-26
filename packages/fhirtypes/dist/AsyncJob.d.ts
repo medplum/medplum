@@ -4,6 +4,7 @@
  */
 
 import { Meta } from './Meta';
+import { Parameters } from './Parameters';
 
 /**
  * Contains details of long running asynchronous/background jobs.
@@ -64,4 +65,9 @@ export interface AsyncJob {
    * request, this URL will not include the request parameters.
    */
   request: string;
+
+  /**
+   * Outputs resulting from the async job.
+   */
+  output?: Parameters;
 }

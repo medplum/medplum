@@ -7,7 +7,7 @@ import {
   getReferenceString,
   serverError,
 } from '@medplum/core';
-import { Agent } from '@medplum/fhirtypes';
+import { Agent, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { asyncWrap } from '../../async';
@@ -15,6 +15,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getRedis, getRedisSubscriber } from '../../redis';
 import { sendOutcome } from '../outcomes';
 import { getAgentForRequest, getDevice } from './agentutils';
+import { sendAsyncResponse } from './utils/asyncjobexecutor';
 import { parseParameters } from './utils/parameters';
 
 export interface AgentPushParameters {
@@ -35,45 +36,78 @@ const MAX_WAIT_TIMEOUT = 60000;
  * Returns the outcome of the agent execution.
  */
 export const agentPushHandler = asyncWrap(async (req: Request, res: Response) => {
+  if (req.header('Prefer') === 'respond-async') {
+    await sendAsyncResponse(req, res, async () => {
+      return new Promise<Parameters>((resolve, reject) => {
+        pushToAgent(req, res, (outcome, agentResponse) => {
+          resolve({
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'outcome', resource: outcome },
+              ...(agentResponse ? [{ name: 'responseBody', valueString: agentResponse.body }] : []),
+            ],
+          } satisfies Parameters);
+        }).catch(reject);
+      });
+    });
+  } else {
+    await pushToAgent(req, res, (outcome, agentResponse) => {
+      if (!agentResponse) {
+        sendOutcome(res, outcome);
+        return;
+      }
+      res
+        .status(agentResponse.statusCode ?? 200)
+        .type(agentResponse.contentType)
+        .send(agentResponse.body);
+    });
+  }
+});
+
+async function pushToAgent(
+  req: Request,
+  res: Response,
+  sendResponse: (outcome: OperationOutcome, agentResponse?: AgentTransmitResponse) => void
+): Promise<void> {
   const { repo } = getAuthenticatedContext();
 
   // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req, repo);
   if (!agent) {
-    sendOutcome(res, badRequest('Must specify agent ID or identifier'));
+    sendResponse(badRequest('Must specify agent ID or identifier'));
     return;
   }
 
   const params = parseParameters<AgentPushParameters>(req.body);
   if (!params.body) {
-    sendOutcome(res, badRequest('Missing body parameter'));
+    sendResponse(badRequest('Missing body parameter'));
     return;
   }
 
   if (!params.contentType) {
-    sendOutcome(res, badRequest('Missing contentType parameter'));
+    sendResponse(badRequest('Missing contentType parameter'));
     return;
   }
 
   if (!params.destination) {
-    sendOutcome(res, badRequest('Missing destination parameter'));
+    sendResponse(badRequest('Missing destination parameter'));
     return;
   }
 
   const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
   if (waitTimeout < 0 || waitTimeout > MAX_WAIT_TIMEOUT) {
-    sendOutcome(res, badRequest('Invalid wait timeout'));
+    sendResponse(badRequest('Invalid wait timeout'));
     return;
   }
 
   const device = await getDevice(repo, params);
   if (!device) {
-    sendOutcome(res, badRequest('Destination device not found'));
+    sendResponse(badRequest('Destination device not found'));
     return;
   }
 
   if (!device.url) {
-    sendOutcome(res, badRequest('Destination device missing url'));
+    sendResponse(badRequest('Destination device missing url'));
     return;
   }
 
@@ -87,7 +121,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // If not waiting for a response, publish and return
   if (!params.waitForResponse) {
     await publishMessage(agent, message);
-    sendOutcome(res, allOk);
+    sendResponse(allOk);
     return;
   }
 
@@ -99,12 +133,9 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   redisSubscriber.on('message', (_channel: string, message: string) => {
     const response = JSON.parse(message) as AgentTransmitResponse;
     if (response.statusCode && response.statusCode >= 400) {
-      sendOutcome(res, serverError(new Error(response.body)));
+      sendResponse(serverError(new Error(response.body)));
     } else {
-      res
-        .status(response.statusCode ?? 200)
-        .type(response.contentType)
-        .send(response.body);
+      sendResponse(allOk, response);
     }
     cleanup();
   });
@@ -126,7 +157,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   // At this point, one of two things will happen:
   // 1. The agent will respond with a message on the channel
   // 2. The timer will expire and the request will timeout
-});
+}
 
 async function publishMessage(agent: Agent, message: BaseAgentRequestMessage): Promise<number> {
   return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
