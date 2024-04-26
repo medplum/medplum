@@ -2,12 +2,15 @@ import {
   ContentType,
   Hl7Message,
   MedplumClient,
+  OperationOutcomeError,
   Operator,
   allOk,
   badRequest,
   createReference,
+  isOperationOutcome,
   normalizeErrorString,
   resolveId,
+  serverError,
 } from '@medplum/core';
 import {
   Agent,
@@ -16,7 +19,9 @@ import {
   Bot,
   Device,
   Login,
+  OperationOutcome,
   Organization,
+  Parameters,
   Project,
   ProjectMembership,
   ProjectSetting,
@@ -40,6 +45,7 @@ import { createAuditEventEntities, findProjectMembership } from '../../workers/u
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
+import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
@@ -76,6 +82,47 @@ export interface BotExecutionResult {
  * Assumes that input content-type is output content-type.
  */
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
+  if (req.header('Prefer') === 'respond-async') {
+    await sendAsyncResponse(req, res, async () => {
+      return new Promise<Parameters>((resolve, reject) => {
+        executeOperation(req, res, (result) => {
+          if (isOperationOutcome(result)) {
+            resolve({
+              resourceType: 'Parameters',
+              parameter: [{ name: 'outcome', resource: result }],
+            });
+            return;
+          }
+          try {
+            const outParams = getOutParametersFromResult(result);
+            resolve(outParams);
+          } catch (err) {
+            reject(err);
+          }
+        }).catch(reject);
+      });
+    });
+  } else {
+    await executeOperation(req, res, (result) => {
+      if (isOperationOutcome(result)) {
+        sendOutcome(res, result);
+        return;
+      }
+
+      const responseBody = getResponseBodyFromResult(result);
+      res
+        .status(result.success ? 200 : 400)
+        .type(getResponseContentType(req))
+        .send(responseBody);
+    });
+  }
+});
+
+async function executeOperation(
+  req: Request,
+  res: Response,
+  sendResponse: (response: OperationOutcome | BotExecutionResult) => void
+): Promise<void> {
   const ctx = getAuthenticatedContext();
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
@@ -109,23 +156,8 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     contentType: req.header('content-type') as string,
   });
 
-  // Send the response
-  // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
-  let responseBody = result.returnValue;
-  if (responseBody === undefined) {
-    // If the bot did not return a value, then return an OperationOutcome
-    responseBody = result.success ? allOk : badRequest(result.logResult);
-  } else if (typeof responseBody === 'number') {
-    // If the bot returned a number, then we must convert it to a string
-    // Otherwise, express will interpret it as an HTTP status code
-    responseBody = responseBody.toString();
-  }
-
-  res
-    .status(result.success ? 200 : 400)
-    .type(getResponseContentType(req))
-    .send(responseBody);
-});
+  sendResponse(result);
+}
 
 /**
  * Returns the Bot for the execute request.
@@ -202,6 +234,53 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   );
 
   return result;
+}
+
+function getResponseBodyFromResult(
+  result: BotExecutionResult
+): Buffer | string | { [key: string]: any } | any[] | boolean {
+  // Send the response
+  // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
+  let responseBody = result.returnValue;
+  if (responseBody === undefined) {
+    // If the bot did not return a value, then return an OperationOutcome
+    responseBody = result.success ? allOk : badRequest(result.logResult);
+  } else if (typeof responseBody === 'number') {
+    // If the bot returned a number, then we must convert it to a string
+    // Otherwise, express will interpret it as an HTTP status code
+    responseBody = responseBody.toString();
+  }
+
+  return responseBody;
+}
+
+function getOutParametersFromResult(result: BotExecutionResult): Parameters {
+  const responseBody = getResponseBodyFromResult(result);
+  switch (typeof responseBody) {
+    case 'string':
+      return {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'responseBody', valueString: responseBody }],
+      };
+    case 'object':
+      if (responseBody instanceof Buffer) {
+        return {
+          resourceType: 'Parameters',
+          parameter: [{ name: 'responseBody', valueString: responseBody.toString() }],
+        };
+      }
+      return {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'responseBody', valueString: JSON.stringify(responseBody) }],
+      };
+    case 'boolean':
+      return {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'responseBody', valueBoolean: responseBody }],
+      };
+    default:
+      throw new OperationOutcomeError(serverError(new Error('Bot returned response.returnVal with an invalid type')));
+  }
 }
 
 /**

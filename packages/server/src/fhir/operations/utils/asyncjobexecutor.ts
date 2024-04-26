@@ -1,4 +1,4 @@
-import { accepted } from '@medplum/core';
+import { OperationOutcomeError, accepted } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -57,6 +57,10 @@ export class AsyncJobExecutor {
         ...this.resource,
         status: 'error',
         transactionTime: new Date().toISOString(),
+        output:
+          err instanceof OperationOutcomeError
+            ? { resourceType: 'Parameters', parameter: [{ name: 'outcome', resource: err.outcome }] }
+            : undefined,
       });
       throw err;
     } finally {

@@ -1,8 +1,8 @@
-import { ContentType } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { ContentType, sleep } from '@medplum/core';
+import { AsyncJob, Bot, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
-import request from 'supertest';
+import { randomUUID } from 'node:crypto';
+import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
@@ -67,6 +67,51 @@ describe('Execute', () => {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toEqual('input');
+  });
+
+  test('Submit plain text', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Prefer', 'respond-async')
+      .send('input');
+    expect(res.status).toBe(202);
+
+    let res2: Response | undefined = undefined;
+
+    let shouldThrow = false;
+    const asyncJobTimeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 5000);
+
+    while (!((res2?.body as AsyncJob)?.status === 'completed')) {
+      if (shouldThrow) {
+        throw new Error('Timed out while waiting for async job to complete');
+      }
+      await sleep(10);
+      res2 = await request(app)
+        .get(new URL(res.headers['content-location']).pathname)
+        .set('Authorization', 'Bearer ' + accessToken);
+    }
+    clearTimeout(asyncJobTimeout);
+
+    const responseBody = (res2 as Response).body as AsyncJob;
+
+    expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+      resourceType: 'AsyncJob',
+      status: 'completed',
+      request: expect.stringContaining('$execute'),
+      output: expect.objectContaining<Parameters>({
+        resourceType: 'Parameters',
+        parameter: expect.arrayContaining<ParametersParameter>([
+          expect.objectContaining<ParametersParameter>({
+            name: 'responseBody',
+            valueString: 'input',
+          }),
+        ]),
+      }),
+    });
   });
 
   test('Submit FHIR with content type', async () => {
