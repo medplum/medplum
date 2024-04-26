@@ -1,10 +1,11 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser } from '@tabler/icons-react';
+import { IconClipboardHeart, IconClipboardList, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { ChartingPatientPage } from './pages/ChartingPatientPage';
+import { EncounterPage } from './pages/EncounterPage';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
-import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
@@ -25,6 +26,17 @@ export function App(): JSX.Element | null {
           title: 'Charts',
           links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
         },
+        {
+          title: 'Encounters',
+          links: [
+            { icon: <IconClipboardList />, label: 'All Encounters', href: '/Encounter' },
+            {
+              icon: <IconClipboardHeart />,
+              label: 'My Encounters',
+              href: `/Encounter?participant=Practitioner/${profile?.id}`,
+            },
+          ],
+        },
       ]}
     >
       <ErrorBoundary>
@@ -32,10 +44,11 @@ export function App(): JSX.Element | null {
           <Routes>
             <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
-            <Route path="/Patient/:id" element={<PatientPage />} />
+            <Route path="/Patient/:id/*" element={<ChartingPatientPage />} />
             <Route path="/:resourceType/:id" element={<ResourcePage />} />
             <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
+            <Route path="/Encounter/:id/*" element={<EncounterPage />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
