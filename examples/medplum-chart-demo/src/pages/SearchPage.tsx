@@ -1,4 +1,5 @@
-import { Paper } from '@mantine/core';
+import { Modal, Paper } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import {
   DEFAULT_SEARCH_COUNT,
   Filter,
@@ -11,6 +12,7 @@ import { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CreateEncounter } from '../components/actions/CreateEncounter';
 import classes from './SearchPage.module.css';
 
 export function SearchPage(): JSX.Element {
@@ -18,6 +20,7 @@ export function SearchPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
+  const [opened, handlers] = useDisclosure(false);
 
   useEffect(() => {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
@@ -41,6 +44,7 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
+      <CreateEncounter opened={opened} handlers={handlers} />
       <MemoizedSearchControl
         checkboxesEnabled={true}
         search={search}
@@ -49,6 +53,9 @@ export function SearchPage(): JSX.Element {
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
+        hideFilters={true}
+        hideToolbar={search.resourceType === 'Encounter' ? false : true}
+        onNew={handlers.open}
       />
     </Paper>
   );
@@ -56,7 +63,7 @@ export function SearchPage(): JSX.Element {
 
 function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);
-  const fields = search.fields ?? ['_id', '_lastUpdated'];
+  const fields = search.fields ?? getDefaultFields(search.resourceType);
   const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
   const offset = search.offset ?? 0;
@@ -101,4 +108,12 @@ function getLastSearch(resourceType: string): SearchRequest | undefined {
 function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem('defaultResourceType', search.resourceType);
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
+}
+
+function getDefaultFields(resourceType: string): string[] {
+  if (resourceType === 'Encounter') {
+    return ['class', 'type', 'subject', 'period'];
+  } else {
+    return ['_id', '_lastUpdated'];
+  }
 }
