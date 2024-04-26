@@ -158,7 +158,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   }
 
   return (
-    <Paper className={classes.chatPaper} p={0} shadow="sm" radius="sm" {...paperProps}>
+    <Paper className={classes.chatPaper} p={0} radius="md" {...paperProps}>
       <Title order={2} className={classes.chatTitle}>
         {title}
       </Title>

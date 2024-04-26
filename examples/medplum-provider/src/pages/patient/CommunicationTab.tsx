@@ -54,8 +54,9 @@ export function CommunicationTab(): JSX.Element {
         communications={communications}
         setCommunications={setCommunications}
         query={`subject=${getReferenceString(patient)}`}
-        inputDisabled={false}
         sendMessage={sendMessage}
+        radius="sm"
+        shadow="sm"
         h={600}
         mt="xl"
       />
