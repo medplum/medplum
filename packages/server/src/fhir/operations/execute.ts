@@ -93,8 +93,9 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
           try {
             const outParams = getOutParametersFromResult(result);
             resolve(outParams);
-          } catch (err) {
-            reject(err);
+          } catch (err: unknown) {
+            // eslint-disable-next-line prefer-promise-reject-errors
+            reject(err as Error);
           }
         }).catch(reject);
       });
