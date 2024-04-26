@@ -16,12 +16,18 @@ const patient: Patient = {
 
 const medplum = new MedplumClient();
 
-// A function to return the url in 'Binary/{id}' format
-const binaryUrl = parsePresignedUrl(patient.photo?.[0].url);
+// A function to return the binary id
+const binaryUrl = getBinaryId(patient.photo?.[0].url);
 // Download the binary
-await medplum.download(binaryUrl);
+await medplum.download(`Binary/${binaryUrl}`);
 // end-block downloadBinary
 
-function parsePresignedUrl(url?: string): string {
-  return `Binary/${url ?? 'example-id'}`;
+function getBinaryId(url?: string): string {
+  if (!url) {
+    throw new Error('Invalid url');
+  }
+
+  const parts: string[] = url.split('/');
+  const id = parts[parts.length - 1];
+  return id;
 }
