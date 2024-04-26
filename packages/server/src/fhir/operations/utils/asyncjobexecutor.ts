@@ -73,7 +73,11 @@ export class AsyncJobExecutor {
   }
 }
 
-export async function sendAsyncResponse(req: Request, res: Response, callback: () => Promise<any>): Promise<void> {
+export async function sendAsyncResponse(
+  req: Request,
+  res: Response,
+  callback: () => Promise<Parameters | undefined>
+): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const exec = new AsyncJobExecutor(ctx.repo);
