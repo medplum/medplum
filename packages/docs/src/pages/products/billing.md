@@ -34,7 +34,6 @@ The Medplum billing and payments implementation is a standards compliant impleme
 
 ## Demos and Tutorials
 
-- [Sample Insurance Eligibility Check](/docs/bots/insurance-eligibility-check)
 - [Foo Medical Billing Page](https://foomedical.com/account/membership-and-billing) sample patient portal with financial data.
 - [Provider Demo](https://provider.foomedical.com) including credential management.
 
