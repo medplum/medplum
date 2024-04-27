@@ -1,5 +1,6 @@
-import { ContentType, allOk, append } from '@medplum/core';
-import { RequestGroup } from '@medplum/fhirtypes';
+import { ContentType, allOk, append, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import { Bundle, RequestGroup, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   HealthGorillaConfig,
@@ -28,6 +29,14 @@ const testConfig: HealthGorillaConfig = {
 
 describe('Health Gorilla utils', () => {
   const OLD_ENV = process.env;
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
+  })
 
   beforeEach(() => {
     jest.resetModules();
