@@ -121,13 +121,13 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
 async function executeOperation(
   req: Request,
   res: Response,
-  sendResponse: (response: OperationOutcome | BotExecutionResult) => void
+  sendOperationResponse: (response: OperationOutcome | BotExecutionResult) => void
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
   if (!userBot) {
-    sendResponse(badRequest('Must specify bot ID or identifier.'));
+    sendOperationResponse(badRequest('Must specify bot ID or identifier.'));
     return;
   }
 
@@ -156,7 +156,7 @@ async function executeOperation(
     contentType: req.header('content-type') as string,
   });
 
-  sendResponse(result);
+  sendOperationResponse(result);
 }
 
 /**
