@@ -1,9 +1,11 @@
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import { ResourceForm, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
+import { RESOURCE_PROFILE_URLS } from './utils';
 
 export function ResourceEditPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -11,6 +13,7 @@ export function ResourceEditPage(): JSX.Element | null {
   const [value, setValue] = useState<Resource | undefined>();
   const navigate = useNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
+  const profileUrl = resourceType && RESOURCE_PROFILE_URLS[resourceType];
 
   useEffect(() => {
     if (resourceType && id) {
@@ -47,5 +50,13 @@ export function ResourceEditPage(): JSX.Element | null {
     return null;
   }
 
-  return <ResourceForm defaultValue={value} onSubmit={handleSubmit} onDelete={handleDelete} outcome={outcome} />;
+  return (
+    <ResourceFormWithRequiredProfile
+      defaultValue={value}
+      onSubmit={handleSubmit}
+      onDelete={handleDelete}
+      outcome={outcome}
+      profileUrl={profileUrl}
+    />
+  );
 }

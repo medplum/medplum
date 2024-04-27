@@ -116,5 +116,8 @@ sha256sum --check "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"
 # Check the build output
 ls -la
 
+# Make sure binary runs
+dist/medplum-agent-$MEDPLUM_VERSION-win64.exe --help
+
 # Move back to root
 popd

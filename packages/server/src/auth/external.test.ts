@@ -106,6 +106,12 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('Missing state');
   });
 
+  test('Invalid JSON state', async () => {
+    const res = await request(app).get('/auth/external?code=xyz&state=xyz');
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid state');
+  });
+
   test('Unknown domain', async () => {
     // Build the external callback URL with an unrecognized domain
     const url = appendQueryParams('/auth/external', {

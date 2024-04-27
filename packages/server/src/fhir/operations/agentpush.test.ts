@@ -6,10 +6,10 @@ import {
   getReferenceString,
   sleep,
 } from '@medplum/core';
-import { Agent, Device, OperationOutcome } from '@medplum/fhirtypes';
+import { Agent, AsyncJob, Device, OperationOutcome, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import request from 'supertest';
+import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
@@ -451,6 +451,113 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     expect(body.issue[0].severity).toEqual('error');
     expect(body.issue[0]?.details?.text).toEqual(expect.stringMatching(/internal server error/i));
     expect(body.issue[0]?.diagnostics).toEqual(expect.stringMatching(/unable to ping/i));
+
+    publishSpy.mockRestore();
+  });
+
+  test('Prefer: respond-async', async () => {
+    const redis = getRedis();
+    const publishSpy = jest.spyOn(redis, 'publish');
+
+    let resolve!: (value: request.Response) => void | PromiseLike<void>;
+    let reject!: (err: Error) => void;
+
+    const deferredResponse = new Promise<request.Response>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Prefer', 'respond-async')
+      .send({
+        contentType: ContentType.PING,
+        body: 'PING',
+        destination: '8.8.8.8',
+        waitForResponse: true,
+      } satisfies AgentPushParameters)
+      .then(resolve)
+      .catch(reject);
+
+    let shouldThrow = false;
+    const timer = setTimeout(() => {
+      shouldThrow = true;
+    }, 3500);
+
+    while (!publishSpy.mock.lastCall) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(50);
+    }
+    clearTimeout(timer);
+
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    expect(transmitRequestStr).toBeDefined();
+    const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
+
+    await getRedis().publish(
+      transmitRequest.callback as string,
+      JSON.stringify({
+        ...transmitRequest,
+        type: 'agent:transmit:response',
+        statusCode: 200,
+        contentType: ContentType.TEXT,
+        body: `
+  PING 8.8.8.8 (8.8.8.8): 56 data bytes
+  64 bytes from 8.8.8.8: icmp_seq=0 ttl=115 time=10.316 ms
+
+  --- 8.8.8.8 ping statistics ---
+  1 packets transmitted, 1 packets received, 0.0% packet loss
+  round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
+      } satisfies AgentTransmitResponse)
+    );
+
+    const res = await deferredResponse;
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+
+    let res2: Response | undefined = undefined;
+
+    shouldThrow = false;
+    const asyncJobTimeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 5000);
+
+    while (!((res2?.body as AsyncJob)?.status === 'completed')) {
+      if (shouldThrow) {
+        throw new Error('Timed out while waiting for async job to complete');
+      }
+      await sleep(10);
+      res2 = await request(app)
+        .get(new URL(res.headers['content-location']).pathname)
+        .set('Authorization', 'Bearer ' + accessToken);
+    }
+    clearTimeout(asyncJobTimeout);
+
+    const responseBody = (res2 as Response).body as AsyncJob;
+
+    expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+      resourceType: 'AsyncJob',
+      status: 'completed',
+      request: expect.stringContaining('$push'),
+      output: expect.objectContaining<Parameters>({
+        resourceType: 'Parameters',
+        parameter: expect.arrayContaining<ParametersParameter>([
+          expect.objectContaining<ParametersParameter>({
+            name: 'outcome',
+            resource: expect.objectContaining(allOk),
+          }),
+          expect.objectContaining<ParametersParameter>({
+            name: 'responseBody',
+            valueString: expect.stringMatching(/ping statistics/i),
+          }),
+        ]),
+      }),
+    });
 
     publishSpy.mockRestore();
   });

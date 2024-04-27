@@ -6,6 +6,7 @@ import {
   Hl7Message,
   LogLevel,
   Logger,
+  MEDPLUM_VERSION,
   MedplumClient,
   isValidHostname,
   normalizeErrorString,
@@ -19,7 +20,6 @@ import WebSocket from 'ws';
 import { Channel } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { AgentSerialPortChannel } from './serialport';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -27,6 +27,7 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
       if (ex) {
         const err = ex as Error;
         reject(err);
+        return;
       }
       resolve({ stdout, stderr });
     });
@@ -41,8 +42,8 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
-  healthcheckPeriod = 10 * 1000;
-  private healthcheckTimer?: NodeJS.Timeout;
+  heartbeatPeriod = 10 * 1000;
+  private heartbeatTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
   private webSocket?: WebSocket;
   private webSocketWorker?: Promise<void>;
@@ -78,11 +79,11 @@ export class App {
 
   private startWebSocket(): void {
     this.connectWebSocket();
-    this.healthcheckTimer = setInterval(() => this.healthcheck(), this.healthcheckPeriod);
+    this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatPeriod);
   }
 
-  private async healthcheck(): Promise<void> {
-    if (!this.webSocket && !this.reconnectTimer) {
+  private async heartbeat(): Promise<void> {
+    if (!(this.webSocket || this.reconnectTimer)) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket();
       return;
@@ -144,7 +145,7 @@ export class App {
             this.startWebSocketWorker();
             break;
           case 'agent:heartbeat:request':
-            await this.sendToWebSocket({ type: 'agent:heartbeat:response' });
+            await this.sendToWebSocket({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION });
             break;
           case 'agent:heartbeat:response':
             // Do nothing
@@ -188,8 +189,6 @@ export class App {
         channel = new AgentDicomChannel(this, definition, endpoint);
       } else if (endpoint.address.startsWith('mllp')) {
         channel = new AgentHl7Channel(this, definition, endpoint);
-      } else if (endpoint.address.startsWith('serial')) {
-        channel = new AgentSerialPortChannel(this, definition, endpoint);
       } else {
         this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
       }
@@ -205,9 +204,9 @@ export class App {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
 
-    if (this.healthcheckTimer) {
-      clearInterval(this.healthcheckTimer);
-      this.healthcheckTimer = undefined;
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = undefined;
     }
 
     if (this.reconnectTimer) {

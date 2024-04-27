@@ -16,13 +16,13 @@ export async function structureDefinitionExpandProfileHandler(req: FhirRequest):
   const { url } = req.query;
 
   if (!url || typeof url !== 'string') {
-    return [badRequest('Profile url not specified')];
+    return [badRequest('StructureDefinition profile url not specified')];
   }
 
   const profile = await fetchProfileByUrl(ctx.repo, url);
 
   if (!profile) {
-    return [badRequest('Profile not found')];
+    return [badRequest(`StructureDefinition profile with URL ${url} not found`)];
   }
 
   const sds = await loadNestedStructureDefinitions(ctx.repo, profile, new Set([url]), 1);

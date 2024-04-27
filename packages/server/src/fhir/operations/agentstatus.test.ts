@@ -3,6 +3,7 @@ import { Agent, Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { AgentConnectionState } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
@@ -44,14 +45,16 @@ describe('Agent Status', () => {
 
     const parameters1 = res1.body as Parameters;
     expect(parameters1.resourceType).toBe('Parameters');
-    expect(parameters1.parameter).toHaveLength(1);
-    expect(parameters1.parameter?.find((p) => p.name === 'status')?.valueCode).toBe('unknown');
+    expect(parameters1.parameter).toHaveLength(2);
+    expect(parameters1.parameter?.find((p) => p.name === 'status')?.valueCode).toBe(AgentConnectionState.UNKNOWN);
+    expect(parameters1.parameter?.find((p) => p.name === 'version')?.valueString).toBe('unknown');
 
     // Emulate a connection
     await getRedis().set(
-      `medplum:agent:${agent.id}:status`,
+      `medplum:agent:${agent.id}:info`,
       JSON.stringify({
-        status: 'connected',
+        status: AgentConnectionState.CONNECTED,
+        version: '3.1.4',
         lastUpdated: new Date().toISOString(),
       }),
       'EX',
@@ -65,8 +68,9 @@ describe('Agent Status', () => {
 
     const parameters2 = res2.body as Parameters;
     expect(parameters2.resourceType).toBe('Parameters');
-    expect(parameters2.parameter).toHaveLength(2);
-    expect(parameters2.parameter?.find((p) => p.name === 'status')?.valueCode).toBe('connected');
+    expect(parameters2.parameter).toHaveLength(3);
+    expect(parameters2.parameter?.find((p) => p.name === 'status')?.valueCode).toBe(AgentConnectionState.CONNECTED);
+    expect(parameters2.parameter?.find((p) => p.name === 'version')?.valueString).toBe('3.1.4');
     expect(parameters2.parameter?.find((p) => p.name === 'lastUpdated')?.valueInstant).toBeTruthy();
   });
 });

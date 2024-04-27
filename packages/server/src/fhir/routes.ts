@@ -9,6 +9,7 @@ import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
+import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
 import { agentStatusHandler } from './operations/agentstatus';
 import { codeSystemImportHandler } from './operations/codesystemimport';
@@ -185,6 +186,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/$status', agentStatusHandler);
   router.add('GET', '/Agent/:id/$status', agentStatusHandler);
 
+  // Agent $bulk-status operation
+  router.add('GET', '/Agent/$bulk-status', agentBulkStatusHandler);
+
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
@@ -244,13 +248,15 @@ function initInternalFhirRouter(): FhirRouter {
   });
 
   router.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
-    recordHistogramValue('medplum.batch.entries', count, { bundleType });
-    recordHistogramValue('medplum.batch.errors', errors, { bundleType });
-    recordHistogramValue('medplum.batch.size', size, { bundleType });
+    const ctx = getAuthenticatedContext();
+    const projectId = ctx.project.id;
+
+    recordHistogramValue('medplum.batch.entries', count, { bundleType, projectId });
+    recordHistogramValue('medplum.batch.errors', errors, { bundleType, projectId });
+    recordHistogramValue('medplum.batch.size', size, { bundleType, projectId });
 
     if (errors > 0 && bundleType === 'transaction') {
-      const ctx = getAuthenticatedContext();
-      ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: ctx.project.id });
+      ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
     }
   });
 

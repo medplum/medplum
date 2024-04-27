@@ -14,6 +14,13 @@ export async function main(argv: string[]): Promise<App> {
   let args: Args;
   if (argv.length >= 6) {
     args = readCommandLineArgs(argv);
+  } else if (argv.length === 3 && (argv[2] === '-h' || argv[2] === '--help')) {
+    console.log('Expected arguments:');
+    console.log('    baseUrl: The Medplum server base URL.');
+    console.log('    clientId: The OAuth client ID.');
+    console.log('    clientSecret: The OAuth client secret.');
+    console.log('    agentId: The Medplum agent ID.');
+    process.exit(0);
   } else if (existsSync('agent.properties')) {
     args = readPropertiesFile('agent.properties');
   } else {

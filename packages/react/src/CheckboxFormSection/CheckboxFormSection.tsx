@@ -15,7 +15,7 @@ export interface CheckboxFormSectionProps {
 export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Element {
   const { debugMode } = useContext(ElementsContext);
 
-  let label: React.ReactNode;
+  let label: ReactNode;
   if (debugMode && props.fhirPath) {
     label = `${props.title} - ${props.fhirPath}`;
   } else {

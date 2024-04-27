@@ -158,7 +158,7 @@ const internalReference: Bundle =
   // start-block internalReference
   {
     resourceType: 'Bundle',
-    type: 'batch',
+    type: 'transaction',
     entry: [
       {
         // highlight-next-line
@@ -216,7 +216,7 @@ const conditional: Bundle =
   // start-block conditionalCreate
   {
     resourceType: 'Bundle',
-    type: 'batch',
+    type: 'transaction',
     entry: [
       {
         fullUrl: 'urn:uuid:4aac5fb6-c2ff-4851-b3cf-d66d63a82a17',
@@ -234,7 +234,7 @@ const conditional: Bundle =
           method: 'POST',
           url: 'Organization',
           // highlight-next-line
-          ifNoneExist: 'identifer=https://example-org.com/organizations|example-organization',
+          ifNoneExist: 'identifier=https://example-org.com/organizations|example-organization',
         },
       },
       {

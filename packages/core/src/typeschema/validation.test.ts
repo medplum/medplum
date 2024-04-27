@@ -1259,6 +1259,19 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(e3, { profile })).toThrow();
   });
 
+  // TODO: Change this check from warning to error
+  // Duplicate entries for choice-of-type property is currently a warning
+  // We need to first log and track this, and notify customers of breaking changes
+  function expectOneWarning(resource: Resource, textContains: string): void {
+    const issues = validateResource(resource);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain(textContains);
+  }
+
+  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Duplicate choice of type property';
+  const PRIMITIVE_EXTENSION_TYPE_MISMATCH = 'Type of primitive extension does not match the type of property';
+
   test('Multiple values for choice of type property', () => {
     const carePlan: CarePlan = {
       resourceType: 'CarePlan',
@@ -1286,13 +1299,91 @@ describe('FHIR resource validation', () => {
       ],
     };
 
-    // TODO: Change this check from warning to error
-    // Duplicate entries for choice-of-type property is currently a warning
-    // We need to first log and track this, and notify customers of breaking changes
-    const issues = validateResource(carePlan);
-    expect(issues).toHaveLength(1);
-    expect(issues[0].severity).toBe('warning');
-    expect(issues[0].details?.text).toContain('Duplicate choice of type property');
+    expectOneWarning(carePlan, DUPLICATE_CHOICE_OF_TYPE_PROPERTY);
+  });
+
+  test('Valid choice of type properties with primitive extensions', () => {
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+      } as Patient)
+    ).toHaveLength(0);
+
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+
+    // check both orders of the properties
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+  });
+
+  test('Invalid choice of type properties with primitive extensions', () => {
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        multipleBirthBoolean: true,
+        multipleBirthInteger: 2,
+      } as Patient,
+      DUPLICATE_CHOICE_OF_TYPE_PROPERTY
+    );
+
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        _multipleBirthInteger: {
+          extension: [],
+        },
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+      } as Patient,
+      DUPLICATE_CHOICE_OF_TYPE_PROPERTY
+    );
+
+    // Primitive extension type mismatch, check both orders of the properties
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+      } as Patient,
+      PRIMITIVE_EXTENSION_TYPE_MISMATCH
+    );
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+        multipleBirthInteger: 2,
+      } as Patient,
+      PRIMITIVE_EXTENSION_TYPE_MISMATCH
+    );
   });
 
   test('Reference type check', () => {

@@ -240,23 +240,23 @@
             }
           },
           {
-            "id" : "Project.secret",
-            "path" : "Project.secret",
-            "definition" : "Secure environment variable that can be used to store secrets for bots.",
+            "id" : "Project.setting",
+            "path" : "Project.setting",
+            "definition" : "Option or parameter that can be adjusted within the Medplum Project to customize its behavior.",
             "min" : 0,
             "max" : "*",
             "type" : [{
               "code" : "BackboneElement"
             }],
             "base" : {
-              "path" : "Project.secret",
+              "path" : "Project.setting",
               "min" : 0,
               "max" : "*"
             }
           },
           {
-            "id" : "Project.secret.name",
-            "path" : "Project.secret.name",
+            "id" : "Project.setting.name",
+            "path" : "Project.setting.name",
             "definition" : "The secret name.",
             "min" : 1,
             "max" : "1",
@@ -264,14 +264,14 @@
               "code" : "string"
             }],
             "base" : {
-              "path" : "Project.secret.name",
+              "path" : "Project.setting.name",
               "min" : 1,
               "max" : "1"
             }
           },
           {
-            "id" : "Project.secret.value[x]",
-            "path" : "Project.secret.value[x]",
+            "id" : "Project.setting.value[x]",
+            "path" : "Project.setting.value[x]",
             "definition" : "The secret value.",
             "min" : 1,
             "max" : "1",
@@ -288,10 +288,49 @@
               "code" : "integer"
             }],
             "base" : {
-              "path" : "Project.secret.value[x]",
+              "path" : "Project.setting.value[x]",
               "min" : 1,
               "max" : "1"
             }
+          },
+          {
+            "id" : "Project.secret",
+            "path" : "Project.secret",
+            "definition" : "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only visible to project administrators.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Project.secret",
+              "min" : 0,
+              "max" : "*"
+            },
+            "contentReference" : "#Project.setting"
+          },
+          {
+            "id" : "Project.systemSetting",
+            "path" : "Project.systemSetting",
+            "definition" : "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only modifiable by system administrators.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Project.systemSetting",
+              "min" : 0,
+              "max" : "*"
+            },
+            "contentReference" : "#Project.setting"
+          },
+          {
+            "id" : "Project.systemSecret",
+            "path" : "Project.systemSecret",
+            "definition" : "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only visible to system administrators.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Project.systemSecret",
+              "min" : 0,
+              "max" : "*"
+            },
+            "contentReference" : "#Project.setting"
           },
           {
             "id" : "Project.site",
@@ -799,7 +838,7 @@
           {
             "id" : "User.externalId",
             "path" : "User.externalId",
-            "definition" : "DEPRECATED Replaced by ProjectMembership.externalId.",
+            "definition" : "@deprecated Replaced by ProjectMembership.externalId.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -844,8 +883,8 @@
           {
             "id" : "User.admin",
             "path" : "User.admin",
-            "short" : "DEPRECATED",
-            "definition" : "DEPRECATED",
+            "short" : "@deprecated",
+            "definition" : "@deprecated",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1535,7 +1574,7 @@
           {
             "id" : "Bot.code",
             "path" : "Bot.code",
-            "definition" : "DEPRECATED Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
+            "definition" : "@deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -2005,7 +2044,7 @@
       "abstract" : false,
       "type" : "PasswordChangeRequest",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "DEPRECATED Password change request for the 'forgot password' flow. Use UserSecurityCheck instead.",
+      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityCheck instead.",
       "snapshot" : {
         "element" : [
           {
@@ -2856,7 +2895,7 @@
           {
             "id" : "AccessPolicy.resource.compartment",
             "path" : "AccessPolicy.resource.compartment",
-            "definition" : "DEPRECATED Optional compartment restriction for the resource type.",
+            "definition" : "@deprecated Optional compartment restriction for the resource type.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -4188,6 +4227,21 @@
             "base" : {
               "path" : "AsyncJob.request",
               "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "AsyncJob.output",
+            "path" : "AsyncJob.output",
+            "definition" : "Outputs resulting from the async job.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code": "Parameters"
+            }],
+            "base" : {
+              "path" : "AsyncJob.output",
+              "min" : 0,
               "max" : "1"
             }
           }

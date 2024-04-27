@@ -190,6 +190,7 @@ const BLOCKED_FILE_EXTENSIONS = [
   '.msp',
   '.mst',
   '.nsh',
+  '.php',
   '.pif',
   '.ps1',
   '.scr',

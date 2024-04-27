@@ -9,6 +9,12 @@ Chaining search parameters allows you to filter your searches based on the param
 
 Chained searches are similar to using [`_include` or `_revinclude` parameters](/docs/search/includes), but it will not return the referenced resources, only filter based on their parameters. The primary benefit of this is it allows for easy pagination since you know you will only receive results of one resource type. See the [paginated search docs](/docs/search/paginated-search) for more details.
 
+:::note Chained Search Availability
+
+Chained search is only available when using the FHIR Rest API as described here. If you are using GraphQL, chained search functionality is not supported.
+
+:::
+
 ## Forward Chained Search
 
 [Search parameters](/docs/search/basic-search) with the `reference` type can be chained together to search on the elements of the referenced resource.

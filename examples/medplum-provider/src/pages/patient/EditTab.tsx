@@ -1,9 +1,21 @@
+import { Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import { Document, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
+import { RESOURCE_PROFILE_URLS } from '../resource/utils';
+
+const missingProfileMessage = RESOURCE_PROFILE_URLS.Patient ? (
+  <p>
+    Could not find the{' '}
+    <Anchor href={RESOURCE_PROFILE_URLS.Patient} target="_blank">
+      US Core Patient Profile
+    </Anchor>
+  </p>
+) : undefined;
 
 export function EditTab(): JSX.Element | null {
   const medplum = useMedplum();
@@ -36,7 +48,7 @@ export function EditTab(): JSX.Element | null {
           showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
         });
     },
-    [medplum, patientId, navigate]
+    [medplum, navigate, patientId]
   );
 
   if (!value) {
@@ -45,7 +57,13 @@ export function EditTab(): JSX.Element | null {
 
   return (
     <Document>
-      <ResourceForm defaultValue={value} onSubmit={handleSubmit} outcome={outcome} />
+      <ResourceFormWithRequiredProfile
+        missingProfileMessage={missingProfileMessage}
+        defaultValue={value}
+        onSubmit={handleSubmit}
+        outcome={outcome}
+        profileUrl={RESOURCE_PROFILE_URLS.Patient}
+      />
     </Document>
   );
 }

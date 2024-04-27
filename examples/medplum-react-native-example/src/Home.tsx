@@ -1,6 +1,6 @@
 import { LoginAuthenticationResponse, getDisplayString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumContext, useMedplumProfile } from '@medplum/react-hooks';
+import { useMedplum, useMedplumContext, useMedplumProfile, useSubscription } from '@medplum/react-hooks';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -121,11 +121,38 @@ export default function Home(): JSX.Element {
                   </View>
                 </ScrollView>
               </View>
+              <NotificationsWidgit title="New Marys created:" criteria="Patient?name=Mary" />
             </View>
           )}
           <StatusBar style="auto" />
         </>
       )}
+    </View>
+  );
+}
+
+interface NotificationsWidgitProps {
+  title?: string;
+  criteria: string;
+}
+
+function NotificationsWidgit(props: NotificationsWidgitProps): JSX.Element {
+  const [notifications, setNotifications] = useState(0);
+
+  useSubscription(props.criteria, () => {
+    setNotifications(notifications + 1);
+  });
+
+  function clearNotifications(): void {
+    setNotifications(0);
+  }
+
+  return (
+    <View style={styles.marginTop10}>
+      <Text>
+        {props.title ?? 'Notifications:'} {notifications}
+      </Text>
+      <CustomButton onPress={clearNotifications} title="Clear" />
     </View>
   );
 }

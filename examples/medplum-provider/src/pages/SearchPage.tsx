@@ -4,6 +4,7 @@ import {
   Filter,
   formatSearchQuery,
   isReference,
+  isResourceType,
   parseSearchRequest,
   SearchRequest,
   SortRule,
@@ -24,6 +25,11 @@ export function SearchPage(): JSX.Element {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
     const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
+
+    if (!isResourceType(populatedSearch.resourceType)) {
+      navigate('/');
+      return;
+    }
 
     if (
       location.pathname === `/${populatedSearch.resourceType}` &&

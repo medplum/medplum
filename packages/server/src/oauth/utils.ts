@@ -11,7 +11,6 @@ import {
   ProfileResource,
   resolveId,
   tooManyRequests,
-  unauthorized,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -792,8 +791,14 @@ export async function verifyMultipleMatchingException(
  * @param accessToken - The access token as provided by the client.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
-export async function getLoginForAccessToken(accessToken: string): Promise<AuthState> {
-  const verifyResult = await verifyJwt(accessToken);
+export async function getLoginForAccessToken(accessToken: string): Promise<AuthState | undefined> {
+  let verifyResult;
+  try {
+    verifyResult = await verifyJwt(accessToken);
+  } catch (err) {
+    return undefined;
+  }
+
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
 
   const systemRepo = getSystemRepo();
@@ -801,11 +806,11 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
   try {
     login = await systemRepo.readResource<Login>('Login', claims.login_id);
   } catch (err) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   if (!login?.membership || login.revoked) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);

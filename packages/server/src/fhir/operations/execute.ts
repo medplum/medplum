@@ -19,7 +19,7 @@ import {
   Organization,
   Project,
   ProjectMembership,
-  ProjectSecret,
+  ProjectSetting,
   Reference,
   Subscription,
 } from '@medplum/fhirtypes';
@@ -59,7 +59,7 @@ export interface BotExecutionRequest {
 
 export interface BotExecutionContext extends BotExecutionRequest {
   readonly accessToken: string;
-  readonly secrets: Record<string, ProjectSecret>;
+  readonly secrets: Record<string, ProjectSetting>;
 }
 
 export interface BotExecutionResult {
@@ -420,7 +420,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
   return accessToken;
 }
 
-async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSecret>> {
+async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSetting>> {
   const systemRepo = getSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);

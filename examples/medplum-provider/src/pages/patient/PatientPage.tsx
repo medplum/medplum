@@ -1,10 +1,11 @@
 import { Loader, Paper, ScrollArea, Tabs } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
-import { PatientSummary } from '@medplum/react';
+import { getReferenceString, isOk } from '@medplum/core';
+import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
 import { Fragment, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
+import { OperationOutcome } from '@medplum/fhirtypes';
 
 const tabs = [
   { id: 'timeline', url: '', label: 'Timeline' },
@@ -54,15 +55,28 @@ const tabs = [
 
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
-  const patient = usePatient();
+  const [outcome, setOutcome] = useState<OperationOutcome>();
+  const patient = usePatient({ setOutcome });
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tabId = window.location.pathname.split('/')[3] ?? '';
     const tab = tabId ? tabs.find((t) => t.id === tabId || t.url.startsWith(tabId)) : undefined;
     return (tab ?? tabs[0]).id;
   });
 
+  if (outcome && !isOk(outcome)) {
+    return (
+      <Document>
+        <OperationOutcomeAlert outcome={outcome} />
+      </Document>
+    );
+  }
+
   if (!patient) {
-    return <Loader />;
+    return (
+      <Document>
+        <Loader />
+      </Document>
+    );
   }
 
   /**

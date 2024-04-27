@@ -181,6 +181,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
+  config.logLevel = 'error';
   return config;
 }
 

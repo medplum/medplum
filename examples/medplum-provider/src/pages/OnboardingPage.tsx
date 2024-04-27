@@ -19,7 +19,7 @@ export function OnboardingPage(): JSX.Element | null {
   );
 }
 
-export const questionnaire: Questionnaire = {
+const questionnaire: Questionnaire = {
   id: '54127-6-x',
   meta: {
     versionId: '1',
