@@ -1657,7 +1657,7 @@ describe('AccessPolicy', () => {
         ...check2,
         superAdmin: true,
         features: ['bots'],
-        systemSetting: [{ name: 'rateLimt', valueInteger: 1000000 }],
+        systemSetting: [{ name: 'rateLimit', valueInteger: 1000000 }],
         systemSecret: [{ name: 'mySecret', valueString: 'bar' }],
       });
       expect(check3.id).toEqual(project.id);
