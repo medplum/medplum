@@ -104,7 +104,7 @@ export interface AccessPolicyResource {
   resourceType: string;
 
   /**
-   * DEPRECATED Optional compartment restriction for the resource type.
+   * @deprecated Optional compartment restriction for the resource type.
    */
   compartment?: Reference;
 

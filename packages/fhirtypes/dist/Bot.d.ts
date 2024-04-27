@@ -117,7 +117,7 @@ export interface Bot {
   executableCode?: Attachment;
 
   /**
-   * DEPRECATED Bot logic script. Use Bot.sourceCode or Bot.executableCode
+   * @deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode
    * instead.
    */
   code?: string;
