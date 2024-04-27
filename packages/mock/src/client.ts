@@ -693,10 +693,12 @@ export class MockFetchClient {
       resourceType: 'SearchParameter',
     });
     codes.forEach((code) => {
-      const isMatch = searchParameters.some((searchParameter) => searchParameter.code === code);
+      const isMatch = searchParameters.some(
+        (searchParameter) => searchParameter.code === code && searchParameter.base.some((r) => r === resourceType)
+      );
       if (!isMatch) {
         console.error(
-          `Unknown search parameter ${code} for resource type ${resourceType}. Please check whether it is defined in searchparameters.json.`
+          `Unknown search parameter '${code}' for resource type '${resourceType}'. Please check whether it is defined in searchparameters.json.`
         );
       }
     });
