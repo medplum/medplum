@@ -8,6 +8,7 @@ import {
   notFound,
   parseSearchRequest,
   singularize,
+  validateResourceType,
 } from '@medplum/core';
 import {
   CapabilityStatementRestInteraction,
@@ -73,6 +74,7 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
 // Search
 async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
+  validateResourceType(resourceType);
   const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, req.query));
   return [allOk, bundle];
 }
