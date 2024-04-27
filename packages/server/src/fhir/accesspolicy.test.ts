@@ -1624,7 +1624,11 @@ describe('AccessPolicy', () => {
 
   test('Project admin cannot modify protected fields', () =>
     withTestContext(async () => {
-      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      const project = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Test Project',
+        systemSecret: [{ name: 'mySecret', valueString: 'foo' }],
+      });
 
       const membership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
@@ -1649,11 +1653,19 @@ describe('AccessPolicy', () => {
 
       // Try to change protected fields
       // This should be a no-op
-      const check3 = await repo2.updateResource<Project>({ ...check2, superAdmin: true, features: ['bots'] });
+      const check3 = await repo2.updateResource<Project>({
+        ...check2,
+        superAdmin: true,
+        features: ['bots'],
+        systemSetting: [{ name: 'rateLimt', valueInteger: 1000000 }],
+        systemSecret: [{ name: 'mySecret', valueString: 'bar' }],
+      });
       expect(check3.id).toEqual(project.id);
       expect(check3.meta?.versionId).toEqual(check2.meta?.versionId);
       expect(check3.superAdmin).toBeUndefined();
       expect(check3.features).toBeUndefined();
+      expect(check3.systemSetting).toBeUndefined();
+      expect(check3.systemSecret).toBeUndefined();
 
       const check4 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
       expect(check4.id).toEqual(membership.id);

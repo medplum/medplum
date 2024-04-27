@@ -62,7 +62,7 @@ export interface User {
   lastName: string;
 
   /**
-   * DEPRECATED Replaced by ProjectMembership.externalId.
+   * @deprecated Replaced by ProjectMembership.externalId.
    */
   externalId?: string;
 
@@ -78,7 +78,7 @@ export interface User {
   emailVerified?: boolean;
 
   /**
-   * DEPRECATED
+   * @deprecated
    */
   admin?: boolean;
 

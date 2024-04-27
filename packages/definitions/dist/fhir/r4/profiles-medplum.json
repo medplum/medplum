@@ -838,7 +838,7 @@
           {
             "id" : "User.externalId",
             "path" : "User.externalId",
-            "definition" : "DEPRECATED Replaced by ProjectMembership.externalId.",
+            "definition" : "@deprecated Replaced by ProjectMembership.externalId.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -883,8 +883,8 @@
           {
             "id" : "User.admin",
             "path" : "User.admin",
-            "short" : "DEPRECATED",
-            "definition" : "DEPRECATED",
+            "short" : "@deprecated",
+            "definition" : "@deprecated",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1574,7 +1574,7 @@
           {
             "id" : "Bot.code",
             "path" : "Bot.code",
-            "definition" : "DEPRECATED Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
+            "definition" : "@deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -2044,7 +2044,7 @@
       "abstract" : false,
       "type" : "PasswordChangeRequest",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "DEPRECATED Password change request for the 'forgot password' flow. Use UserSecurityCheck instead.",
+      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityCheck instead.",
       "snapshot" : {
         "element" : [
           {
@@ -2895,7 +2895,7 @@
           {
             "id" : "AccessPolicy.resource.compartment",
             "path" : "AccessPolicy.resource.compartment",
-            "definition" : "DEPRECATED Optional compartment restriction for the resource type.",
+            "definition" : "@deprecated Optional compartment restriction for the resource type.",
             "min" : 0,
             "max" : "1",
             "type" : [{
