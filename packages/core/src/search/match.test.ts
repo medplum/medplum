@@ -60,12 +60,12 @@ describe('Search matching', () => {
   });
 
   test('Unknown filter', () => {
-    expect(
+    expect(() =>
       matchesSearchRequest(
         { resourceType: 'Patient' },
         { resourceType: 'Patient', filters: [{ code: 'unknown', operator: Operator.EQUALS, value: 'xyz' }] }
       )
-    ).toBe(false);
+    ).toThrow('Unknown search parameter: unknown');
   });
 
   test('Boolean filter', () => {
