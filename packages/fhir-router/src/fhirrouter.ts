@@ -6,6 +6,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   parseSearchRequest,
+  validateResourceType
 } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
@@ -45,6 +46,7 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
 // Search
 async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
+  validateResourceType(resourceType);
   const query = req.query as Record<string, string[] | string | undefined>;
   const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
   return [allOk, bundle];
