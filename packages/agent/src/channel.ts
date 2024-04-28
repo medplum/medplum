@@ -10,19 +10,12 @@ export interface Channel {
   getEndpoint(): Endpoint;
 }
 
-// build list of addresses available
-
 export function needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
-  if (firstEndpoint.address === secondEndpoint.address) {
+  if (
+    firstEndpoint.address === secondEndpoint.address ||
+    new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
+  ) {
     return false;
   }
-
-  const firstEndpointUrl = new URL(firstEndpoint.address);
-  const secondEndpointUrl = new URL(secondEndpoint.address);
-
-  if (firstEndpointUrl.port === secondEndpointUrl.port) {
-    return true;
-  }
-
   return true;
 }
