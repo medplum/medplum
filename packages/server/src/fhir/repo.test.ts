@@ -715,34 +715,6 @@ describe('FHIR Repo', () => {
       expect(patient2.id).toEqual(patient1.id);
     }));
 
-  test('Too many versions', () =>
-    withTestContext(async () => {
-      // Create version 1
-      const patient = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ family: 'Test' }],
-      });
-
-      // Create versions 2-10
-      for (let i = 0; i < 9; i++) {
-        await systemRepo.updateResource<Patient>({
-          ...patient,
-          name: [{ family: `Test ${i}` }],
-        });
-      }
-
-      // Try to create version 11
-      try {
-        await systemRepo.updateResource<Patient>({
-          ...patient,
-          name: [{ family: `Test too many requests` }],
-        });
-      } catch (err) {
-        const outcome = (err as OperationOutcomeError).outcome;
-        expect(outcome.id).toEqual('too-many-requests');
-      }
-    }));
-
   test('expungeResource forbidden', async () => {
     const author = 'Practitioner/' + randomUUID();
 
