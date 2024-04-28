@@ -60,7 +60,7 @@ export function PatientPage(): JSX.Element {
   const patient = usePatient({ setOutcome });
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tabId = window.location.pathname.split('/')[3] ?? '';
-    const tab = tabId ? tabs.find((t) => t.id === tabId || t.url.startsWith(tabId)) : undefined;
+    const tab = tabId ? tabs.find((t) => t.id === tabId || t.url.startsWith(tabId.toLowerCase())) : undefined;
     return (tab ?? tabs[0]).id;
   });
 
