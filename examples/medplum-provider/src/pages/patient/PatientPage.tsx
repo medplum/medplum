@@ -51,6 +51,7 @@ const tabs = [
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
   },
+  { id: 'communication', url: 'communication', label: 'Communications' },
 ];
 
 export function PatientPage(): JSX.Element {
@@ -59,7 +60,7 @@ export function PatientPage(): JSX.Element {
   const patient = usePatient({ setOutcome });
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tabId = window.location.pathname.split('/')[3] ?? '';
-    const tab = tabId ? tabs.find((t) => t.id === tabId || t.url.startsWith(tabId)) : undefined;
+    const tab = tabId ? tabs.find((t) => t.id === tabId || t.url.startsWith(tabId.toLowerCase())) : undefined;
     return (tab ?? tabs[0]).id;
   });
 

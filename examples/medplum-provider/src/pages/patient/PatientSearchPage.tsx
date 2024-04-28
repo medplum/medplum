@@ -5,6 +5,7 @@ import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
+import { useResourceType } from '../resource/useResourceType';
 import { prependPatientPath } from './PatientPage.utils';
 
 export function PatientSearchPage(): JSX.Element {
@@ -13,6 +14,8 @@ export function PatientSearchPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
+
+  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..') });
 
   useEffect(() => {
     if (!patient) {

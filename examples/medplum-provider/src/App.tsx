@@ -33,6 +33,7 @@ import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
+import { CommunicationTab } from './pages/patient/CommunicationTab';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -112,25 +113,27 @@ export function App(): JSX.Element | null {
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="edit" element={<EditTab />} />
                 <Route path="encounter" element={<EncounterTab />} />
+                <Route path="communication" element={<CommunicationTab />} />
+                <Route path="communication/:id" element={<CommunicationTab />} />
                 <Route path="timeline" element={<TimelineTab />} />
+                <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>
                   <Route path="" element={<ResourceDetailPage />} />
                   <Route path="edit" element={<ResourceEditPage />} />
                   <Route path="history" element={<ResourceHistoryPage />} />
                 </Route>
-                <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path="" element={<TimelineTab />} />
               </Route>
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
                 <Route path="" element={<ResourceDetailPage />} />
                 <Route path="edit" element={<ResourceEditPage />} />
                 <Route path="history" element={<ResourceHistoryPage />} />
               </Route>
-              <Route path="/:resourceType" element={<SearchPage />} />
             </>
           ) : (
             <>
