@@ -1,10 +1,11 @@
 import { Stack, Tabs } from '@mantine/core';
-import { getReferenceString, isResourceType } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import classes from './ResourcePage.module.css';
+import { useResourceType } from './useResourceType';
 
 const tabs = [
   { id: 'details', url: '', label: 'Details' },
@@ -23,12 +24,9 @@ export function ResourcePage(): JSX.Element | null {
     return (tab ?? tabs[0]).id;
   });
 
-  useEffect(() => {
-    if (resourceType && !isResourceType(resourceType)) {
-      navigate('/');
-      return;
-    }
+  useResourceType(resourceType, { onInvalidResourceType: () => navigate('..') });
 
+  useEffect(() => {
     if (resourceType && id) {
       medplum
         .readResource(resourceType as ResourceType, id)
