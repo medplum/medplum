@@ -34,7 +34,6 @@ import {
   serverError,
   stringify,
   toPeriod,
-  tooManyRequests,
   validateResource,
   validateResourceType,
 } from '@medplum/core';
@@ -516,9 +515,6 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     const existing = await this.checkExistingResource<T>(resourceType, id, create);
-    if (await this.isTooManyVersions(resourceType, id, create)) {
-      throw new OperationOutcomeError(tooManyRequests);
-    }
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing);
       if (!this.canWriteToResource(existing)) {
@@ -778,27 +774,6 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       // and the current user has permission to create a new version.
       return undefined;
     }
-  }
-
-  /**
-   * Returns true if the resource has too many versions within the specified time period.
-   * @param resourceType - The resource type.
-   * @param id - The resource ID.
-   * @param create - If true, then the resource is being created.
-   * @returns True if the resource has too many versions within the specified time period.
-   */
-  private async isTooManyVersions(resourceType: string, id: string, create: boolean): Promise<boolean> {
-    if (create) {
-      return false;
-    }
-    const seconds = 60;
-    const maxVersions = 10;
-    const rows = await new SelectQuery(resourceType + '_History')
-      .raw(`COUNT (DISTINCT "versionId")::int AS "count"`)
-      .where('id', '=', id)
-      .where('lastUpdated', '>', new Date(Date.now() - 1000 * seconds))
-      .execute(this.getDatabaseClient());
-    return rows[0].count >= maxVersions;
   }
 
   /**
