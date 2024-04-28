@@ -173,10 +173,14 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
       setTitle(<>{props.resource.title}</>);
     } else if (props.resource.resourceType === 'QuestionnaireResponse') {
       fetchQuestionnaireTitle().catch(console.error);
+    } else if (props.task.code) {
+      setTitle(<CodeableConceptDisplay value={props.task.code} />);
     } else {
+      // TODO what should this else actually be?
       setTitle(<>{props.task.code}</>);
     }
   }, [props.resource, props.task, medplum]);
 
+  console.log('TaskTitle', title);
   return title ?? <></>;
 }

@@ -34,6 +34,7 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
+import { TaskTab } from './pages/patient/TaskTab';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -115,6 +116,7 @@ export function App(): JSX.Element | null {
                 <Route path="encounter" element={<EncounterTab />} />
                 <Route path="communication" element={<CommunicationTab />} />
                 <Route path="communication/:id" element={<CommunicationTab />} />
+                <Route path="task/:id/*" element={<TaskTab />} />
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
