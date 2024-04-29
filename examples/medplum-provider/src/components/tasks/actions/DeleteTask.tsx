@@ -1,10 +1,10 @@
-import { Alert, Button, Group, Modal } from '@mantine/core';
+import { Alert, Button, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { normalizeErrorString } from '@medplum/core';
 import { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 
 interface DeleteTaskProps {
@@ -15,21 +15,21 @@ interface DeleteTaskProps {
 export function DeleteTask(props: DeleteTaskProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const [opened, { toggle, close }] = useDisclosure(false);
+  const [opened, { open, close }] = useDisclosure(false);
 
-  const handleDelete = async (task: Task, medplum: MedplumClient, navigate: NavigateFunction): Promise<void> => {
+  const handleDelete = async (task: Task, navigate: NavigateFunction): Promise<void> => {
     // Get the task id
     const taskId = task.id as string;
 
     try {
-      // Delete the task and navigate back to the main page
+      // Delete the task and navigate back to task list
       await medplum.deleteResource('Task', taskId);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Task deleted',
       });
-      navigate('/Task');
+      navigate('..', { relative: 'path' });
     } catch (error) {
       notifications.show({
         color: 'red',
@@ -42,18 +42,20 @@ export function DeleteTask(props: DeleteTaskProps): JSX.Element {
 
   return (
     <div>
-      <Button fullWidth onClick={toggle} color="red">
+      <Button fullWidth onClick={open} color="red">
         Delete Task
       </Button>
-      <Modal opened={opened} onClose={close} withCloseButton={false}>
-        <Alert color="red" title="Warning" icon={<IconAlertCircle />}>
-          Are you sure you want to delete this task?
-          <Group>
-            <Button onClick={() => handleDelete(props.task, medplum, navigate)} color="red">
-              Yes, Delete
-            </Button>
+      <Modal opened={opened} onClose={close}>
+        <Alert color="red">
+          <Text size="lg" fw={500} c="red">
+            Are you sure you want to delete this task?
+          </Text>
+          <Group justify="flex-end" mt="xl" gap="xs">
             <Button onClick={close} color="red" variant="outline">
               Cancel
+            </Button>
+            <Button onClick={() => handleDelete(props.task, navigate)} color="red">
+              Yes, delete
             </Button>
           </Group>
         </Alert>
