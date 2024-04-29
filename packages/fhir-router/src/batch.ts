@@ -149,6 +149,7 @@ class BatchProcessor {
         if (seenIdentities.has(resolved.reference)) {
           throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
         }
+        seenIdentities.add(resolved.reference);
       }
     }
 
