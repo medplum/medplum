@@ -5,6 +5,7 @@ import { Document, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import classes from './ResourcePage.module.css';
+import { useResourceType } from './useResourceType';
 
 const tabs = [
   { id: 'details', url: '', label: 'Details' },
@@ -23,6 +24,8 @@ export function ResourcePage(): JSX.Element | null {
     return (tab ?? tabs[0]).id;
   });
 
+  useResourceType(resourceType, { onInvalidResourceType: () => navigate('..') });
+
   useEffect(() => {
     if (resourceType && id) {
       medplum
@@ -30,7 +33,7 @@ export function ResourcePage(): JSX.Element | null {
         .then(setResource)
         .catch(console.error);
     }
-  }, [medplum, resourceType, id]);
+  }, [medplum, resourceType, id, navigate]);
 
   const onTabChange = useCallback(
     (newTabName: string | null): void => {

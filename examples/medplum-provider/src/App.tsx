@@ -19,23 +19,21 @@ import {
 } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { CreateResourcePage } from './pages/CreateResourcePage';
+import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
 import { HomePage } from './pages/HomePage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { EditTab } from './pages/patient/EditTab';
 import { EncounterTab } from './pages/patient/EncounterTab';
-import { LabsTab } from './pages/patient/LabsTab';
-import { MedsTab } from './pages/patient/MedsTab';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
-import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
 import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
+import { CommunicationTab } from './pages/patient/CommunicationTab';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -115,27 +113,27 @@ export function App(): JSX.Element | null {
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="edit" element={<EditTab />} />
                 <Route path="encounter" element={<EncounterTab />} />
-                <Route path="labs" element={<LabsTab />} />
-                <Route path="meds" element={<MedsTab />} />
-                <Route path="tasks" element={<TasksTab />} />
+                <Route path="communication" element={<CommunicationTab />} />
+                <Route path="communication/:id" element={<CommunicationTab />} />
                 <Route path="timeline" element={<TimelineTab />} />
-                <Route path=":resourceType/new" element={<CreateResourcePage />} />
+                <Route path=":resourceType" element={<PatientSearchPage />} />
+                <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>
                   <Route path="" element={<ResourceDetailPage />} />
                   <Route path="edit" element={<ResourceEditPage />} />
                   <Route path="history" element={<ResourceHistoryPage />} />
                 </Route>
-                <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path="" element={<TimelineTab />} />
               </Route>
               <Route path="/onboarding" element={<OnboardingPage />} />
-              <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+              <Route path="/signin" element={<SignInPage />} />
+              <Route path="/:resourceType" element={<SearchPage />} />
+              <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
                 <Route path="" element={<ResourceDetailPage />} />
                 <Route path="edit" element={<ResourceEditPage />} />
                 <Route path="history" element={<ResourceHistoryPage />} />
               </Route>
-              <Route path="/:resourceType" element={<SearchPage />} />
             </>
           ) : (
             <>

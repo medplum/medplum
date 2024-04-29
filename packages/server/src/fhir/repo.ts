@@ -32,7 +32,6 @@ import {
   serverError,
   stringify,
   toPeriod,
-  tooManyRequests,
   validateResource,
   validateResourceType,
 } from '@medplum/core';
@@ -495,9 +494,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const existing = await this.checkExistingResource<T>(resourceType, id, create);
-    if (await this.isTooManyVersions(resourceType, id, create)) {
-      throw new OperationOutcomeError(tooManyRequests);
-    }
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing);
       if (!this.canWriteToResource(existing)) {
@@ -536,7 +532,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     if (this.isNotModified(existing, result)) {
-      return existing as T;
+      this.removeHiddenFields(existing);
+      return existing;
     }
 
     if (!this.isResourceWriteable(existing, result)) {
@@ -761,33 +758,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
-   * Returns true if the resource has too many versions within the specified time period.
-   * @param resourceType - The resource type.
-   * @param id - The resource ID.
-   * @param create - If true, then the resource is being created.
-   * @returns True if the resource has too many versions within the specified time period.
-   */
-  private async isTooManyVersions(resourceType: string, id: string, create: boolean): Promise<boolean> {
-    if (create) {
-      return false;
-    }
-    const seconds = 60;
-    const maxVersions = 10;
-    const rows = await new SelectQuery(resourceType + '_History')
-      .raw(`COUNT (DISTINCT "versionId")::int AS "count"`)
-      .where('id', '=', id)
-      .where('lastUpdated', '>', new Date(Date.now() - 1000 * seconds))
-      .execute(this.getDatabaseClient());
-    return rows[0].count >= maxVersions;
-  }
-
-  /**
    * Returns true if the resource is not modified from the existing resource.
    * @param existing - The existing resource.
    * @param updated - The updated resource.
    * @returns True if the resource is not modified.
    */
-  private isNotModified(existing: Resource | undefined, updated: Resource): boolean {
+  private isNotModified<T extends Resource>(existing: T | undefined, updated: T): existing is T {
     if (!existing) {
       return false;
     }
@@ -1815,14 +1791,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       original ? AccessPolicyInteraction.UPDATE : AccessPolicyInteraction.CREATE,
       this.context.accessPolicy
     );
-    if (policy?.readonlyFields) {
-      for (const field of policy.readonlyFields) {
-        this.removeField(input, field);
-        if (original) {
-          const value = original[field as keyof T];
-          if (value) {
-            input[field as keyof T] = value;
-          }
+    if (!policy?.readonlyFields && !policy?.hiddenFields) {
+      return input;
+    }
+    const fieldsToRestore = [];
+    if (policy.readonlyFields) {
+      fieldsToRestore.push(...policy.readonlyFields);
+    }
+    if (policy.hiddenFields) {
+      fieldsToRestore.push(...policy.hiddenFields);
+    }
+    for (const field of fieldsToRestore) {
+      this.removeField(input, field);
+      if (original) {
+        const value = original[field as keyof T];
+        if (value) {
+          input[field as keyof T] = value;
         }
       }
     }

@@ -51,7 +51,7 @@ export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
 
   const medplumBundle = readJson('fhir/r4/profiles-medplum.json') as Bundle<StructureDefinition>;
-  const medplumTypes = medplumBundle.entry?.map((e) => e.id) ?? [];
+  const medplumTypes = medplumBundle.entry?.map((e) => e.resource?.id) ?? [];
   indexStructureDefinitionBundle(medplumBundle);
 
   // Start with the existing schema
@@ -182,7 +182,7 @@ const excludedValueSets = [
 function getEnumValues(elementDefinition: InternalSchemaElement): string[] | undefined {
   const valueSet = elementDefinition.binding?.valueSet;
   if (valueSet) {
-    if (excludedValueSets.includes(valueSet)) {
+    if (!excludedValueSets.includes(valueSet)) {
       const values = getValueSetValues(valueSet);
       if (values && values.length > 0) {
         return values;

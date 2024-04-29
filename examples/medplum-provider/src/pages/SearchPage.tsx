@@ -12,6 +12,7 @@ import { Patient, Reference, Resource, UserConfiguration } from '@medplum/fhirty
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useResourceType } from './resource/useResourceType';
 import classes from './SearchPage.module.css';
 
 export function SearchPage(): JSX.Element {
@@ -35,6 +36,8 @@ export function SearchPage(): JSX.Element {
       navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
     }
   }, [medplum, navigate, location]);
+
+  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..') });
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
