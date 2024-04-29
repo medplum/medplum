@@ -1375,6 +1375,21 @@
             }]
           },
           {
+            "id" : "Bot.extension",
+            "path" : "Bot.extension",
+            "definition" : "Extension values for Bots.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Resource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "Bot.identifier",
             "path" : "Bot.identifier",
             "short" : "An identifier for this bot",

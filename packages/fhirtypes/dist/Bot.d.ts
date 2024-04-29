@@ -5,6 +5,7 @@
 
 import { Attachment } from './Attachment';
 import { CodeableConcept } from './CodeableConcept';
+import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Timing } from './Timing';
@@ -44,6 +45,11 @@ export interface Bot {
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * Extension values for Bots.
+   */
+  extension?: Extension[];
 
   /**
    * An identifier for this bot.
