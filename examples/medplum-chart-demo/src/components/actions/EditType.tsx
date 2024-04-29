@@ -1,7 +1,7 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { getQuestionnaireAnswers, PatchOperation } from '@medplum/core';
-import { Coding, Encounter, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, Encounter, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 
 interface EditTypeProps {
@@ -15,18 +15,27 @@ export function EditType(props: EditTypeProps): JSX.Element {
 
   function handleQuestionnaireSubmit(formData: QuestionnaireResponse): void {
     const type = getQuestionnaireAnswers(formData)['type'].valueCoding;
-    console.log(type);
     updateEncounterType(type);
+
+    handlers.close();
   }
 
   function updateEncounterType(type?: Coding): void {
+    if (!type) {
+      throw new Error('Invalid type');
+    }
     const encounterId = props.encounter.id as string;
+    const typeConcept: CodeableConcept = {
+      coding: [type],
+    };
 
     const op = props.encounter.type ? 'replace' : 'add';
     const ops: PatchOperation[] = [
       { op: 'test', path: '/meta/versionId', value: props.encounter.meta?.versionId },
-      { op, path: '/type', value: type },
+      { op, path: '/type', value: [typeConcept] },
     ];
+
+    medplum.patchResource('Encounter', encounterId, ops).then(props.onChange).catch(console.error);
   }
 
   return (

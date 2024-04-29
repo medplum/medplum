@@ -8,6 +8,7 @@ import {
   Patient,
   Practitioner,
   Quantity,
+  Questionnaire,
   QuestionnaireResponse,
   Reference,
   Specimen,
@@ -23,30 +24,10 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import encounterNoteQuestionnaire from '../../data/encounter-note-q';
+import { EncounterNoteDisplay } from './EncounterNoteDisplay';
 
 interface EncounterDetailsProps {
   encounter: Encounter;
-}
-
-interface ObservationResponse {
-  'observation-status': CodeableConcept;
-  'observation-category'?: CodeableConcept;
-  'observation-interpretation'?: CodeableConcept;
-  'observation-specimen'?: Reference<Specimen>;
-  'observation-reference-range-low'?: Quantity;
-  'observation-reference-range-high'?: Quantity;
-  'observation-note'?: string;
-}
-
-interface ConditionResponse {
-  'condition-clinical-status': CodeableConcept;
-  'condition-verification-status'?: CodeableConcept;
-  'condition-problem-list'?: boolean;
-  'condition-code'?: CodeableConcept;
-  'condition-severity'?: CodeableConcept;
-  'condition-onset'?: Date;
-  'condition-abatement'?: Date;
-  'condition-evidence'?: CodeableConcept;
 }
 
 export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
@@ -68,56 +49,20 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
       })
       .then(setResponse)
       .catch(console.error);
-
-    console.log(response);
   }, [response, medplum]);
 
   function handleTabChange(newTab: string | null) {
     navigate(`/Encounter/${id}/${newTab ?? ''}`);
   }
 
-  function handleSaveNote(formData: QuestionnaireResponse): void {
-    console.log(formData);
-    if (response) {
-      const draftResponse: QuestionnaireResponse = {
-        ...formData,
-        id: response.id,
-        meta: response.meta,
-        status: 'in-progress',
-        encounter: { reference: getReferenceString(props.encounter) },
-      };
+  function handleQuestionnaireSubmit(formData: QuestionnaireResponse) {
+    const encounterNote: QuestionnaireResponse = {
+      ...formData,
+      encounter: { reference: getReferenceString(props.encounter) },
+      subject: { reference: getReferenceString(props.encounter.subject as Reference<Patient>) },
+    };
 
-      medplum.updateResource(draftResponse).then(setResponse).catch(console.error);
-    } else {
-      const draftResponse: QuestionnaireResponse = {
-        ...formData,
-        status: 'in-progress',
-        encounter: { reference: getReferenceString(props.encounter) },
-      };
-
-      medplum.createResource(draftResponse).then(setResponse).catch(console.error);
-    }
-  }
-
-  function handleFinalizeNote(formData: QuestionnaireResponse) {
-    const answers = getQuestionnaireAnswers(formData);
-    const observations: Record<string, Object> = {};
-    const conditions: Record<string, Object> = {};
-    const clinicalImpressionNote = answers['clinical-impressions'].valueString as string;
-    for (const key in answers) {
-      if (key === 'clinical-impressions') {
-        continue;
-      }
-      if (key.slice(0, 9) === 'condition') {
-        conditions[key] = answers[key];
-      } else {
-        observations[key] = answers[key];
-      }
-    }
-    console.log(observations, conditions, clinicalImpressionNote);
-    createObservations(medplum, observations, props.encounter, currentUser);
-    createConditions(medplum, conditions, props.encounter, currentUser);
-    createClinicalImpressions(medplum, currentUser, props.encounter, clinicalImpressionNote);
+    medplum.createResource(encounterNote).then(setResponse).catch(console.error);
   }
 
   return (
@@ -131,11 +76,11 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
           ))}
         </Tabs.List>
         <Tabs.Panel value="note">
-          <QuestionnaireForm
-            submitButtonText="Save Changes"
-            questionnaire={encounterNoteQuestionnaire}
-            onSubmit={handleSaveNote}
-          />
+          {response ? (
+            <EncounterNoteDisplay response={response} encounter={props.encounter} />
+          ) : (
+            <QuestionnaireForm questionnaire={encounterNoteQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
+          )}
         </Tabs.Panel>
         <Tabs.Panel value="details">
           <ResourceTable value={props.encounter} ignoreMissingValues={true} />

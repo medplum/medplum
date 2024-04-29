@@ -7,128 +7,227 @@ const encounterNoteQuestionnaire: Questionnaire = {
   id: 'encounter-note',
   item: [
     {
-      linkId: 'observation',
+      linkId: 'encounter-date',
+      type: 'date',
+      text: 'Date of Visit',
+      required: true,
+    },
+    {
+      linkId: 'reason-for-visit',
+      type: 'choice',
+      text: 'Reason for visit',
+      required: true,
+      answerValueSet: 'http://hl7.org/fhir/ValueSet/icd-10',
+    },
+    {
+      linkId: 'vitals',
       type: 'group',
-      text: 'Observations',
-      repeats: true,
+      text: 'Vital Signs',
       item: [
         {
-          linkId: 'observation-status',
-          text: 'Status',
-          type: 'choice',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/observation-status',
+          linkId: 'systolic-blood-pressure',
+          type: 'integer',
+          text: 'Systolic Blood Pressure',
         },
         {
-          linkId: 'observation-category',
-          text: 'Category',
-          type: 'choice',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/observation-category',
+          linkId: 'diastolic-blood-pressure',
+          type: 'integer',
+          text: 'Diastolic Blood Pressure',
         },
         {
-          linkId: 'observation-interpretation',
-          text: 'Interpretation',
-          type: 'choice',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/observation-interpretation',
+          linkId: 'vitals-height',
+          type: 'integer',
+          text: 'Height (cm)',
         },
         {
-          linkId: 'observation-specimen',
-          text: 'Specimen',
-          type: 'reference',
-          extension: [
-            {
-              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
-              valueCodeableConcept: {
-                coding: [
-                  {
-                    code: 'Specimen',
-                  },
-                ],
-              },
-            },
-          ],
-        },
-        {
-          linkId: 'observation-reference-range',
-          text: 'Reference Range',
-          type: 'group',
-          item: [
-            {
-              linkId: 'observation-reference-range-low',
-              text: 'Low Bound',
-              type: 'quantity',
-            },
-            {
-              linkId: 'observation-reference-range-high',
-              text: 'High Bound',
-              type: 'quantity',
-            },
-          ],
-        },
-        {
-          linkId: 'observation-note',
-          text: 'Comments about the observation',
-          type: 'string',
+          linkId: 'vitals-weight',
+          type: 'integer',
+          text: 'Weight (lbs)',
         },
       ],
     },
     {
-      linkId: 'conditions',
-      text: 'Conditions',
+      linkId: 'subjective-evaluation',
       type: 'group',
-      repeats: true,
+      text: 'Subjective Evaluation',
       item: [
         {
-          linkId: 'condition-clinical-status',
-          type: 'choice',
-          text: 'Clinical status',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/condition-clinical',
-        },
-        {
-          linkId: 'condition-verification-status',
-          type: 'choice',
-          text: 'Verification status',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/condition-ver-status',
-        },
-        {
-          linkId: 'condition-problem-list',
+          linkId: 'hot-flashes',
           type: 'boolean',
-          text: 'Add to problem list?',
+          text: 'Hot flashes',
         },
         {
-          linkId: 'condition-code',
-          type: 'choice',
-          text: 'Condition code',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/condition-code',
+          linkId: 'hot-flashes-details',
+          type: 'string',
+          text: 'Hot flashes - details',
+          enableWhen: [
+            {
+              question: 'hot-flashes',
+              operator: '=',
+              answerBoolean: true,
+            },
+          ],
         },
         {
-          linkId: 'condition-severity',
-          type: 'choice',
-          text: 'Severity',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/condition-severity',
+          linkId: 'mood-swings',
+          type: 'boolean',
+          text: 'Mood swings',
         },
         {
-          linkId: 'condition-onset',
-          type: 'date',
-          text: 'Onset date',
+          linkId: 'mood-swings-details',
+          type: 'string',
+          text: 'Mood swings - details',
+          enableWhen: [
+            {
+              question: 'mood-swings',
+              operator: '=',
+              answerBoolean: true,
+            },
+          ],
         },
         {
-          linkId: 'condition-abatement',
-          type: 'date',
-          text: 'Abatement date',
+          linkId: 'vaginal-dryness',
+          type: 'boolean',
+          text: 'Vaginal dryness',
         },
         {
-          linkId: 'condition-evidence',
-          type: 'choice',
-          text: 'Evidence',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/clinical-findings',
+          linkId: 'vaginal-dryness-details',
+          type: 'string',
+          text: 'Vaginal dryness - details',
+          enableWhen: [
+            {
+              question: 'vaginal-dryness',
+              operator: '=',
+              answerBoolean: true,
+            },
+          ],
+        },
+        {
+          linkId: 'sleep-disturbance',
+          type: 'boolean',
+          text: 'Sleep Disturbance',
+        },
+        {
+          linkId: 'sleep-disturbance-details',
+          type: 'string',
+          text: 'Sleep disturbance - details',
+          enableWhen: [
+            {
+              question: 'sleep-disturbance',
+              operator: '=',
+              answerBoolean: true,
+            },
+          ],
+        },
+        {
+          linkId: 'self-reported-history',
+          type: 'open-choice',
+          text: 'Self-reported history',
+          answerOption: [
+            {
+              id: 'id-76',
+              valueString: 'Blood clots',
+            },
+            {
+              id: 'id-77',
+              valueString: 'Stroke',
+            },
+            {
+              id: 'id-78',
+              valueString: 'Breast cancer',
+            },
+            {
+              id: 'id-79',
+              valueString: 'Endometrial cancer',
+            },
+            {
+              id: 'id-80',
+              valueString: 'Irregular bleeding',
+            },
+            {
+              id: 'id-81',
+              valueString: 'BMI > 30',
+            },
+          ],
+        },
+        {
+          linkId: 'blood-clot-details',
+          type: 'string',
+          text: 'Blood clot - details',
+          enableWhen: [
+            {
+              question: 'self-reported-history',
+              operator: '=',
+              answerString: 'Blood clots',
+            },
+          ],
+        },
+        {
+          linkId: 'stroke-details',
+          type: 'string',
+          text: 'Stroke - details',
+          enableWhen: [
+            {
+              question: 'self-reported-history',
+              operator: '=',
+              answerString: 'Stroke',
+            },
+          ],
+        },
+        {
+          linkId: 'breast-cancer-details',
+          type: 'string',
+          text: 'Breast cancer - details',
+          enableWhen: [
+            {
+              question: 'self-reported-history',
+              operator: '=',
+              answerString: 'Breast cancer',
+            },
+          ],
+        },
+        {
+          linkId: 'endometrial-cancer-details',
+          type: 'string',
+          text: 'Endometrial cancer - details',
+          enableWhen: [
+            {
+              question: 'self-reported-history',
+              operator: '=',
+              answerString: 'Endometrial cancer',
+            },
+          ],
+        },
+        {
+          linkId: 'irregular-bleeding-details',
+          type: 'string',
+          text: 'Irregular bleeding - details',
+          enableWhen: [
+            {
+              question: 'self-reported-history',
+              operator: '=',
+              answerString: 'Irregular bleeding',
+            },
+          ],
+        },
+        {
+          linkId: 'bmi>30-details',
+          type: 'string',
+          text: 'BMI > 30 - details',
+          enableWhen: [
+            {
+              question: 'self-reported-history',
+              operator: '=',
+              answerString: 'BMI > 30',
+            },
+          ],
         },
       ],
     },
     {
-      linkId: 'clinical-impressions',
-      type: 'string',
-      text: 'Notes and Comments',
-      repeats: true,
+      linkId: 'notes-and-comments',
+      type: 'text',
+      text: 'Notes and comments',
     },
   ],
 };
