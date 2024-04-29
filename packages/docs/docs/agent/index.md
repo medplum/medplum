@@ -176,8 +176,8 @@ Keep the terminal open so that you can see the logs. At this point you can start
 ## Supported Protocols
 
 - [HL7 v2](https://www.hl7.org): A widely used low-level message protocol for healthcare data exchange.
-- [DICOM C-Store](https://dicom.nema.org/dicom/2013/output/chtml/part07/sect_9.3.html): A protocol used for storing metadata about medical images.
-- [ASTM](https://www.astm.org/): Used to transfer data between clinical instruments and computer systems.
+- [DICOM](https://www.dicomstandard.org/): A protocol used for storing metadata about medical images. Currently, Medplum supports the C-STORE and C-ECHO operations. Support for other DICOM operations such C-FIND, C-GET, and C-MOVE is coming soon.
+- [ASTM](https://www.astm.org/): Used to transfer data between clinical instruments and computer systems. ASTM support is still in alpha.
 
 ## See also
 
