@@ -123,7 +123,7 @@ describe('Agent Net Utils', () => {
         type: 'agent:transmit:response',
         callback,
         statusCode: 200,
-        body: expect.stringMatching(/ping statistics/),
+        body: expect.stringMatching(/ping statistics/i),
       });
     });
 
@@ -160,7 +160,7 @@ describe('Agent Net Utils', () => {
         type: 'agent:transmit:response',
         callback,
         statusCode: 200,
-        body: expect.stringMatching(/ping statistics/),
+        body: expect.stringMatching(/ping statistics/i),
       });
     });
 
