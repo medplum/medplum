@@ -1,47 +1,45 @@
-import { Blockquote, Group, Paper, Stack, Tabs, Title } from '@mantine/core';
+import { Blockquote, Group, Paper, Stack, Tabs, Title, Text } from '@mantine/core';
 import { formatCodeableConcept, getDisplayString } from '@medplum/core';
 import { Annotation, Task } from '@medplum/fhirtypes';
-import { Container, DefaultResourceTimeline, Document, ResourceTable, useResource } from '@medplum/react';
+import { Container, DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TaskActions } from '../../components/tasks/actions/TaskActions';
+import { useEffect, useState } from 'react';
 
 const tabs = ['Details', 'Timeline', 'Notes'];
 
 export function TaskTab(): JSX.Element {
-  // const medplum = useMedplum();
+  const medplum = useMedplum();
   const navigate = useNavigate();
-  // const navigate = useMedplumNavigate();
   const { id } = useParams() as { id: string };
-  const task = useResource<Task>({ reference: `Task/${id}` });
-  // const [task, setTask] = useState<Task | undefined>(undefined);
+  const [task, setTask] = useState<Task | undefined>(undefined);
 
   // Set the current tab to what is in the URL, otherwise default to 'Details'
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
-  // useEffect(() => {
-  // //Fetch the task that is specified in the URL
-  // const fetchTask = async (): Promise<void> => {
-  // try {
-  // const taskData = await medplum.readResource('Task', id);
-  // setTask(taskData);
-  // } catch (error) {
-  // console.error(error);
-  // }
-  // };
-  //
-  // fetchTask().catch((error) => console.error(error));
-  // }, [medplum, id]);
+  useEffect(() => {
+    const fetchTask = async (): Promise<void> => {
+      try {
+        const taskData = await medplum.readResource('Task', id);
+        setTask(taskData);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchTask().catch((error) => console.error(error));
+  }, [medplum, id]);
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string | null): void => {
     console.log('newTab:', newTab);
-    navigate(`./${newTab}`);
+    navigate(`./${newTab}`, { relative: 'path' });
   };
 
   const onTaskChange = (updatedTask: Task): void => {
-    console.log('updatedTask:', JSON.stringify(updatedTask));
-    // setTask(updatedTask);
+    // console.log('updatedTask:', JSON.stringify(updatedTask));
+    setTask(updatedTask);
   };
 
   if (!task) {
@@ -74,7 +72,7 @@ function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsPro
     <>
       <Title>{task.code ? formatCodeableConcept(task.code) : getDisplayString(task)}</Title>
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
-        <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+        <Tabs.List my="md" style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab} value={tab.toLowerCase()}>
               {tab}
@@ -103,11 +101,7 @@ export function NotesPage(props: NotesPageProps): JSX.Element {
   const notes = props.task.note;
 
   if (!notes) {
-    return (
-      <div>
-        <p>No Notes</p>
-      </div>
-    );
+    return <Text>No Notes</Text>;
   }
 
   // Sort notes so the most recent are at the top of the page
