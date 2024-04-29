@@ -67,47 +67,47 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
 async function pushToAgent(
   req: Request,
   res: Response,
-  sendResponse: (outcome: OperationOutcome, agentResponse?: AgentTransmitResponse) => void
+  sendOperationResponse: (outcome: OperationOutcome, agentResponse?: AgentTransmitResponse) => void
 ): Promise<void> {
   const { repo } = getAuthenticatedContext();
 
   // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req, repo);
   if (!agent) {
-    sendResponse(badRequest('Must specify agent ID or identifier'));
+    sendOperationResponse(badRequest('Must specify agent ID or identifier'));
     return;
   }
 
   const params = parseParameters<AgentPushParameters>(req.body);
   if (!params.body) {
-    sendResponse(badRequest('Missing body parameter'));
+    sendOperationResponse(badRequest('Missing body parameter'));
     return;
   }
 
   if (!params.contentType) {
-    sendResponse(badRequest('Missing contentType parameter'));
+    sendOperationResponse(badRequest('Missing contentType parameter'));
     return;
   }
 
   if (!params.destination) {
-    sendResponse(badRequest('Missing destination parameter'));
+    sendOperationResponse(badRequest('Missing destination parameter'));
     return;
   }
 
   const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
   if (waitTimeout < 0 || waitTimeout > MAX_WAIT_TIMEOUT) {
-    sendResponse(badRequest('Invalid wait timeout'));
+    sendOperationResponse(badRequest('Invalid wait timeout'));
     return;
   }
 
   const device = await getDevice(repo, params);
   if (!device) {
-    sendResponse(badRequest('Destination device not found'));
+    sendOperationResponse(badRequest('Destination device not found'));
     return;
   }
 
   if (!device.url) {
-    sendResponse(badRequest('Destination device missing url'));
+    sendOperationResponse(badRequest('Destination device missing url'));
     return;
   }
 
@@ -121,7 +121,7 @@ async function pushToAgent(
   // If not waiting for a response, publish and return
   if (!params.waitForResponse) {
     await publishMessage(agent, message);
-    sendResponse(allOk);
+    sendOperationResponse(allOk);
     return;
   }
 
@@ -133,9 +133,9 @@ async function pushToAgent(
   redisSubscriber.on('message', (_channel: string, message: string) => {
     const response = JSON.parse(message) as AgentTransmitResponse;
     if (response.statusCode && response.statusCode >= 400) {
-      sendResponse(serverError(new Error(response.body)));
+      sendOperationResponse(serverError(new Error(response.body)));
     } else {
-      sendResponse(allOk, response);
+      sendOperationResponse(allOk, response);
     }
     cleanup();
   });
