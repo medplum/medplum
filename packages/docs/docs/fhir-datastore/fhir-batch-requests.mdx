@@ -109,11 +109,9 @@ to provide strong transactional guarantees around the operation in a single, sim
 
 ## Medplum Autobatching
 
-The Medplum Client provides the option to automatically batch HTTP requests using the `autoBatchTime` parameter. This field allows you to set a timer that delays executing any HTTP requests. During this delay, if any additional HTTP requests come through, Medplum will add them to a `Bundle` behind the scenes and then execute them as a batch request.
+The Medplum Client provides the option to automatically batch FHIR `read` and `search` requests using the `autoBatchTime` parameter. This field allows you to set a time window during which to batch up any `GET` requests. After this window expires, the `MedplumClient` will add them to a `Bundle` behind the scenes and then execute them as a batch request.
 
-Autobatching works by creating a queue of `Promises` issued within the `autoBatchTime` window and then creating a bundle out of these requests.
-
-To allow the queue to be created, you must make sure that the main thread continues to run, so you should not use `await` after each request. Using `await` will pause the main thread each time a request is made, so a queue cannot be created.
+Autobatching works by creating a queue of `Promises` issued within the `autoBatchTime` window and then creating a bundle out of these requests. To allow the queue to be created, you must make sure that the main thread continues to run, so you should not use `await` after each request. Using `await` will pause the main thread each time a request is made, so a queue cannot be created.
 
 Instead you should create the queue of `Promise` requests and then use `Promise.all()` to resolve all of them at once.
 
