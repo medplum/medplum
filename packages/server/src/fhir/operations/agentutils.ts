@@ -1,10 +1,25 @@
-import { ContentType, Operator, isValidHostname, parseSearchRequest } from '@medplum/core';
-import { FhirRequest } from '@medplum/fhir-router';
-import { Agent, Device } from '@medplum/fhirtypes';
+import {
+  BaseAgentRequestMessage,
+  ContentType,
+  Operator,
+  allOk,
+  badRequest,
+  getReferenceString,
+  isOk,
+  isValidHostname,
+  parseSearchRequest,
+  serverError,
+} from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { Request } from 'express';
 import { isIPv4 } from 'node:net';
+import { getAuthenticatedContext } from '../../context';
+import { getRedis } from '../../redis';
 import { Repository } from '../repo';
 import { AgentPushParameters } from './agentpush';
+
+export const MAX_AGENTS_PER_PAGE = 100;
 
 /**
  * Returns the Agent for a request.
@@ -68,4 +83,63 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
     return { resourceType: 'Device', url: destination };
   }
   return undefined;
+}
+
+export async function handleBulkAgentOperation(
+  req: FhirRequest,
+  handler: (agent: Agent) => Promise<FhirResponse>
+): Promise<FhirResponse> {
+  const { repo } = getAuthenticatedContext();
+
+  if (req.query._count && Number.parseInt(req.query._count, 10) > MAX_AGENTS_PER_PAGE) {
+    return [badRequest(`'_count' of ${req.query._count} is greater than max of ${MAX_AGENTS_PER_PAGE}`)];
+  }
+
+  const agents = await getAgentsForRequest(req, repo);
+  if (!agents?.length) {
+    return [badRequest('No agent(s) for given query')];
+  }
+
+  const promises = agents.map((agent: Agent) => handler(agent));
+  const results = await Promise.allSettled(promises);
+  const entries = [] as BundleEntry<Parameters>[];
+
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    if (result.status === 'rejected') {
+      entries.push(makeResultWrapperEntry(serverError(result.reason as Error), agents[i]));
+      continue;
+    }
+    const [outcome, params] = result.value;
+    if (!isOk(outcome)) {
+      entries.push(makeResultWrapperEntry(outcome, agents[i]));
+      continue;
+    }
+    entries.push(makeResultWrapperEntry(params as Parameters, agents[i]));
+  }
+
+  return [
+    allOk,
+    {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: entries,
+    } satisfies Bundle<Parameters>,
+  ];
+}
+
+export function makeResultWrapperEntry(result: Parameters | OperationOutcome, agent: Agent): BundleEntry<Parameters> {
+  return {
+    resource: {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'agent', resource: agent },
+        { name: 'result', resource: result },
+      ],
+    },
+  };
+}
+
+export async function publishAgentMessage(agent: Agent, message: BaseAgentRequestMessage): Promise<number> {
+  return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
 }

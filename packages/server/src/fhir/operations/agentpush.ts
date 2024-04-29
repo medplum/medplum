@@ -3,18 +3,17 @@ import {
   AgentTransmitResponse,
   allOk,
   badRequest,
-  BaseAgentRequestMessage,
   getReferenceString,
   serverError,
 } from '@medplum/core';
-import { Agent, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
-import { getRedis, getRedisSubscriber } from '../../redis';
+import { getRedisSubscriber } from '../../redis';
 import { sendOutcome } from '../outcomes';
-import { getAgentForRequest, getDevice } from './agentutils';
+import { getAgentForRequest, getDevice, publishAgentMessage } from './agentutils';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 import { parseParameters } from './utils/parameters';
 
@@ -120,7 +119,7 @@ async function pushToAgent(
 
   // If not waiting for a response, publish and return
   if (!params.waitForResponse) {
-    await publishMessage(agent, message);
+    await publishAgentMessage(agent, message);
     sendOperationResponse(allOk);
     return;
   }
@@ -152,13 +151,9 @@ async function pushToAgent(
   }
 
   // Publish the message to the agent channel
-  await publishMessage(agent, message);
+  await publishAgentMessage(agent, message);
 
   // At this point, one of two things will happen:
   // 1. The agent will respond with a message on the channel
   // 2. The timer will expire and the request will timeout
-}
-
-async function publishMessage(agent: Agent, message: BaseAgentRequestMessage): Promise<number> {
-  return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
 }
