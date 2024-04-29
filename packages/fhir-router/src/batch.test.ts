@@ -1183,4 +1183,123 @@ describe('Batch', () => {
     const result = await processBatch(router, repo, bundle);
     expect(result).toBeDefined();
   });
+
+  test('Concurrent conditional create in transactions', async () => {
+    const patientIdentifier = randomUUID();
+    const encounterIdentifier = randomUUID();
+    const conditionIdentifier = randomUUID();
+
+    const tx: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:' + patientIdentifier,
+          request: {
+            method: 'POST',
+            url: 'Patient',
+            ifNoneExist: 'identifier=http://example.com|' + patientIdentifier,
+          },
+          resource: {
+            resourceType: 'Patient',
+            name: [{ given: ['Bobby' + patientIdentifier], family: 'Tables' }],
+            gender: 'unknown',
+            identifier: [{ system: 'http://example.com', value: patientIdentifier }],
+          },
+        },
+        {
+          request: {
+            method: 'PUT',
+            url:
+              'CareTeam?subject=urn:uuid:' + patientIdentifier + '&status=active&category=http://loinc.org|LA28865-6',
+          },
+          resource: {
+            resourceType: 'CareTeam',
+            status: 'active',
+            category: [
+              {
+                coding: [{ system: 'http://loinc.org', code: 'LA28865-6' }],
+                text: 'Holistic Wellness Squad',
+              },
+            ],
+            subject: { reference: 'urn:uuid:' + patientIdentifier },
+            participant: [
+              { member: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' } },
+            ],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:' + encounterIdentifier,
+          request: {
+            method: 'POST',
+            url: 'Encounter',
+          },
+          resource: {
+            resourceType: 'Encounter',
+            status: 'finished',
+            class: {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+              code: 'AMB',
+            },
+            subject: { reference: 'urn:uuid:' + patientIdentifier },
+            diagnosis: [{ condition: { reference: 'urn:uuid:' + conditionIdentifier } }],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:' + conditionIdentifier,
+          request: {
+            method: 'POST',
+            url: 'Condition',
+          },
+          resource: {
+            resourceType: 'Condition',
+            verificationStatus: {
+              coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status', code: 'confirmed' }],
+            },
+            subject: { reference: 'urn:uuid:' + patientIdentifier },
+            encounter: { reference: 'urn:uuid:' + encounterIdentifier },
+            asserter: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            code: {
+              coding: [{ system: 'http://snomed.info/sct', code: '83157008' }],
+              text: 'FFI',
+            },
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Observation',
+          },
+          resource: {
+            resourceType: 'Observation',
+            status: 'final',
+            code: {
+              coding: [{ system: 'http://loinc.org', code: '31989-7' }],
+              text: 'Prion test',
+            },
+            subject: { reference: 'urn:uuid:' + patientIdentifier },
+            valueCodeableConcept: {
+              coding: [{ system: 'http://loinc.org', code: 'LA6576-8', display: 'Positive' }],
+            },
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Task',
+          },
+          resource: {
+            resourceType: 'Task',
+            status: 'requested',
+            intent: 'plan',
+            encounter: { reference: 'urn:uuid:' + encounterIdentifier },
+            owner: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            description: 'Follow up with B. Tables regarding prognosis',
+          },
+        },
+      ],
+    };
+
+    await expect(processBatch(router, repo, tx)).resolves.toBeDefined();
+  });
 });
