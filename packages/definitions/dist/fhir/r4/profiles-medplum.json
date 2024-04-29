@@ -95,6 +95,70 @@
             }]
           },
           {
+            "id" : "Project.text",
+            "path" : "Project.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Project.contained",
+            "path" : "Project.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Project.extension",
+            "path" : "Project.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Project.modifierExtension",
+            "path" : "Project.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "Project.identifier",
             "path" : "Project.identifier",
             "short" : "An identifier for this project",
@@ -557,6 +621,70 @@
             }]
           },
           {
+            "id" : "ClientApplication.text",
+            "path" : "ClientApplication.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "ClientApplication.contained",
+            "path" : "ClientApplication.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "ClientApplication.extension",
+            "path" : "ClientApplication.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "ClientApplication.modifierExtension",
+            "path" : "ClientApplication.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "ClientApplication.status",
             "path" : "ClientApplication.status",
             "short" : "active | error | off",
@@ -787,6 +915,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "User.text",
+            "path" : "User.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "User.contained",
+            "path" : "User.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "User.extension",
+            "path" : "User.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "User.modifierExtension",
+            "path" : "User.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -1048,6 +1240,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.text",
+            "path" : "ProjectMembership.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.contained",
+            "path" : "ProjectMembership.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.extension",
+            "path" : "ProjectMembership.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.modifierExtension",
+            "path" : "ProjectMembership.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -1375,6 +1631,70 @@
             }]
           },
           {
+            "id" : "Bot.text",
+            "path" : "Bot.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Bot.contained",
+            "path" : "Bot.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Bot.extension",
+            "path" : "Bot.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Bot.modifierExtension",
+            "path" : "Bot.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "Bot.identifier",
             "path" : "Bot.identifier",
             "short" : "An identifier for this bot",
@@ -1677,6 +1997,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "Login.text",
+            "path" : "Login.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Login.contained",
+            "path" : "Login.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Login.extension",
+            "path" : "Login.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Login.modifierExtension",
+            "path" : "Login.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -2122,6 +2506,70 @@
             }]
           },
           {
+            "id" : "PasswordChangeRequest.text",
+            "path" : "PasswordChangeRequest.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "PasswordChangeRequest.contained",
+            "path" : "PasswordChangeRequest.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "PasswordChangeRequest.extension",
+            "path" : "PasswordChangeRequest.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "PasswordChangeRequest.modifierExtension",
+            "path" : "PasswordChangeRequest.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "PasswordChangeRequest.type",
             "path" : "PasswordChangeRequest.type",
             "definition" : "The type of password change request (invite or reset).",
@@ -2295,6 +2743,70 @@
             }]
           },
           {
+            "id" : "UserSecurityRequest.text",
+            "path" : "UserSecurityRequest.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.contained",
+            "path" : "UserSecurityRequest.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.extension",
+            "path" : "UserSecurityRequest.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "UserSecurityRequest.modifierExtension",
+            "path" : "UserSecurityRequest.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "UserSecurityRequest.type",
             "path" : "UserSecurityRequest.type",
             "definition" : "The type of user security request.",
@@ -2465,6 +2977,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "JsonWebKey.text",
+            "path" : "JsonWebKey.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "JsonWebKey.contained",
+            "path" : "JsonWebKey.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "JsonWebKey.extension",
+            "path" : "JsonWebKey.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "JsonWebKey.modifierExtension",
+            "path" : "JsonWebKey.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -2833,6 +3409,70 @@
             }]
           },
           {
+            "id" : "AccessPolicy.text",
+            "path" : "AccessPolicy.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "AccessPolicy.contained",
+            "path" : "AccessPolicy.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "AccessPolicy.extension",
+            "path" : "AccessPolicy.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "AccessPolicy.modifierExtension",
+            "path" : "AccessPolicy.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "AccessPolicy.name",
             "path" : "AccessPolicy.name",
             "definition" : "A name associated with the AccessPolicy.",
@@ -3149,6 +3789,70 @@
             }]
           },
           {
+            "id" : "UserConfiguration.text",
+            "path" : "UserConfiguration.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.contained",
+            "path" : "UserConfiguration.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.extension",
+            "path" : "UserConfiguration.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.modifierExtension",
+            "path" : "UserConfiguration.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "UserConfiguration.name",
             "path" : "UserConfiguration.name",
             "definition" : "A name associated with the UserConfiguration.",
@@ -3434,6 +4138,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "BulkDataExport.text",
+            "path" : "BulkDataExport.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "BulkDataExport.contained",
+            "path" : "BulkDataExport.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "BulkDataExport.extension",
+            "path" : "BulkDataExport.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "BulkDataExport.modifierExtension",
+            "path" : "BulkDataExport.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
@@ -3754,10 +4522,74 @@
               "code" : "code"
             }],
             "base" : {
-              "path" : "SmartAppLaunch.language",
+              "path" : "Resource.language",
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "SmartAppLaunch.text",
+            "path" : "SmartAppLaunch.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.contained",
+            "path" : "SmartAppLaunch.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.extension",
+            "path" : "SmartAppLaunch.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.modifierExtension",
+            "path" : "SmartAppLaunch.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
           },
           {
             "id" : "SmartAppLaunch.patient",
@@ -3879,10 +4711,74 @@
               "code" : "code"
             }],
             "base" : {
-              "path" : "DomainConfiguration.language",
+              "path" : "Resource.language",
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "DomainConfiguration.text",
+            "path" : "DomainConfiguration.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "DomainConfiguration.contained",
+            "path" : "DomainConfiguration.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "DomainConfiguration.extension",
+            "path" : "DomainConfiguration.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "DomainConfiguration.modifierExtension",
+            "path" : "DomainConfiguration.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
           },
           {
             "id" : "DomainConfiguration.domain",
@@ -4166,6 +5062,70 @@
             }]
           },
           {
+            "id" : "AsyncJob.text",
+            "path" : "AsyncJob.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "AsyncJob.contained",
+            "path" : "AsyncJob.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "AsyncJob.extension",
+            "path" : "AsyncJob.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "AsyncJob.modifierExtension",
+            "path" : "AsyncJob.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
             "id" : "AsyncJob.status",
             "path" : "AsyncJob.status",
             "short" : "accepted | error | completed",
@@ -4336,6 +5296,70 @@
             },
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "Agent.text",
+            "path" : "Agent.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Agent.contained",
+            "path" : "Agent.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Agent.extension",
+            "path" : "Agent.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Agent.modifierExtension",
+            "path" : "Agent.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
             }]
           },
           {
