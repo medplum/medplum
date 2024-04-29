@@ -6,7 +6,6 @@ import {
   OperationOutcomeError,
   parseSearchRequest,
   Event,
-  generateRandomId,
   normalizeOperationOutcome,
   allOk,
   notFound,
@@ -176,7 +175,7 @@ class BatchProcessor {
           }
         }
         if (entry.resource && entry.fullUrl?.startsWith(uuidUriPrefix)) {
-          entry.resource.id = generateRandomId();
+          entry.resource.id = this.repo.generateId();
           return {
             placeholder: entry.fullUrl,
             reference: getReferenceString(entry.resource),

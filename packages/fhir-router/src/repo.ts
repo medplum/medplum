@@ -47,6 +47,14 @@ export abstract class FhirRepository<TClient = unknown> {
   abstract createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<T>;
 
   /**
+   * Generates a new unique ID for a resource.
+   *
+   * See: https://www.hl7.org/fhir/R4/resource.html#id
+   * @returns The ID string.
+   */
+  abstract generateId(): string;
+
+  /**
    * Reads a FHIR resource by ID.
    *
    * See: https://www.hl7.org/fhir/http.html#read
@@ -257,7 +265,7 @@ export class MemoryRepository extends FhirRepository {
     const result = deepClone(resource);
 
     if (!result.id) {
-      result.id = generateId();
+      result.id = this.generateId();
     }
     if (!result.meta) {
       result.meta = {};
@@ -291,6 +299,10 @@ export class MemoryRepository extends FhirRepository {
     resourceHistory.push(result);
 
     return deepClone(result);
+  }
+
+  generateId(): string {
+    return generateId();
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {

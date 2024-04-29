@@ -214,7 +214,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<T> {
     const resourceWithId = {
       ...resource,
-      id: options?.assignedId && resource.id ? resource.id : randomUUID(),
+      id: options?.assignedId && resource.id ? resource.id : this.generateId(),
     };
     try {
       const result = await this.updateResourceImpl(resourceWithId, true);
@@ -226,6 +226,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, resourceWithId);
       throw err;
     }
+  }
+
+  generateId(): string {
+    return randomUUID();
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
@@ -1887,7 +1891,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     );
 
     if (getConfig().saveAuditEvents && resource?.resourceType !== 'AuditEvent') {
-      auditEvent.id = randomUUID();
+      auditEvent.id = this.generateId();
       this.updateResourceImpl(auditEvent, true).catch(console.error);
     }
   }
