@@ -1,4 +1,5 @@
 import {
+  AgentError,
   BaseAgentMessage,
   BaseAgentRequestMessage,
   ContentType,
@@ -110,7 +111,12 @@ export async function handleBulkAgentOperation(
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
     if (result.status === 'rejected') {
-      entries.push(makeResultWrapperEntry(serverError(result.reason as Error), agents[i]));
+      entries.push(
+        makeResultWrapperEntry(
+          result.reason instanceof OperationOutcomeError ? result.reason.outcome : serverError(result.reason as Error),
+          agents[i]
+        )
+      );
       continue;
     }
     const [outcome, params] = result.value;
@@ -152,9 +158,9 @@ export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgent
   agent: Agent,
   message: BaseAgentRequestMessage,
   options?: AgentMessageOptions
-): Promise<[OperationOutcome, T | undefined]> {
+): Promise<[OperationOutcome] | [OperationOutcome, T | AgentError]> {
   if (options?.waitForResponse) {
-    let resolve: (response: [OperationOutcome, T | undefined]) => void;
+    let resolve: (response: [OperationOutcome, T | AgentError]) => void;
     let reject: (err: OperationOutcomeError) => void;
 
     // Tie callback to the associated agent and assign a random ID
@@ -164,7 +170,7 @@ export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgent
     await redisSubscriber.subscribe(message.callback);
 
     redisSubscriber.on('message', (_channel: string, message: string) => {
-      const response = JSON.parse(message) as T;
+      const response = JSON.parse(message) as T | AgentError;
       resolve([allOk, response]);
       cleanup();
     });
@@ -181,12 +187,12 @@ export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgent
     };
 
     await getRedis().publish(getReferenceString(agent), JSON.stringify(message));
-    return new Promise<[OperationOutcome, T | undefined]>((_resolve, _reject) => {
+    return new Promise<[OperationOutcome, T | AgentError]>((_resolve, _reject) => {
       resolve = _resolve;
       reject = _reject;
     });
   }
 
   await getRedis().publish(getReferenceString(agent), JSON.stringify(message));
-  return [allOk, undefined];
+  return [allOk];
 }

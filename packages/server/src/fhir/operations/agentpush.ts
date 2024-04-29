@@ -29,7 +29,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
       return new Promise<Parameters>((resolve, reject) => {
-        pushToAgent(req, res, (outcome, agentResponse) => {
+        pushToAgent(req, (outcome, agentResponse) => {
           resolve({
             resourceType: 'Parameters',
             parameter: [
@@ -41,7 +41,7 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
       });
     });
   } else {
-    await pushToAgent(req, res, (outcome, agentResponse) => {
+    await pushToAgent(req, (outcome, agentResponse) => {
       if (!agentResponse) {
         sendOutcome(res, outcome);
         return;
@@ -56,7 +56,6 @@ export const agentPushHandler = asyncWrap(async (req: Request, res: Response) =>
 
 async function pushToAgent(
   req: Request,
-  res: Response,
   sendOperationResponse: (outcome: OperationOutcome, agentResponse?: AgentTransmitResponse) => void
 ): Promise<void> {
   const { repo } = getAuthenticatedContext();
@@ -115,11 +114,17 @@ async function pushToAgent(
     params.waitForResponse ? { waitForResponse: true, timeout: waitTimeout } : undefined
   );
 
-  if (response?.statusCode && response?.statusCode >= 400) {
-    sendOperationResponse(serverError(new Error(response.body)));
-  } else {
-    sendOperationResponse(outcome, response);
+  if (!response) {
+    sendOperationResponse(outcome);
+    return;
   }
+
+  if (response.type === 'agent:error' || (response?.statusCode && response?.statusCode >= 400)) {
+    sendOperationResponse(serverError(new Error(response.body)));
+    return;
+  }
+
+  sendOperationResponse(outcome, response);
 
   // At this point, one of two things will happen:
   // 1. The agent will respond with a message on the channel
