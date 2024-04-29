@@ -1,7 +1,7 @@
 import { Button, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { createReference, MedplumClient, PatchOperation } from '@medplum/core';
+import { createReference, PatchOperation } from '@medplum/core';
 import { Practitioner, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
@@ -14,9 +14,9 @@ interface ClaimTaskProps {
 export function ClaimTask(props: ClaimTaskProps): JSX.Element {
   const medplum = useMedplum();
   const currentUser = useMedplumProfile() as Practitioner;
-  const [opened, { toggle, close }] = useDisclosure(false);
+  const [opened, { open, close }] = useDisclosure(false);
 
-  const handleClaimTask = async (task: Task, medplum: MedplumClient, onChange: (task: Task) => void): Promise<void> => {
+  const handleClaimTask = async (task: Task, onChange: (task: Task) => void): Promise<void> => {
     const taskId = task.id as string;
 
     // Create a patch operation to update the owner to the current user. For more details on task assignment, see https://www.medplum.com/docs/careplans/tasks#task-assignment
@@ -49,14 +49,18 @@ export function ClaimTask(props: ClaimTaskProps): JSX.Element {
 
   return (
     <div>
-      <Button fullWidth onClick={toggle}>
+      <Button fullWidth onClick={open}>
         Claim Task
       </Button>
       <Modal opened={opened} onClose={close}>
-        <Text fw={700}>Are you sure you want to assign this task to yourself?</Text>
-        <Group>
-          <Button onClick={() => handleClaimTask(props.task, medplum, props.onChange)}>Claim</Button>
-          <Button variant="outline">Cancel</Button>
+        <Text fw={500} size="lg">
+          Assign this task to yourself?
+        </Text>
+        <Group justify="flex-end" mt="xl" gap="xs">
+          <Button variant="outline" onClick={close}>
+            Cancel
+          </Button>
+          <Button onClick={() => handleClaimTask(props.task, props.onChange)}>Claim</Button>
         </Group>
       </Modal>
     </div>
