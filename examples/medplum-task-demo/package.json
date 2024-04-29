@@ -1,6 +1,6 @@
 {
   "name": "medplum-task-demo",
-  "version": "3.1.4",
+  "version": "3.1.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,9 +8,9 @@
     "build:bots": "npm run clean && npm run lint && tsc --project tsconfig-bots.json && node --loader ts-node/esm src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
     "dev": "npm run build:bots && vite",
-    "test": "vitest run",
     "lint": "eslint src/",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "prettier": {
     "printWidth": 120,
@@ -29,12 +29,12 @@
     "@mantine/core": "7.8.1",
     "@mantine/hooks": "7.8.1",
     "@mantine/notifications": "7.8.1",
-    "@medplum/core": "3.1.4",
-    "@medplum/definitions": "3.1.4",
-    "@medplum/eslint-config": "3.1.4",
-    "@medplum/fhirtypes": "3.1.4",
-    "@medplum/react": "3.1.4",
-    "@medplum/mock": "3.1.4",
+    "@medplum/core": "3.1.5",
+    "@medplum/definitions": "3.1.5",
+    "@medplum/eslint-config": "3.1.5",
+    "@medplum/fhirtypes": "3.1.5",
+    "@medplum/mock": "3.1.5",
+    "@medplum/react": "3.1.5",
     "@tabler/icons-react": "3.2.0",
     "@types/node": "20.12.7",
     "@types/react": "18.3.1",
@@ -45,10 +45,10 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.23.0",
-    "typescript": "5.4.5",
-    "vite": "5.2.10",
     "rimraf": "5.0.5",
     "ts-node": "10.9.2",
+    "typescript": "5.4.5",
+    "vite": "5.2.10",
     "vitest": "1.5.2"
   }
 }
