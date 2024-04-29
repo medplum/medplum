@@ -37,6 +37,8 @@ export async function processBatch(router: FhirRouter, repo: FhirRepository, bun
 const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 const uuidUriPrefix = 'urn:uuid';
 
+type BundleEntryIdentity = { placeholder: string; reference: string };
+
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
  * In particular, it tracks rewritten ID's as necessary.
@@ -126,31 +128,12 @@ class BatchProcessor {
         );
         continue;
       }
-      if (!entry.request?.url) {
-        results[i] = buildBundleResponse(
-          badRequest('Missing Bundle entry request URL', `Bundle.entry[${i}].request.url`)
-        );
+      const result = await this.preprocessEntry(entry, i, seenIdentities);
+      if (result) {
+        results[i] = result;
         continue;
       }
-
       bucketedEntries[method]?.push(i);
-      let resolved: { placeholder: string; reference: string } | undefined;
-      try {
-        resolved = await this.resolveIdentity(entry, `Bundle.entry[${i}]`);
-      } catch (err: any) {
-        if ((err as OperationOutcomeError).outcome && this.bundle.type !== 'transaction') {
-          results[i] = buildBundleResponse(err.outcome);
-          continue;
-        }
-        throw err;
-      }
-      if (resolved) {
-        this.resolvedIdentities[resolved.placeholder] = resolved.reference;
-        if (seenIdentities.has(resolved.reference)) {
-          throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
-        }
-        seenIdentities.add(resolved.reference);
-      }
     }
 
     const result = [];
@@ -160,64 +143,93 @@ class BatchProcessor {
     return result;
   }
 
-  private async resolveIdentity(
+  private async preprocessEntry(
     entry: BundleEntry,
-    path: string
-  ): Promise<{ placeholder: string; reference: string } | undefined> {
-    const method = entry.request?.method;
+    index: number,
+    seenIdentities: Set<string>
+  ): Promise<BundleEntry | undefined> {
+    if (!entry.request?.url) {
+      return buildBundleResponse(badRequest('Missing Bundle entry request URL', `Bundle.entry[${index}].request.url`));
+    }
+
+    let resolved: { placeholder: string; reference: string } | undefined;
+    try {
+      resolved = await this.resolveIdentity(entry, `Bundle.entry[${index}]`);
+    } catch (err: any) {
+      if ((err as OperationOutcomeError).outcome && this.bundle.type !== 'transaction') {
+        return buildBundleResponse(err.outcome);
+      }
+      throw err;
+    }
+    if (resolved) {
+      this.resolvedIdentities[resolved.placeholder] = resolved.reference;
+      if (seenIdentities.has(resolved.reference)) {
+        throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
+      }
+      seenIdentities.add(resolved.reference);
+    }
+    return undefined;
+  }
+
+  private async resolveIdentity(entry: BundleEntry, path: string): Promise<BundleEntryIdentity | undefined> {
     switch (entry.request?.method) {
       case 'POST':
-        if (entry.request.ifNoneExist) {
-          const existing = await this.repo.searchResources(
-            parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
-          );
-          if (existing.length === 1 && entry.fullUrl?.startsWith(uuidUriPrefix)) {
-            return { placeholder: entry.fullUrl, reference: getReferenceString(existing[0]) };
-          }
-        }
-        if (entry.resource && entry.fullUrl?.startsWith(uuidUriPrefix)) {
-          entry.resource.id = this.repo.generateId();
-          return {
-            placeholder: entry.fullUrl,
-            reference: getReferenceString(entry.resource),
-          };
-        }
-        break;
+        return this.processCreate(entry);
       case 'DELETE':
       case 'PUT':
       case 'PATCH':
-        if (entry.request?.url?.includes('?')) {
-          // Resolve conditional update via search
-          const resolved = await this.repo.searchResources(parseSearchRequest(entry.request.url));
-          if (resolved.length !== 1) {
-            if (resolved.length === 0 && method === 'DELETE') {
-              return undefined;
-            }
-            if (resolved.length === 0 && method === 'PUT' && !entry.resource?.id) {
-              return undefined; // create by update for conditional PUT
-            }
-            throw new OperationOutcomeError(
-              badRequest(
-                `Conditional ${entry.request.method} matched ${resolved.length} resources`,
-                path + '.request.url'
-              )
-            );
-          }
-          const reference = getReferenceString(resolved[0]);
-          entry.request.url = reference;
-          return { placeholder: entry.request.url, reference };
-        } else if (entry.request?.url.includes('/')) {
-          return { placeholder: entry.request.url, reference: entry.request.url };
-        }
-        break;
+        return this.processModification(entry, path);
       case 'GET':
       case 'HEAD':
         // Ignore read-only requests
-        break;
+        return undefined;
       default:
         throw new OperationOutcomeError(
           badRequest('Invalid batch request method: ' + entry.request?.method, path + '.request.method')
         );
+    }
+  }
+
+  private async processCreate(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
+    if (entry.request?.ifNoneExist) {
+      const existing = await this.repo.searchResources(
+        parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
+      );
+      if (existing.length === 1 && entry.fullUrl?.startsWith(uuidUriPrefix)) {
+        return { placeholder: entry.fullUrl, reference: getReferenceString(existing[0]) };
+      }
+    }
+    if (entry.resource && entry.fullUrl?.startsWith(uuidUriPrefix)) {
+      entry.resource.id = this.repo.generateId();
+      return {
+        placeholder: entry.fullUrl,
+        reference: getReferenceString(entry.resource),
+      };
+    }
+    return undefined;
+  }
+
+  private async processModification(entry: BundleEntry, path: string): Promise<BundleEntryIdentity | undefined> {
+    if (entry.request?.url?.includes('?')) {
+      const method = entry.request.method;
+      // Resolve conditional update via search
+      const resolved = await this.repo.searchResources(parseSearchRequest(entry.request.url));
+      if (resolved.length !== 1) {
+        if (resolved.length === 0 && method === 'DELETE') {
+          return undefined;
+        }
+        if (resolved.length === 0 && method === 'PUT' && !entry.resource?.id) {
+          return undefined; // create by update for conditional PUT
+        }
+        throw new OperationOutcomeError(
+          badRequest(`Conditional ${entry.request.method} matched ${resolved.length} resources`, path + '.request.url')
+        );
+      }
+      const reference = getReferenceString(resolved[0]);
+      entry.request.url = reference;
+      return { placeholder: entry.request.url, reference };
+    } else if (entry.request?.url.includes('/')) {
+      return { placeholder: entry.request.url, reference: entry.request.url };
     }
     return undefined;
   }
@@ -318,7 +330,7 @@ class BatchProcessor {
           };
           this.router.dispatchEvent(event);
         }
-        throw new OperationOutcomeError(notFound); // TODO
+        throw new OperationOutcomeError(notFound);
     }
   }
 
@@ -361,7 +373,7 @@ class BatchProcessor {
   }
 
   private rewriteIdsInString(input: string): string {
-    const match = input.match(localBundleReference);
+    const match = localBundleReference.exec(input);
     if (match) {
       if (this.bundle.type !== 'transaction') {
         const event: LogEvent = {

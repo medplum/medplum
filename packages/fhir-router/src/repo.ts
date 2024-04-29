@@ -308,7 +308,6 @@ export class MemoryRepository extends FhirRepository {
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
     resource = deepClone(resource);
     if (options?.ifMatch) {
-      // debugger;
       const existing = await this.readResource(resource.resourceType, resource.id as string);
       if (options.ifMatch !== `W/"${existing.meta?.versionId}"`) {
         throw new OperationOutcomeError(preconditionFailed);
