@@ -85,50 +85,34 @@ export interface BotExecutionResult {
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
-      return new Promise<Parameters>((resolve, reject) => {
-        executeOperation(req, res, (result) => {
-          if (isOperationOutcome(result) && !isOk(result)) {
-            throw new OperationOutcomeError(result);
-          }
-          try {
-            const outParams = getOutParametersFromResult(result);
-            resolve(outParams);
-          } catch (err: unknown) {
-            // eslint-disable-next-line prefer-promise-reject-errors
-            reject(err as Error);
-          }
-        }).catch(reject);
-      });
+      const result = await executeOperation(req);
+      if (isOperationOutcome(result) && !isOk(result)) {
+        throw new OperationOutcomeError(result);
+      }
+      return getOutParametersFromResult(result);
     });
   } else {
-    await executeOperation(req, res, (result) => {
-      if (isOperationOutcome(result)) {
-        sendOutcome(res, result);
-        return;
-      }
-
-      const responseBody = getResponseBodyFromResult(result);
-      // Send the response
-      // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
-      res
-        .status(result.success ? 200 : 400)
-        .type(getResponseContentType(req))
-        .send(responseBody);
-    });
+    const result = await executeOperation(req);
+    if (isOperationOutcome(result)) {
+      sendOutcome(res, result);
+      return;
+    }
+    const responseBody = getResponseBodyFromResult(result);
+    // Send the response
+    // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
+    res
+      .status(result.success ? 200 : 400)
+      .type(getResponseContentType(req))
+      .send(responseBody);
   }
 });
 
-async function executeOperation(
-  req: Request,
-  res: Response,
-  sendOperationResponse: (response: OperationOutcome | BotExecutionResult) => void
-): Promise<void> {
+async function executeOperation(req: Request): Promise<OperationOutcome | BotExecutionResult> {
   const ctx = getAuthenticatedContext();
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
   if (!userBot) {
-    sendOperationResponse(badRequest('Must specify bot ID or identifier.'));
-    return;
+    return badRequest('Must specify bot ID or identifier.');
   }
 
   // Then read the bot as system user to load extended metadata
@@ -156,7 +140,7 @@ async function executeOperation(
     contentType: req.header('content-type') as string,
   });
 
-  sendOperationResponse(result);
+  return result;
 }
 
 /**
