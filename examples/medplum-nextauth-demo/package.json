@@ -27,8 +27,8 @@
     "@medplum/eslint-config": "3.1.4",
     "next": "14.2.3",
     "next-auth": "4.24.7",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "3.1.4",
