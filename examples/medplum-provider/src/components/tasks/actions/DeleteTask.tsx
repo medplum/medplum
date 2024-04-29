@@ -5,31 +5,26 @@ import { normalizeErrorString } from '@medplum/core';
 import { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { NavigateFunction, useNavigate } from 'react-router-dom';
 
 interface DeleteTaskProps {
   readonly task: Task;
-  readonly onChange: (updatedTask: Task) => void;
+  readonly onDeleted: () => void;
 }
 
 export function DeleteTask(props: DeleteTaskProps): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
   const [opened, { open, close }] = useDisclosure(false);
 
-  const handleDelete = async (task: Task, navigate: NavigateFunction): Promise<void> => {
-    // Get the task id
-    const taskId = task.id as string;
-
+  const handleDelete = async (task: Task): Promise<void> => {
     try {
       // Delete the task and navigate back to task list
-      await medplum.deleteResource('Task', taskId);
+      await medplum.deleteResource('Task', task.id as string);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Task deleted',
       });
-      navigate('..', { relative: 'path' });
+      props.onDeleted();
     } catch (error) {
       notifications.show({
         color: 'red',
@@ -54,7 +49,7 @@ export function DeleteTask(props: DeleteTaskProps): JSX.Element {
             <Button onClick={close} color="red" variant="outline">
               Cancel
             </Button>
-            <Button onClick={() => handleDelete(props.task, navigate)} color="red">
+            <Button onClick={() => handleDelete(props.task)} color="red">
               Yes, delete
             </Button>
           </Group>

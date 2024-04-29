@@ -5,13 +5,14 @@ import { Container, DefaultResourceTimeline, Document, ResourceTable, useMedplum
 import { useNavigate, useParams } from 'react-router-dom';
 import { TaskActions } from '../../components/tasks/actions/TaskActions';
 import { useEffect, useState } from 'react';
+import { TasksTab, formatPatientPageTabUrl } from './PatientPage.utils';
 
 const tabs = ['Details', 'Timeline', 'Notes'];
 
 export function TaskTab(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const { id } = useParams() as { id: string };
+  const { patientId, id } = useParams() as { patientId: string; id: string };
   const [task, setTask] = useState<Task | undefined>(undefined);
 
   // Set the current tab to what is in the URL, otherwise default to 'Details'
@@ -38,8 +39,11 @@ export function TaskTab(): JSX.Element {
   };
 
   const onTaskChange = (updatedTask: Task): void => {
-    // console.log('updatedTask:', JSON.stringify(updatedTask));
     setTask(updatedTask);
+  };
+
+  const onTaskDeleted = (): void => {
+    navigate(formatPatientPageTabUrl(patientId, TasksTab));
   };
 
   if (!task) {
@@ -53,7 +57,7 @@ export function TaskTab(): JSX.Element {
           <TaskDetails task={task} tabs={tabs} currentTab={currentTab} handleTabChange={handleTabChange} />
         </Paper>
         <Paper p="md" w={250}>
-          <TaskActions task={task} onChange={onTaskChange} />
+          <TaskActions task={task} onChange={onTaskChange} onDeleted={onTaskDeleted} />
         </Paper>
       </Group>
     </Container>

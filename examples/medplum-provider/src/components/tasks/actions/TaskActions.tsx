@@ -14,6 +14,7 @@ import { CompleteTask } from './CompleteTask';
 interface TaskActionsProps {
   readonly task: Task;
   readonly onChange: (updatedTask: Task) => void;
+  readonly onDeleted: () => void;
 }
 
 export function TaskActions(props: TaskActionsProps): JSX.Element {
@@ -35,7 +36,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
         {!task.owner ? <ClaimTask task={task} onChange={props.onChange} /> : null}
         <PauseResumeTask task={task} onChange={props.onChange} />
         <CompleteTask task={task} onChange={props.onChange} />
-        <DeleteTask task={task} onChange={props.onChange} />
+        <DeleteTask task={task} onDeleted={props.onDeleted} />
       </Stack>
     </Stack>
   );
