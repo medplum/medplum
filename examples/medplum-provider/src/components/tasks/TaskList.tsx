@@ -1,5 +1,5 @@
 import { Box, Card, Divider, Flex, Group, Text, Title } from '@mantine/core';
-import { formatDate } from '@medplum/core';
+import { formatDate, getDisplayString } from '@medplum/core';
 import { CodeableConcept, Questionnaire, Reference, Resource, Task } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
@@ -176,11 +176,9 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
     } else if (props.task.code) {
       setTitle(<CodeableConceptDisplay value={props.task.code} />);
     } else {
-      // TODO what should this else actually be?
-      setTitle(<>{props.task.code}</>);
+      setTitle(<>{getDisplayString(props.task)}</>);
     }
   }, [props.resource, props.task, medplum]);
 
-  console.log('TaskTitle', title);
   return title ?? <></>;
 }
