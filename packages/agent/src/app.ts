@@ -165,7 +165,16 @@ export class App {
             }
             break;
           case 'agent:reloadconfig:request':
-            await this.hydrateListeners();
+            try {
+              await this.hydrateListeners();
+              await this.sendToWebSocket({ type: 'agent:success', callback: command.callback });
+            } catch (err: unknown) {
+              await this.sendToWebSocket({
+                type: 'agent:error',
+                body: normalizeErrorString(err),
+                callback: command.callback,
+              });
+            }
             break;
           case 'agent:error':
             this.log.error(command.body);

@@ -1,17 +1,8 @@
-import {
-  AgentTransmitRequest,
-  AgentTransmitResponse,
-  allOk,
-  badRequest,
-  getReferenceString,
-  serverError,
-} from '@medplum/core';
+import { AgentTransmitRequest, AgentTransmitResponse, badRequest, serverError } from '@medplum/core';
 import { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { randomUUID } from 'node:crypto';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
-import { getRedisSubscriber } from '../../redis';
 import { sendOutcome } from '../outcomes';
 import { getAgentForRequest, getDevice, publishAgentMessage } from './agentutils';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
@@ -117,41 +108,18 @@ async function pushToAgent(
     body: params.body,
   };
 
-  // If not waiting for a response, publish and return
-  if (!params.waitForResponse) {
-    await publishAgentMessage(agent, message);
-    sendOperationResponse(allOk);
-    return;
-  }
-
-  // Otherwise, open a new redis connection in "subscribe" state
-  message.callback = getReferenceString(agent) + '-' + randomUUID();
-
-  const redisSubscriber = getRedisSubscriber();
-  await redisSubscriber.subscribe(message.callback);
-  redisSubscriber.on('message', (_channel: string, message: string) => {
-    const response = JSON.parse(message) as AgentTransmitResponse;
-    if (response.statusCode && response.statusCode >= 400) {
-      sendOperationResponse(serverError(new Error(response.body)));
-    } else {
-      sendOperationResponse(allOk, response);
-    }
-    cleanup();
-  });
-
-  // Create a timer for 5 seconds for timeout
-  const timer = setTimeout(() => {
-    cleanup();
-    sendOutcome(res, badRequest('Timeout'));
-  }, waitTimeout);
-
-  function cleanup(): void {
-    redisSubscriber.disconnect();
-    clearTimeout(timer);
-  }
-
   // Publish the message to the agent channel
-  await publishAgentMessage(agent, message);
+  const [outcome, response] = await publishAgentMessage<AgentTransmitResponse>(
+    agent,
+    message,
+    params.waitForResponse ? { waitForResponse: true, timeout: waitTimeout } : undefined
+  );
+
+  if (response?.statusCode && response?.statusCode >= 400) {
+    sendOperationResponse(serverError(new Error(response.body)));
+  } else {
+    sendOperationResponse(outcome, response);
+  }
 
   // At this point, one of two things will happen:
   // 1. The agent will respond with a message on the channel

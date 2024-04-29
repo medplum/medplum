@@ -1,6 +1,8 @@
 import {
+  BaseAgentMessage,
   BaseAgentRequestMessage,
   ContentType,
+  OperationOutcomeError,
   Operator,
   allOk,
   badRequest,
@@ -13,9 +15,10 @@ import {
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { Request } from 'express';
+import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../context';
-import { getRedis } from '../../redis';
+import { getRedis, getRedisSubscriber } from '../../redis';
 import { Repository } from '../repo';
 import { AgentPushParameters } from './agentpush';
 
@@ -140,6 +143,50 @@ export function makeResultWrapperEntry(result: Parameters | OperationOutcome, ag
   };
 }
 
-export async function publishAgentMessage(agent: Agent, message: BaseAgentRequestMessage): Promise<number> {
-  return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
+export interface AgentMessageOptions {
+  waitForResponse: boolean;
+  timeout?: number;
+}
+
+export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgentMessage>(
+  agent: Agent,
+  message: BaseAgentRequestMessage,
+  options?: AgentMessageOptions
+): Promise<[OperationOutcome, T | undefined]> {
+  if (options?.waitForResponse) {
+    let resolve: (response: [OperationOutcome, T | undefined]) => void;
+    let reject: (err: OperationOutcomeError) => void;
+
+    // Tie callback to the associated agent and assign a random ID
+    message.callback = getReferenceString(agent) + '-' + randomUUID();
+
+    const redisSubscriber = getRedisSubscriber();
+    await redisSubscriber.subscribe(message.callback);
+
+    redisSubscriber.on('message', (_channel: string, message: string) => {
+      const response = JSON.parse(message) as T;
+      resolve([allOk, response]);
+      cleanup();
+    });
+
+    // Create a timer for 5 seconds for timeout
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new OperationOutcomeError(badRequest('Timeout')));
+    }, options?.timeout ?? 5000);
+
+    const cleanup = (): void => {
+      redisSubscriber.disconnect();
+      clearTimeout(timer);
+    };
+
+    await getRedis().publish(getReferenceString(agent), JSON.stringify(message));
+    return new Promise<[OperationOutcome, T | undefined]>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+  }
+
+  await getRedis().publish(getReferenceString(agent), JSON.stringify(message));
+  return [allOk, undefined];
 }
