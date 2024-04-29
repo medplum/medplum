@@ -4,7 +4,7 @@ import { createHmac, createPrivateKey, randomBytes } from 'crypto';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { SignJWT } from 'jose';
 import { basename, extname, resolve } from 'path';
-import tar from 'tar';
+import { extract } from 'tar';
 import { FileSystemStorage } from './storage';
 
 export interface MedplumConfig {
@@ -217,7 +217,7 @@ export function safeTarExtractor(destinationDir: string): NodeJS.WritableStream 
   let fileCount = 0;
   let totalSize = 0;
 
-  return tar.x({
+  return extract({
     cwd: destinationDir,
     filter: (_path, entry) => {
       fileCount++;
@@ -234,7 +234,7 @@ export function safeTarExtractor(destinationDir: string): NodeJS.WritableStream 
     },
 
     // Temporary cast for tar issue: https://github.com/isaacs/node-tar/issues/409
-  }) as ReturnType<typeof tar.x> & NodeJS.WritableStream;
+  }) as ReturnType<typeof extract> & NodeJS.WritableStream;
 }
 
 export function getUnsupportedExtension(): Extension {

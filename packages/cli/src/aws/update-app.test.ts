@@ -44,7 +44,7 @@ jest.mock('fs', () => ({
 jest.mock('node-fetch', () => jest.fn());
 
 jest.mock('tar', () => ({
-  x: jest.fn(),
+  extract: jest.fn(),
 }));
 
 const { Response: NodeFetchResponse } = jest.requireActual('node-fetch');
@@ -180,7 +180,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.x as jest.Mock).mockReturnValueOnce(
+    (tar.extract as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -248,7 +248,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.x as jest.Mock).mockReturnValueOnce(
+    (tar.extract as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -312,7 +312,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.x as jest.Mock).mockReturnValueOnce(
+    (tar.extract as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
