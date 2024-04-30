@@ -22,7 +22,7 @@ export function ResourcePage(): JSX.Element | null {
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0];
 
-  function handleTabChange(newTab: string | null) {
+  function handleTabChange(newTab: string | null): void {
     navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
   }
 
@@ -35,7 +35,7 @@ export function ResourcePage(): JSX.Element | null {
     }
   }, [medplum, resourceType, id]);
 
-  function handleResourceEdit(resource: Resource) {
+  function handleResourceEdit(resource: Resource): void {
     medplum
       .updateResource(cleanResource(resource))
       .then((resource) => {

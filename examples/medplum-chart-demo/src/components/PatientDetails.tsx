@@ -1,5 +1,5 @@
-import { Tabs, TabsPanel } from '@mantine/core';
-import { Operator, parseSearchRequest, SearchRequest } from '@medplum/core';
+import { Tabs } from '@mantine/core';
+import { Operator, SearchRequest } from '@medplum/core';
 import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
-  function handleTabChange(newTab: string | null) {
+  function handleTabChange(newTab: string | null): void {
     navigate(`/Patient/${id}/${newTab ?? ''}`);
   }
 

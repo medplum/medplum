@@ -28,7 +28,7 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
   const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
 
-  function handleQuestionnaireSubmit(formData: QuestionnaireResponse) {
+  function handleQuestionnaireSubmit(formData: QuestionnaireResponse): void {
     const answers = getQuestionnaireAnswers(formData);
     console.log(answers);
     const patientReference = answers['patient'].valueReference as Reference<Patient>;
@@ -39,7 +39,7 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
     handlers.close();
   }
 
-  function createEncounter(patient: Reference<Patient>, encounterClass: Coding, date: string, type?: Coding) {
+  function createEncounter(patient: Reference<Patient>, encounterClass: Coding, date: string, type?: Coding): void {
     const encounterData: Encounter = {
       resourceType: 'Encounter',
       subject: patient,

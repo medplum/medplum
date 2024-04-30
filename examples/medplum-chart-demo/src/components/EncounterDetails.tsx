@@ -1,17 +1,12 @@
 import { Tabs } from '@mantine/core';
-import { getQuestionnaireAnswers, getReferenceString, MedplumClient } from '@medplum/core';
+import { getReferenceString, MedplumClient } from '@medplum/core';
 import {
   ClinicalImpression,
-  CodeableConcept,
   Encounter,
-  Observation,
   Patient,
   Practitioner,
-  Quantity,
-  Questionnaire,
   QuestionnaireResponse,
   Reference,
-  Specimen,
 } from '@medplum/fhirtypes';
 import {
   Document,
@@ -33,7 +28,7 @@ interface EncounterDetailsProps {
 export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const currentUser = useMedplumProfile() as Practitioner;
+  // const currentUser = useMedplumProfile() as Practitioner;
   const [response, setResponse] = useState<QuestionnaireResponse>();
 
   const id = props.encounter.id;
@@ -51,11 +46,11 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
       .catch(console.error);
   }, [response, medplum]);
 
-  function handleTabChange(newTab: string | null) {
+  function handleTabChange(newTab: string | null): void {
     navigate(`/Encounter/${id}/${newTab ?? ''}`);
   }
 
-  function handleQuestionnaireSubmit(formData: QuestionnaireResponse) {
+  function handleQuestionnaireSubmit(formData: QuestionnaireResponse): void {
     const encounterNote: QuestionnaireResponse = {
       ...formData,
       encounter: { reference: getReferenceString(props.encounter) },
