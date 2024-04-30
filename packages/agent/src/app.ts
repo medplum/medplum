@@ -166,6 +166,7 @@ export class App {
             break;
           case 'agent:reloadconfig:request':
             try {
+              this.log.info('Reloading config...');
               await this.hydrateListeners();
               await this.sendToWebSocket({ type: 'agent:success', callback: command.callback });
             } catch (err: unknown) {
@@ -188,12 +189,12 @@ export class App {
     });
   }
 
-  private createOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Channel | undefined {
+  private createOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): void {
     let channel: Channel | undefined = this.channels.get(definition.name);
 
     if (channel) {
       channel.reloadConfig(definition, endpoint);
-      return channel;
+      return;
     }
 
     if (endpoint.address.startsWith('dicom')) {
@@ -205,7 +206,6 @@ export class App {
     }
 
     this.channels.set(definition.name, channel);
-    return channel;
   }
 
   private async hydrateListeners(): Promise<void> {
