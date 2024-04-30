@@ -173,6 +173,12 @@ npm run agent <base_url> <client_id> <client_secret> <agent_id>
 
 Keep the terminal open so that you can see the logs. At this point you can start sending messages to the agent.
 
+## Supported Protocols
+
+- [HL7 v2](https://www.hl7.org): A widely used low-level message protocol for healthcare data exchange.
+- [DICOM](https://www.dicomstandard.org/): A protocol used for storing metadata about medical images. Currently, Medplum supports the C-STORE and C-ECHO operations. Support for other DICOM operations such C-FIND, C-GET, and C-MOVE is coming soon.
+- [ASTM](https://www.astm.org/): Used to transfer data between clinical instruments and computer systems. ASTM support is still in alpha.
+
 ## See also
 
 - [Medplum Agent design discussion](https://github.com/medplum/medplum/discussions/2012)
