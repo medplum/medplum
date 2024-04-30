@@ -4,7 +4,6 @@ import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { ChartingPatientPage } from './pages/ChartingPatientPage';
 import { EncounterPage } from './pages/EncounterPage';
-import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
