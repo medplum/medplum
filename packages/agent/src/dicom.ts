@@ -167,10 +167,18 @@ export class AgentDicomChannel implements Channel {
     this.definition = definition;
     this.endpoint = endpoint;
 
+    this.app.log.info(
+      `[DICOM:${definition.name}] Reloading config... Evaluating if channel needs to change address...`
+    );
+
     if (needToRebindToPort(previousEndpoint, endpoint)) {
       this.stop();
-      this.createDimseServer();
       this.start();
+      this.app.log.info(
+        `[DICOM:${definition.name}] Address changed: ${previousEndpoint.address} => ${endpoint.address}`
+      );
+    } else {
+      this.app.log.info(`[DICOM:${definition.name}] No address change needed. Listening at ${endpoint.address}`);
     }
   }
 

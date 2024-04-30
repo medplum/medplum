@@ -46,9 +46,14 @@ export class AgentHl7Channel implements Channel {
     this.definition = definition;
     this.endpoint = endpoint;
 
+    this.app.log.info(`[HL7:${definition.name}] Reloading config... Evaluating if channel needs to change address...`);
+
     if (needToRebindToPort(previousEndpoint, endpoint)) {
       this.stop();
       this.start();
+      this.app.log.info(`[HL7:${definition.name}] Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
+    } else {
+      this.app.log.info(`[HL7:${definition.name}] No address change needed. Listening at ${endpoint.address}`);
     }
   }
 
