@@ -70,9 +70,11 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
       <Text ta="center" fz="lg" fw={500}>
         {formatHumanName(patient.name?.[0] as HumanName)}
       </Text>
-      <Text ta="center" fz="xs" color="dimmed">
-        {patient.birthDate} ({calculateAgeString(patient.birthDate as string)})
-      </Text>
+      {patient.birthDate && (
+        <Text ta="center" fz="xs" c="dimmed">
+          {patient.birthDate} ({calculateAgeString(patient.birthDate)})
+        </Text>
+      )}
       <Paper withBorder p="md" my="md">
         <Group grow>
           <Flex justify="center" align="center" direction="column" gap={0} maw="33%">

@@ -54,7 +54,7 @@ export type ResourceWithCode = Resource & Code;
 
 /**
  * Creates a reference resource.
- * @param resource - The FHIR reesource.
+ * @param resource - The FHIR resource.
  * @returns A reference resource.
  */
 export function createReference<T extends Resource>(resource: T): Reference<T> {
