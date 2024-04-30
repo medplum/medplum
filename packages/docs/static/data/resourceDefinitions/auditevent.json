@@ -777,6 +777,14 @@
         {
           "datatype": "RelatedPerson",
           "documentLocation": "resource"
+        },
+        {
+          "datatype": "Bot",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "ClientApplication",
+          "documentLocation": "medplum"
         }
       ],
       "path": "AuditEvent.source.observer",
