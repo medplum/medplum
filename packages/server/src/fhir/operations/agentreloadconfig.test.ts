@@ -14,7 +14,12 @@ import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
-import { MockAgentResponseHandle, expectBundleToContainOutcome, mockAgentResponse } from './utils/agenttestutils';
+import {
+  MockAgentResponseHandle,
+  cleanupAllAgentMessageSubscribers,
+  expectBundleToContainOutcome,
+  mockAgentResponse,
+} from './utils/agenttestutils';
 
 const NUM_DEFAULT_AGENTS = 2;
 
@@ -50,6 +55,7 @@ describe('Agent/$reload-config', () => {
   });
 
   afterAll(async () => {
+    cleanupAllAgentMessageSubscribers();
     await shutdownApp();
   });
 
