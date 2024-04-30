@@ -39,7 +39,7 @@ export function MedicationDialog(props: MedicationDialogProps): JSX.Element {
           name="request"
           path="MedicationRequest.medication[x]"
           data-autofocus={true}
-          binding="https://app.medplum.com/ValueSet/16d6f7b7-7eeb-4d0e-a83b-83be082aa10b"
+          binding="http://hl7.org/fhir/ValueSet/medication-codes"
           defaultValue={medication?.medicationCodeableConcept}
           onChange={(request) => setCode(request)}
           outcome={undefined}
