@@ -1,4 +1,12 @@
-import { AgentReloadConfigRequest, AgentSuccess, ContentType, allOk } from '@medplum/core';
+import {
+  AgentConnectResponse,
+  AgentError,
+  AgentReloadConfigRequest,
+  AgentSuccess,
+  ContentType,
+  allOk,
+  serverError,
+} from '@medplum/core';
 import { Agent, Bundle, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -89,6 +97,42 @@ describe('Agent/$reload-config', () => {
     const bundle = res.body as Bundle<Parameters>;
 
     expectBundleToContainOutcome(bundle, agents[0], allOk);
+    cleanup();
+  });
+
+  test('Agent error during reload', async () => {
+    const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentError>(
+      agents[0],
+      'agent:reloadconfig:request',
+      { type: 'agent:error', body: 'Something is broken' }
+    );
+
+    const res = await request(app)
+      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(200);
+    const bundle = res.body as Bundle<Parameters>;
+
+    expectBundleToContainOutcome(bundle, agents[0], serverError(new Error('Something is broken')));
+    cleanup();
+  });
+
+  test('Invalid response from agent during reload', async () => {
+    const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentConnectResponse>(
+      agents[0],
+      'agent:reloadconfig:request',
+      { type: 'agent:connect:response' }
+    );
+
+    const res = await request(app)
+      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(200);
+    const bundle = res.body as Bundle<Parameters>;
+
+    expectBundleToContainOutcome(bundle, agents[0], serverError(new Error('Invalid response received from agent')));
     cleanup();
   });
 });
