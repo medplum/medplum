@@ -89,6 +89,94 @@
       "base": "Resource"
     },
     {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Project.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Project.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Project.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Project.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Project.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "An identifier for this project",
+      "definition": "An identifier for this project.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "name",
       "depth": 1,
       "types": [
@@ -231,18 +319,18 @@
       "inherited": false
     },
     {
-      "name": "secret",
+      "name": "setting",
       "depth": 1,
       "types": [
         {
           "datatype": "BackboneElement"
         }
       ],
-      "path": "Project.secret",
+      "path": "Project.setting",
       "min": 0,
       "max": "*",
       "short": "",
-      "definition": "Secure environment variable that can be used to store secrets for bots.",
+      "definition": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior.",
       "comment": "",
       "inherited": false
     },
@@ -254,7 +342,7 @@
           "datatype": "string"
         }
       ],
-      "path": "Project.secret.name",
+      "path": "Project.setting.name",
       "min": 1,
       "max": "1",
       "short": "",
@@ -279,11 +367,59 @@
           "datatype": "integer"
         }
       ],
-      "path": "Project.secret.value[x]",
+      "path": "Project.setting.value[x]",
       "min": 1,
       "max": "1",
       "short": "",
       "definition": "The secret value.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "secret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Project.secret",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only visible to project administrators.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "systemSetting",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Project.systemSetting",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only modifiable by system administrators.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "systemSecret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Project.systemSecret",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only visible to system administrators.",
       "comment": "",
       "inherited": false
     },
@@ -398,9 +534,49 @@
       "definition": "The private reCAPTCHA secret key. This value is generated when you create a new reCAPTCHA site in the reCAPTCHA admin console. Use this secret key for communication between your site and reCAPTCHA.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "link",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Project.link",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Linked Projects whose contents are made available to this one",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "project",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Project.link.project",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "A reference to the Project to be linked into this one",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "The identifier of the project",
+      "expression": "Project.identifier"
+    },
     {
       "name": "name",
       "type": "string",

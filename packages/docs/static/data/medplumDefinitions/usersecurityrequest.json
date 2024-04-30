@@ -1,21 +1,21 @@
 {
-  "name": "JsonWebKey",
+  "name": "UserSecurityRequest",
   "location": "medplum",
-  "description": "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value.",
+  "description": "User security request for the 'forgot password' flow, email verification, etc.",
   "properties": [
     {
-      "name": "JsonWebKey",
+      "name": "UserSecurityRequest",
       "depth": 0,
       "types": [
         {
           "datatype": ""
         }
       ],
-      "path": "JsonWebKey",
+      "path": "UserSecurityRequest",
       "min": 0,
       "max": "*",
-      "short": "A JSON object that represents a cryptographic key.",
-      "definition": "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value.",
+      "short": "User security request for the 'forgot password' flow, email verification, etc.",
+      "definition": "User security request for the 'forgot password' flow, email verification, etc.",
       "comment": "",
       "inherited": false
     },
@@ -27,7 +27,7 @@
           "datatype": "string"
         }
       ],
-      "path": "JsonWebKey.id",
+      "path": "UserSecurityRequest.id",
       "min": 0,
       "max": "1",
       "short": "Logical id of this artifact",
@@ -45,7 +45,7 @@
           "documentLocation": "datatype"
         }
       ],
-      "path": "JsonWebKey.meta",
+      "path": "UserSecurityRequest.meta",
       "min": 0,
       "max": "1",
       "short": "",
@@ -62,7 +62,7 @@
           "datatype": "uri"
         }
       ],
-      "path": "JsonWebKey.implicitRules",
+      "path": "UserSecurityRequest.implicitRules",
       "min": 0,
       "max": "1",
       "short": "",
@@ -79,7 +79,7 @@
           "datatype": "code"
         }
       ],
-      "path": "JsonWebKey.language",
+      "path": "UserSecurityRequest.language",
       "min": 0,
       "max": "1",
       "short": "",
@@ -97,7 +97,7 @@
           "documentLocation": "datatype"
         }
       ],
-      "path": "JsonWebKey.text",
+      "path": "UserSecurityRequest.text",
       "min": 0,
       "max": "1",
       "short": "Text summary of the resource, for human interpretation",
@@ -114,7 +114,7 @@
           "datatype": "Resource"
         }
       ],
-      "path": "JsonWebKey.contained",
+      "path": "UserSecurityRequest.contained",
       "min": 0,
       "max": "*",
       "short": "Contained, inline Resources",
@@ -132,7 +132,7 @@
           "documentLocation": "datatype"
         }
       ],
-      "path": "JsonWebKey.extension",
+      "path": "UserSecurityRequest.extension",
       "min": 0,
       "max": "*",
       "short": "Additional content defined by implementations",
@@ -150,7 +150,7 @@
           "documentLocation": "datatype"
         }
       ],
-      "path": "JsonWebKey.modifierExtension",
+      "path": "UserSecurityRequest.modifierExtension",
       "min": 0,
       "max": "*",
       "short": "Extensions that cannot be ignored",
@@ -160,268 +160,99 @@
       "base": "DomainResource"
     },
     {
-      "name": "active",
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "UserSecurityRequest.type",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The type of user security request.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "user",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "User",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "UserSecurityRequest.user",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The user performing the security request.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "secret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "UserSecurityRequest.secret",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Secret string used to verify the identity of the user.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "used",
       "depth": 1,
       "types": [
         {
           "datatype": "boolean"
         }
       ],
-      "path": "JsonWebKey.active",
+      "path": "UserSecurityRequest.used",
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Whether this key is in active use.",
+      "definition": "Whether this request has been used, and is therefore no longer valid.",
       "comment": "",
       "inherited": false
     },
     {
-      "name": "alg",
+      "name": "redirectUri",
       "depth": 1,
       "types": [
         {
-          "datatype": "string"
+          "datatype": "uri"
         }
       ],
-      "path": "JsonWebKey.alg",
+      "path": "UserSecurityRequest.redirectUri",
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "The specific cryptographic algorithm used with the key.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "kty",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.kty",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The family of cryptographic algorithms used with the key.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "use",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.use",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "How the key was meant to be used; sig represents the signature.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "key_ops",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.key_ops",
-      "min": 0,
-      "max": "*",
-      "short": "",
-      "definition": "The operation(s) for which the key is intended to be used.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "x5c",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.x5c",
-      "min": 0,
-      "max": "*",
-      "short": "",
-      "definition": "The x.509 certificate chain. The first entry in the array is the certificate to use for token verification; the other certificates can be used to verify this first certificate.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "n",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.n",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The modulus for the RSA public key.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "e",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.e",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The exponent for the RSA public key.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "kid",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.kid",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The unique identifier for the key.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "x5t",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.x5t",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The thumbprint of the x.509 cert (SHA-1 thumbprint).",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "d",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.d",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The exponent for the RSA private key.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "p",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.p",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The first prime factor.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "q",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.q",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The second prime factor.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "dp",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.dp",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The first factor CRT exponent.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "dq",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.dq",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The second factor CRT exponent.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "qi",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "JsonWebKey.qi",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "The first CRT coefficient.",
+      "definition": "Redirect URI used when redirecting a client back to the client application.",
       "comment": "",
       "inherited": false
     }
   ],
   "searchParameters": [
     {
-      "name": "active",
-      "type": "token",
-      "description": "Whether the JWK is active",
-      "expression": "JsonWebKey.active"
+      "name": "user",
+      "type": "reference",
+      "description": "The user for the security request.",
+      "expression": "UserSecurityRequest.user"
     }
   ]
 }

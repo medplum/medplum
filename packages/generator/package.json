@@ -15,7 +15,7 @@
     "benchmark": "ts-node src/benchmarks.ts",
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
-    "docs": "ts-node src/docs.ts",
+    "docs": "ts-node src/docs.ts && cd ../.. && patch -p1 apply src/ONC-compliance-text.patch",
     "fhirtypes": "ts-node src/index.ts",
     "generate": "npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient",
     "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",

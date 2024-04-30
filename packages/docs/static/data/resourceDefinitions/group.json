@@ -670,6 +670,12 @@
       "type": "composite",
       "description": "A composite of both characteristic and value",
       "expression": "Group.characteristic"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "The name of the group",
+      "expression": "Group.name"
     }
   ]
 }
