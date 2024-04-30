@@ -3025,6 +3025,21 @@ describe('FHIR Search', () => {
         expect(result.entry?.length).toBe(1);
       }));
 
+    test('Ambiguous search columns', () =>
+      withTestContext(async () => {
+        const result = await repo.search({
+          resourceType: 'ProjectMembership',
+          filters: [
+            {
+              code: 'user:User.email',
+              operator: Operator.EQUALS,
+              value: randomUUID() + '@example.com',
+            },
+          ],
+        });
+        expect(result.entry?.length).toBe(0);
+      }));
+
     test('Patient by name with stop word', () =>
       withTestContext(async () => {
         const seed = randomUUID();
