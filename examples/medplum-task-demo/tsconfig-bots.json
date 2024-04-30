@@ -3,6 +3,7 @@
     "rootDir": "src/bots",
     "outDir": "dist",
     "lib": ["esnext"],
+    "types": ["vitest/globals"],
     "target": "es2018",
     "module": "commonjs",
     "moduleResolution": "node",
