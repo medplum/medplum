@@ -11,7 +11,6 @@ import { Channel, needToRebindToPort } from './channel';
 
 export class AgentDicomChannel implements Channel {
   private server: dimse.Server;
-  private createDimseServer: () => void;
   private definition: AgentChannel;
   private endpoint: Endpoint;
   readonly tempDir: string;
@@ -138,9 +137,6 @@ export class AgentDicomChannel implements Channel {
     this.definition = definition;
     this.endpoint = endpoint;
     this.server = new dimse.Server(DcmjsDimseScp);
-    this.createDimseServer = () => {
-      this.server = new dimse.Server(DcmjsDimseScp);
-    };
     this.tempDir = mkdtempSync(join(tmpdir(), 'dicom-'));
   }
 
