@@ -61,15 +61,32 @@ const patient = await medplum.createResourceIfNoneExist(patientData, 'identifier
 console.log('Patient record created', patient);
 // end-block create-patient
 
-// start-block upsert
+/*
+
+// start-block upsertCli
+medplum put 'Patient?identifier=<exampleMrn>'  <patientResource>
+// end-block upsertCli
+
+
+// start-block upsertCurl
+curl -X PUT 'https://api.medplum.com/fhir/R4/Patient?identifier=<exampleMrn>' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+  -d '<patientResource>'
+// end-block upsertCurl
+
+*/
+
+// start-block upsertTs
 // An "upsert" (i.e. update/insert) will either update the resource in place if it
 // already exists, otherwise is will be created.  This is performed in a single,
 // transactional request to guarantee data consistency.
 const updatedPatient = medplum.upsertResource(patient, 'identifier=' + exampleMrn);
 console.log('Patient record updated', updatedPatient);
-// end-block upsert
+// end-block upsertTs
 
 // start-block create-service-request
+
 const serviceRequestData: ServiceRequest = {
   resourceType: 'ServiceRequest',
   status: 'active',

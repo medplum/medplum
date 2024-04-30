@@ -32,7 +32,8 @@ When considering which option is best for you, we must consider some system char
   - At any given time, which system is the source of truth?
   - What time delay / data freshness is acceptable?
 
-## Existing system sends FHIR
+## Migration Patterns
+### Existing system sends FHIR
 
 ![Existing system sends FHIR](./migration-existing-system-sends-fhir.png)
 
@@ -52,7 +53,7 @@ Cons:
 - Requires continued investment and maintenance of the existing system
 - May or may not have access to FHIR libraries to generate FHIR resources
 
-## Existing system sends non-FHIR
+### Existing system sends non-FHIR
 
 ![Existing system sends non-FHIR](./migration-existing-system-sends-non-fhir.png)
 
@@ -71,7 +72,7 @@ Cons:
 
 - Usually requires some degree of API access into the existing system
 
-## Medplum Bot pulls data
+### Medplum Bot pulls data
 
 ![Medplum Bot pulls data](./migration-medplum-bot-pulls.png)
 
@@ -89,7 +90,7 @@ Cons:
 - Usually requires some degree of API access into the existing system
 - Time-based polling increases the time delay and hurts data freshness
 
-## Separate integration software
+### Separate integration software
 
 ![Separate integration software](./migration-external-synchronizer.png)
 
@@ -98,3 +99,11 @@ There is an ecosystem of 3rd party tools and companies for system integration.
 Example tools: [NextGen Mirth Connect](https://www.nextgen.com/products-and-services/integration-engine), [Apache Camel](https://camel.apache.org/)
 
 Example platforms + services: [Redox](https://www.redoxengine.com/), [Health Gorilla](https://www.healthgorilla.com/), [Mulesoft](https://www.mulesoft.com/)
+
+
+## Tools
+
+### Idempotency
+A common requirement when building Medplum migration pipelines idempotency. You should be able to run your pipeline multiple times without creating duplicate resources.
+
+To achieve idempotency, you can use FHIR [upsert requests](/docs/fhir-datastore/create-fhir-data#upsert) (aka "Conditional Updates") to perform create-or-update operations with a single FHIR request.
