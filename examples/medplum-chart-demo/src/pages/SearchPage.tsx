@@ -23,7 +23,13 @@ export function SearchPage(): JSX.Element {
   const [opened, handlers] = useDisclosure(false);
 
   useEffect(() => {
+    debugger;
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
+
+    if (!parsedSearch.resourceType) {
+      navigate('/Encounter');
+      return;
+    }
 
     const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
 
@@ -46,7 +52,7 @@ export function SearchPage(): JSX.Element {
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
       <CreateEncounter opened={opened} handlers={handlers} />
       <MemoizedSearchControl
-        checkboxesEnabled={true}
+        checkboxesEnabled={false}
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
@@ -66,8 +72,6 @@ function addSearchValues(search: SearchRequest, config: UserConfiguration | unde
   const fields = search.fields ?? getDefaultFields(search.resourceType);
   const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
-  const offset = search.offset ?? 0;
-  const count = search.count ?? DEFAULT_SEARCH_COUNT;
 
   return {
     ...search,
@@ -75,8 +79,6 @@ function addSearchValues(search: SearchRequest, config: UserConfiguration | unde
     fields,
     filters,
     sortRules,
-    offset,
-    count,
   };
 }
 
@@ -111,9 +113,14 @@ function saveLastSearch(search: SearchRequest): void {
 }
 
 function getDefaultFields(resourceType: string): string[] {
-  if (resourceType === 'Encounter') {
-    return ['class', 'type', 'subject', 'period'];
-  } else {
-    return ['_id', '_lastUpdated'];
+  switch (resourceType) {
+    case 'Encounter':
+      return ['class', 'type', 'subject', 'period'];
+    case 'Patient':
+      return ['name', 'gender', 'birthDate', '_lastUpdated'];
+    case 'Practitioner':
+      return ['name', '_lastUpdated'];
+    default:
+      return ['_id', '_lastUpdated'];
   }
 }

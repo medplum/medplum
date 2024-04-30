@@ -1,9 +1,11 @@
-import { Title } from '@mantine/core';
-import { getDisplayString, getReferenceString } from '@medplum/core';
+import { Tabs, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, ResourceTable, useMedplum } from '@medplum/react';
+import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 /**
  * This is an example of a generic "Resource Display" page.
@@ -12,8 +14,17 @@ import { useParams } from 'react-router-dom';
  */
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
+  const navigate = useNavigate();
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
+
+  const tabs = ['Details', 'Edit', 'History'];
+  const tab = window.location.pathname.split('/').pop();
+  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0];
+
+  function handleTabChange(newTab: string | null) {
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+  }
 
   useEffect(() => {
     if (resourceType && id) {
@@ -24,6 +35,28 @@ export function ResourcePage(): JSX.Element | null {
     }
   }, [medplum, resourceType, id]);
 
+  function handleResourceEdit(resource: Resource) {
+    medplum
+      .updateResource(cleanResource(resource))
+      .then((resource) => {
+        setResource(resource);
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Resource edited.',
+        });
+        navigate(`/${resourceType}/${id}/details`);
+      })
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
+  }
+
   if (!resource) {
     return null;
   }
@@ -31,7 +64,40 @@ export function ResourcePage(): JSX.Element | null {
   return (
     <Document key={getReferenceString(resource)}>
       <Title>{getDisplayString(resource)}</Title>
-      <ResourceTable key={`${resourceType}/${id}`} value={resource} />
+      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
+        <Tabs.List mb="xs">
+          {tabs.map((tab) => (
+            <Tabs.Tab value={tab.toLowerCase()} key={tab.toLowerCase()}>
+              {tab}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+        <Tabs.Panel value="details">
+          <ResourceTable key={`${resourceType}/${id}`} value={resource} ignoreMissingValues={true} />
+        </Tabs.Panel>
+        <Tabs.Panel value="edit">
+          <ResourceForm defaultValue={resource} onSubmit={handleResourceEdit} />
+        </Tabs.Panel>
+        <Tabs.Panel value="history">
+          <ResourceHistoryTable resourceType={resourceType} id={id} />
+        </Tabs.Panel>
+      </Tabs>
     </Document>
   );
+}
+
+function cleanResource(resource: Resource): Resource {
+  let meta = resource.meta;
+  if (meta) {
+    meta = {
+      ...meta,
+      lastUpdated: undefined,
+      versionId: undefined,
+      author: undefined,
+    };
+  }
+  return {
+    ...resource,
+    meta,
+  };
 }

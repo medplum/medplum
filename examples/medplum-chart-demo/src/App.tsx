@@ -24,7 +24,7 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'Charts',
-          links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
+          links: [{ icon: <IconUser />, label: 'Patients', href: '/Patient' }],
         },
         {
           title: 'Encounters',
@@ -42,11 +42,10 @@ export function App(): JSX.Element | null {
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <Routes>
-            <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
+            <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/Patient/:id/*" element={<ChartingPatientPage />} />
-            <Route path="/:resourceType/:id" element={<ResourcePage />} />
-            <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+            <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/Encounter/:id/*" element={<EncounterPage />} />
           </Routes>
