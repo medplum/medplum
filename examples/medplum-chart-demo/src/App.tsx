@@ -2,7 +2,7 @@ import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile }
 import { IconClipboardHeart, IconClipboardList, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { ChartingPatientPage } from './pages/ChartingPatientPage';
+import { PatientPage } from './pages/PatientPage';
 import { EncounterPage } from './pages/EncounterPage';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
@@ -43,7 +43,7 @@ export function App(): JSX.Element | null {
           <Routes>
             <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
-            <Route path="/Patient/:id/*" element={<ChartingPatientPage />} />
+            <Route path="/Patient/:id/*" element={<PatientPage />} />
             <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/Encounter/:id/*" element={<EncounterPage />} />

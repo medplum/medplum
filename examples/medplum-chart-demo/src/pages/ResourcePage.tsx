@@ -6,6 +6,7 @@ import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { cleanResource } from '../utils';
 
 /**
  * This is an example of a generic "Resource Display" page.
@@ -84,20 +85,4 @@ export function ResourcePage(): JSX.Element | null {
       </Tabs>
     </Document>
   );
-}
-
-function cleanResource(resource: Resource): Resource {
-  let meta = resource.meta;
-  if (meta) {
-    meta = {
-      ...meta,
-      lastUpdated: undefined,
-      versionId: undefined,
-      author: undefined,
-    };
-  }
-  return {
-    ...resource,
-    meta,
-  };
 }

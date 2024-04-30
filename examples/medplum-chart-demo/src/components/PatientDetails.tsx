@@ -1,27 +1,57 @@
 import { Tabs } from '@mantine/core';
-import { Operator, SearchRequest } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString, Operator, SearchRequest } from '@medplum/core';
 import { Patient, Resource } from '@medplum/fhirtypes';
-import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl } from '@medplum/react';
+import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
+import { cleanResource } from '../utils';
 
 interface PatientDetailsProps {
   patient: Patient;
+  onChange: (patient: Patient) => void;
 }
 
 export function PatientDetails(props: PatientDetailsProps): JSX.Element {
+  const medplum = useMedplum();
   const navigate = useNavigate();
   const id = props.patient.id;
 
-  const tabs = ['Details', 'Edit', 'History', 'Clinicalimpressions', 'Observations'];
+  const tabs = [
+    ['details', 'Details'],
+    ['edit', 'Edit'],
+    ['history', 'History'],
+    ['clinical', 'Clinical Impressions'],
+    ['observations', 'Observations'],
+  ];
   const tab = window.location.pathname.split('/').pop();
-  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+  const currentTab = tab && tabs.map((t) => t[0]).includes(tab) ? tab : tabs[0][0];
 
   function handleTabChange(newTab: string | null): void {
     navigate(`/Patient/${id}/${newTab ?? ''}`);
   }
 
   function handlePatientEdit(resource: Resource) {
-    console.log(resource);
+    medplum
+      .updateResource(cleanResource(resource))
+      .then((patient) => {
+        props.onChange(patient as Patient);
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Patient edited',
+        });
+        navigate(`/Patient/${id}/details`);
+        window.scrollTo(0, 0);
+      })
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
   }
 
   const clinicalImpressionSearch: SearchRequest = {
@@ -41,8 +71,8 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
-            <Tabs.Tab value={tab.toLowerCase()} key={tab}>
-              {tab}
+            <Tabs.Tab value={tab[0]} key={tab[0]}>
+              {tab[1]}
             </Tabs.Tab>
           ))}
         </Tabs.List>
