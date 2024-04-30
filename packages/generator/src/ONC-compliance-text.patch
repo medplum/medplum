@@ -1,0 +1,264 @@
+From 4390de6797fc1823d0b9b785a778a882a8386652 Mon Sep 17 00:00:00 2001
+From: Rahul Agarwal <rahul@medplum.com>
+Date: Mon, 17 Jul 2023 14:32:35 -0700
+Subject: [PATCH] Add description text for ONC compliance
+
+---
+ .../docs/api/fhir/resources/allergyintolerance.mdx  |  2 +-
+ packages/docs/docs/api/fhir/resources/careplan.mdx  |  2 +-
+ packages/docs/docs/api/fhir/resources/careteam.mdx  |  2 +-
+ packages/docs/docs/api/fhir/resources/condition.mdx |  2 +-
+ packages/docs/docs/api/fhir/resources/device.mdx    |  2 +-
+ .../docs/api/fhir/resources/diagnosticreport.mdx    |  2 +-
+ .../docs/api/fhir/resources/documentreference.mdx   |  2 +-
+ packages/docs/docs/api/fhir/resources/encounter.mdx |  2 +-
+ packages/docs/docs/api/fhir/resources/goal.mdx      |  2 +-
+ .../docs/docs/api/fhir/resources/immunization.mdx   |  2 +-
+ .../docs/docs/api/fhir/resources/medication.mdx     |  2 +-
+ .../docs/api/fhir/resources/medicationrequest.mdx   |  2 +-
+ .../docs/docs/api/fhir/resources/observation.mdx    | 13 ++++++++++++-
+ packages/docs/docs/api/fhir/resources/patient.mdx   |  6 +++++-
+ packages/docs/docs/api/fhir/resources/procedure.mdx |  2 +-
+ .../docs/docs/api/fhir/resources/provenance.mdx     |  2 +-
+ .../api/fhir/resources/questionnaireresponse.mdx    |  2 +-
+ 17 files changed, 32 insertions(+), 17 deletions(-)
+
+diff --git a/packages/docs/docs/api/fhir/resources/allergyintolerance.mdx b/packages/docs/docs/api/fhir/resources/allergyintolerance.mdx
+index 448987f44..ba58ed4ee 100644
+--- a/packages/docs/docs/api/fhir/resources/allergyintolerance.mdx
++++ b/packages/docs/docs/api/fhir/resources/allergyintolerance.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # AllergyIntolerance
+
+-Risk of harmful or undesirable, physiological response which is unique to an individual and associated with exposure to a substance.
++Risk of harmful or undesirable, physiological response which is unique to an individual and associated with exposure to a substance. Refer to the [US Core AllergyIntolerance profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-allergyintolerance.html) details on representing specific substances, statuses and reaction types.
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/careplan.mdx b/packages/docs/docs/api/fhir/resources/careplan.mdx
+index 0d421ac37..46c52c8b6 100644
+--- a/packages/docs/docs/api/fhir/resources/careplan.mdx
++++ b/packages/docs/docs/api/fhir/resources/careplan.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # CarePlan
+
+-Describes the intention of how one or more practitioners intend to deliver care for a particular patient, group or community for a period of time, possibly limited to care for a specific condition or set of conditions.
++Describes the intention of how one or more practitioners intend to deliver care for a particular patient, group or community for a period of time, possibly limited to care for a specific condition or set of conditions. Refer to the [US Core CarePlan profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-careplan.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/careteam.mdx b/packages/docs/docs/api/fhir/resources/careteam.mdx
+index 6aaecf324..9744d108b 100644
+--- a/packages/docs/docs/api/fhir/resources/careteam.mdx
++++ b/packages/docs/docs/api/fhir/resources/careteam.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # CareTeam
+
+-The Care Team includes all the people and organizations who plan to participate in the coordination and delivery of care for a patient.
++The Care Team includes all the people and organizations who plan to participate in the coordination and delivery of care for a patient. Refer to the [US Core CarePlan profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-careplan.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/condition.mdx b/packages/docs/docs/api/fhir/resources/condition.mdx
+index e42adfa9d..5e817c943 100644
+--- a/packages/docs/docs/api/fhir/resources/condition.mdx
++++ b/packages/docs/docs/api/fhir/resources/condition.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Condition
+
+-A clinical condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern.
++A clinical condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern. Refer to the [US Core Condition profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-condition.html) and the US Core [Condition Encounter](http://hl7.org/fhir/us/core/StructureDefinition-us-core-condition-encounter-diagnosis.html) profile.
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/device.mdx b/packages/docs/docs/api/fhir/resources/device.mdx
+index 32a15afeb..c5627beef 100644
+--- a/packages/docs/docs/api/fhir/resources/device.mdx
++++ b/packages/docs/docs/api/fhir/resources/device.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Device
+
+-A type of a manufactured item that is used in the provision of healthcare without being substantially changed through that activity. The device may be a medical or non-medical device.
++A type of a manufactured item that is used in the provision of healthcare without being substantially changed through that activity. The device may be a medical or non-medical device. For more on implantable devices, refer to [US Core Implantable Device Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-implantable-device.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/diagnosticreport.mdx b/packages/docs/docs/api/fhir/resources/diagnosticreport.mdx
+index 3ac475a89..9b6323772 100644
+--- a/packages/docs/docs/api/fhir/resources/diagnosticreport.mdx
++++ b/packages/docs/docs/api/fhir/resources/diagnosticreport.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # DiagnosticReport
+
+-The findings and interpretation of diagnostic  tests performed on patients, groups of patients, devices, and locations, and/or specimens derived from these. The report includes clinical context such as requesting and provider information, and some mix of atomic results, images, textual and coded interpretations, and formatted representation of diagnostic reports.
++The findings and interpretation of diagnostic tests performed on patients, groups of patients, devices, and locations, and/or specimens derived from these. The report includes clinical context such as requesting and provider information, and some mix of atomic results, images, textual and coded interpretations, and formatted representation of diagnostic reports. Refer to the [US Core DiagnosticReport profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-diagnosticreport-note.html) for Report and Note exchange.
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/documentreference.mdx b/packages/docs/docs/api/fhir/resources/documentreference.mdx
+index c7536fce2..359869a5d 100644
+--- a/packages/docs/docs/api/fhir/resources/documentreference.mdx
++++ b/packages/docs/docs/api/fhir/resources/documentreference.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # DocumentReference
+
+-A reference to a document of any kind for any purpose. Provides metadata about the document so that the document can be discovered and managed. The scope of a document is any seralized object with a mime-type, so includes formal patient centric documents (CDA), cliical notes, scanned paper, and non-patient specific documents like policy text.
++A reference to a document of any kind for any purpose. Provides metadata about the document so that the document can be discovered and managed. The scope of a document is any seralized object with a mime-type, so includes formal patient centric documents (CDA), clinical notes, scanned paper, and non-patient specific documents like policy text. Refer to the [US Core DocumentReference profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-documentreference.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/encounter.mdx b/packages/docs/docs/api/fhir/resources/encounter.mdx
+index 08d991f5c..0ea5598ae 100644
+--- a/packages/docs/docs/api/fhir/resources/encounter.mdx
++++ b/packages/docs/docs/api/fhir/resources/encounter.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Encounter
+
+-An interaction between a patient and healthcare provider(s) for the purpose of providing healthcare service(s) or assessing the health status of a patient.
++An interaction between a patient and healthcare provider(s) for the purpose of providing healthcare service(s) or assessing the health status of a patient. Refer to the US Core [Encounter](http://hl7.org/fhir/us/core/StructureDefinition-us-core-encounter.html) Profile and the US Core [Condition Encounter](http://hl7.org/fhir/us/core/StructureDefinition-us-core-condition-encounter-diagnosis.html) profile.
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/goal.mdx b/packages/docs/docs/api/fhir/resources/goal.mdx
+index 14107e3bc..71202ddda 100644
+--- a/packages/docs/docs/api/fhir/resources/goal.mdx
++++ b/packages/docs/docs/api/fhir/resources/goal.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Goal
+
+-Describes the intended objective(s) for a patient, group or organization care, for example, weight loss, restoring an activity of daily living, obtaining herd immunity via immunization, meeting a process improvement objective, etc.
++Describes the intended objective(s) for a patient, group or organization care, for example, weight loss, restoring an activity of daily living, obtaining herd immunity via immunization, meeting a process improvement objective, etc. Refer to the [US Core Goal profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-goal.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/immunization.mdx b/packages/docs/docs/api/fhir/resources/immunization.mdx
+index 9cbd92345..a3db5537f 100644
+--- a/packages/docs/docs/api/fhir/resources/immunization.mdx
++++ b/packages/docs/docs/api/fhir/resources/immunization.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Immunization
+
+-Describes the event of a patient being administered a vaccine or a record of an immunization as reported by a patient, a clinician or another party.
++Describes the event of a patient being administered a vaccine or a record of an immunization as reported by a patient, a clinician or another party. Refer to the [US Core Immunizations profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-immunization.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/medication.mdx b/packages/docs/docs/api/fhir/resources/medication.mdx
+index f59832713..c78c7f587 100644
+--- a/packages/docs/docs/api/fhir/resources/medication.mdx
++++ b/packages/docs/docs/api/fhir/resources/medication.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Medication
+
+-This resource is primarily used for the identification and definition of a medication for the purposes of prescribing, dispensing, and administering a medication as well as for making statements about medication use.
++This resource is primarily used for the identification and definition of a medication for the purposes of prescribing, dispensing, and administering a medication as well as for making statements about medication use. Refer to the [US Core Medication profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-medication.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/medicationrequest.mdx b/packages/docs/docs/api/fhir/resources/medicationrequest.mdx
+index b8d73ea5b..2bdd3ae06 100644
+--- a/packages/docs/docs/api/fhir/resources/medicationrequest.mdx
++++ b/packages/docs/docs/api/fhir/resources/medicationrequest.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # MedicationRequest
+
+-An order or request for both supply of the medication and the instructions for administration of the medication to a patient. The resource is called "MedicationRequest" rather than "MedicationPrescription" or "MedicationOrder" to generalize the use across inpatient and outpatient settings, including care plans, etc., and to harmonize with workflow patterns.
++An order or request for both supply of the medication and the instructions for administration of the medication to a patient. The resource is called "MedicationRequest" rather than "MedicationPrescription" or "MedicationOrder" to generalize the use across inpatient and outpatient settings, including care plans, etc., and to harmonize with workflow patterns. Refer to the [US Core Medication Request profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-medicationrequest.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/observation.mdx b/packages/docs/docs/api/fhir/resources/observation.mdx
+index e63f0b46d..d80138016 100644
+--- a/packages/docs/docs/api/fhir/resources/observation.mdx
++++ b/packages/docs/docs/api/fhir/resources/observation.mdx
+@@ -9,7 +9,18 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Observation
+
+-Measurements and simple assertions made about a patient, device or other subject.
++Measurements and simple assertions made about a patient, device or other subject. US Core Profiles related to Observations are as follows:
++
++- [US Core Laboratory Result profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-observation-lab.html)
++- [US Core Smoking Status Observation profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-smokingstatus.html).
++- [US Core Pulse Oximetry Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-pulse-oximetry.html)
++- [US Core Pediatric BMI for Age Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-pediatric-bmi-for-age.html)
++- [US Core Pediatric Weight for Height](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-pediatric-weight-for-height.html)
++- [US Core Pediatric Head Circumference](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-head-occipital-frontal-circumference-percentile.html)
++- [US Core Observation Survey](http://hl7.org/fhir/us/core/StructureDefinition-us-core-observation-survey.html)
++- [US Core Observation Social History](http://hl7.org/fhir/us/core/StructureDefinition-us-core-observation-social-history.html)
++- [US Core Clinical Test Result](http://hl7.org/fhir/us/core/StructureDefinition-us-core-observation-clinical-test.html)
++- [US Core Observation Sexual Orientation](http://hl7.org/fhir/us/core/StructureDefinition-us-core-observation-sexual-orientation.html)
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/patient.mdx b/packages/docs/docs/api/fhir/resources/patient.mdx
+index e903643f9..df60c17bb 100644
+--- a/packages/docs/docs/api/fhir/resources/patient.mdx
++++ b/packages/docs/docs/api/fhir/resources/patient.mdx
+@@ -9,7 +9,11 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Patient
+
+-Demographics and other administrative information about an individual or animal receiving care or other health-related services.
++Demographics and other administrative information about an individual or animal receiving care or other health-related services. Refer to the following profiles for information on representing specific details:
++
++- [US Core Patient profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html).
++- [US Core Gender Identity Extension](http://hl7.org/fhir/us/core/StructureDefinition-us-core-genderIdentity.html).
++- [US Core Birth Sex Extension](http://hl7.org/fhir/us/core/StructureDefinition-us-core-birthsex.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/procedure.mdx b/packages/docs/docs/api/fhir/resources/procedure.mdx
+index 9c0ca3438..4f5f73e46 100644
+--- a/packages/docs/docs/api/fhir/resources/procedure.mdx
++++ b/packages/docs/docs/api/fhir/resources/procedure.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Procedure
+
+-An action that is or was performed on or for a patient. This can be a physical intervention like an operation, or less invasive like long term services, counseling, or hypnotherapy.
++An action that is or was performed on or for a patient. This can be a physical intervention like an operation, or less invasive like long term services, counseling, or hypnotherapy. Refer to the [US Core Procedure profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-procedure.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/provenance.mdx b/packages/docs/docs/api/fhir/resources/provenance.mdx
+index 4c0a59042..52b4fdadf 100644
+--- a/packages/docs/docs/api/fhir/resources/provenance.mdx
++++ b/packages/docs/docs/api/fhir/resources/provenance.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # Provenance
+
+-Provenance of a resource is a record that describes entities and processes involved in producing and delivering or otherwise influencing that resource. <a href="/docs/api/fhir/resources/provenance">Provenance</a> provides a critical foundation for assessing authenticity, enabling trust, and allowing reproducibility. <a href="/docs/api/fhir/resources/provenance">Provenance</a> assertions are a form of contextual metadata and can themselves become important records with their own provenance. <a href="/docs/api/fhir/resources/provenance">Provenance</a> statement indicates clinical significance in terms of confidence in authenticity, reliability, and trustworthiness, integrity, and stage in lifecycle (e.g. Document Completion - has the artifact been legally authenticated), all of which may impact security, privacy, and trust policies.
++Provenance of a resource is a record that describes entities and processes involved in producing and delivering or otherwise influencing that resource. <a href="/docs/api/fhir/resources/provenance">Provenance</a> provides a critical foundation for assessing authenticity, enabling trust, and allowing reproducibility. <a href="/docs/api/fhir/resources/provenance">Provenance</a> assertions are a form of contextual metadata and can themselves become important records with their own provenance. <a href="/docs/api/fhir/resources/provenance">Provenance</a> statement indicates clinical significance in terms of confidence in authenticity, reliability, and trustworthiness, integrity, and stage in lifecycle (e.g. Document Completion - has the artifact been legally authenticated), all of which may impact security, privacy, and trust policies. Refer to the [US Core Provenance profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-provenance.html).
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+diff --git a/packages/docs/docs/api/fhir/resources/questionnaireresponse.mdx b/packages/docs/docs/api/fhir/resources/questionnaireresponse.mdx
+index 893fb8d08..9676acd01 100644
+--- a/packages/docs/docs/api/fhir/resources/questionnaireresponse.mdx
++++ b/packages/docs/docs/api/fhir/resources/questionnaireresponse.mdx
+@@ -9,7 +9,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
+
+ # QuestionnaireResponse
+
+-A structured set of questions and their answers. The questions are ordered and grouped into coherent subsets, corresponding to the structure of the grouping of the questionnaire being responded to.
++A structured set of questions and their answers. The questions are ordered and grouped into coherent subsets, corresponding to the structure of the grouping of the questionnaire being responded to. Read related on [US Core QuestionnaireResponse](http://hl7.org/fhir/us/core/StructureDefinition-us-core-questionnaireresponse.html) profile.
+
+ <Tabs queryString="section">
+ <TabItem value="schema" label="Schema" default>
+--
+2.39.3 (Apple Git-146)
+
