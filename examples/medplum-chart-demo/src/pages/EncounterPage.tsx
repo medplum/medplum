@@ -1,14 +1,15 @@
 import { Grid, Paper, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { Encounter, Patient, Reference } from '@medplum/fhirtypes';
-import { Document, Loading, PatientSummary, useResource } from '@medplum/react';
-import { useState } from 'react';
+import { Document, Loading, MedplumLink, PatientSummary, useMedplum, useResource } from '@medplum/react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { EncounterActions } from '../components/EncounterActions';
 import { EncounterDetails } from '../components/EncounterDetails';
 import { EncounterHeader } from '../components/EncounterHeader';
 
 export function EncounterPage(): JSX.Element {
+  const medplum = useMedplum();
   const { id } = useParams();
   const [encounter, setEncounter] = useState<Encounter>(
     useResource<Encounter>({ reference: `Encounter/${id}` }) as Encounter
@@ -20,6 +21,19 @@ export function EncounterPage(): JSX.Element {
   function handleEncounterChange(encounter: Encounter): void {
     setEncounter(encounter);
   }
+
+  useEffect(() => {
+    const fetchData = async (): Promise<void> => {
+      try {
+        if (id) {
+          const encounter = await medplum.readResource('Encounter', id);
+          setEncounter(encounter);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+  });
 
   if (!encounter) {
     return <Loading />;

@@ -23,7 +23,6 @@ export function SearchPage(): JSX.Element {
   const [opened, handlers] = useDisclosure(false);
 
   useEffect(() => {
-    debugger;
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
     if (!parsedSearch.resourceType) {

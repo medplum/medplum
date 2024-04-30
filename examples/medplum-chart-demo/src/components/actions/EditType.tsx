@@ -1,8 +1,10 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getQuestionnaireAnswers, PatchOperation } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { CodeableConcept, Coding, Encounter, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface EditTypeProps {
   encounter: Encounter;
@@ -35,7 +37,24 @@ export function EditType(props: EditTypeProps): JSX.Element {
       { op, path: '/type', value: [typeConcept] },
     ];
 
-    medplum.patchResource('Encounter', encounterId, ops).then(props.onChange).catch(console.error);
+    medplum
+      .patchResource('Encounter', encounterId, ops)
+      .then((encounter) => {
+        props.onChange(encounter);
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Type edited',
+        });
+      })
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
   }
 
   return (

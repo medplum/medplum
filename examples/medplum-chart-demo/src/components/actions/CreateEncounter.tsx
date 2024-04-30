@@ -1,7 +1,18 @@
 import { Modal } from '@mantine/core';
-import { getQuestionnaireAnswers } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { QuestionnaireForm } from '@medplum/react';
+import { showNotification } from '@mantine/notifications';
+import { getDisplayString, getQuestionnaireAnswers, getReferenceString, normalizeErrorString } from '@medplum/core';
+import {
+  Coding,
+  Encounter,
+  Patient,
+  Practitioner,
+  Questionnaire,
+  QuestionnaireResponse,
+  Reference,
+} from '@medplum/fhirtypes';
+import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CreateEncounterProps {
   readonly opened: boolean;
@@ -13,9 +24,73 @@ interface CreateEncounterProps {
 }
 
 export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX.Element {
+  const medplum = useMedplum();
+  const profile = useMedplumProfile() as Practitioner;
+  const navigate = useNavigate();
+
   function handleQuestionnaireSubmit(formData: QuestionnaireResponse) {
     const answers = getQuestionnaireAnswers(formData);
     console.log(answers);
+    const patientReference = answers['patient'].valueReference as Reference<Patient>;
+    const encounterClass = answers['class'].valueCoding as Coding;
+    const encounterType = answers['type']?.valueCoding ?? undefined;
+    const encounterDate = answers['date'].valueDate as string;
+    createEncounter(patientReference, encounterClass, encounterDate, encounterType);
+    handlers.close();
+  }
+
+  function createEncounter(patient: Reference<Patient>, encounterClass: Coding, date: string, type?: Coding) {
+    const encounterData: Encounter = {
+      resourceType: 'Encounter',
+      subject: patient,
+      class: encounterClass,
+      status: 'in-progress',
+      period: {
+        start: date,
+      },
+      type: type
+        ? [
+            {
+              coding: [type],
+            },
+          ]
+        : undefined,
+      participant: [
+        {
+          type: [
+            {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
+                  code: 'ATND',
+                  display: 'attender',
+                },
+              ],
+            },
+          ],
+          individual: { reference: getReferenceString(profile), display: getDisplayString(profile) },
+        },
+      ],
+    };
+
+    medplum
+      .createResource(encounterData)
+      .then((encounter) => {
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Encounter created',
+        });
+        navigate(`/Encounter/${encounter.id}`);
+      })
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
   }
 
   return (
@@ -51,6 +126,17 @@ const createEncounterQuestionnaire: Questionnaire = {
       ],
     },
     {
+      linkId: 'date',
+      type: 'date',
+      text: 'What is the date of the encounter?',
+      required: true,
+      initial: [
+        {
+          valueDate: new Date().toISOString(),
+        },
+      ],
+    },
+    {
       linkId: 'class',
       type: 'choice',
       text: 'What is the encounter class?',
@@ -62,16 +148,6 @@ const createEncounterQuestionnaire: Questionnaire = {
       type: 'choice',
       text: 'What type of encounter is this?',
       answerValueSet: 'http://hl7.org/fhir/ValueSet/encounter-type',
-    },
-    {
-      linkId: 'date',
-      type: 'date',
-      text: 'What is the date of the encounter?',
-      initial: [
-        {
-          valueDate: new Date().toISOString(),
-        },
-      ],
     },
   ],
 };
