@@ -108,7 +108,7 @@ export interface DetectedIssue {
   /**
    * Indicates the status of the detected issue.
    */
-  status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'preliminary' | 'final' | 'entered-in-error' | 'mitigated';
 
   /**
    * Identifies the general type of issue identified.
