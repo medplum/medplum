@@ -11,7 +11,7 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Medications } from './Medications';
@@ -22,11 +22,12 @@ import { Vitals } from './Vitals';
 export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
   readonly background?: string;
+  readonly topContent?: ReactNode;
 }
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, background, ...rest } = props;
+  const { patient: propsPatient, background, topContent, ...rest } = props;
   const [patient, setPatient] = useState<Patient>();
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>();
   const [problems, setProblems] = useState<Condition[]>();
@@ -58,6 +59,17 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
       })
       .catch(console.error);
   }, [medplum, propsPatient]);
+
+  const topContentWithFallback = useMemo(() => {
+    return (
+      topContent ?? (
+        <>
+          <Anchor href="#">No upcoming appointments</Anchor>
+          <Anchor href="#">No documented visits</Anchor>
+        </>
+      )
+    );
+  }, [topContent]);
 
   if (!patient) {
     return null;
@@ -98,9 +110,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         </Group>
       </Paper>
       <Stack gap="xs">
-        <Anchor href="#">No upcoming appointments</Anchor>
-        <Anchor href="#">No documented visits</Anchor>
-        <Divider />
+        {topContentWithFallback}
+        {topContentWithFallback && <Divider />}
         <Allergies patient={patient} allergies={allergies as AllergyIntolerance[]} />
         <Divider />
         <ProblemList patient={patient} problems={problems as Condition[]} />
