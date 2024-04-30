@@ -43,6 +43,7 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('No messages in the last 30 minutes that require a response.');
   });
 
+  // Skipping until chained search is implemented in MockClient
   test.skip('Messages part of thread that already has active task', async () => {
     const medplum = new MockClient();
     console.log = vi.fn();
@@ -54,6 +55,7 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('Task already exists for this thread.');
   });
 
+  // Skipping until chained search is implemented in MockClient
   test.skip('Assign task to care coordinator queue', async () => {
     const medplum = new MockClient();
     console.log = vi.fn();
@@ -66,6 +68,7 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('Assigned to care coordinator queue');
   });
 
+  // Skipping until chained search is implemented in MockClient
   test.skip('Assign to practitioner who previously responded to thread', async () => {
     const medplum = new MockClient();
     console.log = vi.fn();
