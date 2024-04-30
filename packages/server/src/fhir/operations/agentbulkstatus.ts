@@ -1,7 +1,7 @@
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { agentStatusHandler } from './agentstatus';
-import { handleBulkAgentOperation } from './agentutils';
+import { handleBulkAgentOperation } from './utils/agentutils';
 
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -22,6 +22,9 @@ export const operation: OperationDefinition = {
  * First reads the agent and makes sure it is valid and the user has access to it.
  * Then tries to get the agent status from Redis.
  * Returns the agent status details as a Parameters resource.
+ *
+ * Endpoint
+ *   [fhir base]/Agent/$bulk-status
  *
  * @param req - The FHIR request.
  * @returns The FHIR response.

@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
-import { getAgentForRequest, getDevice, publishAgentMessage } from './agentutils';
+import { getAgentForRequest, getDevice, publishAgentMessage } from './utils/agentutils';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 import { parseParameters } from './utils/parameters';
 

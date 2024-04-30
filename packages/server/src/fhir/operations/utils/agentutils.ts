@@ -18,10 +18,10 @@ import { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from
 import { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
-import { getAuthenticatedContext } from '../../context';
-import { getRedis, getRedisSubscriber } from '../../redis';
-import { Repository } from '../repo';
-import { AgentPushParameters } from './agentpush';
+import { getAuthenticatedContext } from '../../../context';
+import { getRedis, getRedisSubscriber } from '../../../redis';
+import { Repository } from '../../repo';
+import { AgentPushParameters } from '../agentpush';
 
 export const MAX_AGENTS_PER_PAGE = 100;
 
@@ -68,6 +68,10 @@ export async function getAgentForRequest(req: Request | FhirRequest, repo: Repos
  * @returns The agent, or undefined if not found.
  */
 export async function getAgentsForRequest(req: FhirRequest, repo: Repository): Promise<Agent[] | undefined> {
+  if (req.params.id) {
+    const agent = await getAgentForRequest(req, repo);
+    return agent ? [agent] : undefined;
+  }
   return repo.searchResources(parseSearchRequest('Agent', req.query));
 }
 
@@ -120,7 +124,7 @@ export async function handleBulkAgentOperation(
       continue;
     }
     const [outcome, params] = result.value;
-    if (!isOk(outcome)) {
+    if (!(isOk(outcome) && params)) {
       entries.push(makeResultWrapperEntry(outcome, agents[i]));
       continue;
     }
@@ -163,8 +167,8 @@ export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgent
     let resolve: (response: [OperationOutcome, T | AgentError]) => void;
     let reject: (err: OperationOutcomeError) => void;
 
-    // Tie callback to the associated agent and assign a random ID
-    message.callback = getReferenceString(agent) + '-' + randomUUID();
+    // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
+    message.callback ??= getReferenceString(agent) + '-' + randomUUID();
 
     const redisSubscriber = getRedisSubscriber();
     await redisSubscriber.subscribe(message.callback);

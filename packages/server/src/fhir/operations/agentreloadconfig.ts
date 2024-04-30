@@ -1,7 +1,7 @@
 import { AgentSuccess, OperationOutcomeError, serverError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Agent, OperationDefinition, Parameters } from '@medplum/fhirtypes';
-import { handleBulkAgentOperation, publishAgentMessage } from './agentutils';
+import { Agent, OperationDefinition } from '@medplum/fhirtypes';
+import { handleBulkAgentOperation, publishAgentMessage } from './utils/agentutils';
 
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -13,7 +13,7 @@ export const operation: OperationDefinition = {
   resource: ['Agent'],
   system: false,
   type: true,
-  instance: false,
+  instance: true,
   parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' }],
 };
 
@@ -21,7 +21,11 @@ export const operation: OperationDefinition = {
  * Handles HTTP requests for the Agent $reload-config operation.
  * First reads the agent and makes sure it is valid and the user has access to it.
  * Then tries to get the agent status from Redis.
- * Returns the agent status details as a Parameters resource.
+ * Returns the agent  details as a Parameters resource.
+ *
+ * Endpoints:
+ *   [fhir base]/Agent/$reload-config
+ *   [fhir base]/Agent/[id]/$reload-config
  *
  * @param req - The FHIR request.
  * @returns The FHIR response.
@@ -38,7 +42,7 @@ async function reloadConfig(agent: Agent): Promise<FhirResponse> {
     { waitForResponse: true }
   );
 
-  if (!result) {
+  if (!result || result.type === 'agent:success') {
     return [outcome];
   }
 
@@ -46,11 +50,5 @@ async function reloadConfig(agent: Agent): Promise<FhirResponse> {
     throw new OperationOutcomeError(serverError(new Error(result.body)));
   }
 
-  return [
-    outcome,
-    {
-      resourceType: 'Parameters',
-      parameter: [{ name: 'result', valueString: JSON.stringify(result) }],
-    } satisfies Parameters,
-  ];
+  throw new OperationOutcomeError(serverError(new Error('Invalid response received from agent')));
 }
