@@ -110,7 +110,7 @@ const createEncounterQuestionnaire: Questionnaire = {
     {
       linkId: 'patient',
       type: 'reference',
-      text: 'What patient is the subject of this encounter?',
+      text: 'Which patient is the subject of this encounter?',
       required: true,
       extension: [
         {
@@ -132,7 +132,7 @@ const createEncounterQuestionnaire: Questionnaire = {
       required: true,
       initial: [
         {
-          valueDate: new Date().toISOString(),
+          valueDate: new Date().toISOString().slice(0, 10),
         },
       ],
     },
