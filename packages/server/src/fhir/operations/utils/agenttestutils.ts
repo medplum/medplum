@@ -30,6 +30,7 @@ export async function mockAgentResponse<
 >(agent: Agent, msgType: TRequest['type'], res: TResponse): Promise<MockAgentResponseHandle> {
   const subscriber = getRedisSubscriber();
   await subscriber.subscribe(getReferenceString(agent));
+  subscribers.add(subscriber);
 
   subscriber.on('message', async (_channel, msg) => {
     const message = JSON.parse(msg) as BaseAgentMessage;
