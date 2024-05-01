@@ -57,7 +57,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
   const clinicalImpressionSearch: SearchRequest = {
     resourceType: 'ClinicalImpression',
     filters: [{ code: 'patient', operator: Operator.EQUALS, value: `Patient/${id}` }],
-    fields: ['status', 'description', 'problem'],
+    fields: ['status', 'description', 'note'],
   };
 
   const observationSearch: SearchRequest = {
@@ -85,11 +85,21 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         <Tabs.Panel value="history">
           <ResourceHistoryTable resourceType="Patient" id={id} />
         </Tabs.Panel>
-        <Tabs.Panel value="clinicalimpressions">
-          <SearchControl search={clinicalImpressionSearch} hideFilters={true} hideToolbar={true} />
+        <Tabs.Panel value="clinical">
+          <SearchControl
+            search={clinicalImpressionSearch}
+            hideFilters={true}
+            hideToolbar={true}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+          />
         </Tabs.Panel>
         <Tabs.Panel value="observations">
-          <SearchControl search={observationSearch} hideFilters={true} hideToolbar={true} />
+          <SearchControl
+            search={observationSearch}
+            hideFilters={true}
+            hideToolbar={true}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+          />
         </Tabs.Panel>
       </Tabs>
     </Document>
