@@ -17,42 +17,99 @@ export interface IClientStorage {
  * When Using MedplumClient in the server, it will be backed by the MemoryStorage class.  For example, the Medplum CLI uses `FileSystemStorage`.
  */
 export class ClientStorage implements IClientStorage {
+  private readonly storage: IStorage;
+  private readonly prefix: string;
+
+  constructor(storage?: IStorage, prefix?: string) {
+    this.storage = storage ?? (typeof localStorage !== 'undefined' ? new WebLocalStorage() : new MemoryStorage());
+    this.prefix = prefix ?? '@medplum:';
+  }
+
+  private makeKey(key: string): string {
+    return this.prefix + key;
+  }
+
+  clear(): void {
+    this.storage
+      .keys()
+      .filter((key) => key.startsWith(this.prefix))
+      .forEach((key) => {
+        this.storage.removeItem(key);
+      });
+  }
+
+  getString(key: string): string | undefined {
+    return this.storage.getItem(this.makeKey(key)) ?? undefined;
+  }
+
+  setString(key: string, value: string | undefined): void {
+    if (value) {
+      this.storage.setItem(this.makeKey(key), value);
+    } else {
+      this.storage.removeItem(this.makeKey(key));
+    }
+  }
+
+  getObject<T>(key: string): T | undefined {
+    const str = this.getString(this.makeKey(key));
+    return str ? (JSON.parse(str) as T) : undefined;
+  }
+
+  setObject<T>(key: string, value: T): void {
+    this.setString(this.makeKey(key), value ? stringify(value) : undefined);
+  }
+}
+
+/**
+ * IStorage is an interface that extends the Storage interface with a keys() method.
+ */
+export interface IStorage extends Storage {
+  keys(): string[];
+}
+
+/**
+ * The WebLocalStorage class is a wrapper around the browser localStorage object to implement IStorage.
+ */
+export class WebLocalStorage implements IStorage {
   private readonly storage: Storage;
 
-  constructor(storage?: Storage) {
-    this.storage = storage ?? (typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage());
+  constructor(storage: Storage = localStorage) {
+    this.storage = storage;
+  }
+
+  public get length(): number {
+    return this.storage.length;
   }
 
   clear(): void {
     this.storage.clear();
   }
 
-  getString(key: string): string | undefined {
-    return this.storage.getItem(key) ?? undefined;
+  getItem(key: string): string | null {
+    return this.storage.getItem(key);
   }
 
-  setString(key: string, value: string | undefined): void {
-    if (value) {
-      this.storage.setItem(key, value);
-    } else {
-      this.storage.removeItem(key);
-    }
+  key(index: number): string | null {
+    return this.storage.key(index);
   }
 
-  getObject<T>(key: string): T | undefined {
-    const str = this.getString(key);
-    return str ? (JSON.parse(str) as T) : undefined;
+  removeItem(key: string): void {
+    this.storage.removeItem(key);
   }
 
-  setObject<T>(key: string, value: T): void {
-    this.setString(key, value ? stringify(value) : undefined);
+  setItem(key: string, value: string): void {
+    this.storage.setItem(key, value);
+  }
+
+  keys(): string[] {
+    return Object.keys(this.storage);
   }
 }
 
 /**
  * The MemoryStorage class is a minimal in-memory implementation of the Storage interface.
  */
-export class MemoryStorage implements Storage {
+export class MemoryStorage implements IStorage {
   private data: Map<string, string>;
 
   constructor() {
@@ -111,6 +168,10 @@ export class MemoryStorage implements Storage {
    */
   key(index: number): string | null {
     return Array.from(this.data.keys())[index];
+  }
+
+  keys(): string[] {
+    return Array.from(this.data.keys());
   }
 }
 
