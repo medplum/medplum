@@ -627,21 +627,27 @@ function buildNormalSearchFilterExpression(
 ): Expression {
   const details = getSearchParameterDetails(resourceType, param);
   if (filter.operator === Operator.MISSING) {
-    return new Condition(details.columnName, filter.value === 'true' ? '=' : '!=', null);
+    return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '=' : '!=', null);
   } else if (param.type === 'string') {
-    return buildStringSearchFilter(details, filter.operator, filter.value.split(','));
+    return buildStringSearchFilter(table, details, filter.operator, filter.value.split(','));
   } else if (param.type === 'token' || param.type === 'uri') {
     return buildTokenSearchFilter(table, details, filter.operator, filter.value.split(','));
   } else if (param.type === 'reference') {
-    return buildReferenceSearchFilter(details, filter.value.split(','));
+    return buildReferenceSearchFilter(table, details, filter.value.split(','));
   } else if (param.type === 'date') {
     return buildDateSearchFilter(table, details, filter);
   } else if (param.type === 'quantity') {
-    return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
+    return new Condition(
+      new Column(table, details.columnName),
+      fhirOperatorToSqlOperator(filter.operator),
+      filter.value
+    );
   } else {
     const values = filter.value
       .split(',')
-      .map((v) => new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), v));
+      .map(
+        (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
+      );
     const expr = new Disjunction(values);
     return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
   }
@@ -733,27 +739,38 @@ function buildFilterParameterComparison(
 
 /**
  * Adds a string search filter as "WHERE" clause to the query builder.
+ * @param table - The table in which to search.
  * @param details - The search parameter details.
  * @param operator - The search operator.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
-function buildStringSearchFilter(details: SearchParameterDetails, operator: Operator, values: string[]): Expression {
-  const conditions = values.map((v) => {
-    if (operator === Operator.EXACT) {
-      return new Condition(details.columnName, '=', v);
-    } else if (operator === Operator.CONTAINS) {
-      return new Condition(details.columnName, 'LIKE', `%${v}%`);
-    } else {
-      return new Condition(details.columnName, 'LIKE', `${v}%`);
-    }
-  });
+function buildStringSearchFilter(
+  table: string,
+  details: SearchParameterDetails,
+  operator: Operator,
+  values: string[]
+): Expression {
+  const column = new Column(details.array ? undefined : table, details.columnName);
 
-  const expression = new Disjunction(conditions);
+  const expression = buildStringFilterExpression(column, operator, values);
   if (details.array) {
-    return new ArraySubquery(new Column(undefined, details.columnName), expression);
+    return new ArraySubquery(new Column(table, details.columnName), expression);
   }
   return expression;
+}
+
+function buildStringFilterExpression(column: Column, operator: Operator, values: string[]): Expression {
+  const conditions = values.map((v) => {
+    if (operator === Operator.EXACT) {
+      return new Condition(column, '=', v);
+    } else if (operator === Operator.CONTAINS) {
+      return new Condition(column, 'LIKE', `%${v}%`);
+    } else {
+      return new Condition(column, 'LIKE', `${v}%`);
+    }
+  });
+  return new Disjunction(conditions);
 }
 
 /**
@@ -812,20 +829,22 @@ function buildTokenSearchFilter(
 
 /**
  * Adds a reference search filter as "WHERE" clause to the query builder.
+ * @param table - The table in which to search.
  * @param details - The search parameter details.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
-function buildReferenceSearchFilter(details: SearchParameterDetails, values: string[]): Expression {
+function buildReferenceSearchFilter(table: string, details: SearchParameterDetails, values: string[]): Expression {
+  const column = new Column(table, details.columnName);
   values = values.map((v) =>
     !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
   );
   if (details.array) {
-    return new Condition(details.columnName, 'ARRAY_CONTAINS', values, 'TEXT[]');
+    return new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
   } else if (values.length === 1) {
-    return new Condition(details.columnName, '=', values[0]);
+    return new Condition(column, '=', values[0]);
   }
-  return new Condition(details.columnName, 'IN', values);
+  return new Condition(column, 'IN', values);
 }
 
 /**
