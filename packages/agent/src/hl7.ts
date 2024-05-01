@@ -38,7 +38,7 @@ export class AgentHl7Channel implements Channel {
     }
     this.app.log.info('Channel stopping...');
     this.connections.forEach((connection) => connection.close());
-    this.server.stop();
+    await this.server.stop();
     this.started = false;
     this.app.log.info('Channel stopped successfully');
   }

@@ -3,7 +3,7 @@ import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dimse from 'dcmjs-dimse';
 import { Server } from 'mock-socket';
-import path from 'path';
+import path from 'node:path';
 import { App } from './app';
 
 jest.mock('node-windows');

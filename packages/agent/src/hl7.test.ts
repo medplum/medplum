@@ -182,7 +182,7 @@ describe('HL7', () => {
     expect(hl7Messages.length).toBe(1);
 
     // Shutdown everything
-    hl7Server.stop();
+    await hl7Server.stop();
     await app.stop();
     mockServer.stop();
   });
