@@ -5,7 +5,6 @@ import { App } from './app';
 import { Channel, needToRebindToPort } from './channel';
 
 export class AgentHl7Channel implements Channel {
-  static serversPendingClosing = new Map<string, Hl7Server>();
   readonly server: Hl7Server;
   protected definition: AgentChannel;
   private endpoint: Endpoint;
