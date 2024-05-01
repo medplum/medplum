@@ -189,7 +189,7 @@ export class AgentDicomChannel implements Channel {
     );
 
     if (needToRebindToPort(previousEndpoint, endpoint)) {
-      this.stop();
+      await this.stop();
       this.start();
       this.app.log.info(
         `[DICOM:${definition.name}] Address changed: ${previousEndpoint.address} => ${endpoint.address}`
