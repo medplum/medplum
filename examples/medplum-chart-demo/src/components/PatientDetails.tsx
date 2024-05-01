@@ -21,6 +21,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['details', 'Details'],
     ['edit', 'Edit'],
     ['history', 'History'],
+    ['encounter', 'Encounters'],
     ['clinical', 'Clinical Impressions'],
     ['observations', 'Observations'],
   ];
@@ -54,6 +55,12 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
       });
   }
 
+  const encounterSearch: SearchRequest = {
+    resourceType: 'Encounter',
+    filters: [{ code: 'patient', operator: Operator.EQUALS, value: `Patient/${id}` }],
+    fields: ['date', 'patient', 'class'],
+  };
+
   const clinicalImpressionSearch: SearchRequest = {
     resourceType: 'ClinicalImpression',
     filters: [{ code: 'patient', operator: Operator.EQUALS, value: `Patient/${id}` }],
@@ -84,6 +91,14 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         </Tabs.Panel>
         <Tabs.Panel value="history">
           <ResourceHistoryTable resourceType="Patient" id={id} />
+        </Tabs.Panel>
+        <Tabs.Panel value="encounter">
+          <SearchControl
+            search={encounterSearch}
+            hideFilters={true}
+            hideToolbar={true}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+          />
         </Tabs.Panel>
         <Tabs.Panel value="clinical">
           <SearchControl
