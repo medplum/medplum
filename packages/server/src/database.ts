@@ -16,7 +16,7 @@ export const locks = {
   migration: 1,
 };
 
-export async function initDatabase(serverConfig: MedplumServerConfig, runMigrations = true): Promise<void> {
+export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
   const config = serverConfig.database;
 
   const poolConfig = {
@@ -48,7 +48,8 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
   });
 
   let client: PoolClient | undefined;
-  if (runMigrations) {
+  // Run migrations by default
+  if (config.runMigrations !== false) {
     try {
       client = await pool.connect();
       await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
