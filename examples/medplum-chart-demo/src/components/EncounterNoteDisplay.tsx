@@ -1,5 +1,7 @@
+import { Flex, Group, Stack, Title } from '@mantine/core';
 import { formatDate, getQuestionnaireAnswers } from '@medplum/core';
 import {
+  Annotation,
   CodeableConcept,
   Coding,
   Encounter,
@@ -7,7 +9,7 @@ import {
   QuestionnaireResponse,
   QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, Document, QuantityDisplay } from '@medplum/react';
+import { CodeableConceptDisplay, Document, NoteDisplay, QuantityDisplay } from '@medplum/react';
 
 interface EncounterNoteDisplayProps {
   response: QuestionnaireResponse;
@@ -50,6 +52,7 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
   checkForValidResponse();
 
   const answers = getQuestionnaireAnswers(props.response);
+  console.log(answers['encounter-date']);
 
   const displayValues = parseAnswers(answers);
 
@@ -58,7 +61,7 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
       coding: [answers['reason-for-visit'].valueCoding as Coding],
     };
 
-    const date = answers['encounter-date'].valueString as string;
+    const date = answers['encounter-date'].valueDate;
 
     const diastolic = {
       value: answers['diastolic-blood-pressure'].valueInteger,
@@ -88,6 +91,12 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
       code: '[lb_av]',
     };
 
+    const notes: Annotation[] = [];
+
+    if (answers['notes-and-comments'].valueString) {
+      notes.push({ text: answers['notes-and-comments'].valueString });
+    }
+
     return {
       reasonForVisit,
       date,
@@ -96,6 +105,7 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
       height,
       weight,
       bmi: calculateBMI(answers['vitals-height'].valueInteger, answers['vitals-weight'].valueInteger),
+      notes,
     };
   }
 
@@ -103,9 +113,9 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
     if (!weight || !height) {
       return undefined;
     }
-    const weightKg = weight * 2.2;
+    const weightKg = weight / 2.2;
 
-    const bmi = (weightKg / height / height) * 10000;
+    const bmi = Math.floor((weightKg / (height / 100) ** 2) * 10) / 10;
 
     return {
       value: bmi,
@@ -115,40 +125,46 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
 
   return (
     <Document>
-      <div key="date">
-        <h3>Date of Encounter</h3>
-        <p>{formatDate(displayValues.date)}</p>
-      </div>
-      <div key="reason-for-visit">
-        <h3>Reason for Visit</h3>
-        <CodeableConceptDisplay value={displayValues.reasonForVisit} />
-      </div>
-      <div key="vitals">
-        <h3>Vitals</h3>
-        <div>
-          <h4>Blood Pressure</h4>
+      <Stack>
+        <Group key="date">
+          <Title order={6}>Date of Encounter</Title>
+          <p>{formatDate(displayValues.date)}</p>
+        </Group>
+        <Group key="reason-for-visit">
+          <Title order={6}>Reason for Visit</Title>
+          <CodeableConceptDisplay value={displayValues.reasonForVisit} />
+        </Group>
+        <Stack key="vitals">
+          <Title order={4}>Vitals</Title>
+          <Stack>
+            <Title order={5}>Blood Pressure</Title>
+            <Group ml="md">
+              <Title order={6}>Systolic BP:</Title>
+              <QuantityDisplay value={displayValues.systolic} />
+            </Group>
+            <Group ml="md">
+              <Title order={6}>Diastolic BP:</Title>
+              <QuantityDisplay value={displayValues.diastolic} />
+            </Group>
+            <Group>
+              <Title order={5}>Height (cm):</Title>
+              <QuantityDisplay value={displayValues.height} />
+            </Group>
+            <Group>
+              <Title order={5}>Weight:</Title>
+              <QuantityDisplay value={displayValues.weight} />
+            </Group>
+            <Group>
+              <Title order={5}>BMI:</Title>
+              <QuantityDisplay value={displayValues.bmi} />
+            </Group>
+          </Stack>
           <div>
-            <h5>Systolic BP</h5>
-            <QuantityDisplay value={displayValues.systolic} />
+            <Title order={4}>Notes and Comments</Title>
+            <NoteDisplay value={displayValues.notes} />
           </div>
-          <div>
-            <h5>Diastolic BP</h5>
-            <QuantityDisplay value={displayValues.diastolic} />
-          </div>
-        </div>
-        <div>
-          <h4>Height (cm)</h4>
-          <QuantityDisplay value={displayValues.height} />
-        </div>
-        <div>
-          <h4>Weight</h4>
-          <QuantityDisplay value={displayValues.weight} />
-        </div>
-        <div>
-          <h4>BMI</h4>
-          <QuantityDisplay value={displayValues.bmi} />
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     </Document>
   );
 }

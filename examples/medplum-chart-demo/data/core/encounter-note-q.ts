@@ -228,6 +228,7 @@ const encounterNoteQuestionnaire: Questionnaire = {
       linkId: 'notes-and-comments',
       type: 'text',
       text: 'Notes and comments',
+      repeats: true,
     },
   ],
 };
