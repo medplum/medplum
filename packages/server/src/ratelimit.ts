@@ -4,20 +4,20 @@ import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRedis } from './redis';
+import { MedplumServerConfig } from './config';
 
-// TODO: These values should be server config settings
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
 // That meant that the rate limit was per server instance, rather than per server cluster
 // The value was primarily tuned for one particular cluster with 6 server instances
 // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
-const DEFAULT_RATE_LIMIT_PER_15_MINUTES = 15 * 60 * 1000; // 1000 requests per second
-const DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES = 2400;
+const DEFAULT_RATE_LIMIT_PER_MINUTE = 60_000;
+const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 160;
 
 let handler: RateLimitRequestHandler | undefined = undefined;
 let store: RedisStore | undefined = undefined;
 
-export function getRateLimiter(): RateLimitRequestHandler {
+export function getRateLimiter(config: MedplumServerConfig): RateLimitRequestHandler {
   if (!handler) {
     const client = getRedis();
     store = new RedisStore({
@@ -26,11 +26,12 @@ export function getRateLimiter(): RateLimitRequestHandler {
       sendCommand: (...args: string[]): unknown => client.call(...args),
     });
     handler = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      limit: getRateLimitForRequest,
-      validate: true,
+      windowMs: 60 * 1000, // 1 minute
+      limit: getRateLimitForRequest(config),
+      validate: true, // Enable setup checks on first incoming request
       store,
       message: tooManyRequests,
+      skip: (_req) => config.defaultRateLimit === -1,
     });
   }
   return handler;
@@ -43,21 +44,28 @@ export function closeRateLimiter(): void {
   }
 }
 
-async function getRateLimitForRequest(req: Request): Promise<number> {
-  // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
-  // These URLs have a different rate limit than the rest of the API
-  const authUrl = req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
+function getRateLimitForRequest(config?: MedplumServerConfig): (req: Request) => Promise<number> {
+  return async function getRateLimitForRequest(req: Request): Promise<number> {
+    // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
+    // These URLs have a different rate limit than the rest of the API
+    const authUrl = req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
 
-  let limit = authUrl ? DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES : DEFAULT_RATE_LIMIT_PER_15_MINUTES;
-
-  const ctx = getRequestContext();
-  if (ctx instanceof AuthenticatedRequestContext) {
-    const systemSettingName = authUrl ? 'authRateLimit' : 'rateLimit';
-    const systemSetting = ctx.project.systemSetting?.find((s) => s.name === systemSettingName);
-    if (systemSetting?.valueInteger) {
-      limit = systemSetting.valueInteger;
+    let limit: number;
+    if (authUrl) {
+      limit = config?.defaultAuthRateLimit ?? DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE;
+    } else {
+      limit = config?.defaultRateLimit ?? DEFAULT_RATE_LIMIT_PER_MINUTE;
     }
-  }
 
-  return limit;
+    const ctx = getRequestContext();
+    if (ctx instanceof AuthenticatedRequestContext) {
+      const systemSettingName = authUrl ? 'authRateLimit' : 'rateLimit';
+      const systemSetting = ctx.project.systemSetting?.find((s) => s.name === systemSettingName);
+      if (systemSetting?.valueInteger) {
+        limit = systemSetting.valueInteger;
+      }
+    }
+
+    return limit;
+  };
 }

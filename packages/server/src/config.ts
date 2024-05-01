@@ -64,6 +64,8 @@ export interface MedplumServerConfig {
         | 'websocket-subscriptions'
       )[]
     | undefined;
+  defaultRateLimit?: number;
+  defaultAuthRateLimit?: number;
 
   /** Temporary feature flag, to be removed */
   chainedSearchWithReferenceTables?: boolean;
@@ -182,6 +184,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
+  config.defaultRateLimit = -1; // Disable rate limiter by default in tests
   return config;
 }
 

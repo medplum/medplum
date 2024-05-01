@@ -141,7 +141,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(attachRequestContext);
-  app.use(getRateLimiter());
+  app.use(getRateLimiter(config));
   app.use('/fhir/R4/Binary', binaryRouter);
   app.use(
     urlencoded({
