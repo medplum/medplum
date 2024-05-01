@@ -48,16 +48,15 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
   });
 
   let client: PoolClient | undefined;
-  try {
-    client = await pool.connect();
-    await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
-    if (runMigrations) {
-      await migrate(client);
-    }
-  } finally {
-    if (client) {
-      await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
-      client.release();
+  if (runMigrations) {
+    try {
+      client = await pool.connect();
+      await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
+    } finally {
+      if (client) {
+        await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
+        client.release();
+      }
     }
   }
 }
