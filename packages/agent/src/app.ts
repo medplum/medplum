@@ -189,11 +189,11 @@ export class App {
     });
   }
 
-  private createOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): void {
+  private async startOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
     let channel: Channel | undefined = this.channels.get(definition.name);
 
     if (channel) {
-      channel.reloadConfig(definition, endpoint);
+      await channel.reloadConfig(definition, endpoint);
       return;
     }
 
@@ -205,6 +205,7 @@ export class App {
       throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
     }
 
+    channel.start();
     this.channels.set(definition.name, channel);
   }
 
@@ -212,6 +213,23 @@ export class App {
     const agent = await this.medplum.readResource('Agent', this.agentId);
     const pendingRemoval = new Set(this.channels.keys());
 
+    // Remove all channels from list that are present in the new definition
+    // We will remove the channels that are left over -- channels that are not part of the new config
+    for (const definition of agent.channel ?? []) {
+      pendingRemoval.delete(definition.name);
+    }
+
+    // Now iterate leftover channels and stop any that were not present in config when reloaded
+    for (const leftover of pendingRemoval.keys()) {
+      const channel = this.channels.get(leftover) as Channel;
+      await channel.stop();
+
+      pendingRemoval.delete(leftover);
+      this.channels.delete(leftover);
+    }
+
+    // Iterate the channels specified in the config
+    // Either start them or reload their config if already present
     for (const definition of agent.channel ?? []) {
       const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
 
@@ -219,21 +237,11 @@ export class App {
         this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
       }
 
-      pendingRemoval.delete(definition.name);
       try {
-        this.createOrReloadChannel(definition, endpoint);
+        await this.startOrReloadChannel(definition, endpoint);
       } catch (err) {
         this.log.error(normalizeErrorString(err));
       }
-    }
-
-    // Now iterate leftover channels and stop any that were not reloaded
-    for (const leftover of pendingRemoval.keys()) {
-      const channel = this.channels.get(leftover) as Channel;
-      channel.stop();
-
-      pendingRemoval.delete(leftover);
-      this.channels.delete(leftover);
     }
   }
 

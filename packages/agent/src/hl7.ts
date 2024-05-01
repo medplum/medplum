@@ -5,9 +5,11 @@ import { App } from './app';
 import { Channel, needToRebindToPort } from './channel';
 
 export class AgentHl7Channel implements Channel {
+  static serversPendingClosing = new Map<string, Hl7Server>();
   readonly server: Hl7Server;
   protected definition: AgentChannel;
   private endpoint: Endpoint;
+  private started = false;
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
 
   constructor(
@@ -21,16 +23,24 @@ export class AgentHl7Channel implements Channel {
   }
 
   start(): void {
+    if (this.started) {
+      return;
+    }
+    this.started = true;
     const address = new URL(this.endpoint.address as string);
     this.app.log.info(`Channel starting on ${address}`);
     this.server.start(Number.parseInt(address.port, 10));
     this.app.log.info('Channel started successfully');
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
+    if (!this.started) {
+      return;
+    }
     this.app.log.info('Channel stopping...');
     this.connections.forEach((connection) => connection.close());
     this.server.stop();
+    this.started = false;
     this.app.log.info('Channel stopped successfully');
   }
 
@@ -41,7 +51,7 @@ export class AgentHl7Channel implements Channel {
     }
   }
 
-  reloadConfig(definition: AgentChannel, endpoint: Endpoint): void {
+  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
     const previousEndpoint = this.endpoint;
     this.definition = definition;
     this.endpoint = endpoint;
@@ -49,7 +59,7 @@ export class AgentHl7Channel implements Channel {
     this.app.log.info(`[HL7:${definition.name}] Reloading config... Evaluating if channel needs to change address...`);
 
     if (needToRebindToPort(previousEndpoint, endpoint)) {
-      this.stop();
+      await this.stop();
       this.start();
       this.app.log.info(`[HL7:${definition.name}] Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
     } else {

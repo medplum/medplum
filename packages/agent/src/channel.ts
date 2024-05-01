@@ -3,9 +3,9 @@ import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 
 export interface Channel {
   start(): void;
-  stop(): void;
+  stop(): Promise<void>;
   sendToRemote(message: AgentTransmitResponse): void;
-  reloadConfig(definition: AgentChannel, endpoint: Endpoint): void;
+  reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;
   getDefinition(): AgentChannel;
   getEndpoint(): Endpoint;
 }

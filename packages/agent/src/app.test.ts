@@ -319,7 +319,7 @@ describe('App', () => {
     const hl7StagingEndpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
       status: 'active',
-      address: 'mllp://0.0.0.0:9002',
+      address: 'mllp://0.0.0.0:9004',
       connectionType: { code: ContentType.HL7_V2 },
       payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });

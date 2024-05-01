@@ -4,6 +4,7 @@ import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, unlinkSync } from 'node:fs';
+import net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
@@ -13,6 +14,7 @@ export class AgentDicomChannel implements Channel {
   private server: dimse.Server;
   private definition: AgentChannel;
   private endpoint: Endpoint;
+  private started = false;
   readonly tempDir: string;
 
   constructor(
@@ -119,7 +121,7 @@ export class AgentDicomChannel implements Channel {
           App.instance.addToWebSocketQueue({
             type: 'agent:transmit:request',
             accessToken: 'placeholder',
-            channel: DcmjsDimseScp.channel.definition.name as string,
+            channel: DcmjsDimseScp.channel.getDefinition().name as string,
             remote: this.association?.getCallingAeTitle() as string,
             contentType: ContentType.JSON,
             body: JSON.stringify(payload),
@@ -133,6 +135,7 @@ export class AgentDicomChannel implements Channel {
         return response;
       }
     }
+    DcmjsDimseScp.channel = this;
 
     this.definition = definition;
     this.endpoint = endpoint;
@@ -141,6 +144,10 @@ export class AgentDicomChannel implements Channel {
   }
 
   start(): void {
+    if (this.started) {
+      return;
+    }
+    this.started = true;
     const address = new URL(this.endpoint.address as string);
     this.app.log.info(`Channel starting on ${address}`);
     this.server.on('networkError', (e) => console.log('Network error: ', e));
@@ -148,9 +155,23 @@ export class AgentDicomChannel implements Channel {
     this.app.log.info('Channel started successfully');
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
+    if (!this.started) {
+      return;
+    }
+
     this.app.log.info('Channel stopping...');
-    this.server.close();
+
+    // Wait for server to close
+    await new Promise<void>((resolve) => {
+      // @ts-expect-error Types don't list this internal member
+      (this.server.server as net.Server).on('close', () => {
+        resolve();
+      });
+      this.server.close();
+    });
+
+    this.started = false;
     this.app.log.info('Channel stopped successfully');
   }
 
@@ -158,7 +179,7 @@ export class AgentDicomChannel implements Channel {
     throw new Error(`sendToRemote not implemented (${JSON.stringify(msg)})`);
   }
 
-  reloadConfig(definition: AgentChannel, endpoint: Endpoint): void {
+  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
     const previousEndpoint = this.endpoint;
     this.definition = definition;
     this.endpoint = endpoint;
