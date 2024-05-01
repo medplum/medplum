@@ -28,76 +28,62 @@ const MAX_WAIT_TIMEOUT = 60000;
 export const agentPushHandler = asyncWrap(async (req: Request, res: Response) => {
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
-      return new Promise<Parameters>((resolve, reject) => {
-        pushToAgent(req, (outcome, agentResponse) => {
-          resolve({
-            resourceType: 'Parameters',
-            parameter: [
-              { name: 'outcome', resource: outcome },
-              ...(agentResponse ? [{ name: 'responseBody', valueString: agentResponse.body }] : []),
-            ],
-          } satisfies Parameters);
-        }).catch(reject);
-      });
+      const [outcome, agentResponse] = await pushToAgent(req);
+      return {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'outcome', resource: outcome },
+          ...(agentResponse ? [{ name: 'responseBody', valueString: agentResponse.body }] : []),
+        ],
+      } satisfies Parameters;
     });
   } else {
-    await pushToAgent(req, (outcome, agentResponse) => {
-      if (!agentResponse) {
-        sendOutcome(res, outcome);
-        return;
-      }
-      res
-        .status(agentResponse.statusCode ?? 200)
-        .type(agentResponse.contentType)
-        .send(agentResponse.body);
-    });
+    const [outcome, agentResponse] = await pushToAgent(req);
+    if (!agentResponse) {
+      sendOutcome(res, outcome);
+      return;
+    }
+    res
+      .status(agentResponse.statusCode ?? 200)
+      .type(agentResponse.contentType)
+      .send(agentResponse.body);
   }
 });
 
-async function pushToAgent(
-  req: Request,
-  sendOperationResponse: (outcome: OperationOutcome, agentResponse?: AgentTransmitResponse) => void
-): Promise<void> {
+async function pushToAgent(req: Request): Promise<[OperationOutcome] | [OperationOutcome, AgentTransmitResponse]> {
   const { repo } = getAuthenticatedContext();
 
   // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req, repo);
   if (!agent) {
-    sendOperationResponse(badRequest('Must specify agent ID or identifier'));
-    return;
+    return [badRequest('Must specify agent ID or identifier')];
   }
 
   const params = parseParameters<AgentPushParameters>(req.body);
   if (!params.body) {
-    sendOperationResponse(badRequest('Missing body parameter'));
-    return;
+    return [badRequest('Missing body parameter')];
   }
 
   if (!params.contentType) {
-    sendOperationResponse(badRequest('Missing contentType parameter'));
-    return;
+    return [badRequest('Missing contentType parameter')];
   }
 
   if (!params.destination) {
-    sendOperationResponse(badRequest('Missing destination parameter'));
-    return;
+    return [badRequest('Missing destination parameter')];
   }
 
   const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
   if (waitTimeout < 0 || waitTimeout > MAX_WAIT_TIMEOUT) {
-    sendOperationResponse(badRequest('Invalid wait timeout'));
-    return;
+    return [badRequest('Invalid wait timeout')];
   }
 
   const device = await getDevice(repo, params);
   if (!device) {
-    sendOperationResponse(badRequest('Destination device not found'));
-    return;
+    return [badRequest('Destination device not found')];
   }
 
   if (!device.url) {
-    sendOperationResponse(badRequest('Destination device missing url'));
-    return;
+    return [badRequest('Destination device missing url')];
   }
 
   const message: AgentTransmitRequest = {
@@ -115,16 +101,14 @@ async function pushToAgent(
   );
 
   if (!response) {
-    sendOperationResponse(outcome);
-    return;
+    return [outcome];
   }
 
   if (response.type === 'agent:error' || (response?.statusCode && response?.statusCode >= 400)) {
-    sendOperationResponse(serverError(new Error(response.body)));
-    return;
+    return [serverError(new Error(response.body))];
   }
 
-  sendOperationResponse(outcome, response);
+  return [outcome, response];
 
   // At this point, one of two things will happen:
   // 1. The agent will respond with a message on the channel
