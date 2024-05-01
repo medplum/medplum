@@ -166,6 +166,10 @@ export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgent
   if (options?.waitForResponse) {
     let resolve: (response: [OperationOutcome, T | AgentError]) => void;
     let reject: (err: OperationOutcomeError) => void;
+    const deferredResultPromise = new Promise<[OperationOutcome, T | AgentError]>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
 
     // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
     message.callback ??= getReferenceString(agent) + '-' + randomUUID();
@@ -190,13 +194,17 @@ export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgent
       clearTimeout(timer);
     };
 
-    await getRedis().publish(getReferenceString(agent), JSON.stringify(message));
-    return new Promise<[OperationOutcome, T | AgentError]>((_resolve, _reject) => {
-      resolve = _resolve;
-      reject = _reject;
-    });
+    await publishMessage(agent, message);
+    await deferredResultPromise;
   }
 
-  await getRedis().publish(getReferenceString(agent), JSON.stringify(message));
+  await publishMessage(agent, message);
   return [allOk];
+}
+
+export function publishMessage<T extends BaseAgentMessage = BaseAgentMessage>(
+  agent: Agent,
+  message: T
+): Promise<number> {
+  return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
 }
