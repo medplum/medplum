@@ -172,7 +172,7 @@ export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgent
     });
 
     // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
-    message.callback ??= getReferenceString(agent) + '-' + randomUUID();
+    message.callback = getReferenceString(agent) + '-' + randomUUID();
 
     const redisSubscriber = getRedisSubscriber();
     await redisSubscriber.subscribe(message.callback);
