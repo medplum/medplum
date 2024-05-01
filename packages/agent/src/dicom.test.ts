@@ -101,7 +101,7 @@ describe('DICOM', () => {
     expect(storeCommandDataset?.getElement('Status')).toEqual(0);
 
     client.clearRequests();
-    app.stop();
+    await app.stop();
     mockServer.stop();
   }, 10000);
 });

@@ -53,7 +53,7 @@ export async function main(argv: string[]): Promise<App> {
 
   process.on('SIGINT', () => {
     console.log('Gracefully shutting down from SIGINT (Crtl-C)');
-    app.stop();
+    app.stop().catch(console.error);
     process.exit();
   });
 

@@ -245,7 +245,7 @@ export class App {
     }
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
 
@@ -259,12 +259,16 @@ export class App {
       this.reconnectTimer = undefined;
     }
 
-    this.channels.forEach((channel) => channel.stop());
-
     if (this.webSocket) {
       this.webSocket.close();
       this.webSocket = undefined;
     }
+
+    const channelStopPromises = [];
+    for (const channel of this.channels.values()) {
+      channelStopPromises.push(channel.stop());
+    }
+    await Promise.all(channelStopPromises);
 
     this.log.info('Medplum service stopped successfully');
   }

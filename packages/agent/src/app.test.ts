@@ -86,8 +86,8 @@ describe('App', () => {
     // Simulate a token refresh
     medplum.dispatchEvent({ type: 'change' });
 
-    app.stop();
-    app.stop();
+    await app.stop();
+    await app.stop();
     mockServer.stop();
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unknown message type: unknown'));
@@ -143,8 +143,8 @@ describe('App', () => {
       await sleep(100);
     }
 
-    app.stop();
-    app.stop();
+    await app.stop();
+    await app.stop();
     mockServer2.stop();
   });
 
@@ -198,7 +198,7 @@ describe('App', () => {
 
     const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
-    app.stop();
+    await app.stop();
     mockServer.stop();
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Ignoring empty endpoint address: test'));
@@ -254,7 +254,7 @@ describe('App', () => {
 
     const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
-    app.stop();
+    await app.stop();
     mockServer.stop();
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
@@ -478,7 +478,7 @@ describe('App', () => {
     clearTimeout(timeout);
     expect(stagingChannel.server.server).not.toBeDefined();
 
-    app.stop();
+    await app.stop();
     mockServer.stop();
   });
 });
