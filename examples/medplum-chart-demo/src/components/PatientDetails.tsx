@@ -34,7 +34,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     navigate(`/Patient/${id}/${newTab ?? ''}`);
   }
 
-  function handlePatientEdit(resource: Resource) {
+  function handlePatientEdit(resource: Resource): void {
     medplum
       // Update the resource then re-render the page and go to the details tab
       .updateResource(cleanResource(resource))

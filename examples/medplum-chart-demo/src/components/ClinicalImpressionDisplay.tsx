@@ -26,7 +26,7 @@ export function ClinicalImpressionDisplay(props: ClinicalImpressionDisplayProps)
     };
 
     fetchClinicalImpressions().catch(console.error);
-  }, [medplum]);
+  }, [medplum, props.patient]);
 
   if (!impressions) {
     return <Loading />;

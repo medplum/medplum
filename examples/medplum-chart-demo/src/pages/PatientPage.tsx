@@ -14,9 +14,9 @@ export function PatientPage(): JSX.Element {
     if (id) {
       medplum.readResource('Patient', id).then(setPatient).catch(console.error);
     }
-  });
+  }, [id]);
 
-  function onPatientChange(patient: Patient) {
+  function onPatientChange(patient: Patient): void {
     setPatient(patient);
   }
 

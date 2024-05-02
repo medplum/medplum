@@ -49,7 +49,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
       })
       .then(setResponse)
       .catch(console.error);
-  }, [response, medplum]);
+  }, [response, medplum, props.encounter]);
 
   function handleTabChange(newTab: string | null): void {
     navigate(`/Encounter/${id}/${newTab ?? ''}`);
@@ -342,12 +342,13 @@ function createConditionBatch(conditionData: ConditionData, encounter: Encounter
   ];
 
   // If this item is being added to the problem list, we will create two copies of the condition - one as an encounter diagnosis and one as a problem list item. For more details see https://www.medplum.com/docs/charting/representing-diagnoses#problem-list-item
-  conditionData.problemList ??
+  if (conditionData.problemList) {
     entries.push({
       fullUrl: generateId(),
       request: { method: 'POST', url: 'Condition' },
       resource: problemListCondition,
     });
+  }
 
   return entries;
 }

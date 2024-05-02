@@ -1,4 +1,4 @@
-import { Modal, Paper } from '@mantine/core';
+import { Paper } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   DEFAULT_SEARCH_COUNT,
@@ -62,7 +62,7 @@ export function SearchPage(): JSX.Element {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
         hideFilters={true}
-        hideToolbar={search.resourceType === 'Encounter' ? false : true}
+        hideToolbar={search.resourceType !== 'Encounter'}
         onNew={handlers.open}
       />
     </Paper>

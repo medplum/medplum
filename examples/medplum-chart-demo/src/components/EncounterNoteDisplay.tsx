@@ -16,9 +16,20 @@ interface EncounterNoteDisplayProps {
   encounter: Encounter;
 }
 
+interface NoteDisplay {
+  reasonForVisit: CodeableConcept;
+  date: string | undefined;
+  diastolic: Quantity;
+  systolic: Quantity;
+  height: Quantity;
+  weight: Quantity;
+  notes: Annotation[];
+  bmi: Quantity | undefined;
+}
+
 export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Element {
   // Ensure that the correct response is being displayed
-  function checkForValidResponse() {
+  function checkForValidResponse(): void {
     const response = props.response;
     const encounter = props.encounter;
 
@@ -32,7 +43,7 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
 
   const displayValues = parseAnswers(answers);
 
-  function parseAnswers(answers: Record<string, QuestionnaireResponseItemAnswer>) {
+  function parseAnswers(answers: Record<string, QuestionnaireResponseItemAnswer>): NoteDisplay {
     // Parse out the note into a more easily usable data structure
     const reasonForVisit: CodeableConcept = {
       coding: [answers['reason-for-visit'].valueCoding as Coding],
