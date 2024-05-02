@@ -111,7 +111,9 @@ export class App {
 
     this.webSocket.addEventListener('error', (err) => {
       if (!this.shutdown) {
-        this.log.error(normalizeErrorString(err.error));
+        // This event is only fired when WebSocket closes due to some kind of error
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
+        this.log.error(`WebSocket closed due to an error: ${normalizeErrorString(err)}`);
       }
     });
 

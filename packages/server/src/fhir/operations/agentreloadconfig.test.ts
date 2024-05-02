@@ -1,8 +1,8 @@
 import {
-  AgentConnectResponse,
   AgentError,
   AgentReloadConfigRequest,
   AgentReloadConfigResponse,
+  AgentTransmitResponse,
   ContentType,
   allOk,
   serverError,
@@ -10,13 +10,16 @@ import {
 import { Agent, Bundle, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import { Server } from 'node:http';
+import { AddressInfo } from 'node:net';
 import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
 import {
   MockAgentResponseHandle,
-  cleanupAllAgentMessageSubscribers,
+  cleanupMockAgents,
+  configMockAgents,
   expectBundleToContainOutcome,
   mockAgentResponse,
 } from './utils/agenttestutils';
@@ -26,12 +29,21 @@ const NUM_DEFAULT_AGENTS = 2;
 describe('Agent/$reload-config', () => {
   const app = express();
   const agents = [] as Agent[];
+  let server: Server;
+  let port: number;
   let accessToken: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initApp(app, config);
-    accessToken = await initTestAuth();
+    server = await initApp(app, config);
+    accessToken = await initTestAuth({ membership: { admin: true } });
+
+    await new Promise<void>((resolve) => {
+      server.listen(0, 'localhost', 511, () => {
+        port = (server.address() as AddressInfo).port;
+        resolve();
+      });
+    });
 
     const promises = Array.from({ length: NUM_DEFAULT_AGENTS }) as Promise<Response>[];
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
@@ -52,10 +64,12 @@ describe('Agent/$reload-config', () => {
       expect(responses[i].status).toBe(201);
       agents[i] = responses[i].body;
     }
+
+    configMockAgents(port);
   });
 
   afterAll(async () => {
-    cleanupAllAgentMessageSubscribers();
+    cleanupMockAgents();
     await shutdownApp();
   });
 
@@ -66,6 +80,7 @@ describe('Agent/$reload-config', () => {
     for (let i = 0; i < agents.length; i++) {
       handlePromises[i] = mockAgentResponse<AgentReloadConfigRequest, AgentReloadConfigResponse>(
         agents[i],
+        accessToken,
         'agent:reloadconfig:request',
         { type: 'agent:reloadconfig:response', statusCode: 200 }
       );
@@ -91,6 +106,7 @@ describe('Agent/$reload-config', () => {
   test('Reload config for Agent by ID', async () => {
     const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentReloadConfigResponse>(
       agents[0],
+      accessToken,
       'agent:reloadconfig:request',
       { type: 'agent:reloadconfig:response', statusCode: 200 }
     );
@@ -109,6 +125,7 @@ describe('Agent/$reload-config', () => {
   test('Agent error during reload', async () => {
     const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentError>(
       agents[0],
+      accessToken,
       'agent:reloadconfig:request',
       { type: 'agent:error', body: 'Something is broken' }
     );
@@ -125,10 +142,11 @@ describe('Agent/$reload-config', () => {
   });
 
   test('Invalid response from agent during reload', async () => {
-    const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentConnectResponse>(
+    const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentTransmitResponse>(
       agents[0],
+      accessToken,
       'agent:reloadconfig:request',
-      { type: 'agent:connect:response' }
+      { type: 'agent:transmit:response', remote: '8.8.8.8', contentType: ContentType.PING, body: 'PING' }
     );
 
     const res = await request(app)

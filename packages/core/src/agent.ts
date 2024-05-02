@@ -56,13 +56,17 @@ export interface AgentReloadConfigResponse extends BaseAgentMessage {
   statusCode: number;
 }
 
-export type AgentMessage =
-  | AgentError
+export type AgentRequestMessage =
   | AgentConnectRequest
-  | AgentConnectResponse
   | AgentHeartbeatRequest
-  | AgentHeartbeatResponse
   | AgentTransmitRequest
+  | AgentReloadConfigRequest;
+
+export type AgentResponseMessage =
+  | AgentConnectResponse
+  | AgentHeartbeatResponse
   | AgentTransmitResponse
-  | AgentReloadConfigRequest
-  | AgentReloadConfigResponse;
+  | AgentReloadConfigResponse
+  | AgentError;
+
+export type AgentMessage = AgentRequestMessage | AgentResponseMessage;

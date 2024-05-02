@@ -1,7 +1,7 @@
 import {
   AgentError,
-  BaseAgentMessage,
-  BaseAgentRequestMessage,
+  AgentRequestMessage,
+  AgentResponseMessage,
   ContentType,
   OperationOutcomeError,
   Operator,
@@ -158,51 +158,49 @@ export interface AgentMessageOptions {
   timeout?: number;
 }
 
-export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgentMessage>(
+export async function publishAgentRequest<T extends AgentResponseMessage = AgentResponseMessage>(
   agent: Agent,
-  message: BaseAgentRequestMessage,
+  message: AgentRequestMessage,
   options?: AgentMessageOptions
 ): Promise<[OperationOutcome] | [OperationOutcome, T | AgentError]> {
   if (options?.waitForResponse) {
-    let resolve: (response: [OperationOutcome, T | AgentError]) => void;
-    let reject: (err: OperationOutcomeError) => void;
-    const deferredResultPromise = new Promise<[OperationOutcome, T | AgentError]>((_resolve, _reject) => {
-      resolve = _resolve;
-      reject = _reject;
-    });
-
     // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
     message.callback = getReferenceString(agent) + '-' + randomUUID();
 
     const redisSubscriber = getRedisSubscriber();
     await redisSubscriber.subscribe(message.callback);
 
-    redisSubscriber.on('message', (_channel: string, message: string) => {
-      const response = JSON.parse(message) as T | AgentError;
-      resolve([allOk, response]);
-      cleanup();
+    const resultPromise = new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {
+      redisSubscriber.on('message', (_channel: string, message: string) => {
+        const response = JSON.parse(message) as T | AgentError;
+        resolve([allOk, response]);
+        cleanup();
+      });
+
+      // Create a timer for 5 seconds for timeout
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new OperationOutcomeError(badRequest('Timeout')));
+      }, options?.timeout ?? 5000);
+
+      const cleanup = (): void => {
+        redisSubscriber.disconnect();
+        clearTimeout(timer);
+      };
     });
 
-    // Create a timer for 5 seconds for timeout
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new OperationOutcomeError(badRequest('Timeout')));
-    }, options?.timeout ?? 5000);
-
-    const cleanup = (): void => {
-      redisSubscriber.disconnect();
-      clearTimeout(timer);
-    };
-
-    await publishMessage(agent, message);
-    const result = await deferredResultPromise;
+    await publishRequestMessage(agent, message);
+    const result = await resultPromise;
     return result;
   }
 
-  await publishMessage(agent, message);
+  await publishRequestMessage(agent, message);
   return [allOk];
 }
 
-function publishMessage<T extends BaseAgentMessage = BaseAgentMessage>(agent: Agent, message: T): Promise<number> {
+function publishRequestMessage<T extends AgentRequestMessage = AgentRequestMessage>(
+  agent: Agent,
+  message: T
+): Promise<number> {
   return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
 }
