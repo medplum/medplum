@@ -1,6 +1,6 @@
 import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { HTTP_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
@@ -8,7 +8,7 @@ import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConcep
 import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
 
-const NULLFLAVOR = 'http://terminology.hl7.org/CodeSystem/v3-NullFlavor';
+const NULLFLAVOR = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor';
 
 type SexualOrientationCode = '38628009' | '20430005' | '42035005' | 'OTH' | 'UNK' | 'ASKU';
 // Sexual orientation widget
@@ -57,7 +57,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
             {
               coding: [
                 {
-                  system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+                  system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/observation-category',
                   code: 'social-history',
                   display: 'Social History',
                 },

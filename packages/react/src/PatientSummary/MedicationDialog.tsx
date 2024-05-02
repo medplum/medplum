@@ -1,5 +1,5 @@
 import { Button, Group, Radio, Stack } from '@mantine/core';
-import { createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, createReference } from '@medplum/core';
 import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
@@ -39,7 +39,7 @@ export function MedicationDialog(props: MedicationDialogProps): JSX.Element {
           name="request"
           path="MedicationRequest.medication[x]"
           data-autofocus={true}
-          binding="http://hl7.org/fhir/ValueSet/medication-codes"
+          binding={HTTP_HL7_ORG + '/fhir/ValueSet/medication-codes'}
           defaultValue={medication?.medicationCodeableConcept}
           onChange={(request) => setCode(request)}
           outcome={undefined}
