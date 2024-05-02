@@ -10,7 +10,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
+import { IconGenderFemale, IconGenderMale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
@@ -23,6 +23,19 @@ export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
   readonly background?: string;
   readonly topContent?: ReactNode;
+}
+
+type IconType = typeof IconGenderFemale;
+
+function getGenderIcon(patient?: Patient): IconType | undefined {
+  switch (patient?.gender) {
+    case 'female':
+      return IconGenderFemale;
+    case 'male':
+      return IconGenderMale;
+    default:
+      return undefined;
+  }
 }
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
@@ -75,6 +88,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     return null;
   }
 
+  const GenderIconComponent = getGenderIcon(patient);
+
   return (
     <Card {...rest}>
       <Card.Section h={100} style={{ background }} />
@@ -88,8 +103,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         </Text>
       )}
       <Paper withBorder p="md" my="md">
-        <Group grow>
-          <Flex justify="center" align="center" direction="column" gap={0} maw="33%">
+        <Group wrap="nowrap" justify="space-evenly">
+          <Flex justify="center" align="center" direction="column" gap={0}>
             <IconUserSquare size={24} color="gray" />
             <Text fz="xs" ta="center" style={{ whiteSpace: 'nowrap' }}>
               Self
@@ -101,12 +116,14 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               {patient?.generalPractitioner?.[0]?.display ?? 'No provider'}
             </Text>
           </Flex>
-          <Flex justify="center" align="center" direction="column" gap={0}>
-            <IconGenderFemale size={24} color="gray" />
-            <Text fz="xs" style={{ whiteSpace: 'nowrap' }}>
-              {patient.gender}
-            </Text>
-          </Flex>
+          {GenderIconComponent && (
+            <Flex justify="center" align="center" direction="column" gap={0}>
+              <GenderIconComponent size={24} color="gray" />
+              <Text fz="xs" style={{ whiteSpace: 'nowrap' }}>
+                {patient.gender}
+              </Text>
+            </Flex>
+          )}
         </Group>
       </Paper>
       <Stack gap="xs">
