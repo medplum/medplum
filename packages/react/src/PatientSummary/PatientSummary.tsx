@@ -18,6 +18,7 @@ import { Medications } from './Medications';
 import { ProblemList } from './ProblemList';
 import { SmokingStatus } from './SmokingStatus';
 import { Vitals } from './Vitals';
+import { SexualOrientation } from './SexualOrientation';
 
 export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
@@ -45,6 +46,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>();
   const [problems, setProblems] = useState<Condition[]>();
   const [smokingStatus, setSmokingStatus] = useState<Observation>();
+  const [sexualOrientation, setSexualOrientation] = useState<Observation>();
   const [vitals, setVitals] = useState<Observation[]>();
   const [medicationRequest, setMedicationRequest] = useState<MedicationRequest[]>();
 
@@ -67,6 +69,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         setMedicationRequest(results[3] as MedicationRequest[]);
 
         const observations = results[4] as Observation[];
+
+        setSexualOrientation(observations.find((obs) => obs.code?.coding?.[0].code === '76690-7'));
         setSmokingStatus(observations.find((obs) => obs.code?.coding?.[0].code === '72166-2'));
         setVitals(observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'));
       })
@@ -134,6 +138,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         <ProblemList patient={patient} problems={problems as Condition[]} />
         <Divider />
         <Medications patient={patient} medicationRequests={medicationRequest as MedicationRequest[]} />
+        <Divider />
+        <SexualOrientation patient={patient} sexualOrientation={sexualOrientation} />
         <Divider />
         <SmokingStatus patient={patient} smokingStatus={smokingStatus} />
         <Divider />
