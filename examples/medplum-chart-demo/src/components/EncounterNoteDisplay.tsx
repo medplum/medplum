@@ -1,4 +1,4 @@
-import { Flex, Group, Stack, Title } from '@mantine/core';
+import { Group, Stack, Title } from '@mantine/core';
 import { formatDate, getQuestionnaireAnswers } from '@medplum/core';
 import {
   Annotation,
@@ -14,30 +14,6 @@ import { CodeableConceptDisplay, Document, NoteDisplay, QuantityDisplay } from '
 interface EncounterNoteDisplayProps {
   response: QuestionnaireResponse;
   encounter: Encounter;
-}
-
-interface EncounterNoteAnswer {
-  'encounter-date': { valueString: string };
-  'reason-for-visit': { valueCoding: Coding };
-  'diastolic-blood-pressure'?: { valueInteger: number };
-  'systolic-blood-pressure'?: { valueInteger: number };
-  'vitals-height'?: { valueInteger: number };
-  'vitals-weight'?: { valueInteger: number };
-  'hot-flashes'?: { valueBoolean: boolean };
-  'hot-flashes-details'?: { valueString: string };
-  'mood-swings'?: { valueBoolean: boolean };
-  'mood-swings-details'?: { valueString: string };
-  'vaginal-dryness'?: { valueBoolean: boolean };
-  'vaginal-dryness-details'?: { valueString: string };
-  'sleep-disturbance'?: { valueBoolean: boolean };
-  'sleep-disturbance-details'?: { valueString: string };
-  'self-reported-history'?: { valueString: string };
-  'blood-clots-details'?: { valueString: string };
-  'stroke-details'?: { valueString: string };
-  'breast-cancer-details'?: { valueString: string };
-  'endometrial-cancer-details'?: { valueString: string };
-  'irregular-bleeding-details'?: { valueString: string };
-  'bmi>30-details'?: { valueString: string };
 }
 
 export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Element {

@@ -1,5 +1,5 @@
 import { Tabs } from '@mantine/core';
-import { getQuestionnaireAnswers, getReferenceString } from '@medplum/core';
+import { generateId, getDisplayString, getQuestionnaireAnswers, getReferenceString } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -56,7 +56,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   }
 
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
-    debugger;
+    // Add details to the QuestionnaireResponse based on the encounter
     const encounterNote: QuestionnaireResponse = {
       ...formData,
       encounter: { reference: getReferenceString(props.encounter) },
@@ -64,12 +64,19 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
     };
 
     try {
+      // Store the QuestionnaireResponse in the database and set it so that the page renders correctly
       const response = await medplum.createResource(encounterNote);
       setResponse(response);
-      const [observationData, conditionData, clinicalImpressionData] = parseResponse(response);
-      const bundleEntries = createObservationBatch(observationData, props.encounter, currentUser);
-      bundleEntries.push(createConditionBatch(conditionData, props.encounter, currentUser));
 
+      // Parse the answers to separate the observation, condition, and clinical impression data
+      const [observationData, conditionData, clinicalImpressionData] = parseResponse(response);
+
+      // Build an array of bundle entries so that all resources can be created as a batch
+      const bundleEntries = createObservationBatch(observationData, props.encounter, currentUser).concat(
+        createConditionBatch(conditionData, props.encounter, currentUser)
+      );
+
+      // If there are notes, add them to the bundle
       if (clinicalImpressionData.notes) {
         bundleEntries.push(createClinicalImpressionEntries(clinicalImpressionData, props.encounter, currentUser));
       }
@@ -80,6 +87,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
         entry: bundleEntries,
       };
 
+      // Execute the batch
       await medplum.executeBatch(encounterDataBundle);
     } catch (err) {
       console.error(err);
@@ -123,6 +131,7 @@ interface ObservationData {
 
 interface ConditionData {
   reasonForVisit?: Coding;
+  problemList: boolean;
 }
 
 interface ClinicalImpressionData {
@@ -130,7 +139,10 @@ interface ClinicalImpressionData {
 }
 
 function parseResponse(response: QuestionnaireResponse): [ObservationData, ConditionData, ClinicalImpressionData] {
+  // Get the answers
   const answers = getQuestionnaireAnswers(response);
+
+  // Separate the answers into observations, conditions, and clinical impressions
   const observationData = {
     diastolicBloodPressure: answers['diastolic-blood-pressure'].valueInteger,
     systolicBloodPressure: answers['systolic-blood-pressure'].valueInteger,
@@ -140,20 +152,23 @@ function parseResponse(response: QuestionnaireResponse): [ObservationData, Condi
 
   const conditionData = {
     reasonForVisit: answers['reason-for-visit'].valueCoding,
+    problemList: answers['problem-list'].valueBoolean || false,
   };
 
   const clinicalImpressionData = {
     notes: answers['notes-and-comments'].valueString,
   };
 
+  // Return a tuple of the observation, condition, and clinical impression data
   return [observationData, conditionData, clinicalImpressionData];
 }
 
 function createObservationBatch(
   observationData: ObservationData,
   encounter: Encounter,
-  currentUser: Practitioner
+  user: Practitioner
 ): BundleEntry[] {
+  // Create the blood pressure observation with components for both systolic and diastolic
   const bloodPressureObservation: Observation = {
     resourceType: 'Observation',
     status: 'preliminary',
@@ -169,7 +184,7 @@ function createObservationBatch(
     },
     subject: encounter.subject,
     encounter: { reference: getReferenceString(encounter) },
-    performer: [{ reference: getReferenceString(currentUser) }],
+    performer: [{ reference: getReferenceString(user) }],
     component: [
       {
         code: {
@@ -208,6 +223,7 @@ function createObservationBatch(
     ],
   };
 
+  // Create the height observation
   const heightObservation: Observation = {
     resourceType: 'Observation',
     status: 'preliminary',
@@ -222,7 +238,7 @@ function createObservationBatch(
     },
     subject: encounter.subject,
     encounter: { reference: getReferenceString(encounter) },
-    performer: [{ reference: getReferenceString(currentUser) }],
+    performer: [{ reference: getReferenceString(user) }],
     valueQuantity: {
       value: observationData.height,
       unit: 'cm',
@@ -231,6 +247,7 @@ function createObservationBatch(
     },
   };
 
+  // Create the weight observation
   const weightObservation: Observation = {
     resourceType: 'Observation',
     status: 'preliminary',
@@ -245,7 +262,7 @@ function createObservationBatch(
     },
     subject: encounter.subject,
     encounter: { reference: getReferenceString(encounter) },
-    performer: [{ reference: getReferenceString(currentUser) }],
+    performer: [{ reference: getReferenceString(user) }],
     valueQuantity: {
       value: observationData.weight,
       unit: 'lbs',
@@ -254,6 +271,7 @@ function createObservationBatch(
     },
   };
 
+  // Create a bundle entry with all observations
   const observationBatch: BundleEntry[] = [
     {
       fullUrl: 'urn:uuid:4c644324-0ac7-4014-ab1f-2dd3c64aef60',
@@ -275,27 +293,63 @@ function createObservationBatch(
   return observationBatch;
 }
 
-function createConditionBatch(
-  conditionData: ConditionData,
-  encounter: Encounter,
-  currentUser: Practitioner
-): BundleEntry {
-  const condition: Condition = {
+function createConditionBatch(conditionData: ConditionData, encounter: Encounter, user: Practitioner): BundleEntry[] {
+  // Build the encounter diagnosis condition
+  const encounterDiagnosisCondition: Condition = {
     resourceType: 'Condition',
     subject: encounter.subject as Reference<Patient>,
     code: {
       coding: conditionData.reasonForVisit ? [conditionData.reasonForVisit] : [],
     },
+    category: [
+      {
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/ValueSet/condition-category',
+            code: 'encounter-diagnosis',
+            display: 'Encounter Diagnosis',
+          },
+        ],
+      },
+    ],
     encounter: { reference: getReferenceString(encounter) },
-    recorder: { reference: getReferenceString(currentUser) },
-    asserter: { reference: getReferenceString(currentUser) },
+    recorder: { reference: getReferenceString(user) },
+    asserter: { reference: getReferenceString(user) },
   };
 
-  return {
-    fullUrl: 'urn:uuid:20750874-facd-41a8-8ebf-28ebcf026b45',
-    request: { method: 'POST', url: 'Condition' },
-    resource: condition,
+  // Clone the condition, but with a category of problem list item instead.
+  const problemListCondition: Condition = {
+    ...encounterDiagnosisCondition,
+    category: [
+      {
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/ValueSet/condition-category',
+            code: 'problem-list-item',
+            display: 'Problem List Item',
+          },
+        ],
+      },
+    ],
   };
+
+  const entries: BundleEntry[] = [
+    {
+      fullUrl: generateId(),
+      request: { method: 'POST', url: 'Condition' },
+      resource: encounterDiagnosisCondition,
+    },
+  ];
+
+  // If this item is being added to the problem list, we will create two copies of the condition - one as an encounter diagnosis and one as a problem list item. For more details see https://www.medplum.com/docs/charting/representing-diagnoses#problem-list-item
+  conditionData.problemList ??
+    entries.push({
+      fullUrl: generateId(),
+      request: { method: 'POST', url: 'Condition' },
+      resource: problemListCondition,
+    });
+
+  return entries;
 }
 
 function createClinicalImpressionEntries(
@@ -303,16 +357,26 @@ function createClinicalImpressionEntries(
   encounter: Encounter,
   user: Practitioner
 ): BundleEntry {
+  // Create the clinical impression
   const clinicalImpression: ClinicalImpression = {
     resourceType: 'ClinicalImpression',
     status: 'completed',
     subject: encounter.subject as Reference<Patient>,
-    note: clinicalImpressionData.notes ? [{ text: clinicalImpressionData.notes }] : [],
+    note: clinicalImpressionData.notes
+      ? [
+          {
+            text: clinicalImpressionData.notes,
+            authorReference: { reference: getReferenceString(user) },
+            authorString: getDisplayString(user),
+          },
+        ]
+      : [],
     date: new Date().toISOString(),
     encounter: { reference: getReferenceString(encounter) },
     assessor: { reference: getReferenceString(user) },
   };
 
+  // Return the clinical impression as a bundle entry
   return {
     fullUrl: 'urn:uuid:0107b717-61df-4ddb-9164-f13efea7ba31',
     request: { method: 'POST', url: 'ClinicalImpression' },

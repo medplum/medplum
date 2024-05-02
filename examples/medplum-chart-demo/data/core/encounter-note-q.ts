@@ -20,6 +20,11 @@ const encounterNoteQuestionnaire: Questionnaire = {
       answerValueSet: 'http://hl7.org/fhir/ValueSet/icd-10',
     },
     {
+      linkId: 'problem-list',
+      type: 'boolean',
+      text: 'Add to problem list',
+    },
+    {
       linkId: 'vitals',
       type: 'group',
       text: 'Vital Signs',
