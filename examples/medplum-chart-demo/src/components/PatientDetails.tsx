@@ -6,6 +6,7 @@ import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchCont
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { cleanResource } from '../utils';
+import { ClinicalImpressionDisplay } from './ClinicalImpressionDisplay';
 
 interface PatientDetailsProps {
   patient: Patient;
@@ -101,12 +102,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
           />
         </Tabs.Panel>
         <Tabs.Panel value="clinical">
-          <SearchControl
-            search={clinicalImpressionSearch}
-            hideFilters={true}
-            hideToolbar={true}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
-          />
+          <ClinicalImpressionDisplay patient={props.patient} />
         </Tabs.Panel>
         <Tabs.Panel value="observations">
           <SearchControl
