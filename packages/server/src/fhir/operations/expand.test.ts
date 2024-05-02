@@ -12,20 +12,32 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { initTestAuth, withTestContext } from '../../test.setup';
+import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }])('Expand with %j', (projectProps) => {
   const app = express();
+  let project: Project;
   let accessToken: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth(projectProps);
+    const info = await createTestProject({ project: projectProps, withAccessToken: true });
+    project = info.project;
+    accessToken = info.accessToken;
   });
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  test('Using expected features', () => {
+    if (projectProps.features === undefined) {
+      fail('Expected projectProps.features to be defined');
+    }
+    for (const feature of projectProps.features) {
+      expect(project.features).toContain(feature);
+    }
   });
 
   test('No ValueSet URL', async () => {
@@ -276,7 +288,7 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       version: '1',
       content: 'not-present',
     };
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await initTestAuth({ makeSuperAdmin: true });
 
     // First version of code system
     const res1 = await request(app)

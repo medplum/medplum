@@ -23,7 +23,9 @@ export interface TestProjectOptions {
   project?: Partial<Project>;
   accessPolicy?: Partial<AccessPolicy>;
   membership?: Partial<ProjectMembership>;
-  superAdmin?: boolean;
+  // using `makeSuperAdmin` instead of `superAdmin` to avoid overlap with any properties
+  // of `Project`, `AccessPolicy`, `ProjectMembership`, etc.
+  makeSuperAdmin?: boolean;
   withClient?: boolean;
   withAccessToken?: boolean;
   withRepo?: boolean;
@@ -59,7 +61,7 @@ export async function createTestProject<T extends TestProjectOptions = TestProje
           valueString: 'bar',
         },
       ],
-      superAdmin: options?.superAdmin,
+      superAdmin: options?.makeSuperAdmin,
       ...options?.project,
     });
 
@@ -125,7 +127,7 @@ export async function createTestProject<T extends TestProjectOptions = TestProje
         repo = new Repository({
           projects: [project.id as string],
           author: createReference(client),
-          superAdmin: options?.superAdmin,
+          superAdmin: options?.makeSuperAdmin,
           projectAdmin: options?.membership?.admin,
           accessPolicy,
           strictMode: project.strictMode,
