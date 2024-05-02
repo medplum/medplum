@@ -1,5 +1,6 @@
 import {
   AgentMessage,
+  AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
   ContentType,
@@ -168,7 +169,11 @@ export class App {
             try {
               this.log.info('Reloading config...');
               await this.hydrateListeners();
-              await this.sendToWebSocket({ type: 'agent:success', callback: command.callback });
+              await this.sendToWebSocket({
+                type: 'agent:reloadconfig:response',
+                statusCode: 200,
+                callback: command.callback,
+              } satisfies AgentReloadConfigResponse);
             } catch (err: unknown) {
               await this.sendToWebSocket({
                 type: 'agent:error',

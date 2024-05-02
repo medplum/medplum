@@ -195,16 +195,14 @@ export async function publishAgentMessage<T extends BaseAgentMessage = BaseAgent
     };
 
     await publishMessage(agent, message);
-    await deferredResultPromise;
+    const result = await deferredResultPromise;
+    return result;
   }
 
   await publishMessage(agent, message);
   return [allOk];
 }
 
-export function publishMessage<T extends BaseAgentMessage = BaseAgentMessage>(
-  agent: Agent,
-  message: T
-): Promise<number> {
+function publishMessage<T extends BaseAgentMessage = BaseAgentMessage>(agent: Agent, message: T): Promise<number> {
   return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
 }

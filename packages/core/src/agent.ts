@@ -12,10 +12,6 @@ export interface AgentError extends BaseAgentMessage {
   body: string;
 }
 
-export interface AgentSuccess extends BaseAgentMessage {
-  type: 'agent:success';
-}
-
 export interface AgentConnectRequest extends BaseAgentRequestMessage {
   type: 'agent:connect:request';
   agentId: string;
@@ -55,13 +51,18 @@ export interface AgentReloadConfigRequest extends BaseAgentMessage {
   type: 'agent:reloadconfig:request';
 }
 
+export interface AgentReloadConfigResponse extends BaseAgentMessage {
+  type: 'agent:reloadconfig:response';
+  statusCode: number;
+}
+
 export type AgentMessage =
   | AgentError
-  | AgentSuccess
   | AgentConnectRequest
   | AgentConnectResponse
   | AgentHeartbeatRequest
   | AgentHeartbeatResponse
   | AgentTransmitRequest
   | AgentTransmitResponse
-  | AgentReloadConfigRequest;
+  | AgentReloadConfigRequest
+  | AgentReloadConfigResponse;

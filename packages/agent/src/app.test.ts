@@ -1,4 +1,5 @@
 import {
+  AgentMessage,
   AgentReloadConfigRequest,
   ContentType,
   LogLevel,
@@ -264,17 +265,20 @@ describe('App', () => {
     // Create agent with an HL7 channel
     const state = {
       mySocket: undefined as Client | undefined,
-      gotAgentSuccess: false,
+      gotAgentReloadResponse: false,
     };
 
     function mockConnectionHandler(socket: Client): void {
       state.mySocket = socket;
       socket.on('message', (data) => {
-        const command = JSON.parse((data as Buffer).toString('utf8'));
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
         if (command.type === 'agent:connect:request') {
           socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
-        } else if (command.type === 'agent:success') {
-          state.gotAgentSuccess = true;
+        } else if (command.type === 'agent:reloadconfig:response') {
+          if (command.statusCode !== 200) {
+            throw new Error('Invalid status code! Expected 200');
+          }
+          state.gotAgentReloadResponse = true;
         }
       });
     }
@@ -444,7 +448,7 @@ describe('App', () => {
       shouldThrow = true;
     }, 3000);
 
-    while (!state.gotAgentSuccess) {
+    while (!state.gotAgentReloadResponse) {
       if (shouldThrow) {
         throw new Error('Timeout');
       }
@@ -453,7 +457,7 @@ describe('App', () => {
     clearTimeout(timeout);
 
     // We should get back `agent:success` message
-    expect(state.gotAgentSuccess).toEqual(true);
+    expect(state.gotAgentReloadResponse).toEqual(true);
 
     // Check channels have been updated
     expect(app.channels.has('hl7-test')).toEqual(true);

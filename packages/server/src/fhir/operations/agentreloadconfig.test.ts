@@ -2,7 +2,7 @@ import {
   AgentConnectResponse,
   AgentError,
   AgentReloadConfigRequest,
-  AgentSuccess,
+  AgentReloadConfigResponse,
   ContentType,
   allOk,
   serverError,
@@ -64,10 +64,10 @@ describe('Agent/$reload-config', () => {
   test('Reload configs for all agents', async () => {
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
     for (let i = 0; i < agents.length; i++) {
-      handlePromises[i] = mockAgentResponse<AgentReloadConfigRequest, AgentSuccess>(
+      handlePromises[i] = mockAgentResponse<AgentReloadConfigRequest, AgentReloadConfigResponse>(
         agents[i],
         'agent:reloadconfig:request',
-        { type: 'agent:success' }
+        { type: 'agent:reloadconfig:response', statusCode: 200 }
       );
     }
     const handles = await Promise.all(handlePromises);
@@ -89,10 +89,10 @@ describe('Agent/$reload-config', () => {
   });
 
   test('Reload config for Agent by ID', async () => {
-    const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentSuccess>(
+    const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentReloadConfigResponse>(
       agents[0],
       'agent:reloadconfig:request',
-      { type: 'agent:success' }
+      { type: 'agent:reloadconfig:response', statusCode: 200 }
     );
 
     const res = await request(app)
