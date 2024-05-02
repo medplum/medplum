@@ -26,13 +26,16 @@ export function SearchPage(): JSX.Element {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
     if (!parsedSearch.resourceType) {
+      // If there is no search, go to the Encounter search page by default
       navigate('/Encounter');
       return;
     }
 
+    // Populate the search with default values as necessary
     const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
 
     if (
+      // If the current url matches the search, set the search, otherwise navigate to the correct url
       location.pathname === `/${populatedSearch.resourceType}` &&
       location.search === formatSearchQuery(populatedSearch)
     ) {

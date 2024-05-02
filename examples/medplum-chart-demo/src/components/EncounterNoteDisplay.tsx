@@ -17,6 +17,7 @@ interface EncounterNoteDisplayProps {
 }
 
 export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Element {
+  // Ensure that the correct response is being displayed
   function checkForValidResponse() {
     const response = props.response;
     const encounter = props.encounter;
@@ -28,11 +29,11 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
   checkForValidResponse();
 
   const answers = getQuestionnaireAnswers(props.response);
-  console.log(answers['encounter-date']);
 
   const displayValues = parseAnswers(answers);
 
   function parseAnswers(answers: Record<string, QuestionnaireResponseItemAnswer>) {
+    // Parse out the note into a more easily usable data structure
     const reasonForVisit: CodeableConcept = {
       coding: [answers['reason-for-visit'].valueCoding as Coding],
     };

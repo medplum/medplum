@@ -38,6 +38,7 @@ export function ResourcePage(): JSX.Element | null {
 
   function handleResourceEdit(resource: Resource): void {
     medplum
+      // Update the resource the re-render and go to the details tab
       .updateResource(cleanResource(resource))
       .then((resource) => {
         setResource(resource);
@@ -47,6 +48,7 @@ export function ResourcePage(): JSX.Element | null {
           message: 'Resource edited.',
         });
         navigate(`/${resourceType}/${id}/details`);
+        window.scroll(0, 0);
       })
       .catch((err) => {
         showNotification({

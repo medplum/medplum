@@ -26,6 +26,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['clinical', 'Clinical Impressions'],
     ['observations', 'Observations'],
   ];
+  // Get the current tab
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t[0]).includes(tab) ? tab : tabs[0][0];
 
@@ -35,6 +36,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
 
   function handlePatientEdit(resource: Resource) {
     medplum
+      // Update the resource then re-render the page and go to the details tab
       .updateResource(cleanResource(resource))
       .then((patient) => {
         props.onChange(patient as Patient);
@@ -60,12 +62,6 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     resourceType: 'Encounter',
     filters: [{ code: 'patient', operator: Operator.EQUALS, value: `Patient/${id}` }],
     fields: ['date', 'patient', 'class'],
-  };
-
-  const clinicalImpressionSearch: SearchRequest = {
-    resourceType: 'ClinicalImpression',
-    filters: [{ code: 'patient', operator: Operator.EQUALS, value: `Patient/${id}` }],
-    fields: ['status', 'description', 'note'],
   };
 
   const observationSearch: SearchRequest = {
