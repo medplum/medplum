@@ -288,7 +288,7 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       version: '1',
       content: 'not-present',
     };
-    const superAdminAccessToken = await initTestAuth({ makeSuperAdmin: true });
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
 
     // First version of code system
     const res1 = await request(app)

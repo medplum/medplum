@@ -23,17 +23,18 @@ export interface TestProjectOptions {
   project?: Partial<Project>;
   accessPolicy?: Partial<AccessPolicy>;
   membership?: Partial<ProjectMembership>;
-  // using `makeSuperAdmin` instead of `superAdmin` to avoid overlap with any properties
-  // of `Project`, `AccessPolicy`, `ProjectMembership`, etc.
-  makeSuperAdmin?: boolean;
+  superAdmin?: boolean;
   withClient?: boolean;
   withAccessToken?: boolean;
   withRepo?: boolean;
 }
 
-export type TestProjectResult<T extends TestProjectOptions = TestProjectOptions> = {
+type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
+type StrictTestProjectOptions<T extends TestProjectOptions> = Exact<TestProjectOptions, T>;
+
+export type TestProjectResult<T extends TestProjectOptions> = {
   project: Project;
-  accessPolicy: T['accessPolicy'] extends AccessPolicy ? AccessPolicy : undefined;
+  accessPolicy: T['accessPolicy'] extends Partial<AccessPolicy> ? AccessPolicy : undefined;
   client: T['withClient'] extends true ? ClientApplication : undefined;
   membership: T['withClient'] extends true ? ProjectMembership : undefined;
   login: T['withAccessToken'] extends true ? Login : undefined;
@@ -41,8 +42,8 @@ export type TestProjectResult<T extends TestProjectOptions = TestProjectOptions>
   repo: T['withRepo'] extends true ? Repository : undefined;
 };
 
-export async function createTestProject<T extends TestProjectOptions = TestProjectOptions>(
-  options: T = {} as T
+export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
+  options?: T
 ): Promise<TestProjectResult<T>> {
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
     const systemRepo = getSystemRepo();
@@ -61,7 +62,7 @@ export async function createTestProject<T extends TestProjectOptions = TestProje
           valueString: 'bar',
         },
       ],
-      superAdmin: options?.makeSuperAdmin,
+      superAdmin: options?.superAdmin,
       ...options?.project,
     });
 
@@ -127,7 +128,7 @@ export async function createTestProject<T extends TestProjectOptions = TestProje
         repo = new Repository({
           projects: [project.id as string],
           author: createReference(client),
-          superAdmin: options?.makeSuperAdmin,
+          superAdmin: options?.superAdmin,
           projectAdmin: options?.membership?.admin,
           accessPolicy,
           strictMode: project.strictMode,
@@ -150,11 +151,11 @@ export async function createTestProject<T extends TestProjectOptions = TestProje
 }
 
 export async function createTestClient(options?: TestProjectOptions): Promise<ClientApplication> {
-  return (await createTestProject({ ...options, withClient: true })).client as ClientApplication;
+  return (await createTestProject({ ...options, withClient: true })).client;
 }
 
 export async function initTestAuth(options?: TestProjectOptions): Promise<string> {
-  return (await createTestProject({ ...options, withAccessToken: true })).accessToken as string;
+  return (await createTestProject({ ...options, withAccessToken: true })).accessToken;
 }
 
 export async function addTestUser(
