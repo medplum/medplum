@@ -1,4 +1,4 @@
-import { ContentType, LOINC, SNOMED } from '@medplum/core';
+import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED } from '@medplum/core';
 import {
   CodeSystem,
   OperationOutcome,
@@ -350,6 +350,70 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toEqual(200);
+  });
+
+  test.only('ValueSet that uses expansion instead of compose', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'https://example.com/fhir/ValueSet/clinical-resources' + randomUUID(),
+        expansion: {
+          timestamp: '2024-05-02T06:30:00.000Z',
+          total: 4,
+          contains: [
+            {
+              system: HTTP_HL7_ORG + '/fhir/resource-types',
+              code: 'Patient',
+            },
+            {
+              system: HTTP_HL7_ORG + '/fhir/resource-types',
+              code: 'Practitioner',
+            },
+            {
+              system: HTTP_HL7_ORG + '/fhir/resource-types',
+              code: 'Observation',
+            },
+            {
+              system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor',
+              code: 'UNK',
+              display: 'Unknown',
+            },
+          ],
+        },
+      });
+    expect(res1.status).toBe(201);
+    const url = res1.body.url;
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    console.log(JSON.stringify(res2.body, undefined, 2));
+    expect(res2.status).toBe(200);
+    expect(res2.body.expansion.contains).toEqual(
+      expect.arrayContaining([
+        {
+          system: HTTP_HL7_ORG + '/fhir/resource-types',
+          code: 'Patient',
+        },
+        {
+          system: HTTP_HL7_ORG + '/fhir/resource-types',
+          code: 'Practitioner',
+        },
+        {
+          system: HTTP_HL7_ORG + '/fhir/resource-types',
+          code: 'Observation',
+        },
+        {
+          system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor',
+          code: 'UNK',
+          display: 'Unknown',
+        },
+      ])
+    );
   });
 });
 
