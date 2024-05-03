@@ -1,9 +1,9 @@
 import { ActionIcon, Button, Divider, Group, NumberInput, Table, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { ContentType, formatDateTime, normalizeErrorString } from '@medplum/core';
-import { Agent, Parameters, Reference } from '@medplum/fhirtypes';
+import { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
-import { IconRouter } from '@tabler/icons-react';
+import { IconCheck, IconRouter } from '@tabler/icons-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -12,6 +12,7 @@ export function ToolsPage(): JSX.Element | null {
   const { id } = useParams() as { id: string };
   const reference = useMemo(() => ({ reference: 'Agent/' + id }) as Reference<Agent>, [id]);
   const [loadingStatus, setLoadingStatus] = useState(false);
+  const [reloadingConfig, setReloadingConfig] = useState(false);
   const [status, setStatus] = useState<string>();
   const [version, setVersion] = useState<string>();
   const [lastUpdated, setLastUpdated] = useState<string>();
@@ -47,6 +48,27 @@ export function ToolsPage(): JSX.Element | null {
     },
     [medplum, reference]
   );
+
+  const handleReloadConfig = useCallback(() => {
+    setReloadingConfig(true);
+    medplum
+      .get(medplum.fhirUrl('Agent', id, '$reload-config'), { cache: 'reload' })
+      .then((_result: Bundle<Parameters>) => {
+        showSuccess('Agent config reloaded successfully.');
+      })
+      .catch((err) => showError(normalizeErrorString(err)))
+      .finally(() => setReloadingConfig(false));
+  }, [medplum, id]);
+
+  function showSuccess(message: string): void {
+    showNotification({
+      color: 'green',
+      title: 'Success',
+      icon: <IconCheck size="1rem" />,
+      message,
+      autoClose: false,
+    });
+  }
 
   function showError(message: string): void {
     showNotification({
@@ -92,6 +114,15 @@ export function ToolsPage(): JSX.Element | null {
           </Table.Tbody>
         </Table>
       )}
+      <Divider my="lg" />
+      <Title order={2}>Reload Config</Title>
+      <p>
+        Reload the configuration of this agent, syncing it with the current version of the Agent resource on the Medplum
+        server.
+      </p>
+      <Button onClick={handleReloadConfig} loading={reloadingConfig} aria-label="Reload config">
+        Reload Config
+      </Button>
       <Divider my="lg" />
       <Title order={2}>Ping from Agent</Title>
       <p>
