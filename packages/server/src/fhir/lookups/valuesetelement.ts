@@ -68,6 +68,14 @@ export class ValueSetElementTable extends LookupTable {
           }
         }
       }
+    } else if (valueSet.expansion?.contains) {
+      for (const concept of valueSet.expansion.contains) {
+        result.push({
+          system: concept.system,
+          code: concept.code,
+          display: concept.display,
+        });
+      }
     }
     return result;
   }

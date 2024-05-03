@@ -143,6 +143,8 @@ function buildValueSetSystems(valueSet: ValueSet): Expression[] {
     for (const include of valueSet.compose.include) {
       processInclude(result, include);
     }
+  } else if (valueSet.expansion?.contains) {
+    processExpansion(result, valueSet.expansion.contains);
   }
   return result;
 }
@@ -162,6 +164,33 @@ function processInclude(systemExpressions: Expression[], include: ValueSetCompos
     systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
   } else {
     systemExpressions.push(systemExpression);
+  }
+}
+
+function processExpansion(systemExpressions: Expression[], expansionContains: ValueSetExpansionContains[]): void {
+  if (!expansionContains) {
+    return;
+  }
+
+  const systemToConcepts: Record<string, ValueSetExpansionContains[]> = Object.create(null);
+
+  for (const code of expansionContains) {
+    if (!code.system) {
+      continue;
+    }
+    if (!(code.system in systemToConcepts)) {
+      systemToConcepts[code.system] = [];
+    }
+    systemToConcepts[code.system].push(code);
+  }
+
+  for (const [system, concepts] of Object.entries(systemToConcepts)) {
+    const systemExpression = new Condition('system', '=', system);
+    const codeExpressions: Expression[] = [];
+    for (const concept of concepts) {
+      codeExpressions.push(new Condition('code', '=', concept.code));
+    }
+    systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
   }
 }
 
