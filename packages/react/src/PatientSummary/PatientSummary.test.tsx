@@ -24,4 +24,10 @@ describe('PatientSummary', () => {
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
+
+  test('Renders with gender missing', async () => {
+    await setup({ patient: { ...HomerSimpson, gender: undefined } });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
 });

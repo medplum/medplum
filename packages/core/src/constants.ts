@@ -9,3 +9,4 @@ export const ICD10 = 'http://hl7.org/fhir/sid/icd-10';
 // common http-based origins useful for avoiding false-positives about preferring https over http,
 // e.g. https://rules.sonarsource.com/javascript/type/Security%20Hotspot/RSPEC-5332/
 export const HTTP_HL7_ORG = 'http://hl7.org';
+export const HTTP_TERMINOLOGY_HL7_ORG = 'http://terminology.hl7.org';
