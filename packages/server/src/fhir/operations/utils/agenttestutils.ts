@@ -55,7 +55,7 @@ export async function mockAgentResponse<
   }
 
   const ws = agentWsMap.get(agent.id as string) as WebSocket;
-  const handler = (event: MessageEvent) => {
+  const handler = (event: MessageEvent): void => {
     if (event.type === 'binary') {
       throw new Error('Invalid message type');
     }
@@ -89,7 +89,7 @@ async function getConnectionPromise(ws: WebSocket, agentId: string, accessToken:
         }, 2500);
 
         // Resolve the connection promise only after we receive a response
-        const connectionHandler = (event: MessageEvent) => {
+        const connectionHandler = (event: MessageEvent): void => {
           const msg = parseWebSocketMessageEvent<AgentConnectResponse>(event);
           if (msg.type === 'agent:connect:response') {
             clearTimeout(timeout);
