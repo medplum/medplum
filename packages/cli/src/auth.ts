@@ -107,7 +107,14 @@ async function openBrowser(url: string): Promise<void> {
     default:
       throw new Error('Unsupported platform: ' + os);
   }
-  exec(cmd);
+  exec(cmd, (error, _, stderr) => {
+    if (error) {
+      throw error;
+    }
+    if (stderr) {
+      throw new Error("Could not open browser: " + { stderr });
+    }
+  });
 }
 
 /**
