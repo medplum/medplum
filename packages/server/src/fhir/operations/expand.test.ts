@@ -352,7 +352,7 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
     expect(res6.status).toEqual(200);
   });
 
-  test.only('ValueSet that uses expansion instead of compose', async () => {
+  test('ValueSet that uses expansion instead of compose', async () => {
     const res1 = await request(app)
       .post(`/fhir/R4/ValueSet`)
       .set('Authorization', 'Bearer ' + accessToken)
