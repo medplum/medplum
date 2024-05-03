@@ -507,6 +507,7 @@ describe('Agent WebSockets', () => {
   });
 
   test('Received agent:error without callback', async () => {
+    const originalConsoleLog = console.log;
     console.log = jest.fn();
     await request(server)
       .ws('/ws/agent')
@@ -519,6 +520,6 @@ describe('Agent WebSockets', () => {
       .close()
       .expectClosed();
     expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('[Agent]: Error received from agent'));
-    (console.log as jest.Mock).mockRestore();
+    console.log = originalConsoleLog;
   });
 });
