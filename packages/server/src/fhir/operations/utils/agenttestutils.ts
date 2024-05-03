@@ -126,7 +126,7 @@ async function getConnectionPromise(ws: WebSocket, agentId: string, accessToken:
     // Put the promise in a map so that any call to mockAgentResponse for this agent will get the same promise
     connectionPromiseMap.set(agentId, connectionPromise);
   }
-  return connectionPromiseMap.get(agentId as string) as Promise<void>;
+  return connectionPromiseMap.get(agentId) as Promise<void>;
 }
 
 function parseWebSocketMessageEvent<T extends AgentMessage = AgentMessage>(event: MessageEvent): T {
