@@ -22,14 +22,14 @@ const medplum = new MockClient();
 describe('App', () => {
   beforeAll(async () => {
     console.log = jest.fn();
-    console.error = jest.fn();
-
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
     });
   });
 
   test('Runs successfully', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
     const mockServer = new Server('wss://example.com/ws/agent');
     const state = {
       mySocket: undefined as Client | undefined,
@@ -92,6 +92,7 @@ describe('App', () => {
     mockServer.stop();
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unknown message type: unknown'));
+    console.log = originalConsoleLog;
   });
 
   test('Reconnect after connection closed', async () => {
@@ -150,9 +151,6 @@ describe('App', () => {
   });
 
   test('Empty endpoint URL', async () => {
-    console.log = jest.fn();
-    console.warn = jest.fn();
-
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
     });
@@ -198,14 +196,15 @@ describe('App', () => {
     });
 
     const app = new App(medplum, agent.id as string, LogLevel.INFO);
-    await app.start();
+    await expect(app.start()).rejects.toThrow(new Error("Invalid empty endpoint address for channel 'test'"));
+
     await app.stop();
     mockServer.stop();
-
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Ignoring empty endpoint address: test'));
   });
 
   test('Unknown endpoint protocol', async () => {
+    const originalConsoleLog = console.log;
+    const originalConsoleWarn = console.warn;
     console.log = jest.fn();
     console.error = jest.fn();
 
@@ -259,6 +258,8 @@ describe('App', () => {
     mockServer.stop();
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
+    console.log = originalConsoleLog;
+    console.warn = originalConsoleWarn;
   });
 
   test('Reload config', async () => {
@@ -266,19 +267,35 @@ describe('App', () => {
     const state = {
       mySocket: undefined as Client | undefined,
       gotAgentReloadResponse: false,
+      gotAgentError: false,
     };
 
     function mockConnectionHandler(socket: Client): void {
       state.mySocket = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
-        if (command.type === 'agent:connect:request') {
-          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
-        } else if (command.type === 'agent:reloadconfig:response') {
-          if (command.statusCode !== 200) {
-            throw new Error('Invalid status code! Expected 200');
-          }
-          state.gotAgentReloadResponse = true;
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:reloadconfig:response':
+            if (command.statusCode !== 200) {
+              throw new Error('Invalid status code. Expected 200');
+            }
+            state.gotAgentReloadResponse = true;
+            break;
+
+          case 'agent:error':
+            state.gotAgentError = true;
+            break;
+
+          default:
+            throw new Error('Unhandled message type');
         }
       });
     }
@@ -456,7 +473,7 @@ describe('App', () => {
     }
     clearTimeout(timeout);
 
-    // We should get back `agent:success` message
+    // We should get back `agent:reloadconfig:response` message
     expect(state.gotAgentReloadResponse).toEqual(true);
 
     // Check channels have been updated
@@ -481,6 +498,105 @@ describe('App', () => {
     }
     clearTimeout(timeout);
     expect(stagingChannel.server.server).not.toBeDefined();
+
+    // Now we should test accidentally adding endpoints with conflicting ports
+
+    // Endpoints with conflicting ports
+    const hl7ConflictingEndpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'mllp://0.0.0.0:9002',
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+    });
+    const dicomConflictingEndpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'dicom://0.0.0.0:10002',
+      connectionType: { code: ContentType.DICOM },
+      payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
+    });
+
+    // Update endpoint name
+    await medplum.updateResource({
+      ...agent,
+      channel: [
+        // No changes
+        {
+          name: 'hl7-test',
+          endpoint: createReference(hl7TestEndpoint2),
+          targetReference: createReference(bot),
+        },
+        // No changes
+        {
+          name: 'hl7-prod',
+          endpoint: createReference(hl7ProdEndpoint),
+          targetReference: createReference(bot),
+        },
+        // No changes
+        {
+          name: 'dicom-test',
+          endpoint: createReference(dicomTestEndpoint2),
+          targetReference: createReference(bot),
+        },
+        // No changes
+        {
+          name: 'dicom-prod',
+          endpoint: createReference(dicomProdEndpoint),
+          targetReference: createReference(bot),
+        },
+        // No changes
+        {
+          name: 'hl7-dev',
+          endpoint: createReference(hl7StagingEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'hl7-conflicting',
+          endpoint: createReference(hl7ConflictingEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'dicom-conflicting',
+          endpoint: createReference(dicomConflictingEndpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    // Send reloadconfig message
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:reloadconfig:request',
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentReloadConfigRequest)
+    );
+
+    state.gotAgentReloadResponse = false;
+    shouldThrow = false;
+    timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 3000);
+
+    while (!state.gotAgentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    // We should get back `agent:error` message
+    expect(state.gotAgentReloadResponse).toEqual(false);
+    expect(state.gotAgentError).toEqual(true);
+
+    // Check channels have been updated
+    expect(app.channels.has('hl7-test')).toEqual(true);
+    expect(app.channels.has('hl7-prod')).toEqual(true);
+    expect(app.channels.has('dicom-test')).toEqual(true);
+    expect(app.channels.has('dicom-prod')).toEqual(true);
+    expect(app.channels.has('hl7-dev')).toEqual(true);
+    expect(app.channels.size).toEqual(5);
 
     await app.stop();
     mockServer.stop();

@@ -196,6 +196,95 @@ export class App {
     });
   }
 
+  private async hydrateListeners(): Promise<void> {
+    const agent = await this.medplum.readResource('Agent', this.agentId);
+    const pendingRemoval = new Set(this.channels.keys());
+    const channels = agent.channel ?? [];
+
+    const endpointPromises = [] as Promise<Endpoint>[];
+    for (const definition of channels) {
+      endpointPromises.push(this.medplum.readReference(definition.endpoint as Reference<Endpoint>));
+    }
+
+    const endpoints = await Promise.all(endpointPromises);
+    this.validateAgentEndpoints(channels, endpoints);
+
+    // Remove all channels from list that are present in the new definition
+    // We will remove the channels that are left over -- channels that are not part of the new config
+    for (const definition of channels) {
+      pendingRemoval.delete(definition.name);
+    }
+
+    // Now iterate leftover channels and stop any that were not present in config when reloaded
+    for (const leftover of pendingRemoval.keys()) {
+      const channel = this.channels.get(leftover) as Channel;
+      await channel.stop();
+
+      pendingRemoval.delete(leftover);
+      this.channels.delete(leftover);
+    }
+
+    // Iterate the channels specified in the config
+    // Either start them or reload their config if already present
+    if (!channels.length) {
+      return;
+    }
+    for (let i = 0; i < channels.length; i++) {
+      const definition = channels[i];
+      const endpoint = endpoints[i];
+
+      if (!endpoint.address) {
+        this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
+      }
+
+      try {
+        await this.startOrReloadChannel(definition, endpoint);
+      } catch (err) {
+        this.log.error(normalizeErrorString(err));
+      }
+    }
+  }
+
+  /**
+   * Validates whether all endpoints are valid. Also ensures that there are no conflicting ports between any endpoints in the group.
+   *
+   * Will throw if not valid.
+   *
+   * @param channels - All the channels defined for the agent.
+   * @param endpoints - All the endpoints corresponding to the agent channels that should be validated.
+   */
+  private validateAgentEndpoints(channels: AgentChannel[], endpoints: Endpoint[]): void {
+    if (!endpoints.length) {
+      return;
+    }
+    const seenPorts = new Set<string>();
+    const portToChannelMap = new Map<string, string>();
+    for (let i = 0; i < channels.length; i++) {
+      const channel = channels[i];
+      const endpoint = endpoints[i];
+
+      if (endpoint.address === '') {
+        throw new Error(`Invalid empty endpoint address for channel '${channel.name}'`);
+      }
+
+      let parsedEndpoint: URL;
+      try {
+        parsedEndpoint = new URL(endpoint.address);
+      } catch (err: unknown) {
+        throw new Error(
+          `Error while validating endpoint address for channel '${channel.name}': ${normalizeErrorString(err)}`
+        );
+      }
+      if (seenPorts.has(parsedEndpoint.port)) {
+        throw new Error(
+          `Invalid agent config. Both '${portToChannelMap.get(parsedEndpoint.port) as string}' and '${channel.name}' declare use of port ${parsedEndpoint.port}`
+        );
+      }
+      seenPorts.add(parsedEndpoint.port);
+      portToChannelMap.set(parsedEndpoint.port, endpoint.address);
+    }
+  }
+
   private async startOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
     let channel: Channel | undefined = this.channels.get(definition.name);
 
@@ -214,42 +303,6 @@ export class App {
 
     channel.start();
     this.channels.set(definition.name, channel);
-  }
-
-  private async hydrateListeners(): Promise<void> {
-    const agent = await this.medplum.readResource('Agent', this.agentId);
-    const pendingRemoval = new Set(this.channels.keys());
-
-    // Remove all channels from list that are present in the new definition
-    // We will remove the channels that are left over -- channels that are not part of the new config
-    for (const definition of agent.channel ?? []) {
-      pendingRemoval.delete(definition.name);
-    }
-
-    // Now iterate leftover channels and stop any that were not present in config when reloaded
-    for (const leftover of pendingRemoval.keys()) {
-      const channel = this.channels.get(leftover) as Channel;
-      await channel.stop();
-
-      pendingRemoval.delete(leftover);
-      this.channels.delete(leftover);
-    }
-
-    // Iterate the channels specified in the config
-    // Either start them or reload their config if already present
-    for (const definition of agent.channel ?? []) {
-      const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
-
-      if (!endpoint.address) {
-        this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
-      }
-
-      try {
-        await this.startOrReloadChannel(definition, endpoint);
-      } catch (err) {
-        this.log.error(normalizeErrorString(err));
-      }
-    }
   }
 
   async stop(): Promise<void> {

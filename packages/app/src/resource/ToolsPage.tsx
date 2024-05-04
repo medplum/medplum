@@ -66,7 +66,6 @@ export function ToolsPage(): JSX.Element | null {
       title: 'Success',
       icon: <IconCheck size="1rem" />,
       message,
-      autoClose: false,
     });
   }
 

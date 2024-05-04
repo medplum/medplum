@@ -1,7 +1,8 @@
-import { AgentTransmitResponse } from '@medplum/core';
+import { AgentTransmitResponse, Logger } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 
 export interface Channel {
+  readonly log: Logger;
   start(): void;
   stop(): Promise<void>;
   sendToRemote(message: AgentTransmitResponse): void;

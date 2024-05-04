@@ -1,4 +1,4 @@
-import { AgentTransmitResponse, ContentType, createReference, normalizeErrorString } from '@medplum/core';
+import { AgentTransmitResponse, ContentType, Logger, createReference, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
@@ -16,6 +16,7 @@ export class AgentDicomChannel implements Channel {
   private endpoint: Endpoint;
   private started = false;
   readonly tempDir: string;
+  readonly log: Logger;
 
   constructor(
     readonly app: App,
@@ -128,7 +129,7 @@ export class AgentDicomChannel implements Channel {
           });
           response.setStatus(dimse.constants.Status.Success);
         } catch (err) {
-          App.instance.log.error(`DICOM error: ${normalizeErrorString(err)}`);
+          DcmjsDimseScp.channel.log.error(`DICOM error: ${normalizeErrorString(err)}`);
           response.setStatus(dimse.constants.Status.ProcessingFailure);
         }
 
@@ -141,6 +142,10 @@ export class AgentDicomChannel implements Channel {
     this.endpoint = endpoint;
     this.server = new dimse.Server(DcmjsDimseScp);
     this.tempDir = mkdtempSync(join(tmpdir(), 'dicom-'));
+
+    // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
+    // So this channel's name will remain the same for the duration of its lifetime
+    this.log = app.log.clone({ options: { prefix: `[DICOM:${definition.name}] ` } });
   }
 
   start(): void {
@@ -149,10 +154,10 @@ export class AgentDicomChannel implements Channel {
     }
     this.started = true;
     const address = new URL(this.endpoint.address as string);
-    this.app.log.info(`Channel starting on ${address}`);
+    this.log.info(`Channel starting on ${address}`);
     this.server.on('networkError', (e) => console.log('Network error: ', e));
     this.server.listen(Number.parseInt(address.port, 10));
-    this.app.log.info('Channel started successfully');
+    this.log.info('Channel started successfully');
   }
 
   async stop(): Promise<void> {
@@ -160,7 +165,7 @@ export class AgentDicomChannel implements Channel {
       return;
     }
 
-    this.app.log.info('Channel stopping...');
+    this.log.info('Channel stopping...');
 
     // Wait for server to close
     await new Promise<void>((resolve) => {
@@ -172,7 +177,7 @@ export class AgentDicomChannel implements Channel {
     });
 
     this.started = false;
-    this.app.log.info('Channel stopped successfully');
+    this.log.info('Channel stopped successfully');
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
@@ -184,18 +189,14 @@ export class AgentDicomChannel implements Channel {
     this.definition = definition;
     this.endpoint = endpoint;
 
-    this.app.log.info(
-      `[DICOM:${definition.name}] Reloading config... Evaluating if channel needs to change address...`
-    );
+    this.log.info('Reloading config... Evaluating if channel needs to change address...');
 
     if (needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
       this.start();
-      this.app.log.info(
-        `[DICOM:${definition.name}] Address changed: ${previousEndpoint.address} => ${endpoint.address}`
-      );
+      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
     } else {
-      this.app.log.info(`[DICOM:${definition.name}] No address change needed. Listening at ${endpoint.address}`);
+      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
     }
   }
 
