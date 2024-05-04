@@ -2,12 +2,10 @@ import { AgentTransmitResponse, ContentType, Hl7Message, Logger, normalizeErrorS
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { App } from './app';
-import { Channel, needToRebindToPort } from './channel';
+import { BaseChannel } from './channel';
 
-export class AgentHl7Channel implements Channel {
+export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
-  protected definition: AgentChannel;
-  private endpoint: Endpoint;
   private started = false;
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
   readonly log: Logger;
@@ -17,9 +15,9 @@ export class AgentHl7Channel implements Channel {
     definition: AgentChannel,
     endpoint: Endpoint
   ) {
+    super(app, definition, endpoint);
+
     this.server = new Hl7Server((connection) => this.handleNewConnection(connection));
-    this.definition = definition;
-    this.endpoint = endpoint;
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
@@ -31,7 +29,7 @@ export class AgentHl7Channel implements Channel {
       return;
     }
     this.started = true;
-    const address = new URL(this.endpoint.address as string);
+    const address = new URL(this.getEndpoint().address as string);
     this.log.info(`Channel starting on ${address}...`);
     this.server.start(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
@@ -53,30 +51,6 @@ export class AgentHl7Channel implements Channel {
     if (connection) {
       connection.hl7Connection.send(Hl7Message.parse(msg.body));
     }
-  }
-
-  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
-    const previousEndpoint = this.endpoint;
-    this.definition = definition;
-    this.endpoint = endpoint;
-
-    this.log.info('Reloading config... Evaluating if channel needs to change address...');
-
-    if (needToRebindToPort(previousEndpoint, endpoint)) {
-      await this.stop();
-      this.start();
-      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
-    } else {
-      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
-    }
-  }
-
-  getDefinition(): AgentChannel {
-    return this.definition;
-  }
-
-  getEndpoint(): Endpoint {
-    return this.endpoint;
   }
 
   private handleNewConnection(connection: Hl7Connection): void {

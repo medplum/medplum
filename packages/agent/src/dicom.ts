@@ -8,12 +8,10 @@ import net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
-import { Channel, needToRebindToPort } from './channel';
+import { BaseChannel } from './channel';
 
-export class AgentDicomChannel implements Channel {
+export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
-  private definition: AgentChannel;
-  private endpoint: Endpoint;
   private started = false;
   readonly tempDir: string;
   readonly log: Logger;
@@ -23,6 +21,8 @@ export class AgentDicomChannel implements Channel {
     definition: AgentChannel,
     endpoint: Endpoint
   ) {
+    super(app, definition, endpoint);
+
     class DcmjsDimseScp extends dimse.Scp {
       static channel: AgentDicomChannel;
       association?: dimse.association.Association;
@@ -138,8 +138,6 @@ export class AgentDicomChannel implements Channel {
     }
     DcmjsDimseScp.channel = this;
 
-    this.definition = definition;
-    this.endpoint = endpoint;
     this.server = new dimse.Server(DcmjsDimseScp);
     this.tempDir = mkdtempSync(join(tmpdir(), 'dicom-'));
 
@@ -153,7 +151,7 @@ export class AgentDicomChannel implements Channel {
       return;
     }
     this.started = true;
-    const address = new URL(this.endpoint.address as string);
+    const address = new URL(this.getEndpoint().address as string);
     this.log.info(`Channel starting on ${address}`);
     this.server.on('networkError', (e) => console.log('Network error: ', e));
     this.server.listen(Number.parseInt(address.port, 10));
@@ -182,29 +180,5 @@ export class AgentDicomChannel implements Channel {
 
   sendToRemote(msg: AgentTransmitResponse): void {
     throw new Error(`sendToRemote not implemented (${JSON.stringify(msg)})`);
-  }
-
-  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
-    const previousEndpoint = this.endpoint;
-    this.definition = definition;
-    this.endpoint = endpoint;
-
-    this.log.info('Reloading config... Evaluating if channel needs to change address...');
-
-    if (needToRebindToPort(previousEndpoint, endpoint)) {
-      await this.stop();
-      this.start();
-      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
-    } else {
-      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
-    }
-  }
-
-  getDefinition(): AgentChannel {
-    return this.definition;
-  }
-
-  getEndpoint(): Endpoint {
-    return this.endpoint;
   }
 }
