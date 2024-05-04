@@ -226,9 +226,6 @@ export class App {
 
     // Iterate the channels specified in the config
     // Either start them or reload their config if already present
-    if (!channels.length) {
-      return;
-    }
     for (let i = 0; i < channels.length; i++) {
       const definition = channels[i];
       const endpoint = endpoints[i];
