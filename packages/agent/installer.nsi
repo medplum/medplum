@@ -69,7 +69,8 @@ Function .onInit
     # Check if we should skip signing
     ReadEnvStr $skipSigning SKIP_SIGNING
     # If we can't read the env var, check and clear the error, and set skipSigning to false
-    IfErrors
+    IfErrors failedReadSkipSigning
+    failedReadSkipSigning:
         StrCpy $skipSigning 0
 FunctionEnd
 
