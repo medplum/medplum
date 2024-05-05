@@ -18,7 +18,7 @@ import { ExecException, ExecOptions, exec } from 'node:child_process';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
 import WebSocket from 'ws';
-import { Channel } from './channel';
+import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 
@@ -199,7 +199,14 @@ export class App {
   private async hydrateListeners(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
     const pendingRemoval = new Set(this.channels.keys());
-    const channels = agent.channel ?? [];
+    let channels = agent.channel ?? [];
+
+    if (agent.status === 'off') {
+      channels = [];
+      this.log.warn(
+        "Agent status is currently 'off'. All channels are disconnected until status is set back to 'active'"
+      );
+    }
 
     const endpointPromises = [] as Promise<Endpoint>[];
     for (const definition of channels) {
@@ -209,10 +216,27 @@ export class App {
     const endpoints = await Promise.all(endpointPromises);
     this.validateAgentEndpoints(channels, endpoints);
 
-    // Remove all channels from list that are present in the new definition
-    // We will remove the channels that are left over -- channels that are not part of the new config
-    for (const definition of channels) {
-      pendingRemoval.delete(definition.name);
+    const filteredChannels = [] as AgentChannel[];
+    const filteredEndpoints = [] as Endpoint[];
+
+    for (let i = 0; i < channels.length; i++) {
+      const definition = channels[i];
+      const endpoint = endpoints[i];
+
+      // If the endpoint for this channel is turned off, we're going to skip over this channel
+      // Which means it will be marked for removal in this step
+      if (endpoint.status === 'off') {
+        this.log.warn(
+          `[${getChannelTypeShortName(endpoint)}:${endpoint.name}] Channel currently has status of 'off'. Channel will not reconnect until status is set to 'active'`
+        );
+      } else {
+        // Push the definition and endpoint into our filtered arrays
+        filteredChannels.push(definition);
+        filteredEndpoints.push(endpoint);
+        // Remove all channels from pendingRemoval list that are present in the new definition (unless the endpoint is 'off')
+        // We will remove the channels that are left over -- channels that are not part of the new config
+        pendingRemoval.delete(definition.name);
+      }
     }
 
     // Now iterate leftover channels and stop any that were not present in config when reloaded
@@ -251,9 +275,6 @@ export class App {
    * @param endpoints - All the endpoints corresponding to the agent channels that should be validated.
    */
   private validateAgentEndpoints(channels: AgentChannel[], endpoints: Endpoint[]): void {
-    if (!endpoints.length) {
-      return;
-    }
     const seenPorts = new Set<string>();
     const portToChannelMap = new Map<string, string>();
     for (let i = 0; i < channels.length; i++) {
@@ -290,12 +311,15 @@ export class App {
       return;
     }
 
-    if (endpoint.address.startsWith('dicom')) {
-      channel = new AgentDicomChannel(this, definition, endpoint);
-    } else if (endpoint.address.startsWith('mllp')) {
-      channel = new AgentHl7Channel(this, definition, endpoint);
-    } else {
-      throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    switch (getChannelType(endpoint)) {
+      case ChannelType.DICOM:
+        channel = new AgentDicomChannel(this, definition, endpoint);
+        break;
+      case ChannelType.HL7_V2:
+        channel = new AgentHl7Channel(this, definition, endpoint);
+        break;
+      default:
+        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
     }
 
     channel.start();
