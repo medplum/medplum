@@ -64,14 +64,6 @@ Function .onInit
         MessageBox MB_ICONSTOP "The currently installed version is too old and needs to be uninstalled manually before proceeding."
         Quit
     ${EndIf}
-
-    # Check if we should skip signing
-    ReadEnvStr $skipSigning SKIP_SIGNING
-    # If we can't read the env var, check and clear the error, and set skipSigning to false
-    IfErrors failedReadSkipSigning succeededRead
-    failedReadSkipSigning:
-        StrCpy $skipSigning 0
-    succeededRead:
 FunctionEnd
 
 Page custom WelcomePage
