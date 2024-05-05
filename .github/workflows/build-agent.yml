@@ -50,7 +50,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version)" >> $GITHUB_ENV
+          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Upload agent installer
         uses: actions/upload-artifact@v4
@@ -93,7 +93,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version)" >> $GITHUB_ENV
+          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Make tarball
         shell: bash
