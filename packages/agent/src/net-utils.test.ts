@@ -78,7 +78,7 @@ describe('Agent Net Utils', () => {
     });
 
     afterAll(async () => {
-      app.stop();
+      await app.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -332,7 +332,7 @@ describe('Agent Net Utils', () => {
     });
 
     afterEach(async () => {
-      app.stop();
+      await app.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });

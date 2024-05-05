@@ -88,19 +88,21 @@ if [ ! SKIP_SIGNING ]; then
     --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
     --alias "$SM_CERT_ALIAS" \
     "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe"
+fi
 
-  # Download Shawl exe
-  rm -f shawl-v1.4.0-win64.zip
-  wget https://github.com/mtkennerly/shawl/releases/download/v1.4.0/shawl-v1.4.0-win64.zip
-  unzip shawl-v1.4.0-win64.zip
-  mv shawl.exe dist/shawl-v1.4.0-win64.exe
+# Download Shawl exe
+rm -f shawl-v1.4.0-win64.zip
+wget https://github.com/mtkennerly/shawl/releases/download/v1.4.0/shawl-v1.4.0-win64.zip
+unzip shawl-v1.4.0-win64.zip
+mv shawl.exe dist/shawl-v1.4.0-win64.exe
 
-  # Download Shawl legal
-  rm -f shawl-v1.4.0-legal.zip
-  wget https://github.com/mtkennerly/shawl/releases/download/v1.4.0/shawl-v1.4.0-legal.zip
-  unzip shawl-v1.4.0-legal.zip
-  mv shawl-v1.4.0-legal.txt dist
+# Download Shawl legal
+rm -f shawl-v1.4.0-legal.zip
+wget https://github.com/mtkennerly/shawl/releases/download/v1.4.0/shawl-v1.4.0-legal.zip
+unzip shawl-v1.4.0-legal.zip
+mv shawl-v1.4.0-legal.txt dist
 
+if [ ! SKIP_SIGNING ]; then
   # Sign the Shawl executable
   java -jar jsign-5.0.jar \
     --storetype DIGICERTONE \
@@ -110,7 +112,11 @@ if [ ! SKIP_SIGNING ]; then
 fi
 
 # Build the installer
-makensis installer.nsi
+if [ SKIP_SIGNING ]; then
+  makensis -DSKIP_SIGNING installer.nsi # globally defines the SKIP_SIGNING symbol
+else
+  makensis installer.nsi
+fi
 
 # Generate the installer checksum
 sha256sum "medplum-agent-installer-$MEDPLUM_VERSION.exe" > "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"
