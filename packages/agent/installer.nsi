@@ -41,6 +41,7 @@ Var baseUrl
 Var clientId
 Var clientSecret
 Var agentId
+Var skipSigning
 
 # The onInit handler is called when the installer is nearly finished initializing.
 # See: https://nsis.sourceforge.io/Reference/.onInit
@@ -64,6 +65,12 @@ Function .onInit
         MessageBox MB_ICONSTOP "The currently installed version is too old and needs to be uninstalled manually before proceeding."
         Quit
     ${EndIf}
+
+    # Check if we should skip signing
+    ReadEnvString $skipSigning SKIP_SIGNING
+    # If we can't read the env var, check and clear the error, and set skipSigning to false
+    IfErrors
+        StrCpy $skipSigning 0
 FunctionEnd
 
 Page custom WelcomePage
@@ -317,5 +324,7 @@ SectionEnd
 # Sign the installer and uninstaller
 # Keep in mind that you must append = 0 at !finalize and !uninstfinalize.
 # That will stop running both in parallel.
-!finalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
-!uninstfinalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
+${If} $skipSigning == 0
+    !finalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
+    !uninstfinalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
+${EndIf}
