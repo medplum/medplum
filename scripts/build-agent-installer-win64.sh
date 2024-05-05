@@ -112,7 +112,11 @@ if [ ! SKIP_SIGNING ]; then
 fi
 
 # Build the installer
-makensis installer.nsi
+if [ SKIP_SIGNING ]; then
+  makensis installer.nsi /D SKIP_SIGNING # globally defines the SKIP_SIGNING symbol
+else
+  makensis installer.nsi
+fi
 
 # Generate the installer checksum
 sha256sum "medplum-agent-installer-$MEDPLUM_VERSION.exe" > "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"

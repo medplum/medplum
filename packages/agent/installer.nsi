@@ -41,7 +41,6 @@ Var baseUrl
 Var clientId
 Var clientSecret
 Var agentId
-Var skipSigning
 
 # The onInit handler is called when the installer is nearly finished initializing.
 # See: https://nsis.sourceforge.io/Reference/.onInit
@@ -323,12 +322,11 @@ Section Uninstall
 
 SectionEnd
 
-Section
+# Check if we should skip signing... this can be set via /D cli arg
+!ifndef SKIP_SIGNING
     # Sign the installer and uninstaller
     # Keep in mind that you must append = 0 at !finalize and !uninstfinalize.
     # That will stop running both in parallel.
-    ${If} $skipSigning == 0
-        !finalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
-        !uninstfinalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
-    ${EndIf}
-SectionEnd
+    !finalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
+    !uninstfinalize 'java -jar jsign-5.0.jar --storetype DIGICERTONE --storepass "$%SM_API_KEY%|$%SM_CLIENT_CERT_FILE%|$%SM_CLIENT_CERT_PASSWORD%" --alias "$%SM_CERT_ALIAS%" "%1"' = 0
+!endif
