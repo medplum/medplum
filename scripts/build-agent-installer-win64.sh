@@ -113,7 +113,7 @@ fi
 
 # Build the installer
 if [ SKIP_SIGNING ]; then
-  makensis /DSKIP_SIGNING=1 installer.nsi # globally defines the SKIP_SIGNING symbol
+  makensis -DSKIP_SIGNING installer.nsi # globally defines the SKIP_SIGNING symbol
 else
   makensis installer.nsi
 fi
