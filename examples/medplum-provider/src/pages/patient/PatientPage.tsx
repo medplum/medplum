@@ -65,7 +65,9 @@ export function PatientPage(): JSX.Element {
     );
   }
 
-  if (!patient) {
+  const patientId = patient?.id;
+
+  if (!patientId) {
     return (
       <Document>
         <Loader />
@@ -76,7 +78,26 @@ export function PatientPage(): JSX.Element {
   return (
     <div key={getReferenceString(patient)} className={classes.container}>
       <div className={classes.sidebar}>
-        <PatientSummary w={350} mb="auto" patient={patient} topContent={patientSummaryTopContent} />
+        <PatientSummary
+          w={350}
+          mb="auto"
+          patient={patient}
+          renderLink={{
+            appointments: (msg) => (
+              <Anchor
+                component={Link}
+                to={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
+              >
+                {msg}
+              </Anchor>
+            ),
+            encounters: (msg) => (
+              <Anchor component={Link} to={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}>
+                {msg}
+              </Anchor>
+            ),
+          }}
+        />
       </div>
       <div className={classes.content}>
         <Paper>
