@@ -79,7 +79,7 @@ const editTypeQuestionnaire: Questionnaire = {
       linkId: 'type',
       type: 'choice',
       text: 'New Type:',
-      answerValueSet: 'http://hl7.org/fhir/ValueSet/encounter-type',
+      answerValueSet: 'https://example.com/encounter-types',
     },
   ],
 };

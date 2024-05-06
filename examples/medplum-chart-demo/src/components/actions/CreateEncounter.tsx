@@ -147,7 +147,7 @@ const createEncounterQuestionnaire: Questionnaire = {
       linkId: 'type',
       type: 'choice',
       text: 'What type of encounter is this?',
-      answerValueSet: 'http://hl7.org/fhir/ValueSet/encounter-type',
+      answerValueSet: 'https://example.com/encounter-types',
     },
   ],
 };
