@@ -18,8 +18,8 @@
     "clean": "rimraf dist",
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
-    "test:seed": "jest seed.test.ts",
-    "test": "jest"
+    "test": "jest",
+    "test:seed": "jest seed.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "3.569.0",
@@ -99,7 +99,7 @@
     "mailparser": "3.7.1",
     "openapi3-ts": "4.3.1",
     "set-cookie-parser": "2.6.0",
-    "supertest": "7.0.0",
+    "supertest": "6.3.4",
     "superwstest": "2.0.3",
     "ts-node-dev": "2.0.0"
   },
