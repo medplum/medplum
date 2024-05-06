@@ -1,13 +1,6 @@
 import { Paper } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import {
-  DEFAULT_SEARCH_COUNT,
-  Filter,
-  formatSearchQuery,
-  parseSearchRequest,
-  SearchRequest,
-  SortRule,
-} from '@medplum/core';
+import { Filter, formatSearchQuery, parseSearchRequest, SearchRequest, SortRule } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
