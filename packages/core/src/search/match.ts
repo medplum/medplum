@@ -1,6 +1,6 @@
-import { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, Identifier, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPath } from '../fhirpath/parse';
-import { globalSchema } from '../types';
+import { PropertyType, globalSchema } from '../types';
 import { SearchParameterType, getSearchParameterDetails } from './details';
 import { Filter, Operator, SearchRequest } from './search';
 
@@ -107,12 +107,22 @@ function matchesStringFilter(
   searchParam: SearchParameter,
   asToken?: boolean
 ): boolean {
+  const details = getSearchParameterDetails(resource.resourceType, searchParam);
+  const searchParamElementType = details.elementDefinitions?.[0].type?.[0].code;
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
   const filterValues = filter.value.split(',');
   const negated = isNegated(filter.operator);
+  console.log('matchesStringFilter', searchParamElementType, resourceValues, filterValues);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      const match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
+      let match;
+      if (searchParamElementType === PropertyType.Identifier) {
+        match = matchesTokenIdentifierValue(resourceValue as Identifier, filter.operator, filterValue);
+      } else if (searchParamElementType === PropertyType.CodeableConcept) {
+        match = matchesTokenCodeableConceptValue(resourceValue as Coding, filter.operator, filterValue);
+      } else {
+        match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
+      }
       if (match) {
         return !negated;
       }
@@ -145,6 +155,39 @@ function matchesStringValue(
     }
   }
   return str.toLowerCase().includes(filterValue.toLowerCase());
+}
+
+function matchesTokenIdentifierValue(resourceValue: Identifier, operator: Operator, filterValue: string): boolean {
+  if (filterValue.includes('|')) {
+    const [system, value] = filterValue.split('|');
+    return (
+      resourceValue.system?.toLowerCase() === system.toLowerCase() &&
+      resourceValue.value?.toLowerCase() === value.toLowerCase()
+    );
+  }
+
+  return resourceValue.value?.toLowerCase() === filterValue.toLowerCase();
+}
+
+function matchesTokenCodeableConceptValue(
+  resourceValue: CodeableConcept,
+  operator: Operator,
+  filterValue: string
+): boolean {
+  if (filterValue.includes('|')) {
+    const [system, code] = filterValue.split('|');
+    return (
+      resourceValue.coding?.some(
+        (coding) =>
+          coding.system?.toLowerCase() === system.toLowerCase() && coding.code?.toLowerCase() === code.toLowerCase()
+      ) ?? false
+    );
+  }
+
+  return (
+    resourceValue.text?.toLowerCase() === filterValue.toLowerCase() ||
+    (resourceValue.coding?.some((coding) => coding.code?.toLowerCase() === filterValue.toLowerCase()) ?? false)
+  );
 }
 
 function matchesDateFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
