@@ -134,7 +134,7 @@ describe('Agent/$reload-config', () => {
       .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const bundle = res.body as Bundle<Parameters>;
 
     expectBundleToContainOutcome(bundle, agents[0], serverError(new Error('Something is broken')));
@@ -153,7 +153,7 @@ describe('Agent/$reload-config', () => {
       .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const bundle = res.body as Bundle<Parameters>;
 
     expectBundleToContainOutcome(bundle, agents[0], serverError(new Error('Invalid response received from agent')));

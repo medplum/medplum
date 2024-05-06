@@ -233,7 +233,7 @@ describe('Agent/$bulk-status', () => {
       .get('/fhir/R4/Agent/$bulk-status')
       .query({ name: 'Test Agent 2' })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
 
     const bundle = res.body as Bundle<Parameters>;
     expect(bundle.resourceType).toBe('Bundle');

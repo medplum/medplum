@@ -112,6 +112,8 @@ export async function handleBulkAgentOperation(
   const results = await Promise.allSettled(promises);
   const entries = [] as BundleEntry<Parameters>[];
 
+  let failureCount = 0;
+
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
     if (result.status === 'rejected') {
@@ -121,9 +123,13 @@ export async function handleBulkAgentOperation(
           agents[i]
         )
       );
+      failureCount += 1;
       continue;
     }
     const [outcome, params] = result.value;
+    if (!isOk(outcome)) {
+      failureCount += 1;
+    }
     if (!(isOk(outcome) && params)) {
       entries.push(makeResultWrapperEntry(outcome, agents[i]));
       continue;
@@ -132,7 +138,7 @@ export async function handleBulkAgentOperation(
   }
 
   return [
-    allOk,
+    failureCount === 0 ? allOk : serverError(new Error(`${failureCount} sub-operations failed`)),
     {
       resourceType: 'Bundle',
       type: 'collection',
