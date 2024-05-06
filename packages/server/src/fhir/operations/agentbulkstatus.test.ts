@@ -16,7 +16,8 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
-import { MAX_AGENTS_PER_PAGE } from './agentbulkstatus';
+import { expectBundleToContainOutcome } from './utils/agenttestutils';
+import { MAX_AGENTS_PER_PAGE } from './utils/agentutils';
 
 const NUM_DEFAULT_AGENTS = 2;
 
@@ -238,7 +239,7 @@ describe('Agent/$bulk-status', () => {
     expect(bundle.resourceType).toBe('Bundle');
     expect(bundle.entry).toHaveLength(1);
 
-    expectBundleToContainOutcomeError(bundle, agents[1], {
+    expectBundleToContainOutcome(bundle, agents[1], {
       issue: [expect.objectContaining({ severity: 'error', code: 'exception' })],
     });
 
@@ -303,29 +304,6 @@ function expectBundleToContainStatusEntry(bundle: Bundle<Parameters>, agent: Age
                 : []),
             ]),
           }),
-        }),
-      ]),
-    }),
-  });
-}
-
-function expectBundleToContainOutcomeError(
-  bundle: Bundle<Parameters>,
-  agent: Agent,
-  outcome: Partial<OperationOutcome> & { issue: OperationOutcomeIssue[] }
-): void {
-  const entries = bundle.entry as BundleEntry<Parameters>[];
-  expect(entries).toContainEqual({
-    resource: expect.objectContaining<Parameters>({
-      resourceType: 'Parameters',
-      parameter: expect.arrayContaining<ParametersParameter>([
-        expect.objectContaining<ParametersParameter>({
-          name: 'agent',
-          resource: expect.objectContaining<Agent>(agent),
-        }),
-        expect.objectContaining<ParametersParameter>({
-          name: 'result',
-          resource: expect.objectContaining<Partial<OperationOutcome>>(outcome),
         }),
       ]),
     }),

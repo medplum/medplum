@@ -1,4 +1,4 @@
-import { ContentType, LOINC, SNOMED } from '@medplum/core';
+import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED } from '@medplum/core';
 import {
   CodeSystem,
   OperationOutcome,
@@ -12,20 +12,32 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { initTestAuth, withTestContext } from '../../test.setup';
+import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }])('Expand with %j', (projectProps) => {
   const app = express();
+  let project: Project;
   let accessToken: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth(projectProps);
+    const info = await createTestProject({ project: projectProps, withAccessToken: true });
+    project = info.project;
+    accessToken = info.accessToken;
   });
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  test('Using expected features', () => {
+    if (projectProps.features === undefined) {
+      fail('Expected projectProps.features to be defined');
+    }
+    for (const feature of projectProps.features) {
+      expect(project.features).toContain(feature);
+    }
   });
 
   test('No ValueSet URL', async () => {
@@ -338,6 +350,70 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toEqual(200);
+  });
+
+  test('ValueSet that uses expansion instead of compose', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'https://example.com/fhir/ValueSet/clinical-resources' + randomUUID(),
+        expansion: {
+          timestamp: '2024-05-02T06:30:00.000Z',
+          total: 4,
+          contains: [
+            {
+              system: HTTP_HL7_ORG + '/fhir/resource-types',
+              code: 'Patient',
+            },
+            {
+              system: HTTP_HL7_ORG + '/fhir/resource-types',
+              code: 'Practitioner',
+            },
+            {
+              system: HTTP_HL7_ORG + '/fhir/resource-types',
+              code: 'Observation',
+            },
+            {
+              system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor',
+              code: 'UNK',
+              display: 'Unknown',
+            },
+          ],
+        },
+      });
+    expect(res1.status).toBe(201);
+    const url = res1.body.url;
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    console.log(JSON.stringify(res2.body, undefined, 2));
+    expect(res2.status).toBe(200);
+    expect(res2.body.expansion.contains).toEqual(
+      expect.arrayContaining([
+        {
+          system: HTTP_HL7_ORG + '/fhir/resource-types',
+          code: 'Patient',
+        },
+        {
+          system: HTTP_HL7_ORG + '/fhir/resource-types',
+          code: 'Practitioner',
+        },
+        {
+          system: HTTP_HL7_ORG + '/fhir/resource-types',
+          code: 'Observation',
+        },
+        {
+          system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor',
+          code: 'UNK',
+          display: 'Unknown',
+        },
+      ])
+    );
   });
 });
 

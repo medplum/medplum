@@ -3,10 +3,10 @@ import { Hl7Client } from './client';
 import { Hl7Server } from './server';
 
 describe('HL7 Server', () => {
-  test('Start and stop', () => {
+  test('Start and stop', async () => {
     const server = new Hl7Server(() => undefined);
     server.start(1234);
-    server.stop();
+    await server.stop();
   });
 
   test('Send and receive', async () => {
@@ -36,6 +36,6 @@ describe('HL7 Server', () => {
     expect(response).toBeDefined();
 
     client.close();
-    server.stop();
+    await server.stop();
   });
 });

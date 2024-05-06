@@ -22,17 +22,24 @@ export type PatientPageTabInfo = {
   label: string;
 };
 
-export const TasksTab: PatientPageTabInfo = {
-  id: 'tasks',
-  url: 'Task?_fields=_lastUpdated,code,status,focus&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-  label: 'Tasks',
-};
+export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
+  const result = PatientPageTabs.find((tab) => tab.id === tabId);
+
+  if (!result) {
+    throw new Error(`Could not find patient page tab with id ${tabId}`);
+  }
+  return result;
+}
 
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
   { id: 'edit', url: 'edit', label: 'Edit' },
   { id: 'encounter', url: 'encounter', label: 'Encounter' },
-  TasksTab,
+  {
+    id: 'tasks',
+    url: 'Task?_fields=_lastUpdated,code,status,focus&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    label: 'Tasks',
+  },
   {
     id: 'meds',
     url: 'MedicationRequest?_fields=medication[x],intent,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',

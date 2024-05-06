@@ -10,27 +10,43 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconGenderFemale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { IconGenderFemale, IconGenderMale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Medications } from './Medications';
 import { ProblemList } from './ProblemList';
 import { SmokingStatus } from './SmokingStatus';
 import { Vitals } from './Vitals';
+import { SexualOrientation } from './SexualOrientation';
 
 export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
   readonly background?: string;
+  readonly topContent?: ReactNode;
+}
+
+type IconType = typeof IconGenderFemale;
+
+function getGenderIcon(patient?: Patient): IconType | undefined {
+  switch (patient?.gender) {
+    case 'female':
+      return IconGenderFemale;
+    case 'male':
+      return IconGenderMale;
+    default:
+      return undefined;
+  }
 }
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, background, ...rest } = props;
+  const { patient: propsPatient, background, topContent, ...rest } = props;
   const [patient, setPatient] = useState<Patient>();
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>();
   const [problems, setProblems] = useState<Condition[]>();
   const [smokingStatus, setSmokingStatus] = useState<Observation>();
+  const [sexualOrientation, setSexualOrientation] = useState<Observation>();
   const [vitals, setVitals] = useState<Observation[]>();
   const [medicationRequest, setMedicationRequest] = useState<MedicationRequest[]>();
 
@@ -53,15 +69,30 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         setMedicationRequest(results[3] as MedicationRequest[]);
 
         const observations = results[4] as Observation[];
+
+        setSexualOrientation(observations.find((obs) => obs.code?.coding?.[0].code === '76690-7'));
         setSmokingStatus(observations.find((obs) => obs.code?.coding?.[0].code === '72166-2'));
         setVitals(observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'));
       })
       .catch(console.error);
   }, [medplum, propsPatient]);
 
+  const topContentWithFallback = useMemo(() => {
+    return (
+      topContent ?? (
+        <>
+          <Anchor href="#">No upcoming appointments</Anchor>
+          <Anchor href="#">No documented visits</Anchor>
+        </>
+      )
+    );
+  }, [topContent]);
+
   if (!patient) {
     return null;
   }
+
+  const GenderIconComponent = getGenderIcon(patient);
 
   return (
     <Card {...rest}>
@@ -76,8 +107,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         </Text>
       )}
       <Paper withBorder p="md" my="md">
-        <Group grow>
-          <Flex justify="center" align="center" direction="column" gap={0} maw="33%">
+        <Group wrap="nowrap" justify="space-evenly">
+          <Flex justify="center" align="center" direction="column" gap={0}>
             <IconUserSquare size={24} color="gray" />
             <Text fz="xs" ta="center" style={{ whiteSpace: 'nowrap' }}>
               Self
@@ -89,23 +120,26 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               {patient?.generalPractitioner?.[0]?.display ?? 'No provider'}
             </Text>
           </Flex>
-          <Flex justify="center" align="center" direction="column" gap={0}>
-            <IconGenderFemale size={24} color="gray" />
-            <Text fz="xs" style={{ whiteSpace: 'nowrap' }}>
-              {patient.gender}
-            </Text>
-          </Flex>
+          {GenderIconComponent && (
+            <Flex justify="center" align="center" direction="column" gap={0}>
+              <GenderIconComponent size={24} color="gray" />
+              <Text fz="xs" style={{ whiteSpace: 'nowrap' }}>
+                {patient.gender}
+              </Text>
+            </Flex>
+          )}
         </Group>
       </Paper>
       <Stack gap="xs">
-        <Anchor href="#">No upcoming appointments</Anchor>
-        <Anchor href="#">No documented visits</Anchor>
-        <Divider />
+        {topContentWithFallback}
+        {topContentWithFallback && <Divider />}
         <Allergies patient={patient} allergies={allergies as AllergyIntolerance[]} />
         <Divider />
         <ProblemList patient={patient} problems={problems as Condition[]} />
         <Divider />
         <Medications patient={patient} medicationRequests={medicationRequest as MedicationRequest[]} />
+        <Divider />
+        <SexualOrientation patient={patient} sexualOrientation={sexualOrientation} />
         <Divider />
         <SmokingStatus patient={patient} smokingStatus={smokingStatus} />
         <Divider />

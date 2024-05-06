@@ -5,10 +5,11 @@ import { Container, DefaultResourceTimeline, Document, ResourceTable, useMedplum
 import { useNavigate, useParams } from 'react-router-dom';
 import { TaskActions } from '../../components/tasks/actions/TaskActions';
 import { useEffect, useState } from 'react';
-import { TasksTab, formatPatientPageTabUrl } from './PatientPage.utils';
+import { formatPatientPageTabUrl, getPatientPageTabOrThrow } from './PatientPage.utils';
 
 const tabs = ['Details', 'Timeline', 'Notes'];
 
+const tasksTab = getPatientPageTabOrThrow('tasks');
 export function TaskTab(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export function TaskTab(): JSX.Element {
   };
 
   const onTaskDeleted = (): void => {
-    navigate(formatPatientPageTabUrl(patientId, TasksTab));
+    navigate(formatPatientPageTabUrl(patientId, tasksTab));
   };
 
   if (!task) {
