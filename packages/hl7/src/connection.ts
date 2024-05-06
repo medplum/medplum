@@ -1,5 +1,5 @@
 import { Hl7Message } from '@medplum/core';
-import net from 'net';
+import net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
 import { Hl7ErrorEvent, Hl7MessageEvent } from './events';

@@ -12,7 +12,7 @@ import {
   isValidHostname,
   normalizeErrorString,
 } from '@medplum/core';
-import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
+import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ExecException, ExecOptions, exec } from 'node:child_process';
 import { isIPv4, isIPv6 } from 'node:net';
@@ -50,6 +50,7 @@ export class App {
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
+  private config: Agent | undefined;
 
   constructor(
     readonly medplum: MedplumClient,
@@ -156,12 +157,38 @@ export class App {
           // @ts-expect-error - Deprecated message type
           case 'transmit':
           case 'agent:transmit:response':
-            this.addToHl7Queue(command);
+            if (this.config?.status !== 'active') {
+              const err = new Error('Agent.status is currently set to off');
+              this.log.error(normalizeErrorString(err));
+              this.addToWebSocketQueue({
+                type: 'agent:transmit:response',
+                channel: command.channel,
+                remote: command.remote,
+                callback: command.callback,
+                contentType: ContentType.TEXT,
+                statusCode: 400,
+                body: normalizeErrorString(err),
+              } satisfies AgentTransmitResponse);
+            } else {
+              this.addToHl7Queue(command);
+            }
             break;
           // @ts-expect-error - Deprecated message type
           case 'push':
           case 'agent:transmit:request':
-            if (command.contentType === ContentType.PING) {
+            if (this.config?.status !== 'active') {
+              const err = new Error('Agent.status is currently set to off');
+              this.log.error(normalizeErrorString(err));
+              this.addToWebSocketQueue({
+                type: 'agent:transmit:response',
+                channel: command.channel,
+                remote: command.remote,
+                callback: command.callback,
+                contentType: ContentType.TEXT,
+                statusCode: 400,
+                body: normalizeErrorString(err),
+              } satisfies AgentTransmitResponse);
+            } else if (command.contentType === ContentType.PING) {
               await this.tryPingHost(command);
             } else {
               this.pushMessage(command);
@@ -198,6 +225,7 @@ export class App {
 
   private async hydrateListeners(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
+    this.config = agent;
     const pendingRemoval = new Set(this.channels.keys());
     let channels = agent.channel ?? [];
 
@@ -227,8 +255,9 @@ export class App {
       // Which means it will be marked for removal in this step
       if (endpoint.status === 'off') {
         this.log.warn(
-          `[${getChannelTypeShortName(endpoint)}:${endpoint.name}] Channel currently has status of 'off'. Channel will not reconnect until status is set to 'active'`
+          `[${getChannelTypeShortName(endpoint)}:${definition.name}] Channel currently has status of 'off'. Channel will not reconnect until status is set to 'active'`
         );
+        channels = channels.filter((channel) => channel.name !== definition.name);
       } else {
         // Push the definition and endpoint into our filtered arrays
         filteredChannels.push(definition);
@@ -472,7 +501,7 @@ export class App {
         contentType: ContentType.TEXT,
         remote: message.remote,
         callback: message.callback,
-        statusCode: 500,
+        statusCode: 400,
         body: normalizeErrorString(err),
       } satisfies AgentTransmitResponse);
     }
@@ -525,7 +554,7 @@ export class App {
           remote: message.remote,
           callback: message.callback,
           contentType: ContentType.TEXT,
-          statusCode: 500,
+          statusCode: 400,
           body: normalizeErrorString(err),
         } satisfies AgentTransmitResponse);
       })

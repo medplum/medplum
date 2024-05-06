@@ -1,4 +1,4 @@
-import { AgentTransmitRequest, AgentTransmitResponse, badRequest, serverError } from '@medplum/core';
+import { AgentTransmitRequest, AgentTransmitResponse, ContentType, badRequest, serverError } from '@medplum/core';
 import { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
@@ -60,6 +60,12 @@ async function pushToAgent(req: Request): Promise<[OperationOutcome] | [Operatio
   }
 
   const params = parseParameters<AgentPushParameters>(req.body);
+
+  // TODO: Clean this up later by factoring out 'ping' into it's own operation
+  if (agent.status === 'off' && params.contentType !== ContentType.PING) {
+    return [badRequest("Agent is currently disabled. Agent.status is 'off'")];
+  }
+
   if (!params.body) {
     return [badRequest('Missing body parameter')];
   }

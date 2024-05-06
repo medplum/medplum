@@ -561,4 +561,6 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
 
     publishSpy.mockRestore();
   });
+
+  test('Agent status off', () => {});
 });

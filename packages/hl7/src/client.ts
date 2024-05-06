@@ -1,5 +1,5 @@
 import { Hl7Message } from '@medplum/core';
-import { connect } from 'net';
+import { connect } from 'node:net';
 import { Hl7Base } from './base';
 import { Hl7Connection } from './connection';
 
