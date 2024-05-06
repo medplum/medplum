@@ -17,7 +17,9 @@ git checkout -b "$BRANCH_NAME"
 # Exclude known problem packages
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-EXCLUDE="eslint node-fetch chromatic"
+# react - version 18.3+ incompatible with react-native, waiting for fix
+# supertest - version 7+ incompatible with superwstest, waiting for fix
+EXCLUDE="eslint node-fetch react react-dom supertest"
 
 # First, only upgrade patch and minor versions
 # --workspaces - Run on all workspaces
