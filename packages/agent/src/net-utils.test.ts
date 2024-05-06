@@ -197,7 +197,7 @@ describe('Agent Net Utils', () => {
       await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
-        statusCode: 500,
+        statusCode: 400,
         callback,
         body: expect.stringMatching(/invalid host/i),
       });
@@ -277,7 +277,7 @@ describe('Agent Net Utils', () => {
       await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
-        statusCode: 500,
+        statusCode: 400,
         callback,
         body: expect.stringMatching(/is not a number/i),
       });
@@ -419,7 +419,7 @@ describe('Agent Net Utils', () => {
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
         callback,
-        statusCode: 500,
+        statusCode: 400,
         body: expect.stringMatching(/Ping command timeout/),
       });
     });
@@ -464,7 +464,7 @@ describe('Agent Net Utils', () => {
       await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
-        statusCode: 500,
+        statusCode: 400,
         callback,
         body: expect.stringMatching(/Ping not found/),
       });

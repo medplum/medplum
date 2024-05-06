@@ -461,7 +461,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       JSON.stringify({
         ...transmitRequest,
         type: 'agent:transmit:response',
-        statusCode: 500,
+        statusCode: 400,
         contentType: ContentType.TEXT,
         body: 'Error: Unable to ping "8.8.8.8"',
       } satisfies AgentTransmitResponse)
