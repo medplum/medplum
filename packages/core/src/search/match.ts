@@ -112,7 +112,6 @@ function matchesStringFilter(
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
   const filterValues = filter.value.split(',');
   const negated = isNegated(filter.operator);
-  console.log('matchesStringFilter', searchParamElementType, resourceValues, filterValues);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
       let match;
