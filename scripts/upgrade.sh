@@ -31,8 +31,8 @@ npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target
 # Commit and push before running NPM install
 git add -u .
 git commit -m "Dependency upgrades - step 1"
-git push origin "$BRANCH_NAME"
-gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades" --draft
+git push origin "$BRANCH_NAME":"$BRANCH_NAME-no-major-bumps"
+gh pr create --title "Dependency upgrades $DATE - no major bumps" --body "Dependency upgrades" --draft
 
 # Reinstall all dependencies
 ./scripts/reinstall.sh --update
@@ -40,7 +40,7 @@ gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades" --
 # Commit and push after running NPM install
 git add -u .
 git commit -m "Dependency upgrades - step 2"
-git push origin "$BRANCH_NAME"
+git push origin "$BRANCH_NAME":"$BRANCH_NAME-no-major-bumps"
 gh pr ready
 
 # Next, optimistically upgrade to the latest versions
@@ -51,6 +51,7 @@ npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target
 git add -u .
 git commit -m "Dependency upgrades - step 3"
 git push origin "$BRANCH_NAME"
+gh pr create --title "Dependency upgrades $DATE - latest" --body "Dependency upgrades" --draft
 
 # Reinstall all dependencies
 ./scripts/reinstall.sh --update
@@ -59,3 +60,4 @@ git push origin "$BRANCH_NAME"
 git add -u .
 git commit -m "Dependency upgrades - step 4"
 git push origin "$BRANCH_NAME"
+gh pr ready
