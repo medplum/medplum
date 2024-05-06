@@ -112,7 +112,7 @@ async function openBrowser(url: string): Promise<void> {
       throw error;
     }
     if (stderr) {
-      throw new Error("Could not open browser: " + { stderr });
+      throw new Error('Could not open browser: ' + { stderr });
     }
   });
 }
