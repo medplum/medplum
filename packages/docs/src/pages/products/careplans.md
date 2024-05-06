@@ -59,7 +59,7 @@ These are a common subset of objects that can be linked to CarePlans. Complex Ca
 ## Demos and Reference Material
 
 - [Foo Medical Care Plan](https://foomedical.com/care-plan): sample patient portal with sample patient care plan.
-- [Provider Demo Care Plans](https://provider.foomedical.com/): sample simple EHR with a menu of available care plans.
+- [Provider Demo Care Plans](https://provider.medplum.com/): sample simple EHR with a menu of available care plans.
 - [Sample Code from for creating care plans](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts).
 - [Care Plan sample React Component](https://storybook.medplum.com/?path=/docs/medplum-requestgroupdisplay--simple) is one example of a care plan visualization.
 - [PlanDefinition Apply documentation](https://hl7.org/fhir/plandefinition-operation-apply.html), this is the process by which a PlanDefinition is converted to a CarePlan.
