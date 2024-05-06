@@ -4,6 +4,7 @@ import { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtyp
 import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { Form } from '../Form/Form';
 
 export interface ConditionDialogProps {
@@ -27,7 +28,7 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
         encounter: encounter ? createReference(encounter) : undefined,
         code,
         clinicalStatus,
-        onsetDateTime: formData.onsetDateTime ? formData.onsetDateTime : undefined,
+        onsetDateTime: formData.onsetDateTime ? convertLocalToIso(formData.onsetDateTime) : undefined,
       });
     },
     [patient, encounter, condition, code, clinicalStatus, onSubmit]

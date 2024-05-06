@@ -2,7 +2,7 @@ import { Anchor, Loader, Paper, ScrollArea, Tabs } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
@@ -74,28 +74,26 @@ export function PatientPage(): JSX.Element {
   }
 
   return (
-    <Fragment key={getReferenceString(patient)}>
-      <div className={classes.container}>
-        <div className={classes.sidebar}>
-          <PatientSummary w={350} mb="auto" patient={patient} topContent={patientSummaryTopContent} />
-        </div>
-        <div className={classes.content}>
-          <Paper>
-            <ScrollArea>
-              <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
-                <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-                  {PatientPageTabs.map((t) => (
-                    <Tabs.Tab key={t.id} value={t.id}>
-                      {t.label}
-                    </Tabs.Tab>
-                  ))}
-                </Tabs.List>
-              </Tabs>
-            </ScrollArea>
-          </Paper>
-          <Outlet />
-        </div>
+    <div key={getReferenceString(patient)} className={classes.container}>
+      <div className={classes.sidebar}>
+        <PatientSummary w={350} mb="auto" patient={patient} topContent={patientSummaryTopContent} />
       </div>
-    </Fragment>
+      <div className={classes.content}>
+        <Paper>
+          <ScrollArea>
+            <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
+              <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+                {PatientPageTabs.map((t) => (
+                  <Tabs.Tab key={t.id} value={t.id}>
+                    {t.label}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+            </Tabs>
+          </ScrollArea>
+        </Paper>
+        <Outlet />
+      </div>
+    </div>
   );
 }
