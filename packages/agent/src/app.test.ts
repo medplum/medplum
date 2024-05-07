@@ -713,11 +713,11 @@ describe('App', () => {
 
     let isError = false;
     console.debug('error', error);
-    // @ts-expect-error AggregateError SHOULD be instanceof Error...
+    // err should be Error or AggregateError, and SHOULD be instanceof Error...
     // However on Mac it appears like it's not for some reason?
     // This check only exists because Mac seems to always return an AggregateError
     // While on Linux we are getting just an Error
-    if (error instanceof Error || error?.constructor.name === 'AggregateError') {
+    if (error?.constructor.name === 'Error' || error?.constructor.name === 'AggregateError') {
       isError = true;
     }
     expect(isError).toEqual(true);
