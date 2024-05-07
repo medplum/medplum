@@ -246,6 +246,10 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
 
 function buildSearchColumns(tableDefinition: TableDefinition, resourceType: string): void {
   for (const searchParam of searchParams) {
+    if (searchParam.type === 'composite') {
+      continue;
+    }
+
     if (!searchParam.base?.includes(resourceType as ResourceType)) {
       continue;
     }
@@ -470,6 +474,11 @@ function migrateColumns(b: FileBuilder, startTable: TableDefinition, targetTable
       writeUpdateColumn(b, targetTable, targetColumn);
     }
   }
+  for (const startColumn of startTable.columns) {
+    if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
+      writeDropColumn(b, targetTable, startColumn);
+    }
+  }
 }
 
 function normalizeColumnType(column: ColumnDefinition): string {
@@ -489,6 +498,12 @@ function writeAddColumn(b: FileBuilder, tableDefinition: TableDefinition, column
 function writeUpdateColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
   b.appendNoWrap(
     `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${columnDefinition.name}" TYPE ${columnDefinition.type}');`
+  );
+}
+
+function writeDropColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
+  b.appendNoWrap(
+    `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" DROP COLUMN IF EXISTS "${columnDefinition.name}"');`
   );
 }
 
