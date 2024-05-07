@@ -1,6 +1,5 @@
-import { OperationOutcomeError, Operator, badRequest, createReference } from '@medplum/core';
+import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
 import { getAuthenticatedContext } from '../../../context';
-import { r4ProjectId } from '../../../seed';
 import { CodeSystem, CodeSystemConceptProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
 import { SelectQuery, Conjunction, Condition, Column, Union } from '../../sql';
 import { getSystemRepo } from '../../repo';
@@ -34,35 +33,41 @@ export async function findTerminologyResource<T extends TerminologyResource>(
 
   if (!results.length) {
     throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
-  } else if (results.length === 1) {
+  } else if (results.length === 1 || !sameTerminologyResourceVersion(results[0], results[1])) {
     return results[0];
   } else {
     const resourceReferences: Reference<T>[] = [];
-    const projectOrdering: string[] = [project.id as string];
     for (const resource of results) {
       resourceReferences.push(createReference(resource));
     }
-    if (project.link?.length) {
+    const resources = (await getSystemRepo().readReferences(resourceReferences)) as (T | Error)[];
+    const projectResource = resources.find((r) => r instanceof Error || r.meta?.project === project.id);
+    if (projectResource instanceof Error) {
+      throw projectResource;
+    } else if (projectResource) {
+      return projectResource;
+    }
+    if (project.link) {
       for (const linkedProject of project.link) {
-        const projectId = linkedProject.project.reference?.split('/')?.[1];
-        if (projectId) {
-          projectOrdering.push(projectId);
+        const linkedResource = resources.find(
+          (r) => !(r instanceof Error) && r.meta?.project === resolveId(linkedProject.project)
+        ) as T | undefined;
+        if (linkedResource) {
+          return linkedResource;
         }
       }
     }
-    projectOrdering.push(r4ProjectId);
-
-    const resources = (await getSystemRepo().readReferences(resourceReferences)) as (T | Error)[];
-    resources.sort((a: T | Error, b: T | Error) => {
-      if (a instanceof Error) {
-        throw a;
-      } else if (b instanceof Error) {
-        throw b;
-      }
-      return projectOrdering.indexOf(a.meta?.project as string) - projectOrdering.indexOf(b.meta?.project as string);
-    });
-    return resources[0] as T;
+    throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   }
+}
+
+function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyResource): boolean {
+  if (a.version !== b.version) {
+    return false;
+  } else if (a.date !== b.date) {
+    return false;
+  }
+  return true;
 }
 
 export function addPropertyFilter(query: SelectQuery, property: string, value: string, isEqual?: boolean): SelectQuery {

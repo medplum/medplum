@@ -391,7 +391,6 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
     const res2 = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    console.log(JSON.stringify(res2.body, undefined, 2));
     expect(res2.status).toBe(200);
     expect(res2.body.expansion.contains).toEqual(
       expect.arrayContaining([
@@ -557,13 +556,6 @@ describe('Updated implementation', () => {
       content: 'complete',
       url,
     };
-    const { project: p1, accessToken: a1 } = await createTestProject({ withAccessToken: true });
-    const cs1 = await request(app)
-      .post(`/fhir/R4/CodeSystem`)
-      .set('Authorization', 'Bearer ' + a1)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ ...codeSystem, concept: [{ code: '1', display: 'Correct coding' }] });
-    expect(cs1.status).toEqual(201);
 
     const { project: p2, accessToken: a2 } = await createTestProject({ withAccessToken: true });
     const cs2 = await request(app)
@@ -573,10 +565,26 @@ describe('Updated implementation', () => {
       .send({ ...codeSystem, concept: [{ code: '1', display: 'Incorrect coding' }] });
     expect(cs2.status).toEqual(201);
 
+    const { project: p1, accessToken: a1 } = await createTestProject({ withAccessToken: true });
+    const cs1 = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + a1)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...codeSystem, concept: [{ code: '1', display: 'Correct coding' }] });
+    expect(cs1.status).toEqual(201);
+
+    const { project: p3, accessToken: a3 } = await createTestProject({ withAccessToken: true });
+    const cs3 = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + a3)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...codeSystem, concept: [{ code: '1', display: 'Another incorrect coding' }] });
+    expect(cs3.status).toEqual(201);
+
     accessToken = await initTestAuth({
       project: {
         features: ['terminology'],
-        link: [{ project: createReference(p1) }, { project: createReference(p2) }],
+        link: [{ project: createReference(p1) }, { project: createReference(p2) }, { project: createReference(p3) }],
       },
     });
 
@@ -587,7 +595,7 @@ describe('Updated implementation', () => {
       .send({
         resourceType: 'ValueSet',
         status: 'active',
-        url: 'https://example.com/snomed-all' + randomUUID(),
+        url: 'https://example.com/' + randomUUID(),
         compose: { include: [{ system: url }] },
       });
     expect(res2.status).toBe(201);
