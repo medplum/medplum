@@ -209,7 +209,15 @@ export function generateAccessToken(
  * @returns A well-formed JWT that can be used as a refresh token.
  */
 export function generateRefreshToken(claims: MedplumRefreshTokenClaims, refreshExpiry?: string): Promise<string> {
-  const exp = refreshExpiry ?? '2w';
+  let exp: number | string = '2w';
+
+  if (refreshExpiry) {
+    const timestamp = Date.parse(refreshExpiry);
+    if (typeof timestamp === 'number') {
+      exp = Math.floor(timestamp / 1000); // exp claim is in seconds
+    }
+  }
+
   return generateJwt(exp, claims);
 }
 
@@ -219,7 +227,7 @@ export function generateRefreshToken(claims: MedplumRefreshTokenClaims, refreshE
  * @param claims - The key/value pairs to include in the payload section.
  * @returns Promise to generate and sign the JWT.
  */
-async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
+async function generateJwt(exp: number | string, claims: JWTPayload): Promise<string> {
   if (!signingKey || !issuer) {
     throw new Error('Signing key not initialized');
   }
