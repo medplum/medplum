@@ -28,8 +28,8 @@ export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
   readonly background?: string;
   readonly linkRenderers?: {
-    appointments?: (message: string) => ReactNode;
-    encounters?: (message: string) => ReactNode;
+    appointments?: LinkRenderer;
+    encounters?: LinkRenderer;
   };
 }
 
