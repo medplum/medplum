@@ -1,4 +1,11 @@
-import { AgentTransmitRequest, AgentTransmitResponse, ContentType, badRequest, serverError } from '@medplum/core';
+import {
+  AgentTransmitRequest,
+  AgentTransmitResponse,
+  ContentType,
+  OperationOutcomeError,
+  badRequest,
+  serverError,
+} from '@medplum/core';
 import { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
@@ -66,16 +73,10 @@ async function pushToAgent(req: Request): Promise<[OperationOutcome] | [Operatio
     return [badRequest("Agent is currently disabled. Agent.status is 'off'")];
   }
 
-  if (!params.body) {
-    return [badRequest('Missing body parameter')];
-  }
-
-  if (!params.contentType) {
-    return [badRequest('Missing contentType parameter')];
-  }
-
-  if (!params.destination) {
-    return [badRequest('Missing destination parameter')];
+  try {
+    validateParams(params);
+  } catch (err) {
+    return [(err as OperationOutcomeError).outcome];
   }
 
   const waitTimeout = params.waitTimeout ?? DEFAULT_WAIT_TIMEOUT;
@@ -119,4 +120,18 @@ async function pushToAgent(req: Request): Promise<[OperationOutcome] | [Operatio
   // At this point, one of two things will happen:
   // 1. The agent will respond with a message on the channel
   // 2. The timer will expire and the request will timeout
+}
+
+function validateParams(params: AgentPushParameters): void {
+  if (!params.body) {
+    throw new OperationOutcomeError(badRequest('Missing body parameter'));
+  }
+
+  if (!params.contentType) {
+    throw new OperationOutcomeError(badRequest('Missing contentType parameter'));
+  }
+
+  if (!params.destination) {
+    throw new OperationOutcomeError(badRequest('Missing destination parameter'));
+  }
 }
