@@ -712,7 +712,6 @@ describe('App', () => {
     }
 
     let isError = false;
-    console.debug('error', error);
     // err should be Error or AggregateError, and SHOULD be instanceof Error...
     // However on Mac it appears like it's not for some reason?
     // This check only exists because Mac seems to always return an AggregateError
@@ -1016,7 +1015,16 @@ describe('App', () => {
       error = err as AggregateError;
     }
 
-    expect(error?.constructor.name).toEqual('AggregateError');
+    let isError = false;
+    // err should be Error or AggregateError, and SHOULD be instanceof Error...
+    // However on Mac it appears like it's not for some reason?
+    // This check only exists because Mac seems to always return an AggregateError
+    // While on Linux we are getting just an Error
+    if (error?.constructor.name === 'Error' || error?.constructor.name === 'AggregateError') {
+      isError = true;
+    }
+    expect(isError).toEqual(true);
+
     hl7Client.close();
 
     // Set agent status back to 'active'
