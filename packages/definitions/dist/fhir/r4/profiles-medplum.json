@@ -823,6 +823,21 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "ClientApplication.refreshTokenExpiry",
+            "path" : "ClientApplication.refreshTokenExpiry",
+            "definition" : "Optional configuration to set the refresh token expiry",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "date"
+            }],
+            "base": {
+              "path" : "ClientApplication.refreshTokenExpiry",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
