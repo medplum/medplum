@@ -1,4 +1,4 @@
-import { OperationOutcomeError, Operator } from '@medplum/core';
+import { OperationOutcomeError, Operator, notFound } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
@@ -90,13 +90,12 @@ describe('Repository transactions', () => {
 
       // Read the patient by ID
       // This should fail, because the transaction was rolled back
-      // TODO: Currently not failing due to cache bug
-      // try {
-      //   await repo.readResource('Patient', (patient as Patient).id as string);
-      //   throw new Error('Expected error');
-      // } catch (err) {
-      //   expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
-      // }
+      try {
+        await repo.readResource('Patient', (patient as Patient).id as string);
+        throw new Error('Expected error');
+      } catch (err) {
+        expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
+      }
 
       // Search for patient by ID
       // This should return zero results because the transaction was rolled back
@@ -235,13 +234,102 @@ describe('Repository transactions', () => {
 
         // Read the patient by ID
         // This should fail, because the transaction was rolled back
-        // TODO: Currently not failing due to cache bug
-        // try {
-        //   await repo.readResource('Patient', (patient as Patient).id as string);
-        //   throw new Error('Expected error');
-        // } catch (err) {
-        //   expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
-        // }
+        try {
+          await repo.readResource('Patient', (patient2 as Patient).id as string);
+          throw new Error('Expected error');
+        } catch (err) {
+          expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
+        }
+
+        // Search for patient by ID
+        // This should succeed within the transaction
+        const searchCheck4 = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: (patient2 as Patient).id as string }],
+        });
+        expect(searchCheck4).toBeDefined();
+        expect(searchCheck4.entry).toHaveLength(0);
+      });
+    }));
+
+  test.skip('Nested transaction rollback from DB error', () =>
+    withTestContext(async () => {
+      let patient1: Patient | undefined;
+      let patient2: Patient | undefined;
+
+      // Start an outer transaction - this should succeed
+      await repo.withTransaction(async () => {
+        // Create one patient
+        // This will initially succeed, and should not be rolled back
+        patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        expect(patient1).toBeDefined();
+
+        // Start an inner transaction - this will be rolled back
+        await repo.withTransaction(async (db) => {
+          patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+          expect(patient2).toBeDefined();
+
+          // Read the patient by ID
+          // This should succeed within the transaction
+          const readCheck1 = await repo.readResource('Patient', patient1?.id as string);
+          expect(readCheck1).toBeDefined();
+
+          // Search for patient by ID
+          // This should succeed within the transaction
+          const searchCheck1 = await repo.search<Patient>({
+            resourceType: 'Patient',
+            filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
+          });
+          expect(searchCheck1).toBeDefined();
+          expect(searchCheck1.entry).toHaveLength(1);
+
+          // Read the patient by ID
+          // This should succeed within the transaction
+          const readCheck2 = await repo.readResource('Patient', patient2?.id as string);
+          expect(readCheck2).toBeDefined();
+
+          // Search for patient by ID
+          // This should succeed within the transaction
+          const searchPreCheck = await repo.search<Patient>({
+            resourceType: 'Patient',
+            filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
+          });
+          expect(searchPreCheck).toBeDefined();
+          expect(searchPreCheck.entry).toHaveLength(1);
+
+          await expect(db.query(`SELECT * FROM "TableDoesNotExist"`)).rejects.toMatchObject({
+            message: 'relation "TableDoesNotExist" does not exist',
+          });
+
+          // Search for patient by ID
+          // This should still succeed within the nested transaction
+          const searchPostCheck = await repo.search<Patient>({
+            resourceType: 'Patient',
+            filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
+          });
+          expect(searchPostCheck).toBeDefined();
+          expect(searchPostCheck.entry).toHaveLength(1);
+        });
+
+        // Read the patient by ID
+        // This should succeed within the transaction
+        const readCheck3 = await repo.readResource('Patient', patient1?.id as string);
+        expect(readCheck3).toBeDefined();
+
+        // Search for patient by ID
+        // This should succeed within the transaction
+        const searchCheck3 = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: patient1?.id as string }],
+        });
+        expect(searchCheck3).toBeDefined();
+        expect(searchCheck3.entry).toHaveLength(1);
+
+        // Read the patient by ID
+        // This should fail, because the transaction was rolled back
+        await expect(repo.readResource('Patient', (patient2 as Patient).id as string)).rejects.toMatchObject({
+          outcome: notFound,
+        });
 
         // Search for patient by ID
         // This should succeed within the transaction
