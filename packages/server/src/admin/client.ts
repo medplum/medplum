@@ -16,6 +16,10 @@ import { makeValidationMiddleware } from '../util/validator';
 
 export const createClientValidator = makeValidationMiddleware([
   body('name').notEmpty().withMessage('Client name is required'),
+  body('refreshTokenExpiry')
+    .optional()
+    .isDate()
+    .withMessage('Refresh token expiry must be a valid date'),
 ]);
 
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
