@@ -7,6 +7,7 @@ import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { cleanResource } from '../utils';
 import { ClinicalImpressionDisplay } from './ClinicalImpressionDisplay';
+import { PatientObservations } from './PatientObservations';
 
 interface PatientDetailsProps {
   patient: Patient;
@@ -64,12 +65,6 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     fields: ['date', 'patient', 'class'],
   };
 
-  const observationSearch: SearchRequest = {
-    resourceType: 'Observation',
-    filters: [{ code: 'patient', operator: Operator.EQUALS, value: `Patient/${id}` }],
-    fields: ['status', 'code', 'focus'],
-  };
-
   return (
     <Document>
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
@@ -101,12 +96,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
           <ClinicalImpressionDisplay patient={props.patient} />
         </Tabs.Panel>
         <Tabs.Panel value="observations">
-          <SearchControl
-            search={observationSearch}
-            hideFilters={true}
-            hideToolbar={true}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
-          />
+          <PatientObservations patient={props.patient} />
         </Tabs.Panel>
       </Tabs>
     </Document>
