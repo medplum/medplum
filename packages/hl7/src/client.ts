@@ -26,11 +26,18 @@ export class Hl7Client extends Hl7Base {
       return Promise.resolve(this.connection);
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const connectErrorListener = (err: Error) => {
+        reject(err);
+      };
+
       const socket = connect({ host: this.host, port: this.port }, () => {
         this.connection = new Hl7Connection(socket);
+        socket.off('error', connectErrorListener);
         resolve(this.connection);
       });
+
+      socket.on('error', connectErrorListener);
     });
   }
 
