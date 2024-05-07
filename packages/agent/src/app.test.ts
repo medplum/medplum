@@ -697,7 +697,7 @@ describe('App', () => {
       port: 9010,
     });
 
-    let error: AggregateError | undefined = undefined;
+    let error: Error | AggregateError | undefined = undefined;
     try {
       await hl7Client.sendAndWait(
         Hl7Message.parse(
@@ -708,10 +708,19 @@ describe('App', () => {
         )
       );
     } catch (err) {
-      error = err as AggregateError;
+      error = err as Error | AggregateError;
     }
 
-    expect(error?.constructor.name).toEqual('AggregateError');
+    let isError = false;
+    // @ts-expect-error AggregateError SHOULD be instanceof Error...
+    // However on Mac it appears like it's not for some reason?
+    // This check only exists because Mac seems to always return an AggregateError
+    // While on Linux we are getting just an Error
+    if (error instanceof Error || error?.constructor.name === 'AggregateError') {
+      isError = true;
+    }
+    expect(isError).toEqual(true);
+
     hl7Client.close();
 
     // Wait for socket
