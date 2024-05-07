@@ -92,7 +92,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
     };
 
     getEncounterPeriod(props.communication).then(setPeriod).catch(console.error);
-  }, [props.communication]);
+  }, [medplum, props.communication]);
 
   const attenders = getAttenders(props.communication.recipient, profile, false);
   const subject = getEncounterSubject(props.communication);
