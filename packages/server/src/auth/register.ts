@@ -73,7 +73,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
       ...login,
       membership: createReference(membership as ProjectMembership),
     },
-    createReference(profile as ProfileResource)
+    createReference(profile as ProfileResource),
+    client.refreshTokenExpiry,
   );
 
   return {

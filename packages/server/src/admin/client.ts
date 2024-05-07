@@ -46,6 +46,7 @@ export interface CreateClientRequest {
   readonly redirectUri?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly identityProvider?: IdentityProvider;
+  readonly refreshTokenExpiry?: string;
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<ClientApplication> {
@@ -59,6 +60,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     description: request.description,
     redirectUri: request.redirectUri,
     identityProvider: request.identityProvider,
+    refreshTokenExpiry: request.refreshTokenExpiry,
   });
 
   const systemRepo = getSystemRepo();
