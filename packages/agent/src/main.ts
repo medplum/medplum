@@ -1,5 +1,5 @@
 import { MedplumClient, parseLogLevel } from '@medplum/core';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
 
 interface Args {
@@ -51,9 +51,9 @@ export async function main(argv: string[]): Promise<App> {
   const app = new App(medplum, agentId, parseLogLevel(args.logLevel ?? 'INFO'));
   await app.start();
 
-  process.on('SIGINT', () => {
+  process.on('SIGINT', async () => {
     console.log('Gracefully shutting down from SIGINT (Crtl-C)');
-    app.stop();
+    await app.stop();
     process.exit();
   });
 

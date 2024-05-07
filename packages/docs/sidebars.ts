@@ -55,10 +55,10 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Care Plans',
+      label: 'Care Planning and Navigation',
       link: { type: 'doc', id: 'careplans/index' },
       items: [
-        { type: 'html', value: '<strong class="menu__link">Workflow</strong>' },
+        { type: 'html', value: '<strong class="menu__link">Care Navigation</strong>' },
         { type: 'doc', id: 'careplans/tasks/tasks' },
         { type: 'doc', id: 'careplans/clinical-decision-support' },
         {

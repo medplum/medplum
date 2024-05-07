@@ -96,7 +96,7 @@ describe('HL7', () => {
     expect(response.segments[1].name).toBe('MSA');
 
     client.close();
-    app.stop();
+    await app.stop();
     mockServer.stop();
   });
 
@@ -182,8 +182,8 @@ describe('HL7', () => {
     expect(hl7Messages.length).toBe(1);
 
     // Shutdown everything
-    hl7Server.stop();
-    app.stop();
+    await hl7Server.stop();
+    await app.stop();
     mockServer.stop();
   });
 });

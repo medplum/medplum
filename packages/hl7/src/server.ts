@@ -1,4 +1,4 @@
-import net from 'net';
+import net from 'node:net';
 import { Hl7Connection } from './connection';
 
 export class Hl7Server {
@@ -16,10 +16,18 @@ export class Hl7Server {
     this.server = server;
   }
 
-  stop(): void {
-    if (this.server) {
-      this.server.close();
-      this.server = undefined;
-    }
+  async stop(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (this.server) {
+        this.server.close((err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve();
+        });
+        this.server = undefined;
+      }
+    });
   }
 }

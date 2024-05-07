@@ -1,5 +1,6 @@
 import {
   AgentMessage,
+  AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
   ContentType,
@@ -11,7 +12,7 @@ import {
   isValidHostname,
   normalizeErrorString,
 } from '@medplum/core';
-import { Endpoint, Reference } from '@medplum/fhirtypes';
+import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ExecException, ExecOptions, exec } from 'node:child_process';
 import { isIPv4, isIPv6 } from 'node:net';
@@ -64,7 +65,7 @@ export class App {
 
     this.startWebSocket();
 
-    await this.startListeners();
+    await this.hydrateListeners();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -110,7 +111,9 @@ export class App {
 
     this.webSocket.addEventListener('error', (err) => {
       if (!this.shutdown) {
-        this.log.error(normalizeErrorString(err.error));
+        // This event is only fired when WebSocket closes due to some kind of error
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
+        this.log.error(`WebSocket closed due to an error: ${normalizeErrorString(err)}`);
       }
     });
 
@@ -164,6 +167,23 @@ export class App {
               this.pushMessage(command);
             }
             break;
+          case 'agent:reloadconfig:request':
+            try {
+              this.log.info('Reloading config...');
+              await this.hydrateListeners();
+              await this.sendToWebSocket({
+                type: 'agent:reloadconfig:response',
+                statusCode: 200,
+                callback: command.callback,
+              } satisfies AgentReloadConfigResponse);
+            } catch (err: unknown) {
+              await this.sendToWebSocket({
+                type: 'agent:error',
+                body: normalizeErrorString(err),
+                callback: command.callback,
+              });
+            }
+            break;
           case 'agent:error':
             this.log.error(command.body);
             break;
@@ -176,31 +196,113 @@ export class App {
     });
   }
 
-  private async startListeners(): Promise<void> {
+  private async hydrateListeners(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
+    const pendingRemoval = new Set(this.channels.keys());
+    const channels = agent.channel ?? [];
 
-    for (const definition of agent.channel ?? []) {
-      const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
-      let channel: Channel | undefined = undefined;
+    const endpointPromises = [] as Promise<Endpoint>[];
+    for (const definition of channels) {
+      endpointPromises.push(this.medplum.readReference(definition.endpoint as Reference<Endpoint>));
+    }
+
+    const endpoints = await Promise.all(endpointPromises);
+    this.validateAgentEndpoints(channels, endpoints);
+
+    // Remove all channels from list that are present in the new definition
+    // We will remove the channels that are left over -- channels that are not part of the new config
+    for (const definition of channels) {
+      pendingRemoval.delete(definition.name);
+    }
+
+    // Now iterate leftover channels and stop any that were not present in config when reloaded
+    for (const leftover of pendingRemoval.keys()) {
+      const channel = this.channels.get(leftover) as Channel;
+      await channel.stop();
+
+      pendingRemoval.delete(leftover);
+      this.channels.delete(leftover);
+    }
+
+    // Iterate the channels specified in the config
+    // Either start them or reload their config if already present
+    for (let i = 0; i < channels.length; i++) {
+      const definition = channels[i];
+      const endpoint = endpoints[i];
 
       if (!endpoint.address) {
         this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
-      } else if (endpoint.address.startsWith('dicom')) {
-        channel = new AgentDicomChannel(this, definition, endpoint);
-      } else if (endpoint.address.startsWith('mllp')) {
-        channel = new AgentHl7Channel(this, definition, endpoint);
-      } else {
-        this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
       }
 
-      if (channel) {
-        channel.start();
-        this.channels.set(definition.name as string, channel);
+      try {
+        await this.startOrReloadChannel(definition, endpoint);
+      } catch (err) {
+        this.log.error(normalizeErrorString(err));
       }
     }
   }
 
-  stop(): void {
+  /**
+   * Validates whether all endpoints are valid. Also ensures that there are no conflicting ports between any endpoints in the group.
+   *
+   * Will throw if not valid.
+   *
+   * @param channels - All the channels defined for the agent.
+   * @param endpoints - All the endpoints corresponding to the agent channels that should be validated.
+   */
+  private validateAgentEndpoints(channels: AgentChannel[], endpoints: Endpoint[]): void {
+    if (!endpoints.length) {
+      return;
+    }
+    const seenPorts = new Set<string>();
+    const portToChannelMap = new Map<string, string>();
+    for (let i = 0; i < channels.length; i++) {
+      const channel = channels[i];
+      const endpoint = endpoints[i];
+
+      if (endpoint.address === '') {
+        throw new Error(`Invalid empty endpoint address for channel '${channel.name}'`);
+      }
+
+      let parsedEndpoint: URL;
+      try {
+        parsedEndpoint = new URL(endpoint.address);
+      } catch (err: unknown) {
+        throw new Error(
+          `Error while validating endpoint address for channel '${channel.name}': ${normalizeErrorString(err)}`
+        );
+      }
+      if (seenPorts.has(parsedEndpoint.port)) {
+        throw new Error(
+          `Invalid agent config. Both '${portToChannelMap.get(parsedEndpoint.port) as string}' and '${channel.name}' declare use of port ${parsedEndpoint.port}`
+        );
+      }
+      seenPorts.add(parsedEndpoint.port);
+      portToChannelMap.set(parsedEndpoint.port, endpoint.address);
+    }
+  }
+
+  private async startOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
+    let channel: Channel | undefined = this.channels.get(definition.name);
+
+    if (channel) {
+      await channel.reloadConfig(definition, endpoint);
+      return;
+    }
+
+    if (endpoint.address.startsWith('dicom')) {
+      channel = new AgentDicomChannel(this, definition, endpoint);
+    } else if (endpoint.address.startsWith('mllp')) {
+      channel = new AgentHl7Channel(this, definition, endpoint);
+    } else {
+      throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    }
+
+    channel.start();
+    this.channels.set(definition.name, channel);
+  }
+
+  async stop(): Promise<void> {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
 
@@ -214,12 +316,16 @@ export class App {
       this.reconnectTimer = undefined;
     }
 
-    this.channels.forEach((channel) => channel.stop());
-
     if (this.webSocket) {
       this.webSocket.close();
       this.webSocket = undefined;
     }
+
+    const channelStopPromises = [];
+    for (const channel of this.channels.values()) {
+      channelStopPromises.push(channel.stop());
+    }
+    await Promise.all(channelStopPromises);
 
     this.log.info('Medplum service stopped successfully');
   }

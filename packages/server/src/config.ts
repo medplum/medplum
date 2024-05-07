@@ -100,6 +100,7 @@ export interface MedplumDatabaseConfig {
   password?: string;
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
+  runMigrations?: boolean;
 }
 
 export interface MedplumRedisConfig {
@@ -177,8 +178,9 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
-  config.database.port = process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
+  config.database.port = process.env['POSTGRES_PORT'] ? Number.parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
+  config.database.runMigrations = false;
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   config.approvedSenderEmails = 'no-reply@example.com';

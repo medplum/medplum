@@ -57,6 +57,46 @@ describe('Logger', () => {
     );
   });
 
+  test('With prefix', () => {
+    const logger = new Logger((msg) => testOutput(JSON.parse(msg)), undefined, LogLevel.INFO, { prefix: '[TEST] ' });
+    logger.info('Testing prefix');
+    expect(testOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'INFO',
+        msg: '[TEST] Testing prefix',
+      })
+    );
+  });
+
+  test('Clone logger', () => {
+    const logger = new Logger((msg) => testOutput(JSON.parse(msg)), undefined, LogLevel.INFO);
+    const clonedLogger1 = logger.clone();
+    const clonedLogger2 = logger.clone({ options: { prefix: '[CLONED] ' } });
+    logger.info('Testing clone');
+    clonedLogger1.info('Testing clone');
+    clonedLogger2.info('Testing clone');
+    expect(testOutput).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        level: 'INFO',
+        msg: 'Testing clone',
+      })
+    );
+    expect(testOutput).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        level: 'INFO',
+        msg: 'Testing clone',
+      })
+    );
+    expect(testOutput).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        level: 'INFO',
+        msg: '[CLONED] Testing clone',
+      })
+    );
+  });
+
   test('parseLogLevel', () => {
     expect(parseLogLevel('DEbug')).toBe(LogLevel.DEBUG);
     expect(parseLogLevel('INFO')).toBe(LogLevel.INFO);

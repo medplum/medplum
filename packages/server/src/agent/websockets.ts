@@ -68,10 +68,19 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
             break;
 
           case 'agent:transmit:response':
+          case 'agent:reloadconfig:response':
             if (command.callback) {
               const redis = getRedis();
               await redis.publish(command.callback, JSON.stringify(command));
             }
+            break;
+
+          case 'agent:error':
+            if (command.callback) {
+              const redis = getRedis();
+              await redis.publish(command.callback, JSON.stringify(command));
+            }
+            globalLogger.error('[Agent]: Error received from agent', { error: command.body });
             break;
 
           default:

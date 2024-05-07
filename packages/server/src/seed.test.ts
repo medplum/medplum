@@ -11,6 +11,7 @@ describe('Seed', () => {
     console.log = jest.fn();
 
     const config = await loadTestConfig();
+    config.database.runMigrations = true;
     return withTestContext(() => initAppServices(config));
   });
 

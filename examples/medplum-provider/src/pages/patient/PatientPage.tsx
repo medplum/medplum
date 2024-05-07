@@ -1,12 +1,12 @@
-import { Loader, Paper, ScrollArea, Tabs } from '@mantine/core';
+import { Anchor, Loader, Paper, ScrollArea, Tabs } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
-import { Fragment, useCallback, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
-import { PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
+import { PatientPageTabs, formatPatientPageTabUrl, getPatientPageTabOrThrow } from './PatientPage.utils';
 
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
@@ -40,6 +40,23 @@ export function PatientPage(): JSX.Element {
     [navigate, patient?.id]
   );
 
+  const patientSummaryTopContent = useMemo<JSX.Element | undefined>(() => {
+    if (!patient?.id) {
+      return undefined;
+    }
+
+    return (
+      <>
+        <Anchor component={Link} to={formatPatientPageTabUrl(patient.id, getPatientPageTabOrThrow('appointments'))}>
+          View Appointments
+        </Anchor>
+        <Anchor component={Link} to={formatPatientPageTabUrl(patient.id, getPatientPageTabOrThrow('encounter'))}>
+          View Documented Visits
+        </Anchor>
+      </>
+    );
+  }, [patient?.id]);
+
   if (outcome && !isOk(outcome)) {
     return (
       <Document>
@@ -57,28 +74,26 @@ export function PatientPage(): JSX.Element {
   }
 
   return (
-    <Fragment key={getReferenceString(patient)}>
-      <div className={classes.container}>
-        <div className={classes.sidebar}>
-          <PatientSummary w={350} mb="auto" patient={patient} />
-        </div>
-        <div className={classes.content}>
-          <Paper>
-            <ScrollArea>
-              <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
-                <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-                  {PatientPageTabs.map((t) => (
-                    <Tabs.Tab key={t.id} value={t.id}>
-                      {t.label}
-                    </Tabs.Tab>
-                  ))}
-                </Tabs.List>
-              </Tabs>
-            </ScrollArea>
-          </Paper>
-          <Outlet />
-        </div>
+    <div key={getReferenceString(patient)} className={classes.container}>
+      <div className={classes.sidebar}>
+        <PatientSummary w={350} mb="auto" patient={patient} topContent={patientSummaryTopContent} />
       </div>
-    </Fragment>
+      <div className={classes.content}>
+        <Paper>
+          <ScrollArea>
+            <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
+              <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+                {PatientPageTabs.map((t) => (
+                  <Tabs.Tab key={t.id} value={t.id}>
+                    {t.label}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+            </Tabs>
+          </ScrollArea>
+        </Paper>
+        <Outlet />
+      </div>
+    </div>
   );
 }

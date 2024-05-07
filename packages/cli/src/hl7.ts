@@ -1,7 +1,7 @@
 import { formatHl7DateTime, Hl7Message } from '@medplum/core';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { Command } from 'commander';
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { createMedplumCommand } from './util/command';
 
 const send = createMedplumCommand('send')
@@ -24,7 +24,7 @@ const send = createMedplumCommand('send')
 
     const client = new Hl7Client({
       host,
-      port: parseInt(port, 10),
+      port: Number.parseInt(port, 10),
     });
 
     try {
@@ -46,7 +46,7 @@ const listen = createMedplumCommand('listen')
       });
     });
 
-    server.start(parseInt(port, 10));
+    server.start(Number.parseInt(port, 10));
     console.log('Listening on port ' + port);
   });
 

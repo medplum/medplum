@@ -4,7 +4,7 @@ import { OperationDefinition } from '@medplum/fhirtypes';
 import { AgentConnectionState, AgentInfo } from '../../agent/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
-import { getAgentForRequest } from './agentutils';
+import { getAgentForRequest } from './utils/agentutils';
 import { buildOutputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -16,8 +16,8 @@ const operation: OperationDefinition = {
   experimental: true,
   resource: ['Agent'],
   system: false,
-  type: true,
-  instance: false,
+  type: false,
+  instance: true,
   parameter: [
     { use: 'out', name: 'status', type: 'code', min: 1, max: '1' },
     { use: 'out', name: 'version', type: 'string', min: 1, max: '1' },
