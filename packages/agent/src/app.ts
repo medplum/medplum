@@ -238,7 +238,6 @@ export class App {
         this.log.warn(
           `[${getChannelTypeShortName(endpoint)}:${definition.name}] Channel currently has status of 'off'. Channel will not reconnect until status is set to 'active'`
         );
-        channels = channels.filter((channel) => channel.name !== definition.name);
       } else {
         // Push the definition and endpoint into our filtered arrays
         filteredChannels.push(definition);
@@ -260,9 +259,9 @@ export class App {
 
     // Iterate the channels specified in the config
     // Either start them or reload their config if already present
-    for (let i = 0; i < channels.length; i++) {
-      const definition = channels[i];
-      const endpoint = endpoints[i];
+    for (let i = 0; i < filteredChannels.length; i++) {
+      const definition = filteredChannels[i];
+      const endpoint = filteredEndpoints[i];
 
       if (!endpoint.address) {
         this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
@@ -286,7 +285,7 @@ export class App {
    */
   private validateAgentEndpoints(channels: AgentChannel[], endpoints: Endpoint[]): void {
     const seenPorts = new Set<string>();
-    const portToChannelMap = new Map<string, string>();
+    const portToChannelMap = new Map<string, [string, string]>();
     for (let i = 0; i < channels.length; i++) {
       const channel = channels[i];
       const endpoint = endpoints[i];
@@ -304,12 +303,13 @@ export class App {
         );
       }
       if (seenPorts.has(parsedEndpoint.port)) {
+        const [conflictingChannel, conflictingAddress] = portToChannelMap.get(parsedEndpoint.port) as [string, string];
         throw new Error(
-          `Invalid agent config. Both '${portToChannelMap.get(parsedEndpoint.port) as string}' and '${channel.name}' declare use of port ${parsedEndpoint.port}`
+          `Invalid agent config. Both '${conflictingChannel}' (${conflictingAddress}) and '${channel.name}' (${endpoint.address}) declare use of port ${parsedEndpoint.port}`
         );
       }
       seenPorts.add(parsedEndpoint.port);
-      portToChannelMap.set(parsedEndpoint.port, endpoint.address);
+      portToChannelMap.set(parsedEndpoint.port, [channel.name, endpoint.address]);
     }
   }
 

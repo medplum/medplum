@@ -617,7 +617,7 @@ describe('App', () => {
     const state = {
       mySocket: undefined as Client | undefined,
       gotAgentReloadResponse: false,
-      lastTransmitResponse: undefined as AgentTransmitResponse | undefined,
+      gotAgentError: false,
     };
 
     const originalConsoleLog = console.log;
@@ -628,14 +628,6 @@ describe('App', () => {
     });
 
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
-
-    const endpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'active',
-      address: 'mllp://0.0.0.0:9010',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
 
     const mockServer = new Server('wss://example.com/ws/agent');
 
@@ -664,12 +656,20 @@ describe('App', () => {
               })
             )
           );
-        } else if (command.type === 'agent:transmit:response') {
-          state.lastTransmitResponse = command;
+        } else if (command.type === 'agent:error') {
+          state.gotAgentError = true;
         } else if (command.type === 'agent:reloadconfig:response' && command.statusCode === 200) {
           state.gotAgentReloadResponse = true;
         }
       });
+    });
+
+    const endpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'mllp://0.0.0.0:9010',
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
     const agent = await medplum.createResource<Agent>({
@@ -757,7 +757,7 @@ describe('App', () => {
     expect(state.mySocket).toBeDefined();
 
     // Reset last transmit response
-    state.lastTransmitResponse = undefined;
+    state.gotAgentError = false;
     // Send a push message
     state.mySocket.send(
       Buffer.from(
@@ -776,7 +776,7 @@ describe('App', () => {
     timeout = setTimeout(() => {
       shouldThrow = true;
     }, 2500);
-    while (!state.lastTransmitResponse) {
+    while (!state.gotAgentError) {
       if (shouldThrow) {
         throw new Error('Timeout');
       }
@@ -784,9 +784,7 @@ describe('App', () => {
     }
     clearTimeout(timeout);
 
-    expect(state.lastTransmitResponse).toMatchObject<Partial<AgentTransmitResponse>>({
-      statusCode: 400,
-    });
+    expect(state.gotAgentError).toEqual(true);
 
     state.mySocket.send(
       Buffer.from(
@@ -921,7 +919,7 @@ describe('App', () => {
     const state = {
       mySocket: undefined as Client | undefined,
       gotAgentReloadResponse: false,
-      lastTransmitResponse: undefined as AgentTransmitResponse | undefined,
+      gotAgentError: false,
     };
 
     const originalConsoleLog = console.log;
@@ -932,14 +930,6 @@ describe('App', () => {
     });
 
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
-
-    const endpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      status: 'off',
-      address: 'mllp://0.0.0.0:9010',
-      connectionType: { code: ContentType.HL7_V2 },
-      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
-    });
 
     const mockServer = new Server('wss://example.com/ws/agent');
 
@@ -968,12 +958,28 @@ describe('App', () => {
               })
             )
           );
-        } else if (command.type === 'agent:transmit:response') {
-          state.lastTransmitResponse = command;
+        } else if (command.type === 'agent:error') {
+          state.gotAgentError = true;
         } else if (command.type === 'agent:reloadconfig:response' && command.statusCode === 200) {
           state.gotAgentReloadResponse = true;
         }
       });
+    });
+
+    const testEndpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'off',
+      address: 'mllp://0.0.0.0:9010',
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+    });
+
+    const prodEndpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'mllp://0.0.0.0:9011',
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
     });
 
     const agent = await medplum.createResource<Agent>({
@@ -983,7 +989,12 @@ describe('App', () => {
       channel: [
         {
           name: 'test',
-          endpoint: createReference(endpoint),
+          endpoint: createReference(testEndpoint),
+          targetReference: createReference(bot),
+        },
+        {
+          name: 'prod',
+          endpoint: createReference(prodEndpoint),
           targetReference: createReference(bot),
         },
       ],
@@ -992,8 +1003,9 @@ describe('App', () => {
     const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
 
-    // There should be no channels
-    expect(app.channels.size).toEqual(0);
+    // There should be only the prod channel
+    expect(app.channels.size).toEqual(1);
+    expect(app.channels.has('prod')).toEqual(true);
 
     // Try to send HL7 message -- should fail
     let hl7Client = new Hl7Client({
@@ -1027,9 +1039,31 @@ describe('App', () => {
 
     hl7Client.close();
 
+    // This one should succeed
+    hl7Client = new Hl7Client({
+      host: 'localhost',
+      port: 9011,
+    });
+
+    let response = await hl7Client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
+      )
+    );
+
+    expect(response).toBeDefined();
+    expect(response.header.getComponent(9, 1)).toBe('ACK');
+    expect(response.segments).toHaveLength(2);
+    expect(response.segments[1].name).toBe('MSA');
+
+    hl7Client.close();
+
     // Set agent status back to 'active'
     await medplum.updateResource<Endpoint>({
-      ...endpoint,
+      ...testEndpoint,
       status: 'active',
     });
 
@@ -1071,9 +1105,10 @@ describe('App', () => {
     }
     clearTimeout(timeout);
 
-    // There should be 1 channel
-    expect(app.channels.size).toEqual(1);
+    // There should be 2 channels
+    expect(app.channels.size).toEqual(2);
     expect(app.channels.get('test')).toBeDefined();
+    expect(app.channels.get('prod')).toBeDefined();
 
     // Try to send HL7 message -- should succeed
     hl7Client = new Hl7Client({
@@ -1081,7 +1116,7 @@ describe('App', () => {
       port: 9010,
     });
 
-    const response = await hl7Client.sendAndWait(
+    response = await hl7Client.sendAndWait(
       Hl7Message.parse(
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
           'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
@@ -1097,20 +1132,27 @@ describe('App', () => {
 
     hl7Client.close();
 
-    // Send a push message
-    state.mySocket.send(
-      Buffer.from(
-        JSON.stringify({
-          type: 'agent:transmit:request',
-          body:
-            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
-            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
-            'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
-            'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57099',
-        })
+    // This one should succeed
+    hl7Client = new Hl7Client({
+      host: 'localhost',
+      port: 9011,
+    });
+
+    response = await hl7Client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
       )
     );
+
+    expect(response).toBeDefined();
+    expect(response.header.getComponent(9, 1)).toBe('ACK');
+    expect(response.segments).toHaveLength(2);
+    expect(response.segments[1].name).toBe('MSA');
+
+    hl7Client.close();
 
     await app.stop();
     await new Promise<void>((resolve) => {
