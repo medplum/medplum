@@ -6,7 +6,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   parseSearchRequest,
-  validateResourceType
+  validateResourceType,
 } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';

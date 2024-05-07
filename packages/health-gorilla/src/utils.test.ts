@@ -36,7 +36,7 @@ describe('Health Gorilla utils', () => {
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
       indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
     }
-  })
+  });
 
   beforeEach(() => {
     jest.resetModules();
