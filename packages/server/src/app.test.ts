@@ -117,4 +117,14 @@ describe('App', () => {
     expect(res.header['access-control-max-age']).toBe('86400');
     expect(res.header['cache-control']).toBe('public, max-age=86400');
   });
+
+  test('Server rate limit', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 1;
+    await initApp(app, config);
+    const res = await request(app).get('/api/');
+    expect(res.status).toBe(429);
+    expect(await shutdownApp()).toBeUndefined();
+  });
 });
