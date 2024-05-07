@@ -576,7 +576,7 @@ async function validateClientIdAndSecret(
  * @param membership - The project membership.
  * @param refreshExpiry - The refresh token expiry.
  */
-async function sendTokenResponse(res: Response, login: Login, membership: ProjectMembership, refreshExpiry: string | undefined): Promise<void> {
+async function sendTokenResponse(res: Response, login: Login, membership: ProjectMembership, refreshExpiry?: string): Promise<void> {
   const config = getConfig();
   const tokens = await getAuthTokens(login, membership.profile as Reference<ProfileResource>, refreshExpiry);
   let patient = undefined;
