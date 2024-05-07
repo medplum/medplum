@@ -37,7 +37,7 @@ export class Hl7Client extends Hl7Base {
         resolve(this.connection);
       });
 
-      socket.on('error', connectErrorListener);
+      socket.on('error', reject);
     });
   }
 
