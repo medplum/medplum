@@ -11,6 +11,7 @@ import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
+import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
@@ -188,6 +189,10 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Agent $bulk-status operation
   router.add('GET', '/Agent/$bulk-status', agentBulkStatusHandler);
+
+  // Agent $reload-config operation
+  router.add('GET', '/Agent/$reload-config', agentReloadConfigHandler);
+  router.add('GET', '/Agent/:id/$reload-config', agentReloadConfigHandler);
 
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);

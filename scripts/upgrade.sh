@@ -17,21 +17,18 @@ git checkout -b "$BRANCH_NAME"
 # Exclude known problem packages
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-EXCLUDE="eslint node-fetch chromatic"
+# react - version 18.3+ incompatible with react-native, waiting for fix
+# supertest - version 7+ incompatible with superwstest, waiting for fix
+EXCLUDE="eslint node-fetch react react-dom supertest"
 
-npx npm-check-updates -u -x "$EXCLUDE" --packageFile package.json
-
-for dir in `ls packages`; do
-  if test -f "packages/$dir/package.json"; then
-    npx npm-check-updates -u -x "$EXCLUDE" --packageFile "packages/$dir/package.json"
-  fi
-done
-
-for dir in `ls examples`; do
-  if test -f "examples/$dir/package.json"; then
-    npx npm-check-updates -u -x "$EXCLUDE" --packageFile "examples/$dir/package.json"
-  fi
-done
+# First, only upgrade patch and minor versions
+# --workspaces - Run on all workspaces
+# --root - Runs updates on the root project in addition to specified workspaces
+# --upgrade - Overwrite package file with upgraded versions
+# --reject - Exclude packages matching the given string
+# --target - Determines the version to upgrade to
+# "minor" - Upgrade to the highest minor version without bumping the major version
+npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target minor
 
 # Commit and push before running NPM install
 git add -u .
@@ -47,3 +44,20 @@ git add -u .
 git commit -m "Dependency upgrades - step 2"
 git push origin "$BRANCH_NAME"
 gh pr ready
+
+# Next, optimistically upgrade to the latest versions
+# "latest" - Upgrade to whatever the package's "latest" git tag points to.
+npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target latest
+
+# Commit and push before running NPM install
+git add -u .
+git commit -m "Dependency upgrades - step 3"
+git push origin "$BRANCH_NAME"
+
+# Reinstall all dependencies
+./scripts/reinstall.sh --update
+
+# Commit and push after running NPM install
+git add -u .
+git commit -m "Dependency upgrades - step 4"
+git push origin "$BRANCH_NAME"

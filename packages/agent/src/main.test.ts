@@ -60,7 +60,7 @@ describe('Main', () => {
 
   test('Command line arguments success', async () => {
     const app = await main(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
-    app.stop();
+    await app.stop();
     expect(process.exit).not.toHaveBeenCalled();
   });
 
@@ -92,7 +92,7 @@ describe('Main', () => {
       );
     const app = await main(['node', 'index.js']);
     expect(app.logLevel).toEqual(LogLevel.DEBUG);
-    app.stop();
+    await app.stop();
     expect(process.exit).not.toHaveBeenCalled();
   });
 });

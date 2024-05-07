@@ -1,0 +1,7 @@
+.item {
+  white-space: pre-wrap;
+}
+
+.itemPadding {
+  padding: 0 16px 16px 16px;
+}

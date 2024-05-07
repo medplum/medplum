@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "3.1.4",
+  "version": "3.1.5",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -15,7 +15,7 @@
     "benchmark": "ts-node src/benchmarks.ts",
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
-    "docs": "ts-node src/docs.ts",
+    "docs": "ts-node src/docs.ts && cd ../.. && patch -p1 apply src/ONC-compliance-text.patch",
     "fhirtypes": "ts-node src/index.ts",
     "generate": "npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient",
     "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
@@ -24,19 +24,19 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "3.1.4",
-    "@medplum/definitions": "3.1.4",
-    "@medplum/fhirtypes": "3.1.4",
+    "@medplum/core": "3.1.5",
+    "@medplum/definitions": "3.1.5",
+    "@medplum/fhirtypes": "3.1.5",
     "@types/json-schema": "7.0.15",
-    "@types/pg": "8.11.5",
+    "@types/pg": "8.11.6",
     "@types/unzipper": "0.10.9",
     "fast-xml-parser": "4.3.6",
-    "fhirpath": "3.11.0",
+    "fhirpath": "3.13.0",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.11.5",
-    "tinybench": "2.7.0",
-    "unzipper": "0.11.2"
+    "tinybench": "2.8.0",
+    "unzipper": "0.11.5"
   },
   "engines": {
     "node": ">=18.0.0"

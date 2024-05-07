@@ -18,12 +18,44 @@ export enum LogLevel {
   DEBUG,
 }
 
+export interface LoggerOptions {
+  prefix?: string;
+}
+
+export interface LoggerConfig {
+  write: (msg: string) => void;
+  metadata: Record<string, any>;
+  level: LogLevel;
+  options?: LoggerOptions;
+}
+
+export type LoggerConfigOverride = Partial<LoggerConfig>;
+
 export class Logger {
+  readonly prefix?: string;
   constructor(
     readonly write: (msg: string) => void,
     readonly metadata: Record<string, any> = {},
-    public level: LogLevel = LogLevel.INFO
-  ) {}
+    public level: LogLevel = LogLevel.INFO,
+    readonly options?: LoggerOptions
+  ) {
+    if (options?.prefix) {
+      this.prefix = options.prefix;
+    }
+  }
+
+  clone(override?: LoggerConfigOverride): Logger {
+    const config = this.getLoggerConfig();
+    const mergedConfig = override
+      ? { ...config, override, options: { ...config.options, ...override.options } }
+      : config;
+    return new Logger(mergedConfig.write, mergedConfig.metadata, mergedConfig.level, mergedConfig.options);
+  }
+
+  private getLoggerConfig(): LoggerConfig {
+    const { write, metadata, level, options } = this;
+    return { write, metadata, level, options };
+  }
 
   error(msg: string, data?: Record<string, any>): void {
     this.log(LogLevel.ERROR, msg, data);
@@ -55,7 +87,7 @@ export class Logger {
       JSON.stringify({
         level: LogLevel[level],
         timestamp: new Date().toISOString(),
-        msg,
+        msg: this.prefix ? `${this.prefix}${msg}` : msg,
         ...data,
         ...this.metadata,
       })

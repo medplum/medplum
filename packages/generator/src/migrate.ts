@@ -220,7 +220,6 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
     name: resourceType + '_Token',
     columns: [
       { name: 'resourceId', type: 'UUID NOT NULL' },
-      { name: 'index', type: 'INTEGER' },
       { name: 'code', type: 'TEXT NOT NULL' },
       { name: 'system', type: 'TEXT' },
       { name: 'value', type: 'TEXT' },
@@ -401,7 +400,6 @@ function buildValueSetElementTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'ValueSetElement',
     columns: [
-      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' }, // Deprecated - to be removed
       { name: 'resourceId', type: 'UUID NOT NULL' },
       { name: 'system', type: 'TEXT' },
       { name: 'code', type: 'TEXT' },

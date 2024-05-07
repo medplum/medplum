@@ -5,12 +5,12 @@ import tar, { Unpack } from 'tar';
 import { getCodeContentType, safeTarExtractor } from './utils';
 
 jest.mock('tar', () => ({
-  x: jest.fn(),
+  extract: jest.fn(),
 }));
 
 describe('CLI utils', () => {
   test('safeTarExtractor throws an error when fileCount > MAX_FILES', async () => {
-    (tar as jest.Mocked<typeof tar>).x.mockImplementationOnce((options) => {
+    (tar as jest.Mocked<typeof tar>).extract.mockImplementationOnce((options) => {
       const writable = new Writable({
         write(chunk, _, callback) {
           options.filter?.(chunk.toString(), { size: 1 } as Stats);
@@ -33,7 +33,7 @@ describe('CLI utils', () => {
   });
 
   test('safeTarExtractor throws an error when size > MAX_SIZE', async () => {
-    (tar as jest.Mocked<typeof tar>).x.mockImplementationOnce((options) => {
+    (tar as jest.Mocked<typeof tar>).extract.mockImplementationOnce((options) => {
       const writable = new Writable({
         write(chunk, _, callback) {
           options.filter?.(chunk.toString(), { size: 1024 * 1024 } as Stats);

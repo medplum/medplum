@@ -1,57 +1,98 @@
-import { ContentType } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { ContentType, badRequest, sleep } from '@medplum/core';
+import { AsyncJob, Bot, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
-import request from 'supertest';
+import { randomUUID } from 'node:crypto';
+import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import { getBinaryStorage } from '../storage';
 
-const app = express();
-let accessToken: string;
-let bot: Bot;
-
 describe('Execute', () => {
+  let app: express.Express;
+  let accessToken: string;
+  const bots = [] as Bot[];
+
+  const botCodes = [
+    [
+      `
+export async function handler(medplum, event) {
+  console.log('input', event.input);
+  return event.input;
+}
+  `,
+      `
+exports.handler = async function (medplum, event) {
+  console.log('input', event.input);
+  return event.input;
+};
+`,
+    ],
+    [
+      `
+export async function handler(medplum, event) {
+  console.log('input', event.input);
+  if (event.input === 'input: true') {
+    return true;
+  } else if (event.input === 'input: false') {
+    return false;
+  } else {
+    throw new Error('Invalid boolean');
+  }
+}
+  `,
+      `
+exports.handler = async function (medplum, event) {
+  console.log('input', event.input);
+  if (event.input === 'input: true') {
+    return true;
+  } else if (event.input === 'input: false') {
+    return false;
+  } else {
+    throw new Error('Invalid boolean');
+  }
+};
+`,
+    ],
+  ] as [string, string][];
+
   beforeAll(async () => {
+    app = express();
     const config = await loadTestConfig();
     config.vmContextBotsEnabled = true;
     await initApp(app, config);
     accessToken = await initTestAuth();
 
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
-        name: 'Test Bot',
-        runtimeVersion: 'vmcontext',
-        code: `
-          export async function handler(medplum, event) {
-            console.log('input', event.input);
-            return event.input;
-          }
-        `,
-      });
-    expect(res1.status).toBe(201);
-    bot = res1.body as Bot;
+    for (let i = 0; i < botCodes.length; i++) {
+      const [esmCode, cjsCode] = botCodes[i];
 
-    const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        code: `
-          exports.handler = async function (medplum, event) {
-            console.log('input', event.input);
-            return event.input;
-          };
-      `,
-      });
-    expect(res2.status).toBe(200);
+      const res1 = await request(app)
+        .post('/fhir/R4/Bot')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Bot',
+          identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
+          name: `Test Bot #${i + 1}`,
+          runtimeVersion: 'vmcontext',
+          code: esmCode,
+        });
+
+      expect(res1.status).toBe(201);
+      const bot = res1.body as Bot;
+
+      const res2 = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          code: cjsCode,
+        });
+
+      expect(res2.status).toBe(200);
+      bots[i] = bot;
+    }
   });
 
   afterAll(async () => {
@@ -60,7 +101,7 @@ describe('Execute', () => {
 
   test('Submit plain text', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
       .set('Content-Type', ContentType.TEXT)
       .set('Authorization', 'Bearer ' + accessToken)
       .send('input');
@@ -71,7 +112,7 @@ describe('Execute', () => {
 
   test('Submit FHIR with content type', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
@@ -84,7 +125,7 @@ describe('Execute', () => {
 
   test('Submit FHIR without content type', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Patient',
@@ -103,7 +144,7 @@ describe('Execute', () => {
       'MSA|AA|9B38584D|Everything was okay dokay!|';
 
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
       .set('Content-Type', ContentType.HL7_V2)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(text);
@@ -117,7 +158,7 @@ describe('Execute', () => {
     expect(args[1]).toBe(ContentType.JSON);
 
     const row = JSON.parse(args[2] as string);
-    expect(row.botId).toEqual(bot.id);
+    expect(row.botId).toEqual(bots[0].id);
     expect(row.hl7MessageType).toEqual('ACK');
     expect(row.hl7Version).toEqual('2.6.1');
   });
@@ -125,7 +166,7 @@ describe('Execute', () => {
   test('Execute without code', async () => {
     // Create a bot with empty code
     const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
+      .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
@@ -147,7 +188,7 @@ describe('Execute', () => {
 
   test('Unsupported runtime version', async () => {
     const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
+      .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
@@ -356,5 +397,195 @@ describe('Execute', () => {
 
     // Disable VM context bots
     getConfig().vmContextBotsEnabled = false;
+  });
+
+  describe('Prefer: respond-async', () => {
+    beforeAll(() => {
+      getConfig().vmContextBotsEnabled = true;
+    });
+
+    afterAll(() => {
+      getConfig().vmContextBotsEnabled = false;
+    });
+
+    test('Plain text -- Prefer: respond-async', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Prefer', 'respond-async')
+        .send('input');
+      expect(res.status).toBe(202);
+
+      let res2: Response | undefined = undefined;
+
+      let shouldThrow = false;
+      const asyncJobTimeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 5000);
+
+      while (!((res2?.body as AsyncJob)?.status === 'completed')) {
+        if (shouldThrow) {
+          throw new Error('Timed out while waiting for async job to complete');
+        }
+        await sleep(10);
+        res2 = await request(app)
+          .get(new URL(res.headers['content-location']).pathname)
+          .set('Authorization', 'Bearer ' + accessToken);
+      }
+      clearTimeout(asyncJobTimeout);
+
+      const responseBody = (res2 as Response).body as AsyncJob;
+
+      expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: expect.stringContaining('$execute'),
+        output: expect.objectContaining<Parameters>({
+          resourceType: 'Parameters',
+          parameter: expect.arrayContaining<ParametersParameter>([
+            expect.objectContaining<ParametersParameter>({
+              name: 'responseBody',
+              valueString: 'input',
+            }),
+          ]),
+        }),
+      });
+    });
+
+    test('JSON -- Prefer: respond-async', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Prefer', 'respond-async')
+        .send({ hello: 'medplum' });
+      expect(res.status).toBe(202);
+
+      let res2: Response | undefined = undefined;
+
+      let shouldThrow = false;
+      const asyncJobTimeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 5000);
+
+      while (!((res2?.body as AsyncJob)?.status === 'completed')) {
+        if (shouldThrow) {
+          throw new Error('Timed out while waiting for async job to complete');
+        }
+        await sleep(10);
+        res2 = await request(app)
+          .get(new URL(res.headers['content-location']).pathname)
+          .set('Authorization', 'Bearer ' + accessToken);
+      }
+      clearTimeout(asyncJobTimeout);
+
+      const responseBody = (res2 as Response).body as AsyncJob;
+
+      expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: expect.stringContaining('$execute'),
+        output: expect.objectContaining<Parameters>({
+          resourceType: 'Parameters',
+          parameter: expect.arrayContaining<ParametersParameter>([
+            expect.objectContaining<ParametersParameter>({
+              name: 'responseBody',
+              valueString: JSON.stringify({ hello: 'medplum' }),
+            }),
+          ]),
+        }),
+      });
+    });
+
+    test('Boolean -- Prefer: respond-async', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots[1].id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Prefer', 'respond-async')
+        .send('input: true');
+      expect(res.status).toBe(202);
+
+      let res2: Response | undefined = undefined;
+
+      let shouldThrow = false;
+      const asyncJobTimeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 5000);
+
+      while (!((res2?.body as AsyncJob)?.status === 'completed')) {
+        if (shouldThrow) {
+          throw new Error('Timed out while waiting for async job to complete');
+        }
+        await sleep(10);
+        res2 = await request(app)
+          .get(new URL(res.headers['content-location']).pathname)
+          .set('Authorization', 'Bearer ' + accessToken);
+      }
+      clearTimeout(asyncJobTimeout);
+
+      const responseBody = (res2 as Response).body as AsyncJob;
+
+      expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: expect.stringContaining('$execute'),
+        output: expect.objectContaining<Parameters>({
+          resourceType: 'Parameters',
+          parameter: expect.arrayContaining<ParametersParameter>([
+            expect.objectContaining<ParametersParameter>({
+              name: 'responseBody',
+              valueBoolean: true,
+            }),
+          ]),
+        }),
+      });
+    });
+
+    test('No Bot ID -- Prefer: respond-async', async () => {
+      const res = await request(app)
+        .post('/fhir/R4/Bot/$execute')
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Prefer', 'respond-async')
+        .send('input');
+      expect(res.status).toBe(202);
+
+      let res2: Response | undefined = undefined;
+
+      let shouldThrow = false;
+      const asyncJobTimeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 5000);
+
+      while (!((res2?.body as AsyncJob)?.status === 'error' || (res2?.body as AsyncJob)?.status === 'completed')) {
+        if (shouldThrow) {
+          throw new Error('Timed out while waiting for async job to complete');
+        }
+        await sleep(10);
+        res2 = await request(app)
+          .get(new URL(res.headers['content-location']).pathname)
+          .set('Authorization', 'Bearer ' + accessToken);
+      }
+      clearTimeout(asyncJobTimeout);
+
+      const responseBody = (res2 as Response).body as AsyncJob;
+
+      expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+        resourceType: 'AsyncJob',
+        status: 'error',
+        request: expect.stringContaining('$execute'),
+        output: expect.objectContaining<Parameters>({
+          resourceType: 'Parameters',
+          parameter: expect.arrayContaining<ParametersParameter>([
+            expect.objectContaining<ParametersParameter>({
+              name: 'outcome',
+              resource: badRequest('Must specify bot ID or identifier.'),
+            }),
+          ]),
+        }),
+      });
+    });
   });
 });

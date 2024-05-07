@@ -1,5 +1,5 @@
 import { Box, Card, Divider, Flex, Group, Text, Title } from '@mantine/core';
-import { formatDate } from '@medplum/core';
+import { formatDate, getDisplayString } from '@medplum/core';
 import { CodeableConcept, Questionnaire, Reference, Resource, Task } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
@@ -173,8 +173,10 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
       setTitle(<>{props.resource.title}</>);
     } else if (props.resource.resourceType === 'QuestionnaireResponse') {
       fetchQuestionnaireTitle().catch(console.error);
+    } else if (props.task.code) {
+      setTitle(<CodeableConceptDisplay value={props.task.code} />);
     } else {
-      setTitle(<>{props.task.code}</>);
+      setTitle(<>{getDisplayString(props.task)}</>);
     }
   }, [props.resource, props.task, medplum]);
 

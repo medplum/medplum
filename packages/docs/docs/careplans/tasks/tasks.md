@@ -12,12 +12,23 @@ import TabItem from '@theme/TabItem';
 
 import ExampleCode from '!!raw-loader!@site/..//examples/src/careplans/tasks.ts';
 
-# Using `Tasks` to Manage Workflow
+# Using `Tasks` to Manage Clinical Workflow
+
+Workflow management is an essential part of healthcare, and healthcare operations requiring coordination of many manual steps physicians, patients, nurses, care coordinators, etc. Generally, our goals are to
+
+- **Top-of-License Care:** Ensure clinicians' time is being used efficiently.
+- **Compliant Fifty-State Workflow:** Make sure we can serve patients across a wide geographic area robustly and efficiently
+- **Automation:** Eliminate routine tasks to avoid clinician burnout.
+
+
+The Medplum [Clinical Task Management Demo](https://github.com/medplum/medplum-task-demo) provides an in-depth reference implementation of a task management system that addresses these concerns.
+
+<div style={{textAlign: 'center'}}>
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/xQH27B8sP9o?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen/>
+</div>
+
 
 ## Introduction
-
-Workflow is an essential part of healthcare, and healthcare operations requiring coordination of many manual steps physicians, patients, nurses, care coordinators, etc.
-
 While the majority of FHIR resources represent clinical data that is _operated on_, FHIR also defines a set of workflow resources that describe and track _work to be done._ This guide will discuss the usage of the [`Task`](/docs/api/fhir/resources/task) resource, which is the basic building-block resource used to implement care plans and track workflow progress.
 
 For example, a [`Task`](/docs/api/fhir/resources/task) might represent the task of having a practitioner complete a [PHQ-9 questionnaire](https://www.apa.org/depression-guideline/patient-health-questionnaire.pdf) for a patient as part of their onboarding.

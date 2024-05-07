@@ -25,9 +25,9 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { timingSafeEqual } from 'crypto';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
+import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getRequestContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
@@ -792,7 +792,7 @@ export async function verifyMultipleMatchingException(
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
 export async function getLoginForAccessToken(accessToken: string): Promise<AuthState | undefined> {
-  let verifyResult;
+  let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
     verifyResult = await verifyJwt(accessToken);
   } catch (err) {

@@ -78,7 +78,7 @@ describe('Agent Net Utils', () => {
     });
 
     afterAll(async () => {
-      app.stop();
+      await app.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
@@ -123,7 +123,7 @@ describe('Agent Net Utils', () => {
         type: 'agent:transmit:response',
         callback,
         statusCode: 200,
-        body: expect.stringMatching(/ping statistics/),
+        body: expect.stringMatching(/ping statistics/i),
       });
     });
 
@@ -160,7 +160,7 @@ describe('Agent Net Utils', () => {
         type: 'agent:transmit:response',
         callback,
         statusCode: 200,
-        body: expect.stringMatching(/ping statistics/),
+        body: expect.stringMatching(/ping statistics/i),
       });
     });
 
@@ -332,7 +332,7 @@ describe('Agent Net Utils', () => {
     });
 
     afterEach(async () => {
-      app.stop();
+      await app.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
