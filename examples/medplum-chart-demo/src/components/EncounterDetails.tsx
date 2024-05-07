@@ -25,6 +25,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import encounterNoteQuestionnaire from '../../data/core/encounter-note-q';
 import { EncounterNoteDisplay } from './EncounterNoteDisplay';
+import { obstetricQuestionnaire, gynecologyQuestionnaire } from '../../data/example/encounter-note-questionnaires';
 
 interface EncounterDetailsProps {
   encounter: Encounter;
@@ -41,6 +42,15 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   const tabs = ['Note', 'Details', 'History'];
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+
+  let questionnaire = encounterNoteQuestionnaire;
+
+  if (props.encounter.type?.[0].coding?.[0].code === '408470005') {
+    questionnaire = obstetricQuestionnaire;
+  }
+  if (props.encounter.type?.[0].coding?.[0].code === '394586005') {
+    questionnaire = gynecologyQuestionnaire;
+  }
 
   useEffect(() => {
     medplum
@@ -108,7 +118,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
           {response ? (
             <EncounterNoteDisplay response={response} encounter={props.encounter} />
           ) : (
-            <QuestionnaireForm questionnaire={encounterNoteQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
+            <QuestionnaireForm questionnaire={questionnaire} onSubmit={handleQuestionnaireSubmit} />
           )}
         </Tabs.Panel>
         <Tabs.Panel value="details">

@@ -58,7 +58,11 @@ export const encounterTypeValueSet: ValueSet = {
           },
           {
             code: '408470005',
-            display: 'Maternity care',
+            display: 'Obstetrics',
+          },
+          {
+            code: '394586005',
+            display: 'Gynecology',
           },
           {
             code: '225362009',
