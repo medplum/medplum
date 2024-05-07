@@ -69,9 +69,9 @@ function pluralize(count: number | undefined, singular: string, plural: string):
   }
 }
 
-export function PatientSummary({ ...otherProps }: PatientSummaryProps): JSX.Element | null {
+export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, background, linkRenderers, ...cardProps } = otherProps;
+  const { patient: propsPatient, background, linkRenderers, ...cardProps } = props;
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
 
