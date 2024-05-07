@@ -253,7 +253,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    const cacheRecord = await getCacheEntry<T>(resourceType, id);
+    const cacheRecord = await this.getCacheEntry<T>(resourceType, id);
     if (cacheRecord) {
       // This is an optimization to avoid a database query.
       // However, it depends on all values in the cache having "meta.compartment"
@@ -285,7 +285,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const resource = JSON.parse(rows[0].content as string) as T;
-    await setCacheEntry(resource);
+    await this.setCacheEntry(resource);
     return resource;
   }
 
@@ -303,7 +303,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readReferences(references: Reference[]): Promise<(Resource | Error)[]> {
-    const cacheEntries = await getCacheEntries(references);
+    const cacheEntries = await this.getCacheEntries(references);
     const result: (Resource | Error)[] = new Array(references.length);
 
     for (let i = 0; i < result.length; i++) {
@@ -544,7 +544,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.handleMaybeCacheOnly(result, create);
     await this.postCommit(async () => {
       await this.handleBinaryUpdate(existing, result);
-      await setCacheEntry(result);
+      await this.setCacheEntry(result);
       await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     });
     this.removeHiddenFields(result);
@@ -937,7 +937,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(forbidden);
       }
 
-      await deleteCacheEntry(resourceType, id);
+      await this.deleteCacheEntry(resourceType, id);
 
       await this.withTransaction(async (conn) => {
         const lastUpdated = new Date();
@@ -1033,7 +1033,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
       await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
-      await deleteCacheEntries(resourceType, ids);
+      await this.deleteCacheEntries(resourceType, ids);
     });
   }
 
@@ -2014,6 +2014,98 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
+  /**
+   * Tries to read a cache entry from Redis by resource type and ID.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   * @returns The cache entry if found; otherwise, undefined.
+   */
+  private async getCacheEntry<T extends Resource>(
+    resourceType: string,
+    id: string
+  ): Promise<CacheEntry<T> | undefined> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      return undefined;
+    }
+    const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
+    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+  }
+
+  /**
+   * Performs a bulk read of cache entries from Redis.
+   * @param references - Array of FHIR references.
+   * @returns Array of cache entries or undefined.
+   */
+  private async getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      return new Array(references.length);
+    }
+    const referenceKeys = references.map((r) => r.reference as string);
+    if (referenceKeys.length === 0) {
+      // Return early to avoid calling mget() with no args, which is an error
+      return [];
+    }
+    return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
+      cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
+    );
+  }
+
+  /**
+   * Writes a cache entry to Redis.
+   * @param resource - The resource to cache.
+   */
+  private async setCacheEntry(resource: Resource): Promise<void> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      return;
+    }
+
+    const projectId = resource.meta?.project;
+    await getRedis().set(
+      getCacheKey(resource.resourceType, resource.id as string),
+      JSON.stringify({ resource, projectId }),
+      'EX',
+      REDIS_CACHE_EX_SECONDS
+    );
+    if (projectId && resource.resourceType === 'StructureDefinition') {
+      await setProfileCacheEntry(projectId, resource);
+    }
+  }
+
+  /**
+   * Deletes a cache entry from Redis.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   */
+  private async deleteCacheEntry(resourceType: string, id: string): Promise<void> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      return;
+    }
+
+    await getRedis().del(getCacheKey(resourceType, id));
+  }
+
+  /**
+   * Deletes cache entries from Redis.
+   * @param resourceType - The resource type.
+   * @param ids - The resource IDs.
+   */
+  private async deleteCacheEntries(resourceType: string, ids: string[]): Promise<void> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      return;
+    }
+
+    const cacheKeys = ids.map((id) => {
+      return getCacheKey(resourceType, id);
+    });
+
+    await getRedis().del(cacheKeys);
+  }
+
   close(): void {
     if (this.transactionDepth > 0) {
       throw new Error('Closing with active transaction');
@@ -2048,72 +2140,6 @@ export function getLookupTable(resourceType: string, searchParam: SearchParamete
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
-
-/**
- * Tries to read a cache entry from Redis by resource type and ID.
- * @param resourceType - The resource type.
- * @param id - The resource ID.
- * @returns The cache entry if found; otherwise, undefined.
- */
-async function getCacheEntry<T extends Resource>(resourceType: string, id: string): Promise<CacheEntry<T> | undefined> {
-  const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
-  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
-}
-
-/**
- * Performs a bulk read of cache entries from Redis.
- * @param references - Array of FHIR references.
- * @returns Array of cache entries or undefined.
- */
-async function getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
-  const referenceKeys = references.map((r) => r.reference as string);
-  if (referenceKeys.length === 0) {
-    // Return early to avoid calling mget() with no args, which is an error
-    return [];
-  }
-  return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
-    cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
-  );
-}
-
-/**
- * Writes a cache entry to Redis.
- * @param resource - The resource to cache.
- */
-async function setCacheEntry(resource: Resource): Promise<void> {
-  const projectId = resource.meta?.project;
-  await getRedis().set(
-    getCacheKey(resource.resourceType, resource.id as string),
-    JSON.stringify({ resource, projectId }),
-    'EX',
-    REDIS_CACHE_EX_SECONDS
-  );
-  if (projectId && resource.resourceType === 'StructureDefinition') {
-    await setProfileCacheEntry(projectId, resource);
-  }
-}
-
-/**
- * Deletes a cache entry from Redis.
- * @param resourceType - The resource type.
- * @param id - The resource ID.
- */
-async function deleteCacheEntry(resourceType: string, id: string): Promise<void> {
-  await getRedis().del(getCacheKey(resourceType, id));
-}
-
-/**
- * Deletes cache entries from Redis.
- * @param resourceType - The resource type.
- * @param ids - The resource IDs.
- */
-async function deleteCacheEntries(resourceType: string, ids: string[]): Promise<void> {
-  const cacheKeys = ids.map((id) => {
-    return getCacheKey(resourceType, id);
-  });
-
-  await getRedis().del(cacheKeys);
-}
 
 /**
  * Returns the redis cache key for the given resource type and resource ID.
