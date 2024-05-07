@@ -98,7 +98,7 @@ class BatchProcessor {
 
     return {
       resourceType: 'Bundle',
-      type: `${bundleType}-response` as any,
+      type: `${bundleType}-response` as Bundle['type'],
       entry: resultEntries,
     };
   }
@@ -156,7 +156,7 @@ class BatchProcessor {
     try {
       resolved = await this.resolveIdentity(entry, `Bundle.entry[${index}]`);
     } catch (err: any) {
-      if ((err as OperationOutcomeError).outcome && this.bundle.type !== 'transaction') {
+      if (err instanceof OperationOutcomeError && this.bundle.type !== 'transaction') {
         return buildBundleResponse(err.outcome);
       }
       throw err;
