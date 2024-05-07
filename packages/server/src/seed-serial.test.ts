@@ -19,6 +19,7 @@ describe('Seed Serial', () => {
       : 5433;
     // Keep Redis separate so caches between main test suite and this are separate
     config.redis.db = 8;
+    config.database.runMigrations = true;
 
     // We load the minimal required to get things running so this actually tests seeding the database
     return withTestContext(() =>
