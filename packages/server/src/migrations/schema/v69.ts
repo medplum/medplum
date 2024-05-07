@@ -222,8 +222,12 @@ export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE IF EXISTS "MolecularSequence" DROP COLUMN IF EXISTS "referenceseqid"');
   await client.query('ALTER TABLE IF EXISTS "MolecularSequence" DROP COLUMN IF EXISTS "chromosomeVariantCoordinate"');
   await client.query('ALTER TABLE IF EXISTS "MolecularSequence" DROP COLUMN IF EXISTS "chromosomeWindowCoordinate"');
-  await client.query('ALTER TABLE IF EXISTS "MolecularSequence" DROP COLUMN IF EXISTS "referenceseqidVariantCoordinate"');
-  await client.query('ALTER TABLE IF EXISTS "MolecularSequence" DROP COLUMN IF EXISTS "referenceseqidWindowCoordinate"');
+  await client.query(
+    'ALTER TABLE IF EXISTS "MolecularSequence" DROP COLUMN IF EXISTS "referenceseqidVariantCoordinate"'
+  );
+  await client.query(
+    'ALTER TABLE IF EXISTS "MolecularSequence" DROP COLUMN IF EXISTS "referenceseqidWindowCoordinate"'
+  );
   await client.query('ALTER TABLE IF EXISTS "NamingSystem" DROP COLUMN IF EXISTS "contextType"');
   await client.query('ALTER TABLE IF EXISTS "NamingSystem" DROP COLUMN IF EXISTS "jurisdiction"');
   await client.query('ALTER TABLE IF EXISTS "NamingSystem" DROP COLUMN IF EXISTS "contextTypeQuantity"');
