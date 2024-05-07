@@ -370,7 +370,6 @@ export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE IF EXISTS "Identifier" DROP COLUMN IF EXISTS "id"');
   await client.query('ALTER TABLE IF EXISTS "Identifier" DROP COLUMN IF EXISTS "index"');
   await client.query('ALTER TABLE IF EXISTS "Identifier" DROP COLUMN IF EXISTS "content"');
-  await client.query('ALTER TABLE IF EXISTS "ValueSetElement" ALTER COLUMN "resourceId" TYPE UUID NOT NULL');
   await client.query('ALTER TABLE IF EXISTS "ValueSetElement" DROP COLUMN IF EXISTS "valueSet"');
   await client.query('ALTER TABLE IF EXISTS "ValueSetElement" DROP COLUMN IF EXISTS "index"');
 }

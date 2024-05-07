@@ -486,6 +486,7 @@ function normalizeColumnType(column: ColumnDefinition): string {
     .replaceAll('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ')
     .replaceAll(' PRIMARY KEY', '')
     .replaceAll(' DEFAULT FALSE', '')
+    .replaceAll(' NOT NULL', '')
     .trim();
 }
 
