@@ -27,7 +27,7 @@ export class Hl7Client extends Hl7Base {
     }
 
     return new Promise((resolve, reject) => {
-      const connectErrorListener = (err: Error) => {
+      const connectErrorListener = (err: Error): void => {
         reject(err);
       };
 
