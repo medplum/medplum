@@ -1,4 +1,5 @@
 import {
+  AgentError,
   AgentMessage,
   AgentReloadConfigResponse,
   AgentTransmitRequest,
@@ -158,17 +159,7 @@ export class App {
           case 'transmit':
           case 'agent:transmit:response':
             if (this.config?.status !== 'active') {
-              const err = new Error('Agent.status is currently set to off');
-              this.log.error(normalizeErrorString(err));
-              this.addToWebSocketQueue({
-                type: 'agent:transmit:response',
-                channel: command.channel,
-                remote: command.remote,
-                callback: command.callback,
-                contentType: ContentType.TEXT,
-                statusCode: 400,
-                body: normalizeErrorString(err),
-              } satisfies AgentTransmitResponse);
+              this.sendAgentDisabledError(command);
             } else {
               this.addToHl7Queue(command);
             }
@@ -177,17 +168,7 @@ export class App {
           case 'push':
           case 'agent:transmit:request':
             if (this.config?.status !== 'active') {
-              const err = new Error('Agent.status is currently set to off');
-              this.log.error(normalizeErrorString(err));
-              this.addToWebSocketQueue({
-                type: 'agent:transmit:response',
-                channel: command.channel,
-                remote: command.remote,
-                callback: command.callback,
-                contentType: ContentType.TEXT,
-                statusCode: 400,
-                body: normalizeErrorString(err),
-              } satisfies AgentTransmitResponse);
+              this.sendAgentDisabledError(command);
             } else if (command.contentType === ContentType.PING) {
               await this.tryPingHost(command);
             } else {
@@ -518,6 +499,16 @@ export class App {
       message.accessToken = this.medplum.getAccessToken() as string;
     }
     this.webSocket.send(JSON.stringify(message));
+  }
+
+  private sendAgentDisabledError(command: AgentTransmitRequest | AgentTransmitResponse): void {
+    const errMsg = 'Agent.status is currently set to off';
+    this.log.error(errMsg);
+    this.addToWebSocketQueue({
+      type: 'agent:error',
+      callback: command.callback,
+      body: errMsg,
+    } satisfies AgentError);
   }
 
   private pushMessage(message: AgentTransmitRequest): void {
