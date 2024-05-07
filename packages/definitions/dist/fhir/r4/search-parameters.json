@@ -39203,8 +39203,11 @@
       "xpathUsage" : "normal",
       "target" : ["Practitioner",
       "Group",
+      "Organization",
+      "CareTeam",
       "Device",
       "Patient",
+      "HealthcareService",
       "PractitionerRole",
       "RelatedPerson",
       "Location"]
