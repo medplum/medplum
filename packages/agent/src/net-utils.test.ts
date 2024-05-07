@@ -64,7 +64,9 @@ describe('Agent Net Utils', () => {
 
       const agent = await medplum.createResource<Agent>({
         resourceType: 'Agent',
-      } as Agent);
+        name: 'Test Agent',
+        status: 'active',
+      });
 
       // Start the app
       app = new App(medplum, agent.id as string, LogLevel.INFO);
@@ -318,7 +320,9 @@ describe('Agent Net Utils', () => {
 
       const agent = await medplum.createResource<Agent>({
         resourceType: 'Agent',
-      } as Agent);
+        name: 'Test Agent',
+        status: 'active',
+      });
 
       // Start the app
       app = new App(medplum, agent.id as string, LogLevel.INFO);

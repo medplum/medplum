@@ -737,7 +737,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57001);
+    hl7Server.start(57099);
 
     // Wait for server to start listening
     while (!hl7Server.server?.listening) {
@@ -759,7 +759,7 @@ describe('App', () => {
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57001',
+          remote: 'mllp://localhost:57099',
         })
       )
     );
@@ -789,7 +789,7 @@ describe('App', () => {
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57001',
+          remote: 'mllp://localhost:57099',
         } satisfies AgentTransmitResponse)
       )
     );
@@ -868,7 +868,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    hl7Server.start(57001);
+    hl7Server.start(57099);
 
     // Wait for server to start listening
     while (!hl7Server.server?.listening) {
@@ -888,7 +888,7 @@ describe('App', () => {
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57001',
+          remote: 'mllp://localhost:57099',
         })
       )
     );
@@ -1089,7 +1089,7 @@ describe('App', () => {
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57001',
+          remote: 'mllp://localhost:57099',
         })
       )
     );
