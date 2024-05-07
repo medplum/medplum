@@ -1,8 +1,6 @@
 import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import { PatientSummary } from './PatientSummary';
-import { Anchor } from '@mantine/core';
-import { Link } from 'react-router-dom';
 
 export default {
   title: 'Medplum/PatientSummary',
@@ -37,13 +35,7 @@ export const CustomLinkStyle = (): JSX.Element => (
     mx="md"
     my="xl"
     shadow="xs"
-    linkRenderers={{
-      appointments: (msg) => (
-        <Anchor component={Link} to="/some-custom-appointments-page" fw="bold" c="salmon">
-          {msg}
-        </Anchor>
-      ),
-      encounters: () => undefined,
-    }}
+    appointmentsUrl="/my-custom-appointments-page"
+    encountersUrl={undefined}
   />
 );

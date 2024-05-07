@@ -1,9 +1,9 @@
-import { Anchor, Loader, Paper, ScrollArea, Tabs } from '@mantine/core';
+import { Loader, Paper, ScrollArea, Tabs } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate, Location } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Location } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
 import {
@@ -83,21 +83,8 @@ export function PatientPage(): JSX.Element {
           w={350}
           mb="auto"
           patient={patient}
-          linkRenderers={{
-            appointments: (msg) => (
-              <Anchor
-                component={Link}
-                to={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
-              >
-                {msg}
-              </Anchor>
-            ),
-            encounters: (msg) => (
-              <Anchor component={Link} to={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}>
-                {msg}
-              </Anchor>
-            ),
-          }}
+          appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
+          encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
         />
       </div>
       <div className={classes.content}>

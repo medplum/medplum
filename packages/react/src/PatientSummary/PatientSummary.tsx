@@ -1,4 +1,4 @@
-import { Anchor, Card, CardProps, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
+import { Card, CardProps, Divider, Flex, Group, Paper, Stack, Text } from '@mantine/core';
 import { calculateAgeString, formatHumanName, resolveId } from '@medplum/core';
 import {
   AllergyIntolerance,
@@ -13,7 +13,7 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconGenderFemale, IconGenderMale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
-import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Medications } from './Medications';
@@ -21,19 +21,16 @@ import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
 import { Vitals } from './Vitals';
-
-type LinkRenderer = (msg: string) => ReactNode;
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
   readonly background?: string;
-  readonly linkRenderers?: {
-    appointments?: LinkRenderer;
-    encounters?: LinkRenderer;
-  };
+  /** The URL that the upcoming appointments link should navigate to or `undefined` to not show the link. */
+  readonly appointmentsUrl?: string | undefined;
+  /** The URL that the documented visits (encounters) link should navigate to or `undefined` to not show the link. */
+  readonly encountersUrl?: string | undefined;
 }
-
-const defaultLinkRenderer: LinkRenderer = (msg: string) => <Anchor href="#">{msg}</Anchor>;
 
 interface PatientMedicalData {
   readonly allergies: AllergyIntolerance[];
@@ -43,7 +40,7 @@ interface PatientMedicalData {
   readonly vitals: Observation[];
   readonly medicationRequests: MedicationRequest[];
   readonly encounters?: Encounter[];
-  readonly upcomingAppointments?: Appointment[];
+  readonly appointments?: Appointment[];
 }
 
 type IconType = typeof IconGenderFemale;
@@ -71,9 +68,20 @@ function pluralize(count: number | undefined, singular: string, plural: string):
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, background, linkRenderers, ...cardProps } = props;
+  const {
+    patient: propsPatient,
+    background,
+    appointmentsUrl: propsAppointmentsUrl,
+    encountersUrl: propsEncountersUrl,
+    ...cardProps
+  } = props;
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
+
+  // If a URL is explicitly specified in `props`, use it even if `undefined`.
+  // If not included in `props`, use '#' as a demonstration value.
+  const appointmentsUrl = 'appointmentsUrl' in props ? propsAppointmentsUrl : '#';
+  const encountersUrl = 'encountersUrl' in props ? propsEncountersUrl : '#';
 
   useEffect(() => {
     const id = resolveId(propsPatient) as string;
@@ -103,31 +111,29 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           sexualOrientation: observations.find((obs) => obs.code?.coding?.[0].code === '76690-7'),
           smokingStatus: observations.find((obs) => obs.code?.coding?.[0].code === '72166-2'),
           vitals: observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'),
-          upcomingAppointments: results[4],
+          appointments: results[4],
           encounters: results[5],
         });
       })
       .catch(console.error);
   }, [medplum, propsPatient]);
 
-  const linksContent: ReactNode[] = useMemo(() => {
-    const appointmentsLink = (linkRenderers?.appointments ?? defaultLinkRenderer)(
-      pluralize(medicalData?.upcomingAppointments?.length, 'upcoming appointment', 'upcoming appointments')
-    );
-    const encountersLink = (linkRenderers?.encounters ?? defaultLinkRenderer)(
-      pluralize(medicalData?.encounters?.length, 'documented visit', 'documented visits')
-    );
+  const links: ReactNode[] = useMemo(() => {
+    const appointmentsLink =
+      appointmentsUrl === undefined ? undefined : (
+        <MedplumLink key="appt" to={appointmentsUrl}>
+          {pluralize(medicalData?.appointments?.length, 'upcoming appointment', 'upcoming appointments')}
+        </MedplumLink>
+      );
+    const encountersLink =
+      encountersUrl === undefined ? undefined : (
+        <MedplumLink key="enc" to={encountersUrl}>
+          {pluralize(medicalData?.encounters?.length, 'documented visit', 'documented visits')}
+        </MedplumLink>
+      );
 
-    return [
-      appointmentsLink ? <Fragment key="appt">{appointmentsLink}</Fragment> : undefined,
-      encountersLink ? <Fragment key="enc">{encountersLink}</Fragment> : undefined,
-    ].filter(Boolean);
-  }, [
-    linkRenderers?.appointments,
-    linkRenderers?.encounters,
-    medicalData?.upcomingAppointments?.length,
-    medicalData?.encounters?.length,
-  ]);
+    return [appointmentsLink, encountersLink].filter(Boolean);
+  }, [appointmentsUrl, medicalData?.appointments?.length, medicalData?.encounters?.length, encountersUrl]);
 
   if (!patient) {
     return null;
@@ -172,9 +178,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         </Group>
       </Paper>
       <Stack gap="xs">
-        {linksContent.length > 0 && (
+        {links.length > 0 && (
           <>
-            {linksContent}
+            {links}
             <Divider />
           </>
         )}
