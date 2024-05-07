@@ -712,6 +712,7 @@ describe('App', () => {
     }
 
     let isError = false;
+    console.debug('error', error);
     // @ts-expect-error AggregateError SHOULD be instanceof Error...
     // However on Mac it appears like it's not for some reason?
     // This check only exists because Mac seems to always return an AggregateError
