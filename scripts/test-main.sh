@@ -7,7 +7,7 @@ set -x
 
 # Seed the database before testing
 # This is the parallel implementation so it's faster
-SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed:parallel --filter=./packages/server -- --coverage
+time npx turbo run test:seed:parallel --filter=./packages/server -- --coverage
 cp "packages/server/coverage/seed/parallel/coverage-final.json" "coverage/packages/coverage-server-seed-parallel.json"
 
 # Test
