@@ -1,10 +1,11 @@
-import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { applyDefaultValuesToResource, tryGetProfile } from '@medplum/core';
+import { Alert, Button, Group, Stack, TextInput } from '@mantine/core';
+import { applyDefaultValuesToResource, canWriteResourceType, isPopulated, tryGetProfile } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
+import { IconAlertCircle } from '@tabler/icons-react';
 
 export interface ResourceFormProps {
   readonly defaultValue: Partial<Resource> | Reference;
@@ -22,6 +23,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
   const defaultValue = useResource(props.defaultValue);
   const [schemaLoaded, setSchemaLoaded] = useState<string>();
   const [value, setValue] = useState<Resource>();
+  const accessPolicy = medplum.getAccessPolicy();
 
   useEffect(() => {
     if (defaultValue) {
@@ -55,8 +57,32 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
     }
   }, [medplum, defaultValue, props.schemaName, props.profileUrl]);
 
+  const canWrite = useMemo<boolean>(() => {
+    if (medplum.isSuperAdmin()) {
+      return true;
+    }
+
+    if (!accessPolicy) {
+      return true;
+    }
+
+    if (!isPopulated(value?.resourceType)) {
+      return true;
+    }
+
+    return canWriteResourceType(accessPolicy, value?.resourceType);
+  }, [medplum, accessPolicy, value?.resourceType]);
+
   if (!schemaLoaded || !value) {
     return <div>Loading...</div>;
+  }
+
+  if (!canWrite) {
+    return (
+      <Alert color="red" title="Permission denied" icon={<IconAlertCircle />}>
+        Your access level prevents you from editing and creating {value.resourceType} resources.
+      </Alert>
+    );
   }
 
   return (
