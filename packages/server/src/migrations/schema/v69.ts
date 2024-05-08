@@ -188,7 +188,6 @@ export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE IF EXISTS "Measure" DROP COLUMN IF EXISTS "topic"');
   await client.query('ALTER TABLE IF EXISTS "Measure" DROP COLUMN IF EXISTS "contextTypeQuantity"');
   await client.query('ALTER TABLE IF EXISTS "Measure" DROP COLUMN IF EXISTS "contextTypeValue"');
-  await client.query('ALTER TABLE IF EXISTS "MeasureReport" DROP COLUMN IF EXISTS "period_range"');
   await client.query('ALTER TABLE IF EXISTS "Media" DROP COLUMN IF EXISTS "modality"');
   await client.query('ALTER TABLE IF EXISTS "Media" DROP COLUMN IF EXISTS "site"');
   await client.query('ALTER TABLE IF EXISTS "Media" DROP COLUMN IF EXISTS "type"');

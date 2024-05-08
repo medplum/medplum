@@ -263,7 +263,18 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
     tableDefinition.columns.push({ name: columnName, type: getColumnType(details) });
     tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree' });
   }
+  for (const add of additionalSearchColumns) {
+    if (add.table !== tableDefinition.name) {
+      continue;
+    }
+    tableDefinition.columns.push({ name: add.column, type: add.type });
+    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType as IndexType });
+  }
 }
+
+const additionalSearchColumns = [
+  { table: 'MeasureReport', column: 'period_range', type: 'TSTZRANGE', indexType: 'gist' },
+];
 
 function isLookupTableParam(searchParam: SearchParameter, details: SearchParameterDetails): boolean {
   // Identifier
