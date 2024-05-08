@@ -84,7 +84,7 @@ const assignRoleQuestionnaire: Questionnaire = {
       linkId: 'assign-role',
       text: 'Select Role',
       type: 'choice',
-      answerValueSet: 'http://medplum.com/medplum-task-demo/practitioner-role-codes',
+      answerValueSet: 'http://medplum.com/ValueSet/medplum-provider-practitioner-role-valueset',
     },
   ],
 };
