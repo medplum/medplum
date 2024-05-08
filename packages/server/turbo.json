@@ -10,7 +10,8 @@
     "test:seed:parallel": {
       "dependsOn": ["build"],
       "outputs": ["coverage/**"],
-      "inputs": ["src/**/*.tsx", "src/**/*.ts"]
+      "inputs": ["src/**/*.tsx", "src/**/*.ts"],
+      "env": ["SHOULD_RUN_SEED_TEST"]
     }
   }
 }
