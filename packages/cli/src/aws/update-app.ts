@@ -11,7 +11,7 @@ import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFo
 
 export interface UpdateAppOptions {
   file?: string;
-  version?: string;
+  toVersion?: string;
   dryrun?: boolean;
 }
 
@@ -37,7 +37,7 @@ export async function updateAppCommand(tag: string, options: UpdateAppOptions): 
     return;
   }
 
-  const version = options?.version ?? 'latest';
+  const version = options?.toVersion ?? 'latest';
   const tmpDir = await downloadNpmPackage('@medplum/app', version);
 
   // Replace variables in the app

@@ -7,7 +7,7 @@ import { getServerVersions, printConfigNotFound } from './utils';
 
 export interface UpdateServerOptions extends MedplumClientOptions {
   file?: string;
-  version?: string;
+  toVersion?: string;
 }
 
 /**
@@ -31,7 +31,7 @@ export async function updateServerCommand(tag: string, options: UpdateServerOpti
 
   let updateVersion = await nextUpdateVersion(initialVersion);
   while (updateVersion) {
-    if (options.version && semver.gt(updateVersion, options.version)) {
+    if (options.toVersion && semver.gt(updateVersion, options.toVersion)) {
       console.log(`Skipping update to v${updateVersion}`);
       break;
     }
