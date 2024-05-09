@@ -40,7 +40,7 @@ export function buildAwsCommand(): Command {
       .argument('<tag>', 'The Medplum stack tag')
       .option('--file [file]', 'Specifies the config file to use. If not specified, the file is based on the tag.')
       .option(
-        '--version [version]',
+        '--to-version [version]',
         'Specifies the version of the configuration to update. If not specified, the latest version is updated.'
       )
       .action(updateServerCommand)
@@ -53,7 +53,7 @@ export function buildAwsCommand(): Command {
     .argument('<tag>', 'The Medplum stack tag')
     .option('--file [file]', 'Specifies the config file to use. If not specified, the file is based on the tag.')
     .option(
-      '--version [version]',
+      '--to-version [version]',
       'Specifies the version of the configuration to update. If not specified, the latest version is updated.'
     )
     .option(
