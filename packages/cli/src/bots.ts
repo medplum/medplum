@@ -65,7 +65,7 @@ export async function botWrapper(medplum: MedplumClient, botName: string, deploy
       }
     } catch (err: unknown) {
       errors.push(err as Error);
-      errored.push(botConfig.id);
+      errored.push(`${botConfig.name} [${botConfig.id}]`);
     }
   }
 
@@ -74,7 +74,7 @@ export async function botWrapper(medplum: MedplumClient, botName: string, deploy
   console.log(`Number of errors: ${errors.length}`);
 
   if (errors.length) {
-    throw new Error(`${errors.length} bot(s) had failures. Bots with failures: ${errored.join(', ')}`, {
+    throw new Error(`${errors.length} bot(s) had failures. Bots with failures:\n\n    ${errored.join('\n    ')}`, {
       cause: errors,
     });
   }
