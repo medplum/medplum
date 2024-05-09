@@ -22,9 +22,17 @@ jest.mock('node:fs', () => ({
   },
 }));
 
-let medplum: MedplumClient;
-
 describe('CLI Project', () => {
+  let medplum: MedplumClient;
+  let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+  });
+
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
@@ -33,7 +41,6 @@ describe('CLI Project', () => {
 
     console.log = jest.fn();
     console.error = jest.fn();
-    process.exit = jest.fn() as never;
   });
 
   test('Project List', async () => {
@@ -150,16 +157,20 @@ describe('CLI Project', () => {
         ]),
       })
     );
-    await main(['node', 'index.js', 'project', 'switch', 'bad-projectId']);
-    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`Error: project bad-projectId not found.`));
+
+    await expect(main(['node', 'index.js', 'project', 'switch', 'bad-projectId'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining('Error: Project bad-projectId not found.'));
   });
 
   test('Project invite with no login', async () => {
-    try {
-      await main(['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
-    } catch (err) {
-      expect(console.error).toHaveBeenCalledWith('Unauthenticated: run `npx medplum login` to login');
-    }
+    await expect(
+      main(['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com'])
+    ).rejects.toThrow('Process exited with exit code 1');
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: Unauthenticated: run `npx medplum login` to login')
+    );
   });
 
   test('Project invite with no project', async () => {
@@ -172,11 +183,11 @@ describe('CLI Project', () => {
         }),
       })
     );
-    try {
-      await main(['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
-    } catch (err) {
-      expect(console.error).toHaveBeenCalledWith('No current project to invite user to');
-    }
+
+    await expect(
+      main(['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com'])
+    ).rejects.toThrow('Process exited with exit code 1');
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining('Error: No current project to invite user to'));
   });
 
   test('Project invite with no send-email flag', async () => {

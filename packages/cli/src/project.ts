@@ -62,7 +62,7 @@ projectInviteCommand
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
     }
-    if (!login.project.reference) {
+    if (!login?.project?.reference) {
       throw new Error('No current project to invite user to');
     }
 
