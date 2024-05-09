@@ -1,6 +1,6 @@
 import { ContentType } from '@medplum/core';
-import { Stats } from 'fs';
-import { Writable } from 'stream';
+import { Stats } from 'node:fs';
+import { Writable } from 'node:stream';
 import tar, { Unpack } from 'tar';
 import { getCodeContentType, safeTarExtractor } from './utils';
 

@@ -1,15 +1,15 @@
 import { createReference, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { randomUUID, webcrypto } from 'crypto';
-import { mkdtempSync, rmSync } from 'fs';
-import os from 'os';
-import { sep } from 'path';
+import { randomUUID, webcrypto } from 'node:crypto';
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import { sep } from 'node:path';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('os');
+jest.mock('node:os');
 jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
 }));

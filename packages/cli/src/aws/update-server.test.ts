@@ -7,15 +7,15 @@ import {
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import { MedplumClient } from '@medplum/core';
 import { mockClient } from 'aws-sdk-client-mock';
-import { spawnSync } from 'child_process';
-import { randomUUID } from 'crypto';
-import { unlinkSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
+import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { unlinkSync, writeFileSync } from 'node:fs';
 import { main } from '../index';
 import { createMedplumClient } from '../util/client';
 
 jest.mock('node-fetch');
-jest.mock('child_process');
+jest.mock('node:child_process');
 jest.mock('../util/client');
 
 describe('update-server command', () => {

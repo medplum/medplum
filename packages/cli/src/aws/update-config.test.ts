@@ -1,13 +1,13 @@
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { mockClient } from 'aws-sdk-client-mock';
-import { randomUUID } from 'crypto';
-import { unlinkSync, writeFileSync } from 'fs';
-import readline from 'readline';
+import { randomUUID } from 'node:crypto';
+import { unlinkSync, writeFileSync } from 'node:fs';
+import readline from 'node:readline';
 import { main } from '../index';
 import { getConfigFileName } from '../utils';
 import { mockReadline } from './test.utils';
 
-jest.mock('readline');
+jest.mock('node:readline');
 
 describe('update-config command', () => {
   beforeEach(() => {

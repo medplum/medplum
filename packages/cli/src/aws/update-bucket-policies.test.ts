@@ -15,11 +15,11 @@ import {
 } from '@aws-sdk/client-cloudfront';
 import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client, S3ClientResolvedConfig } from '@aws-sdk/client-s3';
 import { AwsStub, mockClient } from 'aws-sdk-client-mock';
-import fs from 'fs';
+import fs from 'node:fs';
 import { main } from '../index';
 import { updateBucketPolicy } from './update-bucket-policies';
 
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   createReadStream: jest.fn(),
   existsSync: jest.fn(),
   mkdtempSync: jest.fn(() => '/tmp/'),

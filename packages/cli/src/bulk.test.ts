@@ -11,9 +11,9 @@ const testLineOutput = [
   `{"resourceType":"ExplanationOfBenefit", "id":"2222222", "provider": "someprovider", "item":[{"sequence": 1, "productOrService": "someproduct"}]}`,
 ];
 jest.mock('./util/client');
-jest.mock('child_process');
-jest.mock('http');
-jest.mock('readline', () => ({
+jest.mock('node:child_process');
+jest.mock('node:http');
+jest.mock('node:readline', () => ({
   createInterface: jest.fn().mockReturnValue({
     [Symbol.asyncIterator]: jest.fn(function* () {
       for (const line of testLineOutput) {
@@ -23,7 +23,7 @@ jest.mock('readline', () => ({
   }),
 }));
 
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   createReadStream: jest.fn(),
   existsSync: jest.fn(),
   readFileSync: jest.fn(),

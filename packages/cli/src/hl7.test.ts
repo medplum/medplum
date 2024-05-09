@@ -1,5 +1,5 @@
-import fs from 'fs';
-import net from 'net';
+import fs from 'node:fs';
+import net from 'node:net';
 import { generateSampleHl7Message } from './hl7';
 import { main } from './index';
 

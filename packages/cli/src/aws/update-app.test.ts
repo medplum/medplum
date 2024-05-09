@@ -15,9 +15,9 @@ import {
 import { PutObjectCommand, S3Client, S3ClientResolvedConfig } from '@aws-sdk/client-s3';
 import { AwsStub, mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
-import fs from 'fs';
 import fetch from 'node-fetch';
-import { Readable, Writable } from 'stream';
+import fs from 'node:fs';
+import { Readable, Writable } from 'node:stream';
 import tar from 'tar';
 import { main } from '../index';
 
@@ -25,7 +25,7 @@ jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
 }));
 
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   createReadStream: jest.fn(),
   existsSync: jest.fn(),
   mkdtempSync: jest.fn(() => '/tmp/'),

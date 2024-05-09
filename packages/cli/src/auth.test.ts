@@ -1,16 +1,16 @@
 import { ContentType, MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import cp from 'child_process';
-import fs from 'fs';
-import http from 'http';
+import cp from 'node:child_process';
+import fs from 'node:fs';
+import http from 'node:http';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('child_process');
-jest.mock('http');
+jest.mock('node:child_process');
+jest.mock('node:http');
 jest.mock('./util/client');
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   existsSync: jest.fn(),
   mkdirSync: jest.fn(),
   readFileSync: jest.fn(),

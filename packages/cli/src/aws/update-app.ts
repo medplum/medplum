@@ -1,11 +1,11 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { ContentType } from '@medplum/core';
 import fastGlob from 'fast-glob';
-import { createReadStream, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
-import { tmpdir } from 'os';
-import { join, sep } from 'path';
-import { pipeline } from 'stream/promises';
+import { createReadStream, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, sep } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { readConfig, safeTarExtractor } from '../utils';
 import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
 

@@ -1,5 +1,5 @@
 import { MedplumClient, MedplumClientOptions, MedplumInfraConfig } from '@medplum/core';
-import { spawnSync } from 'child_process';
+import { spawnSync } from 'node:child_process';
 import * as semver from 'semver';
 import { createMedplumClient } from '../util/client';
 import { getConfigFileName, readConfig, writeConfig } from '../utils';
