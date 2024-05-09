@@ -580,7 +580,12 @@ export function matchDiscriminant(
     return false;
   }
 
-  const sliceElement: InternalSchemaElement = (elements ?? slice.elements)[discriminator.path];
+  let sliceElement: InternalSchemaElement | undefined;
+  if (discriminator.path === '$this') {
+    sliceElement = slice;
+  } else {
+    sliceElement = (elements ?? slice.elements)[discriminator.path];
+  }
 
   const sliceType = slice.type;
   switch (discriminator.type) {
@@ -589,7 +594,19 @@ export function matchDiscriminant(
       if (!value || !sliceElement) {
         return false;
       }
-      if (matchesSpecifiedValue(value, sliceElement)) {
+      if (sliceElement.pattern /*&& deepIncludes(value, sliceElement.pattern)*/) {
+        // return true;
+        return deepIncludes(value, sliceElement.pattern);
+      }
+      if (sliceElement.fixed /*&& deepEquals(value, sliceElement.fixed)*/) {
+        // return true;
+        return deepEquals(value, sliceElement.fixed);
+      }
+
+      if (sliceElement.binding?.strength === 'required' && sliceElement.binding?.valueSet) {
+        // This cannot be implemented correctly without asynchronous validation, so make it permissive for ow.
+        // Ideally this should check something like value.value.coding.some((code) => isValidCode(sliceElement.binding.valueSet, code))
+        // where isValidCode is a function that checks if the code is included in the expansion of the ValueSet
         return true;
       }
       break;
