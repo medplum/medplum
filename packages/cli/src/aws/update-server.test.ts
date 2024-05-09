@@ -143,6 +143,7 @@ describe('update-server command', () => {
     writeFileSync(configFile, JSON.stringify({ serverImage: `medplum-server:latest`, region: 'us-west-2' }));
 
     await main(['node', 'index.js', 'aws', 'update-server', tag]);
+    unlinkSync(configFile);
     expect(console.log).toHaveBeenCalledWith('Performing update to v2.5.0');
     expect(spawnSync).toHaveBeenCalledTimes(2);
     expect(spawnSync).toHaveBeenCalledWith(`npx cdk deploy -c config=medplum.${tag}.config.json --all`, {
@@ -150,7 +151,15 @@ describe('update-server command', () => {
     });
     expect(medplum.startAsyncRequest).toHaveBeenCalledTimes(2);
     expect(medplum.startAsyncRequest).toHaveBeenCalledWith('/admin/super/migrate');
+  });
 
+  test('Update to specific version', async () => {
+    const tag = randomUUID();
+    const configFile = `medplum.${tag}.config.json`;
+    writeFileSync(configFile, JSON.stringify({ serverImage: `medplum-server:latest`, region: 'us-west-2' }));
+
+    await main(['node', 'index.js', 'aws', 'update-server', tag, '--to-version', '2.7.13']);
     unlinkSync(configFile);
+    expect(console.log).toHaveBeenCalledWith('Performing update to v2.5.0');
   });
 });
