@@ -26,6 +26,14 @@ jest.mock('node:fs', () => ({
 describe('CLI auth', () => {
   const env = process.env;
   let medplum: MedplumClient;
+  let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+  });
 
   beforeEach(() => {
     jest.resetModules();
@@ -34,7 +42,6 @@ describe('CLI auth', () => {
     medplum = new MockClient();
     console.log = jest.fn();
     console.error = jest.fn();
-    process.exit = jest.fn<never, any>();
 
     (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
   });
@@ -87,14 +94,20 @@ describe('CLI auth', () => {
   });
 
   test('Login unsupported auth type', async () => {
-    await main(['node', 'index.js', 'login', '--auth-type', 'foo']);
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Error: Allowed choices are'));
+    await expect(main(['node', 'index.js', 'login', '--auth-type', 'foo'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "error: option '--auth-type <authType>' argument 'foo' is invalid. Allowed choices are basic, client-credentials, authorization-code, jwt-bearer, token-exchange, jwt-assertion"
+      )
+    );
   });
 
   test('Login basic auth', async () => {
     expect(medplum.getActiveLogin()).toBeUndefined();
     await main(['node', 'index.js', 'login', '--auth-type', 'basic']);
-    expect(console.error).not.toHaveBeenCalled();
+    expect(processError).not.toHaveBeenCalled();
   });
 
   test('Login client credentials', async () => {
@@ -110,7 +123,7 @@ describe('CLI auth', () => {
       '--client-secret',
       'abc',
     ]);
-    expect(console.error).not.toHaveBeenCalled();
+    expect(processError).not.toHaveBeenCalled();
   });
 
   test('Load credentials from disk', async () => {
