@@ -68,7 +68,7 @@ export interface SlicingRules {
 
 export interface SliceDefinition extends InternalSchemaElement {
   // narrowed InternalSchemaElement fields
-  slicing: undefined;
+  slicing?: undefined;
 
   // additional fields for SliceDefinition
   name: string;
