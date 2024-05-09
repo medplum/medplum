@@ -42,9 +42,10 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
           Problem List
         </Text>
         <Anchor
-          href="#"
+          component="button"
           onClick={(e) => {
             killEvent(e);
+            setEditCondition(undefined);
             open();
           }}
         >
