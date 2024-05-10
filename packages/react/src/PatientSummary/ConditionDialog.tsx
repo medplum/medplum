@@ -1,5 +1,5 @@
 import { Button, Group, Stack } from '@mantine/core';
-import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
@@ -21,30 +21,30 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      const updatedCondition: Condition = {
-        ...condition,
-        resourceType: 'Condition',
-        meta: {
-          profile: [HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'],
+      const updatedCondition: Condition = addProfileToResource(
+        {
+          ...condition,
+          resourceType: 'Condition',
+          category: [
+            {
+              coding: [
+                {
+                  system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/condition-category',
+                  code: 'problem-list-item',
+                  display: 'Problem List Item',
+                },
+              ],
+              text: 'Problem List Item',
+            },
+          ],
+          subject: createReference(patient),
+          encounter: encounter && createReference(encounter),
+          code,
+          clinicalStatus,
+          onsetDateTime: formData.onsetDateTime ? convertLocalToIso(formData.onsetDateTime) : undefined,
         },
-        category: [
-          {
-            coding: [
-              {
-                system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/condition-category',
-                code: 'problem-list-item',
-                display: 'Problem List Item',
-              },
-            ],
-            text: 'Problem List Item',
-          },
-        ],
-        subject: createReference(patient),
-        encounter: encounter && createReference(encounter),
-        code,
-        clinicalStatus,
-        onsetDateTime: formData.onsetDateTime ? convertLocalToIso(formData.onsetDateTime) : undefined,
-      };
+        HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'
+      );
       onSubmit(updatedCondition);
     },
     [patient, encounter, condition, code, clinicalStatus, onSubmit]

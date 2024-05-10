@@ -1,5 +1,5 @@
 import { Alert, Button, Group, Radio, Stack } from '@mantine/core';
-import { HTTP_HL7_ORG, createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
@@ -37,19 +37,21 @@ export function MedicationDialog(props: MedicationDialogProps): JSX.Element {
         throw new Error('Not signed in');
       }
 
-      onSubmit({
-        ...medication,
-        meta: {
-          profile: [HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-medicationrequest'],
-        },
-        resourceType: 'MedicationRequest',
-        status: formData.status as MedicationRequest['status'],
-        intent: medication?.intent ?? 'order',
-        encounter: medication?.encounter ?? (encounter && createReference(encounter)),
-        requester: medication?.requester ?? createReference(me),
-        medicationCodeableConcept: code,
-        subject: createReference(patient),
-      });
+      onSubmit(
+        addProfileToResource(
+          {
+            ...medication,
+            resourceType: 'MedicationRequest',
+            status: formData.status as MedicationRequest['status'],
+            intent: medication?.intent ?? 'order',
+            encounter: medication?.encounter ?? (encounter && createReference(encounter)),
+            requester: medication?.requester ?? createReference(me),
+            medicationCodeableConcept: code,
+            subject: createReference(patient),
+          },
+          HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-medicationrequest'
+        )
+      );
     },
     [me, onSubmit, medication, encounter, code, patient]
   );
