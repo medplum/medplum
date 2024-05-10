@@ -1,12 +1,18 @@
 import { Button, Group, Stack, Switch, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import {
+  addProfileToResource,
+  deepClone,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  removeProfileFromResource,
+} from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, SupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
 import { FC, useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ProfileTabs } from './ProfileTabs';
-import { addProfileToResource, cleanResource, removeProfileFromResource } from './utils';
+import { cleanResource } from './utils';
 
 export function ProfilesPage(): JSX.Element | null {
   const medplum = useMedplum();
