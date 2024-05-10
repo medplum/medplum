@@ -58,11 +58,11 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
             <Fragment key={problem.id}>
               <Grid.Col span={2}>{problem.onsetDateTime?.substring(0, 4)}</Grid.Col>
               <Grid.Col span={10}>
-                <ConceptBadge
+                <ConceptBadge<Condition>
                   key={problem.id}
                   resource={problem}
-                  onEdit={(p) => {
-                    setEditCondition(p as Condition);
+                  onEdit={(c) => {
+                    setEditCondition(c);
                     open();
                   }}
                 />
