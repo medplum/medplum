@@ -42,9 +42,10 @@ export function Medications(props: MedicationsProps): JSX.Element {
           Medications
         </Text>
         <Anchor
-          href="#"
+          component="button"
           onClick={(e) => {
             killEvent(e);
+            setEditMedication(undefined);
             open();
           }}
         >
