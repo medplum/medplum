@@ -362,8 +362,7 @@ export class MockFetchClient {
     }
 
     // Create new bot
-    const botCreateMatch = /^admin\/projects\/([\w-]+)\/bot$/.exec(path);
-    console.log(botCreateMatch);
+    const botCreateMatch = /^admin\/projects\/([\w(-)?]+)\/bot$/.exec(path);
     if (botCreateMatch && method.toUpperCase() === 'POST') {
       const body = options.body;
       let jsonBody: Record<string, any> | undefined;
@@ -395,21 +394,19 @@ export class MockFetchClient {
       });
     }
 
-    const projectMatch = /^admin\/projects\/([\w-]+)$/.exec(path);
+    const projectMatch = /^admin\/projects\/([\w(-)?]+)$/.exec(path);
     if (projectMatch) {
       return {
         project: await this.repo.readResource('Project', projectMatch[1]),
       };
     }
 
-    const membershipMatch = /^admin\/projects\/([\w-]+)\/members\/([\w-]+)$/.exec(path);
+    const membershipMatch = /^admin\/projects\/([\w(-)?]+)\/members\/([\w(-)?]+)$/.exec(path);
     if (membershipMatch) {
       return this.repo.readResource('ProjectMembership', membershipMatch[2]);
     }
 
-    return {
-      ok: true,
-    };
+    return { ok: true };
   }
 
   private mockAuthHandler(method: HttpMethod, path: string, options: any): any {
