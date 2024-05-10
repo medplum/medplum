@@ -20,8 +20,8 @@ export async function updateServerCommand(tag: string, options: UpdateServerOpti
   const config = readConfig(tag, options) as MedplumInfraConfig;
   if (!config) {
     console.log(`Configuration file ${getConfigFileName(tag)} not found`);
-    await printConfigNotFound(tag, options);
-    return;
+    printConfigNotFound(tag, options);
+    throw new Error(`Config not found: ${tag}`);
   }
 
   const separatorIndex = config.serverImage.lastIndexOf(':');

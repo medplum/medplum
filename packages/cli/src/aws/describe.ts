@@ -8,7 +8,7 @@ export async function describeStacksCommand(tag: string): Promise<void> {
   const details = await getStackByTag(tag);
   if (!details) {
     await printStackNotFound(tag);
-    return;
+    throw new Error(`Stack not found: ${tag}`);
   }
   printStackDetails(details);
 }

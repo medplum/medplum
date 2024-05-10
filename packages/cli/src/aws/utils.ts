@@ -299,7 +299,7 @@ async function writeParameter(client: SSMClient, name: string, value: string): P
  * @param tagName - Medplum stack tag name.
  * @param options - Additional command line options.
  */
-export async function printConfigNotFound(tagName: string, options?: Record<string, any>): Promise<void> {
+export function printConfigNotFound(tagName: string, options?: Record<string, any>): void {
   console.log(`Config not found: ${tagName} (${getConfigFileName(tagName, options)})`);
 
   if (options) {

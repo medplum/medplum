@@ -26,10 +26,15 @@ describe('update-server command', () => {
 
   const cfMock = mockClient(CloudFormationClient);
   let medplum: MedplumClient;
+  let processError: jest.SpyInstance;
 
   beforeAll(() => {
     const ecsMock = mockClient(ECSClient);
     ecsMock.on(UpdateServiceCommand).resolves({});
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
   });
 
   beforeEach(() => {
@@ -124,15 +129,21 @@ describe('update-server command', () => {
   });
 
   test('Update server not found', async () => {
-    await main(['node', 'index.js', 'aws', 'update-server', 'not-found']);
+    await expect(main(['node', 'index.js', 'aws', 'update-server', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(console.log).toHaveBeenCalledWith('Configuration file medplum.not-found.config.json not found');
+    expect(processError).toHaveBeenCalledWith('Error: Config not found: not-found\n');
     expect(spawnSync).not.toHaveBeenCalled();
     expect(medplum.startAsyncRequest).not.toHaveBeenCalled();
   });
 
   test('Update server config custom filename not found', async () => {
-    await main(['node', 'index.js', 'aws', 'update-server', 'not-found', '--file', 'foo.json']);
+    await expect(main(['node', 'index.js', 'aws', 'update-server', 'not-found', '--file', 'foo.json'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(console.log).toHaveBeenCalledWith('Config not found: not-found (foo.json)');
+    expect(processError).toHaveBeenCalledWith('Error: Config not found: not-found\n');
     expect(spawnSync).not.toHaveBeenCalled();
     expect(medplum.startAsyncRequest).not.toHaveBeenCalled();
   });
