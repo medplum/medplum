@@ -5,9 +5,10 @@ import {
   AgentTransmitResponse,
   ContentType,
   allOk,
+  badRequest,
   serverError,
 } from '@medplum/core';
-import { Agent, Bundle, Parameters } from '@medplum/fhirtypes';
+import { Agent, Bundle, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
@@ -116,47 +117,102 @@ describe('Agent/$reload-config', () => {
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(200);
-    const bundle = res.body as Bundle<Parameters>;
+    const outcome = res.body as OperationOutcome;
 
-    expectBundleToContainOutcome(bundle, agents[0], allOk);
+    expect(outcome).toMatchObject<OperationOutcome>(allOk);
     cleanup();
   });
 
   test('Agent error during reload', async () => {
-    const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentError>(
-      agents[0],
-      accessToken,
-      'agent:reloadconfig:request',
-      { type: 'agent:error', body: 'Something is broken' }
-    );
+    // Multi agent example
+    const handlePromises = [] as Promise<MockAgentResponseHandle>[];
+    for (let i = 0; i < agents.length; i++) {
+      handlePromises[i] = mockAgentResponse<AgentReloadConfigRequest, AgentReloadConfigResponse | AgentError>(
+        agents[i],
+        accessToken,
+        'agent:reloadconfig:request',
+        i === 0
+          ? { type: 'agent:error', body: 'Something is broken' }
+          : { type: 'agent:reloadconfig:response', statusCode: 200 }
+      );
+    }
+    const handles = await Promise.all(handlePromises);
 
-    const res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+    let res = await request(app)
+      .get('/fhir/R4/Agent/$reload-config')
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(200);
     const bundle = res.body as Bundle<Parameters>;
 
-    expectBundleToContainOutcome(bundle, agents[0], serverError(new Error('Something is broken')));
-    cleanup();
+    for (let i = 0; i < agents.length; i++) {
+      if (i === 0) {
+        expectBundleToContainOutcome(bundle, agents[0], badRequest('Something is broken'));
+        continue;
+      }
+      expectBundleToContainOutcome(bundle, agents[i], allOk);
+    }
+
+    // Agent by ID
+    res = await request(app)
+      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(400);
+
+    const outcome = res.body as OperationOutcome;
+    expect(outcome).toMatchObject(badRequest('Something is broken'));
+
+    for (const handle of handles) {
+      handle.cleanup();
+    }
   });
 
   test('Invalid response from agent during reload', async () => {
-    const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentTransmitResponse>(
-      agents[0],
-      accessToken,
-      'agent:reloadconfig:request',
-      { type: 'agent:transmit:response', remote: '8.8.8.8', contentType: ContentType.PING, body: 'PING' }
-    );
+    // Multi agent example
+    const handlePromises = [] as Promise<MockAgentResponseHandle>[];
+    for (let i = 0; i < agents.length; i++) {
+      handlePromises[i] = mockAgentResponse<
+        AgentReloadConfigRequest,
+        AgentReloadConfigResponse | AgentTransmitResponse
+      >(
+        agents[i],
+        accessToken,
+        'agent:reloadconfig:request',
+        i === 0
+          ? { type: 'agent:transmit:response', remote: '8.8.8.8', contentType: ContentType.PING, body: 'PING' }
+          : { type: 'agent:reloadconfig:response', statusCode: 200 }
+      );
+    }
+    const handles = await Promise.all(handlePromises);
 
-    const res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+    let res = await request(app)
+      .get('/fhir/R4/Agent/$reload-config')
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(200);
     const bundle = res.body as Bundle<Parameters>;
 
-    expectBundleToContainOutcome(bundle, agents[0], serverError(new Error('Invalid response received from agent')));
-    cleanup();
+    for (let i = 0; i < agents.length; i++) {
+      if (i === 0) {
+        expectBundleToContainOutcome(bundle, agents[0], serverError(new Error('Invalid response received from agent')));
+        continue;
+      }
+      expectBundleToContainOutcome(bundle, agents[i], allOk);
+    }
+
+    // Single agent by ID
+    res = await request(app)
+      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(500);
+
+    const outcome = res.body as OperationOutcome;
+    expect(outcome).toMatchObject<OperationOutcome>(serverError(new Error('Invalid response received from agent')));
+
+    for (const handle of handles) {
+      handle.cleanup();
+    }
   });
 });
