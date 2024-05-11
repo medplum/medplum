@@ -2,7 +2,7 @@ import type { Config } from 'jest';
 
 export default {
   testEnvironment: 'node',
-  testTimeout: 600000,
+  testTimeout: 5000,
   testSequencer: '<rootDir>/jest.sequencer.js',
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
