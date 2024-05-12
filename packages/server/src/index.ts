@@ -5,7 +5,7 @@ import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config';
 import { globalLogger } from './logger';
 
-export async function main(configName: string): Promise<void> {
+export async function main(configName: string): Promise<{ shutdown: () => Promise<void> }> {
   process.on('unhandledRejection', (err: any) => {
     globalLogger.error('Unhandled promise rejection', err);
   });
@@ -30,8 +30,10 @@ export async function main(configName: string): Promise<void> {
     globalLogger.level = parseLogLevel(config.logLevel);
   }
 
-  const app = await initApp(express(), config);
-  const server = app.listen(config.port);
+  const server = await initApp(express(), config);
+  await new Promise<void>((resolve) => {
+    server.listen(config.port, resolve);
+  });
   server.keepAliveTimeout = config.keepAliveTimeout ?? 90000;
   globalLogger.info('Server started', { port: config.port });
   gracefulShutdown(server, {
@@ -48,6 +50,8 @@ export async function main(configName: string): Promise<void> {
       globalLogger.info('Shutdown complete');
     },
   });
+
+  return { shutdown: shutdownApp };
 }
 
 if (require.main === module) {

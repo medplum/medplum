@@ -106,7 +106,7 @@ export interface MedplumDatabaseConfig {
   password?: string;
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
-  runMigrations?: boolean;
+  runMigrations?: 'full' | boolean;
 }
 
 export interface MedplumRedisConfig {

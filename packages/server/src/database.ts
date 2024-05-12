@@ -56,7 +56,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
     try {
       client = await pool.connect();
       await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
-      await migrate(client);
+      await migrate(client, config.runMigrations === 'full');
     } finally {
       if (client) {
         await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
