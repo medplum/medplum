@@ -85,9 +85,7 @@ async function main(): Promise<void> {
   console.info('Database dump successful. Writing dump to file...');
 
   mkdirSync(`${SCHEMA_DIR}/data`, { recursive: true });
-
-  const builder = new FlatMigrationBuilder(dump);
-  const migration = builder.buildMigration();
+  const migration = new FlatMigrationBuilder(dump).buildMigration();
   writeFileSync(`${SCHEMA_DIR}/latest.sql`, migration, { encoding: 'utf-8' });
 
   console.info('Migration file successfully created.');
