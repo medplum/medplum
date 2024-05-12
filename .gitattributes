@@ -23,3 +23,5 @@
 package-lock.json -diff
 package-lock.json linguist-generated=true
 
+packages/server/src/migrations/schema/data/*.tsv -diff
+packages/server/src/migrations/schema/data/*.tsv linguist-generated=true

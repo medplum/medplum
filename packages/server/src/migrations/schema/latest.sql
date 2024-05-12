@@ -1,3 +1,4 @@
+SET search_path TO public;
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -11,7 +12,6 @@ SET row_security = off;
 CREATE EXTENSION IF NOT EXISTS btree_gin WITH SCHEMA public;
 SET default_tablespace = '';
 SET default_table_access_method = heap;
-SET search_path TO public;
 CREATE TABLE public."AccessPolicy" ( id uuid NOT NULL, content text NOT NULL, "lastUpdated" timestamp with time zone NOT NULL, deleted boolean DEFAULT false NOT NULL, compartments uuid[] NOT NULL, name text, _profile text[], _security text[], _source text, _tag text[], "projectId" uuid );
 CREATE TABLE public."AccessPolicy_History" ( "versionId" uuid NOT NULL, id uuid NOT NULL, content text NOT NULL, "lastUpdated" timestamp with time zone NOT NULL );
 CREATE TABLE public."AccessPolicy_References" ( "resourceId" uuid NOT NULL, "targetId" uuid NOT NULL, code text NOT NULL );

@@ -70,7 +70,7 @@ async function main(): Promise<void> {
     }
   );
 
-  let dump = '';
+  let dump = 'SET search_path TO public;\n';
   stdout.setEncoding('utf-8');
   stdout.on('data', (data) => {
     dump += data;
@@ -136,7 +136,7 @@ class FlatMigrationBuilder {
       }
 
       // Otherwise if we don't see the terminal character sequence,
-      // Parse the data line
+      // Parse the line as part of the data file
       this.copyDataParser.parseDataLine(line);
 
       // Go to next line
@@ -144,6 +144,7 @@ class FlatMigrationBuilder {
       return true;
     }
 
+    // If we find a line starting with COPY, buffer the line and the subsequent lines should be treated as table data
     if (line.startsWith('COPY')) {
       const nextLine = this.peekNextLine();
       if (!nextLine) {

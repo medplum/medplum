@@ -1,325 +1,325 @@
-1	4425485b-caab-4a07-8030-220b6c092449	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-2	4425485b-caab-4a07-8030-220b6c092449	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-3	6d738c85-447c-4817-a877-fb0cbe63ea90	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-4	6d738c85-447c-4817-a877-fb0cbe63ea90	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-5	34b2c85b-56f2-4e69-be8b-411a3d6d5581	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-6	34b2c85b-56f2-4e69-be8b-411a3d6d5581	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-7	8d4ad89f-b673-482e-a0ae-f223cd1fe878	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-8	8d4ad89f-b673-482e-a0ae-f223cd1fe878	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-9	4d157341-bb53-4bdd-8c2f-887d3e60efa2	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-10	4d157341-bb53-4bdd-8c2f-887d3e60efa2	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-11	490d5382-30a1-4eb7-a56f-b76bd11e5ef4	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-12	490d5382-30a1-4eb7-a56f-b76bd11e5ef4	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-13	f364830d-f3da-41ec-b76b-93ef81dd0641	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-14	f364830d-f3da-41ec-b76b-93ef81dd0641	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-15	950c142e-ce45-48fc-b68f-5a23baddb7c4	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-16	950c142e-ce45-48fc-b68f-5a23baddb7c4	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-17	75147f44-5e32-406f-b01b-13b01d82b4ed	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-18	75147f44-5e32-406f-b01b-13b01d82b4ed	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-19	865c7934-b431-4fde-a8e9-7a0b580fe773	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-20	865c7934-b431-4fde-a8e9-7a0b580fe773	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-21	da6eabcb-403d-4559-8d51-5a104752856b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-22	da6eabcb-403d-4559-8d51-5a104752856b	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-23	2da5e8a5-065a-4b3c-947a-929684157c73	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-24	2da5e8a5-065a-4b3c-947a-929684157c73	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-25	b573e474-7184-4143-beb0-0908c07e4565	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-26	b573e474-7184-4143-beb0-0908c07e4565	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-27	1a0664d7-d155-4859-910a-d3eb080fa760	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-28	1a0664d7-d155-4859-910a-d3eb080fa760	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-29	ec442565-7e7c-4a7c-b10a-3f19092a1b39	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-30	ec442565-7e7c-4a7c-b10a-3f19092a1b39	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-31	e968fff1-6bee-4d70-af0c-60a5cb367c1b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-32	e968fff1-6bee-4d70-af0c-60a5cb367c1b	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-33	cc2bad6f-b0a4-4dd8-91b7-7134cbdebc7f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-307	66facc9a-6f25-4a3d-8a91-9c3ca4aa8015	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-34	cc2bad6f-b0a4-4dd8-91b7-7134cbdebc7f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-35	d23adba4-6617-4a29-a340-d81746afe721	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-36	d23adba4-6617-4a29-a340-d81746afe721	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-37	704c8311-e4eb-4a9c-9e1c-e4c65d253780	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-38	704c8311-e4eb-4a9c-9e1c-e4c65d253780	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-39	23d1890e-892d-4003-bf26-127fcb40a2b1	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-40	23d1890e-892d-4003-bf26-127fcb40a2b1	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-41	1ceaf814-deec-4b82-a3ec-8a1d134b894f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-42	1ceaf814-deec-4b82-a3ec-8a1d134b894f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-43	a293d886-c1f0-4d18-ac43-6b8e40ad41d9	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-44	a293d886-c1f0-4d18-ac43-6b8e40ad41d9	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-45	e4621708-dffe-440c-96bf-9e3681db547c	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-46	e4621708-dffe-440c-96bf-9e3681db547c	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-47	6e8caeb5-f79e-48b4-9631-5c200659e9e7	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-48	6e8caeb5-f79e-48b4-9631-5c200659e9e7	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-49	04698697-042d-4188-ba64-edd5e02e3fe6	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-50	04698697-042d-4188-ba64-edd5e02e3fe6	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-51	cfdbe58c-a6d0-4d5a-b2ca-ec1e61bda360	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-52	cfdbe58c-a6d0-4d5a-b2ca-ec1e61bda360	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-53	77ed2d33-af61-4bd8-8269-d1416f4ca244	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-54	77ed2d33-af61-4bd8-8269-d1416f4ca244	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-55	7a13bde2-355c-4ba5-8fbe-2e7b17c41ab8	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-56	7a13bde2-355c-4ba5-8fbe-2e7b17c41ab8	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-57	c5143093-6c36-4a7c-9e51-114a691121bf	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-58	c5143093-6c36-4a7c-9e51-114a691121bf	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-59	0f2aa421-2668-42ba-b4ec-84ae32ce0381	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-60	0f2aa421-2668-42ba-b4ec-84ae32ce0381	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-61	90ee0a3d-72b2-4555-aff0-196f8fed2c71	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-62	90ee0a3d-72b2-4555-aff0-196f8fed2c71	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-63	b5c6177a-a422-4c95-9f9f-429ff42ce958	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-64	b5c6177a-a422-4c95-9f9f-429ff42ce958	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-65	631481e0-b5dd-4b79-aedd-8cc5bd8fda01	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-66	631481e0-b5dd-4b79-aedd-8cc5bd8fda01	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-67	2618d4e1-0318-43bc-9935-6b7fe2ffe80b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-68	2618d4e1-0318-43bc-9935-6b7fe2ffe80b	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-69	906a497b-d4d2-4c1e-a50e-6f577281f5f6	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-70	906a497b-d4d2-4c1e-a50e-6f577281f5f6	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-71	87fb2162-6ac9-4511-b012-146572fd1c6f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-72	87fb2162-6ac9-4511-b012-146572fd1c6f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-73	5d161343-533d-4e81-8520-392b536c6277	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-74	5d161343-533d-4e81-8520-392b536c6277	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-75	1af61bfb-a19c-4d45-8b74-063ca1cdaaea	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-76	1af61bfb-a19c-4d45-8b74-063ca1cdaaea	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-77	a3cabb53-a8b2-4e5b-8de7-4a0c00801d92	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-78	a3cabb53-a8b2-4e5b-8de7-4a0c00801d92	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-79	21c9e138-f617-445c-8d25-094d87fb3fba	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-80	21c9e138-f617-445c-8d25-094d87fb3fba	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-81	c65866b8-8e76-48e3-98f5-59b77d27a17e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-82	c65866b8-8e76-48e3-98f5-59b77d27a17e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-83	5c06ec7f-4d88-4b06-b1c9-05c36be61ed1	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-84	5c06ec7f-4d88-4b06-b1c9-05c36be61ed1	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-85	fb541ec6-4458-4cd6-bb8a-cb4ce7e11a98	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-86	fb541ec6-4458-4cd6-bb8a-cb4ce7e11a98	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-87	97ca0891-2fa6-49e0-82d2-7779bb4bf119	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-88	97ca0891-2fa6-49e0-82d2-7779bb4bf119	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-89	030b3e4e-2df0-45a9-96d8-d57db5f1bf7e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-90	030b3e4e-2df0-45a9-96d8-d57db5f1bf7e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-91	8b266e31-7f5c-44b2-a59e-62836c520c37	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-92	8b266e31-7f5c-44b2-a59e-62836c520c37	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-93	5d5246b4-6e1c-4adb-bb70-4b654acca9ae	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-94	5d5246b4-6e1c-4adb-bb70-4b654acca9ae	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-95	b315510c-f085-410d-b3db-0d9da8d16e86	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-96	b315510c-f085-410d-b3db-0d9da8d16e86	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-97	eda0071a-e8d1-427b-ac25-4cecabcaa689	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-98	eda0071a-e8d1-427b-ac25-4cecabcaa689	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-99	2ced3107-6a4e-402a-97c4-a5aa31bc57a8	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-100	2ced3107-6a4e-402a-97c4-a5aa31bc57a8	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-101	805fc43c-a9c5-4257-8607-871802c6e47c	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-102	805fc43c-a9c5-4257-8607-871802c6e47c	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-103	9b116a0c-7d91-4089-8566-96e1862a08f8	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-104	9b116a0c-7d91-4089-8566-96e1862a08f8	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-105	5c613c6b-851c-4998-b721-9f47651d78c9	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-106	5c613c6b-851c-4998-b721-9f47651d78c9	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-107	8980770d-b1ad-4690-87ab-72338d412cf5	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-108	8980770d-b1ad-4690-87ab-72338d412cf5	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-109	0730b64e-7e82-4ba9-9c1e-84eb4b1ec831	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-110	0730b64e-7e82-4ba9-9c1e-84eb4b1ec831	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-111	f3fcd796-5b39-4d56-83e2-2637e6c6f4d2	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-112	f3fcd796-5b39-4d56-83e2-2637e6c6f4d2	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-113	42217fc6-571c-47f7-a47f-634efc3673be	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-114	42217fc6-571c-47f7-a47f-634efc3673be	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-115	7ada0310-5295-499a-92ce-6def93b8efc6	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-116	7ada0310-5295-499a-92ce-6def93b8efc6	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-117	785c7515-ec6a-43d0-8ce4-110da569e23d	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-118	785c7515-ec6a-43d0-8ce4-110da569e23d	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-119	f1088157-fcc7-470c-8960-5685334261aa	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-120	f1088157-fcc7-470c-8960-5685334261aa	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-121	cd4fad72-8ef1-4ea3-ad34-0facf5ea5aa4	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-122	cd4fad72-8ef1-4ea3-ad34-0facf5ea5aa4	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-123	2d343a3b-935c-4632-ade5-5cb74498c91e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-124	2d343a3b-935c-4632-ade5-5cb74498c91e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-125	d935dfc6-22c5-4088-8f1f-1123bd20ae8f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-126	d935dfc6-22c5-4088-8f1f-1123bd20ae8f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-127	7f61ca9c-9fc5-43ba-b30d-1e137ece8c32	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-128	7f61ca9c-9fc5-43ba-b30d-1e137ece8c32	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-129	8ae1e412-a4fa-4dc7-84a3-3b011a96087d	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-130	8ae1e412-a4fa-4dc7-84a3-3b011a96087d	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-131	519ce3cf-b7f7-4117-bc44-55bbaea87fc9	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-132	519ce3cf-b7f7-4117-bc44-55bbaea87fc9	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-133	2a46842f-bb3c-485b-bce9-9d8eabfff73e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-134	2a46842f-bb3c-485b-bce9-9d8eabfff73e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-135	57b2dc48-bd98-468a-bf2e-0fb21057c293	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-136	57b2dc48-bd98-468a-bf2e-0fb21057c293	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-137	9cd84b3a-6d89-4348-8298-976514c4ae6c	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-138	9cd84b3a-6d89-4348-8298-976514c4ae6c	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-139	2bbf5845-2d45-4f69-b0e2-ff929e49c4b1	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-140	2bbf5845-2d45-4f69-b0e2-ff929e49c4b1	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-141	2bbf5845-2d45-4f69-b0e2-ff929e49c4b1	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-142	2bbf5845-2d45-4f69-b0e2-ff929e49c4b1	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-143	1fa3ea14-9a0b-4d17-ac06-ef5327f6e614	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-144	1fa3ea14-9a0b-4d17-ac06-ef5327f6e614	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-145	1fa3ea14-9a0b-4d17-ac06-ef5327f6e614	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-146	1fa3ea14-9a0b-4d17-ac06-ef5327f6e614	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-147	72e61773-185d-43a4-97ac-704beb8b6a50	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-148	1e2676fa-d95b-461d-aa58-75cb9f02db7b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-149	fbda40c2-1593-4575-b8ac-a4f373df96bf	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-150	fbda40c2-1593-4575-b8ac-a4f373df96bf	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-151	fbda40c2-1593-4575-b8ac-a4f373df96bf	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-152	1da4dfca-c8bb-4214-81b8-217a3d749164	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-153	1da4dfca-c8bb-4214-81b8-217a3d749164	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-154	1da4dfca-c8bb-4214-81b8-217a3d749164	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-155	1da4dfca-c8bb-4214-81b8-217a3d749164	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-156	da724f11-bdac-44fb-9289-20ccf5bc8b27	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-157	da724f11-bdac-44fb-9289-20ccf5bc8b27	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-158	da724f11-bdac-44fb-9289-20ccf5bc8b27	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-159	d16d6be7-6c0c-443a-989e-549323fbb2e4	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-160	d16d6be7-6c0c-443a-989e-549323fbb2e4	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-161	d16d6be7-6c0c-443a-989e-549323fbb2e4	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-162	d16d6be7-6c0c-443a-989e-549323fbb2e4	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-163	afc2ef32-4bd3-4ccf-903f-dcdd6fb8695d	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-164	afc2ef32-4bd3-4ccf-903f-dcdd6fb8695d	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-165	795773b7-3f93-4704-bc4c-7103356f8d00	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-166	795773b7-3f93-4704-bc4c-7103356f8d00	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-167	0c37a9ae-7a7e-495c-a517-d1e22e262c08	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-168	0c37a9ae-7a7e-495c-a517-d1e22e262c08	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-169	0c37a9ae-7a7e-495c-a517-d1e22e262c08	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-170	0c37a9ae-7a7e-495c-a517-d1e22e262c08	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-305	ad6dc3f0-edc1-4917-8acc-ab9b1cdf62ad	abstract	boolean	\N	True if an element is considered 'abstract' - in otherwords, the code is not for use as a real concept
-171	0c37a9ae-7a7e-495c-a517-d1e22e262c08	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-172	b3b2f4c5-cefa-4583-94b5-096cf124c55c	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-173	a4e2162b-3914-421a-a8cb-3c98e1cdffd3	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-174	a4e2162b-3914-421a-a8cb-3c98e1cdffd3	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-175	ca4c1058-7090-4d37-9173-80639194fe82	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-176	d4eecd8e-b443-4f02-9174-3ec1c3e8838e	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-177	d4eecd8e-b443-4f02-9174-3ec1c3e8838e	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-178	d4eecd8e-b443-4f02-9174-3ec1c3e8838e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-179	d4eecd8e-b443-4f02-9174-3ec1c3e8838e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-180	e0de023d-a77d-4841-b9ac-dba1082d3137	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-181	4d9ceac8-631e-4c23-bf51-a913306415c1	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-182	4d9ceac8-631e-4c23-bf51-a913306415c1	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-183	4d9ceac8-631e-4c23-bf51-a913306415c1	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-184	4d9ceac8-631e-4c23-bf51-a913306415c1	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-185	4d9ceac8-631e-4c23-bf51-a913306415c1	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-186	fbf622e6-eca6-4a31-8c5e-eb99b38204cd	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-187	fbf622e6-eca6-4a31-8c5e-eb99b38204cd	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-188	fbf622e6-eca6-4a31-8c5e-eb99b38204cd	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-189	fbf622e6-eca6-4a31-8c5e-eb99b38204cd	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-190	fbf622e6-eca6-4a31-8c5e-eb99b38204cd	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-191	b07958d4-699e-4480-9779-abfc4907dc48	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-192	93a837a2-716c-4a7d-bea2-a126dd92795b	partOf	code	http://hl7.org/fhir/codesystem-hierarchy-meaning#part-of	This relationship indicates that the source concept is a component of the target concept
-193	93a837a2-716c-4a7d-bea2-a126dd92795b	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-194	e6adb7a7-04c9-481e-ac32-727e7f77a735	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-195	170f442b-c94a-45a8-8886-500cefb0dfd3	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-196	170f442b-c94a-45a8-8886-500cefb0dfd3	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-197	170f442b-c94a-45a8-8886-500cefb0dfd3	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-198	170f442b-c94a-45a8-8886-500cefb0dfd3	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-199	c7b61e37-db12-41d5-9c76-2fedec479c9a	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-200	c7b61e37-db12-41d5-9c76-2fedec479c9a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-201	fdf14cc4-26c8-4ae5-bbbc-4899a563367a	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-202	fdf14cc4-26c8-4ae5-bbbc-4899a563367a	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-203	fdf14cc4-26c8-4ae5-bbbc-4899a563367a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-204	18745e99-c065-413f-890e-cebbf9b06b37	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-205	18745e99-c065-413f-890e-cebbf9b06b37	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-206	487903f9-4bc1-4e84-b3fc-b1387850f613	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-207	38077533-cdc5-4314-9182-6d41c57680f0	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-208	490a2fe2-3b35-4fcd-9bb5-18296777893d	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-209	490a2fe2-3b35-4fcd-9bb5-18296777893d	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-210	ee4e8dd8-3107-438a-b148-a2d70902f055	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-211	2bf241ba-d4eb-47ab-b238-ab9c46a66c29	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-212	2bf241ba-d4eb-47ab-b238-ab9c46a66c29	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-306	ad6dc3f0-edc1-4917-8acc-ab9b1cdf62ad	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-213	2bf241ba-d4eb-47ab-b238-ab9c46a66c29	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-214	2bf241ba-d4eb-47ab-b238-ab9c46a66c29	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-215	2bf241ba-d4eb-47ab-b238-ab9c46a66c29	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-216	1ad18b5a-9cee-4685-a943-8481c8422450	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-217	1ad18b5a-9cee-4685-a943-8481c8422450	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-218	8592018b-1c32-4630-9241-b019338c8e52	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-219	8592018b-1c32-4630-9241-b019338c8e52	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-220	8592018b-1c32-4630-9241-b019338c8e52	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-221	913dd7b6-f646-4346-bc92-abdc60c302fb	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-222	913dd7b6-f646-4346-bc92-abdc60c302fb	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-223	db230a5b-10bc-42ea-85d5-ccd8692e75f6	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-224	db230a5b-10bc-42ea-85d5-ccd8692e75f6	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-225	7912fe45-5f04-4236-be0f-b31f71b230d6	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-226	7912fe45-5f04-4236-be0f-b31f71b230d6	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-227	7912fe45-5f04-4236-be0f-b31f71b230d6	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-228	cbed2418-ab2b-4da9-8066-309e161f5f7d	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-229	cbed2418-ab2b-4da9-8066-309e161f5f7d	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-230	cbed2418-ab2b-4da9-8066-309e161f5f7d	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-231	90fd7a69-efbb-431c-be49-37138d7cc37b	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-232	90fd7a69-efbb-431c-be49-37138d7cc37b	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-233	db35db7d-70f9-4ff0-923d-e8e6852bffe2	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-234	db35db7d-70f9-4ff0-923d-e8e6852bffe2	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-235	db35db7d-70f9-4ff0-923d-e8e6852bffe2	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-236	49a0ceba-ad21-49ac-a70d-ce61485734c9	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-237	49a0ceba-ad21-49ac-a70d-ce61485734c9	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-238	49a0ceba-ad21-49ac-a70d-ce61485734c9	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-239	49a0ceba-ad21-49ac-a70d-ce61485734c9	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-240	bf7f83e4-81cf-4347-97aa-00c7acfdfe7f	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-241	bf7f83e4-81cf-4347-97aa-00c7acfdfe7f	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-242	edb121c3-fa59-494a-ad15-bed9a4f0aa9d	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-243	7e308b12-5595-4e5e-b70a-834c9cd5a95b	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-244	7e308b12-5595-4e5e-b70a-834c9cd5a95b	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
-245	7e308b12-5595-4e5e-b70a-834c9cd5a95b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-246	e4a0b886-93d2-4c25-bb24-bc1cc196961d	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-247	e4a0b886-93d2-4c25-bb24-bc1cc196961d	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-248	8816e769-6767-49dc-b664-db4a93490e29	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-249	bfda33a8-2fe9-4769-a61b-c80ab952a083	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-250	ce74252d-24b0-4d33-94da-57b373e7fabb	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-251	6cc99854-7df4-4303-9f52-16350fd7ca03	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-252	6cc99854-7df4-4303-9f52-16350fd7ca03	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-253	567108c6-5be7-4cd2-b723-81f88fa95b2a	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-254	567108c6-5be7-4cd2-b723-81f88fa95b2a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-255	567108c6-5be7-4cd2-b723-81f88fa95b2a	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-256	c774418c-7848-4f24-948e-e26db0d708cc	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-257	c774418c-7848-4f24-948e-e26db0d708cc	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-258	e63c0e6d-1da3-466a-91ea-62856f1e845d	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-259	e63c0e6d-1da3-466a-91ea-62856f1e845d	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-260	de7342a1-6a65-437e-84ad-36a29b88a741	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-261	de7342a1-6a65-437e-84ad-36a29b88a741	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-262	2dc78062-d974-46b4-a508-b8e018978629	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-263	ab452660-c597-4d61-96fb-c27afa2651d3	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-264	ab452660-c597-4d61-96fb-c27afa2651d3	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-265	2b1170a6-7811-429a-8a30-4df810cb859d	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-266	2b1170a6-7811-429a-8a30-4df810cb859d	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-267	2b1170a6-7811-429a-8a30-4df810cb859d	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-268	2b1170a6-7811-429a-8a30-4df810cb859d	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-269	33c23566-1b49-434a-90fc-1b9f3d97f82a	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-270	c1569642-737b-408b-b380-3c6764fe037a	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-271	c1569642-737b-408b-b380-3c6764fe037a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-272	1de38461-b6b2-4ae0-be1e-4f04cd30aac3	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-273	1de38461-b6b2-4ae0-be1e-4f04cd30aac3	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-274	937c59aa-9c52-4051-aad9-2eeac3ba37d8	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-275	937c59aa-9c52-4051-aad9-2eeac3ba37d8	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-276	68405a8d-424a-4a9d-8821-924c1185b707	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-277	905c81a4-7ebc-45af-838f-d5b8a1e59d3b	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-278	a9d65744-40d0-4423-9237-99f527d7023e	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-279	a9d65744-40d0-4423-9237-99f527d7023e	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-280	4b5fa3bb-565c-4e7a-bf6c-531029bb6fcd	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-281	4b5fa3bb-565c-4e7a-bf6c-531029bb6fcd	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-282	ad091466-2a1a-4b07-adce-3f1d4b7bb2a2	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-283	ad091466-2a1a-4b07-adce-3f1d4b7bb2a2	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-284	852c793b-31aa-450b-9481-217f7291cbb7	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-285	d8879f31-c5d4-4fe5-a39c-d17857622742	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-286	d8879f31-c5d4-4fe5-a39c-d17857622742	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-287	881fc155-67fc-4389-a043-e8039d19f187	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-288	881fc155-67fc-4389-a043-e8039d19f187	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-289	881fc155-67fc-4389-a043-e8039d19f187	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-290	881fc155-67fc-4389-a043-e8039d19f187	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-291	6eb76af6-f729-49e6-8c89-6aabcc4bc1f1	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-292	1bd8fd53-15d7-4eca-bfb0-b83b39a5a1e8	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-293	f60ca6c0-a6a0-45ca-9da4-77348085da71	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-294	f60ca6c0-a6a0-45ca-9da4-77348085da71	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-295	f60ca6c0-a6a0-45ca-9da4-77348085da71	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
-296	f60ca6c0-a6a0-45ca-9da4-77348085da71	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
-297	7cdbe0e1-9533-4875-aafe-172f8034b844	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-298	428e8dcd-0eab-4d95-945c-be6d85fb1e57	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-299	6f906244-c480-4b86-bb57-b5927a28504b	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-300	de5f5e41-1564-4794-8d4b-8024ce12a84d	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-301	cf350413-ce77-4172-a05b-e4c535e4c94d	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-302	d37dccb2-6fc8-4924-b9b4-1a8dff92bef2	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-303	f2e8814c-b53d-4d9a-8b66-9af958638083	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-304	61423c72-ea91-4180-ba5c-9e442f68c71e	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-308	d43e5041-eaf4-496b-ac99-1a9261a76605	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
-309	d43e5041-eaf4-496b-ac99-1a9261a76605	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-310	ac069816-2d08-47c8-86ba-b98524cd03dc	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-311	480ca8dd-738d-40bb-9e3e-27f502715775	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-312	b6dde0e2-68a4-4090-9611-dc531be9d127	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-313	3019d72b-6474-40bf-b0ce-20d057f7a84d	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-314	d893b1e6-f7bc-4466-a1e8-d06925be1a1f	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-315	e0a5202d-bd8c-45a5-a140-9caaf6880daa	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-316	d6ff2b7c-7f9a-4872-be84-7ec65efea4a0	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-317	7c0a22a5-8dae-4f80-ab38-190943c38c0d	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-318	84fc8132-853a-4bb9-bc32-8a99b458722a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-319	04231aac-fe41-4bd9-afa5-f5f9b71c8cec	abstract	boolean	\N	True if an element is considered 'abstract' - that is the code is not for use as a real concept
-320	04231aac-fe41-4bd9-afa5-f5f9b71c8cec	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
-321	f4bfc357-7018-4f30-beb9-619352bfa271	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-322	0b5bf5fd-32ae-49ff-8257-f3a0c4ae106d	status	code	http://hl7.org/fhir/concept-properties#status	\N
-323	cb83cc4d-1716-49af-a7c9-ed4b8bd26a6b	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-324	fcc4a7fe-b8d3-4940-b98d-35a9a4a49982	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
-325	7f613138-d83f-400b-b518-ca012ece62b6	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+1	d53c0f63-91db-4c0d-a010-54303af788eb	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+2	d53c0f63-91db-4c0d-a010-54303af788eb	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+3	3c8789e2-492b-46bf-8dd4-2b99e2287148	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+4	3c8789e2-492b-46bf-8dd4-2b99e2287148	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+5	13aed9ab-4435-4f78-90d9-7c7671a67882	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+6	13aed9ab-4435-4f78-90d9-7c7671a67882	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+7	b32b2a86-7851-4997-8012-0cc48f81de03	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+8	b32b2a86-7851-4997-8012-0cc48f81de03	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+9	bffe54b7-3214-405c-a818-5ef8beefd107	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+10	bffe54b7-3214-405c-a818-5ef8beefd107	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+11	0a7f6019-c4e1-4566-9f8d-c90f650402cf	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+12	0a7f6019-c4e1-4566-9f8d-c90f650402cf	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+13	316c7dca-4061-4d00-9f6e-36088af81a00	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+14	316c7dca-4061-4d00-9f6e-36088af81a00	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+15	fa0df6c3-ae29-4901-a3d9-ba036d938fac	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+16	fa0df6c3-ae29-4901-a3d9-ba036d938fac	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+17	0bc68a2d-d242-4e26-b7ea-5fe932d2e3fa	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+18	0bc68a2d-d242-4e26-b7ea-5fe932d2e3fa	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+19	61e36f55-4de8-4b08-9202-d688fa9f303d	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+20	61e36f55-4de8-4b08-9202-d688fa9f303d	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+21	e30402c4-c7a5-4669-ba66-a69d8c3862d8	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+22	e30402c4-c7a5-4669-ba66-a69d8c3862d8	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+23	f23001d8-0135-48c9-b6bc-3c2a4a193d6a	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+24	f23001d8-0135-48c9-b6bc-3c2a4a193d6a	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+25	4f83842e-15a8-42eb-876f-d1d3f6f9bf85	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+26	4f83842e-15a8-42eb-876f-d1d3f6f9bf85	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+27	7fca2531-e1bc-4716-9e82-dcdca0da5d1d	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+28	7fca2531-e1bc-4716-9e82-dcdca0da5d1d	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+29	d1bd2251-5044-4b43-9ed6-0e285981bf5c	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+30	d1bd2251-5044-4b43-9ed6-0e285981bf5c	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+31	cb47eaec-d577-4039-8774-588b8cf470e4	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+32	cb47eaec-d577-4039-8774-588b8cf470e4	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+33	e8f426df-2429-41e1-91e5-b8a0fe4e8408	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+307	d9db5547-8006-432f-9d47-995e39144e07	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+34	e8f426df-2429-41e1-91e5-b8a0fe4e8408	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+35	3367dcb3-8d39-4814-b1a7-db262b505e8d	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+36	3367dcb3-8d39-4814-b1a7-db262b505e8d	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+37	b5015808-7e60-4bb3-96f8-17efcec0b030	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+38	b5015808-7e60-4bb3-96f8-17efcec0b030	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+39	7ad534a6-cdcd-4f5e-81e4-f747efabd6b0	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+40	7ad534a6-cdcd-4f5e-81e4-f747efabd6b0	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+41	1ac75ae4-aef6-4fdd-a70b-e2432d93079e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+42	1ac75ae4-aef6-4fdd-a70b-e2432d93079e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+43	f780a093-f3d8-424a-8d5c-852ea935a8e7	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+44	f780a093-f3d8-424a-8d5c-852ea935a8e7	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+45	0d452321-0b08-4bd3-a23c-52e0fbbd86ef	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+46	0d452321-0b08-4bd3-a23c-52e0fbbd86ef	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+47	995bdf53-543e-4f08-ac2e-dc9a2880f0e0	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+48	995bdf53-543e-4f08-ac2e-dc9a2880f0e0	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+49	a2fb6181-9088-4a36-9139-3f9d2a6cd68f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+50	a2fb6181-9088-4a36-9139-3f9d2a6cd68f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+51	6f58f180-f78e-4425-a109-3ac386cf6548	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+52	6f58f180-f78e-4425-a109-3ac386cf6548	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+53	86ff7e8c-628d-4791-a8f5-6f9531654e9f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+54	86ff7e8c-628d-4791-a8f5-6f9531654e9f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+55	65f6945a-f169-4d1b-8667-e9251c8a0b61	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+56	65f6945a-f169-4d1b-8667-e9251c8a0b61	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+57	501d16ce-c55b-4d4a-9f1e-cc91d2cf0e47	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+58	501d16ce-c55b-4d4a-9f1e-cc91d2cf0e47	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+59	795aa1a4-2df9-4703-9919-93f319c6d5d4	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+60	795aa1a4-2df9-4703-9919-93f319c6d5d4	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+61	7b194967-e5ce-4fe6-a6d5-16cd48e29420	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+62	7b194967-e5ce-4fe6-a6d5-16cd48e29420	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+63	64449523-ffeb-4844-a6cb-b8f34890c80b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+64	64449523-ffeb-4844-a6cb-b8f34890c80b	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+65	96f28734-51ff-4ad5-bce9-6bbfe0a0537d	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+66	96f28734-51ff-4ad5-bce9-6bbfe0a0537d	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+67	4093cea9-9773-483f-9319-52b94b9657ac	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+68	4093cea9-9773-483f-9319-52b94b9657ac	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+69	3e56618e-a8ee-4714-a584-b24c9072acad	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+70	3e56618e-a8ee-4714-a584-b24c9072acad	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+71	55fcfd84-f31f-4e4d-bd7a-735face1338e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+72	55fcfd84-f31f-4e4d-bd7a-735face1338e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+73	59090a6d-7a2b-4c7a-8076-cc474ce9f30b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+74	59090a6d-7a2b-4c7a-8076-cc474ce9f30b	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+75	9ebb7c0e-09eb-4bc7-bbc5-4982ef8c75e2	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+76	9ebb7c0e-09eb-4bc7-bbc5-4982ef8c75e2	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+77	e1a63c19-e047-496d-b560-129911515208	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+78	e1a63c19-e047-496d-b560-129911515208	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+79	dea9a6e6-60aa-4d58-a4f3-74409eeb80d8	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+80	dea9a6e6-60aa-4d58-a4f3-74409eeb80d8	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+81	1d5b36a5-6493-446a-aff4-842d586325ac	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+82	1d5b36a5-6493-446a-aff4-842d586325ac	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+83	6a839edd-0574-4733-9404-65c4f67809f1	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+84	6a839edd-0574-4733-9404-65c4f67809f1	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+85	4840f7e5-23be-4e89-9931-24bf2af30d74	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+86	4840f7e5-23be-4e89-9931-24bf2af30d74	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+87	cb76c839-dbd0-448c-aed1-679d7b266a46	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+88	cb76c839-dbd0-448c-aed1-679d7b266a46	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+89	b5f4cf99-965f-4db2-85a6-bb3c17d2f0fc	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+90	b5f4cf99-965f-4db2-85a6-bb3c17d2f0fc	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+91	d2578754-fa28-4b58-80b8-132543d3c484	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+92	d2578754-fa28-4b58-80b8-132543d3c484	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+93	d5085b18-3e0f-46cd-83ed-f0c5057aa323	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+94	d5085b18-3e0f-46cd-83ed-f0c5057aa323	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+95	17ba17de-0081-4d6d-9300-ab02e11e8e77	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+96	17ba17de-0081-4d6d-9300-ab02e11e8e77	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+97	7ae79993-36df-4c92-8a42-6bf6805b54b5	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+98	7ae79993-36df-4c92-8a42-6bf6805b54b5	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+99	0c0392de-b011-4da4-aa88-cff2d6af3746	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+100	0c0392de-b011-4da4-aa88-cff2d6af3746	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+101	8207a179-9986-47bb-9a2f-003b3f618d7f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+102	8207a179-9986-47bb-9a2f-003b3f618d7f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+103	d9f03777-3e81-47d2-b649-a4743873928c	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+104	d9f03777-3e81-47d2-b649-a4743873928c	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+105	bbb87ab3-6b5c-46f1-a613-1972d4ef0778	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+106	bbb87ab3-6b5c-46f1-a613-1972d4ef0778	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+107	457ab143-5367-4194-95fd-d61326bb38a2	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+108	457ab143-5367-4194-95fd-d61326bb38a2	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+109	65b38664-a75e-4ecd-a6b8-f57cea819da2	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+110	65b38664-a75e-4ecd-a6b8-f57cea819da2	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+111	ab759d17-1213-41c9-97a9-ca3217b8ee40	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+112	ab759d17-1213-41c9-97a9-ca3217b8ee40	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+113	a2958f20-a658-4d45-a48f-9428d4d1981f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+114	a2958f20-a658-4d45-a48f-9428d4d1981f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+115	9ff38575-bb70-4317-97eb-848aa048a831	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+116	9ff38575-bb70-4317-97eb-848aa048a831	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+117	3d1db743-d2ec-4061-aaca-eb4e700bad04	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+118	3d1db743-d2ec-4061-aaca-eb4e700bad04	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+119	c96a1321-2b44-46d6-a82f-f54fab72b8b0	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+120	c96a1321-2b44-46d6-a82f-f54fab72b8b0	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+121	169f4632-d367-43fb-b59f-d0cf445c79c2	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+122	169f4632-d367-43fb-b59f-d0cf445c79c2	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+123	82db0932-3605-447a-abcd-e9c70fb6ccb9	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+124	82db0932-3605-447a-abcd-e9c70fb6ccb9	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+125	9e28f762-5ab8-4436-8af2-94d6dd06f2a9	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+126	9e28f762-5ab8-4436-8af2-94d6dd06f2a9	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+127	ee3d0c70-2756-4865-9467-eb3caa1e889e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+128	ee3d0c70-2756-4865-9467-eb3caa1e889e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+129	616a7e4b-f38b-40f1-815f-c2a9a0353d87	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+130	616a7e4b-f38b-40f1-815f-c2a9a0353d87	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+131	cbf71be4-2b12-4a55-8b9e-eb754a82e5d3	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+132	cbf71be4-2b12-4a55-8b9e-eb754a82e5d3	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+133	bbd14f88-35de-4e74-80cf-172774d082ea	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+134	bbd14f88-35de-4e74-80cf-172774d082ea	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+135	b85ab471-ea13-430d-b9a9-93a35fad5a66	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+136	b85ab471-ea13-430d-b9a9-93a35fad5a66	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+137	76a1711a-56d3-40f6-a840-6f06a4ce84c7	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+138	76a1711a-56d3-40f6-a840-6f06a4ce84c7	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+139	07f78efb-d075-4ae1-9322-604a541077c0	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+140	07f78efb-d075-4ae1-9322-604a541077c0	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+141	07f78efb-d075-4ae1-9322-604a541077c0	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+142	07f78efb-d075-4ae1-9322-604a541077c0	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+143	ccca21e6-31ae-4fa9-8fe8-cfd96a5d1d94	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+144	ccca21e6-31ae-4fa9-8fe8-cfd96a5d1d94	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+145	ccca21e6-31ae-4fa9-8fe8-cfd96a5d1d94	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+146	ccca21e6-31ae-4fa9-8fe8-cfd96a5d1d94	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+147	9d83f278-df70-4df8-82fc-8282aeade9b9	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+148	ac911d65-9376-4313-b823-6934e47dc3ef	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+149	21d59663-32b0-4a0a-9e3b-9b027c3eb11b	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+150	21d59663-32b0-4a0a-9e3b-9b027c3eb11b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+151	21d59663-32b0-4a0a-9e3b-9b027c3eb11b	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+152	bca411a1-4cb9-4493-926b-184fa6dacba9	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+153	bca411a1-4cb9-4493-926b-184fa6dacba9	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+154	bca411a1-4cb9-4493-926b-184fa6dacba9	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+155	bca411a1-4cb9-4493-926b-184fa6dacba9	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+156	0d790856-938d-4a9d-b771-7f4e2721d640	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+157	0d790856-938d-4a9d-b771-7f4e2721d640	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+158	0d790856-938d-4a9d-b771-7f4e2721d640	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+159	ebf7097e-c1e2-48e4-ac4e-d0937d1e23ad	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+160	ebf7097e-c1e2-48e4-ac4e-d0937d1e23ad	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+161	ebf7097e-c1e2-48e4-ac4e-d0937d1e23ad	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+162	ebf7097e-c1e2-48e4-ac4e-d0937d1e23ad	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+163	0f9b6961-629e-4013-9c50-c581aa8e22b5	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+164	0f9b6961-629e-4013-9c50-c581aa8e22b5	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+165	11816a3a-9f57-4aac-ae6f-a685da0e0b30	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+166	11816a3a-9f57-4aac-ae6f-a685da0e0b30	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+167	b1e23730-0190-491f-8d2f-e79b437abb1e	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+168	b1e23730-0190-491f-8d2f-e79b437abb1e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+169	b1e23730-0190-491f-8d2f-e79b437abb1e	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+170	b1e23730-0190-491f-8d2f-e79b437abb1e	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+305	d48ec24d-b919-4b74-a297-fcccae884c5a	abstract	boolean	\N	True if an element is considered 'abstract' - in otherwords, the code is not for use as a real concept
+171	b1e23730-0190-491f-8d2f-e79b437abb1e	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+172	34c8f008-b5f6-47d2-9f8a-1847c3c396e5	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+173	3c7cbff8-b195-42a4-a29b-196139e508f5	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+174	3c7cbff8-b195-42a4-a29b-196139e508f5	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+175	a3d5c5e4-3833-4882-901b-9278a9a9633a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+176	2ca5422b-7b91-4a3d-b4a6-ff79eee215c2	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+177	2ca5422b-7b91-4a3d-b4a6-ff79eee215c2	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+178	2ca5422b-7b91-4a3d-b4a6-ff79eee215c2	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+179	2ca5422b-7b91-4a3d-b4a6-ff79eee215c2	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+180	18b749a5-bdb9-497f-bf46-ea9574f75d6b	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+181	b51daece-8e26-4a7a-9960-b9c5fcc6adc2	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+182	b51daece-8e26-4a7a-9960-b9c5fcc6adc2	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+183	b51daece-8e26-4a7a-9960-b9c5fcc6adc2	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+184	b51daece-8e26-4a7a-9960-b9c5fcc6adc2	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+185	b51daece-8e26-4a7a-9960-b9c5fcc6adc2	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+186	33de15ba-bd5a-4967-9129-e541f512db96	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+187	33de15ba-bd5a-4967-9129-e541f512db96	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+188	33de15ba-bd5a-4967-9129-e541f512db96	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+189	33de15ba-bd5a-4967-9129-e541f512db96	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+190	33de15ba-bd5a-4967-9129-e541f512db96	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+191	923757b6-46e0-4aac-aaac-cf15924fad48	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+192	7e008a0a-26b0-4063-9a49-ad0e85b1b1e2	partOf	code	http://hl7.org/fhir/codesystem-hierarchy-meaning#part-of	This relationship indicates that the source concept is a component of the target concept
+193	7e008a0a-26b0-4063-9a49-ad0e85b1b1e2	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+194	90251d16-5ca7-4967-be74-2e68d2f1806c	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+195	51f811f8-bccf-4e1c-99c4-cc1eb441df3b	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+196	51f811f8-bccf-4e1c-99c4-cc1eb441df3b	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+197	51f811f8-bccf-4e1c-99c4-cc1eb441df3b	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+198	51f811f8-bccf-4e1c-99c4-cc1eb441df3b	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+199	80fedea8-e466-46bc-8d4f-0b26d043690b	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+200	80fedea8-e466-46bc-8d4f-0b26d043690b	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+201	54073846-5c6b-45fc-8b17-7bec09d99aa6	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+202	54073846-5c6b-45fc-8b17-7bec09d99aa6	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+203	54073846-5c6b-45fc-8b17-7bec09d99aa6	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+204	e6507ce3-6d73-4721-8779-e9953a068c1c	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+205	e6507ce3-6d73-4721-8779-e9953a068c1c	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+206	c493d363-7b9b-4d51-85de-b9c91ae4e4ae	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+207	145bfaf0-979f-4828-97b3-781d396768a2	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+208	539d4a0a-9fdc-4f5b-a66c-c541d8d14bfb	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+209	539d4a0a-9fdc-4f5b-a66c-c541d8d14bfb	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+210	0a188b1c-beec-4841-a4ae-ac64852b18b0	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+211	48acb63c-7393-4517-9226-b32578f1fe48	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+212	48acb63c-7393-4517-9226-b32578f1fe48	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+306	d48ec24d-b919-4b74-a297-fcccae884c5a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+213	48acb63c-7393-4517-9226-b32578f1fe48	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+214	48acb63c-7393-4517-9226-b32578f1fe48	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+215	48acb63c-7393-4517-9226-b32578f1fe48	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+216	c2ef988b-16c6-4233-804e-c6808ed72fff	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+217	c2ef988b-16c6-4233-804e-c6808ed72fff	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+218	d4184972-57e9-460d-89b1-e205939dfb0a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+219	d4184972-57e9-460d-89b1-e205939dfb0a	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+220	d4184972-57e9-460d-89b1-e205939dfb0a	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+221	917b3df3-2f69-45de-b7bd-7a1add5eeec5	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+222	917b3df3-2f69-45de-b7bd-7a1add5eeec5	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+223	9996b6e5-e790-468a-bfbb-da7fcb2942ac	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+224	9996b6e5-e790-468a-bfbb-da7fcb2942ac	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+225	b37ef251-3602-4c5b-9e0f-b81412606a72	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+226	b37ef251-3602-4c5b-9e0f-b81412606a72	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+227	b37ef251-3602-4c5b-9e0f-b81412606a72	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+228	9a887e7f-2dcc-417d-a766-28243f5d7701	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+229	9a887e7f-2dcc-417d-a766-28243f5d7701	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+230	9a887e7f-2dcc-417d-a766-28243f5d7701	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+231	d6900953-640c-427d-a0d6-9e2c7fd0ed74	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+232	d6900953-640c-427d-a0d6-9e2c7fd0ed74	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+233	af6a18c5-b38a-4855-84ac-b006aefa4857	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+234	af6a18c5-b38a-4855-84ac-b006aefa4857	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+235	af6a18c5-b38a-4855-84ac-b006aefa4857	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+236	ca9de5d8-d62d-4bf9-a546-14ef60d97895	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+237	ca9de5d8-d62d-4bf9-a546-14ef60d97895	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+238	ca9de5d8-d62d-4bf9-a546-14ef60d97895	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+239	ca9de5d8-d62d-4bf9-a546-14ef60d97895	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+240	e2096940-4f9d-4a1c-b39f-60f56bae79b0	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+241	e2096940-4f9d-4a1c-b39f-60f56bae79b0	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+242	9c2c046e-7c97-40e5-b8c2-14edcb3565ed	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+243	0f4a1a3a-8190-4fd5-9308-aa0ef9f3c388	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+244	0f4a1a3a-8190-4fd5-9308-aa0ef9f3c388	child	code	http://hl7.org/fhir/concept-properties#child	The concept identified in this property is a child of the concept on which it is a property. The property type will be 'code'. The meaning of parent/child relationships is defined by the hierarchyMeaning attribute
+245	0f4a1a3a-8190-4fd5-9308-aa0ef9f3c388	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+246	a9f4a64c-a0dd-4539-ac9a-587288e43d42	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+247	a9f4a64c-a0dd-4539-ac9a-587288e43d42	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+248	f9213e6d-c1c7-49bd-a454-f43268b96ab5	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+249	d3d1e764-c0f4-4c4b-9e57-c82b11114823	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+250	d44d3700-7a60-4cf0-939e-b4d8332b7c2f	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+251	3cf7b11a-d2a6-442f-a304-e3586d67360c	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+252	3cf7b11a-d2a6-442f-a304-e3586d67360c	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+253	f9947443-fddb-4e6a-994b-0f29643f0f1c	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+254	f9947443-fddb-4e6a-994b-0f29643f0f1c	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+255	f9947443-fddb-4e6a-994b-0f29643f0f1c	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+256	9bd30ef6-4a49-43ce-8cf8-cd2995923f5f	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+257	9bd30ef6-4a49-43ce-8cf8-cd2995923f5f	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+258	0d6fc414-19da-45c8-8793-22a6bd2a1809	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+259	0d6fc414-19da-45c8-8793-22a6bd2a1809	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+260	997d451d-7f6e-4dca-8996-407eb9a1ae58	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+261	997d451d-7f6e-4dca-8996-407eb9a1ae58	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+262	a9430e84-3a10-4a85-8b6c-0c805fda9b06	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+263	bb129c60-b90d-4239-98b0-090851ce7533	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+264	bb129c60-b90d-4239-98b0-090851ce7533	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+265	98dfe1f1-5e48-48dc-ac7e-ba8bcfe6b73c	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+266	98dfe1f1-5e48-48dc-ac7e-ba8bcfe6b73c	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+267	98dfe1f1-5e48-48dc-ac7e-ba8bcfe6b73c	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+268	98dfe1f1-5e48-48dc-ac7e-ba8bcfe6b73c	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+269	4a912593-bb58-456a-93b3-f9512cdb317e	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+270	8cd59e2b-7399-4219-910e-10a04c6aa38a	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+271	8cd59e2b-7399-4219-910e-10a04c6aa38a	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+272	94201520-8a67-4d0e-bf67-85c877c84ff0	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+273	94201520-8a67-4d0e-bf67-85c877c84ff0	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+274	55d02a9c-4911-4190-b329-502204fe47a5	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+275	55d02a9c-4911-4190-b329-502204fe47a5	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+276	99fe1a5c-fd85-47cd-b0f0-efe4d91445d4	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+277	203644c3-1149-4872-8a16-2928dfd618bd	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+278	c1befea9-dd56-45ef-992c-3d1dad7c8c62	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+279	c1befea9-dd56-45ef-992c-3d1dad7c8c62	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+280	c7932a46-f93a-40f0-bf7c-d86550133037	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+281	c7932a46-f93a-40f0-bf7c-d86550133037	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+282	ffe6d249-52c7-4a9a-8349-a3b2c26359cc	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+283	ffe6d249-52c7-4a9a-8349-a3b2c26359cc	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+284	fa499e14-0a2b-4643-8151-03a5ea63d75d	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+285	03ef043e-23bf-41db-977f-93951099296f	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+286	03ef043e-23bf-41db-977f-93951099296f	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+287	4dd4d043-6c4b-451e-94b4-e88a34421331	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+288	4dd4d043-6c4b-451e-94b4-e88a34421331	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+289	4dd4d043-6c4b-451e-94b4-e88a34421331	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+290	4dd4d043-6c4b-451e-94b4-e88a34421331	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+291	871894aa-33f4-4a5b-98d2-f34165ff3e15	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+292	f347840e-019f-4dcb-babb-0fec1c5cd174	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+293	26b3258e-c375-4f5c-b8b4-a0d7116dce6f	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+294	26b3258e-c375-4f5c-b8b4-a0d7116dce6f	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+295	26b3258e-c375-4f5c-b8b4-a0d7116dce6f	status	code	http://hl7.org/fhir/concept-properties#status	A property that indicates the status of the concept. One of active, experimental, deprecated, retired
+296	26b3258e-c375-4f5c-b8b4-a0d7116dce6f	deprecationDate	dateTime	http://hl7.org/fhir/concept-properties#deprecationDate	The date at which a concept was deprecated. Concepts that are deprecated but not inactive can still be used, but their use is discouraged
+297	68720fe2-ba0b-4bbf-af57-6099894e571b	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+298	1056d00b-15e1-486d-bbe5-af997f121388	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+299	f6cff6df-3abb-4c0b-9563-5e85af538120	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+300	2fe45593-7636-43b1-84fc-5381c4afebcb	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+301	54bb5a51-1cd8-4be7-9ac5-24e7aa20b08a	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+302	a195f763-926e-4b3a-931e-1f872ab92b6f	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+303	85b31b97-3850-4aae-bb0d-61b837c9457b	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+304	e859d5b2-2206-4f66-9c58-f959833718fd	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+308	25661a69-f877-4be8-8aa6-0458a05298f6	notSelectable	boolean	http://hl7.org/fhir/concept-properties#notSelectable	Indicates that the code is abstract - only intended to be used as a selector for other concepts
+309	25661a69-f877-4be8-8aa6-0458a05298f6	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+310	e3f0c0b7-a105-4ec1-b27c-f6c8da4f4156	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+311	fd0e4739-897d-4ac1-98fa-b1bd0c2d4452	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+312	fa1860ba-0fa7-4cc8-ab99-868e6d6e8027	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+313	c8344673-957f-4892-8412-b40a05a4de5b	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+314	c3533f30-de20-493e-85ac-1cddbc36ad30	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+315	51bac8de-404d-4efb-a6e3-cecc8e285760	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+316	34b6acb8-bb2f-48c9-86da-216f0ec54d2f	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+317	06b3beac-a954-4185-bc1a-6c203031df18	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+318	40d85b32-b061-45c7-82aa-acc96742a8c6	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+319	d2514a94-4f68-4686-99c2-28b7d2359457	abstract	boolean	\N	True if an element is considered 'abstract' - that is the code is not for use as a real concept
+320	d2514a94-4f68-4686-99c2-28b7d2359457	is-a	code	http://hl7.org/fhir/concept-properties#parent	\N
+321	6c9baa5c-d92a-47a1-b347-949b26ad356c	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+322	3889c718-e912-4485-bcf3-cfcc86b79475	status	code	http://hl7.org/fhir/concept-properties#status	\N
+323	e596c38d-f412-4579-a6a8-202636168656	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+324	6244a79b-8af5-4a11-89f3-5808faf85d81	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
+325	36a65bee-58bb-47b4-baea-b508048833a4	parent	code	http://hl7.org/fhir/concept-properties#parent	\N
