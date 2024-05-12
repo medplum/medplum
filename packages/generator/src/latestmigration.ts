@@ -7,6 +7,8 @@ import { main as serverMain } from '../../server/src/index';
 import { FileBuilder } from './filebuilder';
 
 const SCHEMA_DIR = resolve(__dirname, '../../server/src/migrations/schema');
+const DATA_DIR = `${SCHEMA_DIR}/data`;
+const MIGRATION_FILE_PATH = `${SCHEMA_DIR}/latest.sql`;
 
 process.on('SIGINT', () => {
   console.info('Gracefully quitting process...');
@@ -70,6 +72,7 @@ async function main(): Promise<void> {
     }
   );
 
+  // We need to add search path
   let dump = 'SET search_path TO public;\n';
   stdout.setEncoding('utf-8');
   stdout.on('data', (data) => {
@@ -84,9 +87,9 @@ async function main(): Promise<void> {
 
   console.info('Database dump successful. Writing dump to file...');
 
-  mkdirSync(`${SCHEMA_DIR}/data`, { recursive: true });
+  mkdirSync(DATA_DIR, { recursive: true });
   const migration = new FlatMigrationBuilder(dump).buildMigration();
-  writeFileSync(`${SCHEMA_DIR}/latest.sql`, migration, { encoding: 'utf-8' });
+  writeFileSync(MIGRATION_FILE_PATH, migration, { encoding: 'utf-8' });
 
   console.info('Migration file successfully created.');
 
@@ -126,7 +129,7 @@ class FlatMigrationBuilder {
       // If we find the copy terminal character sequence, finalize the file for this copy statement
       if (line.startsWith('\\.')) {
         // Finalize the data file
-        this.copyDataParser.writeDataFile(`${SCHEMA_DIR}/data`);
+        this.copyDataParser.writeDataFile(DATA_DIR);
         // Remove copyParser
         this.copyDataParser = undefined;
 
