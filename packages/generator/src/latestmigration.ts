@@ -9,11 +9,11 @@ import { FileBuilder } from './filebuilder';
 const SCHEMA_DIR = resolve(__dirname, '../../server/src/migrations/schema');
 
 process.on('SIGINT', () => {
-  console.log('Gracefully quitting process...');
+  console.info('Gracefully quitting process...');
   // @ts-expect-error Not a public method
   const activeHandles = process._getActiveHandles() as any[];
   if (activeHandles.length) {
-    console.log('Active handles:', activeHandles);
+    console.info('Active handles:', activeHandles);
   }
   process.exit(1);
 });
@@ -86,12 +86,9 @@ async function main(): Promise<void> {
 
   mkdirSync(`${SCHEMA_DIR}/data`, { recursive: true });
 
-  // TODO: Remove this
-  writeFileSync(`${SCHEMA_DIR}/test.sql`, dump, 'utf-8');
-
   const builder = new FlatMigrationBuilder(dump);
   const migration = builder.buildMigration();
-  writeFileSync(`${SCHEMA_DIR}/latest.ts`, migration, { encoding: 'utf-8' });
+  writeFileSync(`${SCHEMA_DIR}/latest.sql`, migration, { encoding: 'utf-8' });
 
   console.info('Migration file successfully created.');
 
@@ -102,12 +99,13 @@ class FlatMigrationBuilder {
   readonly builder: FileBuilder;
   readonly sourceLines: string[];
   copyDataParser: CopyStatementDataParser | undefined;
-  currentLine = 0;
   bufferedStatement: string[] | undefined;
+  currentLine = 0;
+  migration = '';
 
   constructor(sqlDump: string) {
     this.builder = new FileBuilder();
-    this.sourceLines = sqlDump.split('\n').map((line) => line.trim());
+    this.sourceLines = sqlDump.split('\n');
     this.bufferedStatement = undefined;
     this.copyDataParser = undefined;
   }
@@ -120,7 +118,7 @@ class FlatMigrationBuilder {
 
     // If line is empty, skip it
     const line = this.sourceLines[this.currentLine];
-    if (line === '' || line.startsWith('--')) {
+    if (line.trim() === '' || line.startsWith('--')) {
       this.currentLine++;
       return true;
     }
@@ -160,6 +158,7 @@ class FlatMigrationBuilder {
       }
       // start building copy
       this.copyDataParser = new CopyStatementDataParser(line);
+      this.bufferPartialStatement(line);
       this.currentLine++;
       return true;
     }
@@ -171,11 +170,11 @@ class FlatMigrationBuilder {
 
   private bufferPartialStatement(partialStatement: string): void {
     if (!this.bufferedStatement) {
-      this.bufferedStatement = ["await client.query('"];
+      this.bufferedStatement = [];
     } else {
       this.bufferedStatement.push(' ');
     }
-    this.bufferedStatement.push(partialStatement.replaceAll("'", "\\'"));
+    this.bufferedStatement.push(partialStatement.trim());
     if (partialStatement.endsWith(';')) {
       this.endStatement();
     }
@@ -185,8 +184,7 @@ class FlatMigrationBuilder {
     if (!this.bufferedStatement) {
       throw new Error('No buffered statement to end');
     }
-    this.bufferedStatement.push("');");
-    this.builder.appendNoWrap(this.bufferedStatement.join(''));
+    this.migration += this.bufferedStatement.join('') + '\n';
     this.bufferedStatement = undefined;
   }
 
@@ -198,23 +196,11 @@ class FlatMigrationBuilder {
   }
 
   buildMigration(): string {
-    const b = this.builder;
-
-    b.append("import { PoolClient } from 'pg';");
-    b.newLine();
-    b.append('export async function run(client: PoolClient): Promise<void> {');
-    b.indentCount++;
-
-    b.newLine();
-
     let line = false;
     do {
       line = this.processCurrentLine();
     } while (line);
-
-    b.append('}');
-
-    return b.toString();
+    return this.migration;
   }
 }
 
@@ -223,7 +209,7 @@ class CopyStatementDataParser {
   constructor(readonly copyStatement: string) {}
 
   parseDataLine(line: string): void {
-    this.dataFile += `${line}\n`;
+    this.dataFile += line + '\n';
   }
 
   writeDataFile(dirPath: string): void {

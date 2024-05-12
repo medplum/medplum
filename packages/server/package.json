@@ -90,6 +90,7 @@
     "@types/node-fetch": "2.6.11",
     "@types/nodemailer": "6.4.15",
     "@types/pg": "8.11.6",
+    "@types/pg-copy-streams": "1.2.5",
     "@types/qrcode": "1.5.5",
     "@types/set-cookie-parser": "2.4.9",
     "@types/supertest": "6.0.2",
