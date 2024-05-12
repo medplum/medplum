@@ -24,18 +24,18 @@ async function main(): Promise<void> {
   const container = await new PostgreSqlContainer().start();
 
   // Load existing `medplum.config.json`, change port
-  const baseConfig = JSON.parse(
+  const config = JSON.parse(
     readFileSync(resolve(__dirname, '../../server/medplum.config.json'), { encoding: 'utf-8' })
   ) as MedplumServerConfig;
 
-  baseConfig.database.port = container.getPort();
-  baseConfig.database.dbname = container.getDatabase();
-  baseConfig.database.username = container.getUsername();
-  baseConfig.database.password = container.getPassword();
-  baseConfig.database.runMigrations = 'full';
+  config.database.port = container.getPort();
+  config.database.dbname = container.getDatabase();
+  config.database.username = container.getUsername();
+  config.database.password = container.getPassword();
+  config.database.runMigrations = 'full';
 
   // Write latestmigration config
-  writeFileSync(resolve(__dirname, '../../server/latestmigration.config.json'), JSON.stringify(baseConfig));
+  writeFileSync(resolve(__dirname, '../../server/latestmigration.config.json'), JSON.stringify(config));
 
   // Startup server, triggering migration
   console.info('Starting server... Migrations will run...');
@@ -156,7 +156,7 @@ class FlatMigrationBuilder {
         this.currentLine += 2;
         return true;
       }
-      // start building copy
+      // Start building copy data
       this.copyDataParser = new CopyStatementDataParser(line);
       this.bufferPartialStatement(line);
       this.currentLine++;
@@ -174,8 +174,9 @@ class FlatMigrationBuilder {
     } else {
       this.bufferedStatement.push(' ');
     }
-    this.bufferedStatement.push(partialStatement.trim());
-    if (partialStatement.endsWith(';')) {
+    const trimmedStatement = partialStatement.trim();
+    this.bufferedStatement.push(trimmedStatement);
+    if (trimmedStatement.endsWith(';')) {
       this.endStatement();
     }
   }
