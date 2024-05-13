@@ -61,9 +61,9 @@
   "peerDependencies": {
     "@medplum/core": "3.1.5",
     "expo": "*",
-    "expo-crypto": "^12.6.0",
-    "expo-secure-store": "^12.3.1",
-    "expo-standard-web-crypto": "^1.7.0",
+    "expo-crypto": "^13.0.0",
+    "expo-secure-store": "^13.0.0",
+    "expo-standard-web-crypto": "^1.8.0",
     "react": "*",
     "react-native": "*"
   }
