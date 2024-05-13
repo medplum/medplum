@@ -66,11 +66,7 @@ export interface SlicingRules {
   slices: SliceDefinition[];
 }
 
-export interface SliceDefinition extends InternalSchemaElement {
-  // narrowed InternalSchemaElement fields
-  slicing?: never;
-
-  // additional fields for SliceDefinition
+export interface SliceDefinition extends Omit<InternalSchemaElement, 'slicing'> {
   name: string;
   definition?: string;
   elements: Record<string, InternalSchemaElement>;
@@ -442,7 +438,6 @@ class StructureDefinitionParser {
 
     this.slicingContext.current = {
       ...this.parseElementDefinition(element),
-      slicing: undefined,
       name: element.sliceName ?? '',
       definition: element.definition,
       elements: {},
