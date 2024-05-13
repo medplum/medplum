@@ -77,9 +77,9 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     noReasonForVisit.encounter = { reference: encounterRef };
 
-    expect(
-      async () => await handler({ bot, contentType, input: noReasonForVisit, secrets: {} }, medplum)
-    ).rejects.toThrow(/^Must provide a reason for the visit$/);
+    await expect(handler({ bot, contentType, input: noReasonForVisit, secrets: {} }, medplum)).rejects.toThrow(
+      /^Must provide a reason for the visit$/
+    );
   });
 
   test('Only condition', async () => {

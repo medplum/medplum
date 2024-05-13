@@ -70,7 +70,7 @@ describe('Obstetric Encounter Note', async () => {
     const testEncounter = await medplum.createResource(encounter);
     noCondition.encounter = { reference: getReferenceString(testEncounter) };
 
-    expect(async () => await handler({ bot, input: noCondition, contentType, secrets: {} }, medplum)).rejects.toThrow(
+    await expect(handler({ bot, input: noCondition, contentType, secrets: {} }, medplum)).rejects.toThrow(
       /^Must provide a reason for the visit$/
     );
   });

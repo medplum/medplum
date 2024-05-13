@@ -40,7 +40,7 @@ interface ClinicalImpressionData {
   assessment?: string;
 }
 
-export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient) {
+export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
   const response = event.input;
   const answers = getQuestionnaireAnswers(response);
@@ -84,7 +84,9 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   // Create an entry array of all the bundle entries
   const entry = observationEntries.concat(conditionEntries);
-  clinicalImpressionEntry && entry.push(clinicalImpressionEntry);
+  if (clinicalImpressionEntry) {
+    entry.push(clinicalImpressionEntry);
+  }
 
   // Build the bundle
   const bundle: Bundle = {
@@ -258,7 +260,7 @@ function createConditionEntries(conditionData: ConditionData, encounter: Encount
   entries.push({ fullUrl: generateId(), request: { method: 'POST', url: 'Condition' }, resource: encounterDiagnosis });
 
   // If the response specified that the condition should be added to the problem list, create an additional condition to add to the problem list
-  conditionData.problemList &&
+  if (conditionData.problemList) {
     entries.push({
       fullUrl: generateId(),
       request: { method: 'POST', url: 'Condition' },
@@ -281,6 +283,7 @@ function createConditionEntries(conditionData: ConditionData, encounter: Encount
         code: conditionData.reasonForVisit,
       },
     });
+  }
 
   return entries;
 }

@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, Encounter, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Encounter, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export const encounter: Encounter = {
   resourceType: 'Encounter',

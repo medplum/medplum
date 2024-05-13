@@ -87,7 +87,9 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   // Create an array of bundle entries for all resource types
   const entry = [...observationEntries, ...conditionEntry];
-  clinicalImpressionEntry && entry.push(clinicalImpressionEntry);
+  if (clinicalImpressionEntry) {
+    entry.push(clinicalImpressionEntry);
+  }
 
   // Create a batch
   const resourceBatch: Bundle = {
@@ -267,7 +269,7 @@ function createConditionEntry(conditionData: ConditionData, encounter: Encounter
   entries.push({ fullUrl: generateId(), request, resource: encounterDiagnosis });
 
   // If the problem list question was checked, create an additional condition for it
-  conditionData.problemList &&
+  if (conditionData.problemList) {
     entries.push({
       fullUrl: generateId(),
       request,
@@ -291,6 +293,7 @@ function createConditionEntry(conditionData: ConditionData, encounter: Encounter
         ],
       },
     });
+  }
 
   return entries;
 }

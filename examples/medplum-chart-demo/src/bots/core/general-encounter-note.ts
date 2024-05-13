@@ -84,7 +84,9 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   // Create an array of all entries
   const entry = [...observationEntries, ...conditionEntries];
-  clinicalImpressionEntries && entry.push(clinicalImpressionEntries);
+  if (clinicalImpressionEntries) {
+    entry.push(clinicalImpressionEntries);
+  }
 
   // Create the bundle
   const encounterNoteBatch: Bundle = {
@@ -323,7 +325,7 @@ function createConditionEntries(conditionData: ConditionData, encounter: Encount
   entries.push({ fullUrl: generateId(), request, resource: encounterDiagnosis });
 
   // If the response specified that the condition should be added to the problem list, create an additional condition to add to the problem list
-  conditionData.problemList &&
+  if (conditionData.problemList) {
     entries.push({
       fullUrl: generateId(),
       request,
@@ -347,6 +349,7 @@ function createConditionEntries(conditionData: ConditionData, encounter: Encount
         ],
       },
     });
+  }
 
   return entries;
 }
