@@ -8,7 +8,14 @@ import { mockClient } from 'aws-sdk-client-mock';
 import { main } from '../index';
 
 describe('describe command', () => {
+  let processError: jest.SpyInstance;
+
   beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+
     const cfMock = mockClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
@@ -87,6 +94,10 @@ describe('describe command', () => {
     });
   });
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('Describe command', async () => {
     console.log = jest.fn();
     await main(['node', 'index.js', 'aws', 'describe', 'dev']);
@@ -95,7 +106,10 @@ describe('describe command', () => {
 
   test('Describe not found', async () => {
     console.log = jest.fn();
-    await main(['node', 'index.js', 'aws', 'describe', 'not-found']);
+    await expect(main(['node', 'index.js', 'aws', 'describe', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(console.log).toHaveBeenCalledWith('Stack not found: not-found');
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining('Error: Stack not found: not-found'));
   });
 });

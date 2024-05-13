@@ -5,9 +5,9 @@ import {
   MedplumClient,
   normalizeErrorString,
 } from '@medplum/core';
-import { exec } from 'child_process';
-import { createServer } from 'http';
-import { platform } from 'os';
+import { exec } from 'node:child_process';
+import { createServer } from 'node:http';
+import { platform } from 'node:os';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 import { jwtAssertionLogin, jwtBearerLogin, Profile, saveProfile } from './utils';

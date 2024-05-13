@@ -1,32 +1,35 @@
 import { createReference, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { randomUUID, webcrypto } from 'crypto';
-import { mkdtempSync, rmSync } from 'fs';
-import os from 'os';
-import { sep } from 'path';
+import { randomUUID, webcrypto } from 'node:crypto';
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import { sep } from 'node:path';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('os');
+jest.mock('node:os');
 jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
 }));
 jest.mock('./util/client');
 
-let medplum: MedplumClient;
-const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
-const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
-
 describe('CLI rest', () => {
+  const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
   const env = process.env;
+  let medplum: MedplumClient;
+  let processError: jest.SpyInstance;
 
   beforeAll(async () => {
     (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
   });
 
-  afterAll(async () => {
+  afterAll(() => {
     rmSync(testHomeDir, { recursive: true, force: true });
   });
 
@@ -37,7 +40,6 @@ describe('CLI rest', () => {
     medplum = new MockClient();
     console.log = jest.fn();
     console.error = jest.fn();
-    process.exit = jest.fn<never, any>();
 
     (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
   });
@@ -45,6 +47,7 @@ describe('CLI rest', () => {
   afterEach(() => {
     process.env = env;
   });
+
   test('Delete command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'delete', `Patient/${patient.id}`]);
@@ -65,8 +68,10 @@ describe('CLI rest', () => {
   });
 
   test('Get not found', async () => {
-    await main(['node', 'index.js', 'get', `Patient/${randomUUID()}`]);
-    expect(console.error).toHaveBeenCalledWith(expect.stringMatching('Error: Not found'));
+    await expect(main(['node', 'index.js', 'get', `Patient/${randomUUID()}`])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(expect.stringMatching('Error: Not found'));
   });
 
   test('Get admin urls', async () => {
@@ -104,7 +109,9 @@ describe('CLI rest', () => {
   test('Get command with invalid flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
 
-    await main(['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
+    await expect(main(['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(processError).toHaveBeenCalledWith(expect.stringContaining(`error: unknown option '--bad-flag'`));
   });
 
@@ -134,13 +141,15 @@ describe('CLI rest', () => {
   });
 
   test('Post command with empty body', async () => {
-    await main(['node', 'index.js', 'post', 'Patient', '']);
-    expect(console.error).toHaveBeenCalledWith(expect.stringMatching(`Error: Cannot read properties of undefined`));
+    await expect(main(['node', 'index.js', 'post', 'Patient', ''])).rejects.toThrow('Process exited with exit code 1');
+    expect(processError).toHaveBeenCalledWith(expect.stringMatching('Error: Cannot read properties of undefined'));
   });
 
   test('Post command with invalid json', async () => {
-    await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType" }']);
-    expect(console.error).toHaveBeenCalledWith(expect.stringMatching(`Error:`));
+    await expect(main(['node', 'index.js', 'post', 'Patient', '{ "resourceType" }'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(expect.stringMatching('Error:'));
   });
 
   test('Put command', async () => {

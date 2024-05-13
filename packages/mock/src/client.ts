@@ -11,6 +11,8 @@ import {
   SubscriptionEmitter,
   allOk,
   badRequest,
+  generateId,
+  getReferenceString,
   getStatus,
   indexSearchParameter,
   loadDataType,
@@ -20,6 +22,7 @@ import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/
 import {
   Agent,
   Binary,
+  Bot,
   Device,
   Reference,
   Resource,
@@ -341,7 +344,7 @@ export class MockFetchClient {
 
   private async mockHandler(method: HttpMethod, path: string, options: any): Promise<any> {
     if (path.startsWith('admin/')) {
-      return this.mockAdminHandler(method, path);
+      return this.mockAdminHandler(method, path, options);
     } else if (path.startsWith('auth/')) {
       return this.mockAuthHandler(method, path, options);
     } else if (path.startsWith('oauth2/')) {
@@ -353,26 +356,57 @@ export class MockFetchClient {
     }
   }
 
-  private async mockAdminHandler(_method: string, path: string): Promise<any> {
-    if (path === 'admin/projects/setpassword' && _method.toUpperCase() === 'POST') {
+  private async mockAdminHandler(method: string, path: string, options: RequestInit): Promise<any> {
+    if (path === 'admin/projects/setpassword' && method.toUpperCase() === 'POST') {
       return { ok: true };
     }
 
-    const projectMatch = /^admin\/projects\/([\w-]+)$/.exec(path);
+    // Create new bot
+    const botCreateMatch = /^admin\/projects\/([\w(-)?]+)\/bot$/.exec(path);
+    if (botCreateMatch && method.toUpperCase() === 'POST') {
+      const body = options.body;
+      let jsonBody: Record<string, any> | undefined;
+      if (body) {
+        jsonBody = JSON.parse(body as string);
+      }
+
+      const binary = await this.repo.createResource<Binary>({
+        id: generateId(),
+        resourceType: 'Binary',
+        contentType: ContentType.TYPESCRIPT,
+      });
+
+      const projectId = botCreateMatch[1];
+      return this.repo.createResource<Bot>({
+        meta: {
+          project: projectId,
+        },
+        id: generateId(),
+        resourceType: 'Bot',
+        name: jsonBody?.name,
+        description: jsonBody?.description,
+        runtimeVersion: jsonBody?.runtimeVersion ?? 'awslambda',
+        sourceCode: {
+          contentType: ContentType.TYPESCRIPT,
+          title: 'index.ts',
+          url: getReferenceString(binary),
+        },
+      });
+    }
+
+    const projectMatch = /^admin\/projects\/([\w(-)?]+)$/.exec(path);
     if (projectMatch) {
       return {
         project: await this.repo.readResource('Project', projectMatch[1]),
       };
     }
 
-    const membershipMatch = /^admin\/projects\/([\w-]+)\/members\/([\w-]+)$/.exec(path);
+    const membershipMatch = /^admin\/projects\/([\w(-)?]+)\/members\/([\w(-)?]+)$/.exec(path);
     if (membershipMatch) {
       return this.repo.readResource('ProjectMembership', membershipMatch[2]);
     }
 
-    return {
-      ok: true,
-    };
+    return { ok: true };
   }
 
   private mockAuthHandler(method: HttpMethod, path: string, options: any): any {

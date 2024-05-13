@@ -1,13 +1,15 @@
-import { MedplumClient } from '@medplum/core';
+import { allOk } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { randomUUID } from 'crypto';
-import fs from 'fs';
-import { main } from '.';
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import * as cli from '.';
 import { createMedplumClient } from './util/client';
 
+const { main } = cli;
+
 jest.mock('./util/client');
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
@@ -18,11 +20,18 @@ jest.mock('fs', () => ({
     readFile: jest.fn(async () => '{}'),
   },
 }));
-const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
 
 describe('CLI Bots', () => {
   const env = process.env;
-  let medplum: MedplumClient;
+  let medplum: MockClient;
+  let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+  });
 
   beforeEach(() => {
     jest.resetModules();
@@ -30,8 +39,7 @@ describe('CLI Bots', () => {
     process.env = { ...env };
     medplum = new MockClient();
     console.log = jest.fn();
-    console.error = jest.fn();
-    process.exit = jest.fn<never, any>();
+
     (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
   });
 
@@ -40,8 +48,11 @@ describe('CLI Bots', () => {
   });
 
   test('Deploy bot missing name', async () => {
-    await main(['node', 'index.js', 'bot', 'deploy']);
-    expect(processError).toHaveBeenCalledWith(expect.stringContaining(`error: missing required argument 'botName'`));
+    await expect(main(['node', 'index.js', 'bot', 'deploy'])).rejects.toThrow('Process exited with exit code 1');
+    expect(processError).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining("error: missing required argument 'botName'")
+    );
   });
 
   test('Deploy bot config not found', async () => {
@@ -61,7 +72,9 @@ describe('CLI Bots', () => {
         ],
       })
     );
-    await main(['node', 'index.js', 'bot', 'deprecate', 'does-not-exist']);
+    await expect(main(['node', 'index.js', 'bot', 'deprecate', 'does-not-exist'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(processError).toHaveBeenCalledWith(expect.stringContaining(`error: unknown command 'deprecate'`));
   });
 
@@ -83,8 +96,10 @@ describe('CLI Bots', () => {
       })
     );
 
-    await main(['node', 'index.js', 'bot', 'deploy', 'hello-world']);
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Error: Not found'));
+    await expect(main(['node', 'index.js', 'bot', 'deploy', 'hello-world'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining('Error: Not found'));
   });
 
   test('Save bot success', async () => {
@@ -115,8 +130,10 @@ describe('CLI Bots', () => {
   });
 
   test('Deploy bot success', async () => {
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+
     // Create the bot
-    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+    const bot = await medplum.createResource<Bot>({ id: randomUUID(), resourceType: 'Bot' });
     expect(bot.code).toBeUndefined();
 
     // Setup bot config
@@ -142,6 +159,8 @@ describe('CLI Bots', () => {
   });
 
   test('Deploy bot without dist success', async () => {
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+
     // Create the bot
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
     expect(bot.code).toBeUndefined();
@@ -168,6 +187,8 @@ describe('CLI Bots', () => {
   });
 
   test('Deploy bot for multiple bot with wildcards ', async () => {
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+
     // Create the bot
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
     const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
@@ -238,6 +259,8 @@ describe('CLI Bots', () => {
   });
 
   test('Create bot command success with existing config file', async () => {
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+
     // Setup bot config
     (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
@@ -290,8 +313,10 @@ describe('CLI Bots', () => {
   });
 
   test('Create bot error with lack of commands', async () => {
-    await main(['node', 'index.js', 'bot', 'create', 'test-bot']);
-    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Error while creating new bot'));
+    await expect(main(['node', 'index.js', 'bot', 'create', 'test-bot'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining("error: missing required argument 'projectId'"));
   });
 
   test('Create bot do not write to config', async () => {
@@ -319,7 +344,7 @@ describe('CLI Bots', () => {
   // Deprecated bot commands
 
   test('Deprecate Deploy bot missing name', async () => {
-    await main(['node', 'index.js', 'deploy-bot']);
+    await expect(main(['node', 'index.js', 'deploy-bot'])).rejects.toThrow('Process exited with exit code 1');
     expect(processError).toHaveBeenCalledWith(expect.stringContaining(`error: missing required argument 'botName'`));
   });
 
@@ -362,8 +387,10 @@ describe('CLI Bots', () => {
         ],
       })
     );
-    await main(['node', 'index.js', 'deploy-bot', 'hello-world']);
-    expect(console.error).toHaveBeenCalledWith(expect.stringMatching('Error: Not found'));
+    await expect(main(['node', 'index.js', 'deploy-bot', 'hello-world'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(expect.stringMatching('Error: Not found'));
   });
 
   test('Deprecate Save bot success', async () => {
@@ -394,6 +421,8 @@ describe('CLI Bots', () => {
   });
 
   test('Deprecate Deploy bot success', async () => {
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+
     // Create the bot
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
     expect(bot.code).toBeUndefined();
@@ -421,6 +450,8 @@ describe('CLI Bots', () => {
   });
 
   test('Deprecate Deploy bot for multiple bot with wildcards ', async () => {
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+
     // Create the bot
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
     const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
@@ -497,8 +528,10 @@ describe('CLI Bots', () => {
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Success! Bot created:'));
   });
 
-  test('Depreate Create bot error with lack of commands', async () => {
-    await main(['node', 'index.js', 'create-bot', 'test-bot']);
-    expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Error while creating new bot'));
+  test('Deprecate Create bot error with lack of commands', async () => {
+    await expect(main(['node', 'index.js', 'create-bot', 'test-bot'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(expect.stringContaining("error: missing required argument 'projectId'"));
   });
 });
