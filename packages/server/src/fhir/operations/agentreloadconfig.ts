@@ -1,4 +1,4 @@
-import { AgentReloadConfigResponse, OperationOutcomeError, serverError } from '@medplum/core';
+import { AgentReloadConfigResponse, OperationOutcomeError, badRequest, serverError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
@@ -47,7 +47,7 @@ async function reloadConfig(agent: Agent): Promise<FhirResponse> {
   }
 
   if (result.type === 'agent:error') {
-    throw new OperationOutcomeError(serverError(new Error(result.body)));
+    throw new OperationOutcomeError(badRequest(result.body));
   }
 
   throw new OperationOutcomeError(serverError(new Error('Invalid response received from agent')));

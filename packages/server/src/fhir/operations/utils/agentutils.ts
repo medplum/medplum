@@ -108,6 +108,10 @@ export async function handleBulkAgentOperation(
     return [badRequest('No agent(s) for given query')];
   }
 
+  if (req.params.id) {
+    return handler(agents[0]);
+  }
+
   const promises = agents.map((agent: Agent) => handler(agent));
   const results = await Promise.allSettled(promises);
   const entries = [] as BundleEntry<Parameters>[];
