@@ -28,6 +28,12 @@ const bloodPressureCoding: Coding = {
   display: 'blood-pressure',
 };
 
+const bmiCoding: Coding = {
+  system: 'http://loinc.org',
+  code: '39156-5',
+  display: 'bmi',
+};
+
 export function PatientObservations(props: PatientObservationsProps): JSX.Element {
   const navigate = useNavigate();
 
@@ -82,6 +88,9 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
         </Tabs.Panel>
         <Tabs.Panel value="blood-pressure">
           <ObservationGraph code={bloodPressureCoding} patient={props.patient} />
+        </Tabs.Panel>
+        <Tabs.Panel value="bmi">
+          <ObservationGraph code={bmiCoding} patient={props.patient} />
         </Tabs.Panel>
       </Tabs>
     </div>

@@ -69,4 +69,18 @@ export const measurementsMeta: Record<string, ObservationType> = {
       },
     ],
   },
+  bmi: {
+    id: 'bmi',
+    code: '39156-5',
+    title: 'BMI',
+    description: 'An indicator of body density as determined by the relationship of weight to height',
+    chartDatasets: [
+      {
+        label: 'BMI',
+        unit: 'kg/m^2',
+        backgroundColor,
+        borderColor,
+      },
+    ],
+  },
 };
