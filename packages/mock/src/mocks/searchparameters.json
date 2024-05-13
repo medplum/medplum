@@ -205,5 +205,14 @@
     "base": ["Task"],
     "type": "token",
     "expression": "Task.identifier"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Agent-identifier",
+    "name": "identifier",
+    "code": "identifier",
+    "base": ["Agent"],
+    "type": "token",
+    "expression": "Agent.identifier"
   }
 ]

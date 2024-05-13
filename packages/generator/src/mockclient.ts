@@ -1,9 +1,10 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import { readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const resourceTypes = [
+  'Agent',
   'Address',
   'Patient',
   'Organization',
@@ -34,6 +35,7 @@ const properties = [
   'snapshot',
   'element',
   'id',
+  'identifier',
   'path',
   'min',
   'max',
@@ -73,6 +75,7 @@ const searchParams = [
   'ActivityDefinition-name',
   'Schedule-identifier',
   'Task-identifier',
+  'Agent-identifier',
   'Slot-schedule',
   'Slot-start',
   'Measure-url',

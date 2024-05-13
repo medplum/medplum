@@ -12583,5 +12583,290 @@
         }
       ]
     }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Agent",
+    "name": "Agent",
+    "type": "Agent",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Agent",
+          "path": "Agent",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Agent.id",
+          "path": "Agent.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Agent.meta",
+          "path": "Agent.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Agent.implicitRules",
+          "path": "Agent.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Agent.language",
+          "path": "Agent.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Agent.text",
+          "path": "Agent.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Agent.contained",
+          "path": "Agent.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Agent.extension",
+          "path": "Agent.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Agent.modifierExtension",
+          "path": "Agent.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Agent.identifier",
+          "path": "Agent.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Agent.name",
+          "path": "Agent.name",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Agent.status",
+          "path": "Agent.status",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Agent.device",
+          "path": "Agent.device",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Device"]
+            }
+          ]
+        },
+        {
+          "id": "Agent.setting",
+          "path": "Agent.setting",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Agent.setting.name",
+          "path": "Agent.setting.name",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Agent.setting.value[x]",
+          "path": "Agent.setting.value[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        {
+          "id": "Agent.channel",
+          "path": "Agent.channel",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Agent.channel",
+            "min": 1,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Agent.channel.name",
+          "path": "Agent.channel.name",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Agent.channel.endpoint",
+          "path": "Agent.channel.endpoint",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Endpoint"]
+            }
+          ]
+        },
+        {
+          "id": "Agent.channel.target[x]",
+          "path": "Agent.channel.target[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/Bot"]
+            },
+            {
+              "code": "url"
+            }
+          ]
+        }
+      ]
+    }
   }
 ]
