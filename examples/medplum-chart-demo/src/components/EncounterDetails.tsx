@@ -10,11 +10,13 @@ import {
   Observation,
   Patient,
   Practitioner,
+  Questionnaire,
   QuestionnaireResponse,
   Reference,
 } from '@medplum/fhirtypes';
 import {
   Document,
+  Loading,
   QuestionnaireForm,
   ResourceHistoryTable,
   ResourceTable,
@@ -23,9 +25,12 @@ import {
 } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import encounterNoteQuestionnaire from '../../data/core/encounter-note-q';
-import { EncounterNoteDisplay } from './EncounterNoteDisplay';
-import { obstetricQuestionnaire, gynecologyQuestionnaire } from '../../data/example/encounter-note-questionnaires';
+import { EncounterNoteDisplay } from './note-display/EncounterNoteDisplay';
+import {
+  obstetricQuestionnaire,
+  gynecologyQuestionnaire,
+  defaultQuestionnaire,
+} from '../../data/example/encounter-note-questionnaires';
 
 interface EncounterDetailsProps {
   encounter: Encounter;
@@ -36,6 +41,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   const navigate = useNavigate();
   const currentUser = useMedplumProfile() as Practitioner;
   const [response, setResponse] = useState<QuestionnaireResponse>();
+  const [questionnaire, setQuestionnaire] = useState<Questionnaire>();
 
   const id = props.encounter.id;
 
@@ -43,23 +49,31 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
-  let questionnaire = encounterNoteQuestionnaire;
+  // Get the encounter type so the correct questionnaire can be retrieved
+  const code = props.encounter.type?.[0].coding?.[0].code;
 
-  if (props.encounter.type?.[0].coding?.[0].code === '408470005') {
-    questionnaire = obstetricQuestionnaire;
-  }
-  if (props.encounter.type?.[0].coding?.[0].code === '394586005') {
-    questionnaire = gynecologyQuestionnaire;
+  if (!code) {
+    return <Loading />;
   }
 
   useEffect(() => {
+    // Search for a response if there is one
     medplum
       .searchOne('QuestionnaireResponse', {
         encounter: getReferenceString(props.encounter),
       })
       .then(setResponse)
       .catch(console.error);
-  }, [response, medplum, props.encounter]);
+
+    // Get the questionnaire
+    medplum
+      .searchOne('Questionnaire', {
+        // If the code is for gynecology or obstetrics, use it, otherwise search for the default
+        context: code === '163497009' || code === '83607001' ? code : '1287706006',
+      })
+      .then(setQuestionnaire)
+      .catch(console.error);
+  }, [response, questionnaire, code, medplum, props.encounter]);
 
   function handleTabChange(newTab: string | null): void {
     navigate(`/Encounter/${id}/${newTab ?? ''}`);
@@ -102,6 +116,10 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
     } catch (err) {
       console.error(err);
     }
+  }
+
+  if (!questionnaire) {
+    return <Loading />;
   }
 
   return (
