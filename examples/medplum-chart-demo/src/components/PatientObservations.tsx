@@ -1,7 +1,8 @@
-import { Tabs } from '@mantine/core';
+import { Burger, Button, Menu, Tabs } from '@mantine/core';
 import { formatSearchQuery, Operator, SearchRequest } from '@medplum/core';
 import { Coding, Patient } from '@medplum/fhirtypes';
-import { SearchControl, useMedplum } from '@medplum/react';
+import { SearchControl } from '@medplum/react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ObservationGraph } from './graphs/ObservationGraph';
 
@@ -28,19 +29,16 @@ const bloodPressureCoding: Coding = {
 };
 
 export function PatientObservations(props: PatientObservationsProps): JSX.Element {
-  const medplum = useMedplum();
   const navigate = useNavigate();
-  // const [tab, setTab] = useState;
 
   const tabs = [
     ['all', 'All Observations'],
     ['height', 'Height'],
     ['weight', 'Weight'],
     ['blood-pressure', 'Blood Pressure'],
-    // ['systolic', 'Systolic BP'],
-    // ['diastolic', 'Diastolic BP'],
     ['bmi', 'BMI'],
   ];
+  const [currentTab, setCurrentTab] = useState<string[]>(tabs[0]);
 
   const search: SearchRequest = {
     resourceType: 'Observation',
@@ -50,14 +48,21 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
 
   return (
     <div>
-      <Tabs defaultValue={tabs[0][0]}>
-        <Tabs.List>
+      <Menu>
+        <Menu.Target>
+          <Button leftSection={<Burger size="sm" />} variant="default">
+            {currentTab[1]}
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
           {tabs.map((tab) => (
-            <Tabs.Tab value={tab[0]} key={tab[0]}>
+            <Menu.Item key={tab[0]} onClick={() => setCurrentTab(tab)}>
               {tab[1]}
-            </Tabs.Tab>
+            </Menu.Item>
           ))}
-        </Tabs.List>
+        </Menu.Dropdown>
+      </Menu>
+      <Tabs value={currentTab[0]} mt="md">
         <Tabs.Panel value="all">
           <SearchControl
             search={search}
@@ -78,12 +83,6 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
         <Tabs.Panel value="blood-pressure">
           <ObservationGraph code={bloodPressureCoding} patient={props.patient} />
         </Tabs.Panel>
-        {/* <Tabs.Panel value="systolic">
-          <ObservationGraph code={systolicCoding} patient={props.patient} />
-        </Tabs.Panel>
-        <Tabs.Panel value="diastolic">
-          <ObservationGraph code={diastolicCoding} patient={props.patient} />
-        </Tabs.Panel> */}
       </Tabs>
     </div>
   );
