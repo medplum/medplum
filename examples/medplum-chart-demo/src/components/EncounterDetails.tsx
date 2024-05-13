@@ -26,11 +26,6 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EncounterNoteDisplay } from './note-display/EncounterNoteDisplay';
-import {
-  obstetricQuestionnaire,
-  gynecologyQuestionnaire,
-  defaultQuestionnaire,
-} from '../../data/example/encounter-note-questionnaires';
 
 interface EncounterDetailsProps {
   encounter: Encounter;
