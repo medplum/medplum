@@ -3,10 +3,9 @@ import { Document, useMedplum } from '@medplum/react';
 import { ResourceFormWithRequiredProfile } from '../components/ResourceFormWithRequiredProfile';
 import { RESOURCE_PROFILE_URLS } from './resource/utils';
 import { showNotification } from '@mantine/notifications';
-import { normalizeOperationOutcome, normalizeErrorString } from '@medplum/core';
+import { normalizeOperationOutcome, normalizeErrorString, addProfileToResource } from '@medplum/core';
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addProfileToResource } from '../utils';
 
 /**
  * This is an example of a generic "Resource Display" page.

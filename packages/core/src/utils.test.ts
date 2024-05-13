@@ -13,6 +13,7 @@ import { OperationOutcomeError } from './outcomes';
 import { PropertyType } from './types';
 import {
   ResourceWithCode,
+  addProfileToResource,
   arrayBufferToBase64,
   arrayBufferToHex,
   calculateAge,
@@ -1360,5 +1361,43 @@ describe('Core Utils', () => {
     expect(isValidHostname('https://foo.com')).toEqual(false);
     expect(isValidHostname('foo_-bar_-')).toEqual(false);
     expect(isValidHostname('foo | rm -rf /')).toEqual(false);
+  });
+});
+
+describe('addProfileToResource', () => {
+  test('add profile URL to resource w/o any profiles', async () => {
+    const profileUrl = 'http://example.com/patient-profile';
+    const patient: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['Given'], family: 'Family' }],
+    };
+    addProfileToResource(patient, profileUrl);
+    expect(patient.meta?.profile?.length ?? -1).toEqual(1);
+    expect(patient.meta?.profile).toEqual(expect.arrayContaining([profileUrl]));
+  });
+
+  test('add profile URL to resource with empty profile array', async () => {
+    const profileUrl = 'http://example.com/patient-profile';
+    const patient: Patient = {
+      resourceType: 'Patient',
+      meta: { profile: [] },
+      name: [{ given: ['Given'], family: 'Family' }],
+    };
+    addProfileToResource(patient, profileUrl);
+    expect(patient.meta?.profile?.length ?? -1).toEqual(1);
+    expect(patient.meta?.profile).toEqual(expect.arrayContaining([profileUrl]));
+  });
+
+  test('add profile URL to resource with populated profile array', async () => {
+    const existingProfileUrl = 'http://example.com/existing-patient-profile';
+    const profileUrl = 'http://example.com/patient-profile';
+    const patient: Patient = {
+      resourceType: 'Patient',
+      meta: { profile: [existingProfileUrl] },
+      name: [{ given: ['Given'], family: 'Family' }],
+    };
+    addProfileToResource(patient, profileUrl);
+    expect(patient.meta?.profile?.length ?? -1).toEqual(2);
+    expect(patient.meta?.profile).toEqual(expect.arrayContaining([profileUrl, existingProfileUrl]));
   });
 });
