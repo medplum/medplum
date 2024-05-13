@@ -7,7 +7,7 @@ set -e
 set -x
 
 # Set node options
-export NODE_OPTIONS='--max-old-space-size=5120'
+export NODE_OPTIONS='--max-old-space-size=8192'
 
 # Clear old code coverage data
 rm -rf coverage
@@ -22,20 +22,7 @@ SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/se
 cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
 
 # Test
-# Run them separately because code coverage is resource intensive
-
-for dir in `ls packages`; do
-  if test -f "packages/$dir/package.json" && grep -q "\"test\":" "packages/$dir/package.json"; then
-    npx turbo run test --filter=./packages/$dir -- --coverage
-  fi
-done
-
-for dir in `ls examples`; do
-  if test -f "examples/$dir/package.json" && grep -q "\"test\":" "examples/$dir/package.json"; then
-    npx turbo run test --filter=./packages/$dir
-  fi
-done
-
+npx turbo run test -- --coverage
 
 # Combine test coverage
 PACKAGES=(
