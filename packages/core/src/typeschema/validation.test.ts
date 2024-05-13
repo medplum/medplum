@@ -31,7 +31,7 @@ import {
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
+import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
@@ -406,6 +406,33 @@ describe('FHIR resource validation', () => {
       ],
     };
     expect(() => validateResource(patient, { profile: patientProfile })).not.toThrow();
+  });
+
+  // This test is failing because we do not recursively validate extensions. In this case,
+  // US Core Race requires the `text` extension, so not having it should fail validation.
+  test.failing('Nested extensions are not yet validated', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['New'], family: 'User' }],
+      identifier: [{ system: 'http://names.io', value: 'new-user' }],
+      gender: 'male',
+      extension: [
+        {
+          url: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
+          extension: [
+            {
+              url: 'ombCategory',
+              valueCoding: { system: 'urn:oid:2.16.840.1.113883.6.238', code: '2106-3', display: 'White' },
+            },
+            //{
+            // url: 'text',
+            // valueString: 'This should be required',
+            //},
+          ],
+        },
+      ],
+    };
+    expect(() => validateResource(patient, { profile: patientProfile })).toThrow();
   });
 
   test('Valid resource with nulls in primitive extension', () => {
