@@ -35,7 +35,6 @@ const properties = [
   'snapshot',
   'element',
   'id',
-  'identifier',
   'path',
   'min',
   'max',
