@@ -804,14 +804,20 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.forAllResources(resourceType, async (resource) => {
-      try {
-        (resource.meta as Meta).compartment = this.getCompartments(resource);
-        await this.updateResourceImpl(resource, false);
-      } catch (err) {
-        getLogger().error('Failed to rebuild compartments for resource', {
-          error: normalizeErrorString(err),
-        });
+    await this.forAllResources(resourceType, async (resources) => {
+      let resource: Resource;
+      // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
+      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      for (let i = 0; i < resources.length; i++) {
+        resource = resources[i];
+        try {
+          (resource.meta as Meta).compartment = this.getCompartments(resource);
+          await this.updateResourceImpl(resource, false);
+        } catch (err) {
+          getLogger().error('Failed to rebuild compartments for resource', {
+            error: normalizeErrorString(err),
+          });
+        }
       }
     });
   }
@@ -827,12 +833,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.forAllResources(resourceType, async (resource) => {
-      try {
-        await this.reindexResourceImpl(resource);
-      } catch (err) {
-        getLogger().error('Failed to reindex resource', { error: normalizeErrorString(err) });
-      }
+    await this.forAllResources(resourceType, async (resources) => {
+      await this.reindexResourceImpl(...resources);
     });
   }
 
@@ -853,7 +855,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    */
   async forAllResources<T extends Resource>(
     resourceType: T['resourceType'],
-    callback: (resource: T) => Promise<void>
+    callback: (resources: T[]) => Promise<void>
   ): Promise<void> {
     const batchSize = 1000;
     let hasMore = true;
@@ -873,14 +875,16 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       }
 
       const bundle = await this.search(searchRequest);
+      const resources: T[] = [];
       if (bundle.entry) {
         for (const entry of bundle.entry) {
           const resource = entry.resource as T;
-          await callback(resource);
+          resources.push(resource);
 
           const lastUpdated = resource.meta?.lastUpdated as string;
           currentTimestamp = lastUpdated;
         }
+        await callback(resources);
       }
 
       hasMore = !!bundle.link?.find((link) => link.relation === 'next');
@@ -910,16 +914,22 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * Internal implementation of reindexing a resource.
    * This accepts a resource as a parameter, rather than a resource type and ID.
    * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
-   * @param resource - The resource.
+   * @param resources - The resource(s) to reindex.
    * @returns The reindexed resource.
    */
-  private async reindexResourceImpl<T extends Resource>(resource: T): Promise<void> {
-    (resource.meta as Meta).compartment = this.getCompartments(resource);
+  private async reindexResourceImpl<T extends Resource>(...resources: T[]): Promise<void> {
+    let resource: Resource;
+    // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i = 0; i < resources.length; i++) {
+      resource = resources[i];
+      (resource.meta as Meta).compartment = this.getCompartments(resource);
 
-    await this.withTransaction(async (conn) => {
-      await this.writeResource(conn, resource);
-      await this.writeLookupTables(conn, resource, false);
-    });
+      await this.withTransaction(async (conn) => {
+        await this.writeResource(conn, resource);
+        await this.writeLookupTables(conn, resource, false);
+      });
+    }
   }
 
   /**
