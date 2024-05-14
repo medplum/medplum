@@ -1,0 +1,193 @@
+{
+  "resourceType": "QuestionnaireResponse",
+  "status": "completed",
+  "item": [
+    {
+      "id": "id-1",
+      "linkId": "g5",
+      "text": "Organization",
+      "item": [
+        {
+          "id": "id-2",
+          "linkId": "organization-name",
+          "text": "Name",
+          "answer": [
+            {
+              "valueString": "Foo Medical"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-3",
+      "linkId": "endpoint-details",
+      "text": "Endpoint",
+      "item": [
+        {
+          "id": "id-4",
+          "linkId": "q1",
+          "text": "The agent endpoints describe the addresses the Agent will expose to the remote site's network"
+        },
+        {
+          "id": "id-5",
+          "linkId": "endpoint-name",
+          "text": "Name",
+          "answer": [
+            {
+              "valueString": "Test Channel"
+            }
+          ]
+        },
+        {
+          "id": "id-6",
+          "linkId": "endpoint-ip",
+          "text": "IP Address",
+          "answer": [
+            {
+              "valueString": "129.1.21.1"
+            }
+          ]
+        },
+        {
+          "id": "id-7",
+          "linkId": "endpoint-port",
+          "text": "Port",
+          "answer": [
+            {
+              "valueInteger": 1234
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-14",
+      "linkId": "endpoint-details",
+      "text": "Endpoint",
+      "item": [
+        {
+          "id": "id-15",
+          "linkId": "q1",
+          "text": "The agent endpoints describe the addresses the Agent will expose to the remote site's network"
+        },
+        {
+          "id": "id-16",
+          "linkId": "endpoint-name",
+          "text": "Name",
+          "answer": [
+            {
+              "valueString": "Production Channel"
+            }
+          ]
+        },
+        {
+          "id": "id-17",
+          "linkId": "endpoint-ip",
+          "text": "IP Address",
+          "answer": [
+            {
+              "valueString": "129.1.21.2"
+            }
+          ]
+        },
+        {
+          "id": "id-18",
+          "linkId": "endpoint-port",
+          "text": "Port",
+          "answer": [
+            {
+              "valueInteger": 8889
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-8",
+      "linkId": "device-group",
+      "text": "Devices",
+      "item": [
+        {
+          "id": "id-9",
+          "linkId": "q3",
+          "text": "The Device resource describes the local address of the target device the Agent will connect to on the remote site's network"
+        },
+        {
+          "id": "id-10",
+          "linkId": "device-details",
+          "text": "Details",
+          "item": [
+            {
+              "id": "id-11",
+              "linkId": "device-name",
+              "text": "Name",
+              "answer": [
+                {
+                  "valueString": "Foo LIS"
+                }
+              ]
+            },
+            {
+              "id": "id-12",
+              "linkId": "device-address",
+              "text": "IP Address",
+              "answer": [
+                {
+                  "valueString": "10.1.1.2"
+                }
+              ]
+            },
+            {
+              "id": "id-13",
+              "linkId": "device-port",
+              "text": "Port",
+              "answer": [
+                {
+                  "valueInteger": 1234
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "id-19",
+          "linkId": "device-details",
+          "text": "Details",
+          "item": [
+            {
+              "id": "id-20",
+              "linkId": "device-name",
+              "text": "Name",
+              "answer": [
+                {
+                  "valueString": "Foo RIS"
+                }
+              ]
+            },
+            {
+              "id": "id-21",
+              "linkId": "device-address",
+              "text": "IP Address",
+              "answer": [
+                {
+                  "valueString": "10.1.1.2"
+                }
+              ]
+            },
+            {
+              "id": "id-22",
+              "linkId": "device-port",
+              "text": "Port",
+              "answer": [
+                {
+                  "valueInteger": 5642
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
