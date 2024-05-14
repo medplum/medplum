@@ -64,3 +64,29 @@ export function needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endp
   }
   return true;
 }
+
+export enum ChannelType {
+  HL7_V2 = 'HL7_V2',
+  DICOM = 'DICOM',
+}
+
+export function getChannelType(endpoint: Endpoint): ChannelType {
+  if (endpoint.address.startsWith('dicom')) {
+    return ChannelType.DICOM;
+  }
+  if (endpoint.address.startsWith('mllp')) {
+    return ChannelType.HL7_V2;
+  }
+  throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+}
+
+export function getChannelTypeShortName(endpoint: Endpoint): string {
+  switch (getChannelType(endpoint)) {
+    case ChannelType.HL7_V2:
+      return 'HL7';
+    case ChannelType.DICOM:
+      return 'DICOM';
+    default:
+      throw new Error(`Invalid endpoint type with address '${endpoint.address}'`);
+  }
+}

@@ -1,5 +1,5 @@
 import { Hl7Message } from '@medplum/core';
-import { connect } from 'net';
+import { connect } from 'node:net';
 import { Hl7Base } from './base';
 import { Hl7Connection } from './connection';
 
@@ -26,11 +26,14 @@ export class Hl7Client extends Hl7Base {
       return Promise.resolve(this.connection);
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const socket = connect({ host: this.host, port: this.port }, () => {
         this.connection = new Hl7Connection(socket);
+        socket.off('error', reject);
         resolve(this.connection);
       });
+
+      socket.on('error', reject);
     });
   }
 

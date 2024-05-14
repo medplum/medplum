@@ -1,4 +1,5 @@
 import {
+  AgentError,
   AgentMessage,
   AgentReloadConfigResponse,
   AgentTransmitRequest,
@@ -12,13 +13,13 @@ import {
   isValidHostname,
   normalizeErrorString,
 } from '@medplum/core';
-import { AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
+import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ExecException, ExecOptions, exec } from 'node:child_process';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
 import WebSocket from 'ws';
-import { Channel } from './channel';
+import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 
@@ -50,6 +51,7 @@ export class App {
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
+  private config: Agent | undefined;
 
   constructor(
     readonly medplum: MedplumClient,
@@ -156,12 +158,18 @@ export class App {
           // @ts-expect-error - Deprecated message type
           case 'transmit':
           case 'agent:transmit:response':
-            this.addToHl7Queue(command);
+            if (this.config?.status !== 'active') {
+              this.sendAgentDisabledError(command);
+            } else {
+              this.addToHl7Queue(command);
+            }
             break;
           // @ts-expect-error - Deprecated message type
           case 'push':
           case 'agent:transmit:request':
-            if (command.contentType === ContentType.PING) {
+            if (this.config?.status !== 'active') {
+              this.sendAgentDisabledError(command);
+            } else if (command.contentType === ContentType.PING) {
               await this.tryPingHost(command);
             } else {
               this.pushMessage(command);
@@ -198,8 +206,16 @@ export class App {
 
   private async hydrateListeners(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
+    this.config = agent;
     const pendingRemoval = new Set(this.channels.keys());
-    const channels = agent.channel ?? [];
+    let channels = agent.channel ?? [];
+
+    if (agent.status === 'off') {
+      channels = [];
+      this.log.warn(
+        "Agent status is currently 'off'. All channels are disconnected until status is set back to 'active'"
+      );
+    }
 
     const endpointPromises = [] as Promise<Endpoint>[];
     for (const definition of channels) {
@@ -209,10 +225,27 @@ export class App {
     const endpoints = await Promise.all(endpointPromises);
     this.validateAgentEndpoints(channels, endpoints);
 
-    // Remove all channels from list that are present in the new definition
-    // We will remove the channels that are left over -- channels that are not part of the new config
-    for (const definition of channels) {
-      pendingRemoval.delete(definition.name);
+    const filteredChannels = [] as AgentChannel[];
+    const filteredEndpoints = [] as Endpoint[];
+
+    for (let i = 0; i < channels.length; i++) {
+      const definition = channels[i];
+      const endpoint = endpoints[i];
+
+      // If the endpoint for this channel is turned off, we're going to skip over this channel
+      // Which means it will be marked for removal in this step
+      if (endpoint.status === 'off') {
+        this.log.warn(
+          `[${getChannelTypeShortName(endpoint)}:${definition.name}] Channel currently has status of 'off'. Channel will not reconnect until status is set to 'active'`
+        );
+      } else {
+        // Push the definition and endpoint into our filtered arrays
+        filteredChannels.push(definition);
+        filteredEndpoints.push(endpoint);
+        // Remove all channels from pendingRemoval list that are present in the new definition (unless the endpoint is 'off')
+        // We will remove the channels that are left over -- channels that are not part of the new config
+        pendingRemoval.delete(definition.name);
+      }
     }
 
     // Now iterate leftover channels and stop any that were not present in config when reloaded
@@ -226,9 +259,9 @@ export class App {
 
     // Iterate the channels specified in the config
     // Either start them or reload their config if already present
-    for (let i = 0; i < channels.length; i++) {
-      const definition = channels[i];
-      const endpoint = endpoints[i];
+    for (let i = 0; i < filteredChannels.length; i++) {
+      const definition = filteredChannels[i];
+      const endpoint = filteredEndpoints[i];
 
       if (!endpoint.address) {
         this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
@@ -251,11 +284,8 @@ export class App {
    * @param endpoints - All the endpoints corresponding to the agent channels that should be validated.
    */
   private validateAgentEndpoints(channels: AgentChannel[], endpoints: Endpoint[]): void {
-    if (!endpoints.length) {
-      return;
-    }
     const seenPorts = new Set<string>();
-    const portToChannelMap = new Map<string, string>();
+    const portToChannelMap = new Map<string, [string, string]>();
     for (let i = 0; i < channels.length; i++) {
       const channel = channels[i];
       const endpoint = endpoints[i];
@@ -273,12 +303,13 @@ export class App {
         );
       }
       if (seenPorts.has(parsedEndpoint.port)) {
+        const [conflictingChannel, conflictingAddress] = portToChannelMap.get(parsedEndpoint.port) as [string, string];
         throw new Error(
-          `Invalid agent config. Both '${portToChannelMap.get(parsedEndpoint.port) as string}' and '${channel.name}' declare use of port ${parsedEndpoint.port}`
+          `Invalid agent config. Both '${conflictingChannel}' (${conflictingAddress}) and '${channel.name}' (${endpoint.address}) declare use of port ${parsedEndpoint.port}`
         );
       }
       seenPorts.add(parsedEndpoint.port);
-      portToChannelMap.set(parsedEndpoint.port, endpoint.address);
+      portToChannelMap.set(parsedEndpoint.port, [channel.name, endpoint.address]);
     }
   }
 
@@ -290,12 +321,15 @@ export class App {
       return;
     }
 
-    if (endpoint.address.startsWith('dicom')) {
-      channel = new AgentDicomChannel(this, definition, endpoint);
-    } else if (endpoint.address.startsWith('mllp')) {
-      channel = new AgentHl7Channel(this, definition, endpoint);
-    } else {
-      throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    switch (getChannelType(endpoint)) {
+      case ChannelType.DICOM:
+        channel = new AgentDicomChannel(this, definition, endpoint);
+        break;
+      case ChannelType.HL7_V2:
+        channel = new AgentHl7Channel(this, definition, endpoint);
+        break;
+      default:
+        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
     }
 
     channel.start();
@@ -448,7 +482,7 @@ export class App {
         contentType: ContentType.TEXT,
         remote: message.remote,
         callback: message.callback,
-        statusCode: 500,
+        statusCode: 400,
         body: normalizeErrorString(err),
       } satisfies AgentTransmitResponse);
     }
@@ -465,6 +499,16 @@ export class App {
       message.accessToken = this.medplum.getAccessToken() as string;
     }
     this.webSocket.send(JSON.stringify(message));
+  }
+
+  private sendAgentDisabledError(command: AgentTransmitRequest | AgentTransmitResponse): void {
+    const errMsg = 'Agent.status is currently set to off';
+    this.log.error(errMsg);
+    this.addToWebSocketQueue({
+      type: 'agent:error',
+      callback: command.callback,
+      body: errMsg,
+    } satisfies AgentError);
   }
 
   private pushMessage(message: AgentTransmitRequest): void {
@@ -501,7 +545,7 @@ export class App {
           remote: message.remote,
           callback: message.callback,
           contentType: ContentType.TEXT,
-          statusCode: 500,
+          statusCode: 400,
           body: normalizeErrorString(err),
         } satisfies AgentTransmitResponse);
       })
