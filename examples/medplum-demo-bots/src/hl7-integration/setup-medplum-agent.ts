@@ -5,7 +5,7 @@ import {
   getAllQuestionnaireAnswers,
   getReferenceString,
 } from '@medplum/core';
-import { AgentChannel, Bot, Endpoint, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { AgentChannel, Bot, Device, Endpoint, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   const response = event.input;
@@ -114,11 +114,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
       const ip = answers['device-address']?.at(index)?.valueString;
       const port = answers['device-port']?.at(index)?.valueInteger;
       const deviceId = `${toIdentifier(organizationName)}-${toIdentifier(deviceName.valueString ?? '')}`;
-      return medplum.upsertResource(
+      return medplum.upsertResource<Device>(
         {
           resourceType: 'Device',
           identifier: [{ system: 'http://example.com/device-id', value: deviceId }],
-          name: deviceName.valueString,
+          deviceName: [{ name: deviceName.valueString ?? '', type: 'user-friendly-name' }],
           url: `mllp://${ip}:${port}`,
         },
         { identifier: deviceId }
