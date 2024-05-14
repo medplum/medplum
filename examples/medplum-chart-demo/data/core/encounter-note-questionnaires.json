@@ -48,8 +48,8 @@
         "meta": {},
         "item": [
           {
-            "linkId": "encounter-date",
-            "type": "date",
+            "linkId": "date",
+            "type": "dateTime",
             "text": "Date of Visit",
             "required": true
           },
@@ -201,8 +201,8 @@
         "meta": {},
         "item": [
           {
-            "linkId": "encounter-date",
-            "type": "date",
+            "linkId": "date",
+            "type": "dateTime",
             "text": "Date of Visit",
             "required": true
           },
@@ -495,8 +495,8 @@
         ],
         "item": [
           {
-            "linkId": "encounter-date",
-            "type": "date",
+            "linkId": "date",
+            "type": "dateTime",
             "text": "Date of Visit",
             "required": true
           },
