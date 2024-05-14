@@ -22,7 +22,6 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { Communication } from '@medplum/fhirtypes';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -216,41 +215,6 @@ superAdminRouter.post(
         ctx.logger.info('Data migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
         await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
-    });
-  })
-);
-
-// POST to /admin/super/dbstats
-// to query database statistics.
-superAdminRouter.post(
-  '/dbstats',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
-
-    await sendAsyncResponse(req, res, async () => {
-      const systemRepo = getSystemRepo();
-      const client = getDatabasePool();
-      const sql = `
-      SELECT * FROM (
-        SELECT table_schema, table_name, pg_relation_size('"'||table_schema||'"."'||table_name||'"') AS table_size
-        FROM information_schema.tables
-      ) tables
-      WHERE table_size > 0
-      ORDER BY table_size DESC;
-      `;
-
-      const result = await client.query(sql);
-
-      const contentString = result.rows
-        .map((row) => `${row.table_schema}.${row.table_name}: ${row.table_size}`)
-        .join('\n');
-
-      await systemRepo.createResource<Communication>({
-        resourceType: 'Communication',
-        status: 'completed',
-        payload: [{ contentString }],
-      });
     });
   })
 );
