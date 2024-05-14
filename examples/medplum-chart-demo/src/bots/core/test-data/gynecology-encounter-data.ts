@@ -10,6 +10,7 @@ export const fullResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   status: 'completed',
   item: [
+    { linkId: 'date', answer: [{ valueDateTime: '2024-02-14T11:18:05.446Z' }] },
     {
       linkId: 'reason-for-visit',
       answer: [{ valueCoding: { code: '112233', system: 'http://hl7.org/fhir/sid/icd-10', display: 'DIAG-4' } }],
@@ -66,6 +67,7 @@ export const fullResponseNoProblemList: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   status: 'completed',
   item: [
+    { linkId: 'date', answer: [{ valueDateTime: '2024-02-14T11:18:05.446Z' }] },
     {
       linkId: 'reason-for-visit',
       answer: [{ valueCoding: { code: '112233', system: 'http://hl7.org/fhir/sid/icd-10', display: 'DIAG-4' } }],
@@ -122,6 +124,7 @@ export const noAssessment: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   status: 'completed',
   item: [
+    { linkId: 'date', answer: [{ valueDateTime: '2024-02-14T11:18:05.446Z' }] },
     {
       linkId: 'reason-for-visit',
       answer: [{ valueCoding: { code: '112233', system: 'http://hl7.org/fhir/sid/icd-10', display: 'DIAG-4' } }],
@@ -168,6 +171,7 @@ export const noCondition: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   status: 'completed',
   item: [
+    { linkId: 'date', answer: [{ valueDateTime: '2024-02-14T11:18:05.446Z' }] },
     { linkId: 'systolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'height', answer: [{ valueQuantity: { value: 180, unit: 'cm' } }] },
@@ -209,6 +213,7 @@ export const onlyCondition: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   status: 'completed',
   item: [
+    { linkId: 'date', answer: [{ valueDateTime: '2024-02-14T11:18:05.446Z' }] },
     {
       linkId: 'reason-for-visit',
       answer: [{ valueCoding: { code: '112233', system: 'http://hl7.org/fhir/sid/icd-10', display: 'DIAG-4' } }],
@@ -220,6 +225,7 @@ export const oneBloodPressureMeasurement: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   status: 'completed',
   item: [
+    { linkId: 'date', answer: [{ valueDateTime: '2024-02-14T11:18:05.446Z' }] },
     {
       linkId: 'reason-for-visit',
       answer: [{ valueCoding: { code: '112233', system: 'http://hl7.org/fhir/sid/icd-10', display: 'DIAG-4' } }],

@@ -1,46 +1,25 @@
-import { BotEvent, generateId, getQuestionnaireAnswers, getReferenceString, MedplumClient } from '@medplum/core';
+import { BotEvent, generateId, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
-  ClinicalImpression,
-  CodeableConcept,
   Coding,
-  Condition,
   Encounter,
   Observation,
-  ObservationComponent,
-  Patient,
   Practitioner,
-  Quantity,
   QuestionnaireResponse,
   Reference,
 } from '@medplum/fhirtypes';
-
-interface ObservationData {
-  gravida?: number;
-  para?: number;
-  gestationalDays?: number;
-  gestationalWeeks?: number;
-  height?: Quantity;
-  weight?: Quantity;
-  totalWeightGain?: Quantity;
-  bloodPressure: {
-    systolic?: number;
-    diastolic?: number;
-  };
-  bmi?: Quantity;
-  date?: string;
-}
-
-interface ConditionData {
-  reasonForVisit: CodeableConcept;
-  problemList: boolean;
-}
-
-interface ClinicalImpressionData {
-  assessment?: string;
-}
+import {
+  calculateBMI,
+  ClinicalImpressionData,
+  ConditionData,
+  createClinicalImpressionEntry,
+  createConditionEntries,
+  createObservationEntries,
+  handleBloodPressure,
+  ObstetricObservationData,
+} from './bot-utils';
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
@@ -56,7 +35,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   }
 
   // Parse the answers into more easily usable objects
-  const observationData: ObservationData = {
+  const observationData: ObstetricObservationData = {
     gravida: answers['gravida']?.valueInteger,
     para: answers['para']?.valueInteger,
     gestationalDays: answers['gestational-age-days']?.valueInteger,
@@ -85,7 +64,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   };
 
   // Take the above objects and create bundle entries for each resource type.
-  const observationEntries = createObservationEntries(observationData, encounter, user);
+  const observationEntries = createObservationEntries(observationData, encounter, user, createObservationEntry);
   const conditionEntries = createConditionEntries(conditionData, encounter, user);
   const clinicalImpressionEntry = createClinicalImpressionEntry(clinicalImpressionData, encounter, user);
 
@@ -107,45 +86,11 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   return responseBundle;
 }
 
-function createObservationEntries(
-  observationData: ObservationData,
-  encounter: Encounter,
-  user: Practitioner
-): BundleEntry[] {
-  const entries: BundleEntry[] = [];
-  const request: BundleEntryRequest = { method: 'POST', url: 'Observation' };
-
-  // A generic observation resource that can be used for all of the Observations by adding a code and value
-  const genericObservation: Observation = {
-    resourceType: 'Observation',
-    status: 'preliminary',
-    subject: encounter.subject,
-    encounter: { reference: getReferenceString(encounter) },
-    performer: [{ reference: getReferenceString(user) }],
-    effectiveDateTime: observationData.date,
-    code: {},
-  };
-
-  // Loop over each answer from the data
-  for (const [key, value] of Object.entries(observationData)) {
-    // If there is no value, skip that key
-    // Additionally, if it is blood pressure check that at least one value is populated, otherwise skip it
-    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
-      continue;
-    }
-    // Create a Bundle entry with the obsevation and add it to the entry array
-    entries.push(createObservationEntry(key, request, genericObservation, observationData));
-  }
-
-  // Return all of the created entries
-  return entries;
-}
-
 function createObservationEntry(
   key: string,
   request: BundleEntryRequest,
   generic: Observation,
-  observationData: ObservationData
+  observationData: ObstetricObservationData
 ): BundleEntry {
   // Use the generic data from above
   const resource: Observation = {
@@ -218,167 +163,4 @@ function createObservationEntry(
     request,
     resource,
   };
-}
-
-function handleBloodPressure(observationData: ObservationData): ObservationComponent[] {
-  const components: ObservationComponent[] = [];
-  const bloodPressure = observationData.bloodPressure;
-
-  // Add the diastolic measurement if it exists
-  if (bloodPressure.diastolic) {
-    components.push({
-      code: { coding: [{ code: '8462-4', system: 'http://loinc.org', display: 'Diastolic blood pressure' }] },
-      valueQuantity: {
-        value: bloodPressure.diastolic,
-        unit: 'mm[Hg]',
-      },
-    });
-  }
-
-  // Add the sytolic measurement if it exists
-  if (bloodPressure.systolic) {
-    components.push({
-      code: { coding: [{ code: '8480-6', system: 'http://loinc.org', display: 'Systolic blood pressure' }] },
-      valueQuantity: {
-        value: bloodPressure.systolic,
-        unit: 'mm[Hg]',
-      },
-    });
-  }
-
-  return components;
-}
-
-function createConditionEntries(conditionData: ConditionData, encounter: Encounter, user: Practitioner): BundleEntry[] {
-  const entries: BundleEntry[] = [];
-  // Create an encounter diagnosis condition
-  const encounterDiagnosis: Condition = {
-    resourceType: 'Condition',
-    subject: encounter.subject as Reference<Patient>,
-    encounter: { reference: getReferenceString(encounter) },
-    asserter: { reference: getReferenceString(user) },
-    category: [
-      {
-        coding: [
-          {
-            system: 'http://hl7.org/fhir/ValueSet/condition-category',
-            code: 'encounter-diagnosis',
-            display: 'Encounter Diagnosis',
-          },
-        ],
-      },
-    ],
-    code: conditionData.reasonForVisit,
-  };
-
-  entries.push({ fullUrl: generateId(), request: { method: 'POST', url: 'Condition' }, resource: encounterDiagnosis });
-
-  // If the response specified that the condition should be added to the problem list, create an additional condition to add to the problem list
-  if (conditionData.problemList) {
-    entries.push({
-      fullUrl: generateId(),
-      request: { method: 'POST', url: 'Condition' },
-      resource: {
-        resourceType: 'Condition',
-        subject: encounter.subject as Reference<Patient>,
-        encounter: { reference: getReferenceString(encounter) },
-        asserter: { reference: getReferenceString(user) },
-        category: [
-          {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/ValueSet/condition-category',
-                code: 'problem-list-item',
-                display: 'Problem List Item',
-              },
-            ],
-          },
-        ],
-        code: conditionData.reasonForVisit,
-      },
-    });
-  }
-
-  return entries;
-}
-
-export function createClinicalImpressionEntry(
-  clinicalImpressionData: ClinicalImpressionData,
-  encounter: Encounter,
-  user: Practitioner
-): BundleEntry | undefined {
-  if (!clinicalImpressionData.assessment) {
-    return undefined;
-  }
-
-  // Create the clinical impression
-  const clinicalImpression: ClinicalImpression = {
-    resourceType: 'ClinicalImpression',
-    status: 'in-progress',
-    subject: encounter.subject as Reference<Patient>,
-    encounter: { reference: getReferenceString(encounter) },
-    assessor: { reference: getReferenceString(user) },
-    note: [{ text: clinicalImpressionData.assessment }],
-  };
-
-  // Return the clinical impression in a bundle entry
-  return {
-    fullUrl: generateId(),
-    request: { method: 'POST', url: 'ClinicalImpression' },
-    resource: clinicalImpression,
-  };
-}
-
-export function calculateBMI(height: Quantity, weight: Quantity): Quantity {
-  if (!height?.value || !weight?.value) {
-    throw new Error('All values must be provided');
-  }
-  const heightM = getHeightInMeters(height);
-  const weightKg = getWeightInKilograms(weight);
-
-  const bmi = Math.round((weightKg / heightM ** 2) * 10) / 10;
-  return {
-    value: bmi,
-    unit: 'kg/m^2',
-  };
-}
-
-function getWeightInKilograms(weight: Quantity): number {
-  if (!weight.unit) {
-    throw new Error('No unit defined');
-  }
-  const unit = weight.unit;
-  const weightVal = weight.value as number;
-
-  switch (unit) {
-    case 'lb':
-      return weightVal / 2.2;
-    case 'kg':
-      return weightVal;
-    default:
-      throw new Error('Unknown unit. Please provide weight in one of the following units: Pounds or kilograms.');
-  }
-}
-
-function getHeightInMeters(height: Quantity): number {
-  if (!height.unit) {
-    throw new Error('No unit defined');
-  }
-  const unit = height.unit;
-  const heightVal = height.value as number;
-
-  switch (unit) {
-    case 'in':
-      return (heightVal * 2.54) / 100;
-    case 'ft':
-      return (heightVal * 12 * 2.54) / 100;
-    case 'cm':
-      return heightVal / 100;
-    case 'm':
-      return heightVal;
-    default:
-      throw new Error(
-        'Unknown unit. Please provide height in one of the following units: Inches, feet, centimeters, or meters.'
-      );
-  }
 }

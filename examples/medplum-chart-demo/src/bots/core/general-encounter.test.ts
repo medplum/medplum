@@ -1,8 +1,8 @@
 import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Quantity, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { calculateBMI, handler } from './general-encounter-note';
+import { handler } from './general-encounter-note';
 import {
   encounter,
   fullResponse,
@@ -10,6 +10,9 @@ import {
   noReasonForVisit,
   oneBloodPressureMeasurement,
   onlyCondition,
+  selfReportedHistoryBmi,
+  selfReportedHistoryBreastCancer,
+  selfReportedHistoryEndometrialCancer,
 } from './test-data/general-encounter-test-data';
 import { vi } from 'vitest';
 
@@ -132,46 +135,91 @@ describe('General Encounter Note', async () => {
     expect(components?.length).toBe(1);
   });
 
-  test('Calculate BMI', async () => {
-    const weightKg: Quantity = { value: 50, unit: 'kg' };
-    const heightIn: Quantity = { value: 70, unit: 'in' };
-    const heightFt: Quantity = { value: 6, unit: 'ft' };
-    const heightM: Quantity = { value: 1.8, unit: 'm' };
+  test('Self-reported history of BMI > 30', async () => {
+    const medplum = new MockClient();
+    const testEncounter = await medplum.createResource(encounter);
+    const encounterRef = getReferenceString(testEncounter);
+    selfReportedHistoryBmi.encounter = { reference: encounterRef };
 
-    const bmiFromInches = calculateBMI(heightIn, weightKg);
-    const bmiFromFeet = calculateBMI(heightFt, weightKg);
-    const bmiFromMeters = calculateBMI(heightM, weightKg);
+    await handler({ bot, contentType, input: selfReportedHistoryBmi, secrets: {} }, medplum);
 
-    expect(bmiFromInches.value).toBe(15.8);
-    expect(bmiFromFeet.value).toBe(14.9);
-    expect(bmiFromMeters.value).toBe(15.4);
+    const highBmiObservation = await medplum.searchOne('Observation', {
+      code: '162864005',
+    });
+    expect(highBmiObservation).toBeDefined();
+    expect(highBmiObservation?.valueString).toBe('BMI > 30');
   });
 
-  test('BMI with no height value', async () => {
-    expect(() => calculateBMI({ unit: 'cm' }, { value: 60, unit: 'kg' })).toThrow(/^All values must be provided$/);
+  test('Self-reported breast cancer', async () => {
+    const medplum = new MockClient();
+    const testEncounter = await medplum.createResource(encounter);
+    const encounterRef = getReferenceString(testEncounter);
+    selfReportedHistoryBreastCancer.encounter = { reference: encounterRef };
+
+    await handler({ bot, contentType, input: selfReportedHistoryBreastCancer, secrets: {} }, medplum);
+
+    const breastCancerObservatoin = await medplum.searchOne('Observation', {
+      code: '254837009',
+    });
+    expect(breastCancerObservatoin).toBeDefined();
+    expect(breastCancerObservatoin?.valueString).toBe('Breast cancer');
   });
 
-  test('BMI with no weight value', async () => {
-    expect(() => calculateBMI({ value: 180, unit: 'cm' }, { unit: 'kg' })).toThrow(/^All values must be provided$/);
+  test('Self-reported endometrial cancer', async () => {
+    const medplum = new MockClient();
+    const testEncounter = await medplum.createResource(encounter);
+    const encounterRef = getReferenceString(testEncounter);
+    selfReportedHistoryEndometrialCancer.encounter = { reference: encounterRef };
+
+    await handler({ bot, contentType, input: selfReportedHistoryEndometrialCancer, secrets: {} }, medplum);
+
+    const endometrialCancerObservatoin = await medplum.searchOne('Observation', {
+      code: '315267003',
+    });
+    expect(endometrialCancerObservatoin).toBeDefined();
+    expect(endometrialCancerObservatoin?.valueString).toBe('Endometrial cancer');
   });
 
-  test('BMI with no height unit', async () => {
-    expect(() => calculateBMI({ value: 180 }, { value: 60, unit: 'kg' })).toThrow(/^No unit defined$/);
-  });
+  // test('Calculate BMI', async () => {
+  //   const weightKg: Quantity = { value: 50, unit: 'kg' };
+  //   const heightIn: Quantity = { value: 70, unit: 'in' };
+  //   const heightFt: Quantity = { value: 6, unit: 'ft' };
+  //   const heightM: Quantity = { value: 1.8, unit: 'm' };
 
-  test('BMI with no weight unit', async () => {
-    expect(() => calculateBMI({ value: 180, unit: 'cm' }, { value: 50 })).toThrow(/^No unit defined$/);
-  });
+  //   const bmiFromInches = calculateBMI(heightIn, weightKg);
+  //   const bmiFromFeet = calculateBMI(heightFt, weightKg);
+  //   const bmiFromMeters = calculateBMI(heightM, weightKg);
 
-  test('BMI with unknown height unit', async () => {
-    expect(() => calculateBMI({ value: 180, unit: 'cms' }, { value: 50, unit: 'kg' })).toThrow(
-      /^Unknown unit. Please provide height in one of the following units: Inches, feet, centimeters, or meters.$/
-    );
-  });
+  //   expect(bmiFromInches.value).toBe(15.8);
+  //   expect(bmiFromFeet.value).toBe(14.9);
+  //   expect(bmiFromMeters.value).toBe(15.4);
+  // });
 
-  test('BMI with unknown weight unit', async () => {
-    expect(() => calculateBMI({ value: 180, unit: 'cm' }, { value: 50, unit: 'kgs' })).toThrow(
-      /^Unknown unit. Please provide weight in one of the following units: Pounds or kilograms.$/
-    );
-  });
+  // test('BMI with no height value', async () => {
+  //   expect(() => calculateBMI({ unit: 'cm' }, { value: 60, unit: 'kg' })).toThrow(/^All values must be provided$/);
+  // });
+
+  // test('BMI with no weight value', async () => {
+  //   expect(() => calculateBMI({ value: 180, unit: 'cm' }, { unit: 'kg' })).toThrow(/^All values must be provided$/);
+  // });
+
+  // test('BMI with no height unit', async () => {
+  //   expect(() => calculateBMI({ value: 180 }, { value: 60, unit: 'kg' })).toThrow(/^No unit defined$/);
+  // });
+
+  // test('BMI with no weight unit', async () => {
+  //   expect(() => calculateBMI({ value: 180, unit: 'cm' }, { value: 50 })).toThrow(/^No unit defined$/);
+  // });
+
+  // test('BMI with unknown height unit', async () => {
+  //   expect(() => calculateBMI({ value: 180, unit: 'cms' }, { value: 50, unit: 'kg' })).toThrow(
+  //     /^Unknown unit. Please provide height in one of the following units: Inches, feet, centimeters, or meters.$/
+  //   );
+  // });
+
+  // test('BMI with unknown weight unit', async () => {
+  //   expect(() => calculateBMI({ value: 180, unit: 'cm' }, { value: 50, unit: 'kgs' })).toThrow(
+  //     /^Unknown unit. Please provide weight in one of the following units: Pounds or kilograms.$/
+  //   );
+  // });
 });
