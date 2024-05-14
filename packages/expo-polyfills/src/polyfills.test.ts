@@ -6,9 +6,6 @@ describe('Medplum polyfills', () => {
 
   beforeEach(() => {
     cleanupMedplumWebAPIs();
-  });
-
-  beforeEach(() => {
     Object.defineProperty(globalThis, 'window', {
       value: { ...originalWindow },
     });
