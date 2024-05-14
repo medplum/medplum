@@ -458,7 +458,7 @@
         "resourceType": "Questionnaire",
         "status": "active",
         "title": "Encounter Note",
-        "id": "encounter-note",
+        "name": "encounter-note",
         "useContext": [
           {
             "code": {
