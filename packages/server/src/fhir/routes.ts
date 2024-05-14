@@ -1,6 +1,5 @@
 import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
-import { Bundle } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
@@ -36,7 +35,8 @@ import { structureDefinitionExpandProfileHandler } from './operations/structured
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
-import { getFullUrl, sendResponse } from './response';
+import { sendResponse } from './response';
+import { getServiceBaseUrlBundle } from './servicebaseurl';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -284,117 +284,12 @@ publicRoutes.use(
 
     if (request.method === 'GET' && request.pathname === '' && !request.query['_type']) {
       // Handle unauthenticated special case of GET /fhir/R4 with no _type parameter
-      //  * Service based URLs must be publicly published in Endpoint resource format according
-      //    to the standard adopted in § 170.215(a) - FHIR 4.0.1 release
-      //  * Organization details for each service base URL must be publicly published in
-      //    Organization resource format according to the standard adopted in §170.215(a) -
-      //    FHIR 4.0.1 release
-      //  * Each Organization resource must contain:
-      //      * A reference in the Organization.endpoint element, to the Endpoint resources containing service base URLs managed by this organization
-      //      * The organization’s name, location, and provider identifier
-      //      * Endpoint and Organization resources must be:
-      //          * Collected into a Bundle resource formatted according to the standard adopted in FHIR v4.0.1: § 170.215(a) for publication
-      //          * Reviewed quarterly and, as necessary, updated
-      // See: https://inferno.healthit.gov/test-kits/service-base-url/
-      const bundle: Bundle = {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [
-          {
-            fullUrl: getFullUrl('Endpoint', 'medplum'),
-            resource: {
-              resourceType: 'Endpoint',
-              id: 'medplum',
-              status: 'active',
-              connectionType: {
-                system: 'http://terminology.hl7.org/CodeSystem/endpoint-connection-type',
-                code: 'hl7-fhir-rest',
-                display: 'HL7 FHIR',
-              },
-              name: 'Medplum Endpoint',
-              managingOrganization: {
-                reference: 'Organization/medplum',
-                display: 'Medplum',
-              },
-              payloadType: [
-                {
-                  coding: [
-                    {
-                      system: 'http://terminology.hl7.org/CodeSystem/endpoint-payload-type',
-                      code: 'any',
-                      display: 'Any',
-                    },
-                  ],
-                },
-              ],
-              payloadMimeType: ['application/fhir+json'],
-              address: 'https://api.medplum.com/fhir/R4',
-            },
-          },
-          {
-            fullUrl: getFullUrl('Organization', 'medplum'),
-            resource: {
-              resourceType: 'Organization',
-              id: 'medplum',
-              name: 'Medplum',
-              telecom: [
-                {
-                  system: 'phone',
-                  use: 'work',
-                  value: '+1-415-900-9122',
-                },
-              ],
-              address: [
-                {
-                  use: 'work',
-                  type: 'both',
-                  line: ['2477 Sutter St'],
-                  city: 'San Francisco',
-                  state: 'California',
-                  postalCode: '94115',
-                },
-              ],
-              contact: [
-                {
-                  purpose: {
-                    coding: [
-                      {
-                        system: 'http://terminology.hl7.org/CodeSystem/contactentity-type',
-                        code: 'ADMIN',
-                        display: 'Administrative',
-                      },
-                    ],
-                  },
-                  name: {
-                    use: 'official',
-                    given: ['Cody', 'Ebberson'],
-                    family: 'Cody Ebberson',
-                  },
-                  address: {
-                    city: 'San Francisco',
-                    state: 'California',
-                    postalCode: '94115',
-                    line: ['2477 Sutter St'],
-                  },
-                },
-              ],
-              endpoint: [
-                {
-                  reference: 'Endpoint/medplum',
-                  display: 'Medplum Endpoint',
-                },
-              ],
-            },
-          },
-        ],
-      };
-
-      await sendResponse(req, res, allOk, bundle);
+      await sendResponse(req, res, allOk, getServiceBaseUrlBundle());
       return;
     }
 
     // Otherwise, authenticate the request and process it
-    await authenticateRequest(req, res, async (_err) => {
+    authenticateRequest(req, res, async (_err) => {
       const ctx = getAuthenticatedContext();
 
       const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
