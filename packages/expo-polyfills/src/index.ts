@@ -156,7 +156,7 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
     });
   }
 
-  if (config?.btoa !== false && typeof window.btoa === 'undefined') {
+  if (config?.btoa !== false) {
     Object.defineProperty(window, 'btoa', {
       configurable: true,
       enumerable: true,
@@ -164,7 +164,7 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
     });
   }
 
-  if (config?.btoa !== false && typeof window.atob === 'undefined') {
+  if (config?.btoa !== false) {
     Object.defineProperty(window, 'atob', {
       configurable: true,
       enumerable: true,

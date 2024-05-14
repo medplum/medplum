@@ -6,6 +6,14 @@ A module for polyfilling the minimum necessary web APIs for using the Medplum cl
 
 For [managed](https://docs.expo.dev/archive/managed-vs-bare/) Expo projects, please follow the installation instructions in the [API documentation for the latest stable release](#api-documentation). If you follow the link and there is no documentation available then this library is not yet usable within managed projects &mdash; it is likely to be included in an upcoming Expo SDK release.
 
+### Expo SDK Compatibility
+
+**It's recommended you use the latest Expo SDK (SDK 51 as of May 2024).**
+
+However, this package should be compatible with Expo SDK `49+`. 
+
+Going forward, each version of this package will advertise the minimum compatible Expo SDK required which is subject to change based on the breaking changes of underlying Expo packages.
+
 ## Installation in bare React Native projects
 
 For bare React Native projects, you must ensure that you have [installed and configured the `expo` package](https://docs.expo.dev/bare/installing-expo-modules/) before continuing.
