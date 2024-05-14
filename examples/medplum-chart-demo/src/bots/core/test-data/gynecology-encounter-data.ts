@@ -18,7 +18,7 @@ export const fullResponse: QuestionnaireResponse = {
     { linkId: 'systolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'height', answer: [{ valueQuantity: { value: 180, unit: 'cm' } }] },
-    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lbs.' } }] },
+    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lb' } }] },
     {
       id: 'id-5',
       linkId: 'last-period',
@@ -74,7 +74,7 @@ export const fullResponseNoProblemList: QuestionnaireResponse = {
     { linkId: 'systolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'height', answer: [{ valueQuantity: { value: 180, unit: 'cm' } }] },
-    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lbs.' } }] },
+    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lb' } }] },
     {
       id: 'id-5',
       linkId: 'last-period',
@@ -130,7 +130,7 @@ export const noAssessment: QuestionnaireResponse = {
     { linkId: 'systolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'height', answer: [{ valueQuantity: { value: 180, unit: 'cm' } }] },
-    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lbs.' } }] },
+    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lb' } }] },
     {
       id: 'id-5',
       linkId: 'last-period',
@@ -171,7 +171,7 @@ export const noCondition: QuestionnaireResponse = {
     { linkId: 'systolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'height', answer: [{ valueQuantity: { value: 180, unit: 'cm' } }] },
-    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lbs.' } }] },
+    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lb' } }] },
     {
       id: 'id-5',
       linkId: 'last-period',
@@ -227,7 +227,7 @@ export const oneBloodPressureMeasurement: QuestionnaireResponse = {
     { linkId: 'problem-list', answer: [{ valueBoolean: true }] },
     { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
     { linkId: 'height', answer: [{ valueQuantity: { value: 180, unit: 'cm' } }] },
-    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lbs.' } }] },
+    { linkId: 'weight', answer: [{ valueQuantity: { value: 180, unit: 'lb' } }] },
     { id: 'id-5', linkId: 'last-period', answer: [{ valueDate: '2024-03-03' }] },
     { id: 'id-6', linkId: 'contraception', answer: [{ valueCoding: { code: 'Condom', display: 'Condom' } }] },
     { id: 'id-10', linkId: 'mammogram', answer: [{ valueDate: '2024-02-08' }] },

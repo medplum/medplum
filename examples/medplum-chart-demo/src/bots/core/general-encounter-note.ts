@@ -29,6 +29,8 @@ interface ObservationData {
   vaginalDryness?: boolean;
   sleepDisturbance?: boolean;
   selfReportedHistory?: string;
+  bmi?: Quantity;
+  date?: string;
 }
 
 interface ConditionData {
@@ -66,7 +68,12 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     vaginalDryness: answers['vaginal-dryness']?.valueBoolean,
     sleepDisturbance: answers['sleep-disturbance']?.valueBoolean,
     selfReportedHistory: answers['self-reported-history']?.valueString,
+    date: answers['date']?.valueDateTime,
   };
+
+  if (observationData.height && observationData.weight) {
+    observationData.bmi = calculateBMI(observationData.height, observationData.weight);
+  }
 
   const conditionData: ConditionData = {
     reasonForVisit: answers['reason-for-visit']?.valueCoding,
@@ -114,6 +121,7 @@ function createObservationEntries(
     subject: encounter.subject,
     encounter: { reference: getReferenceString(encounter) },
     performer: [{ reference: getReferenceString(user) }],
+    effectiveDateTime: observationData.date,
     code: {},
   };
 
@@ -121,7 +129,7 @@ function createObservationEntries(
   for (const [key, value] of Object.entries(observationData)) {
     // If there is no value, skip
     // If it is a blood pressure observation, check for one of systolic or diastolic, otherwise skip
-    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic)) {
+    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
       continue;
     }
 
@@ -217,6 +225,12 @@ function createObservationEntry(
       };
       // Add the blood pressure as a component instead of a value
       resource.component = handleBloodPressure(observationData);
+      break;
+    case 'bmi':
+      resource.code = {
+        coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
+      };
+      resource.valueQuantity = observationData.bmi;
       break;
   }
 
@@ -380,4 +394,58 @@ function createClinicalImpressionEntries(
     request: { method: 'POST', url: 'ClinicalImpression' },
     resource: clinicalImpression,
   };
+}
+
+export function calculateBMI(height: Quantity, weight: Quantity): Quantity {
+  if (!height?.value || !weight?.value) {
+    throw new Error('All values must be provided');
+  }
+  const heightM = getHeightInMeters(height);
+  const weightKg = getWeightInKilograms(weight);
+
+  const bmi = Math.round((weightKg / heightM ** 2) * 10) / 10;
+  return {
+    value: bmi,
+    unit: 'kg/m^2',
+  };
+}
+
+function getWeightInKilograms(weight: Quantity): number {
+  if (!weight.unit) {
+    throw new Error('No unit defined');
+  }
+  const unit = weight.unit;
+  const weightVal = weight.value as number;
+
+  switch (unit) {
+    case 'lb':
+      return weightVal / 2.2;
+    case 'kg':
+      return weightVal;
+    default:
+      throw new Error('Unknown unit. Please provide weight in one of the following units: Pounds or kilograms.');
+  }
+}
+
+function getHeightInMeters(height: Quantity): number {
+  if (!height.unit) {
+    throw new Error('No unit defined');
+  }
+  const unit = height.unit;
+  const heightVal = height.value as number;
+
+  switch (unit) {
+    case 'in':
+      return (heightVal * 2.54) / 100;
+    case 'ft':
+      return (heightVal * 12 * 2.54) / 100;
+    case 'cm':
+      return heightVal / 100;
+    case 'm':
+      return heightVal;
+    default:
+      throw new Error(
+        'Unknown unit. Please provide height in one of the following units: Inches, feet, centimeters, or meters.'
+      );
+  }
 }

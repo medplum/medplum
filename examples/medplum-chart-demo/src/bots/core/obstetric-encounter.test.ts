@@ -1,5 +1,5 @@
 import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Quantity, SearchParameter } from '@medplum/fhirtypes';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { MockClient } from '@medplum/mock';
 import {
@@ -12,6 +12,7 @@ import {
 } from './test-data/obstetric-encounter-note-test-data';
 import { handler } from './obstetric-encounter-note';
 import { vi } from 'vitest';
+import { calculateBMI } from './obstetric-encounter-note';
 
 describe('Obstetric Encounter Note', async () => {
   const bot = { reference: 'Bot/123' };
@@ -44,8 +45,8 @@ describe('Obstetric Encounter Note', async () => {
     });
     const clinicalImpressions = await medplum.searchResources('ClinicalImpression');
 
-    expect(responseBundle.entry?.length).toBe(11);
-    expect(observations.length).toBe(8);
+    expect(responseBundle.entry?.length).toBe(12);
+    expect(observations.length).toBe(9);
     expect(conditions.length).toBe(2);
     expect(clinicalImpressions.length).toBe(1);
   });
@@ -60,7 +61,7 @@ describe('Obstetric Encounter Note', async () => {
 
     const clinicalImpression = await medplum.searchResources('ClinicalImpression');
 
-    expect(responseBundle.entry?.length).toBe(10);
+    expect(responseBundle.entry?.length).toBe(11);
     expect(clinicalImpression.length).toBe(0);
   });
 
@@ -117,10 +118,53 @@ describe('Obstetric Encounter Note', async () => {
     });
     const components = bloodPressure[0].component;
 
-    expect(responseBundle.entry?.length).toBe(11);
-    expect(observations.length).toBe(8);
+    expect(responseBundle.entry?.length).toBe(12);
+    expect(observations.length).toBe(9);
     expect(conditions.length).toBe(2);
     expect(clinicalImpression.length).toBe(1);
     expect(components?.length).toBe(1);
+  });
+
+  test('Calculate BMI', async () => {
+    const weightKg: Quantity = { value: 50, unit: 'kg' };
+    const heightIn: Quantity = { value: 70, unit: 'in' };
+    const heightFt: Quantity = { value: 6, unit: 'ft' };
+    const heightM: Quantity = { value: 1.8, unit: 'm' };
+
+    const bmiFromInches = calculateBMI(heightIn, weightKg);
+    const bmiFromFeet = calculateBMI(heightFt, weightKg);
+    const bmiFromMeters = calculateBMI(heightM, weightKg);
+
+    expect(bmiFromInches.value).toBe(15.8);
+    expect(bmiFromFeet.value).toBe(14.9);
+    expect(bmiFromMeters.value).toBe(15.4);
+  });
+
+  test('BMI with no height value', async () => {
+    expect(() => calculateBMI({ unit: 'cm' }, { value: 60, unit: 'kg' })).toThrow(/^All values must be provided$/);
+  });
+
+  test('BMI with no weight value', async () => {
+    expect(() => calculateBMI({ value: 180, unit: 'cm' }, { unit: 'kg' })).toThrow(/^All values must be provided$/);
+  });
+
+  test('BMI with no height unit', async () => {
+    expect(() => calculateBMI({ value: 180 }, { value: 60, unit: 'kg' })).toThrow(/^No unit defined$/);
+  });
+
+  test('BMI with no weight unit', async () => {
+    expect(() => calculateBMI({ value: 180, unit: 'cm' }, { value: 50 })).toThrow(/^No unit defined$/);
+  });
+
+  test('BMI with unknown height unit', async () => {
+    expect(() => calculateBMI({ value: 180, unit: 'cms' }, { value: 50, unit: 'kg' })).toThrow(
+      /^Unknown unit. Please provide height in one of the following units: Inches, feet, centimeters, or meters.$/
+    );
+  });
+
+  test('BMI with unknown weight unit', async () => {
+    expect(() => calculateBMI({ value: 180, unit: 'cm' }, { value: 50, unit: 'kgs' })).toThrow(
+      /^Unknown unit. Please provide weight in one of the following units: Pounds or kilograms.$/
+    );
   });
 });
