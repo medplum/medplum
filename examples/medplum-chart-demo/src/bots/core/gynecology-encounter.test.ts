@@ -2,16 +2,16 @@ import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitio
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Quantity, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { calculateBMI } from './gynecology-encounter-note';
-import { handler } from './gynecology-encounter-note';
+import { handler, calculateBMI } from './gynecology-encounter-note';
 import {
   encounter,
   fullResponse,
   fullResponseNoProblemList,
   noAssessment,
   oneBloodPressureMeasurement,
+  noCondition,
+  onlyCondition,
 } from './test-data/gynecology-encounter-data';
-import { noCondition, onlyCondition } from './test-data/obstetric-encounter-note-test-data';
 
 describe('Gynecology Encounter Note', async () => {
   const bot = { reference: 'Bot/123' };

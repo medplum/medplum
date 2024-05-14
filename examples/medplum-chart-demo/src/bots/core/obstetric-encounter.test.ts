@@ -10,9 +10,8 @@ import {
   onlyCondition,
   responseWithNoAssessment,
 } from './test-data/obstetric-encounter-note-test-data';
-import { handler } from './obstetric-encounter-note';
+import { handler, calculateBMI } from './obstetric-encounter-note';
 import { vi } from 'vitest';
-import { calculateBMI } from './obstetric-encounter-note';
 
 describe('Obstetric Encounter Note', async () => {
   const bot = { reference: 'Bot/123' };
