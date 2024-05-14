@@ -1,8 +1,7 @@
 import { sleep } from '@medplum/core';
 import SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { ExpoClientStorage } from '.';
-import { SyncSecureStorage } from './storage';
+import { ExpoClientStorage, SyncSecureStorage } from './storage';
 
 jest.mock('expo-secure-store', () => {
   const store = new Map<string, string>();

@@ -1,4 +1,4 @@
-import { ClientStorage, IClientStorage, MemoryStorage } from '@medplum/core';
+import { MemoryStorage } from '@medplum/core';
 import { decode, encode } from 'base-64';
 import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
 import expoWebCrypto from 'expo-standard-web-crypto';
@@ -6,7 +6,8 @@ import { Platform } from 'react-native';
 import { setupURLPolyfill } from 'react-native-url-polyfill';
 import { TextDecoder, TextEncoder } from 'text-encoding';
 import { polyfillEvent } from './polyfills/event';
-import { SyncSecureStorage } from './storage';
+
+export { ExpoClientStorage, type IExpoClientStorage } from './storage';
 
 let polyfilled = false;
 let originalCryptoIsSet = false;
@@ -177,43 +178,4 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
   }
 
   polyfilled = true;
-}
-
-export interface IExpoClientStorage extends IClientStorage {
-  getInitPromise(): Promise<void>;
-  length: number;
-}
-
-/**
- * Provides a wrapper around Expo's `SecureStore` package which provides a persistent and secure storage on mobile.
- *
- * This class is necessary for use with `MedplumClient` since `MedplumClient` expects `ClientStorage` to use a synchronous interface, and `SecureStore` uses an asynchronous one.
- *
- * On web, this class will instead wrap `localStorage` automatically, so there is no need to conditionally omit passing this to `MedplumClient` for React Native Web.
- */
-export class ExpoClientStorage extends ClientStorage implements IExpoClientStorage {
-  // We keep a private reference to the storage we pass in so we can use it within this subclass too...
-  private secureStorage?: SyncSecureStorage;
-  constructor() {
-    // Metro should automatically prune these branches out at compile time
-    if (Platform.OS === 'web') {
-      super(globalThis.localStorage);
-    } else {
-      const storage = new SyncSecureStorage();
-      super(storage);
-      this.secureStorage = storage;
-    }
-  }
-  getInitPromise(): Promise<void> {
-    if (Platform.OS === 'web') {
-      return Promise.resolve();
-    }
-    return (this.secureStorage as SyncSecureStorage).getInitPromise();
-  }
-  get length(): number {
-    if (Platform.OS === 'web') {
-      return globalThis.localStorage.length;
-    }
-    return (this.secureStorage as SyncSecureStorage).length;
-  }
 }
