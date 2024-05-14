@@ -430,6 +430,44 @@ describe('Core Utils', () => {
     ).toMatchObject({
       q1: [{ valueString: 'xyz' }, { valueString: 'abc' }],
     });
+
+    // Test repeated groups
+    expect(
+      getAllQuestionnaireAnswers({
+        resourceType: 'QuestionnaireResponse',
+        status: 'completed',
+        item: [
+          {
+            linkId: 'group1',
+            item: [
+              {
+                linkId: 'q1',
+                answer: [
+                  {
+                    valueString: 'xyz',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            linkId: 'group1',
+            item: [
+              {
+                linkId: 'q1',
+                answer: [
+                  {
+                    valueString: '123',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      })
+    ).toMatchObject({
+      q1: [{ valueString: 'xyz' }, { valueString: '123' }],
+    });
   });
 
   test('Get identifier', () => {

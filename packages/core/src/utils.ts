@@ -350,7 +350,11 @@ function buildAllQuestionnaireAnswerItems(
   if (items) {
     for (const item of items) {
       if (item.linkId && item.answer && item.answer.length > 0) {
-        result[item.linkId] = item.answer;
+        if (result[item.linkId]) {
+          result[item.linkId] = [...result[item.linkId], ...item.answer];
+        } else {
+          result[item.linkId] = item.answer;
+        }
       }
       buildAllQuestionnaireAnswerItems(item.item, result);
     }
