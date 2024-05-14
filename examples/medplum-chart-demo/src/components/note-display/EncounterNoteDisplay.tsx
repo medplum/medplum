@@ -1,13 +1,6 @@
 import { Group, Stack, Title } from '@mantine/core';
 import { formatDate, getQuestionnaireAnswers } from '@medplum/core';
-import {
-  Annotation,
-  CodeableConcept,
-  Encounter,
-  Quantity,
-  Questionnaire,
-  QuestionnaireResponse,
-} from '@medplum/fhirtypes';
+import { Encounter, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Document, NoteDisplay, QuantityDisplay, useMedplum } from '@medplum/react';
 import { parseAnswers } from './encounter-notes.utils';
 
@@ -15,17 +8,6 @@ interface EncounterNoteDisplayProps {
   response: QuestionnaireResponse;
   encounter: Encounter;
 }
-
-// interface NoteDisplay {
-//   reasonForVisit: CodeableConcept;
-//   date: string | undefined;
-//   diastolic: Quantity;
-//   systolic: Quantity;
-//   height: Quantity;
-//   weight: Quantity;
-//   notes: Annotation[];
-//   bmi: Quantity | undefined;
-// }
 
 export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Element {
   const medplum = useMedplum();
@@ -116,8 +98,4 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
       </Stack>
     </Document>
   );
-}
-
-function GynecologyDisplay(): JSX.Element {
-  return <div></div>;
 }

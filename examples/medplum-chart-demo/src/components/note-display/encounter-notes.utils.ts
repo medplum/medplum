@@ -54,17 +54,19 @@ function parseGynecologyAnswers(
 ): GynecologyAnswers {
   const genericAnswers = parseGenericAnswers(answers, noteType);
 
-  const lastPeriod = answers['q4'].valueDate;
+  const lastPeriod = answers['last-period'].valueDate;
   const contraception = answers['contraception'].valueCoding;
   const lastMammogram = answers['mammogram'].valueDate;
 
   const smokingStatus = answers['smoking'].valueCoding;
   const drugUse = answers['drugs'].valueCoding;
-  const housingStatus = answers['q10'].valueCoding;
+  const housingStatus = answers['housing'].valueCoding;
 
   const visitLength = answers['visit-length'].valueInteger;
   const assessment: Annotation[] = [];
-  answers['q13'].valueString && assessment.push({ text: answers['q13'].valueString });
+  if (answers['assessment'].valueString) {
+    assessment.push({ text: answers['assessment'].valueString });
+  }
 
   return {
     ...genericAnswers,
@@ -95,7 +97,9 @@ function parseObstetricAnswers(
 
   const assessment: Annotation[] = [];
 
-  answers['assessment'].valueString && assessment.push({ text: answers['assessment'].valueString });
+  if (answers['assessment'].valueString) {
+    assessment.push({ text: answers['assessment'].valueString });
+  }
 
   return {
     ...genericAnswers,
@@ -118,7 +122,9 @@ function parseGeneralAnswers(
 
   const assessment: Annotation[] = [];
 
-  answers['assessment'].valueString && assessment.push({ text: answers['assessment'].valueString });
+  if (answers['assessment'].valueString) {
+    assessment.push({ text: answers['assessment'].valueString });
+  }
 
   return {
     ...genericAnswers,
@@ -136,25 +142,25 @@ function parseGenericAnswers(answers: Record<string, QuestionnaireResponseItemAn
     coding: [answers['reason-for-visit'].valueCoding as Coding],
   };
 
-  const date = answers['encounter-date'].valueDate as string;
+  const date = answers['date'].valueDate as string;
 
   const diastolic = {
-    value: answers['diastolic-blood-pressure'].valueInteger,
+    value: answers['diastolic'].valueInteger,
     unit: 'mmHg',
     system: 'http://unitsofmeasure.com',
     code: 'mm[Hg]',
   };
 
   const systolic = {
-    value: answers['systolic-blood-pressure'].valueInteger,
+    value: answers['systolic'].valueInteger,
     unit: 'mmHg',
     system: 'http://unitsofmeasure.com',
     code: 'mm[Hg]',
   };
 
-  const height = answers['vitals-height'].valueQuantity;
+  const height = answers['height'].valueQuantity;
 
-  const weight = answers['vitals-weight'].valueQuantity;
+  const weight = answers['weight'].valueQuantity;
 
   return {
     reasonForVisit,

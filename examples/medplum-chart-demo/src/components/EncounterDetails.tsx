@@ -47,10 +47,6 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   // Get the encounter type so the correct questionnaire can be retrieved
   const code = props.encounter.type?.[0].coding?.[0].code;
 
-  if (!code) {
-    return <Loading />;
-  }
-
   useEffect(() => {
     // Search for a response if there is one
     medplum
