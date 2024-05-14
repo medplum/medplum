@@ -1712,7 +1712,7 @@ describe('OAuth2 Token', () => {
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
-    expect(res2.body.refresh_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
   });
 });
 
