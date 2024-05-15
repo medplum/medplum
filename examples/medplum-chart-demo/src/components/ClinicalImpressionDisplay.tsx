@@ -1,32 +1,14 @@
 import { Blockquote, Stack } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { ClinicalImpression, Patient } from '@medplum/fhirtypes';
-import { Loading, NoteDisplay, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { Patient } from '@medplum/fhirtypes';
+import { Loading, NoteDisplay, useSearchResources } from '@medplum/react';
 
 interface ClinicalImpressionDisplayProps {
   readonly patient: Patient;
 }
 
 export function ClinicalImpressionDisplay(props: ClinicalImpressionDisplayProps): JSX.Element {
-  const medplum = useMedplum();
-  const [impressions, setImpressions] = useState<ClinicalImpression[]>();
-
-  useEffect(() => {
-    // Get the clinical impressions containing encounter notes
-    const fetchClinicalImpressions = async (): Promise<void> => {
-      try {
-        const clinicalImpressions = await medplum.searchResources('ClinicalImpression', {
-          patient: getReferenceString(props.patient),
-        });
-        setImpressions(clinicalImpressions);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchClinicalImpressions().catch(console.error);
-  }, [medplum, props.patient]);
+  const [impressions] = useSearchResources('ClinicalImpression', { patient: getReferenceString(props.patient) });
 
   if (!impressions) {
     return <Loading />;
