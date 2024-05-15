@@ -161,6 +161,61 @@ describe('App', () => {
     mockServer2.stop();
   });
 
+  test('Empty endpoint URL', async () => {
+    const medplum = new MockClient({ validateResources: false });
+    medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
+      return [allOk, {} as Resource];
+    });
+
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    const endpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: '', // invalid empty address
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+    });
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      status: 'active',
+      name: 'Test Agent',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    await expect(app.start()).rejects.toThrow(new Error("Invalid empty endpoint address for channel 'test'"));
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
   test('Unknown endpoint protocol', async () => {
     const originalConsoleLog = console.log;
     const originalConsoleError = console.error;
