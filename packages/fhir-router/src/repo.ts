@@ -13,6 +13,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   preconditionFailed,
+  validateResource,
 } from '@medplum/core';
 import { Bundle, BundleEntry, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
@@ -229,6 +230,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
+    validateResource(resource);
     const result = deepClone(resource);
 
     if (!result.id) {
@@ -272,6 +274,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   }
 
   updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T> {
+    validateResource(resource);
     const result = deepClone(resource);
     if (versionId && result.meta?.versionId !== versionId) {
       throw new OperationOutcomeError(preconditionFailed);

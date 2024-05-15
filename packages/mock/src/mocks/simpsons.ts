@@ -463,8 +463,6 @@ export const HomerObservation5: Observation = {
     value: 100,
     unit: 'x',
   },
-  referenceRange: [{}],
-  interpretation: [{}],
 };
 
 export const HomerObservation6: Observation = {
