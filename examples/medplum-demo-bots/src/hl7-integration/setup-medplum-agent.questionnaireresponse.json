@@ -3,12 +3,12 @@
   "status": "completed",
   "item": [
     {
-      "id": "id-1",
+      "id": "id-14",
       "linkId": "g5",
       "text": "Organization",
       "item": [
         {
-          "id": "id-2",
+          "id": "id-15",
           "linkId": "organization-name",
           "text": "Name",
           "answer": [
@@ -20,17 +20,17 @@
       ]
     },
     {
-      "id": "id-3",
+      "id": "id-16",
       "linkId": "endpoint-details",
       "text": "Endpoint",
       "item": [
         {
-          "id": "id-4",
+          "id": "id-17",
           "linkId": "q1",
           "text": "The agent endpoints describe the addresses the Agent will expose to the remote site's network"
         },
         {
-          "id": "id-5",
+          "id": "id-18",
           "linkId": "endpoint-name",
           "text": "Name",
           "answer": [
@@ -40,17 +40,17 @@
           ]
         },
         {
-          "id": "id-6",
+          "id": "id-19",
           "linkId": "endpoint-ip",
           "text": "IP Address",
           "answer": [
             {
-              "valueString": "129.1.21.1"
+              "valueString": "1.1.1.1"
             }
           ]
         },
         {
-          "id": "id-7",
+          "id": "id-20",
           "linkId": "endpoint-port",
           "text": "Port",
           "answer": [
@@ -62,17 +62,17 @@
       ]
     },
     {
-      "id": "id-14",
+      "id": "id-27",
       "linkId": "endpoint-details",
       "text": "Endpoint",
       "item": [
         {
-          "id": "id-15",
+          "id": "id-28",
           "linkId": "q1",
           "text": "The agent endpoints describe the addresses the Agent will expose to the remote site's network"
         },
         {
-          "id": "id-16",
+          "id": "id-29",
           "linkId": "endpoint-name",
           "text": "Name",
           "answer": [
@@ -82,44 +82,44 @@
           ]
         },
         {
-          "id": "id-17",
+          "id": "id-30",
           "linkId": "endpoint-ip",
           "text": "IP Address",
           "answer": [
             {
-              "valueString": "129.1.21.2"
+              "valueString": "1.1.1.2"
             }
           ]
         },
         {
-          "id": "id-18",
+          "id": "id-31",
           "linkId": "endpoint-port",
-          "text": "Port",
+          "text": "Port ",
           "answer": [
             {
-              "valueInteger": 8889
+              "valueInteger": 1234
             }
           ]
         }
       ]
     },
     {
-      "id": "id-8",
+      "id": "id-21",
       "linkId": "device-group",
       "text": "Devices",
       "item": [
         {
-          "id": "id-9",
+          "id": "id-22",
           "linkId": "q3",
           "text": "The Device resource describes the local address of the target device the Agent will connect to on the remote site's network"
         },
         {
-          "id": "id-10",
+          "id": "id-23",
           "linkId": "device-details",
           "text": "Details",
           "item": [
             {
-              "id": "id-11",
+              "id": "id-24",
               "linkId": "device-name",
               "text": "Name",
               "answer": [
@@ -129,17 +129,17 @@
               ]
             },
             {
-              "id": "id-12",
+              "id": "id-25",
               "linkId": "device-address",
               "text": "IP Address",
               "answer": [
                 {
-                  "valueString": "10.1.1.2"
+                  "valueString": "2.3.4.5"
                 }
               ]
             },
             {
-              "id": "id-13",
+              "id": "id-26",
               "linkId": "device-port",
               "text": "Port",
               "answer": [
@@ -151,12 +151,12 @@
           ]
         },
         {
-          "id": "id-19",
+          "id": "id-32",
           "linkId": "device-details",
           "text": "Details",
           "item": [
             {
-              "id": "id-20",
+              "id": "id-33",
               "linkId": "device-name",
               "text": "Name",
               "answer": [
@@ -166,22 +166,22 @@
               ]
             },
             {
-              "id": "id-21",
+              "id": "id-34",
               "linkId": "device-address",
               "text": "IP Address",
               "answer": [
                 {
-                  "valueString": "10.1.1.2"
+                  "valueString": "2.3.4.5"
                 }
               ]
             },
             {
-              "id": "id-22",
+              "id": "id-35",
               "linkId": "device-port",
               "text": "Port",
               "answer": [
                 {
-                  "valueInteger": 5642
+                  "valueInteger": 9876
                 }
               ]
             }

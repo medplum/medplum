@@ -1,6 +1,7 @@
 {
   "resourceType": "Questionnaire",
   "status": "active",
+  "title": "Setup Remote Site",
   "item": [
     {
       "id": "id-6",
@@ -20,14 +21,14 @@
       "id": "id-2",
       "linkId": "endpoint-details",
       "type": "group",
-      "text": "Endpoint",
+      "text": "Inbound Channels",
       "repeats": true,
       "item": [
         {
           "id": "id-12",
           "linkId": "q1",
           "type": "display",
-          "text": "The agent endpoints describe the addresses the Agent will expose to the remote site's network"
+          "text": "Describe the network addresses the Medplum Agent will expose to the remote site's network to receive inbound messages"
         },
         {
           "id": "id-3",
@@ -53,13 +54,13 @@
       "id": "id-8",
       "linkId": "device-group",
       "type": "group",
-      "text": "Devices",
+      "text": "Outbound Devices",
       "item": [
         {
           "id": "id-14",
           "linkId": "q3",
           "type": "display",
-          "text": "The Device resource describes the local address of the target device the Agent will connect to on the remote site's network"
+          "text": "Describe the target device(s) the local address of the target device the Medplum Agent will connect to on the remote network (e.g. remote EMR, RIS, LIS, PACS, etc.)"
         },
         {
           "id": "id-9",

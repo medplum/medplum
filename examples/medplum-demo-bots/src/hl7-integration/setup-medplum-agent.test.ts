@@ -59,8 +59,8 @@ describe('Setup Medplum Agent', () => {
     expect(endpoints).toHaveLength(2);
     const channel1 = endpoints.find((e) => e.name === 'Test Channel');
     const channel2 = endpoints.find((e) => e.name === 'Production Channel');
-    expect(channel1?.address).toBe('mllp://129.1.21.1:1234');
-    expect(channel2?.address).toBe('mllp://129.1.21.2:8889');
+    expect(channel1?.address).toBe('mllp://1.1.1.1:1234');
+    expect(channel2?.address).toBe('mllp://1.1.1.2:1234');
 
     // Check for Inbound Bots
     const bot1 = await medplum.searchOne('Bot', { name: 'Foo Medical: Test Channel [Inbound]' });
@@ -91,9 +91,9 @@ describe('Setup Medplum Agent', () => {
     const risDevice = await medplum.searchOne('Device', { identifier: 'foo-medical-foo-ris' });
 
     expect(lisDevice).toBeDefined();
-    expect(lisDevice?.url).toBe('mllp://10.1.1.2:1234');
+    expect(lisDevice?.url).toBe('mllp://2.3.4.5:1234');
     expect(risDevice).toBeDefined();
-    expect(risDevice?.url).toBe('mllp://10.1.1.2:5642');
+    expect(risDevice?.url).toBe('mllp://2.3.4.5:9876');
 
     // Check for Outbound Bots
     const outboundBot = await medplum.searchOne('Bot', { name: 'Foo Medical [Outbound]' });
