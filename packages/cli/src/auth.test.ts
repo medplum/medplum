@@ -1,4 +1,4 @@
-import { ContentType, MedplumClient } from '@medplum/core';
+import { ContentType, MedplumClient, indexStructureDefinitionBundle } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import cp from 'node:child_process';
 import fs from 'node:fs';
@@ -6,6 +6,8 @@ import http from 'node:http';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
+import { Bundle } from '@medplum/fhirtypes';
+import { readJson } from '@medplum/definitions';
 
 jest.mock('node:child_process');
 jest.mock('node:http');
@@ -27,6 +29,12 @@ describe('CLI auth', () => {
   const env = process.env;
   let medplum: MedplumClient;
   let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+  });
 
   beforeAll(() => {
     process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {

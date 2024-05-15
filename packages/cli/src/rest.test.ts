@@ -1,5 +1,6 @@
-import { createReference, MedplumClient } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { createReference, indexStructureDefinitionBundle, MedplumClient } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID, webcrypto } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -20,6 +21,12 @@ describe('CLI rest', () => {
   const env = process.env;
   let medplum: MedplumClient;
   let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+  });
 
   beforeAll(async () => {
     (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
@@ -160,13 +167,7 @@ describe('CLI rest', () => {
 
   test('Patch command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main([
-      'node',
-      'index.js',
-      'patch',
-      `Patient/${patient.id}`,
-      '[{"op":"add","path":"/active","value":[true]}]',
-    ]);
+    await main(['node', 'index.js', 'patch', `Patient/${patient.id}`, '[{"op":"add","path":"/active","value":true}]']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching('active'));
   });
 });
