@@ -31,8 +31,16 @@ export class AsyncJobExecutor {
       throw new Error('AsyncJob missing');
     }
 
+    const startTime = Date.now();
+    ctx.logger.info('Async job starting', { name: callback.name, asyncJobId: this.resource?.id });
     this.run(callback)
-      .then(() => ctx.logger.info('Async job completed', { name: callback.name, asyncJobId: this.resource?.id }))
+      .then(() =>
+        ctx.logger.info('Async job completed', {
+          name: callback.name,
+          asyncJobId: this.resource?.id,
+          duration: `${Date.now() - startTime} ms`,
+        })
+      )
       .catch((err) =>
         ctx.logger.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err })
       );

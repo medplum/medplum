@@ -578,9 +578,10 @@ describe('FHIR Repo', () => {
     }
   });
 
-  test('Reindex success', async () => {
-    await systemRepo.reindexResourceType('Practitioner');
-  });
+  test('Reindex success', async () =>
+    withTestContext(async () => {
+      await systemRepo.reindexResourceType('Practitioner');
+    }));
 
   test('Rebuild compartments as non-admin', async () => {
     const repo = new Repository({
