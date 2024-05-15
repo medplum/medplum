@@ -157,6 +157,18 @@ For a more comprehensive end-to-end test of HL7 over MLLP, we recommend using [S
 docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest health/simulator -output mllp -mllp_destination <ip_address>:<port> -pathways_per_hour 720
 ```
 
+## Audit Events and Logging
+
+All interactions between a `Bot` and an `Agent`, such as calling `Agent` operations from a `Bot` or calling `Agent` operations that `$execute` a `Bot`, will trigger either the creation of `AuditEvent` resources or the configured logging behavior for the `Bot` (see: [Bot logging configuration](../bots/bots-in-production#configuring-bot-logging)).
+
+:::note
+
+Because a reference to the `Agent` that interacted with the `Bot` is logged in the `AuditEvent` created by the `Bot`, these events will show up in the `Events` tab for both the `Bot` and the `Agent`. 
+
+These are not duplicated `AuditEvent` resources but rather the same resource showing up in both `Event` log views.
+
+:::
+
 ## Preparing for Scale
 
 HL7 Feeds can be extremely high volume, and before you go live with a high-volume feed you may want to modify your Bot to log only set the Bot `AuditEventDestination` to `log`.
