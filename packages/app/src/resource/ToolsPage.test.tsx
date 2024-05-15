@@ -38,7 +38,8 @@ describe('ToolsPage', () => {
     agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       name: 'Agente',
-    } as Agent);
+      status: 'active',
+    });
   });
 
   afterEach(() => {

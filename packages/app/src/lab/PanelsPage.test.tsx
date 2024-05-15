@@ -38,8 +38,9 @@ describe('PanelsPage', () => {
       resourceType: 'ActivityDefinition',
       id: '1',
       name: 'Panel 1',
+      status: 'active',
       observationResultRequirement: [createReference(assay1), createReference(assay2)],
-    } as ActivityDefinition);
+    } satisfies ActivityDefinition);
 
     await medplum.createResource({
       resourceType: 'ActivityDefinition',

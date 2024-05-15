@@ -26,6 +26,10 @@ describe('AuditEventPage', () => {
 
     const auditEvent = await medplum.createResource<AuditEvent>({
       resourceType: 'AuditEvent',
+      type: { code: 'transmit' },
+      recorded: '',
+      source: { observer: { display: '' } },
+      agent: [{ requestor: true, who: { display: '' } }],
       entity: [
         {
           what: {
@@ -33,7 +37,7 @@ describe('AuditEventPage', () => {
           },
         },
       ],
-    } as AuditEvent);
+    });
 
     // load bot page
     await act(async () => {
@@ -64,6 +68,10 @@ describe('AuditEventPage', () => {
 
     const auditEvent = await medplum.createResource<AuditEvent>({
       resourceType: 'AuditEvent',
+      type: { code: 'transmit' },
+      recorded: '',
+      source: { observer: { display: '' } },
+      agent: [{ requestor: true, who: { display: '' } }],
       entity: [
         {
           what: {
@@ -71,7 +79,7 @@ describe('AuditEventPage', () => {
           },
         },
       ],
-    } as AuditEvent);
+    });
 
     // directly load bot audit event page
     await act(async () => {
