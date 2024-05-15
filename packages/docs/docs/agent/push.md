@@ -111,3 +111,15 @@ PV1|1|I|2000^2012^01||||12345^DOCTOR^DOC||||||||||1234567^DOCTOR^DOC||AMB|||||||
    - Set the criteria to "ServiceRequest".
    - Choose the Bot as the channel target.
 4. Now, any "create" or "update" operation on a FHIR ServiceRequest will trigger the Medplum server to call the Bot. The Bot will process and convert the message to HL7, sending it to the remote device via the Medplum Agent.
+
+## Audit Events / Logging
+
+When calling the `$push` operation, `Bot` interactions that occur as a part of the operation will trigger either the creation of `AuditEvent` resources or the configured logging behavior for the `Bot` (see: [Bot logging configuration](../bots/bots-in-production#configuring-bot-logging)).
+
+:::note
+
+Because a reference to the `Agent` that interacted with the bot is logged in the `AuditEvent` created by the `Bot`, these events will show up both in the `Events` tab for both the `Bot` and the `Agent`. 
+
+These are not duplicated `AuditEvent` resources but rather the same resource showing up in both `Event` log views.
+
+:::
