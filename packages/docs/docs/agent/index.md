@@ -159,7 +159,7 @@ docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest
 
 ## Audit Events and Logging
 
-All interactions between a `Bot` and an `Agent`, such as calling `Agent` operations from a `Bot` or calling `Agent` operations that `$execute` a `Bot`, will trigger either the creation of `AuditEvent` resources or the configured logging behavior for the `Bot` (see: [Bot logging configuration](../bots/bots-in-production#configuring-bot-logging)).
+All interactions between a `Bot` and an `Agent`, such as calling `Agent` operations from a `Bot` or calling `Agent` operations that `$execute` a `Bot`, will trigger either the creation of `AuditEvent` resources or the configured logging behavior for the `Bot` (see: [Bot logging configuration](/docs/bots/bots-in-production#configuring-bot-logging)).
 
 :::note
 
