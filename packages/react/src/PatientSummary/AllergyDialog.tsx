@@ -17,19 +17,21 @@ const HTTP = 'http://';
 
 const PATIENT_ALLERGY_PROFILE = HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-allergyintolerance';
 
+const DEFAULT_CLINICAL_STATUS = {
+  coding: [
+    {
+      system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+      code: 'active',
+      display: 'Active',
+    },
+  ],
+};
+
 export function AllergyDialog(props: AllergyDialogProps): JSX.Element {
   const { patient, encounter, allergy, onSubmit } = props;
   const [code, setCode] = useState<CodeableConcept | undefined>(allergy?.code);
   const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept>(
-    allergy?.clinicalStatus ?? {
-      coding: [
-        {
-          system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-          code: 'active',
-          display: 'Active',
-        },
-      ],
-    }
+    allergy?.clinicalStatus ?? DEFAULT_CLINICAL_STATUS
   );
 
   const handleSubmit = useCallback(
@@ -73,7 +75,7 @@ export function AllergyDialog(props: AllergyDialogProps): JSX.Element {
           path="AllergyIntolerance.clinicalStatus"
           binding={HTTP_HL7_ORG + '/fhir/ValueSet/allergyintolerance-clinical'}
           defaultValue={allergy?.clinicalStatus}
-          onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
+          onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus ?? DEFAULT_CLINICAL_STATUS)}
           outcome={undefined}
         />
         <DateTimeInput name="onsetDateTime" label="Onset" defaultValue={allergy?.recordedDate} />
