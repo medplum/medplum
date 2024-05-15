@@ -1,8 +1,7 @@
 import { createReference } from '@medplum/core';
-import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
+import { DiagnosticReport } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
 import {
   HealthGorillaDiagnosticReport,
@@ -12,6 +11,7 @@ import {
   HealthGorillaObservationGroup2,
 } from '../stories/healthgorilla';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
+import { act, render, screen } from '../test-utils/render';
 import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 
 const syntheaReport: DiagnosticReport = {
@@ -220,8 +220,13 @@ describe('DiagnosticReportDisplay', () => {
     // This is a technically valid Observation resource,
     // although it doesn't really make sense.
     // It uses "Observation Grouping" to create a cycle.
-    let obs = await medplum.createResource({ resourceType: 'Observation', valueString: 'XYZ' } as Observation);
-    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs)] } as Observation);
+    let obs = await medplum.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'Foo' },
+      valueString: 'XYZ',
+    });
+    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs)] });
 
     const report: DiagnosticReport = {
       resourceType: 'DiagnosticReport',

@@ -46,6 +46,7 @@ describe('PanelsPage', () => {
       resourceType: 'ActivityDefinition',
       id: '2',
       name: 'Panel 2',
+      status: 'active',
       observationResultRequirement: [createReference(assay1)],
     } as ActivityDefinition);
 

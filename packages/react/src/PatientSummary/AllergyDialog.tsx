@@ -20,7 +20,17 @@ const PATIENT_ALLERGY_PROFILE = HTTP_HL7_ORG + '/fhir/us/core/StructureDefinitio
 export function AllergyDialog(props: AllergyDialogProps): JSX.Element {
   const { patient, encounter, allergy, onSubmit } = props;
   const [code, setCode] = useState<CodeableConcept | undefined>(allergy?.code);
-  const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept | undefined>(allergy?.clinicalStatus);
+  const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept>(
+    allergy?.clinicalStatus ?? {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+          code: 'active',
+          display: 'Active',
+        },
+      ],
+    }
+  );
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {

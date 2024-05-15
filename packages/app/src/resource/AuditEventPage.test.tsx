@@ -27,7 +27,7 @@ describe('AuditEventPage', () => {
     const auditEvent = await medplum.createResource<AuditEvent>({
       resourceType: 'AuditEvent',
       type: { code: 'transmit' },
-      recorded: '',
+      recorded: '2017-01-01T00:00:00Z',
       source: { observer: { display: '' } },
       agent: [{ requestor: true, who: { display: '' } }],
       entity: [
@@ -69,7 +69,7 @@ describe('AuditEventPage', () => {
     const auditEvent = await medplum.createResource<AuditEvent>({
       resourceType: 'AuditEvent',
       type: { code: 'transmit' },
-      recorded: '',
+      recorded: '2017-01-01T00:00:00Z',
       source: { observer: { display: '' } },
       agent: [{ requestor: true, who: { display: '' } }],
       entity: [
