@@ -1,4 +1,4 @@
-import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED } from '@medplum/core';
+import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import {
   CodeSystem,
   OperationOutcome,
@@ -391,7 +391,6 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
     const res2 = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    console.log(JSON.stringify(res2.body, undefined, 2));
     expect(res2.status).toBe(200);
     expect(res2.body.expansion.contains).toEqual(
       expect.arrayContaining([
@@ -546,6 +545,69 @@ describe('Updated implementation', () => {
     expect(coding.system).toBe(SNOMED);
     expect(coding.code).toBe('314159265');
     expect(coding.display).toEqual('Test SNOMED override');
+  });
+
+  test('Prefers CodeSystem from linked Projects in link order', async () => {
+    // Set up linked Projects and CodeSystem resources
+    const url = 'http://example.com/cs' + randomUUID();
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url,
+    };
+
+    const { project: p2, accessToken: a2 } = await createTestProject({ withAccessToken: true });
+    const cs2 = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + a2)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...codeSystem, concept: [{ code: '1', display: 'Incorrect coding' }] });
+    expect(cs2.status).toEqual(201);
+
+    const { project: p1, accessToken: a1 } = await createTestProject({ withAccessToken: true });
+    const cs1 = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + a1)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...codeSystem, concept: [{ code: '1', display: 'Correct coding' }] });
+    expect(cs1.status).toEqual(201);
+
+    const { project: p3, accessToken: a3 } = await createTestProject({ withAccessToken: true });
+    const cs3 = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + a3)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...codeSystem, concept: [{ code: '1', display: 'Another incorrect coding' }] });
+    expect(cs3.status).toEqual(201);
+
+    accessToken = await initTestAuth({
+      project: {
+        features: ['terminology'],
+        link: [{ project: createReference(p1) }, { project: createReference(p2) }, { project: createReference(p3) }],
+      },
+    });
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'https://example.com/' + randomUUID(),
+        compose: { include: [{ system: url }] },
+      });
+    expect(res2.status).toBe(201);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(res2.body.url)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    const coding = res3.body.expansion.contains[0];
+    expect(coding.system).toBe(url);
+    expect(coding.code).toBe('1');
+    expect(coding.display).toEqual('Correct coding');
   });
 
   test('Returns error when property filter is invalid for CodeSystem', async () => {

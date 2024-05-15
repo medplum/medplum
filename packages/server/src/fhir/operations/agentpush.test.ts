@@ -6,25 +6,46 @@ import {
   getReferenceString,
   sleep,
 } from '@medplum/core';
-import { Agent, AsyncJob, Device, OperationOutcome, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import {
+  Agent,
+  AsyncJob,
+  Device,
+  OperationOutcome,
+  OperationOutcomeIssue,
+  Parameters,
+  ParametersParameter,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import { Server } from 'node:http';
+import { AddressInfo } from 'node:net';
 import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 import { AgentPushParameters } from './agentpush';
-
-const app = express();
-let accessToken: string;
-let agent: Agent;
-let device: Device;
+import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
 describe('Agent Push', () => {
+  const app = express();
+  let accessToken: string;
+  let agent: Agent;
+  let device: Device;
+  let server: Server;
+  let port: number;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initApp(app, config);
+    server = await initApp(app, config);
+    accessToken = await initTestAuth();
+
+    await new Promise<void>((resolve) => {
+      server.listen(0, 'localhost', 511, () => {
+        port = (server.address() as AddressInfo).port;
+        resolve();
+      });
+    });
     accessToken = await initTestAuth();
 
     const res1 = await request(app)
@@ -51,9 +72,12 @@ describe('Agent Push', () => {
       });
     expect(res2.status).toBe(201);
     device = res2.body as Device;
+
+    configMockAgents(port);
   });
 
   afterAll(async () => {
+    cleanupMockAgents();
     await shutdownApp();
   });
 
@@ -437,7 +461,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       JSON.stringify({
         ...transmitRequest,
         type: 'agent:transmit:response',
-        statusCode: 500,
+        statusCode: 400,
         contentType: ContentType.TEXT,
         body: 'Error: Unable to ping "8.8.8.8"',
       } satisfies AgentTransmitResponse)
@@ -560,5 +584,103 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     });
 
     publishSpy.mockRestore();
+  });
+
+  test('Agent/$push when Agent.status off -- should fail', async () => {
+    // Create an agent with status = 'off'
+    const res1 = await request(app)
+      .post('/fhir/R4/Agent')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Agent',
+        identifier: [{ system: 'https://example.com/agent', value: randomUUID() }],
+        name: 'Test Agent',
+        status: 'off',
+      } satisfies Agent);
+    expect(res1.status).toBe(201);
+
+    const agent = res1.body as Agent;
+
+    const { cleanup } = await mockAgentResponse<AgentTransmitRequest, AgentTransmitResponse>(
+      agent,
+      accessToken,
+      'agent:transmit:request',
+      { type: 'agent:transmit:response', remote: '8.8.8.8', contentType: ContentType.PING, body: 'PING' }
+    );
+
+    const hl7Text =
+      'MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\r' +
+      'MSA|AA|9B38584D|Everything was okay dokay!|';
+
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id as string}/$push`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.HL7_V2,
+        body: hl7Text,
+        destination: getReferenceString(device),
+        waitForResponse: true,
+      } satisfies AgentPushParameters);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<Partial<OperationOutcome>>({
+      resourceType: 'OperationOutcome',
+      issue: expect.arrayContaining([
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          details: {
+            text: expect.stringContaining("Agent is currently disabled. Agent.status is 'off'"),
+          },
+        }),
+      ]),
+    });
+
+    cleanup();
+  });
+
+  test('Ping from agent when Agent.status off -- should succeed', async () => {
+    // Create an agent with status = 'off'
+    const res1 = await request(app)
+      .post('/fhir/R4/Agent')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Agent',
+        identifier: [{ system: 'https://example.com/agent', value: randomUUID() }],
+        name: 'Test Agent',
+        status: 'off',
+      } satisfies Agent);
+    expect(res1.status).toBe(201);
+
+    const agent = res1.body as Agent;
+
+    const { cleanup } = await mockAgentResponse<AgentTransmitRequest, AgentTransmitResponse>(
+      agent,
+      accessToken,
+      'agent:transmit:request',
+      {
+        type: 'agent:transmit:response',
+        remote: '8.8.8.8',
+        contentType: ContentType.TEXT,
+        body: 'insert ping statistics here',
+      }
+    );
+
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id as string}/$push`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.PING,
+        body: 'PING',
+        destination: '8.8.8.8',
+        waitForResponse: true,
+      } satisfies AgentPushParameters);
+
+    expect(res.status).toEqual(200);
+    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+
+    cleanup();
   });
 });

@@ -412,10 +412,17 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
 
   // Everything checks out, update the login
-  return systemRepo.updateResource<Login>({
+  const updatedLogin: Login = {
     ...login,
     membership: createReference(membership),
-  });
+  };
+
+  if (project.superAdmin) {
+    // Disable refresh tokens for super admins
+    updatedLogin.refreshSecret = undefined;
+  }
+
+  return systemRepo.updateResource<Login>(updatedLogin);
 }
 
 /**
