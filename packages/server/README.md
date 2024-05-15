@@ -68,3 +68,19 @@ If so, create a new multiarch driver:
 ```bash
 docker buildx create --name multiarch --driver docker-container --use
 ```
+
+## Testing
+
+### Seeding the database
+Before running `npm run test` in `packages/server`, you will want to make sure the database is seeded. You are able to seed the database before running the tests by running:
+
+```bash
+npm run test:seed:parallel
+```
+
+### Running the tests
+To run the tests, simply issue the command:
+
+```bash
+npm run test
+```

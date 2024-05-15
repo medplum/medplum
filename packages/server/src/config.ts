@@ -261,7 +261,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
   config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
-  config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
+  config.emailProvider = config.emailProvider ?? (config.smtp ? 'smtp' : 'awsses');
   return config;
 }
 

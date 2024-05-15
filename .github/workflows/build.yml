@@ -177,7 +177,20 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432/tcp
+          - 5432:5432/tcp
+      postgres-seed:
+        image: postgres:${{ matrix.pg-version }}
+        env:
+          POSTGRES_DB: medplum_test
+          POSTGRES_USER: medplum
+          POSTGRES_PASSWORD: medplum
+        options: >-
+          --health-cmd pg_isready
+          --health-retries 5
+          --health-interval 10s
+          --health-timeout 5s
+        ports:
+          - 5433:5432/tcp
       redis:
         image: redis:${{ matrix.redis-version }}
         options: >-
@@ -186,7 +199,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 6379:6379
+          - 6379:6379/tcp
 
     steps:
       - uses: actions/checkout@v4
@@ -224,7 +237,8 @@ jobs:
         run: ./scripts/test.sh
         env:
           POSTGRES_HOST: localhost
-          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
+          POSTGRES_PORT: 5432
+          POSTGRES_SEED_PORT: 5433
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Upload code coverage
         if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
