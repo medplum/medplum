@@ -118,7 +118,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
         {
           resourceType: 'Device',
           identifier: [{ system: 'http://example.com/device-id', value: deviceId }],
-          name: deviceName.valueString,
+          deviceName: [{ name: deviceName.valueString ?? '', type: 'user-friendly-name' }],
           url: `mllp://${ip}:${port}`,
         },
         { identifier: deviceId }
