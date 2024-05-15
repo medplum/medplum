@@ -3,6 +3,7 @@ import {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
+  CodeableConcept,
   Encounter,
   Observation,
   Practitioner,
@@ -99,67 +100,39 @@ function createObservationEntry(
     code: {},
   };
 
+  resource.code = gynecologyCodes[key];
+
   // Add the appropriate code and value based on the key
   switch (key) {
     case 'lastPeriod':
-      resource.code = {
-        coding: [{ code: '8665-2', system: 'http://loinc.org', display: 'Last menstrual period start date' }],
-      };
       resource.valueDateTime = observationData.lastPeriod;
       break;
     case 'contraception':
-      resource.code = {
-        coding: [{ code: '8659-5', system: 'http://loinc.org', display: 'Birth control method - Reported' }],
-      };
       resource.valueCodeableConcept = observationData.contraception;
       break;
     case 'lastMammogram':
-      resource.code = {
-        coding: [{ code: '429736008', system: 'http://snomed.info/sct', display: 'Date of last mammogram' }],
-      };
       resource.valueDateTime = observationData.lastMammogram;
       break;
     case 'smokingStatus':
-      resource.code = {
-        coding: [{ code: '72166-2', system: 'http://loinc.org', display: 'Tobacco smoking status' }],
-      };
       resource.valueCodeableConcept = observationData.smokingStatus;
       break;
     case 'drugUse':
-      resource.code = {
-        coding: [{ code: '74204-9', system: 'http://loinc.org', display: 'Drug use' }],
-      };
       resource.valueCodeableConcept = observationData.drugUse;
       break;
     case 'housingStatus':
-      resource.code = {
-        coding: [{ code: '71802-3', system: 'http://loinc.org', display: 'Housing status' }],
-      };
       resource.valueCodeableConcept = observationData.housingStatus;
       break;
     case 'height':
-      resource.code = {
-        coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
-      };
       resource.valueQuantity = observationData.height;
       break;
     case 'weight':
-      resource.code = {
-        coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
-      };
       resource.valueQuantity = observationData.weight;
       break;
     case 'bloodPressure':
-      resource.code = {
-        coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
-      };
       // Add the blood pressure as a component instead of a value
       resource.component = handleBloodPressure(observationData);
       break;
     case 'bmi':
-      resource.code = {
-        coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
-      };
       resource.valueQuantity = observationData.bmi;
       break;
   }
@@ -170,3 +143,36 @@ function createObservationEntry(
     resource,
   };
 }
+
+const gynecologyCodes: Record<string, CodeableConcept> = {
+  lastPeriod: {
+    coding: [{ code: '8665-2', system: 'http://loinc.org', display: 'Last menstrual period start date' }],
+  },
+  contraception: {
+    coding: [{ code: '8659-5', system: 'http://loinc.org', display: 'Birth control method - Reported' }],
+  },
+  lastMammogram: {
+    coding: [{ code: '429736008', system: 'http://snomed.info/sct', display: 'Date of last mammogram' }],
+  },
+  smokingStatus: {
+    coding: [{ code: '72166-2', system: 'http://loinc.org', display: 'Tobacco smoking status' }],
+  },
+  drugUse: {
+    coding: [{ code: '74204-9', system: 'http://loinc.org', display: 'Drug use' }],
+  },
+  housingStatus: {
+    coding: [{ code: '71802-3', system: 'http://loinc.org', display: 'Housing status' }],
+  },
+  height: {
+    coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
+  },
+  weight: {
+    coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
+  },
+  bloodPressure: {
+    coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
+  },
+  bmi: {
+    coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
+  },
+};

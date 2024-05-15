@@ -23,7 +23,7 @@ import {
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
-  const response = event.input as QuestionnaireResponse;
+  const response = event.input;
   const answers = getQuestionnaireAnswers(response);
   // Get the linked encounter and the user who initiated the bot
   const encounter = await medplum.readReference(response.encounter as Reference<Encounter>);
@@ -98,84 +98,38 @@ function createObservationEntry(
     code: {},
   };
 
+  if (key === 'selfReportedHistory') {
+    resource.code = getSelfReportedCode(observationData.selfReportedHistory as string);
+    resource.valueString = observationData.selfReportedHistory;
+  } else {
+    resource.code = generalCodes[key];
+  }
+
   // Add the code and value based on the key
   switch (key) {
     case 'height':
-      resource.code = {
-        coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
-      };
       resource.valueQuantity = observationData.height;
       break;
     case 'weight':
-      resource.code = {
-        coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
-      };
       resource.valueQuantity = observationData.weight;
       break;
     case 'hotFlash':
-      resource.code = {
-        coding: [
-          {
-            code: '70376-9',
-            system: 'http://loinc.org',
-            display: 'I have hot flashes in the last 7 days',
-          },
-        ],
-      };
       resource.valueBoolean = observationData.hotFlash;
       break;
     case 'moodSwings':
-      resource.code = {
-        coding: [
-          {
-            code: '70805-7',
-            system: 'http://loing.org',
-            display: 'I have mood swings in the last 7 days',
-          },
-        ],
-      };
       resource.valueBoolean = observationData.moodSwings;
       break;
     case 'vaginalDryness':
-      resource.code = {
-        coding: [
-          {
-            code: '70802-4',
-            system: 'http://loing.org',
-            display: 'I have vaginal dryness in the last 7 days',
-          },
-        ],
-      };
       resource.valueBoolean = observationData.vaginalDryness;
       break;
     case 'sleepDisturbance':
-      resource.code = {
-        coding: [
-          {
-            code: '77712-8',
-            system: 'http://loing.org',
-            display: 'Sleep disturbance indicator in the last week',
-          },
-        ],
-      };
       resource.valueBoolean = observationData.sleepDisturbance;
       break;
-    case 'selfReportedHistory':
-      // Self reported history can have multiple codes
-      resource.code = getSelfReportedCode(observationData.selfReportedHistory as string);
-      resource.valueString = observationData.selfReportedHistory;
-      break;
     case 'bloodPressure':
-      resource.code = {
-        coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
-      };
       // Add the blood pressure as a component instead of a value
       resource.component = handleBloodPressure(observationData);
       break;
     case 'bmi':
-      resource.code = {
-        coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
-      };
       resource.valueQuantity = observationData.bmi;
       break;
   }
@@ -228,3 +182,30 @@ function getSelfReportedCode(reportedHistory: string): CodeableConcept {
 
   return code;
 }
+
+const generalCodes: Record<string, CodeableConcept> = {
+  height: {
+    coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
+  },
+  weight: {
+    coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
+  },
+  bloodPressure: {
+    coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
+  },
+  bmi: {
+    coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
+  },
+  hotFlash: {
+    coding: [{ code: '70376-9', system: 'http://loinc.org', display: 'I have hot flashes in the last 7 days' }],
+  },
+  moodSwings: {
+    coding: [{ code: '70805-7', system: 'http://loing.org', display: 'I have mood swings in the last 7 days' }],
+  },
+  vaginalDryness: {
+    coding: [{ code: '70802-4', system: 'http://loing.org', display: 'I have vaginal dryness in the last 7 days' }],
+  },
+  sleepDisturbance: {
+    coding: [{ code: '77712-8', system: 'http://loing.org', display: 'Sleep disturbance indicator in the last week' }],
+  },
+};

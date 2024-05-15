@@ -3,6 +3,7 @@ import {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
+  CodeableConcept,
   Coding,
   Encounter,
   Observation,
@@ -97,63 +98,36 @@ function createObservationEntry(
     ...generic,
   };
 
+  resource.code = obstetricCodes[key];
+
   // Based on the key add the appropriate code and value
   switch (key) {
     case 'gravida':
-      resource.code = {
-        coding: [{ code: '161732006', system: 'http://snomed.info/sct', display: 'Gravida' }],
-      };
       resource.valueInteger = observationData.gravida;
       break;
     case 'para':
-      resource.code = {
-        coding: [{ code: '118212000', system: 'http://snomed.info/sct', display: 'Parity finding' }],
-      };
       resource.valueInteger = observationData.para;
       break;
     case 'gestationalDays':
-      resource.code = {
-        coding: [{ code: '49052-4', system: 'http://loinc.org', display: 'Gestational age in days' }],
-      };
       resource.valueInteger = observationData.gestationalDays;
       break;
     case 'gestationalWeeks':
-      resource.code = {
-        coding: [{ code: '49051-6', system: 'http://loinc.org', display: 'Gestational age in weeks' }],
-      };
       resource.valueInteger = observationData.gestationalWeeks;
       break;
     case 'height':
-      resource.code = {
-        coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
-      };
       resource.valueQuantity = observationData.height;
       break;
     case 'weight':
-      resource.code = {
-        coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
-      };
       resource.valueQuantity = observationData.weight;
       break;
     case 'totalWeightGain':
-      resource.code = {
-        coding: [
-          { code: '56078-9', system: 'http://loinc.org', display: 'Weight gain [Mass] --during current pregnancy' },
-        ],
-      };
       resource.valueQuantity = observationData.totalWeightGain;
       break;
     case 'bloodPressure':
-      resource.code = {
-        coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
-      };
       // Since there may be multiple blood pressure values, we create a component instead of a value like the other observations
       resource.component = handleBloodPressure(observationData);
       break;
     case 'bmi':
-      resource.code = {
-        coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
-      };
       resource.valueQuantity = observationData.bmi;
       break;
   }
@@ -164,3 +138,33 @@ function createObservationEntry(
     resource,
   };
 }
+
+const obstetricCodes: Record<string, CodeableConcept> = {
+  height: {
+    coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
+  },
+  weight: {
+    coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
+  },
+  bloodPressure: {
+    coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
+  },
+  bmi: {
+    coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
+  },
+  gravida: {
+    coding: [{ code: '161732006', system: 'http://snomed.info/sct', display: 'Gravida' }],
+  },
+  para: {
+    coding: [{ code: '118212000', system: 'http://snomed.info/sct', display: 'Parity finding' }],
+  },
+  gestationalDays: {
+    coding: [{ code: '49052-4', system: 'http://loinc.org', display: 'Gestational age in days' }],
+  },
+  gestationalWeeks: {
+    coding: [{ code: '49051-6', system: 'http://loinc.org', display: 'Gestational age in weeks' }],
+  },
+  totalWeightGain: {
+    coding: [{ code: '56078-9', system: 'http://loinc.org', display: 'Weight gain [Mass] --during current pregnancy' }],
+  },
+};
