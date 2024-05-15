@@ -1,5 +1,6 @@
 ---
 sidebar_position: 7
+title: Modeling your Provider Directory
 ---
 
 # Modeling your Provider Directory
