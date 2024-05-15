@@ -23,6 +23,7 @@ export function UploadDataPage(): JSX.Element {
 
   const { dataType } = useParams();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
+  const buttonDisabled = dataType === 'bots' && (!checkQuestionnairesUploaded(medplum) || checkBotsUploaded(medplum));
 
   const handleUpload = useCallback(() => {
     setPageDisabled(true);
@@ -60,7 +61,7 @@ export function UploadDataPage(): JSX.Element {
   return (
     <Document>
       <LoadingOverlay visible={pageDisabled} />
-      <Button disabled={pageDisabled} onClick={handleUpload}>
+      <Button disabled={buttonDisabled} onClick={handleUpload}>
         Upload {dataTypeDisplay} data
       </Button>
     </Document>
@@ -208,4 +209,42 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
     title: 'Success',
     message: 'Deployed Example Bots',
   });
+}
+
+function checkQuestionnairesUploaded(medplum: MedplumClient): boolean {
+  let check = false;
+  const clinicalNoteQuestionnaires = medplum
+    .searchResources('Questionnaire', {
+      context: 'CLINNOTEE',
+    })
+    .read();
+
+  const questionnairesToCheck = clinicalNoteQuestionnaires.filter(
+    (questionnaire) =>
+      questionnaire.title === 'Obstetric Return Visit' ||
+      questionnaire.title === 'Gynecology New Visit' ||
+      questionnaire.title === 'Encounter Note'
+  );
+
+  if (questionnairesToCheck.length === 3) {
+    check = true;
+  }
+
+  return check;
+}
+
+function checkBotsUploaded(medplum: MedplumClient) {
+  const bots = medplum.searchResources('Bot').read();
+
+  const exampleBots = bots.filter(
+    (bot) =>
+      bot.name === 'general-encounter-note' ||
+      bot.name === 'gynecology-encounter-note' ||
+      bot.name === 'obstetric-encounter-note'
+  );
+
+  if (exampleBots.length === 3) {
+    return true;
+  }
+  return false;
 }

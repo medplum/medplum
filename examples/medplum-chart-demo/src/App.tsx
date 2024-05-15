@@ -53,9 +53,8 @@ export function App(): JSX.Element | null {
           links: [
             { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
             { icon: <IconHealthRecognition />, label: 'Upload Example Patient Data', href: '/upload/example' },
-            questionnairesUploaded
-              ? { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' }
-              : { icon: <IconQuestionMark />, label: 'Upload Questionnaires', href: '/upload/questionnaire' },
+            { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
+            { icon: <IconQuestionMark />, label: 'Upload Questionnaires', href: '/upload/questionnaire' },
           ],
         },
       ]}
