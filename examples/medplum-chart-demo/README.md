@@ -9,8 +9,8 @@
 This example app demonstrates the following:
 
 - Managing the lifecylce of an encounter and its corresponding notes.
-- Creating and displaying Encounter Notes using the `ClinicalImpression` resource.
-- Converting notes into structured data for easy use.
+- Creating and displaying Encounter Notes using the [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression) resource.
+- Converting notes into structured data ([`Observations`](/docs/api/fhir/resources/observation) and [`Conditions`](/docs/api/fhir/resources/condition)) for easy retrieval and longitudinal tracking.
 - Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display a chart that provides visibility on a patient and their medical encounters.
   - More information on a [charting experience](https://www.medplum.com/docs/charting)
 
@@ -18,7 +18,7 @@ This example app demonstrates the following:
 
 This repo is organized into two main directories: `src` and `data`.
 
-The `src` directory contains the app, including a `pages` and `components` directory. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) for use.
+The `src` directory contains the React app that implements the charting UX. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) to implement the parsing of notes into structured data.
 
 The `data` directory contains data that can be uploaded for use in the demo. The `example` directory contains data that is meant to be used for testing and learning, while the `core` directory contains resources, terminologies, and more that are necessary to use the demo.
 
