@@ -108,7 +108,7 @@ export function ToolsPage(): JSX.Element | null {
             </Table.Tr>
             <Table.Tr>
               <Table.Td>Last Updated</Table.Td>
-              <Table.Td>{formatDateTime(lastUpdated)}</Table.Td>
+              <Table.Td>{formatDateTime(lastUpdated, undefined, { timeZoneName: 'longOffset' })}</Table.Td>
             </Table.Tr>
           </Table.Tbody>
         </Table>
