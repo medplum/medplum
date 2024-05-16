@@ -5,8 +5,6 @@ import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
 import { App } from './app';
 
-jest.mock('node-windows');
-
 const medplum = new MockClient();
 let bot: Bot;
 let endpoint: Endpoint;

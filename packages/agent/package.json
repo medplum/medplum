@@ -27,14 +27,12 @@
     "@medplum/hl7": "3.1.7",
     "dcmjs-dimse": "0.1.27",
     "iconv-lite": "0.6.3",
-    "node-windows": "1.0.0-beta.8",
     "ws": "8.17.0"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "3.1.7",
     "@medplum/mock": "3.1.7",
     "@types/async-eventemitter": "0.2.4",
-    "@types/node-windows": "0.1.6",
     "@types/ws": "8.5.10",
     "mock-socket": "9.3.1",
     "pkg": "5.8.1"
