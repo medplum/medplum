@@ -233,7 +233,7 @@ function checkQuestionnairesUploaded(medplum: MedplumClient): boolean {
   return check;
 }
 
-function checkBotsUploaded(medplum: MedplumClient) {
+function checkBotsUploaded(medplum: MedplumClient): boolean {
   const bots = medplum.searchResources('Bot').read();
 
   const exampleBots = bots.filter(

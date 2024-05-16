@@ -10,20 +10,17 @@ import {
 } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { PatientPage } from './pages/PatientPage';
 import { EncounterPage } from './pages/EncounterPage';
 import { LandingPage } from './pages/LandingPage';
+import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
-import { MedplumClient } from '@medplum/core';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-
-  const questionnairesUploaded = checkQuestionnairesUploaded(medplum);
 
   if (medplum.isLoading()) {
     return null;
@@ -74,26 +71,4 @@ export function App(): JSX.Element | null {
       </ErrorBoundary>
     </AppShell>
   );
-}
-
-function checkQuestionnairesUploaded(medplum: MedplumClient): boolean {
-  let check = false;
-  const clinicalNoteQuestionnaires = medplum
-    .searchResources('Questionnaire', {
-      context: 'CLINNOTEE',
-    })
-    .read();
-
-  const questionnairesToCheck = clinicalNoteQuestionnaires.filter(
-    (questionnaire) =>
-      questionnaire.title === 'Obstetric Return Visit' ||
-      questionnaire.title === 'Gynecology New Visit' ||
-      questionnaire.title === 'Encounter Note'
-  );
-
-  if (questionnairesToCheck.length === 3) {
-    check = true;
-  }
-
-  return check;
 }
