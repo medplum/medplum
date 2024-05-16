@@ -17,9 +17,17 @@ import {
   createClinicalImpressionEntry,
   createConditionEntries,
   createObservationEntries,
-  GeneralObservationData,
   handleBloodPressure,
-} from './bot-utils';
+  ObservationData,
+} from './charting-utils';
+
+export interface GeneralObservationData extends ObservationData {
+  hotFlash?: boolean;
+  moodSwings?: boolean;
+  vaginalDryness?: boolean;
+  sleepDisturbance?: boolean;
+  selfReportedHistory?: string;
+}
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
@@ -64,7 +72,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   };
 
   // Take the objects and create bundle entries from the data for each resource
-  const observationEntries = createObservationEntries(observationData, encounter, user, createObservationEntry);
+  const partialObservations = createPartialGeneralObservations(observationData, generalCodes);
+  const observationEntries = createObservationEntries(observationData, encounter, user, partialObservations);
   const conditionEntries = createConditionEntries(conditionData, encounter, user);
   const clinicalImpressionEntries = createClinicalImpressionEntry(clinicalImpressionData, encounter, user);
 
@@ -86,59 +95,56 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   return responseBundle;
 }
 
-function createObservationEntry(
-  key: string,
-  request: BundleEntryRequest,
-  genericObservation: Observation,
-  observationData: GeneralObservationData
-): BundleEntry {
-  // Create the generic observation
-  const resource = {
-    ...genericObservation,
-    code: {},
-  };
+function createPartialGeneralObservations(
+  observationData: GeneralObservationData,
+  codes: Record<string, CodeableConcept>
+): Partial<Observation>[] {
+  const partials: Partial<Observation>[] = [];
+  for (const [key, value] of Object.entries(observationData)) {
+    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
+      continue;
+    }
 
-  if (key === 'selfReportedHistory') {
-    resource.code = getSelfReportedCode(observationData.selfReportedHistory as string);
-    resource.valueString = observationData.selfReportedHistory;
-  } else {
-    resource.code = generalCodes[key];
+    const resource: Partial<Observation> = {
+      code:
+        key === 'selfReportedHistory' ? getSelfReportedCode(observationData.selfReportedHistory as string) : codes[key],
+    };
+
+    switch (key) {
+      case 'height':
+        resource.valueQuantity = observationData.height;
+        break;
+      case 'weight':
+        resource.valueQuantity = observationData.weight;
+        break;
+      case 'hotFlash':
+        resource.valueBoolean = observationData.hotFlash;
+        break;
+      case 'moodSwings':
+        resource.valueBoolean = observationData.moodSwings;
+        break;
+      case 'vaginalDryness':
+        resource.valueBoolean = observationData.vaginalDryness;
+        break;
+      case 'sleepDisturbance':
+        resource.valueBoolean = observationData.sleepDisturbance;
+        break;
+      case 'bloodPressure':
+        // Add the blood pressure as a component instead of a value
+        resource.component = handleBloodPressure(observationData);
+        break;
+      case 'bmi':
+        resource.valueQuantity = observationData.bmi;
+        break;
+      case 'selfReportedHistory':
+        resource.valueString = observationData.selfReportedHistory;
+        break;
+    }
+
+    partials.push(resource);
   }
 
-  // Add the code and value based on the key
-  switch (key) {
-    case 'height':
-      resource.valueQuantity = observationData.height;
-      break;
-    case 'weight':
-      resource.valueQuantity = observationData.weight;
-      break;
-    case 'hotFlash':
-      resource.valueBoolean = observationData.hotFlash;
-      break;
-    case 'moodSwings':
-      resource.valueBoolean = observationData.moodSwings;
-      break;
-    case 'vaginalDryness':
-      resource.valueBoolean = observationData.vaginalDryness;
-      break;
-    case 'sleepDisturbance':
-      resource.valueBoolean = observationData.sleepDisturbance;
-      break;
-    case 'bloodPressure':
-      // Add the blood pressure as a component instead of a value
-      resource.component = handleBloodPressure(observationData);
-      break;
-    case 'bmi':
-      resource.valueQuantity = observationData.bmi;
-      break;
-  }
-
-  return {
-    fullUrl: generateId(),
-    request,
-    resource,
-  };
+  return partials;
 }
 
 function getSelfReportedCode(reportedHistory: string): CodeableConcept {
@@ -149,33 +155,45 @@ function getSelfReportedCode(reportedHistory: string): CodeableConcept {
   // Add the appropriate code based on the answer provided for self-reported history
   switch (reportedHistory) {
     case 'Blood clots':
-      code.coding?.push({ code: '75753009', system: 'http://snomed.info/sct', display: 'Blood clot' });
+      code.coding?.push({
+        code: 'I74.9',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Embolism and thrombosis of unspecified artery',
+      });
       break;
     case 'Stroke':
-      code.coding?.push({ code: '230690007', system: 'http://snomed.info/sct', display: 'Stroke' });
+      code.coding?.push({
+        code: 'I63.9',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Cerebral infarction, unspecified',
+      });
       break;
     case 'Breast cancer':
-      code.coding?.push({ code: '254837009', system: 'http://snomed.info/sct', display: 'Breast cancer' });
+      code.coding?.push({
+        code: 'D05.10',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Intraductal carcinoma in situ of unspecified breast',
+      });
       break;
     case 'Endometrial cancer':
       code.coding?.push({
-        code: '315267003',
-        system: 'http://snomed.info/sct',
-        display: 'Suspected endometrial canncer',
+        code: 'C54.1',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Malignant neoplasm of endometrium',
       });
       break;
     case 'Irregular bleeding':
       code.coding?.push({
-        code: '64996003',
-        system: 'http://snomed.info/sct',
-        display: 'Irregular intermenstrual bleeding',
+        code: 'N92.1',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Excessive and frequent menstruation with irregular cycle',
       });
       break;
     case 'BMI > 30':
       code.coding?.push({
-        code: '162864005',
-        system: 'http://snomed.info/sct',
-        display: 'Body mass index 30+ - obesity',
+        code: 'E66.9',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Obesity, unspecified',
       });
       break;
   }

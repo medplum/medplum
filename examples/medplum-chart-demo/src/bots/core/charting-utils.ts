@@ -14,7 +14,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 
-interface ObservationData {
+export interface ObservationData {
   bloodPressure: {
     systolic?: number;
     diastolic?: number;
@@ -23,31 +23,6 @@ interface ObservationData {
   weight?: Quantity;
   bmi?: Quantity;
   date?: string;
-}
-
-export interface GeneralObservationData extends ObservationData {
-  hotFlash?: boolean;
-  moodSwings?: boolean;
-  vaginalDryness?: boolean;
-  sleepDisturbance?: boolean;
-  selfReportedHistory?: string;
-}
-
-export interface GynecologyObservationData extends ObservationData {
-  lastPeriod?: string;
-  contraception?: Coding;
-  lastMammogram?: string;
-  smokingStatus?: Coding;
-  drugUse?: Coding;
-  housingStatus?: Coding;
-}
-
-export interface ObstetricObservationData extends ObservationData {
-  gravida?: number;
-  para?: number;
-  gestationalDays?: number;
-  gestationalWeeks?: number;
-  totalWeightGain?: Quantity;
 }
 
 export interface ConditionData {
@@ -60,46 +35,64 @@ export interface ClinicalImpressionData {
   assessment?: string;
 }
 
+/**
+ * This function takes partial observations with the code and value and fills them out with generic observation data. It then creates a
+ * bundle entry and adds that to an array. These bundle entries can then be used in a batch transaction to create all of the necessary
+ * Observations at once.
+ *
+ * @param observationData The values to be added to the created Observations
+ * @param encounter The encounter the observations are derived from
+ * @param user The user creating the Observations
+ * @param partialObservations An array of the partial Observations containing the code and value for each given observation
+ * @returns An array of bundle entries which can be added to a batch transaction
+ */
 export function createObservationEntries(
-  observationData: GeneralObservationData | GynecologyObservationData | ObstetricObservationData,
+  observationData: ObservationData,
   encounter: Encounter,
   user: Practitioner,
-  createEntryFunction: (
-    key: string,
-    request: BundleEntryRequest,
-    genericObservation: Observation,
-    observationData: GeneralObservationData | GynecologyObservationData | ObstetricObservationData
-  ) => BundleEntry
+  partialObservations: Partial<Observation>[]
 ): BundleEntry[] {
   const entries: BundleEntry[] = [];
-  const request: BundleEntryRequest = { method: 'POST', url: 'Observation' };
-  // Create a generic observation that just needs to have a code and value added to it
-  const genericObservation: Observation = {
-    resourceType: 'Observation',
-    status: 'preliminary',
-    subject: encounter.subject,
-    encounter: { reference: getReferenceString(encounter) },
-    performer: [{ reference: getReferenceString(user) }],
-    effectiveDateTime: observationData.date,
-    code: {},
-  };
-
-  // Loop over each entry of the observation data
-  for (const [key, value] of Object.entries(observationData)) {
-    // If there is no value for a key, skip
-    // Check that blood pressure has a measurement for at least one of systolic and diastolic, otherwise skip
-    // Date is used to get the time for each observation, but does not create its own observation so skip it
-    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
-      continue;
+  for (const partial of partialObservations) {
+    const code = partial.code;
+    if (!code) {
+      throw new Error('No code provided');
     }
+    const request: BundleEntryRequest = {
+      method: 'PUT',
+      url: code.coding?.[0].code
+        ? `Observation?encounter=${getReferenceString(encounter)}&code=${code.coding?.[0].code}`
+        : `Observation?encounter=${getReferenceString(encounter)}`,
+    };
 
-    // Create an entry and add it to the entries array
-    entries.push(createEntryFunction(key, request, genericObservation, observationData));
+    const observation: Observation = {
+      ...partial,
+      resourceType: 'Observation',
+      status: 'final',
+      code,
+      subject: encounter.subject,
+      encounter: { reference: getReferenceString(encounter) },
+      performer: [{ reference: getReferenceString(user) }],
+      effectiveDateTime: observationData.date,
+    };
+
+    entries.push({
+      fullUrl: generateId(),
+      request,
+      resource: observation,
+    });
   }
 
   return entries;
 }
 
+/**
+ * This function handles adding blood pressure measurements to an observation since there are often both systolic and diastolic
+ * measurements which need to be added to the component element.
+ *
+ * @param observationData The data object containing the blood pressure values
+ * @returns An Observation component element with diastolic, systolic, or both blood pressure measurements
+ */
 export function handleBloodPressure(observationData: ObservationData): ObservationComponent[] {
   const components: ObservationComponent[] = [];
   const bloodPressure = observationData.bloodPressure;
@@ -129,13 +122,27 @@ export function handleBloodPressure(observationData: ObservationData): Observati
   return components;
 }
 
+/**
+ * This function takes condition data and turns it into an array of bundle entries that can be used in a batch transaction. If the
+ * Condition is being added to the problem list, then an additional Condition resource will be created. For more details see the
+ * Representing Diagnoses docs here: https://www.medplum.com/docs/charting/representing-diagnoses
+ *
+ * @param conditionData Data object containg codes and values for a condition/reason for the visit.
+ * @param encounter The encounter the data is derived from.
+ * @param user The user creating the Condition resource
+ * @returns An array of bundle entries containing the Condition resource that can be created in a batch request.
+ */
 export function createConditionEntries(
   conditionData: ConditionData,
   encounter: Encounter,
   user: Practitioner
 ): BundleEntry[] {
+  const code = conditionData.reasonForVisit.code;
   const entries: BundleEntry[] = [];
-  const request: BundleEntryRequest = { method: 'POST', url: 'Condition' };
+  const request: BundleEntryRequest = {
+    method: 'PUT',
+    url: `Condition?encounter=${getReferenceString(encounter)}&code=${code}`,
+  };
   // Create a condition for the encounter diagnosis
   const encounterDiagnosis: Condition = {
     resourceType: 'Condition',
@@ -189,6 +196,15 @@ export function createConditionEntries(
   return entries;
 }
 
+/**
+ * This function takes ClinicalImpression data and creates a bundle entry so that it can be added to a batch transaction. The
+ * ClinicalImpression resource represents any notes on an encounter in this context.
+ *
+ * @param clinicalImpressionData Data object containing codes and values for the ClinicalImpression resources
+ * @param encounter The encounter that the data is derived from
+ * @param user The user creating the ClinicalImpressions
+ * @returns A bundle entry with the ClinicalImpression resource that can be used in a batch transaction
+ */
 export function createClinicalImpressionEntry(
   clinicalImpressionData: ClinicalImpressionData,
   encounter: Encounter,
@@ -211,11 +227,18 @@ export function createClinicalImpressionEntry(
   // Return the clinical impression in a bundle entry
   return {
     fullUrl: generateId(),
-    request: { method: 'POST', url: 'ClinicalImpression' },
+    request: { method: 'PUT', url: `ClinicalImpression?encounter=${getReferenceString(encounter)}` },
     resource: clinicalImpression,
   };
 }
 
+/**
+ * This function calculates the BMI of a patient based on their height and weight. Reference: https://my.clevelandclinic.org/health/articles/9464-body-mass-index-bmi
+ *
+ * @param height The height of the patient
+ * @param weight The weight of the patient
+ * @returns The BMI of the patient
+ */
 export function calculateBMI(height: Quantity, weight: Quantity): Quantity {
   if (!height?.value || !weight?.value) {
     throw new Error('All values must be provided');

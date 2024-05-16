@@ -8,6 +8,7 @@ import {
   Encounter,
   Observation,
   Practitioner,
+  Quantity,
   QuestionnaireResponse,
   Reference,
 } from '@medplum/fhirtypes';
@@ -19,8 +20,16 @@ import {
   createConditionEntries,
   createObservationEntries,
   handleBloodPressure,
-  ObstetricObservationData,
-} from './bot-utils';
+  ObservationData,
+} from './charting-utils';
+
+export interface ObstetricObservationData extends ObservationData {
+  gravida?: number;
+  para?: number;
+  gestationalDays?: number;
+  gestationalWeeks?: number;
+  totalWeightGain?: Quantity;
+}
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
@@ -65,7 +74,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   };
 
   // Take the above objects and create bundle entries for each resource type.
-  const observationEntries = createObservationEntries(observationData, encounter, user, createObservationEntry);
+  const partialObservations = createPartialObstetricObservations(observationData, obstetricCodes);
+  const observationEntries = createObservationEntries(observationData, encounter, user, partialObservations);
   const conditionEntries = createConditionEntries(conditionData, encounter, user);
   const clinicalImpressionEntry = createClinicalImpressionEntry(clinicalImpressionData, encounter, user);
 
@@ -87,56 +97,55 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   return responseBundle;
 }
 
-function createObservationEntry(
-  key: string,
-  request: BundleEntryRequest,
-  generic: Observation,
-  observationData: ObstetricObservationData
-): BundleEntry {
-  // Use the generic data from above
-  const resource: Observation = {
-    ...generic,
-  };
+function createPartialObstetricObservations(
+  observationData: ObstetricObservationData,
+  codes: Record<string, CodeableConcept>
+): Partial<Observation>[] {
+  const partials: Partial<Observation>[] = [];
+  for (const [key, value] of Object.entries(observationData)) {
+    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
+      continue;
+    }
 
-  resource.code = obstetricCodes[key];
+    const resource: Partial<Observation> = {
+      code: codes[key],
+    };
 
-  // Based on the key add the appropriate code and value
-  switch (key) {
-    case 'gravida':
-      resource.valueInteger = observationData.gravida;
-      break;
-    case 'para':
-      resource.valueInteger = observationData.para;
-      break;
-    case 'gestationalDays':
-      resource.valueInteger = observationData.gestationalDays;
-      break;
-    case 'gestationalWeeks':
-      resource.valueInteger = observationData.gestationalWeeks;
-      break;
-    case 'height':
-      resource.valueQuantity = observationData.height;
-      break;
-    case 'weight':
-      resource.valueQuantity = observationData.weight;
-      break;
-    case 'totalWeightGain':
-      resource.valueQuantity = observationData.totalWeightGain;
-      break;
-    case 'bloodPressure':
-      // Since there may be multiple blood pressure values, we create a component instead of a value like the other observations
-      resource.component = handleBloodPressure(observationData);
-      break;
-    case 'bmi':
-      resource.valueQuantity = observationData.bmi;
-      break;
+    switch (key) {
+      case 'gravida':
+        resource.valueInteger = observationData.gravida;
+        break;
+      case 'para':
+        resource.valueInteger = observationData.para;
+        break;
+      case 'gestationalDays':
+        resource.valueInteger = observationData.gestationalDays;
+        break;
+      case 'gestationalWeeks':
+        resource.valueInteger = observationData.gestationalWeeks;
+        break;
+      case 'height':
+        resource.valueQuantity = observationData.height;
+        break;
+      case 'weight':
+        resource.valueQuantity = observationData.weight;
+        break;
+      case 'totalWeightGain':
+        resource.valueQuantity = observationData.totalWeightGain;
+        break;
+      case 'bloodPressure':
+        // Since there may be multiple blood pressure values, we create a component instead of a value like the other observations
+        resource.component = handleBloodPressure(observationData);
+        break;
+      case 'bmi':
+        resource.valueQuantity = observationData.bmi;
+        break;
+    }
+
+    partials.push(resource);
   }
 
-  return {
-    fullUrl: generateId(),
-    request,
-    resource,
-  };
+  return partials;
 }
 
 const obstetricCodes: Record<string, CodeableConcept> = {

@@ -1,7 +1,8 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Quantity, SearchParameter } from '@medplum/fhirtypes';
-import { calculateBMI } from './bot-utils';
+import { Bundle, Encounter, Observation, Practitioner, Quantity, SearchParameter } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { calculateBMI, createObservationEntries, ObservationData } from './charting-utils';
 
 describe('Bot utility function tests', async () => {
   beforeAll(() => {
@@ -52,5 +53,26 @@ describe('Bot utility function tests', async () => {
     expect(() => calculateBMI({ value: 180, unit: 'cm' }, { value: 50, unit: 'kgs' })).toThrow(
       /^Unknown unit. Please provide weight in one of the following units: Pounds or kilograms.$/
     );
+  });
+
+  test('Create entries with no code', async () => {
+    const medplum = new MockClient();
+    const noCode: ObservationData = {
+      bloodPressure: {
+        systolic: 99,
+        diastolic: 99,
+      },
+    };
+    const partials: Partial<Observation>[] = [{ valueInteger: 99 }];
+    const encounter: Encounter = await medplum.createResource({
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: { code: 'example' },
+    });
+    const practitioner: Practitioner = await medplum.createResource({
+      resourceType: 'Practitioner',
+    });
+
+    expect(() => createObservationEntries(noCode, encounter, practitioner, partials)).toThrow(/^No code provided$/);
   });
 });

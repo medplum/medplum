@@ -1,9 +1,10 @@
-import { BotEvent, generateId, getQuestionnaireAnswers, getReferenceString, MedplumClient } from '@medplum/core';
+import { BotEvent, generateId, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
   CodeableConcept,
+  Coding,
   Encounter,
   Observation,
   Practitioner,
@@ -17,9 +18,18 @@ import {
   createClinicalImpressionEntry,
   createConditionEntries,
   createObservationEntries,
-  GynecologyObservationData,
   handleBloodPressure,
-} from './bot-utils';
+  ObservationData,
+} from './charting-utils';
+
+export interface GynecologyObservationData extends ObservationData {
+  lastPeriod?: string;
+  contraception?: Coding;
+  lastMammogram?: string;
+  smokingStatus?: Coding;
+  drugUse?: Coding;
+  housingStatus?: Coding;
+}
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
@@ -66,7 +76,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   };
 
   // Create bundle entries from the above objects
-  const observationEntries = createObservationEntries(observationData, encounter, user, createObservationEntry);
+  const partialObservations = createPartialGynecologyObservations(observationData, gynecologyCodes);
+  const observationEntries = createObservationEntries(observationData, encounter, user, partialObservations);
   const conditionEntry = createConditionEntries(conditionData, encounter, user);
   const clinicalImpressionEntry = createClinicalImpressionEntry(clinicalImpressionData, encounter, user);
 
@@ -88,60 +99,58 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   return responseBundle;
 }
 
-function createObservationEntry(
-  key: string,
-  request: BundleEntryRequest,
-  genericObservation: Observation,
-  observationData: GynecologyObservationData
-): BundleEntry {
-  // Create a base resource from the generic
-  const resource: Observation = {
-    ...genericObservation,
-    code: {},
-  };
+function createPartialGynecologyObservations(
+  observationData: GynecologyObservationData,
+  codes: Record<string, CodeableConcept>
+): Partial<Observation>[] {
+  const partials: Partial<Observation>[] = [];
+  for (const [key, value] of Object.entries(observationData)) {
+    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
+      continue;
+    }
 
-  resource.code = gynecologyCodes[key];
+    const resource: Partial<Observation> = {
+      code: codes[key],
+    };
 
-  // Add the appropriate code and value based on the key
-  switch (key) {
-    case 'lastPeriod':
-      resource.valueDateTime = observationData.lastPeriod;
-      break;
-    case 'contraception':
-      resource.valueCodeableConcept = observationData.contraception;
-      break;
-    case 'lastMammogram':
-      resource.valueDateTime = observationData.lastMammogram;
-      break;
-    case 'smokingStatus':
-      resource.valueCodeableConcept = observationData.smokingStatus;
-      break;
-    case 'drugUse':
-      resource.valueCodeableConcept = observationData.drugUse;
-      break;
-    case 'housingStatus':
-      resource.valueCodeableConcept = observationData.housingStatus;
-      break;
-    case 'height':
-      resource.valueQuantity = observationData.height;
-      break;
-    case 'weight':
-      resource.valueQuantity = observationData.weight;
-      break;
-    case 'bloodPressure':
-      // Add the blood pressure as a component instead of a value
-      resource.component = handleBloodPressure(observationData);
-      break;
-    case 'bmi':
-      resource.valueQuantity = observationData.bmi;
-      break;
+    switch (key) {
+      case 'lastPeriod':
+        resource.valueDateTime = observationData.lastPeriod;
+        break;
+      case 'contraception':
+        resource.valueCodeableConcept = observationData.contraception;
+        break;
+      case 'lastMammogram':
+        resource.valueDateTime = observationData.lastMammogram;
+        break;
+      case 'smokingStatus':
+        resource.valueCodeableConcept = observationData.smokingStatus;
+        break;
+      case 'drugUse':
+        resource.valueCodeableConcept = observationData.drugUse;
+        break;
+      case 'housingStatus':
+        resource.valueCodeableConcept = observationData.housingStatus;
+        break;
+      case 'height':
+        resource.valueQuantity = observationData.height;
+        break;
+      case 'weight':
+        resource.valueQuantity = observationData.weight;
+        break;
+      case 'bloodPressure':
+        // Add the blood pressure as a component instead of a value
+        resource.component = handleBloodPressure(observationData);
+        break;
+      case 'bmi':
+        resource.valueQuantity = observationData.bmi;
+        break;
+    }
+
+    partials.push(resource);
   }
 
-  return {
-    fullUrl: generateId(),
-    request,
-    resource,
-  };
+  return partials;
 }
 
 const gynecologyCodes: Record<string, CodeableConcept> = {
