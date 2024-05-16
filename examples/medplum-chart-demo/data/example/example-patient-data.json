@@ -39,7 +39,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -67,7 +68,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -95,7 +97,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -123,7 +126,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -151,7 +155,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -179,7 +184,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -235,7 +241,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -291,7 +298,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -347,7 +355,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -403,7 +412,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -459,7 +469,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -487,7 +498,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -515,7 +527,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -543,7 +556,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -571,7 +585,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -599,7 +614,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -627,7 +643,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -655,7 +672,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -683,7 +701,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -711,7 +730,8 @@
         "resourceType": "Observation",
         "status": "final",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "code": {
           "coding": [
@@ -739,7 +759,8 @@
         "resourceType": "ClinicalImpression",
         "status": "completed",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "effectiveDateTime": "1987-06-12",
         "note": [
@@ -759,7 +780,8 @@
         "resourceType": "ClinicalImpression",
         "status": "completed",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "effectiveDateTime": "1989-12-17",
         "note": [
@@ -779,7 +801,8 @@
         "resourceType": "ClinicalImpression",
         "status": "completed",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "effectiveDateTime": "1992-03-22",
         "note": [
@@ -799,7 +822,8 @@
         "resourceType": "ClinicalImpression",
         "status": "completed",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "effectiveDateTime": "1995-09-14",
         "note": [
@@ -819,7 +843,8 @@
         "resourceType": "ClinicalImpression",
         "status": "completed",
         "subject": {
-          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57"
+          "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
+          "display": "Homer Simpson"
         },
         "effectiveDateTime": "2000-02-05",
         "note": [

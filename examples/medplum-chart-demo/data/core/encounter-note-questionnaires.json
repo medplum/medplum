@@ -73,22 +73,26 @@
               {
                 "linkId": "systolic",
                 "type": "integer",
-                "text": "Systolic Blood Pressure"
+                "text": "Systolic Blood Pressure",
+                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }]
               },
               {
                 "linkId": "diastolic",
                 "type": "integer",
-                "text": "Diastolic Blood Pressure"
+                "text": "Diastolic Blood Pressure",
+                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }]
               },
               {
                 "linkId": "height",
                 "type": "quantity",
-                "text": "Height"
+                "text": "Height",
+                "code": [{ "code": "8302-2", "system": "http://loinc.org", "display": "Body height" }]
               },
               {
                 "linkId": "weight",
                 "type": "quantity",
-                "text": "Weight"
+                "text": "Weight",
+                "code": [{ "code": "29463-7", "system": "http://loinc.org", "display": "Body weight" }]
               }
             ]
           },
@@ -96,7 +100,14 @@
             "id": "id-29",
             "linkId": "total-weight-gain",
             "type": "quantity",
-            "text": "Total Weight Gain"
+            "text": "Total Weight Gain",
+            "code": [
+              {
+                "code": "56078-9",
+                "system": "http://loinc.org",
+                "display": "Weight gain [Mass] --during current pregnancy"
+              }
+            ]
           },
           {
             "id": "id-24",
@@ -108,13 +119,15 @@
                 "id": "id-25",
                 "linkId": "gravida",
                 "type": "integer",
-                "text": "Gravida"
+                "text": "Gravida",
+                "code": [{ "code": "161732006", "system": "http://snomed.info/sct", "display": "Gravida" }]
               },
               {
                 "id": "id-26",
                 "linkId": "para",
                 "type": "integer",
-                "text": "Para"
+                "text": "Para",
+                "code": [{ "code": "118212000", "system": "http://snomed.info/sct", "display": "Para" }]
               },
               {
                 "id": "id-31",
@@ -126,13 +139,15 @@
                     "id": "id-32",
                     "linkId": "gestational-age-weeks",
                     "type": "integer",
-                    "text": "Weeks"
+                    "text": "Weeks",
+                    "code": [{ "code": "49051-6", "system": "http://loinc.org", "display": "Gestational age in weeks" }]
                   },
                   {
                     "id": "id-33",
                     "linkId": "gestational-age-days",
                     "type": "integer",
-                    "text": "Days"
+                    "text": "Days",
+                    "code": [{ "code": "56078-9", "system": "http://loinc.org", "display": "Gestational age in days" }]
                   }
                 ]
               }
@@ -226,22 +241,26 @@
               {
                 "linkId": "systolic",
                 "type": "integer",
-                "text": "Systolic Blood Pressure"
+                "text": "Systolic Blood Pressure",
+                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }]
               },
               {
                 "linkId": "diastolic",
                 "type": "integer",
-                "text": "Diastolic Blood Pressure"
+                "text": "Diastolic Blood Pressure",
+                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }]
               },
               {
                 "linkId": "height",
                 "type": "quantity",
-                "text": "Height"
+                "text": "Height",
+                "code": [{ "code": "8302-2", "system": "http://loinc.org", "display": "Body height" }]
               },
               {
                 "linkId": "weight",
                 "type": "quantity",
-                "text": "Weight"
+                "text": "Weight",
+                "code": [{ "code": "29463-7", "system": "http://loinc.org", "display": "Body weight" }]
               }
             ]
           },
@@ -255,13 +274,19 @@
                 "id": "id-5",
                 "linkId": "last-period",
                 "type": "date",
-                "text": "Last Period"
+                "text": "Last Period",
+                "code": [
+                  { "code": "8665-2", "system": "http://loinc.org", "display": "Last menstrual period start date" }
+                ]
               },
               {
                 "id": "id-6",
                 "linkId": "contraception",
                 "type": "open-choice",
                 "text": "Preferred Contraception Method",
+                "code": [
+                  { "code": "8659-5", "system": "http://loinc.org", "display": "Birth control method - Reported" }
+                ],
                 "answerOption": [
                   {
                     "id": "id-7",
@@ -290,7 +315,10 @@
                 "id": "id-10",
                 "linkId": "mammogram",
                 "type": "date",
-                "text": "Last Mammogram"
+                "text": "Last Mammogram",
+                "code": [
+                  { "code": "429736008", "system": "http://snomed.info/sct", "display": "Date of last mammogram" }
+                ]
               }
             ]
           },
@@ -305,6 +333,7 @@
                 "linkId": "smoking",
                 "type": "choice",
                 "text": "Smoking Status",
+                "code": [{ "code": "72166-2", "system": "http://loinc.org", "display": "Tobacco smoking status" }],
                 "answerOption": [
                   {
                     "valueCoding": {
@@ -348,6 +377,7 @@
                 "linkId": "drugs",
                 "type": "choice",
                 "text": "Drug Use",
+                "code": [{ "code": "74204-9", "system": "http://loinc.org", "display": "Drug use" }],
                 "answerOption": [
                   {
                     "valueCoding": {
@@ -384,6 +414,7 @@
                 "linkId": "housing",
                 "type": "choice",
                 "text": "Housing Status",
+                "code": [{ "code": "71802-3", "system": "http://loinc.org", "display": "Housing status" }],
                 "answerOption": [
                   {
                     "valueCoding": {
@@ -520,22 +551,26 @@
               {
                 "linkId": "systolic",
                 "type": "integer",
-                "text": "Systolic Blood Pressure"
+                "text": "Systolic Blood Pressure",
+                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }]
               },
               {
                 "linkId": "diastolic",
                 "type": "integer",
-                "text": "Diastolic Blood Pressure"
+                "text": "Diastolic Blood Pressure",
+                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }]
               },
               {
                 "linkId": "height",
                 "type": "quantity",
-                "text": "Height"
+                "text": "Height",
+                "code": [{ "code": "8302-2", "system": "http://loinc.org", "display": "Body height" }]
               },
               {
                 "linkId": "weight",
                 "type": "quantity",
-                "text": "Weight"
+                "text": "Weight",
+                "code": [{ "code": "29463-7", "system": "http://loinc.org", "display": "Body weight" }]
               }
             ]
           },
@@ -547,22 +582,50 @@
               {
                 "linkId": "hot-flashes",
                 "type": "boolean",
-                "text": "Hot flashes"
+                "text": "Hot flashes",
+                "code": [
+                  {
+                    "code": "70376-9",
+                    "system": "http://loinc.org",
+                    "display": "I have hot flashes in the last 7 days"
+                  }
+                ]
               },
               {
                 "linkId": "mood-swings",
                 "type": "boolean",
-                "text": "Mood swings"
+                "text": "Mood swings",
+                "code": [
+                  {
+                    "code": "70805-7",
+                    "system": "http://loinc.org",
+                    "display": "I have mood swings in the last 7 days"
+                  }
+                ]
               },
               {
                 "linkId": "vaginal-dryness",
                 "type": "boolean",
-                "text": "Vaginal dryness"
+                "text": "Vaginal dryness",
+                "code": [
+                  {
+                    "code": "70802-4",
+                    "system": "http://loinc.org",
+                    "display": "I have vaginal dryness in the last 7 days"
+                  }
+                ]
               },
               {
                 "linkId": "sleep-disturbance",
                 "type": "boolean",
-                "text": "Sleep Disturbance"
+                "text": "Sleep Disturbance",
+                "code": [
+                  {
+                    "code": "77712-8",
+                    "system": "http://loinc.org",
+                    "display": "Sleep disturbance indicator in the last week"
+                  }
+                ]
               },
               {
                 "linkId": "self-reported-history",
