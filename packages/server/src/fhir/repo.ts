@@ -869,31 +869,32 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   ): Promise<void> {
     const batchSize = 500;
     let hasMore = true;
-    let currentTimestamp: string | undefined = undefined;
+    let currentTimestamp = new Date(0).toISOString(); // Beginning of epoch time
+    const endTimestamp = new Date(Date.now() + 1000 * 60 * 5).toISOString(); // Five minutes in the future
 
     while (hasMore) {
       const searchRequest: SearchRequest<T> = {
         resourceType,
         count: batchSize,
         sortRules: [{ code: '_lastUpdated', descending: false }],
+        filters: [
+          {
+            code: '_lastUpdated',
+            operator: Operator.GREATER_THAN_OR_EQUALS,
+            value: currentTimestamp,
+          },
+          { code: '_lastUpdated', operator: Operator.LESS_THAN, value: endTimestamp },
+        ],
       };
-
-      if (currentTimestamp) {
-        searchRequest.filters = [
-          { code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: currentTimestamp },
-        ];
-      }
 
       await this.withTransaction(async (conn) => {
         const bundle = await this.search(searchRequest);
-        const resources: T[] = [];
         if (bundle.entry) {
+          const resources: T[] = [];
           for (const entry of bundle.entry) {
             const resource = entry.resource as T;
             resources.push(resource);
-
-            const lastUpdated = resource.meta?.lastUpdated as string;
-            currentTimestamp = lastUpdated;
+            currentTimestamp = resource.meta?.lastUpdated as string;
           }
           await callback(conn, resources);
         }
