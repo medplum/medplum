@@ -10,11 +10,13 @@ interface Answers {
   assessment?: Annotation[];
 }
 
-interface GeneralAnswers extends Answers {
+export interface GeneralAnswers extends Answers {
   noteType: 'general';
+  subjective: [string, boolean][];
+  selfReportedHistory?: CodeableConcept;
 }
 
-interface ObstetricAnswers extends Answers {
+export interface ObstetricAnswers extends Answers {
   totalWeightGain?: Quantity;
   gravida?: number;
   para?: number;
@@ -23,7 +25,7 @@ interface ObstetricAnswers extends Answers {
   noteType: 'obstetric';
 }
 
-interface GynecologyAnswers extends Answers {
+export interface GynecologyAnswers extends Answers {
   lastPeriod?: string;
   contraception?: Coding;
   lastMammogram?: string;
@@ -54,17 +56,17 @@ function parseGynecologyAnswers(
 ): GynecologyAnswers {
   const genericAnswers = parseGenericAnswers(answers, noteType);
 
-  const lastPeriod = answers['last-period'].valueDate;
-  const contraception = answers['contraception'].valueCoding;
-  const lastMammogram = answers['mammogram'].valueDate;
+  const lastPeriod = answers['last-period']?.valueDate;
+  const contraception = answers['contraception']?.valueCoding;
+  const lastMammogram = answers['mammogram']?.valueDate;
 
-  const smokingStatus = answers['smoking'].valueCoding;
-  const drugUse = answers['drugs'].valueCoding;
-  const housingStatus = answers['housing'].valueCoding;
+  const smokingStatus = answers['smoking']?.valueCoding;
+  const drugUse = answers['drugs']?.valueCoding;
+  const housingStatus = answers['housing']?.valueCoding;
 
-  const visitLength = answers['visit-length'].valueInteger;
+  const visitLength = answers['visit-length']?.valueInteger;
   const assessment: Annotation[] = [];
-  if (answers['assessment'].valueString) {
+  if (answers['assessment']?.valueString) {
     assessment.push({ text: answers['assessment'].valueString });
   }
 
@@ -88,16 +90,16 @@ function parseObstetricAnswers(
 ): ObstetricAnswers {
   const genericAnswers = parseGenericAnswers(answers, noteType);
 
-  const totalWeightGain = answers['total-weight-gain'].valueQuantity;
+  const totalWeightGain = answers['total-weight-gain']?.valueQuantity;
 
-  const gravida = answers['gravida'].valueInteger;
-  const para = answers['para'].valueInteger;
-  const gestationalWeeks = answers['gestational-age-weeks'].valueInteger;
-  const gestationalDays = answers['gestational-age-days'].valueInteger;
+  const gravida = answers['gravida']?.valueInteger;
+  const para = answers['para']?.valueInteger;
+  const gestationalWeeks = answers['gestational-age-weeks']?.valueInteger;
+  const gestationalDays = answers['gestational-age-days']?.valueInteger;
 
   const assessment: Annotation[] = [];
 
-  if (answers['assessment'].valueString) {
+  if (answers['assessment']?.valueString) {
     assessment.push({ text: answers['assessment'].valueString });
   }
 
@@ -119,10 +121,23 @@ function parseGeneralAnswers(
 ): GeneralAnswers {
   // Parse out the note into a more easily usable data structure
   const genericAnswers = parseGenericAnswers(answers, noteType);
+  const hotFlashes = answers['hot-flashes']?.valueBoolean || false;
+  const moodSwings = answers['mood-swings']?.valueBoolean || false;
+  const vaginalDryness = answers['vaginal-dryness']?.valueBoolean || false;
+  const sleepDisturbance = answers['sleep-disturbance']?.valueBoolean || false;
+
+  const subjective: [string, boolean][] = [
+    ['Hot Flashes', hotFlashes],
+    ['Mood Swings', moodSwings],
+    ['Vaginal Dryness', vaginalDryness],
+    ['Sleep Disturbances', sleepDisturbance],
+  ];
+
+  const selfReportedHistory: CodeableConcept = { coding: [{ display: answers['self-reported-history']?.valueString }] };
 
   const assessment: Annotation[] = [];
 
-  if (answers['assessment'].valueString) {
+  if (answers['assessment']?.valueString) {
     assessment.push({ text: answers['assessment'].valueString });
   }
 
@@ -130,6 +145,8 @@ function parseGeneralAnswers(
     ...genericAnswers,
     assessment,
     noteType: 'general',
+    subjective,
+    selfReportedHistory,
   };
 }
 
@@ -139,28 +156,28 @@ function parseGenericAnswers(answers: Record<string, QuestionnaireResponseItemAn
   }
 
   const reasonForVisit: CodeableConcept = {
-    coding: [answers['reason-for-visit'].valueCoding as Coding],
+    coding: [answers['reason-for-visit']?.valueCoding as Coding],
   };
 
-  const date = answers['date'].valueDate as string;
+  const date = answers['date']?.valueDate as string;
 
   const diastolic = {
-    value: answers['diastolic'].valueInteger,
+    value: answers['diastolic']?.valueInteger,
     unit: 'mmHg',
     system: 'http://unitsofmeasure.com',
     code: 'mm[Hg]',
   };
 
   const systolic = {
-    value: answers['systolic'].valueInteger,
+    value: answers['systolic']?.valueInteger,
     unit: 'mmHg',
     system: 'http://unitsofmeasure.com',
     code: 'mm[Hg]',
   };
 
-  const height = answers['height'].valueQuantity;
+  const height = answers['height']?.valueQuantity;
 
-  const weight = answers['weight'].valueQuantity;
+  const weight = answers['weight']?.valueQuantity;
 
   return {
     reasonForVisit,
