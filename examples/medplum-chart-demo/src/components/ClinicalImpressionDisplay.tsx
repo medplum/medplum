@@ -20,8 +20,8 @@ export function ClinicalImpressionDisplay(props: ClinicalImpressionDisplayProps)
 
   return (
     <Stack>
-      {impressions.map((impression) => (
-        <NoteDisplay value={impression.note} />
+      {impressions.map((impression, idx) => (
+        <NoteDisplay key={idx} value={impression.note} />
       ))}
     </Stack>
   );

@@ -1,7 +1,8 @@
-import { Burger, Button, Menu, Tabs } from '@mantine/core';
+import { Button, Menu, Tabs } from '@mantine/core';
 import { formatSearchQuery, Operator, SearchRequest } from '@medplum/core';
 import { Coding, Patient } from '@medplum/fhirtypes';
 import { SearchControl } from '@medplum/react';
+import { IconMenu2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ObservationGraph } from './graphs/ObservationGraph';
@@ -56,7 +57,7 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
     <div>
       <Menu>
         <Menu.Target>
-          <Button leftSection={<Burger size="sm" />} variant="default">
+          <Button leftSection={<IconMenu2 />} variant="default">
             {currentTab[1]}
           </Button>
         </Menu.Target>
