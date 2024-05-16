@@ -1,14 +1,12 @@
-import { BotEvent, generateId, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
-  QuestionnaireResponse,
-  Practitioner,
-  BundleEntry,
-  Observation,
-  Encounter,
-  Reference,
   Bundle,
-  BundleEntryRequest,
   CodeableConcept,
+  Encounter,
+  Observation,
+  Practitioner,
+  QuestionnaireResponse,
+  Reference,
 } from '@medplum/fhirtypes';
 import {
   calculateBMI,

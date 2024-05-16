@@ -40,10 +40,10 @@ export interface ClinicalImpressionData {
  * bundle entry and adds that to an array. These bundle entries can then be used in a batch transaction to create all of the necessary
  * Observations at once.
  *
- * @param observationData The values to be added to the created Observations
- * @param encounter The encounter the observations are derived from
- * @param user The user creating the Observations
- * @param partialObservations An array of the partial Observations containing the code and value for each given observation
+ * @param observationData - The values to be added to the created Observations
+ * @param encounter - The encounter the observations are derived from
+ * @param user - The user creating the Observations
+ * @param partialObservations - An array of the partial Observations containing the code and value for each given observation
  * @returns An array of bundle entries which can be added to a batch transaction
  */
 export function createObservationEntries(
@@ -90,7 +90,7 @@ export function createObservationEntries(
  * This function handles adding blood pressure measurements to an observation since there are often both systolic and diastolic
  * measurements which need to be added to the component element.
  *
- * @param observationData The data object containing the blood pressure values
+ * @param observationData - The data object containing the blood pressure values
  * @returns An Observation component element with diastolic, systolic, or both blood pressure measurements
  */
 export function handleBloodPressure(observationData: ObservationData): ObservationComponent[] {
@@ -127,9 +127,9 @@ export function handleBloodPressure(observationData: ObservationData): Observati
  * Condition is being added to the problem list, then an additional Condition resource will be created. For more details see the
  * Representing Diagnoses docs here: https://www.medplum.com/docs/charting/representing-diagnoses
  *
- * @param conditionData Data object containg codes and values for a condition/reason for the visit.
- * @param encounter The encounter the data is derived from.
- * @param user The user creating the Condition resource
+ * @param conditionData - Data object containg codes and values for a condition/reason for the visit.
+ * @param encounter - The encounter the data is derived from.
+ * @param user - The user creating the Condition resource
  * @returns An array of bundle entries containing the Condition resource that can be created in a batch request.
  */
 export function createConditionEntries(
@@ -200,9 +200,9 @@ export function createConditionEntries(
  * This function takes ClinicalImpression data and creates a bundle entry so that it can be added to a batch transaction. The
  * ClinicalImpression resource represents any notes on an encounter in this context.
  *
- * @param clinicalImpressionData Data object containing codes and values for the ClinicalImpression resources
- * @param encounter The encounter that the data is derived from
- * @param user The user creating the ClinicalImpressions
+ * @param clinicalImpressionData - Data object containing codes and values for the ClinicalImpression resources
+ * @param encounter - The encounter that the data is derived from
+ * @param user - The user creating the ClinicalImpressions
  * @returns A bundle entry with the ClinicalImpression resource that can be used in a batch transaction
  */
 export function createClinicalImpressionEntry(
@@ -235,8 +235,8 @@ export function createClinicalImpressionEntry(
 /**
  * This function calculates the BMI of a patient based on their height and weight. Reference: https://my.clevelandclinic.org/health/articles/9464-body-mass-index-bmi
  *
- * @param height The height of the patient
- * @param weight The weight of the patient
+ * @param height - The height of the patient
+ * @param weight - The weight of the patient
  * @returns The BMI of the patient
  */
 export function calculateBMI(height: Quantity, weight: Quantity): Quantity {

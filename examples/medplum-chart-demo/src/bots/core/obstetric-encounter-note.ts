@@ -1,8 +1,6 @@
-import { BotEvent, generateId, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Bundle,
-  BundleEntry,
-  BundleEntryRequest,
   CodeableConcept,
   Coding,
   Encounter,
