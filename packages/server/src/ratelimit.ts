@@ -28,6 +28,7 @@ export function getRateLimiter(): RateLimitRequestHandler {
     handler = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
       limit: getRateLimitForRequest,
+      keyGenerator: (req, _res) => (req.ip as string) + (isAuthRequest(req) ? ':auth' : ''),
       validate: true,
       store,
       message: tooManyRequests,
@@ -43,16 +44,22 @@ export function closeRateLimiter(): void {
   }
 }
 
-async function getRateLimitForRequest(req: Request): Promise<number> {
+function isAuthRequest(req: Request): boolean {
   // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
   // These URLs have a different rate limit than the rest of the API
-  const authUrl = req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
+  if (req.originalUrl === '/auth/me') {
+    return false; // Read-only URL doesn't need the same rate limit protection
+  }
+  return req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
+}
 
-  let limit = authUrl ? DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES : DEFAULT_RATE_LIMIT_PER_15_MINUTES;
+async function getRateLimitForRequest(req: Request): Promise<number> {
+  const isAuthUrl = isAuthRequest(req);
+  let limit = isAuthUrl ? DEFAULT_AUTH_RATE_LIMIT_PER_15_MINUTES : DEFAULT_RATE_LIMIT_PER_15_MINUTES;
 
   const ctx = getRequestContext();
   if (ctx instanceof AuthenticatedRequestContext) {
-    const systemSettingName = authUrl ? 'authRateLimit' : 'rateLimit';
+    const systemSettingName = isAuthUrl ? 'authRateLimit' : 'rateLimit';
     const systemSetting = ctx.project.systemSetting?.find((s) => s.name === systemSettingName);
     if (systemSetting?.valueInteger) {
       limit = systemSetting.valueInteger;
