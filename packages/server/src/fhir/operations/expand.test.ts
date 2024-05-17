@@ -368,14 +368,17 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
             {
               system: HTTP_HL7_ORG + '/fhir/resource-types',
               code: 'Patient',
+              display: 'Patient',
             },
             {
               system: HTTP_HL7_ORG + '/fhir/resource-types',
               code: 'Practitioner',
+              display: 'Practitioner',
             },
             {
               system: HTTP_HL7_ORG + '/fhir/resource-types',
               code: 'Observation',
+              display: 'Observation',
             },
             {
               system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor',
@@ -397,19 +400,42 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
         {
           system: HTTP_HL7_ORG + '/fhir/resource-types',
           code: 'Patient',
+          display: 'Patient',
         },
         {
           system: HTTP_HL7_ORG + '/fhir/resource-types',
           code: 'Practitioner',
+          display: 'Practitioner',
         },
         {
           system: HTTP_HL7_ORG + '/fhir/resource-types',
           code: 'Observation',
+          display: 'Observation',
         },
         {
           system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor',
           code: 'UNK',
           display: 'Unknown',
+        },
+      ])
+    );
+
+    // with a filter parameter
+    const res3 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&filter=p`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body.expansion.contains).toEqual(
+      expect.arrayContaining([
+        {
+          system: HTTP_HL7_ORG + '/fhir/resource-types',
+          code: 'Patient',
+          display: 'Patient',
+        },
+        {
+          system: HTTP_HL7_ORG + '/fhir/resource-types',
+          code: 'Practitioner',
+          display: 'Practitioner',
         },
       ])
     );
