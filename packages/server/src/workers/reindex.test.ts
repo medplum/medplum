@@ -1,9 +1,5 @@
-// import { ContentType } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
-// import { randomUUID } from 'crypto';
-// import fetch from 'node-fetch';
-// import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';

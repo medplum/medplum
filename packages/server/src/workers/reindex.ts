@@ -1,8 +1,3 @@
-/*
- * The reindex worker updates resource rows in the database,
- * recomputing all search columns and lookup table entries.
- */
-
 import { SearchRequest, Operator } from '@medplum/core';
 import { ResourceType, Resource, AsyncJob } from '@medplum/fhirtypes';
 import { Queue, QueueBaseOptions, Job, Worker } from 'bullmq';
@@ -11,6 +6,11 @@ import { getRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+
+/*
+ * The reindex worker updates resource rows in the database,
+ * recomputing all search columns and lookup table entries.
+ */
 
 export type ReindexJobData = {
   readonly asyncJob: AsyncJob;
