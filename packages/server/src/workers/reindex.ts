@@ -29,7 +29,7 @@ let queue: Queue<ReindexJobData> | undefined = undefined;
 let worker: Worker<ReindexJobData> | undefined = undefined;
 
 const batchSize = 500;
-// const progressLogThreshold = 25_000;
+const progressLogThreshold = 25_000;
 
 export function initReindexWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
@@ -57,9 +57,9 @@ export function initReindexWorker(config: MedplumServerConfig): void {
   );
   worker.on('completed', (job) => {
     const count = job.data.count ?? 0;
-    // if (Math.floor(count / progressLogThreshold) !== Math.floor((count - batchSize) / progressLogThreshold)) {
-    globalLogger.info('Reindex in progress', { resourceType: job.data.resourceType, latestJobId: job.id, count });
-    // }
+    if (Math.floor(count / progressLogThreshold) !== Math.floor((count - batchSize) / progressLogThreshold)) {
+      globalLogger.info('Reindex in progress', { resourceType: job.data.resourceType, latestJobId: job.id, count });
+    }
   });
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
