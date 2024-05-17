@@ -37,7 +37,7 @@ async function createVitalOrder(medplum: MedplumClient, event: BotEvent, sr: Ser
   const patient = await medplum.readResource('Patient', patientID);
   const practitioner = await medplum.readResource('Practitioner', practitionerID);
 
-  const aoes = await get_aoe_resources(medplum, sr.supportingInfo || []);
+  const aoes = await GetAoeResources(medplum, sr.supportingInfo || []);
 
   const bundle: Bundle = {
     resourceType: 'Bundle',
@@ -94,14 +94,10 @@ async function createVitalOrder(medplum: MedplumClient, event: BotEvent, sr: Ser
     throw new Error('Vital API error: ' + (await resp.text()));
   }
 
-  // return true;
-  // Return the response as a string for debugging purposes
-  console.log(JSON.stringify(await resp.json()));
-  return JSON.stringify(bundle);
+  return true;
 }
 
-function get_id_from_reference(reference: string): [ResourceType, string] {
-  // Check if the reference is a valid format (e.g., "Patient/123") using regex
+function GetIDAndResourceFromReference(reference: string): [ResourceType, string] {
   if (!reference.includes('/')) {
     throw new Error('Invalid reference: ' + reference);
   }
@@ -115,14 +111,14 @@ function get_id_from_reference(reference: string): [ResourceType, string] {
   return [parts[0] as ResourceType, parts[1]];
 }
 
-async function get_aoe_resources(medplum: MedplumClient, suporrtedInfo: Reference[]): Promise<QuestionnaireResponse[]> {
+async function GetAoeResources(medplum: MedplumClient, suporrtedInfo: Reference[]): Promise<QuestionnaireResponse[]> {
   const aoe_ids = suporrtedInfo.reduce<string[]>((acc, curr) => {
     if (!curr.reference) {
       throw new Error('Reference is missing');
     }
 
     try {
-      const [resourceType, id] = get_id_from_reference(curr.reference);
+      const [resourceType, id] = GetIDAndResourceFromReference(curr.reference);
 
       if (resourceType === 'QuestionnaireResponse') {
         return [...acc, id];
