@@ -58,7 +58,12 @@ export function initReindexWorker(config: MedplumServerConfig): void {
   worker.on('completed', (job) => {
     const count = job.data.count ?? 0;
     if (Math.floor(count / progressLogThreshold) !== Math.floor((count - batchSize) / progressLogThreshold)) {
-      globalLogger.info('Reindex in progress', { resourceType: job.data.resourceType, latestJobId: job.id, count });
+      globalLogger.info('Reindex in progress', {
+        resourceType: job.data.resourceType,
+        latestJobId: job.id,
+        count,
+        elapsedTime: `${Date.now() - job.data.startTime} ms`,
+      });
     }
   });
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
