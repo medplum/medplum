@@ -1,5 +1,5 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
-import { Resource, ServiceRequest, Bundle, Reference, ResourceType, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Resource, ServiceRequest, Bundle, Reference, ResourceType, QuestionnaireResponse, Coverage } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Check if event.input is of type Resource
@@ -39,6 +39,15 @@ async function createVitalOrder(medplum: MedplumClient, event: BotEvent, sr: Ser
 
   const aoes = await GetAoeResources(medplum, sr.supportingInfo || []);
 
+  const insurance = sr.insurance as Reference<Coverage> | undefined;
+
+  const [resource, coverageID] = GetIDAndResourceFromReference(insurance?.reference || '')
+  if (!coverageID || resource !== 'Coverage') {
+    throw new Error('Coverage is missing');
+  }
+
+  const coverage = await medplum.readResource('Coverage', coverageID);
+
   const bundle: Bundle = {
     resourceType: 'Bundle',
     type: 'transaction',
@@ -74,8 +83,17 @@ async function createVitalOrder(medplum: MedplumClient, event: BotEvent, sr: Ser
           requester: sr.requester,
         },
       },
-      ...aoes.map((questionaryResponse) => ({
-        resource: questionaryResponse,
+      {
+        resource: coverage,
+      },
+      ...aoes.map((questionnaryResponse) => ({
+        resource: {
+          questionaryResponse: questionnaryResponse,
+          resourceType: questionnaryResponse.resourceType,
+          questionnaire: questionnaryResponse.questionnaire,
+          status: questionnaryResponse.status,
+          item: questionnaryResponse.item,
+        },
       })),
     ],
   };
