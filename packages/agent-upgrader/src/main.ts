@@ -11,7 +11,7 @@ type ReleaseManifest = { tag_name: string; assets: { name: string; browser_downl
 type SupportedOs = 'windows' | 'linux';
 
 const GITHUB_RELEASES_URL = 'https://api.github.com/repos/medplum/medplum/releases';
-const RELEASES_PATH = resolve(__dirname, '../../agent');
+const RELEASES_PATH = resolve(__dirname);
 const VERSION: string | undefined = undefined;
 
 const globalLogger = new Logger((msg) => console.log(msg));
