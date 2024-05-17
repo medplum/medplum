@@ -1,0 +1,39 @@
+{
+  "name": "medplum-vital",
+  "version": "0.0.1",
+  "description": "Vital Integration",
+  "license": "Apache-2.0",
+  "author": "Esequiel <esequiel@tryvital.io>",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint src/",
+    "prettier": "prettier --write ."
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "extends": [
+      "@medplum/eslint-config"
+    ],
+    "root": true
+  },
+  "devDependencies": {
+    "@medplum/cli": "3.1.5",
+    "@medplum/core": "3.1.5",
+    "@medplum/eslint-config": "3.1.5",
+    "@medplum/fhirtypes": "3.1.5",
+    "@medplum/mock": "3.1.5",
+    "@types/node": "20.12.11",
+    "@types/node-fetch": "2.6.11",
+    "esbuild": "0.21.2",
+    "node-fetch": "2.7.0",
+    "typescript": "5.4.5",
+    "vitest": "1.6.0"
+  }
+}
