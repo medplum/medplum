@@ -1,4 +1,4 @@
-import { Logger, normalizeErrorString } from '@medplum/core';
+import { Logger } from '@medplum/core';
 import { execSync } from 'node:child_process';
 import { createWriteStream, existsSync } from 'node:fs';
 import { platform } from 'node:os';
@@ -10,13 +10,13 @@ let osString: SupportedOs;
 type ReleaseManifest = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
 type SupportedOs = 'windows' | 'linux';
 
-const GITHUB_RELEASES_URL = 'https://api.github.com/repos/medplum/medplum/releases/latest';
+const GITHUB_RELEASES_URL = 'https://api.github.com/repos/medplum/medplum/releases';
 const RELEASES_PATH = resolve(__dirname, '../../agent');
 const VERSION: string | undefined = undefined;
 
 const globalLogger = new Logger((msg) => console.log(msg));
 
-let releasesManifest: ReleaseManifest[] | undefined;
+let releaseManifest: ReleaseManifest;
 
 async function main(_argv: string[]): Promise<void> {
   if (!osString) {
@@ -39,17 +39,7 @@ async function main(_argv: string[]): Promise<void> {
 
   // NOTE: Windows past this point, for now
 
-  // First get requested version
-  let version = VERSION as string;
-  if (!version) {
-    try {
-      version = await fetchLatestVersionString();
-    } catch (err: unknown) {
-      globalLogger.error(`Error while fetching the latest version: ${normalizeErrorString(err)}`);
-      throw err;
-    }
-  }
-
+  const version = VERSION ?? (await fetchLatestVersionString());
   const binPath = getReleaseBinPath(version);
 
   // If release in not locally downloaded, download it first
@@ -70,7 +60,7 @@ async function main(_argv: string[]): Promise<void> {
 }
 
 async function fetchLatestVersionString(): Promise<string> {
-  const latest = (await fetchReleasesManifest())[0];
+  const latest = await fetchVersionManifest();
   if (!latest.tag_name.startsWith('v')) {
     throw new Error(`Invalid release name found. Release tag '${latest.tag_name}' did not start with 'v'`);
   }
@@ -78,10 +68,7 @@ async function fetchLatestVersionString(): Promise<string> {
 }
 
 async function downloadRelease(version: string, path: string): Promise<void> {
-  const allReleases = await fetchReleasesManifest();
-
-  // Find release in the manifest
-  const release = findManifestForVersion(allReleases, version);
+  const release = await fetchVersionManifest(version);
 
   // Get download url
   const downloadUrl = parseDownloadUrl(release, osString);
@@ -101,24 +88,19 @@ async function downloadRelease(version: string, path: string): Promise<void> {
   });
 }
 
-async function fetchReleasesManifest(): Promise<ReleaseManifest[]> {
-  if (!releasesManifest) {
-    const res = await fetch(GITHUB_RELEASES_URL);
-    releasesManifest = (await res.json()) as ReleaseManifest[];
-    if (!releasesManifest[0]) {
-      throw new Error('No releases found for repo');
+/**
+ * @param version - The version to fetch. If no `version` is provided, defaults to the `latest` version.
+ * @returns - The manifest for the specified or latest version.
+ */
+async function fetchVersionManifest(version?: string): Promise<ReleaseManifest> {
+  if (!releaseManifest) {
+    const res = await fetch(`${GITHUB_RELEASES_URL}/${version ? `tags/v${version}` : 'latest'}`);
+    releaseManifest = (await res.json()) as ReleaseManifest;
+    if (!releaseManifest) {
+      throw new Error(version ? `No release found with tag v${version}` : 'No releases found in repo');
     }
   }
-  return releasesManifest;
-}
-
-function findManifestForVersion(releases: ReleaseManifest[], version: string): ReleaseManifest {
-  for (const release of releases) {
-    if (release.tag_name.slice(1) === version) {
-      return release;
-    }
-  }
-  throw new Error(`Release not found for version ${version}`);
+  return releaseManifest;
 }
 
 function parseDownloadUrl(release: ReleaseManifest, os: SupportedOs): string {
@@ -155,5 +137,5 @@ function getReleaseBinPath(version: string): string {
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  main(process.argv).catch(console.error);
+  main(process.argv).catch(globalLogger.error);
 }
