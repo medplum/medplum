@@ -85,7 +85,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      const job = await addReindexJob(resourceType as ResourceType, asyncJob);
+      await addReindexJob(resourceType as ResourceType, asyncJob);
     });
 
     const { baseUrl } = getConfig();
