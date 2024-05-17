@@ -51,6 +51,9 @@ export class AsyncJobExecutor {
       .catch(async (err) => {
         ctx.logger.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err });
         await this.failJob(systemRepo, err);
+      })
+      .finally(() => {
+        this.repo.close();
       });
   }
 
@@ -65,12 +68,8 @@ export class AsyncJobExecutor {
       throw new Error('Job already completed');
     }
 
-    try {
-      const output = await callback(this.resource);
-      return output ?? undefined;
-    } finally {
-      this.repo.close();
-    }
+    const output = await callback(this.resource);
+    return output ?? undefined;
   }
 
   async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob | undefined> {
