@@ -838,7 +838,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     const startTime = Date.now();
     let count = 0;
     await this.forAllResources(resourceType, async (conn, resources) => {
-      await this.reindexResourceImpl(conn, ...resources);
+      await this.reindexResources(conn, ...resources);
       count += resources.length;
     });
     ctx.logger.info('Reindex completed', {
@@ -919,7 +919,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     await this.withTransaction(async (conn) => {
       const resource = await this.readResourceImpl<T>(resourceType, id);
-      return this.reindexResourceImpl(conn, resource);
+      return this.reindexResources(conn, resource);
     });
   }
 
@@ -931,7 +931,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param resources - The resource(s) to reindex.
    * @returns The reindexed resource.
    */
-  private async reindexResourceImpl<T extends Resource>(conn: PoolClient, ...resources: T[]): Promise<void> {
+  async reindexResources<T extends Resource>(conn: PoolClient, ...resources: T[]): Promise<void> {
     let resource: Resource;
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
     // eslint-disable-next-line @typescript-eslint/prefer-for-of

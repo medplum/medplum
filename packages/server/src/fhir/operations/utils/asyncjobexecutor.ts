@@ -10,70 +10,94 @@ import { Repository, getSystemRepo } from '../../repo';
 export class AsyncJobExecutor {
   readonly repo: Repository;
   private resource: AsyncJob | undefined;
-  constructor(repo: Repository) {
+  constructor(repo: Repository, resource?: AsyncJob) {
     this.repo = repo.clone();
+    this.resource = resource;
   }
 
   async init(url: string): Promise<AsyncJob> {
-    this.resource = await this.repo.createResource<AsyncJob>({
-      resourceType: 'AsyncJob',
-      status: 'accepted',
-      request: url,
-      requestTime: new Date().toISOString(),
-    });
-
+    if (!this.resource) {
+      this.resource = await this.repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: url,
+        requestTime: new Date().toISOString(),
+      });
+    }
     return this.resource;
   }
 
-  start(callback: () => Promise<any>): void {
+  start(callback: (job: AsyncJob) => Promise<any>): void {
     const ctx = getRequestContext();
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
+    if (this.resource.status !== 'accepted') {
+      throw new Error('Job already completed');
+    }
 
     const startTime = Date.now();
+    const systemRepo = getSystemRepo();
     ctx.logger.info('Async job starting', { name: callback.name, asyncJobId: this.resource?.id });
     this.run(callback)
-      .then(() =>
+      .then(async (output) => {
         ctx.logger.info('Async job completed', {
           name: callback.name,
           asyncJobId: this.resource?.id,
           duration: `${Date.now() - startTime} ms`,
-        })
-      )
-      .catch((err) =>
-        ctx.logger.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err })
-      );
+        });
+        await this.completeJob(systemRepo, output);
+      })
+      .catch(async (err) => {
+        ctx.logger.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err });
+        await this.failJob(systemRepo, err);
+      });
   }
 
-  async run(callback: (() => Promise<Parameters>) | (() => Promise<void>)): Promise<void> {
+  async run(
+    callback: ((job: AsyncJob) => Promise<Parameters>) | ((job: AsyncJob) => Promise<void>)
+  ): Promise<Parameters | undefined> {
     callback = AsyncLocalStorage.bind(callback);
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
-    const systemRepo = getSystemRepo();
+    if (this.resource.status !== 'accepted') {
+      throw new Error('Job already completed');
+    }
+
     try {
-      const output = await callback();
-      await systemRepo.updateResource<AsyncJob>({
-        ...this.resource,
-        status: 'completed',
-        transactionTime: new Date().toISOString(),
-        output: output ?? undefined,
-      });
-    } catch (err) {
-      await systemRepo.updateResource<AsyncJob>({
-        ...this.resource,
-        status: 'error',
-        transactionTime: new Date().toISOString(),
-        output:
-          err instanceof OperationOutcomeError
-            ? { resourceType: 'Parameters', parameter: [{ name: 'outcome', resource: err.outcome }] }
-            : undefined,
-      });
-      throw err;
+      const output = await callback(this.resource);
+      return output ?? undefined;
     } finally {
       this.repo.close();
     }
+  }
+
+  async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob | undefined> {
+    if (!this.resource) {
+      return undefined;
+    }
+    return repo.updateResource<AsyncJob>({
+      ...this.resource,
+      status: 'completed',
+      transactionTime: new Date().toISOString(),
+      output,
+    });
+  }
+
+  async failJob(repo: Repository, err: Error): Promise<AsyncJob | undefined> {
+    if (!this.resource) {
+      return undefined;
+    }
+    return repo.updateResource<AsyncJob>({
+      ...this.resource,
+      status: 'error',
+      transactionTime: new Date().toISOString(),
+      output:
+        err instanceof OperationOutcomeError
+          ? { resourceType: 'Parameters', parameter: [{ name: 'outcome', resource: err.outcome }] }
+          : undefined,
+    });
   }
 
   getContentLocation(baseUrl: string): string {
@@ -88,7 +112,7 @@ export class AsyncJobExecutor {
 export async function sendAsyncResponse(
   req: Request,
   res: Response,
-  callback: (() => Promise<Parameters>) | (() => Promise<void>)
+  callback: ((job: AsyncJob) => Promise<Parameters>) | ((job: AsyncJob) => Promise<void>)
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
