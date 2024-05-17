@@ -79,7 +79,7 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
     }
   }
 
-  let result: any[];
+  let result: any[] | undefined;
   if (codesToQuery.size > 0) {
     const query = new SelectQuery('Coding')
       .column('id')
@@ -90,12 +90,10 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
 
     const db = getDatabasePool();
     result = await query.execute(db);
-  } else {
-    result = [];
   }
 
   return codings.map((c, idx) => {
-    const row = eligible[idx] && result.find((r: any) => r.code === c.code);
+    const row = eligible[idx] && result?.find((r: any) => r.code === c.code);
     return row ? { id: row.id, system: codeSystem.url, code: c.code, display: row.display } : undefined;
   });
 }
