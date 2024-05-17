@@ -96,4 +96,36 @@ describe('Reindex Worker', () => {
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('accepted');
     }));
+
+  test('Fails job on error', () =>
+    withTestContext(async () => {
+      const queue = getReindexQueue() as any;
+      queue.add.mockClear();
+
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      await addReindexJob('ValueSet', asyncJob);
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({
+          resourceType: 'ValueSet',
+          asyncJob,
+        })
+      );
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      queue.add.mockClear();
+
+      const err = new Error('Failed to add job to queue!');
+      queue.add.mockRejectedValueOnce(err);
+      await expect(execReindexJob(job)).rejects.toBe(err);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
+      expect(asyncJob.status).toEqual('error');
+    }));
 });
