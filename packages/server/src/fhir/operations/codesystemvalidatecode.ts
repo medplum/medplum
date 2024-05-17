@@ -61,8 +61,8 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
   return [allOk, buildOutputParameters(operation, output)];
 }
 
-export async function validateCoding(codeSystem: CodeSystem, codings: Coding): Promise<Coding | undefined> {
-  return validateCodings(codeSystem, [codings]).then((results) => results[0]);
+export async function validateCoding(codeSystem: CodeSystem, coding: Coding): Promise<Coding | undefined> {
+  return validateCodings(codeSystem, [coding]).then((results) => results[0]);
 }
 
 export async function validateCodings(codeSystem: CodeSystem, codings: Coding[]): Promise<(Coding | undefined)[]> {
