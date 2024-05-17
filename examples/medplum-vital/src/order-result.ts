@@ -2,27 +2,20 @@ import { BotEvent, MedplumClient } from "@medplum/core";
 import { DiagnosticReport } from "@medplum/fhirtypes";
 
 type OrderEvent = {
-  orderID: string;
-  type: "partial_results" | "final_results";
+  id: string;
 };
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Check if event.input is of type Resource
-  if (typeof event.input !== "object" || !("orderID" in event.input)) {
+  if (typeof event.input !== "object" || !("id" in event.input)) {
     return false;
   }
 
-  const resource = event.input as OrderEvent;
-
-  switch (resource.type) {
-    case "final_results":
-      return saveResults(medplum, event, resource);
-    default:
-      return true;
-  }
+  const orderID = (event.input as OrderEvent).id;
+  return saveResults(medplum, event, orderID);
 }
 
-async function saveResults(medplum: MedplumClient, event: BotEvent, resource: OrderEvent): Promise<any> {
+async function saveResults(medplum: MedplumClient, event: BotEvent, orderID: string): Promise<any> {
   const VITAL_API_KEY = event.secrets["VITAL_API_KEY"].valueString;
   const VITAL_BASE_URL = event.secrets["VITAL_BASE_URL"].valueString || "https://api.dev.tryvital.io";
 
@@ -30,12 +23,12 @@ async function saveResults(medplum: MedplumClient, event: BotEvent, resource: Or
     throw new Error("VITAL_API_KEY and VITAL_BASE_URL are required");
   }
 
-  const FETCH_RESULT_URL = VITAL_BASE_URL + `/v3/order/${resource.orderID}/result/fhir`;
+  const FETCH_RESULT_URL = VITAL_BASE_URL + `/v3/order/${orderID}/result/fhir`;
 
-  const resp = await fetch(FETCH_RESULT_URL.toString(), {
+  const resp = await fetch(FETCH_RESULT_URL, {
     method: "GET",
     headers: {
-      "Content-Type": "application/fhir+json",
+      "Content-Type": "application/json",
       "x-vital-api-key": VITAL_API_KEY,
     },
   });

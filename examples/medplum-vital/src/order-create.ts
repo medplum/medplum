@@ -80,7 +80,7 @@ async function createVitalOrder(medplum: MedplumClient, event: BotEvent, sr: Ser
     ],
   };
 
-  const resp = await fetch(CREATE_ORDER_URL.toString(), {
+  const resp = await fetch(CREATE_ORDER_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/fhir+json',
