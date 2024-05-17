@@ -27,6 +27,10 @@ export class AsyncJobExecutor {
     return this.resource;
   }
 
+  /**
+   * Begins execution of the async job and coordinates resource updates and logging throughout the job lifecycle.
+   * @param callback - The callback to execute.
+   */
   start(callback: (job: AsyncJob) => Promise<any>): void {
     const ctx = getRequestContext();
     if (!this.resource) {
@@ -39,6 +43,7 @@ export class AsyncJobExecutor {
     const startTime = Date.now();
     const systemRepo = getSystemRepo();
     ctx.logger.info('Async job starting', { name: callback.name, asyncJobId: this.resource?.id });
+
     this.run(callback)
       .then(async (output) => {
         ctx.logger.info('Async job completed', {
@@ -57,6 +62,11 @@ export class AsyncJobExecutor {
       });
   }
 
+  /**
+   * Conditionally runs the job callback if the AsyncJob resource is in the correct state.
+   * @param callback - The callback to execute.
+   * @returns (optional) Output encoded as a Parameters resource.
+   */
   async run(
     callback: ((job: AsyncJob) => Promise<Parameters>) | ((job: AsyncJob) => Promise<void>)
   ): Promise<Parameters | undefined> {
