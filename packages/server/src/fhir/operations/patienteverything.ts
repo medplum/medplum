@@ -1,5 +1,5 @@
 import { allOk, getReferenceString, Operator, sortStringArray } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { FhirRequest, FhirResponse, getFhirRequestParams } from '@medplum/fhir-router';
 import { Bundle, CompartmentDefinitionResource, Patient, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
@@ -28,7 +28,7 @@ type PatientEverythingParameters = {
  */
 export async function patientEverythingHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  const { id } = req.params;
+  const { id } = getFhirRequestParams<{ id: string }>(req);
   const params = parseInputParameters<PatientEverythingParameters>(operation, req);
 
   // First read the patient to verify access

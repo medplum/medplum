@@ -1,5 +1,5 @@
 import { ContentType, allOk, badRequest, getReferenceString, normalizeOperationOutcome } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { FhirRequest, FhirResponse, getFhirRequestParams } from '@medplum/fhir-router';
 import { Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
 import { deployLambda } from '../../cloud/aws/deploy';
@@ -10,7 +10,7 @@ import { isBotEnabled } from './execute';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  const { id } = req.params;
+  const { id } = getFhirRequestParams<{ id: string; resourceType: string }>(req);
 
   // Validate that the request body has a code property
   const code = req.body.code as string | undefined;

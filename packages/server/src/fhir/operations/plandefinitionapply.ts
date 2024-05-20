@@ -1,5 +1,5 @@
 import { allOk, createReference, getReferenceString, ProfileResource } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { FhirRequest, FhirResponse, getFhirRequestParams } from '@medplum/fhir-router';
 import {
   Patient,
   PlanDefinition,
@@ -32,7 +32,7 @@ interface PlanDefinitionApplyParameters {
  */
 export async function planDefinitionApplyHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  const { id } = req.params;
+  const { id } = getFhirRequestParams<{ id: string }>(req);
   const planDefinition = await ctx.repo.readResource<PlanDefinition>('PlanDefinition', id);
   const params = parseInputParameters<PlanDefinitionApplyParameters>(operation, req);
   const subject = await ctx.repo.readReference<Patient>({ reference: params.subject[0] });
