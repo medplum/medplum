@@ -1,15 +1,24 @@
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { mockClient } from 'aws-sdk-client-mock';
-import { randomUUID } from 'crypto';
-import { unlinkSync, writeFileSync } from 'fs';
-import readline from 'readline';
+import { randomUUID } from 'node:crypto';
+import { unlinkSync, writeFileSync } from 'node:fs';
+import readline from 'node:readline';
 import { main } from '../index';
 import { getConfigFileName } from '../utils';
 import { mockReadline } from './test.utils';
 
-jest.mock('readline');
+jest.mock('node:readline');
 
 describe('update-config command', () => {
+  let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+  });
+
   beforeEach(() => {
     const ssmClient = mockClient(SSMClient);
     ssmClient.on(GetParameterCommand).rejects({ name: 'ParameterNotFound' });
@@ -23,9 +32,11 @@ describe('update-config command', () => {
 
     readline.createInterface = jest.fn(() => mockReadline());
 
-    await main(['node', 'index.js', 'aws', 'update-config', tag]);
-
+    await expect(main(['node', 'index.js', 'aws', 'update-config', tag])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(console.log).toHaveBeenCalledWith(`Config not found: ${tag} (${getConfigFileName(tag)})`);
+    expect(processError).toHaveBeenCalledWith(`Error: Config not found: ${tag}\n`);
   });
 
   test('Infra only success', async () => {
@@ -191,10 +202,12 @@ describe('update-config command', () => {
 
     readline.createInterface = jest.fn(() => mockReadline());
 
-    await main(['node', 'index.js', 'aws', 'update-config', tag]);
+    await expect(main(['node', 'index.js', 'aws', 'update-config', tag])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     unlinkSync(infraFileName);
     unlinkSync(serverFileName);
 
-    expect(console.error).toHaveBeenCalledWith('Error: Infra "apiPort" (8103) does not match server "port" (5000)');
+    expect(processError).toHaveBeenCalledWith('Error: Infra "apiPort" (8103) does not match server "port" (5000)\n');
   });
 });

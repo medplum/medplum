@@ -181,7 +181,7 @@ export function badRequest(details: string, expression?: string): OperationOutco
         details: {
           text: details,
         },
-        expression: expression ? [expression] : undefined,
+        ...(expression ? { expression: [expression] } : undefined),
       },
     ],
   };

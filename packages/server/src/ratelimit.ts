@@ -28,6 +28,7 @@ export function getRateLimiter(config: MedplumServerConfig): RateLimitRequestHan
     handler = rateLimit({
       windowMs: 60 * 1000, // 1 minute
       limit: getRateLimitForRequest(config),
+      keyGenerator: (req, _res) => (req.ip as string) + (isAuthRequest(req) ? ':auth' : ''),
       validate: true, // Enable setup checks on first incoming request
       store,
       message: tooManyRequests,
@@ -44,14 +45,20 @@ export function closeRateLimiter(): void {
   }
 }
 
+function isAuthRequest(req: Request): boolean {
+  // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
+  // These URLs have a different rate limit than the rest of the API
+  if (req.originalUrl === '/auth/me') {
+    return false; // Read-only URL doesn't need the same rate limit protection
+  }
+  return req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
+}
+
 function getRateLimitForRequest(config?: MedplumServerConfig): (req: Request) => Promise<number> {
   return async function getRateLimitForRequest(req: Request): Promise<number> {
-    // Check if this is an "auth URL" (e.g., /auth/login, /auth/register, /oauth2/token)
-    // These URLs have a different rate limit than the rest of the API
-    const authUrl = req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
-
+    const isAuthUrl = isAuthRequest(req);
     let limit: number;
-    if (authUrl) {
+    if (isAuthUrl) {
       limit = config?.defaultAuthRateLimit ?? DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE;
     } else {
       limit = config?.defaultRateLimit ?? DEFAULT_RATE_LIMIT_PER_MINUTE;
@@ -59,7 +66,7 @@ function getRateLimitForRequest(config?: MedplumServerConfig): (req: Request) =>
 
     const ctx = getRequestContext();
     if (ctx instanceof AuthenticatedRequestContext) {
-      const systemSettingName = authUrl ? 'authRateLimit' : 'rateLimit';
+      const systemSettingName = isAuthUrl ? 'authRateLimit' : 'rateLimit';
       const systemSetting = ctx.project.systemSetting?.find((s) => s.name === systemSettingName);
       if (systemSetting?.valueInteger) {
         limit = systemSetting.valueInteger;

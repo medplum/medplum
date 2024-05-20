@@ -65,6 +65,8 @@ describe('HL7', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
       channel: [
         {
           name: 'test',
@@ -72,7 +74,7 @@ describe('HL7', () => {
           targetReference: createReference(bot),
         },
       ],
-    } as Agent);
+    });
 
     const app = new App(medplum, agent.id as string, LogLevel.INFO);
     await app.start();
@@ -122,6 +124,8 @@ describe('HL7', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
       channel: [
         {
           name: 'test',
@@ -129,7 +133,7 @@ describe('HL7', () => {
           targetReference: createReference(bot),
         },
       ],
-    } as Agent);
+    });
 
     // Start an HL7 listener
     const hl7Messages = [];

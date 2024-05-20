@@ -24,3 +24,18 @@ export const BackgroundImage = (): JSX.Element => (
     background="url(https://images.unsplash.com/photo-1535961652354-923cb08225a7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bmF0dXJlJTIwc21hbGx8ZW58MHwwfDB8fHww&auto=format&fit=crop&w=800&q=60)"
   />
 );
+
+export const CustomLinkStyle = (): JSX.Element => (
+  <PatientSummary
+    patient={HomerSimpson}
+    w={350}
+    withBorder
+    padding="lg"
+    radius="md"
+    mx="md"
+    my="xl"
+    shadow="xs"
+    appointmentsUrl="/my-custom-appointments-page"
+    encountersUrl={undefined}
+  />
+);

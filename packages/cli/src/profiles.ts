@@ -1,10 +1,10 @@
 import { Command } from 'commander';
-import { createMedplumCommand } from './util/command';
+import { readdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { resolve } from 'node:path';
 import { FileSystemStorage } from './storage';
-import { resolve } from 'path';
-import { readdirSync } from 'fs';
-import { homedir } from 'os';
-import { saveProfile, loadProfile } from './utils';
+import { createMedplumCommand } from './util/command';
+import { loadProfile, saveProfile } from './utils';
 
 const setProfile = createMedplumCommand('set');
 const removeProfile = createMedplumCommand('remove');

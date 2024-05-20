@@ -1,16 +1,16 @@
 import { MedplumClientOptions } from '@medplum/core';
-import { createMedplumClient } from './client';
-import os from 'os';
-import { mkdtempSync, rmSync } from 'fs';
-import { sep } from 'path';
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import { sep } from 'node:path';
 import { FileSystemStorage } from '../storage';
+import { createMedplumClient } from './client';
 
-jest.mock('os');
+jest.mock('node:os');
 jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
 }));
-jest.mock('fs', () => ({
-  ...jest.requireActual('fs'),
+jest.mock('node:fs', () => ({
+  ...jest.requireActual('node:fs'),
   writeFile: jest.fn((path, data, callback) => {
     callback();
   }),

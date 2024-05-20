@@ -3,10 +3,12 @@
  * Do not edit manually.
  */
 
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
 import { Device } from './Device';
 import { Extension } from './Extension';
 import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
 import { List } from './List';
 import { Location } from './Location';
@@ -138,7 +140,7 @@ export interface MeasureReport {
    * Optional subject identifying the individual or individuals the report
    * is for.
    */
-  subject?: Reference<Patient | Practitioner | PractitionerRole | Location | Device | RelatedPerson | Group>;
+  subject?: Reference<Patient | Practitioner | PractitionerRole | Location | Device | RelatedPerson | Organization | CareTeam | HealthcareService | Group>;
 
   /**
    * The date this measure report was generated.

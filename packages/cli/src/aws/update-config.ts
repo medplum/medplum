@@ -19,8 +19,8 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
 
     const infraConfig = readConfig(tag, options) as MedplumInfraConfig;
     if (!infraConfig) {
-      await printConfigNotFound(tag, options);
-      return;
+      printConfigNotFound(tag, options);
+      throw new Error(`Config not found: ${tag}`);
     }
 
     const serverConfig = readServerConfig(tag) ?? {};

@@ -62,7 +62,7 @@ projectInviteCommand
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
     }
-    if (!login.project.reference) {
+    if (!login?.project?.reference) {
       throw new Error('No current project to invite user to');
     }
 
@@ -82,21 +82,16 @@ async function switchProject(medplum: MedplumClient, projectId: string): Promise
   const logins = medplum.getLogins();
   const login = logins.find((login: LoginState) => login.project.reference?.includes(projectId));
   if (!login) {
-    console.log(`Error: project ${projectId} not found. Make sure you are added as a user to this project`);
-  } else {
-    await medplum.setActiveLogin(login);
-    console.log(`Switched to project ${projectId}\n`);
+    throw new Error(`Project ${projectId} not found. Make sure you are added as a user to this project`);
   }
+  await medplum.setActiveLogin(login);
+  console.log(`Switched to project ${projectId}\n`);
 }
 
 async function inviteUser(projectId: string, inviteBody: InviteRequest, medplum: MedplumClient): Promise<void> {
-  try {
-    await medplum.invite(projectId, inviteBody);
-    if (inviteBody.sendEmail) {
-      console.log('Email sent');
-    }
-    console.log('See your users at https://app.medplum.com/admin/users');
-  } catch (err) {
-    console.log('Error while sending invite ' + err);
+  await medplum.invite(projectId, inviteBody);
+  if (inviteBody.sendEmail) {
+    console.log('Email sent');
   }
+  console.log('See your users at https://app.medplum.com/admin/users');
 }

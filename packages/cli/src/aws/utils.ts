@@ -13,8 +13,8 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { normalizeErrorString } from '@medplum/core';
-import { readdirSync } from 'fs';
 import fetch from 'node-fetch';
+import { readdirSync } from 'node:fs';
 import * as semver from 'semver';
 import { getConfigFileName } from '../utils';
 import { checkOk, print } from './terminal';
@@ -299,7 +299,7 @@ async function writeParameter(client: SSMClient, name: string, value: string): P
  * @param tagName - Medplum stack tag name.
  * @param options - Additional command line options.
  */
-export async function printConfigNotFound(tagName: string, options?: Record<string, any>): Promise<void> {
+export function printConfigNotFound(tagName: string, options?: Record<string, any>): void {
   console.log(`Config not found: ${tagName} (${getConfigFileName(tagName, options)})`);
 
   if (options) {

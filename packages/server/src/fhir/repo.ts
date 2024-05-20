@@ -51,10 +51,10 @@ import {
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation, applyPatch } from 'rfc6902';
-import { Readable } from 'stream';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger, getRequestContext } from '../context';

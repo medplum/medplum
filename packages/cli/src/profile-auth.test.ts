@@ -1,19 +1,19 @@
 import { FetchLike, getStatus, isOperationOutcome, MedplumClient } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { mkdtempSync, rmSync } from 'fs';
-import os from 'os';
-import { sep } from 'path';
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import { sep } from 'node:path';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('os');
+jest.mock('node:os');
 jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
 }));
 jest.mock('./util/client');
-jest.mock('fs', () => ({
-  ...jest.requireActual('fs'),
+jest.mock('node:fs', () => ({
+  ...jest.requireActual('node:fs'),
   writeFile: jest.fn((path, data, callback) => {
     callback();
   }),
@@ -21,7 +21,7 @@ jest.mock('fs', () => ({
     if (filePath.endsWith('testPrivateKey.pem')) {
       return testPrivateKey;
     }
-    return jest.requireActual('fs').readFileSync(filePath);
+    return jest.requireActual('node:fs').readFileSync(filePath);
   }),
 }));
 

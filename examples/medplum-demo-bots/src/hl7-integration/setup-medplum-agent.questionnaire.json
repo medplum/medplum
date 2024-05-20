@@ -1,0 +1,95 @@
+{
+  "resourceType": "Questionnaire",
+  "status": "active",
+  "title": "Setup Remote Site",
+  "item": [
+    {
+      "id": "id-6",
+      "linkId": "g5",
+      "type": "group",
+      "text": "Organization",
+      "item": [
+        {
+          "id": "id-7",
+          "linkId": "organization-name",
+          "type": "string",
+          "text": "Name"
+        }
+      ]
+    },
+    {
+      "id": "id-2",
+      "linkId": "endpoint-details",
+      "type": "group",
+      "text": "Inbound Channels",
+      "repeats": true,
+      "item": [
+        {
+          "id": "id-12",
+          "linkId": "q1",
+          "type": "display",
+          "text": "Describe the network addresses the Medplum Agent will expose to the remote site's network to receive inbound messages"
+        },
+        {
+          "id": "id-3",
+          "linkId": "endpoint-name",
+          "type": "string",
+          "text": "Name"
+        },
+        {
+          "id": "id-4",
+          "linkId": "endpoint-ip",
+          "type": "string",
+          "text": "IP Address"
+        },
+        {
+          "id": "id-13",
+          "linkId": "endpoint-port",
+          "type": "integer",
+          "text": "Port"
+        }
+      ]
+    },
+    {
+      "id": "id-8",
+      "linkId": "device-group",
+      "type": "group",
+      "text": "Outbound Devices",
+      "item": [
+        {
+          "id": "id-14",
+          "linkId": "q3",
+          "type": "display",
+          "text": "Describe the target device(s) the local address of the target device the Medplum Agent will connect to on the remote network (e.g. remote EMR, RIS, LIS, PACS, etc.)"
+        },
+        {
+          "id": "id-9",
+          "linkId": "device-details",
+          "type": "group",
+          "text": "Details",
+          "repeats": true,
+          "item": [
+            {
+              "id": "id-10",
+              "linkId": "device-name",
+              "type": "string",
+              "text": "Name"
+            },
+            {
+              "id": "id-11",
+              "linkId": "device-address",
+              "type": "string",
+              "text": "IP Address"
+            },
+            {
+              "id": "id-15",
+              "linkId": "device-port",
+              "type": "integer",
+              "text": "Port"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

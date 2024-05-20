@@ -7,15 +7,15 @@ import {
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import { MedplumClient } from '@medplum/core';
 import { mockClient } from 'aws-sdk-client-mock';
-import { spawnSync } from 'child_process';
-import { randomUUID } from 'crypto';
-import { unlinkSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
+import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { unlinkSync, writeFileSync } from 'node:fs';
 import { main } from '../index';
 import { createMedplumClient } from '../util/client';
 
 jest.mock('node-fetch');
-jest.mock('child_process');
+jest.mock('node:child_process');
 jest.mock('../util/client');
 
 describe('update-server command', () => {
@@ -26,10 +26,15 @@ describe('update-server command', () => {
 
   const cfMock = mockClient(CloudFormationClient);
   let medplum: MedplumClient;
+  let processError: jest.SpyInstance;
 
   beforeAll(() => {
     const ecsMock = mockClient(ECSClient);
     ecsMock.on(UpdateServiceCommand).resolves({});
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
   });
 
   beforeEach(() => {
@@ -124,15 +129,21 @@ describe('update-server command', () => {
   });
 
   test('Update server not found', async () => {
-    await main(['node', 'index.js', 'aws', 'update-server', 'not-found']);
+    await expect(main(['node', 'index.js', 'aws', 'update-server', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(console.log).toHaveBeenCalledWith('Configuration file medplum.not-found.config.json not found');
+    expect(processError).toHaveBeenCalledWith('Error: Config not found: not-found\n');
     expect(spawnSync).not.toHaveBeenCalled();
     expect(medplum.startAsyncRequest).not.toHaveBeenCalled();
   });
 
   test('Update server config custom filename not found', async () => {
-    await main(['node', 'index.js', 'aws', 'update-server', 'not-found', '--file', 'foo.json']);
+    await expect(main(['node', 'index.js', 'aws', 'update-server', 'not-found', '--file', 'foo.json'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(console.log).toHaveBeenCalledWith('Config not found: not-found (foo.json)');
+    expect(processError).toHaveBeenCalledWith('Error: Config not found: not-found\n');
     expect(spawnSync).not.toHaveBeenCalled();
     expect(medplum.startAsyncRequest).not.toHaveBeenCalled();
   });
@@ -143,6 +154,7 @@ describe('update-server command', () => {
     writeFileSync(configFile, JSON.stringify({ serverImage: `medplum-server:latest`, region: 'us-west-2' }));
 
     await main(['node', 'index.js', 'aws', 'update-server', tag]);
+    unlinkSync(configFile);
     expect(console.log).toHaveBeenCalledWith('Performing update to v2.5.0');
     expect(spawnSync).toHaveBeenCalledTimes(2);
     expect(spawnSync).toHaveBeenCalledWith(`npx cdk deploy -c config=medplum.${tag}.config.json --all`, {
@@ -150,7 +162,15 @@ describe('update-server command', () => {
     });
     expect(medplum.startAsyncRequest).toHaveBeenCalledTimes(2);
     expect(medplum.startAsyncRequest).toHaveBeenCalledWith('/admin/super/migrate');
+  });
 
+  test('Update to specific version', async () => {
+    const tag = randomUUID();
+    const configFile = `medplum.${tag}.config.json`;
+    writeFileSync(configFile, JSON.stringify({ serverImage: `medplum-server:latest`, region: 'us-west-2' }));
+
+    await main(['node', 'index.js', 'aws', 'update-server', tag, '--to-version', '2.7.13']);
     unlinkSync(configFile);
+    expect(console.log).toHaveBeenCalledWith('Performing update to v2.5.0');
   });
 });

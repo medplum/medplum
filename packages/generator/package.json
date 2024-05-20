@@ -30,13 +30,13 @@
     "@types/json-schema": "7.0.15",
     "@types/pg": "8.11.6",
     "@types/unzipper": "0.10.9",
-    "fast-xml-parser": "4.3.6",
-    "fhirpath": "3.13.0",
+    "fast-xml-parser": "4.4.0",
+    "fhirpath": "3.13.2",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.11.5",
     "tinybench": "2.8.0",
-    "unzipper": "0.11.5"
+    "unzipper": "0.11.6"
   },
   "engines": {
     "node": ">=18.0.0"

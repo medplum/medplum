@@ -5,9 +5,9 @@ import {
   MedplumClient,
   normalizeErrorString,
 } from '@medplum/core';
-import { exec } from 'child_process';
-import { createServer } from 'http';
-import { platform } from 'os';
+import { exec } from 'node:child_process';
+import { createServer } from 'node:http';
+import { platform } from 'node:os';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 import { jwtAssertionLogin, jwtBearerLogin, Profile, saveProfile } from './utils';
@@ -107,7 +107,14 @@ async function openBrowser(url: string): Promise<void> {
     default:
       throw new Error('Unsupported platform: ' + os);
   }
-  exec(cmd);
+  exec(cmd, (error, _, stderr) => {
+    if (error) {
+      throw error;
+    }
+    if (stderr) {
+      throw new Error('Could not open browser: ' + stderr);
+    }
+  });
 }
 
 /**

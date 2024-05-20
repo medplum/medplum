@@ -350,7 +350,11 @@ function buildAllQuestionnaireAnswerItems(
   if (items) {
     for (const item of items) {
       if (item.linkId && item.answer && item.answer.length > 0) {
-        result[item.linkId] = item.answer;
+        if (result[item.linkId]) {
+          result[item.linkId] = [...result[item.linkId], ...item.answer];
+        } else {
+          result[item.linkId] = item.answer;
+        }
       }
       buildAllQuestionnaireAnswerItems(item.item, result);
     }
@@ -1171,4 +1175,34 @@ export const VALID_HOSTNAME_REGEX =
  */
 export function isValidHostname(input: string): boolean {
   return VALID_HOSTNAME_REGEX.test(input);
+}
+
+/**
+ * Adds the supplied profileUrl to the resource.meta.profile if it is not already
+ * specified
+ * @param resource - A FHIR resource
+ * @param profileUrl - The profile URL to add
+ * @returns The resource
+ */
+export function addProfileToResource<T extends Resource = Resource>(resource: T, profileUrl: string): T {
+  if (!resource?.meta?.profile?.includes(profileUrl)) {
+    resource.meta = resource.meta ?? {};
+    resource.meta.profile = resource.meta.profile ?? [];
+    resource.meta.profile.push(profileUrl);
+  }
+  return resource;
+}
+
+/**
+ * Removes the supplied profileUrl from the resource.meta.profile if it is present
+ * @param resource - A FHIR resource
+ * @param profileUrl - The profile URL to remove
+ * @returns The resource
+ */
+export function removeProfileFromResource<T extends Resource = Resource>(resource: T, profileUrl: string): T {
+  if (resource?.meta?.profile?.includes(profileUrl)) {
+    const index = resource.meta.profile.indexOf(profileUrl);
+    resource.meta.profile.splice(index, 1);
+  }
+  return resource;
 }
