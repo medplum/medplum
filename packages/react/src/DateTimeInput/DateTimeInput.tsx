@@ -13,6 +13,7 @@ export interface DateTimeInputProps {
   readonly required?: boolean;
   readonly outcome?: OperationOutcome;
   readonly onChange?: (value: string) => void;
+  readonly disabled?: boolean;
 }
 
 /**
@@ -33,6 +34,7 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
       data-testid={props.name}
       placeholder={props.placeholder}
       required={props.required}
+      disabled={props.disabled}
       type={getInputType()}
       defaultValue={convertIsoToLocal(props.defaultValue)}
       autoFocus={props.autoFocus}

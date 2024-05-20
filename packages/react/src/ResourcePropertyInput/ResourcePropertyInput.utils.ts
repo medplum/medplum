@@ -22,6 +22,7 @@ export interface PrimitiveTypeInputProps {
   defaultValue?: any;
   required: boolean;
   error: string | undefined;
+  disabled?: boolean | undefined;
 }
 
 export function getValuePath(elementPath: string, valuePath: string | undefined, arrayIndex?: number): string {

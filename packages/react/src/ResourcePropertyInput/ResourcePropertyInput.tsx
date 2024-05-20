@@ -1,10 +1,10 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import {
+  AnnotatedInternalSchemaElement,
   applyDefaultValuesToElement,
   capitalize,
   getPathDifference,
   HTTP_HL7_ORG,
-  InternalSchemaElement,
   isComplexTypeCode,
   isEmpty,
   isPopulated,
@@ -40,7 +40,7 @@ import { getErrorsForInput } from '../utils/outcomes';
 import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
 
 export interface ResourcePropertyInputProps extends BaseInputProps {
-  readonly property: InternalSchemaElement;
+  readonly property: AnnotatedInternalSchemaElement;
   readonly name: string;
   readonly defaultPropertyType?: string | undefined;
   readonly defaultValue: any;
@@ -95,6 +95,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         binding={property.binding}
         path={props.path}
         valuePath={props.valuePath}
+        readOnly={property.readonly}
       />
     );
   }
@@ -159,10 +160,11 @@ export interface ElementDefinitionTypeInputProps
   readonly min: number;
   readonly max: number;
   readonly binding: ElementDefinitionBinding | undefined;
+  readonly readOnly?: boolean;
 }
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const { name, onChange, outcome, binding, path, valuePath } = props;
+  const { name, onChange, outcome, binding, path, valuePath, readOnly } = props;
   const required = props.min !== undefined && props.min > 0;
 
   const propertyType = props.elementDefinitionType.code;
@@ -212,6 +214,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       defaultValue,
       required,
       error,
+      disabled: readOnly,
     };
   }
 

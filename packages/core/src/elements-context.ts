@@ -2,6 +2,10 @@ import { AccessPolicyResource } from '@medplum/fhirtypes';
 import { InternalSchemaElement } from './typeschema/types';
 import { getPathDifference } from './utils';
 
+export interface AnnotatedInternalSchemaElement extends InternalSchemaElement {
+  readonly?: boolean;
+}
+
 /**
  * Information for the set of elements at a given path within in a resource. This mostly exists to
  * normalize access to elements regardless of whether they are from a profile, extension, or slice.
@@ -10,16 +14,16 @@ export type ElementsContextType = {
   /** The FHIR path from the root resource to which the keys of `elements` are relative. */
   path: string;
   /**
-   * The mapping of keys to `InternalSchemaElement` at the current `path` relative to the
+   * The mapping of keys to `AnnotatedInternalSchemaElement` at the current `path` relative to the
    * root resource. `elements` originate from either `InternalTypeSchema.elements` or
    * `SliceDefinition.elements` when the elements context is created within a slice.
    */
-  elements: Record<string, InternalSchemaElement>;
+  elements: Record<string, AnnotatedInternalSchemaElement>;
   /**
    * Similar mapping as `elements`, but with keys being the full path from the root resource rather
    * than relative to `path`, in other words, the keys of the Record are `${path}.${key}`.
    */
-  elementsByPath: Record<string, InternalSchemaElement>;
+  elementsByPath: Record<string, AnnotatedInternalSchemaElement>;
   /** The URL, if any, of the resource profile or extension from which the `elements` collection originated. */
   profileUrl: string | undefined;
   /** Whether debug logging is enabled */
@@ -54,15 +58,16 @@ export function buildElementsContext({
     return undefined;
   }
 
-  let mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
+  let mergedElements: Record<string, AnnotatedInternalSchemaElement> = mergeElementsForContext(
     path,
     elements,
     parentContext,
     Boolean(debugMode)
   );
   mergedElements = removeHiddenFields(mergedElements, accessPolicyResource);
+  mergedElements = markReadonlyFields(mergedElements, accessPolicyResource);
 
-  const elementsByPath: Record<string, InternalSchemaElement> = Object.create(null);
+  const elementsByPath: Record<string, AnnotatedInternalSchemaElement> = Object.create(null);
   for (const [key, property] of Object.entries(mergedElements)) {
     elementsByPath[path + '.' + key] = property;
   }
@@ -140,6 +145,42 @@ function removeHiddenFields(
       }
     }
     if (!isHidden) {
+      result[key] = element;
+    }
+  }
+
+  return result;
+}
+
+function markReadonlyFields(
+  elements: Record<string, InternalSchemaElement>,
+  accessPolicyResource: AccessPolicyResource | undefined
+): Record<string, AnnotatedInternalSchemaElement> {
+  if (!accessPolicyResource?.readonlyFields?.length) {
+    return elements;
+  }
+
+  const readonlyKeyPrefixes = new Set<string>();
+  for (const field of accessPolicyResource.readonlyFields) {
+    readonlyKeyPrefixes.add(field);
+  }
+
+  const result: Record<string, AnnotatedInternalSchemaElement> = Object.create(null);
+
+  for (const [key, element] of Object.entries(elements)) {
+    let isReadonly = false;
+    const keyParts = key.split('.');
+    for (let i = 1; i <= keyParts.length; i++) {
+      const key = keyParts.slice(0, i).join('.');
+      if (readonlyKeyPrefixes.has(key)) {
+        isReadonly = true;
+        break;
+      }
+    }
+
+    if (isReadonly) {
+      result[key] = { ...element, readonly: true };
+    } else {
       result[key] = element;
     }
   }
