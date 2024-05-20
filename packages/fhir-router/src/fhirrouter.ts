@@ -19,8 +19,8 @@ export type FhirRequest = {
   method: HttpMethod;
   pathname: string;
   body: any;
-  params: Record<string, string>;
-  query: Record<string, string>;
+  params: Record<string, string | undefined>;
+  query: Record<string, string | undefined>;
   headers?: IncomingHttpHeaders;
 };
 
@@ -84,21 +84,21 @@ async function createResource(req: FhirRequest, repo: FhirRepository): Promise<F
 
 // Read resource by ID
 async function readResourceById(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const { resourceType, id } = req.params;
+  const { resourceType, id } = getFhirRequestParams<{ resourceType: string; id: string }>(req);
   const resource = await repo.readResource(resourceType, id);
   return [allOk, resource];
 }
 
 // Read resource history
 async function readHistory(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const { resourceType, id } = req.params;
+  const { resourceType, id } = getFhirRequestParams<{ resourceType: string; id: string }>(req);
   const bundle = await repo.readHistory(resourceType, id);
   return [allOk, bundle];
 }
 
 // Read resource version by version ID
 async function readVersion(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const { resourceType, id, vid } = req.params;
+  const { resourceType, id, vid } = getFhirRequestParams<{ resourceType: string; id: string; vid: string }>(req);
   const resource = await repo.readVersion(resourceType, id, vid);
   return [allOk, resource];
 }
@@ -119,7 +119,7 @@ async function updateResource(req: FhirRequest, repo: FhirRepository): Promise<F
 
 // Conditional update
 async function conditionalUpdate(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const { resourceType } = req.params;
+  const { resourceType } = getFhirRequestParams<{ resourceType: 'string' }>(req);
   const params = req.query;
   const resource = req.body;
 
@@ -130,14 +130,14 @@ async function conditionalUpdate(req: FhirRequest, repo: FhirRepository): Promis
 
 // Delete resource
 async function deleteResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const { resourceType, id } = req.params;
+  const { resourceType, id } = getFhirRequestParams<{ resourceType: string; id: string }>(req);
   await repo.deleteResource(resourceType, id);
   return [allOk];
 }
 
 // Patch resource
 async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const { resourceType, id } = req.params;
+  const { resourceType, id } = getFhirRequestParams<{ resourceType: string; id: string }>(req);
   const patch = req.body as Operation[];
   if (!patch) {
     return [badRequest('Empty patch body')];
@@ -197,4 +197,10 @@ function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   }
   const match = /"([^"]+)"/.exec(ifMatch);
   return match ? match[1] : undefined;
+}
+
+export function getFhirRequestParams<T extends Record<string, string | undefined> = Record<string, string | undefined>>(
+  req: FhirRequest
+): T {
+  return req.params as T;
 }

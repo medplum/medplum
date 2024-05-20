@@ -4,6 +4,8 @@ import {
   AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
+  AgentUpgradeRequest,
+  AgentUpgradeResponse,
   ContentType,
   Hl7Message,
   LogLevel,
@@ -15,13 +17,17 @@ import {
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { ExecException, ExecOptions, exec } from 'node:child_process';
+import { ChildProcess, ExecException, ExecOptions, Serializable, exec, fork } from 'node:child_process';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
+import path from 'node:path';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+
+const UPGRADE_MANIFEST_PATH = path.resolve(__dirname, 'upgrade.json');
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -67,6 +73,9 @@ export class App {
 
     this.startWebSocket();
 
+    // We do this after starting WebSockets so that we can send a message if we finished upgrading
+    await this.maybeFinalizeUpgrade();
+
     await this.hydrateListeners();
 
     this.medplum.addEventListener('change', () => {
@@ -78,6 +87,19 @@ export class App {
     });
 
     this.log.info('Medplum service started successfully');
+  }
+
+  private async maybeFinalizeUpgrade(): Promise<void> {
+    if (existsSync(UPGRADE_MANIFEST_PATH)) {
+      const upgradeFile = readFileSync(UPGRADE_MANIFEST_PATH, { encoding: 'utf-8' });
+      const upgradeDetails = JSON.parse(upgradeFile) as { previousVersion: string; targetVersion: string };
+      if (upgradeDetails.targetVersion === MEDPLUM_VERSION) {
+        // Delete manifest
+        rmSync(UPGRADE_MANIFEST_PATH);
+        // Send message
+        await this.sendToWebSocket({ type: 'agent:upgrade:response', statusCode: 200 } satisfies AgentUpgradeResponse);
+      }
+    }
   }
 
   private startWebSocket(): void {
@@ -191,6 +213,9 @@ export class App {
                 callback: command.callback,
               });
             }
+            break;
+          case 'agent:upgrade:request':
+            await this.tryUpgradeAgent(command);
             break;
           case 'agent:error':
             this.log.error(command.body);
@@ -485,6 +510,55 @@ export class App {
         statusCode: 400,
         body: normalizeErrorString(err),
       } satisfies AgentTransmitResponse);
+    }
+  }
+
+  private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
+    let child: ChildProcess;
+    try {
+      child = fork('../../agent-upgrader/dist/cjs/index.js', { detached: true });
+
+      // Wait for STARTED message from child
+      await new Promise<void>((resolve) => {
+        const listener = (msg: Serializable): void => {
+          const parsedMsg = JSON.parse(msg as string);
+          if (parsedMsg.type === 'STARTED') {
+            child.off('message', listener);
+            resolve();
+          }
+        };
+        child.on('message', listener);
+      });
+    } catch (err) {
+      const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}': ${normalizeErrorString(err)}`;
+      this.log.error(errMsg);
+      this.addToWebSocketQueue({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
+    try {
+      // Stop the agent to prepare for service being restarted
+      await this.stop();
+
+      // Write a manifest file
+      writeFileSync(
+        UPGRADE_MANIFEST_PATH,
+        JSON.stringify({ previousVersion: MEDPLUM_VERSION, targetVersion: message.version ?? 'latest' }),
+        { encoding: 'utf-8' }
+      );
+
+      // Send message to child to signal that we are ready to continue
+      if (!child.send({ type: 'STOPPED' })) {
+        throw new Error('Upgrader child process has closed');
+      }
+    } catch (err: unknown) {
+      this.log.error(
+        `Error while stopping agent or messaging child process as part of upgrade: ${normalizeErrorString(err)}`
+      );
     }
   }
 

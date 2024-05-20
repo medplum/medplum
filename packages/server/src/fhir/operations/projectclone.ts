@@ -1,7 +1,7 @@
 import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { FhirRequest, FhirResponse, getFhirRequestParams } from '@medplum/fhir-router';
 import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../repo';
 import { getBinaryStorage } from '../storage';
@@ -20,7 +20,7 @@ export async function projectCloneHandler(req: FhirRequest): Promise<FhirRespons
     return [forbidden];
   }
 
-  const { id } = req.params;
+  const { id } = getFhirRequestParams<{ id: string }>(req);
   const { name, resourceTypes, includeIds, excludeIds } = req.body;
   const cloner = new ProjectCloner(ctx.repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();

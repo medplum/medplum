@@ -1,5 +1,5 @@
 import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
+import { FhirRequest, FhirRouter, getFhirRequestParams, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -14,6 +14,7 @@ import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
+import { agentUpgradeHandler } from './operations/agentupgrade';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -196,6 +197,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/$reload-config', agentReloadConfigHandler);
   router.add('GET', '/Agent/:id/$reload-config', agentReloadConfigHandler);
 
+  // Agent $upgrade operation
+  router.add('GET', '/Agent/$reload-config', agentUpgradeHandler);
+  router.add('GET', '/Agent/:id/$reload-config', agentUpgradeHandler);
+
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
@@ -236,7 +241,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Reindex resource
   router.add('POST', '/:resourceType/:id/$reindex', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
+    const { resourceType, id } = getFhirRequestParams<{ resourceType: ResourceType; id: string }>(req);
     await ctx.repo.reindexResource(resourceType, id);
     return [allOk];
   });
@@ -244,7 +249,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Resend subscriptions
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
+    const { resourceType, id } = getFhirRequestParams<{ resourceType: ResourceType; id: string }>(req);
     await ctx.repo.resendSubscriptions(resourceType, id);
     return [allOk];
   });

@@ -1,6 +1,6 @@
 import { Logger } from '@medplum/core';
 import { execSync } from 'node:child_process';
-import { createWriteStream, existsSync } from 'node:fs';
+import { createWriteStream, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
@@ -10,26 +10,24 @@ let osString: SupportedOs;
 type ReleaseManifest = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
 type SupportedOs = 'windows' | 'linux';
 
+const UPGRADE_MANIFEST_PATH = resolve(__dirname, '../../agent/src/upgrade.json');
 const GITHUB_RELEASES_URL = 'https://api.github.com/repos/medplum/medplum/releases';
 const RELEASES_PATH = resolve(__dirname);
-const VERSION: string | undefined = undefined;
 
 const globalLogger = new Logger((msg) => console.log(msg));
 
 let releaseManifest: ReleaseManifest;
 
-async function main(_argv: string[]): Promise<void> {
-  if (!osString) {
-    switch (platform()) {
-      case 'win32':
-        osString = 'windows';
-        break;
-      case 'linux':
-        osString = 'linux';
-        break;
-      default:
-        throw new Error(`Unsupported platform: ${platform()}`);
-    }
+async function main(argv: string[]): Promise<void> {
+  switch (platform()) {
+    case 'win32':
+      osString = 'windows';
+      break;
+    case 'linux':
+      osString = 'linux';
+      break;
+    default:
+      throw new Error(`Unsupported platform: ${platform()}`);
   }
 
   // TODO: Remove this when Linux auto-update is supported
@@ -39,7 +37,23 @@ async function main(_argv: string[]): Promise<void> {
 
   // NOTE: Windows past this point, for now
 
-  const version = VERSION ?? (await fetchLatestVersionString());
+  // Make sure if version is given, it matches semver
+  if (argv[2] && !/\d+\.\d+\.\d+/.test(argv[2])) {
+    throw new Error('Invalid version specified');
+  }
+  const version = argv[2] ?? (await fetchLatestVersionString());
+  // If we are upgrading to latest version, record what version we are upgrading to in `upgrade.json` for comparison after the new version restarts
+  if (!argv[2]) {
+    if (!existsSync(UPGRADE_MANIFEST_PATH)) {
+      throw new Error('`upgrade.json` is missing. Unable to upgrade');
+    }
+    const upgradeFile = readFileSync(UPGRADE_MANIFEST_PATH, { encoding: 'utf-8' });
+    const manifest = JSON.parse(upgradeFile) as { previousVersion: string; targetVersion: string };
+    if (manifest.targetVersion === 'latest') {
+      manifest.targetVersion = version;
+      writeFileSync(UPGRADE_MANIFEST_PATH, JSON.stringify(manifest), { encoding: 'utf-8' });
+    }
+  }
   const binPath = getReleaseBinPath(version);
 
   // If release in not locally downloaded, download it first
@@ -53,9 +67,11 @@ async function main(_argv: string[]): Promise<void> {
     execSync('net stop "Medplum Agent"');
     // Run installer
     execSync(`${binPath} /S`);
-  } finally {
+  } catch (err: unknown) {
     // Try to restart Agent service if anything goes wrong
+    globalLogger.error('Failed to run installer, attempting to restart agent service...');
     execSync('net start "Medplum Agent"');
+    throw err;
   }
 }
 
