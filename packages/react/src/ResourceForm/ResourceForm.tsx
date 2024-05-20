@@ -1,5 +1,12 @@
 import { Alert, Button, Group, Stack, TextInput } from '@mantine/core';
-import { applyDefaultValuesToResource, canWriteResourceType, isPopulated, tryGetProfile } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  applyDefaultValuesToResource,
+  canWriteResourceType,
+  isPopulated,
+  satisfiedAccessPolicy,
+  tryGetProfile,
+} from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -57,6 +64,10 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
     }
   }, [medplum, defaultValue, props.schemaName, props.profileUrl]);
 
+  const accessPolicyResource = useMemo(() => {
+    return defaultValue && satisfiedAccessPolicy(defaultValue, AccessPolicyInteraction.READ, accessPolicy);
+  }, [accessPolicy, defaultValue]);
+
   const canWrite = useMemo<boolean>(() => {
     if (medplum.isSuperAdmin()) {
       return true;
@@ -112,6 +123,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         outcome={outcome}
         onChange={setValue}
         profileUrl={props.profileUrl}
+        accessPolicyResource={accessPolicyResource}
       />
       <Group justify="flex-end" mt="xl">
         <Button type="submit">OK</Button>

@@ -1,3 +1,4 @@
+import { AccessPolicyResource } from '@medplum/fhirtypes';
 import { InternalSchemaElement } from './typeschema/types';
 import { getPathDifference } from './utils';
 
@@ -23,6 +24,7 @@ export type ElementsContextType = {
   profileUrl: string | undefined;
   /** Whether debug logging is enabled */
   debugMode: boolean;
+  accessPolicyResource?: AccessPolicyResource;
 };
 
 export function buildElementsContext({
@@ -31,6 +33,7 @@ export function buildElementsContext({
   elements,
   profileUrl,
   debugMode,
+  accessPolicyResource,
 }: {
   /** The most recent `ElementsContextType` in which this context is being built. */
   parentContext: ElementsContextType | undefined;
@@ -45,19 +48,21 @@ export function buildElementsContext({
   profileUrl?: string;
   /** Whether debug logging is enabled */
   debugMode?: boolean;
+  accessPolicyResource?: AccessPolicyResource;
 }): ElementsContextType | undefined {
   if (path === parentContext?.path) {
     return undefined;
   }
 
-  const mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
+  let mergedElements: ElementsContextType['elements'] = mergeElementsForContext(
     path,
     elements,
     parentContext,
     Boolean(debugMode)
   );
-  const elementsByPath: Record<string, InternalSchemaElement> = Object.create(null);
+  mergedElements = removeHiddenFields(mergedElements, accessPolicyResource);
 
+  const elementsByPath: Record<string, InternalSchemaElement> = Object.create(null);
   for (const [key, property] of Object.entries(mergedElements)) {
     elementsByPath[path + '.' + key] = property;
   }
@@ -68,6 +73,7 @@ export function buildElementsContext({
     elementsByPath,
     profileUrl: profileUrl ?? parentContext?.profileUrl,
     debugMode: debugMode ?? parentContext?.debugMode ?? false,
+    accessPolicyResource: accessPolicyResource ?? parentContext?.accessPolicyResource,
   };
 }
 
@@ -105,5 +111,38 @@ function mergeElementsForContext(
   if (debugMode) {
     console.assert(usedNewElements, 'Unnecessary ElementsContext; not using any newly provided elements');
   }
+  return result;
+}
+
+export function removeHiddenFields(
+  elements: Record<string, InternalSchemaElement>,
+  accessPolicyResource: AccessPolicyResource | undefined
+): Record<string, InternalSchemaElement> {
+  if (!accessPolicyResource?.hiddenFields?.length) {
+    return elements;
+  }
+
+  const hiddenKeyPrefixes = new Set<string>();
+  for (const field of accessPolicyResource.hiddenFields) {
+    hiddenKeyPrefixes.add(field);
+  }
+
+  const result: Record<string, InternalSchemaElement> = Object.create(null);
+
+  for (const [key, element] of Object.entries(elements)) {
+    let isHidden = false;
+    const keyParts = key.split('.');
+    for (let i = 1; i <= keyParts.length; i++) {
+      const key = keyParts.slice(0, i).join('.');
+      if (hiddenKeyPrefixes.has(key)) {
+        isHidden = true;
+        break;
+      }
+    }
+    if (!isHidden) {
+      result[key] = element;
+    }
+  }
+
   return result;
 }
