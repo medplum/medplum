@@ -114,7 +114,7 @@ function mergeElementsForContext(
   return result;
 }
 
-export function removeHiddenFields(
+function removeHiddenFields(
   elements: Record<string, InternalSchemaElement>,
   accessPolicyResource: AccessPolicyResource | undefined
 ): Record<string, InternalSchemaElement> {
