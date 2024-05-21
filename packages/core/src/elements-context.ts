@@ -70,8 +70,9 @@ export function buildElementsContext({
     parentContext,
     Boolean(debugMode)
   );
-  mergedElements = removeHiddenFields(mergedElements, accessPolicyResource);
-  mergedElements = markReadonlyFields(mergedElements, accessPolicyResource);
+  const [_resourceType, keyPrefix] = splitN(path, '.', 2);
+  mergedElements = removeHiddenFields(mergedElements, accessPolicyResource, keyPrefix);
+  mergedElements = markReadonlyFields(mergedElements, accessPolicyResource, keyPrefix);
 
   const elementsByPath: Record<string, AnnotatedInternalSchemaElement> = Object.create(null);
   for (const [key, property] of Object.entries(mergedElements)) {
@@ -153,7 +154,8 @@ function mergeElementsForContext(
 
 function removeHiddenFields(
   elements: Record<string, InternalSchemaElement>,
-  accessPolicyResource: AccessPolicyResource | undefined
+  accessPolicyResource: AccessPolicyResource | undefined,
+  keyPrefix: string
 ): Record<string, InternalSchemaElement> {
   if (!accessPolicyResource?.hiddenFields?.length) {
     return elements;
@@ -166,8 +168,9 @@ function removeHiddenFields(
 
   const result: Record<string, InternalSchemaElement> = Object.create(null);
 
+  const prefix = keyPrefix ? keyPrefix + '.' : '';
   for (const [key, element] of Object.entries(elements)) {
-    const isHidden = matchesKeyPrefixes(key, accessPolicyResource.hiddenFields);
+    const isHidden = matchesKeyPrefixes(prefix + key, accessPolicyResource.hiddenFields);
     if (!isHidden) {
       result[key] = element;
     }
@@ -178,7 +181,8 @@ function removeHiddenFields(
 
 function markReadonlyFields(
   elements: Record<string, InternalSchemaElement>,
-  accessPolicyResource: AccessPolicyResource | undefined
+  accessPolicyResource: AccessPolicyResource | undefined,
+  keyPrefix: string
 ): Record<string, AnnotatedInternalSchemaElement> {
   if (!accessPolicyResource?.readonlyFields?.length) {
     return elements;
@@ -186,8 +190,9 @@ function markReadonlyFields(
 
   const result: Record<string, AnnotatedInternalSchemaElement> = Object.create(null);
 
+  const prefix = keyPrefix ? keyPrefix + '.' : '';
   for (const [key, element] of Object.entries(elements)) {
-    const isReadonly = matchesKeyPrefixes(key, accessPolicyResource.readonlyFields);
+    const isReadonly = matchesKeyPrefixes(prefix + key, accessPolicyResource.readonlyFields);
     if (isReadonly) {
       result[key] = { ...element, readonly: true };
     } else {
@@ -210,6 +215,5 @@ function matchesKeyPrefixes(key: string, prefixes: string[] | undefined): boolea
       return true;
     }
   }
-  return true; //TODO remove this line
   return false;
 }
