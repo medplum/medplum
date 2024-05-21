@@ -10,20 +10,20 @@ export interface BaseInputProps {
 }
 
 export interface ComplexTypeInputProps<ValueType> extends BaseInputProps {
-  name: string;
-  defaultValue?: ValueType;
-  onChange: ((value: ValueType, propName?: string) => void) | undefined;
-  disabled?: boolean;
+  readonly name: string;
+  readonly defaultValue?: ValueType;
+  readonly onChange?: (value: ValueType, propName?: string) => void;
+  readonly disabled?: boolean;
 }
 
 export interface PrimitiveTypeInputProps {
-  id: string;
-  name: string;
-  'data-testid': string;
-  defaultValue?: any;
-  required: boolean;
-  error: string | undefined;
-  disabled?: boolean;
+  readonly id?: string;
+  readonly name: string;
+  readonly 'data-testid'?: string;
+  readonly defaultValue?: any;
+  readonly required?: boolean;
+  readonly error?: string;
+  readonly disabled?: boolean;
 }
 
 export function getValuePath(elementPath: string, valuePath: string | undefined, arrayIndex?: number): string {

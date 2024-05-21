@@ -11,7 +11,7 @@ export interface AttachmentButtonProps {
   readonly onUploadProgress?: (e: ProgressEvent) => void;
   readonly onUploadError?: (outcome: OperationOutcome) => void;
   children(props: { disabled?: boolean; onClick(e: MouseEvent): void }): ReactNode;
-  disabled?: boolean;
+  readonly disabled?: boolean;
 }
 
 export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {

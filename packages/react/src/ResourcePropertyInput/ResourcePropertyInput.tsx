@@ -45,7 +45,7 @@ export interface ResourcePropertyInputProps extends BaseInputProps {
   readonly defaultPropertyType?: string | undefined;
   readonly defaultValue: any;
   readonly arrayElement?: boolean | undefined;
-  readonly onChange: ((value: any, propName?: string) => void) | undefined;
+  readonly onChange?: (value: any, propName?: string) => void;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
@@ -124,24 +124,23 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">
-      {!props.property.readonly && (
-        <NativeSelect
-          style={{ width: '200px' }}
-          defaultValue={selectedType.code}
-          data-testid={props.name && props.name + '-selector'}
-          onChange={(e) => {
-            setSelectedType(
-              propertyTypes.find(
-                (type: ElementDefinitionType) => type.code === e.currentTarget.value
-              ) as ElementDefinitionType
-            );
-          }}
-          data={propertyTypes.map((type: ElementDefinitionType) => ({
-            value: type.code as string,
-            label: type.code as string,
-          }))}
-        />
-      )}
+      <NativeSelect
+        disabled={props.property.readonly}
+        style={{ width: '200px' }}
+        defaultValue={selectedType.code}
+        data-testid={props.name && props.name + '-selector'}
+        onChange={(e) => {
+          setSelectedType(
+            propertyTypes.find(
+              (type: ElementDefinitionType) => type.code === e.currentTarget.value
+            ) as ElementDefinitionType
+          );
+        }}
+        data={propertyTypes.map((type: ElementDefinitionType) => ({
+          value: type.code as string,
+          label: type.code as string,
+        }))}
+      />
       <ElementDefinitionTypeInput
         name={props.name}
         defaultValue={props.defaultValue}
@@ -275,7 +274,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       );
     case PropertyType.dateTime:
     case PropertyType.instant:
-      return <DateTimeInput name={name} defaultValue={defaultValue} onChange={onChange} outcome={outcome} />;
+      return <DateTimeInput {...getPrimitiveInputProps()} onChange={onChange} outcome={outcome} />;
     case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:

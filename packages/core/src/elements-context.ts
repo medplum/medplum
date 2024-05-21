@@ -30,6 +30,7 @@ export type ElementsContextType = {
   debugMode: boolean;
   accessPolicyResource?: AccessPolicyResource;
   getExtendedProps(path: string): ExtendedElementProps | undefined;
+  isDefault?: boolean;
 };
 
 type ExtendedElementProps = { readonly: boolean; hidden: boolean };
@@ -81,7 +82,7 @@ export function buildElementsContext({
   // memoize getExtendedProps since its input are full paths regardless of the depth/location of the
   // ElementsContext within the resource.
   let getExtendedProps: (path: string) => ExtendedElementProps | undefined;
-  if (parentContext) {
+  if (parentContext?.isDefault === false) {
     getExtendedProps = parentContext.getExtendedProps;
   } else {
     const memoizedExtendedProps: Record<string, ExtendedElementProps> = Object.create(null);
@@ -102,6 +103,7 @@ export function buildElementsContext({
   }
 
   return {
+    isDefault: false,
     path: path,
     elements: mergedElements,
     elementsByPath,
@@ -185,7 +187,7 @@ function markReadonlyFields(
   const result: Record<string, AnnotatedInternalSchemaElement> = Object.create(null);
 
   for (const [key, element] of Object.entries(elements)) {
-    const isReadonly = matchesKeyPrefixes(key, accessPolicyResource.readonlyFields) || true;
+    const isReadonly = matchesKeyPrefixes(key, accessPolicyResource.readonlyFields);
     if (isReadonly) {
       result[key] = { ...element, readonly: true };
     } else {
@@ -208,5 +210,6 @@ function matchesKeyPrefixes(key: string, prefixes: string[] | undefined): boolea
       return true;
     }
   }
+  return true; //TODO remove this line
   return false;
 }

@@ -3,11 +3,13 @@ import { createContext } from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 
 export const ElementsContext = createContext<ElementsContextType>({
+  isDefault: true,
   path: '',
   profileUrl: undefined,
   elements: Object.create(null),
   elementsByPath: Object.create(null),
   getExtendedProps: () => ({ readonly: false, hidden: false }),
+  accessPolicyResource: undefined,
   debugMode: false,
 });
 ElementsContext.displayName = 'ElementsContext';

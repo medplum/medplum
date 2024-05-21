@@ -4,9 +4,9 @@ import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourceProperty
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeableConceptInputProps
-  extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange'>,
+  extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,
     ComplexTypeInputProps<CodeableConcept> {
-  readonly onChange: ((value: CodeableConcept | undefined) => void) | undefined;
+  readonly onChange?: (value: CodeableConcept | undefined) => void;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {

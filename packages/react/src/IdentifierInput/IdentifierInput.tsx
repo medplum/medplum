@@ -9,11 +9,16 @@ export type IdentifierInputProps = ComplexTypeInputProps<Identifier>;
 
 export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
-  const { elementsByPath } = useContext(ElementsContext);
+  const { elementsByPath, getExtendedProps } = useContext(ElementsContext);
 
   const [systemElement, valueElement] = useMemo(
     () => ['system', 'value'].map((field) => elementsByPath[props.path + '.' + field]),
     [elementsByPath, props.path]
+  );
+
+  const [systemProps, valueProps] = useMemo(
+    () => ['system', 'value'].map((field) => getExtendedProps(props.path + '.' + field)),
+    [getExtendedProps, props.path]
   );
 
   function setValueWrapper(newValue: Identifier): void {
@@ -27,7 +32,7 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <TextInput
-        disabled={systemElement?.readonly || props.disabled}
+        disabled={props.disabled || systemProps.readonly}
         placeholder="System"
         required={(systemElement?.min ?? 0) > 0}
         defaultValue={value?.system}
@@ -35,7 +40,7 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
         error={getErrorsForInput(props.outcome, errorPath + '.system')}
       />
       <TextInput
-        disabled={valueElement?.readonly || props.disabled}
+        disabled={props.disabled || valueProps.readonly}
         placeholder="Value"
         required={(valueElement?.min ?? 0) > 0}
         defaultValue={value?.value}

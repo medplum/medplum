@@ -6,7 +6,7 @@ import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export type ContactPointInputProps = ComplexTypeInputProps<ContactPoint> & {
-  readonly onChange: ((value: ContactPoint | undefined) => void) | undefined;
+  readonly onChange?: (value: ContactPoint | undefined) => void;
 };
 
 export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
@@ -65,7 +65,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <NativeSelect
-        disabled={props.disabled || systemProps?.readonly}
+        disabled={props.disabled || systemProps.readonly}
         data-testid="system"
         defaultValue={contactPoint?.system}
         required={(systemElement?.min ?? 0) > 0}
@@ -76,7 +76,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
         error={getErrorsForInput(outcome, errorPath + '.system')}
       />
       <NativeSelect
-        disabled={props.disabled || useProps?.readonly}
+        disabled={props.disabled || useProps.readonly}
         data-testid="use"
         defaultValue={contactPoint?.use}
         required={(useElement?.min ?? 0) > 0}
@@ -85,7 +85,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
         error={getErrorsForInput(outcome, errorPath + '.use')}
       />
       <TextInput
-        disabled={props.disabled || valueProps?.readonly}
+        disabled={props.disabled || valueProps.readonly}
         placeholder="Value"
         defaultValue={contactPoint?.value}
         required={(valueElement?.min ?? 0) > 0}
