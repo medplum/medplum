@@ -8,6 +8,7 @@
 !define SERVICE_DESCRIPTION      "Securely connects local devices to ${COMPANY_NAME} cloud"
 !define SERVICE_FILE_NAME        "medplum-agent-$%MEDPLUM_VERSION%-win64.exe"
 !define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%.exe"
+!define UPGRADER_FILE_NAME       "medplum-agent-upgrader-$%MEDPLUM_VERSION%-win64.exe"
 !define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
 !define DEFAULT_BASE_URL         "https://api.medplum.com/"
 
@@ -230,7 +231,7 @@ Function InstallApp
     File README.md
 
     # Copy the upgrader exe
-    File "dist\medplum-agent-upgrader-$MEDPLUM_VERSION-win64.exe"
+    File dist\${UPGRADER_FILE_NAME}
 
     # Create the agent.properties config file
     FileOpen $9 agent.properties w
