@@ -154,7 +154,6 @@ export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
   } catch (err) {
     const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
     await exec.failJob(systemRepo, err as Error);
-    throw err;
   }
 }
 
