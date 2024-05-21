@@ -69,6 +69,13 @@ pushd packages/agent
 # Build the agent
 npm run build
 
+pushd ../agent-upgrader
+
+# Build the upgrader
+npm run build
+
+popd
+
 # Build the executable
 npx pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe" --options no-warnings
 

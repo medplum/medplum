@@ -230,7 +230,7 @@ Function InstallApp
     File README.md
 
     # Copy the upgrader exe
-    File dist\medplum-agent-upgrader-${MEDPLUM_VERSION}-win64.exe
+    File "dist\medplum-agent-upgrader-$MEDPLUM_VERSION-win64.exe"
 
     # Create the agent.properties config file
     FileOpen $9 agent.properties w
