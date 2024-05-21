@@ -1,7 +1,7 @@
 import { Group, Stack } from '@mantine/core';
 import {
+  AnnotatedInternalSchemaElement,
   ElementsContextType,
-  InternalSchemaElement,
   SliceDefinitionWithTypes,
   buildElementsContext,
   getPropertyDisplayName,
@@ -21,7 +21,7 @@ import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 export interface SliceInputProps extends BaseInputProps {
   readonly slice: SliceDefinitionWithTypes;
-  readonly property: InternalSchemaElement;
+  readonly property: AnnotatedInternalSchemaElement;
   readonly defaultValue: any[];
   readonly onChange: (newValue: any[]) => void;
   readonly testId?: string;
@@ -90,9 +90,10 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                   binding={slice.binding}
                   path={props.path}
                   valuePath={undefined /* `valuePath` not supported in slices */}
+                  readOnly={props.property.readonly}
                 />
               </div>
-              {values.length > slice.min && (
+              {!props.property.readonly && values.length > slice.min && (
                 <ArrayRemoveButton
                   propertyDisplayName={propertyDisplayName}
                   testId={props.testId && `${props.testId}-remove-${valueIndex}`}
@@ -107,7 +108,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
             </Group>
           );
         })}
-        {values.length < slice.max && (
+        {!props.property.readonly && values.length < slice.max && (
           <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
             <ArrayAddButton
               propertyDisplayName={propertyDisplayName}

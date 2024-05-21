@@ -1,5 +1,5 @@
 import { Group, Stack } from '@mantine/core';
-import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
+import { AnnotatedInternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import { MouseEvent, useContext, useEffect, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -13,7 +13,7 @@ import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.util
 import { BaseInputProps, getValuePath } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface ResourceArrayInputProps extends BaseInputProps {
-  readonly property: InternalSchemaElement;
+  readonly property: AnnotatedInternalSchemaElement;
   readonly name: string;
   readonly defaultValue?: any[];
   readonly indent?: boolean;
@@ -111,19 +111,21 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
                 outcome={props.outcome}
               />
             </div>
-            <ArrayRemoveButton
-              propertyDisplayName={propertyDisplayName}
-              testId={`nonsliced-remove-${valueIndex}`}
-              onClick={(e: MouseEvent) => {
-                killEvent(e);
-                const newNonSliceValues = [...nonSliceValues];
-                newNonSliceValues.splice(valueIndex, 1);
-                setValuesWrapper(newNonSliceValues, nonSliceIndex);
-              }}
-            />
+            {!props.property.readonly && (
+              <ArrayRemoveButton
+                propertyDisplayName={propertyDisplayName}
+                testId={`nonsliced-remove-${valueIndex}`}
+                onClick={(e: MouseEvent) => {
+                  killEvent(e);
+                  const newNonSliceValues = [...nonSliceValues];
+                  newNonSliceValues.splice(valueIndex, 1);
+                  setValuesWrapper(newNonSliceValues, nonSliceIndex);
+                }}
+              />
+            )}
           </Group>
         ))}
-      {showNonSliceValues && slicedValues.flat().length < property.max && (
+      {!props.property.readonly && showNonSliceValues && slicedValues.flat().length < property.max && (
         <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
           <ArrayAddButton
             propertyDisplayName={propertyDisplayName}

@@ -23,6 +23,7 @@ export interface ReferenceInputProps {
   readonly autoFocus?: boolean;
   readonly required?: boolean;
   readonly onChange?: (value: Reference | undefined) => void;
+  readonly disabled?: boolean;
 }
 
 interface BaseTargetType {
@@ -153,7 +154,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
 
   return (
     <Group gap="xs" grow wrap="nowrap">
-      {targetTypes && targetTypes.length > 1 && (
+      {!props.disabled && targetTypes && targetTypes.length > 1 && (
         <NativeSelect
           data-autofocus={props.autoFocus}
           data-testid="reference-input-resource-type-select"
@@ -167,7 +168,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
           data={typeSelectOptions}
         />
       )}
-      {!targetTypes && (
+      {!props.disabled && !targetTypes && (
         <ResourceTypeInput
           autoFocus={props.autoFocus}
           testId="reference-input-resource-type-input"
@@ -191,6 +192,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
         defaultValue={value}
         searchCriteria={searchCriteria}
         onChange={setValueHelper}
+        disabled={props.disabled}
       />
     </Group>
   );

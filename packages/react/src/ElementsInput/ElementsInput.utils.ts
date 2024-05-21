@@ -7,6 +7,7 @@ export const ElementsContext = createContext<ElementsContextType>({
   profileUrl: undefined,
   elements: Object.create(null),
   elementsByPath: Object.create(null),
+  getExtendedProps: () => ({ readonly: false, hidden: false }),
   debugMode: false,
 });
 ElementsContext.displayName = 'ElementsContext';

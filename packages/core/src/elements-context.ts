@@ -1,6 +1,6 @@
 import { AccessPolicyResource } from '@medplum/fhirtypes';
 import { InternalSchemaElement } from './typeschema/types';
-import { getPathDifference } from './utils';
+import { getPathDifference, splitN } from './utils';
 
 export interface AnnotatedInternalSchemaElement extends InternalSchemaElement {
   readonly?: boolean;
@@ -26,10 +26,13 @@ export type ElementsContextType = {
   elementsByPath: Record<string, AnnotatedInternalSchemaElement>;
   /** The URL, if any, of the resource profile or extension from which the `elements` collection originated. */
   profileUrl: string | undefined;
+  // extendedElementProps: Record<string, ExtendedElementProps>;
+  getExtendedProps(path: string): ExtendedElementProps;
   /** Whether debug logging is enabled */
   debugMode: boolean;
-  accessPolicyResource?: AccessPolicyResource;
 };
+
+type ExtendedElementProps = { readonly: boolean; hidden: boolean };
 
 export function buildElementsContext({
   parentContext,
@@ -72,13 +75,29 @@ export function buildElementsContext({
     elementsByPath[path + '.' + key] = property;
   }
 
+  const memoizedExtendedProps: Record<string, ExtendedElementProps> = Object.create(null);
+  function getExtendedProps(path: string): ExtendedElementProps {
+    const [resourceType, key] = splitN(path, '.', 2);
+    if (accessPolicyResource?.resourceType) {
+      console.assert([resourceType, '*'].includes(accessPolicyResource.resourceType), 'Unexpected resource type');
+    }
+
+    if (!memoizedExtendedProps[key]) {
+      memoizedExtendedProps[key] = {
+        readonly: matchesKeyPrefixes(key, accessPolicyResource?.readonlyFields),
+        hidden: matchesKeyPrefixes(key, accessPolicyResource?.hiddenFields),
+      };
+    }
+    return memoizedExtendedProps[key];
+  }
+
   return {
     path: path,
     elements: mergedElements,
     elementsByPath,
     profileUrl: profileUrl ?? parentContext?.profileUrl,
     debugMode: debugMode ?? parentContext?.debugMode ?? false,
-    accessPolicyResource: accessPolicyResource ?? parentContext?.accessPolicyResource,
+    getExtendedProps,
   };
 }
 
@@ -135,15 +154,7 @@ function removeHiddenFields(
   const result: Record<string, InternalSchemaElement> = Object.create(null);
 
   for (const [key, element] of Object.entries(elements)) {
-    let isHidden = false;
-    const keyParts = key.split('.');
-    for (let i = 1; i <= keyParts.length; i++) {
-      const key = keyParts.slice(0, i).join('.');
-      if (hiddenKeyPrefixes.has(key)) {
-        isHidden = true;
-        break;
-      }
-    }
+    const isHidden = matchesKeyPrefixes(key, accessPolicyResource.hiddenFields);
     if (!isHidden) {
       result[key] = element;
     }
@@ -160,24 +171,10 @@ function markReadonlyFields(
     return elements;
   }
 
-  const readonlyKeyPrefixes = new Set<string>();
-  for (const field of accessPolicyResource.readonlyFields) {
-    readonlyKeyPrefixes.add(field);
-  }
-
   const result: Record<string, AnnotatedInternalSchemaElement> = Object.create(null);
 
   for (const [key, element] of Object.entries(elements)) {
-    let isReadonly = false;
-    const keyParts = key.split('.');
-    for (let i = 1; i <= keyParts.length; i++) {
-      const key = keyParts.slice(0, i).join('.');
-      if (readonlyKeyPrefixes.has(key)) {
-        isReadonly = true;
-        break;
-      }
-    }
-
+    const isReadonly = matchesKeyPrefixes(key, accessPolicyResource.readonlyFields) || true;
     if (isReadonly) {
       result[key] = { ...element, readonly: true };
     } else {
@@ -186,4 +183,19 @@ function markReadonlyFields(
   }
 
   return result;
+}
+
+function matchesKeyPrefixes(key: string, prefixes: string[] | undefined): boolean {
+  if (!prefixes?.length) {
+    return false;
+  }
+
+  const keyParts = key.split('.');
+  for (let i = 1; i <= keyParts.length; i++) {
+    const key = keyParts.slice(0, i).join('.');
+    if (prefixes.includes(key)) {
+      return true;
+    }
+  }
+  return false;
 }

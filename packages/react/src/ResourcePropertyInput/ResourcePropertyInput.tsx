@@ -117,22 +117,24 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">
-      <NativeSelect
-        style={{ width: '200px' }}
-        defaultValue={selectedType.code}
-        data-testid={props.name && props.name + '-selector'}
-        onChange={(e) => {
-          setSelectedType(
-            propertyTypes.find(
-              (type: ElementDefinitionType) => type.code === e.currentTarget.value
-            ) as ElementDefinitionType
-          );
-        }}
-        data={propertyTypes.map((type: ElementDefinitionType) => ({
-          value: type.code as string,
-          label: type.code as string,
-        }))}
-      />
+      {!props.property.readonly && (
+        <NativeSelect
+          style={{ width: '200px' }}
+          defaultValue={selectedType.code}
+          data-testid={props.name && props.name + '-selector'}
+          onChange={(e) => {
+            setSelectedType(
+              propertyTypes.find(
+                (type: ElementDefinitionType) => type.code === e.currentTarget.value
+              ) as ElementDefinitionType
+            );
+          }}
+          data={propertyTypes.map((type: ElementDefinitionType) => ({
+            value: type.code as string,
+            label: type.code as string,
+          }))}
+        />
+      )}
       <ElementDefinitionTypeInput
         name={props.name}
         defaultValue={props.defaultValue}
@@ -148,6 +150,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         binding={props.property.binding}
         path={props.property.path}
         valuePath={props.valuePath}
+        readOnly={props.property.readonly}
       />
     </Group>
   );
@@ -202,7 +205,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   }
 
   function getComplexInputProps(): ComplexTypeInputProps<any> {
-    return { name, defaultValue, onChange, outcome, path, valuePath };
+    return { name, defaultValue, onChange, outcome, path, valuePath, disabled: readOnly };
   }
 
   function getPrimitiveInputProps(): PrimitiveTypeInputProps {

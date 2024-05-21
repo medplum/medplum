@@ -13,6 +13,7 @@ export interface ComplexTypeInputProps<ValueType> extends BaseInputProps {
   name: string;
   defaultValue?: ValueType;
   onChange: ((value: ValueType, propName?: string) => void) | undefined;
+  disabled?: boolean;
 }
 
 export interface PrimitiveTypeInputProps {
@@ -22,7 +23,7 @@ export interface PrimitiveTypeInputProps {
   defaultValue?: any;
   required: boolean;
   error: string | undefined;
-  disabled?: boolean | undefined;
+  disabled?: boolean;
 }
 
 export function getValuePath(elementPath: string, valuePath: string | undefined, arrayIndex?: number): string {

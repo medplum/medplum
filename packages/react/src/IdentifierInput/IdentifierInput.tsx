@@ -27,6 +27,7 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <TextInput
+        disabled={systemElement?.readonly || props.disabled}
         placeholder="System"
         required={(systemElement?.min ?? 0) > 0}
         defaultValue={value?.system}
@@ -34,6 +35,7 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
         error={getErrorsForInput(props.outcome, errorPath + '.system')}
       />
       <TextInput
+        disabled={valueElement?.readonly || props.disabled}
         placeholder="Value"
         required={(valueElement?.min ?? 0) > 0}
         defaultValue={value?.value}
