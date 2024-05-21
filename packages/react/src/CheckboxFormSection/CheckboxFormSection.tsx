@@ -1,6 +1,7 @@
 import { Group, Input } from '@mantine/core';
 import { ReactNode, useContext } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { READ_ONLY_TOOLTIP_TEXT, maybeWrapWithTooltip } from '../utils/maybeWrapWithTooltip';
 
 export interface CheckboxFormSectionProps {
   readonly htmlFor?: string;
@@ -10,6 +11,7 @@ export interface CheckboxFormSectionProps {
   readonly children?: ReactNode;
   readonly testId?: string;
   readonly fhirPath?: string;
+  readonly readonly?: boolean;
 }
 
 export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Element {
@@ -21,7 +23,8 @@ export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Elemen
   } else {
     label = props.title;
   }
-  return (
+  return maybeWrapWithTooltip(
+    props.readonly ? READ_ONLY_TOOLTIP_TEXT : undefined,
     <Group wrap="nowrap" data-testid={props.testId}>
       <div>{props.children}</div>
       <div>

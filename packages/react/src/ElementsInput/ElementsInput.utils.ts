@@ -1,4 +1,4 @@
-import { ElementsContextType, InternalSchemaElement, isPopulated } from '@medplum/core';
+import { AnnotatedInternalSchemaElement, ElementsContextType, isPopulated } from '@medplum/core';
 import { createContext } from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 
@@ -18,8 +18,8 @@ export const IGNORED_PROPERTIES = ['id', ...DEFAULT_IGNORED_PROPERTIES].filter(
 );
 
 export function getElementsToRender(
-  inputElements: Record<string, InternalSchemaElement>
-): [string, InternalSchemaElement][] {
+  inputElements: Record<string, AnnotatedInternalSchemaElement>
+): [string, AnnotatedInternalSchemaElement][] {
   const result = Object.entries(inputElements).filter(([key, element]) => {
     if (!isPopulated(element.type)) {
       return false;
