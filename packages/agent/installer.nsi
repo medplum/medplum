@@ -176,6 +176,10 @@ Function UpgradeApp
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
+    # Copy the upgrader exe
+    File dist\${UPGRADER_FILE_NAME}
+
+
     # Create the service
     DetailPrint "Creating service..."
     ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
