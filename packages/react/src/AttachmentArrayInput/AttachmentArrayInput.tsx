@@ -11,6 +11,7 @@ export interface AttachmentArrayInputProps {
   readonly defaultValue?: Attachment[];
   readonly arrayElement?: boolean;
   readonly onChange?: (value: Attachment[]) => void;
+  readonly disabled?: boolean;
 }
 
 export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Element {
@@ -60,12 +61,13 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
           <td></td>
           <td>
             <AttachmentButton
+              disabled={props.disabled}
               onUpload={(attachment: Attachment) => {
                 setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
               }}
             >
               {(props) => (
-                <ActionIcon {...props} title="Add" variant="subtle" size="sm" color="green">
+                <ActionIcon {...props} title="Add" variant="subtle" size="sm" color={props.disabled ? 'gray' : 'green'}>
                   <IconCloudUpload />
                 </ActionIcon>
               )}

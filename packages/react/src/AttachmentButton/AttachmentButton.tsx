@@ -10,7 +10,8 @@ export interface AttachmentButtonProps {
   readonly onUploadStart?: () => void;
   readonly onUploadProgress?: (e: ProgressEvent) => void;
   readonly onUploadError?: (outcome: OperationOutcome) => void;
-  children(props: { onClick(e: MouseEvent): void }): ReactNode;
+  children(props: { disabled?: boolean; onClick(e: MouseEvent): void }): ReactNode;
+  disabled?: boolean;
 }
 
 export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
@@ -67,13 +68,14 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
   return (
     <>
       <input
+        disabled={props.disabled}
         type="file"
         data-testid="upload-file-input"
         style={{ display: 'none' }}
         ref={fileInputRef}
         onChange={(e) => onFileChange(e)}
       />
-      {props.children({ onClick })}
+      {props.children({ onClick, disabled: props.disabled })}
     </>
   );
 }
