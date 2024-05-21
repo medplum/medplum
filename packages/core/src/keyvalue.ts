@@ -1,4 +1,5 @@
 import { MedplumClient } from './client';
+import { ContentType } from './contenttype';
 
 export class MedplumKeyValueClient {
   constructor(readonly medplum: MedplumClient) {}
@@ -18,7 +19,7 @@ export class MedplumKeyValueClient {
    * @param value - The value to set.
    */
   async set(key: string, value: string): Promise<void> {
-    await this.medplum.put(`keyvalue/v1/${key}`, value);
+    await this.medplum.put(`keyvalue/v1/${key}`, value, ContentType.TEXT);
   }
 
   /**
