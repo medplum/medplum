@@ -26,10 +26,10 @@ export type ElementsContextType = {
   elementsByPath: Record<string, AnnotatedInternalSchemaElement>;
   /** The URL, if any, of the resource profile or extension from which the `elements` collection originated. */
   profileUrl: string | undefined;
-  // extendedElementProps: Record<string, ExtendedElementProps>;
-  getExtendedProps(path: string): ExtendedElementProps;
   /** Whether debug logging is enabled */
   debugMode: boolean;
+  accessPolicyResource?: AccessPolicyResource;
+  getExtendedProps(path: string): ExtendedElementProps | undefined;
 };
 
 type ExtendedElementProps = { readonly: boolean; hidden: boolean };
@@ -61,6 +61,8 @@ export function buildElementsContext({
     return undefined;
   }
 
+  accessPolicyResource ??= parentContext?.accessPolicyResource;
+
   let mergedElements: Record<string, AnnotatedInternalSchemaElement> = mergeElementsForContext(
     path,
     elements,
@@ -75,20 +77,28 @@ export function buildElementsContext({
     elementsByPath[path + '.' + key] = property;
   }
 
-  const memoizedExtendedProps: Record<string, ExtendedElementProps> = Object.create(null);
-  function getExtendedProps(path: string): ExtendedElementProps {
-    const [resourceType, key] = splitN(path, '.', 2);
-    if (accessPolicyResource?.resourceType) {
-      console.assert([resourceType, '*'].includes(accessPolicyResource.resourceType), 'Unexpected resource type');
-    }
+  // Since AccessPolicyResource are always specified from the root of a resource, we can (and should)
+  // memoize getExtendedProps since its input are full paths regardless of the depth/location of the
+  // ElementsContext within the resource.
+  let getExtendedProps: (path: string) => ExtendedElementProps | undefined;
+  if (parentContext) {
+    getExtendedProps = parentContext.getExtendedProps;
+  } else {
+    const memoizedExtendedProps: Record<string, ExtendedElementProps> = Object.create(null);
+    getExtendedProps = (path: string): ExtendedElementProps => {
+      const [resourceType, key] = splitN(path, '.', 2);
+      if (accessPolicyResource?.resourceType) {
+        console.assert([resourceType, '*'].includes(accessPolicyResource.resourceType), 'Unexpected resource type');
+      }
 
-    if (!memoizedExtendedProps[key]) {
-      memoizedExtendedProps[key] = {
-        readonly: matchesKeyPrefixes(key, accessPolicyResource?.readonlyFields),
-        hidden: matchesKeyPrefixes(key, accessPolicyResource?.hiddenFields),
-      };
-    }
-    return memoizedExtendedProps[key];
+      if (!memoizedExtendedProps[key]) {
+        memoizedExtendedProps[key] = {
+          readonly: matchesKeyPrefixes(key, accessPolicyResource?.readonlyFields),
+          hidden: matchesKeyPrefixes(key, accessPolicyResource?.hiddenFields),
+        };
+      }
+      return memoizedExtendedProps[key];
+    };
   }
 
   return {
@@ -98,6 +108,7 @@ export function buildElementsContext({
     profileUrl: profileUrl ?? parentContext?.profileUrl,
     debugMode: debugMode ?? parentContext?.debugMode ?? false,
     getExtendedProps,
+    accessPolicyResource,
   };
 }
 
