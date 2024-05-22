@@ -693,10 +693,49 @@ export class MockFetchClient {
 
     const result = await this.router.handleRequest(request, this.repo);
     if (result.length === 1) {
+      await this.logStructureDefinitionError(request.params.resourceType);
+      await this.logSearchParameterError(request);
       return result[0];
     } else {
       return result[1];
     }
+  }
+
+  private async logStructureDefinitionError(resourceType: string): Promise<void> {
+    const structureDefinitions = await this.repo.searchResources<StructureDefinition>({
+      resourceType: 'StructureDefinition',
+    });
+    const isMatch = structureDefinitions.some((sd) => sd.id === resourceType);
+    if (!isMatch) {
+      console.error(
+        `Unknown resource type: ${resourceType}. Please check whether it is defined in structuredefinitions.json.`
+      );
+    }
+  }
+
+  private async logSearchParameterError(request: FhirRequest): Promise<void> {
+    const {
+      method,
+      params: { resourceType },
+      query,
+    } = request;
+    const codes = Object.keys(query);
+    if (method !== 'GET' || codes.length === 0) {
+      return;
+    }
+    const searchParameters = await this.repo.searchResources<SearchParameter>({
+      resourceType: 'SearchParameter',
+    });
+    codes.forEach((code) => {
+      const isMatch = searchParameters.some(
+        (searchParameter) => searchParameter.code === code && searchParameter.base.some((r) => r === resourceType)
+      );
+      if (!isMatch) {
+        console.error(
+          `Unknown search parameter '${code}' for resource type '${resourceType}'. Please check whether it is defined in searchparameters.json.`
+        );
+      }
+    });
   }
 }
 

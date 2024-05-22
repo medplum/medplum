@@ -1,3 +1,6 @@
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
 import { handler } from './stripe-create-invoice';
@@ -6,6 +9,11 @@ const medplum = new MockClient();
 // npm t src/examples/stripe-bots/stripe-create-invoice.test.ts
 
 test('Create Invoice', async () => {
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+    indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+  }
   // This input is a Stripe Event object from https://stripe.com/docs/webhooks/stripe-events
   const input = {
     id: 'evt_1MqItaDlo6kh7lYQKFQhFJ2J',

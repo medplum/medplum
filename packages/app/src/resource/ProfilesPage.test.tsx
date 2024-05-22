@@ -16,7 +16,7 @@ describe('ProfilesPage', () => {
   beforeAll(async () => {
     const loadedProfileUrls: string[] = [];
     for (const profile of [fishPatientProfile, FishPatientResources.getFishSpeciesExtensionSD()]) {
-      const sd = await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
+      const sd = await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url=${profile.url}`);
       loadedProfileUrls.push(sd.url);
       loadDataType(sd, sd.url);
     }
