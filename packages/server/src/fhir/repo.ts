@@ -171,10 +171,9 @@ export interface CacheEntry<T extends Resource = Resource> {
   projectId: string;
 }
 
-export interface ReadResourceOptions {
+export type ReadResourceOptions = {
   checkCacheOnly?: boolean;
-  createAuditEvent?: boolean;
-}
+};
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -232,14 +231,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   ): Promise<T> {
     try {
       const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
-      if (options?.createAuditEvent !== false) {
-        this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, result);
-      }
+      this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
-      if (options?.createAuditEvent !== false) {
-        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err);
-      }
+      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
     }
   }
