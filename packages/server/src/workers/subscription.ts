@@ -15,7 +15,7 @@ import {
   serverError,
   stringify,
 } from '@medplum/core';
-import { Bot, Project, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -54,7 +54,7 @@ const DEFAULT_RETRIES = 3;
 
 export interface SubscriptionJobData {
   readonly subscriptionId: string;
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
   readonly channelType?: Subscription['channel']['type'];
   readonly id: string;
   readonly versionId: string;
@@ -471,11 +471,11 @@ async function tryGetSubscription(
   }
 }
 
-async function tryGetCurrentVersion(
+async function tryGetCurrentVersion<T extends Resource = Resource>(
   systemRepo: Repository,
-  resourceType: string,
+  resourceType: T['resourceType'],
   id: string
-): Promise<Resource | undefined> {
+): Promise<T | undefined> {
   try {
     return await systemRepo.readResource(resourceType, id);
   } catch (err) {
