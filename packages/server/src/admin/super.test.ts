@@ -314,7 +314,30 @@ describe('Super Admin routes', () => {
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
       expect.objectContaining<Partial<ReindexJobData>>({
-        resourceType: 'PaymentNotice',
+        resourceTypes: ['PaymentNotice'],
+      })
+    );
+  });
+
+  test('Reindex with multiple resource types', async () => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice, MedicinalProductManufactured,BiologicallyDerivedProduct',
+      });
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['PaymentNotice', 'MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
       })
     );
   });

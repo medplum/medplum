@@ -1,4 +1,4 @@
-import { AsyncJob, Parameters } from '@medplum/fhirtypes';
+import { AsyncJob, Parameters, ResourceType } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
@@ -34,11 +34,11 @@ describe('Reindex Worker', () => {
           request: '/admin/super/reindex',
         });
 
-        await addReindexJob('ImmunizationEvaluation', asyncJob);
+        await addReindexJob(['ImmunizationEvaluation'], asyncJob);
         expect(queue.add).toHaveBeenCalledWith(
           'ReindexJobData',
           expect.objectContaining<Partial<ReindexJobData>>({
-            resourceType: 'ImmunizationEvaluation',
+            resourceTypes: ['ImmunizationEvaluation'],
             asyncJob,
           })
         );
@@ -49,7 +49,15 @@ describe('Reindex Worker', () => {
         asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
         expect(asyncJob.status).toEqual('completed');
         expect(asyncJob.output).toMatchObject<Partial<Parameters>>({
-          parameter: expect.arrayContaining([{ name: 'count', valueInteger: 0 }]),
+          parameter: expect.arrayContaining([
+            {
+              name: 'result',
+              part: expect.arrayContaining([
+                { name: 'count', valueInteger: 0 },
+                { name: 'resourceType', valueCode: 'ImmunizationEvaluation' },
+              ]),
+            },
+          ]),
         });
       },
       { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
@@ -67,11 +75,11 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      await addReindexJob('ValueSet', asyncJob);
+      await addReindexJob(['ValueSet'], asyncJob);
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
         expect.objectContaining<Partial<ReindexJobData>>({
-          resourceType: 'ValueSet',
+          resourceTypes: ['ValueSet'],
           asyncJob,
         })
       );
@@ -83,9 +91,53 @@ describe('Reindex Worker', () => {
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
         expect.objectContaining<Partial<ReindexJobData>>({
-          resourceType: 'ValueSet',
+          resourceTypes: ['ValueSet'],
           asyncJob,
           count: 500,
+        })
+      );
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
+      expect(asyncJob.status).toEqual('accepted');
+    }));
+
+  test('Proceeds to next resource type after exhausting initial one', () =>
+    withTestContext(async () => {
+      const queue = getReindexQueue() as any;
+      queue.add.mockClear();
+
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const resourceTypes = [
+        'PaymentNotice',
+        'MedicinalProductManufactured',
+        'BiologicallyDerivedProduct',
+      ] as ResourceType[];
+
+      await addReindexJob(resourceTypes, asyncJob);
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({
+          resourceTypes: ['PaymentNotice', 'MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
+          asyncJob,
+        })
+      );
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      queue.add.mockClear();
+      await execReindexJob(job);
+
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({
+          resourceTypes: ['MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
+          asyncJob,
+          count: 0,
         })
       );
 
@@ -105,11 +157,11 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      await addReindexJob('ValueSet', asyncJob);
+      await addReindexJob(['ValueSet'], asyncJob);
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
         expect.objectContaining<Partial<ReindexJobData>>({
-          resourceType: 'ValueSet',
+          resourceTypes: ['ValueSet'],
           asyncJob,
         })
       );
@@ -119,7 +171,7 @@ describe('Reindex Worker', () => {
 
       const err = new Error('Failed to add job to queue!');
       queue.add.mockRejectedValueOnce(err);
-      await expect(execReindexJob(job)).rejects.toBe(err);
+      await expect(execReindexJob(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('error');

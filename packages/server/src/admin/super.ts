@@ -78,14 +78,16 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    const resourceType = req.body.resourceType;
-    validateResourceType(resourceType);
+    const resourceTypes = (req.body.resourceType as string).split(',').map((t) => t.trim());
+    for (const resourceType of resourceTypes) {
+      validateResourceType(resourceType);
+    }
     const systemRepo = getSystemRepo();
 
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceType as ResourceType, asyncJob);
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob);
     });
 
     const { baseUrl } = getConfig();
