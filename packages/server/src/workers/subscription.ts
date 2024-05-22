@@ -457,7 +457,6 @@ async function tryGetSubscription(
   try {
     return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
       checkCacheOnly: channelType === 'websocket',
-      createAuditEvent: false,
     });
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
