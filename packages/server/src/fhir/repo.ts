@@ -230,7 +230,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  private async readResourceImpl<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  private async readResourceImpl<T extends Resource>(resourceType: T['resourceType'], id: string): Promise<T> {
     if (!id || !validator.isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
@@ -1967,7 +1967,10 @@ const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
  * @param id - The resource ID.
  * @returns The cache entry if found; otherwise, undefined.
  */
-async function getCacheEntry<T extends Resource>(resourceType: string, id: string): Promise<CacheEntry<T> | undefined> {
+export async function getCacheEntry<T extends Resource>(
+  resourceType: T['resourceType'],
+  id: string
+): Promise<CacheEntry<T> | undefined> {
   const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
   return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
 }
