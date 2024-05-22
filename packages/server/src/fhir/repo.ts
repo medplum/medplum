@@ -268,7 +268,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       }
     }
 
-    if (options.checkCacheOnly) {
+    if (options?.checkCacheOnly) {
       throw new OperationOutcomeError(notFound);
     }
 
