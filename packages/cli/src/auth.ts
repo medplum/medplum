@@ -17,6 +17,7 @@ const redirectUri = 'http://localhost:9615';
 
 export const login = createMedplumCommand('login');
 export const whoami = createMedplumCommand('whoami');
+export const token = createMedplumCommand('token');
 
 login.action(async (options) => {
   const profileName = options.profile ?? 'default';
@@ -31,6 +32,18 @@ login.action(async (options) => {
 whoami.action(async (options) => {
   const medplum = await createMedplumClient(options);
   printMe(medplum);
+});
+
+token.action(async (options) => {
+  const medplum = await createMedplumClient(options);
+  await medplum.getProfileAsync();
+  const token = medplum.getAccessToken();
+  if (!token) {
+    throw new Error('Not logged in');
+  }
+  console.log('Access token:');
+  console.log();
+  console.log(token);
 });
 
 async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
