@@ -1,7 +1,7 @@
 import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { Command, CommanderError } from 'commander';
 import dotenv from 'dotenv';
-import { login, whoami } from './auth';
+import { login, token, whoami } from './auth';
 import { buildAwsCommand } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { bulk } from './bulk';
@@ -20,6 +20,7 @@ export async function main(argv: string[]): Promise<void> {
   // Auth commands
   index.addCommand(login);
   index.addCommand(whoami);
+  index.addCommand(token);
 
   // REST commands
   index.addCommand(get);
