@@ -41,7 +41,7 @@ token.action(async (options) => {
   if (!token) {
     throw new Error('Not logged in');
   }
-  console.log(`Access token:`);
+  console.log('Access token:');
   console.log();
   console.log(token);
 });
