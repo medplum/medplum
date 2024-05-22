@@ -455,7 +455,10 @@ async function tryGetSubscription(
   channelType: SubscriptionJobData['channelType'] | undefined
 ): Promise<Subscription | undefined> {
   try {
-    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, channelType === 'websocket');
+    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
+      checkCacheOnly: channelType === 'websocket',
+      createAuditEvent: false,
+    });
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
     // If the Subscription was marked as deleted in the database, this will return "gone"

@@ -171,6 +171,11 @@ export interface CacheEntry<T extends Resource = Resource> {
   projectId: string;
 }
 
+export interface ReadResourceOptions {
+  checkCacheOnly?: boolean;
+  createAuditEvent?: boolean;
+}
+
 /**
  * The lookup tables array includes a list of special tables for search indexing.
  */
@@ -223,16 +228,16 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   async readResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    checkCacheOnly?: boolean
+    options?: ReadResourceOptions
   ): Promise<T> {
     try {
-      const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, checkCacheOnly));
-      if (!checkCacheOnly) {
+      const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
+      if (options?.createAuditEvent !== false) {
         this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, result);
       }
       return result;
     } catch (err) {
-      if (!checkCacheOnly) {
+      if (options?.createAuditEvent !== false) {
         this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err);
       }
       throw err;
@@ -242,7 +247,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private async readResourceImpl<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    checkCacheOnly?: boolean
+    options?: ReadResourceOptions
   ): Promise<T> {
     if (!id || !validator.isUUID(id)) {
       throw new OperationOutcomeError(notFound);
@@ -268,7 +273,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       }
     }
 
-    if (checkCacheOnly) {
+    if (options.checkCacheOnly) {
       throw new OperationOutcomeError(notFound);
     }
 
