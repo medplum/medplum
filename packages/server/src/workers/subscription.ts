@@ -6,14 +6,15 @@ import {
   getExtensionValue,
   getReferenceString,
   isGone,
-  matchesSearchRequest,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
-  parseSearchRequest,
+  resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   serverError,
   stringify,
+  BackgroundJobContext,
+  BackgroundJobInteraction,
 } from '@medplum/core';
 import { Bot, Project, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
@@ -29,8 +30,7 @@ import { getRedis } from '../redis';
 import { createSubEventNotification } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { BackgroundJobContext, BackgroundJobInteraction } from './context';
-import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
+import { createAuditEvent, findProjectMembership, getPreviousResource, isJobSuccessful } from './utils';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -267,73 +267,13 @@ async function matchesCriteria(
   context: BackgroundJobContext
 ): Promise<boolean> {
   const ctx = getRequestContext();
-  if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    ctx.logger.debug('Ignore resource in different account compartment');
-    return false;
-  }
-
-  if (!matchesChannelType(subscription)) {
-    ctx.logger.debug(`Ignore subscription without recognized channel type`);
-    return false;
-  }
-
-  const subscriptionCriteria = subscription.criteria;
-  if (!subscriptionCriteria) {
-    ctx.logger.debug(`Ignore rest hook missing criteria`);
-    return false;
-  }
-
-  const searchRequest = parseSearchRequest(subscriptionCriteria);
-  if (resource.resourceType !== searchRequest.resourceType) {
-    ctx.logger.debug(
-      `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
-    );
-    return false;
-  }
-
-  const fhirPathCriteria = await isFhirCriteriaMet(subscription, resource);
-  if (!fhirPathCriteria) {
-    ctx.logger.debug(`Ignore rest hook for criteria returning false`);
-    return false;
-  }
-
-  const supportedInteractionExtension = getExtension(
+  return resourceMatchesSubscriptionCriteria({
+    resource,
     subscription,
-    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
-  );
-  if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
-    ctx.logger.debug(
-      `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
-    );
-    return false;
-  }
-
-  return matchesSearchRequest(resource, searchRequest);
-}
-
-/**
- * Returns true if the subscription channel type is ok to execute.
- * @param subscription - The subscription resource.
- * @returns True if the subscription channel type is ok to execute.
- */
-function matchesChannelType(subscription: Subscription): boolean {
-  const channelType = subscription.channel?.type;
-
-  if (channelType === 'rest-hook') {
-    const url = subscription.channel?.endpoint;
-    if (!url) {
-      getLogger().debug(`Ignore rest-hook missing URL`);
-      return false;
-    }
-
-    return true;
-  }
-
-  if (channelType === 'websocket') {
-    return true;
-  }
-
-  return false;
+    context,
+    logger: ctx.logger,
+    getPreviousResource: getPreviousResource,
+  });
 }
 
 /**

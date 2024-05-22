@@ -1,6 +1,12 @@
-import { Bundle, Communication, Parameters, SubscriptionStatus } from '@medplum/fhirtypes';
+import { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
-import { RobustWebSocket, SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from '.';
+import {
+  RobustWebSocket,
+  SubscriptionEmitter,
+  SubscriptionEventMap,
+  SubscriptionManager,
+  resourceMatchesSubscriptionCriteria,
+} from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
 import { OperationOutcomeError } from '../outcomes';
@@ -747,5 +753,55 @@ describe('SubscriptionManager', () => {
       expect(console.error).toHaveBeenCalledTimes(1);
       console.error = originalError;
     });
+  });
+});
+
+describe('resourceMatchesSubscriptionCriteria', () => {
+  it('should return true for a resource that matches the criteria', async () => {
+    const subscription: Subscription = {
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'test subscription',
+      criteria: 'Communication',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+          valueString: '%previous.status = "in-progress" and %current.status = "completed"',
+        },
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+          valueCode: 'update',
+        },
+      ],
+    };
+
+    const result1 = await resourceMatchesSubscriptionCriteria({
+      resource: {
+        resourceType: 'Communication',
+        status: 'in-progress',
+      },
+      subscription,
+      context: { interaction: 'create' },
+      getPreviousResource: async () => undefined,
+    });
+    expect(result1).toBe(false);
+
+    const result2 = await resourceMatchesSubscriptionCriteria({
+      resource: {
+        resourceType: 'Communication',
+        status: 'completed',
+      },
+      subscription,
+      context: { interaction: 'update' },
+      getPreviousResource: async () => ({
+        resourceType: 'Communication',
+        status: 'in-progress',
+      }),
+    });
+    expect(result2).toBe(true);
   });
 });
