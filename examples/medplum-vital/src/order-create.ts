@@ -1,5 +1,5 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
-import { Resource, ServiceRequest, Bundle, Reference, ResourceType, QuestionnaireResponse, Coverage } from '@medplum/fhirtypes';
+import { Resource, ServiceRequest, Bundle, Reference, QuestionnaireResponse, Coverage, Patient, Practitioner, ProjectSetting } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Check if event.input is of type Resource
@@ -10,45 +10,30 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const resource = event.input as Resource;
 
   switch (resource.resourceType) {
-    case 'ServiceRequest':
-      return createVitalOrder(medplum, event, resource as ServiceRequest);
+    case 'ServiceRequest': {
+      const bundle = await buildVitalOrder(medplum, resource);
+      return createVitalOrder(event.secrets, bundle);
+    }
     default:
       return false;
   }
 }
 
-async function createVitalOrder(medplum: MedplumClient, event: BotEvent, sr: ServiceRequest): Promise<any> {
-  const VITAL_API_KEY = event.secrets['VITAL_API_KEY'].valueString;
-  const VITAL_BASE_URL = event.secrets['VITAL_BASE_URL'].valueString || 'https://api.dev.tryvital.io';
-
-  if (!VITAL_API_KEY || !VITAL_BASE_URL) {
-    throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');
-  }
-
-  const CREATE_ORDER_URL = VITAL_BASE_URL + '/v3/order';
-
-  const patientID = sr.subject?.reference?.split('/')[1];
-  const practitionerID = sr.requester?.reference?.split('/')[1];
-
-  if (!patientID || !practitionerID) {
+async function buildVitalOrder(medplum: MedplumClient, sr: ServiceRequest): Promise<Bundle> {
+  if (!sr.subject || !sr.requester) {
     throw new Error('ServiceRequest is missing subject or requester');
   }
 
-  const patient = await medplum.readResource('Patient', patientID);
-  const practitioner = await medplum.readResource('Practitioner', practitionerID);
-
-  const aoes = await GetAoeResources(medplum, sr.supportingInfo || []);
-
-  const insurance = sr.insurance as Reference<Coverage> | undefined;
-
-  const [resource, coverageID] = GetIDAndResourceFromReference(insurance?.reference || '')
-  if (!coverageID || resource !== 'Coverage') {
-    throw new Error('Coverage is missing');
+  if (sr.subject.type !== 'Patient' || sr.requester.type !== 'Practitioner') {
+    throw new Error('ServiceRequest subject or requester is not a Patient or Practitioner');
   }
 
-  const coverage = await medplum.readResource('Coverage', coverageID);
+  const coverage = await getCoverage(medplum, sr);
+  const questionnaries = await getQuestionnaires(medplum, sr.supportingInfo || []);
+  const patient = await medplum.readReference(sr.subject as Reference<Patient>);
+  const practitioner = await medplum.readReference(sr.requester as Reference<Practitioner>);
 
-  const bundle: Bundle = {
+  return {
     resourceType: 'Bundle',
     type: 'transaction',
     entry: [
@@ -84,69 +69,82 @@ async function createVitalOrder(medplum: MedplumClient, event: BotEvent, sr: Ser
         },
       },
       {
-        resource: coverage,
-      },
-      ...aoes.map((questionnaryResponse) => ({
         resource: {
-          questionaryResponse: questionnaryResponse,
-          resourceType: questionnaryResponse.resourceType,
-          questionnaire: questionnaryResponse.questionnaire,
-          status: questionnaryResponse.status,
-          item: questionnaryResponse.item,
+          resourceType: 'Coverage',
+          network: coverage.network,
+          subscriberId: coverage.subscriberId,
+          status: coverage.status,
+          beneficiary: coverage.beneficiary,
+          identifier: coverage.identifier,
+          payor: coverage.payor,
+          relationship: coverage.relationship,
+        },
+      },
+      ...questionnaries.map((qs) => ({
+        resource: {
+          questionaryResponse: qs,
+          resourceType: qs.resourceType,
+          questionnaire: qs.questionnaire,
+          status: qs.status,
+          item: qs.item,
         },
       })),
     ],
   };
+}
 
-  const resp = await fetch(CREATE_ORDER_URL, {
+async function createVitalOrder(secrets: Record<string, ProjectSetting>, bundle: Bundle): Promise<any> {
+  const apiKey = secrets['VITAL_API_KEY'].valueString;
+  const baseURL = secrets['VITAL_BASE_URL']?.valueString || 'https://api.dev.tryvital.io';
+
+  if (!apiKey || !baseURL) {
+    throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');
+  }
+
+  const resp = await fetch(`${baseURL}/v3/order`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/fhir+json',
-      'x-vital-api-key': VITAL_API_KEY,
+      'x-vital-api-key': apiKey,
     },
     body: JSON.stringify(bundle),
   });
 
+  const content = await resp.text();
+
   // Not a 2xx response
   if (resp.status - 200 >= 100) {
-    throw new Error('Vital API error: ' + (await resp.text()));
+    throw new Error('Vital API error: ' + content);
   }
 
-  return true;
+  return content;
 }
 
-function GetIDAndResourceFromReference(reference: string): [ResourceType, string] {
-  if (!reference.includes('/')) {
-    throw new Error('Invalid reference: ' + reference);
+async function getQuestionnaires(medplum: MedplumClient, suporrtedInfo: Reference[]): Promise<QuestionnaireResponse[]> {
+  const questionnaires = [] as QuestionnaireResponse[];
+
+  for (const ref of suporrtedInfo) {
+    if (ref.type !== 'QuestionnaireResponse') {
+      continue;
+    }
+
+    const q = await medplum.readReference(ref as Reference<QuestionnaireResponse>);
+    questionnaires.push(q);
   }
 
-  const parts = reference.split('/');
-
-  if (parts.length !== 2) {
-    throw new Error('Invalid reference: ' + reference);
+  if (questionnaires.length === 0) {
+    throw new Error('Questionnaires are missing');
   }
 
-  return [parts[0] as ResourceType, parts[1]];
+  return questionnaires;
 }
 
-async function GetAoeResources(medplum: MedplumClient, suporrtedInfo: Reference[]): Promise<QuestionnaireResponse[]> {
-  const aoe_ids = suporrtedInfo.reduce<string[]>((acc, curr) => {
-    if (!curr.reference) {
-      throw new Error('Reference is missing');
-    }
+async function getCoverage(medplum: MedplumClient, sr: ServiceRequest): Promise<Coverage> {
+  const ref = (sr.insurance || []).find((r) => r.type === 'Coverage');
 
-    try {
-      const [resourceType, id] = GetIDAndResourceFromReference(curr.reference);
+  if (!ref) {
+    throw new Error('Coverage is missing');
+  }
 
-      if (resourceType === 'QuestionnaireResponse') {
-        return [...acc, id];
-      }
-    } catch (err) {
-      console.error(err);
-    }
-
-    return acc;
-  }, []);
-
-  return Promise.all(aoe_ids.map(async (id) => medplum.readResource('QuestionnaireResponse', id)));
+  return medplum.readReference(ref as Reference<Coverage>);
 }
