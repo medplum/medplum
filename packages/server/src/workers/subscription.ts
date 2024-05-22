@@ -655,10 +655,6 @@ async function catchJobError(subscription: Subscription, job: Job<SubscriptionJo
     // See: https://docs.bullmq.io/guide/jobs/prioritized
     await job.changePriority({ priority: 1 + job.attemptsMade });
 
-    if (subscription.channel?.type === 'websocket') {
-      console.log(err);
-    }
-
     throw err;
   }
   // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
