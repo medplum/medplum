@@ -8,6 +8,7 @@ import {
   getExtensionValue,
   getReferenceString,
   isGone,
+  isNotFound,
   matchesSearchRequest,
   normalizeOperationOutcome,
   parseSearchRequest,
@@ -23,7 +24,7 @@ import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
-import { Repository, getCacheEntry, getSystemRepo } from '../fhir/repo';
+import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createSubEventNotification } from '../subscriptions/websockets';
@@ -454,15 +455,12 @@ async function tryGetSubscription(
   channelType: SubscriptionJobData['channelType'] | undefined
 ): Promise<Subscription | undefined> {
   try {
-    if (channelType === 'websocket') {
-      return (await getCacheEntry<Subscription>('Subscription', subscriptionId))?.resource;
-    }
-    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
+    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, channelType === 'websocket');
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
     // If the Subscription was marked as deleted in the database, this will return "gone"
     // However, deleted WebSocket subscriptions will return "not found"
-    if (isGone(outcome)) {
+    if (isGone(outcome) || isNotFound(outcome)) {
       // If the subscription was deleted, then stop processing it.
       return undefined;
     }

@@ -220,18 +220,30 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  async readResource<T extends Resource>(resourceType: T['resourceType'], id: string): Promise<T> {
+  async readResource<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    checkCacheOnly?: boolean
+  ): Promise<T> {
     try {
-      const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id));
-      this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, result);
+      const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, checkCacheOnly));
+      if (!checkCacheOnly) {
+        this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, result);
+      }
       return result;
     } catch (err) {
-      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err);
+      if (!checkCacheOnly) {
+        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err);
+      }
       throw err;
     }
   }
 
-  private async readResourceImpl<T extends Resource>(resourceType: T['resourceType'], id: string): Promise<T> {
+  private async readResourceImpl<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    checkCacheOnly?: boolean
+  ): Promise<T> {
     if (!id || !validator.isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
@@ -254,6 +266,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       if (this.canReadCacheEntry(cacheRecord)) {
         return cacheRecord.resource;
       }
+    }
+
+    if (checkCacheOnly) {
+      throw new OperationOutcomeError(notFound);
     }
 
     return this.readResourceFromDatabase(resourceType, id);
@@ -1974,7 +1990,7 @@ const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
  * @param id - The resource ID.
  * @returns The cache entry if found; otherwise, undefined.
  */
-export async function getCacheEntry<T extends Resource>(
+async function getCacheEntry<T extends Resource>(
   resourceType: T['resourceType'],
   id: string
 ): Promise<CacheEntry<T> | undefined> {
