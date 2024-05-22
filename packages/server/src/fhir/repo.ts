@@ -1954,11 +1954,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   close(): void {
-    if (this.transactionDepth > 0) {
-      throw new Error('Closing with active transaction');
-    }
     this.assertNotClosed();
     this.releaseConnection();
+    if (this.transactionDepth > 0) {
+      getRequestContext().logger.error('Closing Repository with active transaction');
+    }
     this.closed = true;
   }
 
