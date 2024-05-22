@@ -5,7 +5,7 @@ import { loadTestConfig } from '../config';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository } from './repo';
 
-describe.skip('FHIR Repo Transactions', () => {
+describe('FHIR Repo Transactions', () => {
   let repo: Repository;
 
   beforeAll(async () => {
@@ -82,7 +82,7 @@ describe.skip('FHIR Repo Transactions', () => {
               details: {
                 text: 'Invalid additional property "foo"',
               },
-              expression: ['foo'],
+              expression: ['Patient.foo'],
             },
           ],
         });
@@ -213,7 +213,7 @@ describe.skip('FHIR Repo Transactions', () => {
                 details: {
                   text: 'Invalid additional property "foo"',
                 },
-                expression: ['foo'],
+                expression: ['Patient.foo'],
               },
             ],
           });
