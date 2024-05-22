@@ -1932,7 +1932,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   async withTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
     const conn = await getDatabasePool().connect();
     try {
-      await conn.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+      await conn.query('BEGIN');
       const result = await callback(conn);
       await conn.query('COMMIT');
       conn.release();
