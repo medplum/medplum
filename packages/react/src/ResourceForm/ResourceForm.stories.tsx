@@ -81,7 +81,7 @@ export const PartiallyHiddenPatient = (): JSX.Element => {
       resource: [
         {
           resourceType: 'Patient',
-          hiddenFields: ['identifier', 'name.given', 'name.family', 'birthDate', 'link', 'contact'],
+          hiddenFields: ['identifier', 'name.use', 'name.prefix', 'name.suffix', 'birthDate', 'link', 'contact'],
         },
       ],
     }),

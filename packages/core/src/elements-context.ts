@@ -119,9 +119,11 @@ export function buildElementsContext({
       }
 
       if (!memoizedExtendedProps[key]) {
+        const hidden = matchesKeyPrefixes(key, accessPolicyResource?.hiddenFields);
         memoizedExtendedProps[key] = {
-          readonly: matchesKeyPrefixes(key, accessPolicyResource?.readonlyFields),
-          hidden: matchesKeyPrefixes(key, accessPolicyResource?.hiddenFields),
+          hidden,
+          // hidden implies readonly even if it's not explicitly marked as such
+          readonly: hidden || matchesKeyPrefixes(key, accessPolicyResource?.readonlyFields),
         };
       }
       return memoizedExtendedProps[key];
