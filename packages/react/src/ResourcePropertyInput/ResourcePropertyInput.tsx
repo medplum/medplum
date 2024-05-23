@@ -1,6 +1,6 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import {
-  AnnotatedInternalSchemaElement,
+  ExtendedInternalSchemaElement,
   applyDefaultValuesToElement,
   capitalize,
   getPathDifference,
@@ -40,7 +40,7 @@ import { getErrorsForInput } from '../utils/outcomes';
 import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
 
 export interface ResourcePropertyInputProps extends BaseInputProps {
-  readonly property: AnnotatedInternalSchemaElement;
+  readonly property: ExtendedInternalSchemaElement;
   readonly name: string;
   readonly defaultPropertyType?: string | undefined;
   readonly defaultValue: any;

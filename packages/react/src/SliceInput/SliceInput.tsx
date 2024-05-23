@@ -1,6 +1,6 @@
 import { Group, Stack } from '@mantine/core';
 import {
-  AnnotatedInternalSchemaElement,
+  ExtendedInternalSchemaElement,
   ElementsContextType,
   SliceDefinitionWithTypes,
   buildElementsContext,
@@ -21,7 +21,7 @@ import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 export interface SliceInputProps extends BaseInputProps {
   readonly slice: SliceDefinitionWithTypes;
-  readonly property: AnnotatedInternalSchemaElement;
+  readonly property: ExtendedInternalSchemaElement;
   readonly defaultValue: any[];
   readonly onChange: (newValue: any[]) => void;
   readonly testId?: string;

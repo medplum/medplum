@@ -2,11 +2,11 @@ import { AccessPolicyResource } from '@medplum/fhirtypes';
 import { InternalSchemaElement } from './typeschema/types';
 import { getPathDifference, splitN } from './utils';
 
-export interface AnnotatedInternalSchemaElement extends InternalSchemaElement {
+export interface ExtendedInternalSchemaElement extends InternalSchemaElement {
   readonly?: boolean;
 }
 
-export type ExtendedElementProps = { readonly: boolean; hidden: boolean };
+export type ExtendedElementProperties = { readonly: boolean; hidden: boolean };
 
 /*
 Throughout ElementsContext and the ResourceForm components, we use the following terminology:
@@ -22,23 +22,39 @@ export type ElementsContextType = {
   /** The FHIR path from the root resource to which the keys of `elements` are relative. */
   path: string;
   /**
-   * The mapping of keys to `AnnotatedInternalSchemaElement` at the current `path` relative to the
+   * The mapping of keys to `ExtendedInternalSchemaElement` at the current `path` relative to the
    * root resource. `elements` originate from either `InternalTypeSchema.elements` or
    * `SliceDefinition.elements` when the elements context is created within a slice.
    */
-  elements: Record<string, AnnotatedInternalSchemaElement>;
+  elements: Record<string, ExtendedInternalSchemaElement>;
   /**
    * Similar mapping as `elements`, but with keys being the full path from the root resource rather
    * than relative to `path`, in other words, the keys of the Record are `${path}.${key}`.
    */
-  elementsByPath: Record<string, AnnotatedInternalSchemaElement>;
+  elementsByPath: Record<string, ExtendedInternalSchemaElement>;
   /** The URL, if any, of the resource profile or extension from which the `elements` collection originated. */
   profileUrl: string | undefined;
   /** Whether debug logging is enabled */
   debugMode: boolean;
+  /** The `AccessPolicyResource` provided, if any, used to determine hidden and readonly elements. */
   accessPolicyResource?: AccessPolicyResource;
-  getExtendedProps(path: string): ExtendedElementProps | undefined;
-  isDefault?: boolean;
+  /**
+   * Used to get an `ExtendedElementProperties` object for an element at a given path. This
+   * is primarily useful when working with elements not included in `InternalTypeSchema.elements`
+   * as is the case for nested elements that have not been modified by a profile or extension,
+   * e.g. Patient.name.family.
+   *
+   * This function does not attempt to determine if the input `path` is actually an element in the
+   * resource. When a syntactically correct path to a nonexistent element, e.g. Patient.foobar, is provided,
+   * a `ExtendedElementProperties` object with default values is returned.
+   *
+   * @param path - The full path to an element in the resource, e.g. Patient.name.family
+   * @returns An `ExtendedElementProperties` object with `readonly` and `hidden` properties for the
+   * element at `path`, or `undefined` if the input path is malformed.
+   */
+  getExtendedProps(path: string): ExtendedElementProperties | undefined;
+  /** `true` if this is a default/placeholder `ElementsContextType` */
+  isDefaultContext?: boolean;
 };
 
 export function buildElementsContext({
@@ -71,7 +87,7 @@ export function buildElementsContext({
   debugMode ??= parentContext?.debugMode ?? false;
   accessPolicyResource ??= parentContext?.accessPolicyResource;
 
-  let mergedElements: Record<string, AnnotatedInternalSchemaElement> = mergeElementsForContext(
+  let mergedElements: Record<string, ExtendedInternalSchemaElement> = mergeElementsForContext(
     path,
     elements,
     parentContext,
@@ -82,7 +98,7 @@ export function buildElementsContext({
   mergedElements = removeHiddenFields(mergedElements, accessPolicyResource, keyPrefix);
   mergedElements = markReadonlyFields(mergedElements, accessPolicyResource, keyPrefix);
 
-  const elementsByPath: Record<string, AnnotatedInternalSchemaElement> = Object.create(null);
+  const elementsByPath: Record<string, ExtendedInternalSchemaElement> = Object.create(null);
   for (const [key, property] of Object.entries(mergedElements)) {
     elementsByPath[path + '.' + key] = property;
   }
@@ -91,12 +107,12 @@ export function buildElementsContext({
   Since AccessPolicyResource.readonlyFields and hiddenFields are always relative to the root resource, we propagate
   a memoized `getExtendedProps` from the outermost ElementsContext
   */
-  let getExtendedProps: (path: string) => ExtendedElementProps | undefined;
-  if (parentContext?.isDefault === false) {
+  let getExtendedProps: (path: string) => ExtendedElementProperties | undefined;
+  if (parentContext && !parentContext.isDefaultContext) {
     getExtendedProps = parentContext.getExtendedProps;
   } else {
-    const memoizedExtendedProps: Record<string, ExtendedElementProps> = Object.create(null);
-    getExtendedProps = (path: string): ExtendedElementProps | undefined => {
+    const memoizedExtendedProps: Record<string, ExtendedElementProperties> = Object.create(null);
+    getExtendedProps = (path: string): ExtendedElementProperties | undefined => {
       const key = splitN(path, '.', 2)[1] as string | undefined;
       if (!key) {
         return undefined;
@@ -113,7 +129,6 @@ export function buildElementsContext({
   }
 
   return {
-    isDefault: false,
     path: path,
     elements: mergedElements,
     elementsByPath,
@@ -185,12 +200,12 @@ function markReadonlyFields(
   elements: Record<string, InternalSchemaElement>,
   accessPolicyResource: AccessPolicyResource | undefined,
   keyPrefix?: string
-): Record<string, AnnotatedInternalSchemaElement> {
+): Record<string, ExtendedInternalSchemaElement> {
   if (!accessPolicyResource?.readonlyFields?.length) {
     return elements;
   }
 
-  const result: Record<string, AnnotatedInternalSchemaElement> = Object.create(null);
+  const result: Record<string, ExtendedInternalSchemaElement> = Object.create(null);
 
   const prefix = keyPrefix ? keyPrefix + '.' : '';
   for (const [key, element] of Object.entries(elements)) {

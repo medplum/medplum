@@ -1,5 +1,5 @@
 import { Group, Stack } from '@mantine/core';
-import { AnnotatedInternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
+import { ExtendedInternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import { MouseEvent, useContext, useEffect, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -13,7 +13,7 @@ import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.util
 import { BaseInputProps, getValuePath } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface ResourceArrayInputProps extends BaseInputProps {
-  readonly property: AnnotatedInternalSchemaElement;
+  readonly property: ExtendedInternalSchemaElement;
   readonly name: string;
   readonly defaultValue?: any[];
   readonly indent?: boolean;
