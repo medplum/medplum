@@ -1,5 +1,5 @@
-import { badRequest, createReference } from '@medplum/core';
-import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
+import { badRequest, createReference, resolveId } from '@medplum/core';
+import { Bundle, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
@@ -22,12 +22,91 @@ export interface BindWithTokenMsg extends BaseSubscriptionClientMsg {
   payload: { token: string };
 }
 
+const wsToSubLookup = new Map<ws.WebSocket, Set<string>>();
+const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
+let redisSubscriber: Redis | undefined;
+let heartbeatHandler: (() => void) | undefined;
+
+async function setupSubscriptionHandler(): Promise<void> {
+  redisSubscriber = getRedisSubscriber();
+  redisSubscriber.on('message', (channel: string, events: string) => {
+    globalLogger.debug('[WS] redis subscription events', { channel, events });
+    const parsedBundles = JSON.parse(events) as Bundle[];
+    for (const bundle of parsedBundles) {
+      const status = bundle.entry?.[0].resource as SubscriptionStatus | undefined;
+      const subscriptionId = resolveId(status?.subscription);
+      if (!subscriptionId) {
+        globalLogger.error('[WS] SubscriptionStatus undefined or missing subscription ID', { channel, status });
+        continue;
+      }
+      for (const socket of subToWsLookup.get(subscriptionId) ?? []) {
+        socket.send(JSON.stringify(bundle), { binary: false });
+      }
+    }
+  });
+  await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
+}
+
+function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string): void {
+  let wsSet = subToWsLookup.get(subscriptionId);
+  let subIdSet = wsToSubLookup.get(ws);
+  if (!wsSet) {
+    wsSet = new Set();
+    subToWsLookup.set(subscriptionId, wsSet);
+  }
+  if (!subIdSet) {
+    subIdSet = new Set();
+    wsToSubLookup.set(ws, subIdSet);
+  }
+  wsSet.add(ws);
+  subIdSet.add(subscriptionId);
+}
+
+function ensureHeartbeatHandler(): void {
+  if (!heartbeatHandler) {
+    heartbeatHandler = (): void => {
+      for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
+        ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
+      }
+    };
+    heartbeat.addEventListener('heartbeat', heartbeatHandler);
+  }
+}
+
+// function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string): void {
+//   const wsSet = subToWsLookup.get(subscriptionId);
+//   const subIdSet = wsToSubLookup.get(ws);
+//   if (!(wsSet && subIdSet && wsSet.has(ws) && subIdSet.has(subscriptionId))) {
+//     globalLogger.error(`[WS] Subscription binding to subscription ${subscriptionId} for this WebSocket is missing`);
+//     return;
+//   }
+//   wsSet.delete(ws);
+//   subIdSet.delete(subscriptionId);
+// }
+
+function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
+  const subscriptionIds = wsToSubLookup.get(ws);
+  if (!subscriptionIds) {
+    globalLogger.error('[WS] No entry for given WebSocket in subscription lookup');
+    return;
+  }
+  for (const subscriptionId of subscriptionIds) {
+    if (!subToWsLookup.has(subscriptionId)) {
+      globalLogger.error(`[WS] Subscription binding to subscription ${subscriptionId} for this WebSocket is missing`);
+      continue;
+    }
+    const wsSet = subToWsLookup.get(subscriptionId) as Set<ws.WebSocket>;
+    wsSet.delete(ws);
+    if (wsSet.size === 0) {
+      subToWsLookup.delete(subscriptionId);
+    }
+  }
+  wsToSubLookup.delete(ws);
+}
+
 export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
   const redis = getRedis();
-  const subscriptionIds = [] as string[];
-  let redisSubscriber: Redis | undefined;
   let onDisconnect: (() => Promise<void>) | undefined;
-  let heartbeatHandler: (() => void) | undefined;
 
   const onBind = async (tokenPayload: JWTPayload & Partial<AdditionalWsBindingClaims>): Promise<void> => {
     const subscriptionId = tokenPayload?.subscription_id;
@@ -40,40 +119,26 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     }
 
     if (!redisSubscriber) {
-      // Create a redis client for this connection.
-      // According to Redis documentation: http://redis.io/commands/subscribe
-      // Once the client enters the subscribed state it is not supposed to issue any other commands,
-      // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-      redisSubscriber = getRedisSubscriber();
-
-      redisSubscriber.on('message', (channel: string, message: string) => {
-        globalLogger.debug('[WS] redis message', { channel, message });
-        socket.send(message, { binary: false });
-      });
-
-      onDisconnect = async (): Promise<void> => {
-        redisSubscriber?.disconnect();
-        const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
-        if (!cacheEntryStr) {
-          globalLogger.error('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect.');
-          return;
-        }
-        const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
-        await markInMemorySubscriptionsInactive(cacheEntry.projectId, subscriptionIds);
-      };
+      await setupSubscriptionHandler();
     }
+    subscribeWsToSubscription(socket, subscriptionId);
+    ensureHeartbeatHandler();
 
-    if (!subscriptionIds.includes(subscriptionId)) {
-      subscriptionIds.push(subscriptionId);
-    }
-    await redisSubscriber.subscribe(subscriptionId);
-
-    if (!heartbeatHandler) {
-      heartbeatHandler = (): void => {
-        socket.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
-      };
-      heartbeat.addEventListener('heartbeat', heartbeatHandler);
-    }
+    onDisconnect = async (): Promise<void> => {
+      const subscriptionIds = wsToSubLookup.get(socket);
+      if (!subscriptionIds) {
+        globalLogger.error('[WS] No entry for given WebSocket in subscription lookup');
+        return;
+      }
+      unsubscribeWsFromAllSubscriptions(socket);
+      const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
+      if (!cacheEntryStr) {
+        globalLogger.error('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect.');
+        return;
+      }
+      const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+      await markInMemorySubscriptionsInactive(cacheEntry.projectId, subscriptionIds);
+    };
   };
 
   socket.on('message', async (data: ws.RawData) => {
@@ -104,26 +169,21 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
   });
 
   socket.on('close', () => {
-    if (onDisconnect) {
-      onDisconnect().catch(console.error);
-    }
-    if (heartbeatHandler) {
-      heartbeat.removeEventListener('heartbeat', heartbeatHandler);
-    }
+    onDisconnect?.().catch(console.error);
   });
 }
 
 export type SubStatus = 'requested' | 'active' | 'error' | 'off';
 export type SubEventsOptions = { status?: SubStatus; includeResource?: boolean };
 
-export function createSubHeartbeatEvent(subscriptionIds: string[]): Bundle {
+export function createSubHeartbeatEvent(subscriptionIds: Set<string>): Bundle {
   const timestamp = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
     resourceType: 'Bundle',
     type: 'history',
     timestamp,
-    entry: subscriptionIds.map((subscriptionId) => ({
+    entry: Array.from(subscriptionIds).map((subscriptionId) => ({
       resource: {
         resourceType: 'SubscriptionStatus',
         id: crypto.randomUUID(),
@@ -174,7 +234,10 @@ export function createSubEventNotification<ResourceType extends Resource = Resou
   };
 }
 
-export async function markInMemorySubscriptionsInactive(projectId: string, subscriptionIds: string[]): Promise<void> {
+export async function markInMemorySubscriptionsInactive(
+  projectId: string,
+  subscriptionIds: Set<string>
+): Promise<void> {
   const refStrs = [];
   for (const subscriptionId of subscriptionIds) {
     refStrs.push(`Subscription/${subscriptionId}`);

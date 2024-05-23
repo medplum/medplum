@@ -16,10 +16,19 @@ import {
   serverError,
   stringify,
 } from '@medplum/core';
-import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
+import {
+  Bot,
+  Bundle,
+  Project,
+  ProjectMembership,
+  Reference,
+  Resource,
+  ResourceType,
+  Subscription,
+} from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
+import { createHmac } from 'node:crypto';
 import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
@@ -236,6 +245,8 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   const subscriptions = await getSubscriptions(resource, project);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
 
+  const wsEvents = [] as Bundle[];
+
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
@@ -243,10 +254,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        await getRedis().publish(
-          subscription.id as string,
-          JSON.stringify(createSubEventNotification(resource, subscription.id as string, { includeResource: true }))
-        );
+        wsEvents.push(createSubEventNotification(resource, subscription.id as string, { includeResource: true }));
         continue;
       }
       await addSubscriptionJobData({
@@ -261,6 +269,10 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         traceId: ctx?.traceId,
       });
     }
+  }
+
+  if (wsEvents.length) {
+    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(wsEvents));
   }
 }
 
