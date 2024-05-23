@@ -242,6 +242,13 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
         continue;
       }
+      if (subscription.channel.type === 'websocket') {
+        await getRedis().publish(
+          subscription.id as string,
+          JSON.stringify(createSubEventNotification(resource, subscription.id as string, { includeResource: true }))
+        );
+        continue;
+      }
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
@@ -434,12 +441,6 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
         } else {
           await sendRestHook(job, subscription, versionedResource, interaction, requestTime);
         }
-        break;
-      case 'websocket':
-        await getRedis().publish(
-          subscriptionId as string,
-          JSON.stringify(createSubEventNotification(versionedResource, subscriptionId, { includeResource: true }))
-        );
         break;
       default:
         throw new OperationOutcomeError(serverError(new Error('Subscription type not currently supported.')));
