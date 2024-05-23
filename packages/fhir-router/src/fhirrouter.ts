@@ -32,7 +32,16 @@ export type FhirRequest = {
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
 
-export type FhirRouteHandler = (req: FhirRequest, repo: FhirRepository, router: FhirRouter) => Promise<FhirResponse>;
+export type FhirRouteOptions = {
+  batch?: boolean;
+};
+
+export type FhirRouteHandler = (
+  req: FhirRequest,
+  repo: FhirRepository,
+  router: FhirRouter,
+  options?: FhirRouteOptions
+) => Promise<FhirResponse>;
 
 export interface FhirOptions {
   introspectionEnabled?: boolean;
@@ -76,22 +85,26 @@ async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<Fhi
 }
 
 // Create resource
-async function createResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+async function createResource(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
   const { resourceType } = req.params;
   const resource = req.body as Resource;
 
-  let options: CreateResourceOptions | undefined;
   if (req.headers?.['if-none-exist']) {
     let ifNoneExist = req.headers['if-none-exist'];
     if (Array.isArray(ifNoneExist)) {
       ifNoneExist = ifNoneExist[0];
     }
 
-    const result = await repo.conditionalCreate(resource, parseSearchRequest(ifNoneExist));
+    const result = await repo.conditionalCreate(resource, parseSearchRequest(`${resourceType}?${ifNoneExist}`));
     return [result.outcome, result.resource];
   }
 
-  return createResourceImpl(resourceType as ResourceType, resource, repo, options);
+  return createResourceImpl(resourceType as ResourceType, resource, repo, { assignedId: Boolean(options?.batch) });
 }
 
 export async function createResourceImpl<T extends Resource>(
