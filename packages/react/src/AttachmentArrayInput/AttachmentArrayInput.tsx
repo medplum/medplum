@@ -41,6 +41,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
             </td>
             <td>
               <ActionIcon
+                disabled={props.disabled}
                 title="Remove"
                 variant="subtle"
                 size="sm"

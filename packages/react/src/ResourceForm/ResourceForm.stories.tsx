@@ -12,7 +12,7 @@ import { ResourceForm } from './ResourceForm';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { MedplumClient, RequestProfileSchemaOptions, deepClone, loadDataType } from '@medplum/core';
-import { OperationOutcome, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { AccessPolicy, OperationOutcome, Resource, StructureDefinition } from '@medplum/fhirtypes';
 
 export default {
   title: 'Medplum/ResourceForm',
@@ -29,6 +29,76 @@ export const Patient = (): JSX.Element => (
     />
   </Document>
 );
+
+function useFakeGetAccessPolicy(medplum: MedplumClient, accessPolicy: AccessPolicy): void {
+  useLayoutEffect(() => {
+    const realGetAccessPolicy = medplum.getAccessPolicy;
+    function fakeGetAccessPolicy(): AccessPolicy {
+      console.log('Fake medplum.getAccessPolicy invoked');
+      return accessPolicy;
+    }
+
+    medplum.getAccessPolicy = fakeGetAccessPolicy;
+
+    return () => {
+      medplum.getAccessPolicy = realGetAccessPolicy;
+    };
+  }, [medplum, accessPolicy]);
+}
+
+export const PartiallyReadonlyPatient = (): JSX.Element => {
+  const medplum = useMedplum();
+  const accessPolicy = useMemo<AccessPolicy>(
+    () => ({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonlyFields: ['identifier', 'name.given', 'name.family', 'birthDate', 'link', 'contact'],
+        },
+      ],
+    }),
+    []
+  );
+  useFakeGetAccessPolicy(medplum, accessPolicy);
+  return (
+    <Document>
+      <ResourceForm
+        defaultValue={HomerSimpson}
+        onSubmit={(formData: any) => {
+          console.log('submit', formData);
+        }}
+      />
+    </Document>
+  );
+};
+
+export const PartiallyHiddenPatient = (): JSX.Element => {
+  const medplum = useMedplum();
+  const accessPolicy = useMemo<AccessPolicy>(
+    () => ({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          hiddenFields: ['identifier', 'name.given', 'name.family', 'birthDate', 'link', 'contact'],
+        },
+      ],
+    }),
+    []
+  );
+  useFakeGetAccessPolicy(medplum, accessPolicy);
+  return (
+    <Document>
+      <ResourceForm
+        defaultValue={HomerSimpson}
+        onSubmit={(formData: any) => {
+          console.log('submit', formData);
+        }}
+      />
+    </Document>
+  );
+};
 
 export const Organization = (): JSX.Element => (
   <Document>

@@ -154,8 +154,9 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
 
   return (
     <Group gap="xs" grow wrap="nowrap">
-      {!props.disabled && targetTypes && targetTypes.length > 1 && (
+      {targetTypes && targetTypes.length > 1 && (
         <NativeSelect
+          disabled={props.disabled}
           data-autofocus={props.autoFocus}
           data-testid="reference-input-resource-type-select"
           defaultValue={targetType?.resourceType}
@@ -168,8 +169,9 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
           data={typeSelectOptions}
         />
       )}
-      {!props.disabled && !targetTypes && (
+      {!targetTypes && (
         <ResourceTypeInput
+          disabled={props.disabled}
           autoFocus={props.autoFocus}
           testId="reference-input-resource-type-input"
           defaultValue={targetType?.resourceType as ResourceType}

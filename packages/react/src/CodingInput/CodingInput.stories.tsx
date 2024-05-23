@@ -32,3 +32,16 @@ export const MultipleValues = (): JSX.Element => (
     <CodingInput path="" binding={valueSet} name="code" label="Max Values 2" maxValues={2} />
   </Document>
 );
+
+export const Disabled = (): JSX.Element => (
+  <Document>
+    <CodingInput
+      path=""
+      binding={valueSet}
+      name="code"
+      label="My Label"
+      defaultValue={{ display: 'display' }}
+      disabled
+    />
+  </Document>
+);

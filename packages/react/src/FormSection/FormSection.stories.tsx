@@ -40,3 +40,23 @@ export const Basic = (): JSX.Element => (
     </Form>
   </Document>
 );
+
+export const Readonly = (): JSX.Element => (
+  <Document>
+    <FormSection
+      readonly
+      title="Demographics"
+      description="Basic Patient Information
+      "
+    >
+      <HumanNameInput
+        disabled
+        name="patient-name"
+        path="Patient.name"
+        defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
+        onChange={undefined}
+        outcome={undefined}
+      />
+    </FormSection>
+  </Document>
+);

@@ -13,11 +13,13 @@ type DayOfWeek = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 
 type PeriodUnit = 'a' | 's' | 'min' | 'h' | 'd' | 'wk' | 'mo';
 
-export interface TimingInputProps extends ComplexTypeInputProps<Timing> {}
+export interface TimingInputProps extends ComplexTypeInputProps<Timing> {
+  readonly defaultModalOpen?: boolean;
+}
 
 export function TimingInput(props: TimingInputProps): JSX.Element {
   const [value, setValue] = useState<Timing | undefined>(props.defaultValue);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!props.disabled && (props.defaultModalOpen ?? false));
 
   const valueRef = useRef<Timing>();
   valueRef.current = value;

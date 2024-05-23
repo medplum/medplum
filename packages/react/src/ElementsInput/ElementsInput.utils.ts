@@ -7,7 +7,10 @@ export const ElementsContext = createContext<ElementsContextType>({
   profileUrl: undefined,
   elements: Object.create(null),
   elementsByPath: Object.create(null),
-  getExtendedProps: () => ({ readonly: false, hidden: false }),
+  getExtendedProps: () => {
+    console.warn('Calling the placeholder getExtendedProps function');
+    return { readonly: false, hidden: false };
+  },
   accessPolicyResource: undefined,
   debugMode: false,
   isDefaultContext: true,
