@@ -693,6 +693,24 @@
         "type": "token",
         "expression": "Communication.topic"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Subscription-author",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Subscription-author",
+        "url": "https://medplum.com/fhir/SearchParameter/Subscription-author",
+        "version": "4.0.1",
+        "name": "author",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The author of the Subscription resource",
+        "code": "author",
+        "base": ["Subscription"],
+        "type": "reference",
+        "expression": "Subscription.meta.author",
+        "target": ["Patient", "Practitioner", "RelatedPerson", "ClientApplication", "Bot"]
+      }
     }
   ]
 }

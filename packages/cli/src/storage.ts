@@ -1,7 +1,7 @@
 import { ClientStorage } from '@medplum/core';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { homedir } from 'os';
-import { resolve } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { resolve } from 'node:path';
 
 export class FileSystemStorage extends ClientStorage {
   private readonly dirName: string;

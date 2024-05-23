@@ -25,9 +25,9 @@ export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirRes
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, params.version);
+    codeSystem = await findTerminologyResource('CodeSystem', params.system, params.version);
   } else if (params.coding?.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.coding.system, params.version);
+    codeSystem = await findTerminologyResource('CodeSystem', params.coding.system, params.version);
   } else {
     return [badRequest('No code system specified')];
   }

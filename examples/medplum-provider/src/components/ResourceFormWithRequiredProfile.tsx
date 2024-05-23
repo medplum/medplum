@@ -1,9 +1,8 @@
 import { Alert } from '@mantine/core';
-import { InternalTypeSchema, normalizeErrorString, tryGetProfile } from '@medplum/core';
+import { InternalTypeSchema, addProfileToResource, normalizeErrorString, tryGetProfile } from '@medplum/core';
 import { Loading, ResourceForm, ResourceFormProps, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { addProfileToResource } from '../utils';
 import { Resource } from '@medplum/fhirtypes';
 
 interface ResourceFormWithRequiredProfileProps extends ResourceFormProps {

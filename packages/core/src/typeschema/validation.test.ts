@@ -31,7 +31,7 @@ import {
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
+import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
@@ -408,6 +408,33 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(patient, { profile: patientProfile })).not.toThrow();
   });
 
+  // This test is failing because we do not recursively validate extensions. In this case,
+  // US Core Race requires the `text` extension, so not having it should fail validation.
+  test.failing('Nested extensions are not yet validated', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['New'], family: 'User' }],
+      identifier: [{ system: 'http://names.io', value: 'new-user' }],
+      gender: 'male',
+      extension: [
+        {
+          url: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
+          extension: [
+            {
+              url: 'ombCategory',
+              valueCoding: { system: 'urn:oid:2.16.840.1.113883.6.238', code: '2106-3', display: 'White' },
+            },
+            //{
+            // url: 'text',
+            // valueString: 'This should be required',
+            //},
+          ],
+        },
+      ],
+    };
+    expect(() => validateResource(patient, { profile: patientProfile })).toThrow();
+  });
+
   test('Valid resource with nulls in primitive extension', () => {
     expect(() => {
       validateResource({
@@ -661,6 +688,74 @@ describe('FHIR resource validation', () => {
       },
     };
     expect(() => validateResource(observation, { profile: bodyWeightProfile as StructureDefinition })).not.toThrow();
+  });
+
+  describe('Slice with pattern on $this', () => {
+    const healthConcernsProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__/us-core-condition-problems-health-concerns.json'), 'utf8')
+    ) as StructureDefinition;
+
+    const baseCondition: Condition = {
+      resourceType: 'Condition',
+      code: {
+        coding: [
+          {
+            system: 'http://snomed.info/sct',
+            code: '102263004',
+            display: 'Eggs',
+          },
+        ],
+      },
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'],
+      },
+      subject: {
+        reference: 'Patient/6de16ccc-3ae2-49e0-b2d0-178a6c6de872',
+      },
+    };
+
+    test('Missing Condition.category', () => {
+      const conditionNoCategory = deepClone(baseCondition);
+      conditionNoCategory.category = undefined;
+      expect(() => validateResource(conditionNoCategory, { profile: healthConcernsProfile })).toThrow();
+    });
+
+    // Slicing by ValueSet not supported without async validation. Ideally validating this resource would fail,
+    // but it must pass for now to make it possible to save resources against profiles using ValueSet slicing
+    // like https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-condition-problems-health-concerns.html
+    test.failing('Populated but missing required Condition.category', () => {
+      const conditionWrongCategory = deepClone(baseCondition);
+      conditionWrongCategory.category = [
+        {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/us/core/CodeSystem/us-core-tags',
+              code: 'sdoh',
+              display: 'SDOH',
+            },
+          ],
+          text: 'Social Determinants Of Health',
+        },
+      ];
+      expect(() => validateResource(conditionWrongCategory, { profile: healthConcernsProfile })).toThrow();
+    });
+
+    test('Populated with valid Condition.category', () => {
+      const validCondition: Condition = deepClone(baseCondition);
+      validCondition.category = [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+              code: 'problem-list-item',
+              display: 'Problem List Item',
+            },
+          ],
+          text: 'Problem List Item',
+        },
+      ];
+      expect(() => validateResource(validCondition, { profile: healthConcernsProfile })).not.toThrow();
+    });
   });
 
   test('validateResource', () => {

@@ -6,6 +6,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
+  parseSearchRequest,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -21,6 +22,7 @@ import {
   Questionnaire,
   ServiceRequest,
   StructureDefinition,
+  Subscription,
   Task,
   User,
 } from '@medplum/fhirtypes';
@@ -29,7 +31,7 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { createTestProject, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository } from './repo';
 
@@ -2048,5 +2050,201 @@ describe('AccessPolicy', () => {
 
       expect(accessPolicy).toBeDefined();
       expect(accessPolicy.resource?.find((r) => r.resourceType === '*')).toBeDefined();
+    }));
+
+  test('AccessPolicy for Subscriptions with author in criteria', async () =>
+    withTestContext(async () => {
+      const { project, login, membership } = await registerNew({
+        firstName: 'Project',
+        lastName: 'Admin',
+        projectName: 'Testing AccessPolicy for Subscriptions',
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      expect(project.link).toBeUndefined();
+
+      // Create another user
+      const { profile } = await addTestUser(project);
+
+      // Create access policy to enforce
+      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: {
+          project: project.id,
+        },
+        name: 'Only own subscriptions',
+        resource: [
+          {
+            resourceType: 'Subscription',
+            criteria: 'Subscription?author=%profile',
+          },
+        ],
+      });
+
+      // Repo for project admin
+      const projAdminRepo = await getRepoForLogin(login, membership, project, true);
+
+      // Repos for the test user
+
+      const repoWithoutAccessPolicy = new Repository({
+        author: createReference(profile),
+        projects: [project.id as string],
+        projectAdmin: false,
+        strictMode: true,
+        extendedMode: true,
+      });
+
+      const repoWithAccessPolicy = new Repository({
+        author: createReference(profile),
+        projects: [project.id as string],
+        projectAdmin: false,
+        strictMode: true,
+        extendedMode: true,
+        accessPolicy,
+      });
+
+      let subscription: Subscription;
+
+      // Create -- Without access policy
+
+      // Test creating rest-hook subscriptions
+      subscription = await repoWithoutAccessPolicy.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'For testing creating subscriptions',
+        status: 'active',
+        criteria: 'Communication',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'http://localhost:1337',
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      // Test creating WebSocket subscriptions
+      subscription = await repoWithoutAccessPolicy.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'For testing creating subscriptions',
+        status: 'active',
+        criteria: 'Communication',
+        channel: {
+          type: 'websocket',
+          endpoint: 'http://localhost:1337',
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      // Create -- With access policy
+
+      // Test creating rest-hook subscriptions
+      await expect(
+        repoWithAccessPolicy.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'For testing creating subscriptions',
+          status: 'active',
+          criteria: 'Communication',
+          channel: {
+            type: 'rest-hook',
+            endpoint: 'http://localhost:1337',
+          },
+        })
+      ).rejects.toThrow();
+
+      // Test creating WebSocket subscriptions
+      await expect(
+        repoWithAccessPolicy.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'For testing creating subscriptions',
+          status: 'active',
+          criteria: 'Communication',
+          channel: {
+            type: 'websocket',
+          },
+        })
+      ).rejects.toThrow();
+
+      // Search -- Without access policy
+
+      // Subscriptions -- Rest hook and WebSocket
+      const restHookSub = await projAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'Project Admin Subscription',
+        status: 'active',
+        criteria: 'Patient?name=Homer',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'http://localhost:1337',
+        },
+      });
+
+      const websocketSub = await projAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'Project Admin Subscription',
+        status: 'active',
+        criteria: 'Patient?name=Homer',
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      // Test searching for rest-hook subscriptions
+      let bundle = await repoWithoutAccessPolicy.search(
+        parseSearchRequest('Subscription?type=rest-hook&criteria=Patient?name=Homer')
+      );
+      expect(bundle?.entry?.length).toEqual(1);
+
+      // Test searching for WebSocket subscriptions
+      bundle = await repoWithoutAccessPolicy.search(
+        parseSearchRequest('Subscription?type=websocket&criteria=Patient?name=Homer')
+      );
+      // This actually returns 0 for now because search doesn't know about cache-only resources
+      expect(bundle?.entry?.length).toEqual(0);
+
+      // Search -- With access policy
+      // Test searching for rest-hook subscriptions
+      bundle = await repoWithAccessPolicy.search(
+        parseSearchRequest('Subscription?type=rest-hook&criteria=Patient?name=Homer')
+      );
+      expect(bundle?.entry?.length).toEqual(0);
+
+      // Test searching for WebSocket subscriptions
+      bundle = await repoWithAccessPolicy.search(
+        parseSearchRequest('Subscription?type=websocket&criteria=Patient?name=Homer')
+      );
+      // This actually returns 0 for now because search doesn't know about cache-only resources
+      expect(bundle?.entry?.length).toEqual(0);
+
+      // Updating subscription -- Without access policy
+
+      // Test updating a rest-hook subscription not owned
+      const updatedRestHookSub = await repoWithoutAccessPolicy.updateResource<Subscription>({
+        ...restHookSub,
+        criteria: 'Patient',
+      });
+      expect(updatedRestHookSub).toMatchObject({ criteria: 'Patient' });
+
+      // Test updating a WebSocket subscription not owned
+      const updatedWebsocketSub = await repoWithoutAccessPolicy.updateResource<Subscription>({
+        ...websocketSub,
+        criteria: 'Patient',
+      });
+      expect(updatedWebsocketSub).toMatchObject({ criteria: 'Patient' });
+
+      // Updating subscription -- With access policy
+
+      // Test updating a rest-hook subscription not owned
+      await expect(
+        repoWithAccessPolicy.updateResource<Subscription>({
+          ...updatedRestHookSub,
+          criteria: 'Communication',
+        })
+      ).rejects.toThrow();
+
+      // Test updating a WebSocket subscription not owned
+      await expect(
+        repoWithAccessPolicy.updateResource<Subscription>({
+          ...updatedWebsocketSub,
+          criteria: 'Communication',
+        })
+      ).rejects.toThrow();
     }));
 });

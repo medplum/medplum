@@ -1,8 +1,8 @@
-import { OperationOutcomeError, Operator, badRequest } from '@medplum/core';
+import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
 import { getAuthenticatedContext } from '../../../context';
-import { r4ProjectId } from '../../../seed';
-import { CodeSystem, CodeSystemConceptProperty, ConceptMap, ValueSet } from '@medplum/fhirtypes';
+import { CodeSystem, CodeSystemConceptProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
 import { SelectQuery, Conjunction, Condition, Column, Union } from '../../sql';
+import { getSystemRepo } from '../../repo';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
@@ -15,12 +15,12 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   url: string,
   version?: string
 ): Promise<T> {
-  const { repo } = getAuthenticatedContext();
+  const { repo, project } = getAuthenticatedContext();
   const filters = [{ code: 'url', operator: Operator.EQUALS, value: url }];
   if (version) {
     filters.push({ code: 'version', operator: Operator.EQUALS, value: version });
   }
-  const resources = await repo.searchResources<T>({
+  const results = await repo.searchResources<T>({
     resourceType,
     filters,
     sortRules: [
@@ -31,24 +31,43 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     ],
   });
 
-  if (!resources.length) {
+  if (!results.length) {
     throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
-  } else if (resources.length === 1) {
-    return resources[0];
+  } else if (results.length === 1 || !sameTerminologyResourceVersion(results[0], results[1])) {
+    return results[0];
   } else {
-    resources.sort((a: TerminologyResource, b: TerminologyResource) => {
-      // Select the non-base FHIR versions of resources before the base FHIR ones
-      // This is kind of a kludge, but is required to break ties because some CodeSystems (including SNOMED)
-      // don't have a version and the base spec version doesn't include a date (and so is always considered current)
-      if (a.meta?.project === r4ProjectId) {
-        return 1;
-      } else if (b.meta?.project === r4ProjectId) {
-        return -1;
+    const resourceReferences: Reference<T>[] = [];
+    for (const resource of results) {
+      resourceReferences.push(createReference(resource));
+    }
+    const resources = (await getSystemRepo().readReferences(resourceReferences)) as (T | Error)[];
+    const projectResource = resources.find((r) => r instanceof Error || r.meta?.project === project.id);
+    if (projectResource instanceof Error) {
+      throw projectResource;
+    } else if (projectResource) {
+      return projectResource;
+    }
+    if (project.link) {
+      for (const linkedProject of project.link) {
+        const linkedResource = resources.find(
+          (r) => !(r instanceof Error) && r.meta?.project === resolveId(linkedProject.project)
+        ) as T | undefined;
+        if (linkedResource) {
+          return linkedResource;
+        }
       }
-      return 0;
-    });
-    return resources[0];
+    }
+    throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   }
+}
+
+function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyResource): boolean {
+  if (a.version !== b.version) {
+    return false;
+  } else if (a.date !== b.date) {
+    return false;
+  }
+  return true;
 }
 
 export function addPropertyFilter(query: SelectQuery, property: string, value: string, isEqual?: boolean): SelectQuery {

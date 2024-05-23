@@ -15,11 +15,11 @@ import {
 } from '@aws-sdk/client-cloudfront';
 import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client, S3ClientResolvedConfig } from '@aws-sdk/client-s3';
 import { AwsStub, mockClient } from 'aws-sdk-client-mock';
-import fs from 'fs';
+import fs from 'node:fs';
 import { main } from '../index';
 import { updateBucketPolicy } from './update-bucket-policies';
 
-jest.mock('fs', () => ({
+jest.mock('node:fs', () => ({
   createReadStream: jest.fn(),
   existsSync: jest.fn(),
   mkdtempSync: jest.fn(() => '/tmp/'),
@@ -40,7 +40,14 @@ let s3Mock: AwsStub<ServiceInputTypes, ServiceOutputTypes, S3ClientResolvedConfi
 let cloudFrontMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFrontClientResolvedConfig>;
 
 describe('update-bucket-policies command', () => {
+  let processError: jest.SpyInstance;
+
   beforeAll(() => {
+    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+      throw new Error(`Process exited with exit code ${exitCode}`);
+    }) as unknown as typeof process.exit;
+    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+
     cfMock = mockClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
@@ -130,6 +137,10 @@ describe('update-bucket-policies command', () => {
     cloudFrontMock.on(CreateInvalidationCommand).resolves({});
   });
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('Success', async () => {
     console.log = jest.fn();
 
@@ -153,8 +164,11 @@ describe('update-bucket-policies command', () => {
     (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
 
     console.log = jest.fn();
-    await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
+    await expect(main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(console.log).toHaveBeenCalledWith('Config not found: not-found (medplum.not-found.config.json)');
+    expect(processError).toHaveBeenCalledWith('Error: Config not found: not-found\n');
   });
 
   test('Stack not found', async () => {
@@ -164,33 +178,36 @@ describe('update-bucket-policies command', () => {
     (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
     (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
 
-    await main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found']);
+    await expect(main(['node', 'index.js', 'aws', 'update-bucket-policies', 'not-found'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
     expect(console.log).toHaveBeenCalledWith('Stack not found: not-found');
+    expect(processError).toHaveBeenCalledWith('Error: Stack not found: not-found\n');
   });
 
   describe('updateBucketPolicy', () => {
     test('Bucket not found', async () => {
-      console.log = jest.fn();
-      await updateBucketPolicy('App', undefined, undefined, undefined, {});
-      expect(console.log).toHaveBeenCalledWith('App bucket not found');
+      await expect(updateBucketPolicy('App', undefined, undefined, undefined, {})).rejects.toThrow(
+        'App bucket not found'
+      );
     });
 
     test('Distribution not found', async () => {
-      console.log = jest.fn();
-      await updateBucketPolicy('App', { PhysicalResourceId: 'x' } as StackResource, undefined, undefined, {});
-      expect(console.log).toHaveBeenCalledWith('App distribution not found');
+      await expect(
+        updateBucketPolicy('App', { PhysicalResourceId: 'x' } as StackResource, undefined, undefined, {})
+      ).rejects.toThrow('App distribution not found');
     });
 
     test('OAI not found', async () => {
-      console.log = jest.fn();
-      await updateBucketPolicy(
-        'App',
-        { PhysicalResourceId: 'x' } as StackResource,
-        { PhysicalResourceId: 'x' } as StackResource,
-        undefined,
-        {}
-      );
-      expect(console.log).toHaveBeenCalledWith('App OAI not found');
+      await expect(
+        updateBucketPolicy(
+          'App',
+          { PhysicalResourceId: 'x' } as StackResource,
+          { PhysicalResourceId: 'x' } as StackResource,
+          undefined,
+          {}
+        )
+      ).rejects.toThrow('App OAI not found');
     });
 
     test('Dry run', async () => {
