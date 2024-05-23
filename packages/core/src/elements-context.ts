@@ -6,6 +6,14 @@ export interface AnnotatedInternalSchemaElement extends InternalSchemaElement {
   readonly?: boolean;
 }
 
+export type ExtendedElementProps = { readonly: boolean; hidden: boolean };
+
+/*
+Throughout ElementsContext and the ResourceForm components, we use the following terminology:
+"path" refers to the FHIR path to an element including the resourceType, e.g. Patient.name.family
+"key" is a contextually relative path to an element not prefixed by the resourceType, e.g. name.family,
+*/
+
 /**
  * Information for the set of elements at a given path within in a resource. This mostly exists to
  * normalize access to elements regardless of whether they are from a profile, extension, or slice.
@@ -32,8 +40,6 @@ export type ElementsContextType = {
   getExtendedProps(path: string): ExtendedElementProps | undefined;
   isDefault?: boolean;
 };
-
-type ExtendedElementProps = { readonly: boolean; hidden: boolean };
 
 export function buildElementsContext({
   parentContext,
@@ -62,6 +68,7 @@ export function buildElementsContext({
     return undefined;
   }
 
+  debugMode ??= parentContext?.debugMode ?? false;
   accessPolicyResource ??= parentContext?.accessPolicyResource;
 
   let mergedElements: Record<string, AnnotatedInternalSchemaElement> = mergeElementsForContext(
@@ -70,7 +77,8 @@ export function buildElementsContext({
     parentContext,
     Boolean(debugMode)
   );
-  const [_resourceType, keyPrefix] = splitN(path, '.', 2);
+
+  const keyPrefix = splitN(path, '.', 2)[1] as string | undefined;
   mergedElements = removeHiddenFields(mergedElements, accessPolicyResource, keyPrefix);
   mergedElements = markReadonlyFields(mergedElements, accessPolicyResource, keyPrefix);
 
@@ -79,18 +87,20 @@ export function buildElementsContext({
     elementsByPath[path + '.' + key] = property;
   }
 
-  // Since AccessPolicyResource are always specified from the root of a resource, we can (and should)
-  // memoize getExtendedProps since its input are full paths regardless of the depth/location of the
-  // ElementsContext within the resource.
+  /*
+  Since AccessPolicyResource.readonlyFields and hiddenFields are always relative to the root resource, we propagate
+  a memoized `getExtendedProps` from the outermost ElementsContext
+  */
   let getExtendedProps: (path: string) => ExtendedElementProps | undefined;
   if (parentContext?.isDefault === false) {
     getExtendedProps = parentContext.getExtendedProps;
   } else {
     const memoizedExtendedProps: Record<string, ExtendedElementProps> = Object.create(null);
-    getExtendedProps = (path: string): ExtendedElementProps => {
-      const [resourceType, key] = splitN(path, '.', 2);
-      if (accessPolicyResource?.resourceType) {
-        console.assert([resourceType, '*'].includes(accessPolicyResource.resourceType), 'Unexpected resource type');
+    getExtendedProps = (path: string): ExtendedElementProps | undefined => {
+      const key = splitN(path, '.', 2)[1] as string | undefined;
+      if (!key) {
+        console.warn(key, `getExtendedProps called with invalid path: "${path}"`);
+        return undefined;
       }
 
       if (!memoizedExtendedProps[key]) {
@@ -109,7 +119,7 @@ export function buildElementsContext({
     elements: mergedElements,
     elementsByPath,
     profileUrl: profileUrl ?? parentContext?.profileUrl,
-    debugMode: debugMode ?? parentContext?.debugMode ?? false,
+    debugMode,
     getExtendedProps,
     accessPolicyResource,
   };
@@ -155,7 +165,7 @@ function mergeElementsForContext(
 function removeHiddenFields(
   elements: Record<string, InternalSchemaElement>,
   accessPolicyResource: AccessPolicyResource | undefined,
-  keyPrefix: string
+  keyPrefix?: string
 ): Record<string, InternalSchemaElement> {
   if (!accessPolicyResource?.hiddenFields?.length) {
     return elements;
@@ -182,7 +192,7 @@ function removeHiddenFields(
 function markReadonlyFields(
   elements: Record<string, InternalSchemaElement>,
   accessPolicyResource: AccessPolicyResource | undefined,
-  keyPrefix: string
+  keyPrefix?: string
 ): Record<string, AnnotatedInternalSchemaElement> {
   if (!accessPolicyResource?.readonlyFields?.length) {
     return elements;
