@@ -853,6 +853,22 @@
           }
         ]
       }
+    },
+    {
+      "fullUrl": "urn:uuid:954c6506-4553-487e-a204-d32850967074",
+      "request": { "method": "POST", "url": "Encounter" },
+      "resource": {
+        "resourceType": "Encounter",
+        "status": "in-progress",
+        "class": { "code": "11429006", "system": "http://snomed.info/sct", "display": "Consultation" },
+        "subject": { "reference": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57", "display": "Homer Simpson" },
+        "length": { "value": 30, "unit": "minutes" },
+        "priority": {
+          "coding": [
+            { "code": "R", "system": "http://terminology.hl7.org/CodeSystem/v3-ActPriority", "display": "routine" }
+          ]
+        }
+      }
     }
   ]
 }
