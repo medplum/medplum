@@ -185,11 +185,6 @@ function removeHiddenFields(
     return elements;
   }
 
-  const hiddenKeyPrefixes = new Set<string>();
-  for (const field of accessPolicyResource.hiddenFields) {
-    hiddenKeyPrefixes.add(field);
-  }
-
   const prefix = keyPrefix ? keyPrefix + '.' : '';
   return Object.fromEntries(
     Object.entries(elements).filter(([key]) => !matchesKeyPrefixes(prefix + key, accessPolicyResource.hiddenFields))
@@ -221,6 +216,10 @@ function markReadonlyFields(
 }
 
 function matchesKeyPrefixes(key: string, prefixes: string[] | undefined): boolean {
+  // It might be a performance win to convert prefixes to a set, but the
+  // cardinality of prefixes, i.e. hidden/readonly fields, is expected to be small (< 10)
+  // such that the memory overhead of a set is not worth the performance gain.
+
   if (!prefixes?.length) {
     return false;
   }
