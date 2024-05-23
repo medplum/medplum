@@ -11,6 +11,7 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <RangeInput
+      path=""
       name="range"
       defaultValue={
         {

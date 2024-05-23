@@ -9,7 +9,7 @@ export default {
 
 export const Example = (): JSX.Element => (
   <Document>
-    <TimingInput name="demo" />
+    <TimingInput name="demo" path="Extension.value[x]" />
   </Document>
 );
 
@@ -17,6 +17,7 @@ export const DefaultValue = (): JSX.Element => (
   <Document>
     <TimingInput
       name="demo"
+      path="Extension.value[x]"
       defaultValue={{
         repeat: {
           periodUnit: 'wk',

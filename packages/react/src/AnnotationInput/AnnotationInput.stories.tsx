@@ -21,6 +21,7 @@ export const Basic = (): JSX.Element => (
       }
       onChange={console.log}
       name="annotation"
+      path="Extension.value[x]"
     />
   </Document>
 );

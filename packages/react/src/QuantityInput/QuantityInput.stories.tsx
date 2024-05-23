@@ -9,13 +9,14 @@ export default {
 
 export const Example = (): JSX.Element => (
   <Document>
-    <QuantityInput name="demo" />
+    <QuantityInput path="" name="demo" />
   </Document>
 );
 
 export const DefaultValue = (): JSX.Element => (
   <Document>
     <QuantityInput
+      path=""
       name="demo"
       defaultValue={{
         value: 10,
@@ -29,6 +30,7 @@ export const DefaultValue = (): JSX.Element => (
 export const ScrollWheelDisabled = (): JSX.Element => (
   <Document>
     <QuantityInput
+      path=""
       name="demo"
       disableWheel
       defaultValue={{

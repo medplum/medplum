@@ -9,12 +9,12 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <MoneyInput name="foo" onChange={console.log} />
+    <MoneyInput path="" name="demo" onChange={console.log} />
   </Document>
 );
 
 export const DefaultValue = (): JSX.Element => (
   <Document>
-    <MoneyInput name="foo" onChange={console.log} defaultValue={{ value: 101.55, currency: 'USD' }} />
+    <MoneyInput path="" name="demo" onChange={console.log} defaultValue={{ value: 101.55, currency: 'USD' }} />
   </Document>
 );

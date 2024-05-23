@@ -179,6 +179,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <Group py={4}>
           <AttachmentInput
+            path=""
             name={name}
             defaultValue={defaultValue?.value}
             onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue })}
@@ -199,6 +200,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.quantity:
       return (
         <QuantityInput
+          path=""
           name={name}
           required={item.required}
           defaultValue={defaultValue?.value}
@@ -319,6 +321,7 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
   if (item.answerValueSet) {
     return (
       <CodingInput
+        path=""
         name={name}
         binding={item.answerValueSet}
         onChange={(code) => onChangeAnswer({ valueCoding: code })}

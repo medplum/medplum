@@ -9,13 +9,14 @@ export default {
 
 export const Example = (): JSX.Element => (
   <Document>
-    <PeriodInput name="demo" />
+    <PeriodInput path="" name="demo" />
   </Document>
 );
 
 export const DefaultValue = (): JSX.Element => (
   <Document>
     <PeriodInput
+      path=""
       name="demo"
       defaultValue={{
         start: '2021-12-01T00:00:00.000Z',

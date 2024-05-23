@@ -1,15 +1,17 @@
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { TimingInput } from './TimingInput';
+import { TimingInput, TimingInputProps } from './TimingInput';
 
 describe('TimingInput', () => {
+  const defaultProps: Pick<TimingInputProps, 'path' | 'name'> = { name: 'example', path: 'Extension.value[x]' };
+
   test('Renders', async () => {
-    render(<TimingInput name="example" />);
+    render(<TimingInput {...defaultProps} />);
     expect(screen.getByText('No repeat')).toBeDefined();
     expect(screen.getByText('Edit')).toBeDefined();
   });
 
   test('Open dialog', async () => {
-    render(<TimingInput name="example" />);
+    render(<TimingInput {...defaultProps} />);
     expect(screen.getByText('Edit')).toBeDefined();
 
     await act(async () => {
@@ -22,7 +24,7 @@ describe('TimingInput', () => {
   test('Cancel', async () => {
     const onChange = jest.fn();
 
-    render(<TimingInput name="example" onChange={onChange} />);
+    render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
 
     await act(async () => {
@@ -40,7 +42,7 @@ describe('TimingInput', () => {
   test('Add repeat', async () => {
     const onChange = jest.fn();
 
-    render(<TimingInput name="example" defaultValue={{}} onChange={onChange} />);
+    render(<TimingInput {...defaultProps} defaultValue={{}} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
 
     await act(async () => {
@@ -64,7 +66,7 @@ describe('TimingInput', () => {
     const onChange = jest.fn();
 
     render(
-      <TimingInput name="example" defaultValue={{ repeat: { period: 1, periodUnit: 'd' } }} onChange={onChange} />
+      <TimingInput {...defaultProps} defaultValue={{ repeat: { period: 1, periodUnit: 'd' } }} onChange={onChange} />
     );
     expect(screen.getByText('Edit')).toBeDefined();
 
@@ -88,7 +90,7 @@ describe('TimingInput', () => {
   test('Change start', async () => {
     const onChange = jest.fn();
 
-    render(<TimingInput name="example" onChange={onChange} />);
+    render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
 
     await act(async () => {
@@ -111,7 +113,7 @@ describe('TimingInput', () => {
   test('Change period', async () => {
     const onChange = jest.fn();
 
-    render(<TimingInput name="example" onChange={onChange} />);
+    render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
 
     await act(async () => {
@@ -138,7 +140,7 @@ describe('TimingInput', () => {
   test('Change day of week', async () => {
     const onChange = jest.fn();
 
-    render(<TimingInput name="example" onChange={onChange} />);
+    render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
 
     await act(async () => {

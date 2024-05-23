@@ -9,6 +9,6 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <DateTimeInput onChange={console.log} />
+    <DateTimeInput name="demo" onChange={console.log} />
   </Document>
 );
