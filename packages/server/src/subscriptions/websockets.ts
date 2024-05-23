@@ -1,5 +1,5 @@
-import { badRequest, createReference, resolveId } from '@medplum/core';
-import { Bundle, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
+import { badRequest, createReference } from '@medplum/core';
+import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
@@ -31,14 +31,9 @@ async function setupSubscriptionHandler(): Promise<void> {
   redisSubscriber = getRedisSubscriber();
   redisSubscriber.on('message', (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
-    const parsedBundles = JSON.parse(events) as Bundle[];
-    for (const bundle of parsedBundles) {
-      const status = bundle.entry?.[0].resource as SubscriptionStatus | undefined;
-      const subscriptionId = resolveId(status?.subscription);
-      if (!subscriptionId) {
-        globalLogger.error('[WS] SubscriptionStatus undefined or missing subscription ID', { channel, status });
-        continue;
-      }
+    const subEventArgsArr = JSON.parse(events) as [Resource, subscriptionId: string, options?: SubEventsOptions][];
+    for (const [resource, subscriptionId, options] of subEventArgsArr) {
+      const bundle = createSubEventNotification(resource, subscriptionId, options);
       for (const socket of subToWsLookup.get(subscriptionId) ?? []) {
         socket.send(JSON.stringify(bundle), { binary: false });
       }
@@ -195,8 +190,8 @@ export function createSubHeartbeatEvent(subscriptionIds: Set<string>): Bundle {
   };
 }
 
-export function createSubEventNotification<ResourceType extends Resource = Resource>(
-  resource: ResourceType,
+export function createSubEventNotification<T extends Resource = Resource>(
+  resource: T,
   subscriptionId: string,
   options?: SubEventsOptions
 ): Bundle {

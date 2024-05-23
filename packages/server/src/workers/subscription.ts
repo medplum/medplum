@@ -16,16 +16,7 @@ import {
   serverError,
   stringify,
 } from '@medplum/core';
-import {
-  Bot,
-  Bundle,
-  Project,
-  ProjectMembership,
-  Reference,
-  Resource,
-  ResourceType,
-  Subscription,
-} from '@medplum/fhirtypes';
+import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
@@ -36,7 +27,7 @@ import { executeBot } from '../fhir/operations/execute';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
-import { createSubEventNotification } from '../subscriptions/websockets';
+import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext, BackgroundJobInteraction } from './context';
@@ -245,7 +236,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   const subscriptions = await getSubscriptions(resource, project);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
 
-  const wsEvents = [] as Bundle[];
+  const wsEvents = [] as [Resource, string, SubEventsOptions][];
 
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
@@ -254,7 +245,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        wsEvents.push(createSubEventNotification(resource, subscription.id as string, { includeResource: true }));
+        wsEvents.push([resource, subscription.id as string, { includeResource: true }]);
         continue;
       }
       await addSubscriptionJobData({
