@@ -196,10 +196,11 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
+/** @see http://hl7.org/fhir/R4/codesystem-restful-interaction.html */
 export type RestInteraction =
   | CapabilityStatementRestInteraction['code']
   | CapabilityStatementRestResourceInteraction['code']
-  | 'execute';
+  | 'operation';
 type RouteMetadata = {
   interaction: RestInteraction;
 };
@@ -224,11 +225,11 @@ export class FhirRouter extends EventTarget {
     this.router.add('PUT', ':resourceType', conditionalUpdate, { interaction: 'update' });
     this.router.add('DELETE', ':resourceType/:id', deleteResource, { interaction: 'delete' });
     this.router.add('PATCH', ':resourceType/:id', patchResource, { interaction: 'patch' });
-    this.router.add('POST', '$graphql', graphqlHandler, { interaction: 'execute' });
+    this.router.add('POST', '$graphql', graphqlHandler, { interaction: 'operation' });
   }
 
   add(method: HttpMethod, path: string, handler: FhirRouteHandler, interaction?: RestInteraction): void {
-    this.router.add(method, path, handler, { interaction: interaction ?? 'execute' });
+    this.router.add(method, path, handler, { interaction: interaction ?? 'operation' });
   }
 
   find(method: HttpMethod, path: string): RouteResult<FhirRouteHandler, RouteMetadata> | undefined {
