@@ -13,7 +13,7 @@ import { AccessPolicyInteraction, satisfiedAccessPolicy } from './access';
 
 describe('buildElementsContext', () => {
   const DEFAULT_EXTENDED_PROPS = { readonly: false, hidden: false };
-  const HIDDEN = { readonly: false, hidden: true };
+  const HIDDEN = { readonly: true, hidden: true };
   const READONLY = { readonly: true, hidden: false };
   let USCoreStructureDefinitions: StructureDefinition[];
 
