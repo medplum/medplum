@@ -1,5 +1,6 @@
 import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
+import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
@@ -234,7 +235,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Reindex resource
   router.add('POST', '/:resourceType/:id/$reindex', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    const { resourceType, id } = req.params;
+    const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
     await ctx.repo.reindexResource(resourceType, id);
     return [allOk];
   });
@@ -242,7 +243,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Resend subscriptions
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    const { resourceType, id } = req.params;
+    const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
     await ctx.repo.resendSubscriptions(resourceType, id);
     return [allOk];
   });

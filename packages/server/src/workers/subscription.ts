@@ -1,6 +1,8 @@
 import {
   AccessPolicyInteraction,
   ContentType,
+  OperationOutcomeError,
+  Operator,
   createReference,
   getExtension,
   getExtensionValue,
@@ -10,13 +12,16 @@ import {
   OperationOutcomeError,
   Operator,
   resourceMatchesSubscriptionCriteria,
+  isNotFound,
+  matchesSearchRequest,
+  parseSearchRequest,
   satisfiedAccessPolicy,
   serverError,
   stringify,
   BackgroundJobContext,
   BackgroundJobInteraction,
 } from '@medplum/core';
-import { Bot, Project, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -24,7 +29,7 @@ import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createSubEventNotification } from '../subscriptions/websockets';
@@ -54,7 +59,8 @@ const DEFAULT_RETRIES = 3;
 
 export interface SubscriptionJobData {
   readonly subscriptionId: string;
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
+  readonly channelType?: Subscription['channel']['type'];
   readonly id: string;
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
@@ -243,6 +249,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
+        channelType: subscription.channel.type,
         id: resource.id as string,
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
@@ -335,9 +342,9 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const systemRepo = getSystemRepo();
-  const { subscriptionId, resourceType, id, versionId, interaction, requestTime } = job.data;
+  const { subscriptionId, channelType, resourceType, id, versionId, interaction, requestTime } = job.data;
 
-  const subscription = await tryGetSubscription(systemRepo, subscriptionId);
+  const subscription = await tryGetSubscription(systemRepo, subscriptionId, channelType);
   if (!subscription) {
     // If the subscription was deleted, then stop processing it.
     return;
@@ -386,12 +393,20 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 }
 
-async function tryGetSubscription(systemRepo: Repository, subscriptionId: string): Promise<Subscription | undefined> {
+async function tryGetSubscription(
+  systemRepo: Repository,
+  subscriptionId: string,
+  channelType: SubscriptionJobData['channelType'] | undefined
+): Promise<Subscription | undefined> {
   try {
-    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
+    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
+      checkCacheOnly: channelType === 'websocket',
+    });
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
-    if (isGone(outcome)) {
+    // If the Subscription was marked as deleted in the database, this will return "gone"
+    // However, deleted WebSocket subscriptions will return "not found"
+    if (isGone(outcome) || isNotFound(outcome)) {
       // If the subscription was deleted, then stop processing it.
       return undefined;
     }
@@ -400,11 +415,11 @@ async function tryGetSubscription(systemRepo: Repository, subscriptionId: string
   }
 }
 
-async function tryGetCurrentVersion(
+async function tryGetCurrentVersion<T extends Resource = Resource>(
   systemRepo: Repository,
-  resourceType: string,
+  resourceType: T['resourceType'],
   id: string
-): Promise<Resource | undefined> {
+): Promise<T | undefined> {
   try {
     return await systemRepo.readResource(resourceType, id);
   } catch (err) {
