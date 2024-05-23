@@ -32,7 +32,7 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
     <Group gap="xs" grow wrap="nowrap">
       <QuantityInput
         path={props.path + '.low'}
-        disabled={props.disabled || lowProps.readonly}
+        disabled={props.disabled || lowProps?.readonly}
         name={props.name + '-low'}
         defaultValue={value?.low}
         onChange={(v) =>
@@ -45,7 +45,7 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
 
       <QuantityInput
         path={props.path + '.high'}
-        disabled={props.disabled || highProps.readonly}
+        disabled={props.disabled || highProps?.readonly}
         name={props.name + '-high'}
         defaultValue={value?.high}
         onChange={(v) =>

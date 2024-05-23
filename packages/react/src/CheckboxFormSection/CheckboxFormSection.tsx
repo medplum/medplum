@@ -24,7 +24,7 @@ export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Elemen
     label = props.title;
   }
   return maybeWrapWithTooltip(
-    props.readonly ? READ_ONLY_TOOLTIP_TEXT : undefined,
+    props?.readonly ? READ_ONLY_TOOLTIP_TEXT : undefined,
     <Group wrap="nowrap" data-testid={props.testId}>
       <div>{props.children}</div>
       <div>

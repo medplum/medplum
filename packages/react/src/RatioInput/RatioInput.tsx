@@ -32,7 +32,7 @@ export function RatioInput(props: RatioInputProps): JSX.Element {
     <Group gap="xs" grow wrap="nowrap">
       <QuantityInput
         path={props.path + '.numerator'}
-        disabled={props.disabled || numeratorProps.readonly}
+        disabled={props.disabled || numeratorProps?.readonly}
         name={props.name + '-numerator'}
         defaultValue={value?.numerator}
         onChange={(v) =>
@@ -44,7 +44,7 @@ export function RatioInput(props: RatioInputProps): JSX.Element {
       />
       <QuantityInput
         path={props.path + '.denominator'}
-        disabled={props.disabled || denominatorProps.readonly}
+        disabled={props.disabled || denominatorProps?.readonly}
         name={props.name + '-denominator'}
         defaultValue={value?.denominator}
         onChange={(v) =>

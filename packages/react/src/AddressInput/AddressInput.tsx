@@ -76,45 +76,45 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   return (
     <Group gap="xs" wrap="nowrap" grow>
       <NativeSelect
-        disabled={props.disabled || useProps.readonly}
+        disabled={props.disabled || useProps?.readonly}
         data-testid="address-use"
         defaultValue={value.use}
         onChange={(e) => setUse(e.currentTarget.value as 'home' | 'work' | 'temp' | 'old' | 'billing')}
         data={['', 'home', 'work', 'temp', 'old', 'billing']}
       />
       <NativeSelect
-        disabled={props.disabled || typeProps.readonly}
+        disabled={props.disabled || typeProps?.readonly}
         data-testid="address-type"
         defaultValue={value.type}
         onChange={(e) => setType(e.currentTarget.value as 'postal' | 'physical' | 'both')}
         data={['', 'postal', 'physical', 'both']}
       />
       <TextInput
-        disabled={props.disabled || line1Props.readonly}
+        disabled={props.disabled || line1Props?.readonly}
         placeholder="Line 1"
         defaultValue={getLine(value, 0)}
         onChange={(e) => setLine1(e.currentTarget.value)}
       />
       <TextInput
-        disabled={props.disabled || line2Props.readonly}
+        disabled={props.disabled || line2Props?.readonly}
         placeholder="Line 2"
         defaultValue={getLine(value, 1)}
         onChange={(e) => setLine2(e.currentTarget.value)}
       />
       <TextInput
-        disabled={props.disabled || cityProps.readonly}
+        disabled={props.disabled || cityProps?.readonly}
         placeholder="City"
         defaultValue={value.city}
         onChange={(e) => setCity(e.currentTarget.value)}
       />
       <TextInput
-        disabled={props.disabled || stateProps.readonly}
+        disabled={props.disabled || stateProps?.readonly}
         placeholder="State"
         defaultValue={value.state}
         onChange={(e) => setState(e.currentTarget.value)}
       />
       <TextInput
-        disabled={props.disabled || postalCodeProps.readonly}
+        disabled={props.disabled || postalCodeProps?.readonly}
         placeholder="Postal Code"
         defaultValue={value.postalCode}
         onChange={(e) => setPostalCode(e.currentTarget.value)}

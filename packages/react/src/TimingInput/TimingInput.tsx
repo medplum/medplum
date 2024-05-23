@@ -108,13 +108,13 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
       <Stack>
         <FormSection title="Starts on" htmlFor="timing-dialog-start">
           <DateTimeInput
-            disabled={eventProps.readonly}
+            disabled={eventProps?.readonly}
             name="timing-dialog-start"
             onChange={(newValue) => setStart(newValue)}
           />
         </FormSection>
         <Switch
-          disabled={repeatProps.readonly}
+          disabled={repeatProps?.readonly}
           label="Repeat"
           checked={!!value.repeat}
           onChange={(e) => setRepeat(e.currentTarget.checked ? defaultValue.repeat : undefined)}
@@ -124,7 +124,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
             <FormSection title="Repeat every" htmlFor="timing-dialog-period">
               <Group gap="xs" grow wrap="nowrap">
                 <TextInput
-                  disabled={repeatPeriodProps.readonly}
+                  disabled={repeatPeriodProps?.readonly}
                   type="number"
                   step={1}
                   id="timing-dialog-period"
@@ -133,7 +133,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                   onChange={(e) => setPeriod(parseInt(e.currentTarget.value, 10) || 1)}
                 />
                 <NativeSelect
-                  disabled={repeatPeriodUnitProps.readonly}
+                  disabled={repeatPeriodUnitProps?.readonly}
                   id="timing-dialog-periodUnit"
                   name="timing-dialog-periodUnit"
                   defaultValue={value.repeat.periodUnit}
@@ -155,7 +155,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                 <Chip.Group multiple onChange={setDaysOfWeek as (v: string[] | undefined) => void}>
                   <Group justify="space-between" mt="md" gap="xs">
                     {daysOfWeek.map((day) => (
-                      <Chip key={day} value={day} size="xs" radius="xl" disabled={repeatDayOfWeekProps.readonly}>
+                      <Chip key={day} value={day} size="xs" radius="xl" disabled={repeatDayOfWeekProps?.readonly}>
                         {day.charAt(0).toUpperCase()}
                       </Chip>
                     ))}

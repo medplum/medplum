@@ -62,7 +62,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   return (
     <Group gap="xs" grow wrap="nowrap">
       <NativeSelect
-        disabled={props.disabled || useProps.readonly}
+        disabled={props.disabled || useProps?.readonly}
         defaultValue={value?.use}
         name={props.name + '-use'}
         data-testid="use"
@@ -73,7 +73,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
         error={getErrorsForInput(outcome, errorPath + '.use')}
       />
       <TextInput
-        disabled={props.disabled || prefixProps.readonly}
+        disabled={props.disabled || prefixProps?.readonly}
         placeholder="Prefix"
         name={props.name + '-prefix'}
         defaultValue={value?.prefix?.join(' ')}
@@ -81,7 +81,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
         error={getErrorsForInput(outcome, errorPath + '.prefix')}
       />
       <TextInput
-        disabled={props.disabled || givenProps.readonly}
+        disabled={props.disabled || givenProps?.readonly}
         placeholder="Given"
         name={props.name + '-given'}
         defaultValue={value?.given?.join(' ')}
@@ -89,7 +89,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
         error={getErrorsForInput(outcome, errorPath + '.given')}
       />
       <TextInput
-        disabled={props.disabled || familyProps.readonly}
+        disabled={props.disabled || familyProps?.readonly}
         name={props.name + '-family'}
         placeholder="Family"
         defaultValue={value?.family}
@@ -97,7 +97,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
         error={getErrorsForInput(outcome, errorPath + '.family')}
       />
       <TextInput
-        disabled={props.disabled || suffixProps.readonly}
+        disabled={props.disabled || suffixProps?.readonly}
         placeholder="Suffix"
         name={props.name + '-suffix'}
         defaultValue={value?.suffix?.join(' ')}

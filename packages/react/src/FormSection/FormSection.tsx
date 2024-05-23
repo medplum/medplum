@@ -28,7 +28,7 @@ export function FormSection(props: FormSectionProps): JSX.Element {
     label = props.title;
   }
   return maybeWrapWithTooltip(
-    props.readonly ? READ_ONLY_TOOLTIP_TEXT : undefined,
+    props?.readonly ? READ_ONLY_TOOLTIP_TEXT : undefined,
     <Input.Wrapper
       id={props.htmlFor}
       label={label}

@@ -28,7 +28,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
   return (
     <Group gap="xs" grow wrap="nowrap">
       <NativeSelect
-        disabled={props.disabled || comparatorProps.readonly}
+        disabled={props.disabled || comparatorProps?.readonly}
         style={{ width: 80 }}
         data-testid={props.name + '-comparator'}
         defaultValue={value?.comparator}
@@ -41,7 +41,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         }
       />
       <TextInput
-        disabled={props.disabled || valueProps.readonly}
+        disabled={props.disabled || valueProps?.readonly}
         id={props.name}
         name={props.name}
         required={props.required}
@@ -65,7 +65,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         }}
       />
       <TextInput
-        disabled={props.disabled || unitProps.readonly}
+        disabled={props.disabled || unitProps?.readonly}
         placeholder="Unit"
         data-testid={props.name + '-unit'}
         defaultValue={value?.unit}

@@ -25,14 +25,14 @@ export function PeriodInput(props: PeriodInputProps): JSX.Element {
   return (
     <Group gap="xs" grow wrap="nowrap">
       <DateTimeInput
-        disabled={props.disabled || startProps.readonly}
+        disabled={props.disabled || startProps?.readonly}
         name={props.name + '.start'}
         placeholder="Start"
         defaultValue={value?.start}
         onChange={(newValue) => setValueWrapper({ ...value, start: newValue })}
       />
       <DateTimeInput
-        disabled={props.disabled || endProps.readonly}
+        disabled={props.disabled || endProps?.readonly}
         name={props.name + '.end'}
         placeholder="End"
         defaultValue={value?.end}

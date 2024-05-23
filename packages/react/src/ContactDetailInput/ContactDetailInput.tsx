@@ -45,7 +45,7 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
   return (
     <Group gap="xs" grow wrap="nowrap">
       <TextInput
-        disabled={props.disabled || nameProps.readonly}
+        disabled={props.disabled || nameProps?.readonly}
         data-testid={props.name + '-name'}
         name={props.name + '-name'}
         placeholder="Name"
@@ -54,7 +54,7 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
         onChange={(e) => setName(e.currentTarget.value)}
       />
       <ContactPointInput
-        disabled={props.disabled || telecomProps.readonly}
+        disabled={props.disabled || telecomProps?.readonly}
         name={props.name + '-telecom'}
         path={props.path + '.telecom'}
         defaultValue={contactPoint?.telecom?.[0]}

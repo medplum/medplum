@@ -68,7 +68,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
 
   const select = (
     <NativeSelect
-      disabled={props.disabled || currencyProps.readonly}
+      disabled={props.disabled || currencyProps?.readonly}
       defaultValue={value?.currency}
       data={data}
       styles={{
@@ -85,7 +85,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
 
   return (
     <TextInput
-      disabled={props.disabled || valueProps.readonly}
+      disabled={props.disabled || valueProps?.readonly}
       type="number"
       name={props.name}
       label={props.label}
