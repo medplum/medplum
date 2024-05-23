@@ -99,7 +99,6 @@ export function buildElementsContext({
     getExtendedProps = (path: string): ExtendedElementProps | undefined => {
       const key = splitN(path, '.', 2)[1] as string | undefined;
       if (!key) {
-        console.warn(key, `getExtendedProps called with invalid path: "${path}"`);
         return undefined;
       }
 
@@ -176,17 +175,10 @@ function removeHiddenFields(
     hiddenKeyPrefixes.add(field);
   }
 
-  const result: Record<string, InternalSchemaElement> = Object.create(null);
-
   const prefix = keyPrefix ? keyPrefix + '.' : '';
-  for (const [key, element] of Object.entries(elements)) {
-    const isHidden = matchesKeyPrefixes(prefix + key, accessPolicyResource.hiddenFields);
-    if (!isHidden) {
-      result[key] = element;
-    }
-  }
-
-  return result;
+  return Object.fromEntries(
+    Object.entries(elements).filter(([key]) => !matchesKeyPrefixes(prefix + key, accessPolicyResource.hiddenFields))
+  );
 }
 
 function markReadonlyFields(
