@@ -70,7 +70,7 @@ export const PartiallyDisabled = (): JSX.Element => {
   return maybeWrapWithContext(
     ElementsContext.Provider,
     context,
-    <Document>
+    <Document h={500}>
       <TimingInput
         name="demo"
         path="NutritionOrder.oralDiet.schedule"
