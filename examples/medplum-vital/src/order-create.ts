@@ -53,6 +53,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
  * @param medplum - An instance of the Medplum client for interacting with the FHIR server.
  * @param secrets - An object containing project settings, including `VITAL_API_KEY` and `VITAL_BASE_URL`.
  * @param orderID - The ID of the order to simulate the result for.
+ *
+ * @returns A Promise that resolves to void.
  */
 async function simulateResult(
   medplum: MedplumClient,
@@ -218,6 +220,8 @@ type CreateOrderRequestCompatible = {
  *
  * @param medplum - An instance of the Medplum client for interacting with the FHIR server.
  * @param sr - The ServiceRequest resource to use for building the CreateOrderRequestCompatible object.
+ *
+ * @returns A Promise that resolves to the constructed CreateOrderRequestCompatible object.
  */
 async function buildCreateOrderRequestCompatible(
   medplum: MedplumClient,
