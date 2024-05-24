@@ -55,17 +55,22 @@ async function buildVitalOrder(medplum: MedplumClient, sr: ServiceRequest): Prom
       {
         resource: {
           resourceType: 'Patient',
+          extension: patient.extension,
           identifier: patient.identifier,
           name: patient.name,
           telecom: patient.telecom,
           gender: patient.gender,
           birthDate: patient.birthDate,
-          address: patient.address,
+          address: patient.address?.map(address => ({
+            ...address,
+            country: address.country || 'US',
+          })),
         },
       },
       {
         resource: {
           resourceType: 'Practitioner',
+          extension: practitioner.extension,
           identifier: practitioner.identifier,
           name: practitioner.name,
           telecom: practitioner.telecom,
@@ -75,6 +80,7 @@ async function buildVitalOrder(medplum: MedplumClient, sr: ServiceRequest): Prom
       {
         resource: {
           resourceType: 'ServiceRequest',
+          extension: sr.extension,
           identifier: sr.identifier,
           status: sr.status,
           intent: sr.intent,
@@ -86,6 +92,7 @@ async function buildVitalOrder(medplum: MedplumClient, sr: ServiceRequest): Prom
       {
         resource: {
           resourceType: 'Coverage',
+          extension: coverage.extension,
           network: coverage.network,
           subscriberId: coverage.subscriberId,
           status: coverage.status,
@@ -97,8 +104,8 @@ async function buildVitalOrder(medplum: MedplumClient, sr: ServiceRequest): Prom
       },
       ...questionnaries.map((qs) => ({
         resource: {
-          questionaryResponse: qs,
           resourceType: qs.resourceType,
+          extension: qs.extension,
           questionnaire: qs.questionnaire,
           status: qs.status,
           item: qs.item,
