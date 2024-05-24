@@ -49,6 +49,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
  * Simulates the result of a Vital order by sending a POST request to the Vital API.
  * And then executes a bot to process the result.
  * WARN: This is used for testing purposes only.
+ *
+ * @param medplum - An instance of the Medplum client for interacting with the FHIR server.
+ * @param secrets - An object containing project settings, including `VITAL_API_KEY` and `VITAL_BASE_URL`.
+ * @param orderID - The ID of the order to simulate the result for.
  */
 async function simulateResult(
   medplum: MedplumClient,
@@ -211,6 +215,9 @@ type CreateOrderRequestCompatible = {
 /**
  * Builds a CreateOrderRequestCompatible object from the provided ServiceRequest.
  * This object is compatible with the Vital API for creating a new order in json format.
+ *
+ * @param medplum - An instance of the Medplum client for interacting with the FHIR server.
+ * @param sr - The ServiceRequest resource to use for building the CreateOrderRequestCompatible object.
  */
 async function buildCreateOrderRequestCompatible(
   medplum: MedplumClient,
@@ -301,7 +308,7 @@ async function createVitalOrder(secrets: Record<string, ProjectSetting>, body: s
   const resp = await fetch(url, {
     method: 'POST',
     headers: {
-      'Content-Type': isFhir ? 'application/fhir+json': 'application/json',
+      'Content-Type': isFhir ? 'application/fhir+json' : 'application/json',
       'x-vital-api-key': apiKey,
     },
     body: body,
@@ -309,7 +316,7 @@ async function createVitalOrder(secrets: Record<string, ProjectSetting>, body: s
 
   // Not a 2xx response
   if (resp.status - 200 >= 100) {
-    throw new Error('Vital API error: ' + await resp.text());
+    throw new Error('Vital API error: ' + (await resp.text()));
   }
 
   const { order } = (await resp.json()) as { order: { id: string } };
