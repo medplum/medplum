@@ -1,5 +1,7 @@
 import {
   AccessPolicyInteraction,
+  BackgroundJobContext,
+  BackgroundJobInteraction,
   ContentType,
   OperationOutcomeError,
   Operator,
@@ -8,18 +10,12 @@ import {
   getExtensionValue,
   getReferenceString,
   isGone,
-  normalizeOperationOutcome,
-  OperationOutcomeError,
-  Operator,
-  resourceMatchesSubscriptionCriteria,
   isNotFound,
-  matchesSearchRequest,
-  parseSearchRequest,
+  normalizeOperationOutcome,
+  resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   serverError,
   stringify,
-  BackgroundJobContext,
-  BackgroundJobInteraction,
 } from '@medplum/core';
 import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
