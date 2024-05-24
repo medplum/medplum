@@ -171,8 +171,23 @@ export const functions: Record<string, FhirPathFunction> = {
    * is empty ({ }), the result is false.
    *
    * See: http://hl7.org/fhirpath/#subsetofother-collection-boolean
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param other - The atom representing the collection of elements to check for membership.
+   * @returns True if all items in the input collection are members of the other collection.
    */
-  subsetOf: stub,
+  subsetOf: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+    if (input.length === 0) {
+      return booleanToTypedValue(true);
+    }
+
+    const otherArray = other.eval(context, getRootInput(context));
+    if (otherArray.length === 0) {
+      return booleanToTypedValue(false);
+    }
+
+    return booleanToTypedValue(input.every((e) => otherArray.some((o) => o.value === e.value)));
+  },
 
   /**
    * Returns true if all items in the collection passed as the other argument are members of
@@ -262,7 +277,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   where: (context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.filter((e) => toJsBoolean(criteria.eval({ parent: context, variables: { $this: e } }, [e])));
+    return input.filter((e) => toJsBoolean(criteria.eval(context, [e])));
   },
 
   /**
@@ -438,7 +453,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!result.some((e) => e.value === value.value) && otherArray.some((e) => e.value === value.value)) {
@@ -1786,4 +1801,12 @@ function validateInput(input: TypedValue[], count: number): TypedValue[] {
     }
   }
   return input;
+}
+
+function getRootInput(context: AtomContext): [TypedValue] {
+  let last = context;
+  while (last.parent?.variables.$this) {
+    last = last.parent;
+  }
+  return [last.variables.$this];
 }
