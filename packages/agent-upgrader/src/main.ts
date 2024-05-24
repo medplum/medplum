@@ -1,4 +1,4 @@
-import { Logger } from '@medplum/core';
+import { Logger, normalizeErrorString } from '@medplum/core';
 import { execSync } from 'node:child_process';
 import { createWriteStream, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { platform } from 'node:os';
@@ -153,5 +153,5 @@ function getReleaseBinPath(version: string): string {
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  main(process.argv).catch(globalLogger.error);
+  main(process.argv).catch((err) => globalLogger.error(normalizeErrorString(err)));
 }

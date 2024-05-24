@@ -42,6 +42,12 @@ export class Logger {
     if (options?.prefix) {
       this.prefix = options.prefix;
     }
+
+    this.error = this.error.bind(this);
+    this.warn = this.warn.bind(this);
+    this.info = this.info.bind(this);
+    this.debug = this.debug.bind(this);
+    this.log = this.log.bind(this);
   }
 
   clone(override?: LoggerConfigOverride): Logger {
