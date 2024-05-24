@@ -19,6 +19,7 @@ import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { dbStatsHandler } from './operations/dbstats';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
 import { executeHandler } from './operations/execute';
@@ -247,6 +248,9 @@ function initInternalFhirRouter(): FhirRouter {
     await ctx.repo.resendSubscriptions(resourceType, id);
     return [allOk];
   });
+
+  // Super admin operations
+  router.add('POST', '/$db-stats', dbStatsHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
