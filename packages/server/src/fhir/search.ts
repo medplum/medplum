@@ -628,6 +628,8 @@ function buildNormalSearchFilterExpression(
   const details = getSearchParameterDetails(resourceType, param);
   if (filter.operator === Operator.MISSING) {
     return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '=' : '!=', null);
+  } else if (filter.operator === Operator.PRESENT) {
+    return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '!=' : '=', null);
   } else if (param.type === 'string') {
     return buildStringSearchFilter(table, details, filter.operator, filter.value.split(','));
   } else if (param.type === 'token' || param.type === 'uri') {

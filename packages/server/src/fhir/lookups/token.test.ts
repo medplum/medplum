@@ -501,4 +501,60 @@ describe('Identifier Lookup Table', () => {
       expect(r1.entry?.length).toEqual(1);
       expect(r1.entry?.[0]?.resource?.id).toEqual(p1.id);
     }));
+
+  test('Missing/present', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+
+      const p1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      const p2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        identifier: [{ system: 'https://www.example.com', value: randomUUID() }],
+      });
+
+      const r1 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EQUALS, value: family },
+          { code: 'identifier', operator: Operator.MISSING, value: 'true' },
+        ],
+      });
+      expect(r1.entry?.length).toEqual(1);
+      expect(r1.entry?.[0]?.resource?.id).toEqual(p1.id);
+
+      const r2 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EQUALS, value: family },
+          { code: 'identifier', operator: Operator.MISSING, value: 'false' },
+        ],
+      });
+      expect(r2.entry?.length).toEqual(1);
+      expect(r2.entry?.[0]?.resource?.id).toEqual(p2.id);
+
+      const r3 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EQUALS, value: family },
+          { code: 'identifier', operator: Operator.PRESENT, value: 'true' },
+        ],
+      });
+      expect(r3.entry?.length).toEqual(1);
+      expect(r3.entry?.[0]?.resource?.id).toEqual(p2.id);
+
+      const r4 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EQUALS, value: family },
+          { code: 'identifier', operator: Operator.PRESENT, value: 'false' },
+        ],
+      });
+      expect(r4.entry?.length).toEqual(1);
+      expect(r4.entry?.[0]?.resource?.id).toEqual(p1.id);
+    }));
 });
