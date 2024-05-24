@@ -514,16 +514,14 @@ describe('Identifier Lookup Table', () => {
       const p2 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family }],
-        managingOrganization: {
-          reference: 'Organization/1',
-        },
+        identifier: [{ system: 'https://www.example.com', value: randomUUID() }],
       });
 
       const r1 = await systemRepo.search({
         resourceType: 'Patient',
         filters: [
           { code: 'name', operator: Operator.EQUALS, value: family },
-          { code: 'organization', operator: Operator.MISSING, value: 'true' },
+          { code: 'identifier', operator: Operator.MISSING, value: 'true' },
         ],
       });
       expect(r1.entry?.length).toEqual(1);
@@ -533,7 +531,7 @@ describe('Identifier Lookup Table', () => {
         resourceType: 'Patient',
         filters: [
           { code: 'name', operator: Operator.EQUALS, value: family },
-          { code: 'organization', operator: Operator.MISSING, value: 'false' },
+          { code: 'identifier', operator: Operator.MISSING, value: 'false' },
         ],
       });
       expect(r2.entry?.length).toEqual(1);
@@ -543,7 +541,7 @@ describe('Identifier Lookup Table', () => {
         resourceType: 'Patient',
         filters: [
           { code: 'name', operator: Operator.EQUALS, value: family },
-          { code: 'organization', operator: Operator.PRESENT, value: 'true' },
+          { code: 'identifier', operator: Operator.PRESENT, value: 'true' },
         ],
       });
       expect(r3.entry?.length).toEqual(1);
@@ -553,7 +551,7 @@ describe('Identifier Lookup Table', () => {
         resourceType: 'Patient',
         filters: [
           { code: 'name', operator: Operator.EQUALS, value: family },
-          { code: 'organization', operator: Operator.PRESENT, value: 'false' },
+          { code: 'identifier', operator: Operator.PRESENT, value: 'false' },
         ],
       });
       expect(r4.entry?.length).toEqual(1);
