@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "3.1.5",
+  "version": "3.1.6",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -31,9 +31,9 @@
     "@aws-sdk/cloudfront-signer": "3.576.0",
     "@aws-sdk/lib-storage": "3.578.0",
     "@aws-sdk/types": "3.577.0",
-    "@medplum/core": "3.1.5",
-    "@medplum/definitions": "3.1.5",
-    "@medplum/fhir-router": "3.1.5",
+    "@medplum/core": "3.1.6",
+    "@medplum/definitions": "3.1.6",
+    "@medplum/fhir-router": "3.1.6",
     "@opentelemetry/auto-instrumentations-node": "0.46.1",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.51.1",
     "@opentelemetry/exporter-trace-otlp-proto": "0.51.1",
@@ -73,7 +73,7 @@
   },
   "devDependencies": {
     "@jest/test-sequencer": "29.7.0",
-    "@medplum/fhirtypes": "3.1.5",
+    "@medplum/fhirtypes": "3.1.6",
     "@types/bcryptjs": "2.4.6",
     "@types/body-parser": "1.19.5",
     "@types/bytes": "3.1.4",
