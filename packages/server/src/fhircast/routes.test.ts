@@ -135,6 +135,36 @@ describe('FHIRCast routes', () => {
     }
   });
 
+  test('Unsubscribe', async () => {
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(app)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'subscribe',
+          'hub.topic': 'topic',
+          'hub.events': 'Patient-open',
+        });
+      expect(res.status).toBe(202);
+      expect(res.body['hub.channel.endpoint']).toBeDefined();
+
+      await request(app)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'unsubscribe',
+          'hub.topic': 'topic',
+          'hub.events': 'Patient-open',
+        });
+      expect(res.status).toBe(202);
+      expect(res.body['hub.channel.endpoint']).toBeDefined();
+    }
+  });
+
   test('Publish event missing timestamp', async () => {
     const topic = randomUUID();
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
