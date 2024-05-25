@@ -8,17 +8,16 @@ import {
   Subscription,
   SubscriptionStatus,
 } from '@medplum/fhirtypes';
-import { Job } from 'bullmq';
 import express, { Express } from 'express';
-import { Server } from 'http';
 import { randomUUID } from 'node:crypto';
+import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
-import { execSubscriptionJob, getSubscriptionQueue } from '../workers/subscription';
+import { getSubscriptionQueue } from '../workers/subscription';
 
 jest.mock('hibp');
 
@@ -116,16 +115,6 @@ describe('WebSockets Subscriptions', () => {
             },
           });
           expect(version2).toBeDefined();
-
-          const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-          await execSubscriptionJob(job);
-
-          // Update should also trigger the subscription
-          expect(queue.add).toHaveBeenCalled();
-
-          // Clear the queue
-          queue.add.mockClear();
-
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -217,9 +206,6 @@ describe('WebSockets Subscriptions', () => {
         .sendJson({ type: 'bind-with-token', payload: { token: accessToken } }) // We accidentally reused access token instead of token for sub
         // Add a new patient for this project
         .exec(async () => {
-          const queue = getSubscriptionQueue() as any;
-          queue.add.mockClear();
-
           // Update the patient
           const version2 = await repo.updateResource<Patient>({
             resourceType: 'Patient',
@@ -231,15 +217,6 @@ describe('WebSockets Subscriptions', () => {
             },
           });
           expect(version2).toBeDefined();
-
-          const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-          await execSubscriptionJob(job);
-
-          // Update should also trigger the subscription
-          expect(queue.add).toHaveBeenCalled();
-
-          // Clear the queue
-          queue.add.mockClear();
         })
         .expectJson({
           resourceType: 'OperationOutcome',

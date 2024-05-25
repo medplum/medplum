@@ -1,6 +1,6 @@
 {
   "testEnvironment": "node",
-  "testTimeout": 600000,
+  "testTimeout": 30000,
   "testSequencer": "<rootDir>/jest.sequencer.js",
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
