@@ -8,12 +8,31 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) as string;
   const messageSubtype = input.getSegment('MSH')?.getField(9)?.getComponent(2) as string;
 
-  // If this is anything but ADT^A28, ADT^A08, ADT^A30 then exit
+  // If this is anything but ADT^A28, ADT^A08, ADT^A30, ADT^A40 then exit
   if (messageType !== 'ADT') {
     return input.buildAck();
   }
 
-  if (messageSubtype !== 'A28' && messageSubtype !== 'A08' && messageSubtype !== 'A30') {
+  if (messageSubtype !== 'A28' && messageSubtype !== 'A08' && messageSubtype !== 'A30' && messageSubtype !== 'A40') {
+    return input.buildAck();
+  }
+
+  if (messageSubtype === 'A40') {
+    const oldMrn = input.getSegment('MRG')?.getField(1).getComponent(1) as string;
+    const newMrn = input.getSegment('PID')?.getField(3).getComponent(1) as string;
+
+    const oldPatient = await medplum.searchOne<Patient>('Patient', 'identifier=' + oldMrn);
+    const newPatient = await medplum.searchOne<Patient>('Patient', 'identifier=' + newMrn);
+
+    if (oldPatient && newPatient) {
+      oldPatient.active = false;
+      oldPatient.link = [{ other: { reference: `Patient/${newPatient.id}` }, type: 'replaced-by' }];
+      await medplum.updateResource<Patient>(oldPatient);
+
+      newPatient.link = [{ other: { reference: `Patient/${oldPatient.id}` }, type: 'replaces' }];
+      await medplum.updateResource<Patient>(newPatient);
+    }
+
     return input.buildAck();
   }
 

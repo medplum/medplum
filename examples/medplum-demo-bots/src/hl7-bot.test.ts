@@ -84,4 +84,40 @@ ZVN|A05`);
     expect(patient?.address?.[0].postalCode).toBe('SW1A 1AA');
     expect(patient?.address?.[0].country).toBe('GBR');
   });
+
+  // Test for ADT-A40 merge message
+  test('Merge Patient Records ADT-A40', async () => {
+    const medplum = new MockClient();
+    const bot: Reference<Bot> = { reference: 'Bot/123' };
+
+    // Create two Allison Evans patients
+    await medplum.createResource({
+      resourceType: 'Patient',
+      name: [{ given: ['Allison'], family: 'Evans' }],
+      identifier: [{ system: 'XYZ', value: 'MR1' }]
+    });
+    await medplum.createResource({
+      resourceType: 'Patient',
+      name: [{ given: ['Allison'], family: 'Evans' }],
+      identifier: [{ system: 'XYZ', value: 'MR2' }]
+    });
+
+    const input = Hl7Message.parse(`MSH|^~\\&|REGADT|MCM|RSP1P8|MCM|199601051530|SEC|ADT^A40|00000003|P|2.3.1
+EVN|A40|199601051530
+PID|||MR1^^^XYZ||EVANS^ALLISON|||||||||||||ACCT3
+MRG|MR2^^^XYZ||ACCT1`);
+    const contentType = 'x-application/hl7-v2+er7';
+    const secrets = {};
+    const result = await handler(medplum, { bot, input, contentType, secrets });
+    expect(result.get('MSA')).toBeDefined();
+
+    const oldPatient = await medplum.searchOne('Patient', 'identifier=MR2');
+    const newPatient = await medplum.searchOne('Patient', 'identifier=MR1');
+
+    expect(oldPatient).toBeDefined();
+    expect(newPatient).toBeDefined();
+    expect(oldPatient?.active).toBe(false);
+    expect(oldPatient?.link?.[0]?.type).toBe('replaced-by');
+    expect(newPatient?.link?.[0]?.type).toBe('replaces');
+  });
 });
