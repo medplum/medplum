@@ -17,7 +17,6 @@ import { MedplumServerConfig, loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
-import { getSubscriptionQueue } from '../workers/subscription';
 
 jest.mock('hibp');
 
@@ -101,9 +100,6 @@ describe('WebSockets Subscriptions', () => {
         .sendJson({ type: 'bind-with-token', payload: { token } })
         // Add a new patient for this project
         .exec(async () => {
-          const queue = getSubscriptionQueue() as any;
-          queue.add.mockClear();
-
           // Update the patient
           version2 = await repo.updateResource<Patient>({
             resourceType: 'Patient',

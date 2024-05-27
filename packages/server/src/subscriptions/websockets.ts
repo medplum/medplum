@@ -68,17 +68,6 @@ function ensureHeartbeatHandler(): void {
   }
 }
 
-// function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string): void {
-//   const wsSet = subToWsLookup.get(subscriptionId);
-//   const subIdSet = wsToSubLookup.get(ws);
-//   if (!(wsSet && subIdSet && wsSet.has(ws) && subIdSet.has(subscriptionId))) {
-//     globalLogger.error(`[WS] Subscription binding to subscription ${subscriptionId} for this WebSocket is missing`);
-//     return;
-//   }
-//   wsSet.delete(ws);
-//   subIdSet.delete(subscriptionId);
-// }
-
 function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
   const subscriptionIds = wsToSubLookup.get(ws);
   if (!subscriptionIds) {
