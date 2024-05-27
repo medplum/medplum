@@ -19,8 +19,8 @@ import {
 } from '@medplum/core';
 import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
+import { createHmac } from 'node:crypto';
 import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
@@ -28,7 +28,7 @@ import { executeBot } from '../fhir/operations/execute';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
-import { createSubEventNotification } from '../subscriptions/websockets';
+import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
 import { createAuditEvent, findProjectMembership, getPreviousResource, isJobSuccessful } from './utils';
@@ -236,10 +236,16 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   const subscriptions = await getSubscriptions(resource, project);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
 
+  const wsEvents = [] as [Resource, string, SubEventsOptions][];
+
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
+        continue;
+      }
+      if (subscription.channel.type === 'websocket') {
+        wsEvents.push([resource, subscription.id as string, { includeResource: true }]);
         continue;
       }
       await addSubscriptionJobData({
@@ -254,6 +260,10 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         traceId: ctx?.traceId,
       });
     }
+  }
+
+  if (wsEvents.length) {
+    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(wsEvents));
   }
 }
 
@@ -374,12 +384,6 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
         } else {
           await sendRestHook(job, subscription, versionedResource, interaction, requestTime);
         }
-        break;
-      case 'websocket':
-        await getRedis().publish(
-          subscriptionId as string,
-          JSON.stringify(createSubEventNotification(versionedResource, subscriptionId, { includeResource: true }))
-        );
         break;
       default:
         throw new OperationOutcomeError(serverError(new Error('Subscription type not currently supported.')));
