@@ -94,12 +94,12 @@ ZVN|A05`);
     await medplum.createResource({
       resourceType: 'Patient',
       name: [{ given: ['Allison'], family: 'Evans' }],
-      identifier: [{ system: 'XYZ', value: 'MR1' }]
+      identifier: [{ system: 'XYZ', value: 'MR1' }],
     });
     await medplum.createResource({
       resourceType: 'Patient',
       name: [{ given: ['Allison'], family: 'Evans' }],
-      identifier: [{ system: 'XYZ', value: 'MR2' }]
+      identifier: [{ system: 'XYZ', value: 'MR2' }],
     });
 
     const input = Hl7Message.parse(`MSH|^~\\&|REGADT|MCM|RSP1P8|MCM|199601051530|SEC|ADT^A40|00000003|P|2.3.1
