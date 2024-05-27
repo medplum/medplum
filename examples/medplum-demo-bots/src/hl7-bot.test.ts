@@ -39,7 +39,8 @@ PV2||||||||||||||||||||||N|||||||||||||||||||||||||||`);
   test('Update HL7 Message', async () => {
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
-    const input = Hl7Message.parse(`MSH|^~\\&|SendingApp|SendingFacility|HL7API|PKB|20190201113000||ADT^A08|ABC0000000003|P|2.4
+    const input =
+      Hl7Message.parse(`MSH|^~\\&|SendingApp|SendingFacility|HL7API|PKB|20190201113000||ADT^A08|ABC0000000003|P|2.4
 PID|||9555555555^^^NHS^NH||Smith^John^Joe^^Mr||19700101|M|||My flat name^1, The Road^London^London^SW1A 1AA^GBR|||||||||||||||||||N|
 PV1|1|I|^^^^^^^^My Ward Corrected||||^Jones^Stuart^James^^Dr^|^Smith^William^^^Dr^|^Foster^Terry^^^Mr^||||||||||enctrId|||||||||||||||||||||||||201902011000|
 ZVN|A02|||||201902011015`);
@@ -63,7 +64,8 @@ ZVN|A02|||||201902011015`);
   test('Update HL7 Message with different PV1 and ZVN segments', async () => {
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
-    const input = Hl7Message.parse(`MSH|^~\\&|SendingApp|SendingFacility|HL7API|PKB|20190201113000||ADT^A08|ABC0000000003|P|2.4
+    const input =
+      Hl7Message.parse(`MSH|^~\\&|SendingApp|SendingFacility|HL7API|PKB|20190201113000||ADT^A08|ABC0000000003|P|2.4
 PID|||9555555555^^^NHS^NH||Smith^John^Joe^^Mr||19700101|M|||My flat name^1, The Road^London^London^SW1A 1AA^GBR|||||||||||||||||||N|
 PV1|1|I|^^^^^^^^Main Outpatient||||^Jones^Stuart^James^^Dr^|^Smith^William^^^Dr^|^Foster^Terry^^^Mr^||||||||||enctrId2|||||||||||||||||||||||||201908091000|
 ZVN|A05`);
