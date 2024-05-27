@@ -27,7 +27,6 @@ describe('buildElementsContext', () => {
   beforeAll(() => {
     USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    // indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
   });
 
   test('deeply nested schema', () => {
