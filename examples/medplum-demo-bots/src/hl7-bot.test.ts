@@ -6,7 +6,7 @@ import { handler } from './hl7-bot';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 
 //To run these tests from the command line
-//npm t src/hl7-bot.test.ts 
+//npm t src/hl7-bot.test.ts
 
 //To run a specific test
 //npm t src/hl7-bot.test.ts -t 'Update HL7 Message'
