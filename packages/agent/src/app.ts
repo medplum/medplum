@@ -521,6 +521,7 @@ export class App {
     const client = new Hl7Client({
       host: address.hostname,
       port: Number.parseInt(address.port, 10),
+      encoding: address.searchParams.get('encoding') ?? undefined,
     });
 
     client
