@@ -9,6 +9,7 @@ import {
   createReference,
   isOk,
   isOperationOutcome,
+  isResource,
   normalizeErrorString,
   resolveId,
   serverError,
@@ -45,6 +46,7 @@ import { MockConsole } from '../../util/console';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
+import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
@@ -95,6 +97,11 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     const result = await executeOperation(req);
     if (isOperationOutcome(result)) {
       sendOutcome(res, result);
+      return;
+    }
+    if (isResource(result) && result.resourceType === 'Binary') {
+      const outcome = result.success ? allOk : badRequest(result.logResult);
+      await sendResponse(req, res, outcome, result);
       return;
     }
     const responseBody = getResponseBodyFromResult(result);
