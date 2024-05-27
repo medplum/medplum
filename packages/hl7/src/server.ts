@@ -6,7 +6,7 @@ export class Hl7Server {
 
   constructor(public readonly handler: (connection: Hl7Connection) => void) {}
 
-  start(port: number, encoding?: BufferEncoding): void {
+  start(port: number, encoding?: string): void {
     const server = net.createServer((socket) => {
       const connection = new Hl7Connection(socket, encoding);
       this.handler(connection);

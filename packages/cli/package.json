@@ -55,6 +55,7 @@
     "commander": "12.1.0",
     "dotenv": "16.4.5",
     "fast-glob": "3.3.2",
+    "iconv-lite": "0.6.3",
     "node-fetch": "2.7.0",
     "tar": "7.1.0"
   },

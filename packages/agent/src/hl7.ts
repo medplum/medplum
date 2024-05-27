@@ -30,8 +30,9 @@ export class AgentHl7Channel extends BaseChannel {
     }
     this.started = true;
     const address = new URL(this.getEndpoint().address as string);
+    const encoding = address.searchParams.get('encoding') ?? undefined;
     this.log.info(`Channel starting on ${address}...`);
-    this.server.start(Number.parseInt(address.port, 10));
+    this.server.start(Number.parseInt(address.port, 10), encoding);
     this.log.info('Channel started successfully');
   }
 
