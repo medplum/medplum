@@ -8,12 +8,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) as string;
   const messageSubtype = input.getSegment('MSH')?.getField(9)?.getComponent(2) as string;
 
-  //If this is anything but ADT^A28, ADT^A08, ADT^830 then exit
+  // If this is anything but ADT^A28, ADT^A08, ADT^A30 then exit
   if (messageType !== 'ADT') {
     return input.buildAck();
   }
 
-  if (messageSubtype !== 'A28' && messageSubtype !== 'A08' && messageSubtype !== '830') {
+  if (messageSubtype !== 'A28' && messageSubtype !== 'A08' && messageSubtype !== 'A30') {
     return input.buildAck();
   }
 
@@ -23,7 +23,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   // Get patient ID
   const mrnNumber = input.getSegment('PID')?.getField(3).getComponent(1) as string;
- 
+
   // Get patient address
   const addressLine = input.getSegment('PID')?.getField(11).getComponent(1) as string;
   const city = input.getSegment('PID')?.getField(11).getComponent(3) as string;
