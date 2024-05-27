@@ -208,6 +208,7 @@ function markReadonlyFields(
   for (const [key, element] of Object.entries(elements)) {
     const isReadonly = matchesKeyPrefixes(prefix + key, accessPolicyResource.readonlyFields);
     if (isReadonly) {
+      // shallow-clone `element` to avoid modifying the in-memory DATA_TYPES cache access via `getDataType`
       result[key] = { ...element, readonly: true };
     } else {
       result[key] = element;

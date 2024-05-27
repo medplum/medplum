@@ -1,4 +1,4 @@
-import { buildElementsContext } from './elements-context';
+import { ExtendedInternalSchemaElement, buildElementsContext } from './elements-context';
 import { HTTP_HL7_ORG } from './constants';
 import { isPopulated } from './utils';
 import {
@@ -308,5 +308,45 @@ describe('buildElementsContext', () => {
     expect(context.getExtendedProps('Patient.identifier')).toEqual(READONLY);
     expect(context.getExtendedProps('Patient.identifier.system')).toEqual(READONLY);
     expect(context.getExtendedProps('Patient.identifier.value')).toEqual(READONLY);
+  });
+
+  test('setting readonly/hidden does not mutate DATA_TYPES', () => {
+    // re-create the in-memory schema to ensure isolation from other tests
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+
+    const schema = getDataType('Patient');
+
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: 'Patient', readonlyFields: ['gender'], hiddenFields: ['identifier'] }],
+    };
+    const resource: Patient = {
+      resourceType: 'Patient',
+    };
+    const apr = satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
+
+    function checkSchema(): void {
+      const typeSchema = getDataType('Patient');
+      expect(typeSchema.elements['gender']).toBeDefined();
+      expect((typeSchema.elements['gender'] as ExtendedInternalSchemaElement).readonly).toBeUndefined();
+
+      expect(typeSchema.elements['identifier']).toBeDefined();
+      expect((typeSchema.elements['identifier'] as ExtendedInternalSchemaElement).readonly).toBeUndefined();
+    }
+
+    checkSchema();
+
+    const context = buildElementsContext({
+      elements: schema.elements,
+      path: 'Patient',
+      parentContext: undefined,
+      accessPolicyResource: apr,
+    });
+    if (context === undefined) {
+      fail('Expected context to be defined');
+    }
+
+    // schema remains unchanged
+    checkSchema();
   });
 });
