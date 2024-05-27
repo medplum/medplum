@@ -6,7 +6,7 @@ import { handler } from './hl7-bot';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 
 //To run these tests from the command line
-//npm t src/hl7-bot.test.ts 
+//npm t src/hl7-bot.test.ts
 
 //To run a specific test
 //npm t src/hl7-bot.test.ts -t 'Update HL7 Message'
@@ -59,4 +59,5 @@ ZVN|A02|||||201902011015`);
     expect(patient?.address?.[0].state).toBe('London');
     expect(patient?.address?.[0].postalCode).toBe('SW1A 1AA');
     expect(patient?.address?.[0].country).toBe('GBR');
-  })});
+  });
+});

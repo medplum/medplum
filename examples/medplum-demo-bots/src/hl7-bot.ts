@@ -23,7 +23,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   // Get patient ID
   const mrnNumber = input.getSegment('PID')?.getField(3).getComponent(1) as string;
- 
+
   // Get patient address
   const addressLine = input.getSegment('PID')?.getField(11).getComponent(1) as string;
   const city = input.getSegment('PID')?.getField(11).getComponent(3) as string;
