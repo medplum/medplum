@@ -86,8 +86,7 @@ ZVN|A05`);
   test('ADT 01 create patient and encounter', async () => {
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
-    const input =
-      Hl7Message.parse(`MSH|^~\\&|ADT1|HOSPITAL|LABADT|DH|202305231530|SECURITY|ADT^A01|MSG00001|P|2.3
+    const input = Hl7Message.parse(`MSH|^~\\&|ADT1|HOSPITAL|LABADT|DH|202305231530|SECURITY|ADT^A01|MSG00001|P|2.3
 EVN|A01|202305231530
 PID|||123456^^^HOSPITAL^MR||DOE^JOHN^A||19610615|M||C|123 MAIN ST^^METROPOLIS^IL^60060^USA||(555)555-1212||(555)555-1234||S||123456789|987654^NC
 NK1|1|DOE^JANE|WIFE|123 MAIN ST^^METROPOLIS^IL^60060^USA||(555)555-5678

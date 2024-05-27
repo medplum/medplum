@@ -81,18 +81,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     });
   }
 
-   //Create Encounter for Admissions 
+  //Create Encounter for Admissions
   if (messageSubtype === 'A01') {
     const locationString = input.getSegment('PV1')?.getField(3)?.getComponent(1) as string;
     const location = await medplum.searchOne('Location', 'identifier=' + locationString);
     await medplum.createResource<Encounter>({
       resourceType: 'Encounter',
       status: 'arrived',
-      subject: { 
-        reference: 'Patient/' + patient.id
+      subject: {
+        reference: 'Patient/' + patient.id,
       },
       class: { code: 'AMB' },
-      location: [{ location: { reference: 'Location/' + location } }]
+      location: [{ location: { reference: 'Location/' + location } }],
     });
   } else if (messageSubtype === 'A08') {
     let encounter = await medplum.searchOne('Encounter', 'subject=Patient/' + patient.id + '&status=arrived');
@@ -100,7 +100,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       encounter.status = 'finished';
       encounter = await medplum.updateResource<Encounter>(encounter);
     }
-  } 
+  }
   // Return Ack
   return input.buildAck();
 }
