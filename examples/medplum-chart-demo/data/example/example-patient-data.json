@@ -1,12 +1,12 @@
 {
   "resourceType": "Bundle",
-  "type": "batch",
+  "type": "transaction",
   "entry": [
     {
       "fullUrl": "urn:uuid:badc91d9-9209-49b8-ab22-5bb44e75ae57",
       "request": {
-        "method": "POST",
-        "url": "Patient"
+        "method": "PUT",
+        "url": "Patient?name=Homer%20Simpson"
       },
       "resource": {
         "resourceType": "Patient",
@@ -32,8 +32,8 @@
     {
       "fullUrl": "urn:uuid:60081479-c0a1-4b9e-9c52-039cf80f45b4",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=39156-5&date=1987-06-12"
       },
       "resource": {
         "resourceType": "Observation",
@@ -61,8 +61,8 @@
     {
       "fullUrl": "urn:uuid:58b8f2ff-6f67-4b14-ba53-af1ce4892962",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=39156-5&date=1989-12-17"
       },
       "resource": {
         "resourceType": "Observation",
@@ -90,8 +90,8 @@
     {
       "fullUrl": "urn:uuid:a6142c63-4bcc-48eb-872b-88f990330d61",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=39156-5&date=1992-03-22"
       },
       "resource": {
         "resourceType": "Observation",
@@ -119,8 +119,8 @@
     {
       "fullUrl": "urn:uuid:8c4e50e3-fdb8-4926-92ce-1289923dbd39",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=39156-5&date=1995-09-14"
       },
       "resource": {
         "resourceType": "Observation",
@@ -148,8 +148,8 @@
     {
       "fullUrl": "urn:uuid:9b4f8afa-0704-45f8-b7ea-b0992bac0b46",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=39156-5&date=2000-02-05"
       },
       "resource": {
         "resourceType": "Observation",
@@ -177,8 +177,8 @@
     {
       "fullUrl": "urn:uuid:012349c4-9d40-4e21-953d-5672f0f67942",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=85354-9&date=1987-06-12"
       },
       "resource": {
         "resourceType": "Observation",
@@ -234,8 +234,8 @@
     {
       "fullUrl": "urn:uuid:a14598d0-ffe4-46d4-8735-685ac98a8278",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=85354-9&date=1989-12-17"
       },
       "resource": {
         "resourceType": "Observation",
@@ -291,8 +291,8 @@
     {
       "fullUrl": "urn:uuid:2a1833b4-7bb4-4a83-a31e-e3f30315d2bb",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=85354-9&date=1992-03-22"
       },
       "resource": {
         "resourceType": "Observation",
@@ -348,8 +348,8 @@
     {
       "fullUrl": "urn:uuid:c6b74449-0a42-4657-b641-a24d7aca8b4a",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=85354-9&date=1995-09-14"
       },
       "resource": {
         "resourceType": "Observation",
@@ -405,8 +405,8 @@
     {
       "fullUrl": "urn:uuid:6548b43d-f232-4861-a261-c36279f71457",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=85354-9&date=2000-02-05"
       },
       "resource": {
         "resourceType": "Observation",
@@ -462,8 +462,8 @@
     {
       "fullUrl": "urn:uuid:35de66ca-012e-42db-a0c1-484043c2c6b3",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=8302-2&date=1987-06-12"
       },
       "resource": {
         "resourceType": "Observation",
@@ -491,8 +491,8 @@
     {
       "fullUrl": "urn:uuid:ba8d8414-32bb-4423-bb3e-aa4d1f6b12f6",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=8302-2&date=1989-12-17"
       },
       "resource": {
         "resourceType": "Observation",
@@ -520,8 +520,8 @@
     {
       "fullUrl": "urn:uuid:67064023-25a4-4405-8243-a71c88faafa5",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=8302-2&date=1992-03-22"
       },
       "resource": {
         "resourceType": "Observation",
@@ -549,8 +549,8 @@
     {
       "fullUrl": "urn:uuid:a3c01797-50cd-4b85-91e8-d4fa7022b7b3",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=8302-2&date=1995-09-14"
       },
       "resource": {
         "resourceType": "Observation",
@@ -578,8 +578,8 @@
     {
       "fullUrl": "urn:uuid:70b68e90-1337-4a16-9a25-61fd89b14678",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=8302-2&date=2000-02-05"
       },
       "resource": {
         "resourceType": "Observation",
@@ -607,8 +607,8 @@
     {
       "fullUrl": "urn:uuid:ce6fc8ed-ffdf-4281-9a8c-7c44b0c19b9b",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=29463-7&date=1987-06-12"
       },
       "resource": {
         "resourceType": "Observation",
@@ -636,8 +636,8 @@
     {
       "fullUrl": "urn:uuid:4b622e91-a25a-40a4-b2af-1ccaa8b412df",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=29463-7&date=1989-12-17"
       },
       "resource": {
         "resourceType": "Observation",
@@ -665,8 +665,8 @@
     {
       "fullUrl": "urn:uuid:c55ce861-b0db-4fe1-8575-337d3f6cbfc9",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=29463-7&date=1992-03-22"
       },
       "resource": {
         "resourceType": "Observation",
@@ -694,8 +694,8 @@
     {
       "fullUrl": "urn:uuid:1d5a6101-90fb-41d6-a5e4-0428efde45d4",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=29463-7&date=1995-09-14"
       },
       "resource": {
         "resourceType": "Observation",
@@ -723,8 +723,8 @@
     {
       "fullUrl": "urn:uuid:53c23011-834b-4ffb-80ad-ecb8c7847c86",
       "request": {
-        "method": "POST",
-        "url": "Observation"
+        "method": "PUT",
+        "url": "Observation?code=29463-7&date=2000-02-05"
       },
       "resource": {
         "resourceType": "Observation",
@@ -752,8 +752,8 @@
     {
       "fullUrl": "urn:uuid:4050e50c-e7a4-431d-97b1-e17c5bd07722",
       "request": {
-        "method": "POST",
-        "url": "ClinicalImpression"
+        "method": "PUT",
+        "url": "ClinicalImpression?date=1987-06-12"
       },
       "resource": {
         "resourceType": "ClinicalImpression",
@@ -773,8 +773,8 @@
     {
       "fullUrl": "urn:uuid:4050e50c-e7a4-431d-97b1-e17c5bd07722",
       "request": {
-        "method": "POST",
-        "url": "ClinicalImpression"
+        "method": "PUT",
+        "url": "ClinicalImpression?date=1989-12-17"
       },
       "resource": {
         "resourceType": "ClinicalImpression",
@@ -794,8 +794,8 @@
     {
       "fullUrl": "urn:uuid:4050e50c-e7a4-431d-97b1-e17c5bd07722",
       "request": {
-        "method": "POST",
-        "url": "ClinicalImpression"
+        "method": "PUT",
+        "url": "ClinicalImpression?date=1992-03-22"
       },
       "resource": {
         "resourceType": "ClinicalImpression",
@@ -815,8 +815,8 @@
     {
       "fullUrl": "urn:uuid:4050e50c-e7a4-431d-97b1-e17c5bd07722",
       "request": {
-        "method": "POST",
-        "url": "ClinicalImpression"
+        "method": "PUT",
+        "url": "ClinicalImpression?date=1995-09-14"
       },
       "resource": {
         "resourceType": "ClinicalImpression",
@@ -836,8 +836,8 @@
     {
       "fullUrl": "urn:uuid:4050e50c-e7a4-431d-97b1-e17c5bd07722",
       "request": {
-        "method": "POST",
-        "url": "ClinicalImpression"
+        "method": "PUT",
+        "url": "ClinicalImpression?date=2000-02-05"
       },
       "resource": {
         "resourceType": "ClinicalImpression",
@@ -856,7 +856,10 @@
     },
     {
       "fullUrl": "urn:uuid:954c6506-4553-487e-a204-d32850967074",
-      "request": { "method": "POST", "url": "Encounter" },
+      "request": {
+        "method": "PUT",
+        "url": "Encounter?class=11429006"
+      },
       "resource": {
         "resourceType": "Encounter",
         "status": "in-progress",

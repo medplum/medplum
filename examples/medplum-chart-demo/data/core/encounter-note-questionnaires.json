@@ -1,10 +1,10 @@
 {
   "resourceType": "Bundle",
-  "type": "batch",
+  "type": "transaction",
   "entry": [
     {
       "fullUrl": "urn:uuid:721dc32c-ebbf-4640-97b8-aa4f238e0ba2",
-      "request": { "method": "POST", "url": "Questionnaire" },
+      "request": { "method": "PUT", "url": "Questionnaire?name=obstetric-visit" },
       "resource": {
         "resourceType": "Questionnaire",
         "status": "active",
@@ -172,7 +172,7 @@
     },
     {
       "fullUrl": "urn:uuid:2f6f9b2f-14bf-48c5-8f7d-7bf2b282e50e",
-      "request": { "method": "POST", "url": "Questionnaire" },
+      "request": { "method": "PUT", "url": "Questionnaire?name=gynecology-visit" },
       "resource": {
         "resourceType": "Questionnaire",
         "status": "active",
@@ -484,7 +484,7 @@
     },
     {
       "fullUrl": "3bcb2a56-9706-4229-be3f-78a76d84a610",
-      "request": { "method": "POST", "url": "Questionnaire" },
+      "request": { "method": "PUT", "url": "Questionnaire?name=encounter-note" },
       "resource": {
         "resourceType": "Questionnaire",
         "status": "active",
