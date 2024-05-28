@@ -46,7 +46,6 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
   const noteType = getNoteType();
   const answers = getQuestionnaireAnswers(props.response);
   const displayValues = parseAnswers(answers, noteType);
-  console.log(answers, displayValues);
 
   return (
     <Document>
