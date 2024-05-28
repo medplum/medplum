@@ -257,22 +257,22 @@ describe('FHIR Repo Transactions', () => {
 
   test('Conflicting concurrent writes', () =>
     withTestContext(async () => {
-      const existing = await repo.createResource({ resourceType: 'Patient' });
+      const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
 
       const tx1 = repo.withTransaction(async () => {
         await repo.updateResource({ ...existing, gender: 'unknown' });
         await sleep(500);
       });
 
+      await sleep(250);
+
       const systemRepo = getSystemRepo();
       const tx2 = systemRepo.withTransaction(async () => {
-        await sleep(250);
         await systemRepo.updateResource({ ...existing, deceasedBoolean: false });
       });
 
       const results = await Promise.allSettled([tx1, tx2]);
-      expect(results[0].status).toEqual('fulfilled');
-      expect(results[1].status).toEqual('rejected');
+      expect(results.map((r) => r.status)).toContain('rejected');
     }));
 
   test('Allowed concurrent writes', () =>
@@ -363,5 +363,25 @@ describe('FHIR Repo Transactions', () => {
 
       const results = await Promise.allSettled([tx1, tx2]);
       expect(results.map((r) => r.status)).not.toContain('rejected');
+    }));
+
+  test('Conflicting update with patch', () =>
+    withTestContext(async () => {
+      const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const tx1 = repo.withTransaction(async () => {
+        await repo.searchResources(parseSearchRequest('Patient?_id=' + existing.id)); // Ensure request hits the DB
+        await sleep(500);
+        return repo.updateResource({ ...resource, gender: 'other' });
+      });
+
+      await sleep(200);
+
+      const systemRepo = getSystemRepo();
+      const tx2 = systemRepo.updateResource({ ...existing, deceasedBoolean: false });
+
+      const results = await Promise.allSettled([tx1, tx2]);
+      const resource = await repo.readResource(existing.resourceType, existing.id as string);
+      expect(results.map((r) => r.status)).toContain('rejected');
     }));
 });

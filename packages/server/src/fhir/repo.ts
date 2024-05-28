@@ -1012,18 +1012,20 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
     try {
-      const resource = await this.readResourceImpl(resourceType, id);
+      const result = await this.withTransaction(async () => {
+        const resource = await this.readResourceFromDatabase(resourceType, id);
 
-      try {
-        const patchResult = applyPatch(resource, patch).filter(Boolean);
-        if (patchResult.length > 0) {
-          throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+        try {
+          const patchResult = applyPatch(resource, patch).filter(Boolean);
+          if (patchResult.length > 0) {
+            throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+          }
+        } catch (err) {
+          throw new OperationOutcomeError(normalizeOperationOutcome(err));
         }
-      } catch (err) {
-        throw new OperationOutcomeError(normalizeOperationOutcome(err));
-      }
 
-      const result = await this.updateResourceImpl(resource, false);
+        return this.updateResourceImpl(resource, false);
+      });
       this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
