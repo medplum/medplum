@@ -26,6 +26,7 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
+  parseReference,
   parseSearchRequest,
   preconditionFailed,
   protectedResourceTypes,
@@ -178,6 +179,10 @@ export interface CacheEntry<T extends Resource = Resource> {
   projectId: string;
 }
 
+export type ReadResourceOptions = {
+  checkCacheOnly?: boolean;
+};
+
 /**
  * The lookup tables array includes a list of special tables for search indexing.
  */
@@ -229,9 +234,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  async readResource<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: ReadResourceOptions
+  ): Promise<T> {
     try {
-      const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id));
+      const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
       this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
@@ -240,7 +249,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  private async readResourceImpl<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  private async readResourceImpl<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: ReadResourceOptions
+  ): Promise<T> {
     if (!id || !validator.isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
@@ -263,6 +276,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       if (this.canReadCacheEntry(cacheRecord)) {
         return cacheRecord.resource;
       }
+    }
+
+    if (options?.checkCacheOnly) {
+      throw new OperationOutcomeError(notFound);
     }
 
     return this.readResourceFromDatabase(resourceType, id);
@@ -348,8 +365,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
-    const parts = reference.reference?.split('/');
-    if (!parts || parts.length !== 2) {
+    let parts: [T['resourceType'], string];
+    try {
+      parts = parseReference(reference);
+    } catch (err) {
       throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);
@@ -365,7 +384,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param id - The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
    */
-  async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
+  async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string): Promise<Bundle<T>> {
     try {
       let resource: T | undefined = undefined;
       try {
@@ -431,7 +450,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  async readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T> {
+  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
     try {
       if (!validator.isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
@@ -763,7 +782,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @returns The existing resource, if found.
    */
   private async checkExistingResource<T extends Resource>(
-    resourceType: string,
+    resourceType: T['resourceType'],
     id: string,
     create: boolean
   ): Promise<T | undefined> {
@@ -905,7 +924,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param id - The resource ID.
    * @returns Promise to complete.
    */
-  async reindexResource<T extends Resource>(resourceType: string, id: string): Promise<void> {
+  async reindexResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -940,7 +959,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param id - The resource ID.
    * @returns Promise to complete.
    */
-  async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<void> {
+  async resendSubscriptions<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -949,10 +968,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     return addSubscriptionJobs(resource, { interaction: 'update' });
   }
 
-  async deleteResource(resourceType: string, id: string): Promise<void> {
+  async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
     let resource: Resource;
     try {
-      resource = await this.readResourceImpl(resourceType, id);
+      resource = await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
       const outcomeErr = err as OperationOutcomeError;
       if (isGone(outcomeErr.outcome)) {
@@ -1010,7 +1029,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
+  async patchResource<T extends Resource = Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    patch: Operation[]
+  ): Promise<T> {
     try {
       const result = await this.withTransaction(async () => {
         const resource = await this.readResourceFromDatabase(resourceType, id);
@@ -2060,7 +2083,10 @@ const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
  * @param id - The resource ID.
  * @returns The cache entry if found; otherwise, undefined.
  */
-async function getCacheEntry<T extends Resource>(resourceType: string, id: string): Promise<CacheEntry<T> | undefined> {
+async function getCacheEntry<T extends Resource>(
+  resourceType: T['resourceType'],
+  id: string
+): Promise<CacheEntry<T> | undefined> {
   const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
   return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
 }

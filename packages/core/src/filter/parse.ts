@@ -33,7 +33,7 @@ const operatorMap: Record<string, Operator | undefined> = {
   // eb - The value ends before the specified value
   eb: Operator.ENDS_BEFORE,
   // pr - The set is empty or not (value is false or true)
-  pr: Operator.MISSING,
+  pr: Operator.PRESENT,
   // po - True if a (implied) date period in the set overlaps with the implied period in the value
   po: undefined,
   // ss - True if the value subsumes a concept in the set

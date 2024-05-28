@@ -26,6 +26,7 @@ const options = {
     'commander',
     'dotenv',
     'fast-glob',
+    'iconv-lite',
     'node-fetch',
     'tar',
   ],

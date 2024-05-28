@@ -42,6 +42,7 @@ CPOE should be aware of the logistics workflow a provider wants to enable. Below
 - [Sandbox CPOE video](https://www.youtube.com/watch?v=m0AWpEOh1es)
 - [ONC Certification](/docs/compliance/onc)
 - [Health Gorilla](/docs/integration/health-gorilla) in integration
+- [(a)(2) CPOE Laboratory](https://youtu.be/bb_ISvpcw6o) on Youtube
 
 :::caution
 

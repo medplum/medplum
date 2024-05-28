@@ -76,6 +76,7 @@ export enum Operator {
 
   // All
   MISSING = 'missing',
+  PRESENT = 'present',
 
   // Reference
   IDENTIFIER = 'identifier',

@@ -775,4 +775,25 @@ describe('Search matching', () => {
     };
     expect(matchesSearchRequest(resource, search2)).toBe(true);
   });
+
+  test('Present', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'true' }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(false);
+
+    resource.managingOrganization = {
+      reference: 'Organization/FooMedical',
+    };
+    const search2: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'false' }],
+    };
+    expect(matchesSearchRequest(resource, search2)).toBe(false);
+  });
 });
