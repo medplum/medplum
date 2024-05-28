@@ -1036,7 +1036,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   ): Promise<T> {
     try {
       const result = await this.withTransaction(async () => {
-        const resource = await this.readResourceFromDatabase(resourceType, id);
+        const resource = await this.readResourceFromDatabase<T>(resourceType, id);
 
         try {
           const patchResult = applyPatch(resource, patch).filter(Boolean);
