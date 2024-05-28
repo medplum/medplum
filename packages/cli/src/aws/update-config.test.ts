@@ -210,4 +210,158 @@ describe('update-config command', () => {
 
     expect(processError).toHaveBeenCalledWith('Error: Infra "apiPort" (8103) does not match server "port" (5000)\n');
   });
+
+  test('Auto confirm without mockReadline (Auto Update)', async () => {
+    const tag = randomUUID();
+    const infraFileName = getConfigFileName(tag);
+  
+    writeFileSync(
+      infraFileName,
+      JSON.stringify({
+        apiPort: 8103,
+        name: tag,
+        region: 'us-east-1',
+        accountNumber: 'account-123',
+        stackName: 'TestStack',
+        domainName: 'test.example.com',
+        baseUrl: 'https://api.test.example.com/',
+        apiDomainName: 'api.test.example.com',
+        appDomainName: 'app.test.example.com',
+        storageDomainName: 'storage.test.example.com',
+        storageBucketName: 'storage.test.example.com',
+        maxAzs: 2,
+        rdsInstances: 1,
+        desiredServerCount: 1,
+        serverMemory: 512,
+        serverCpu: 256,
+        serverImage: 'medplum/medplum-server:2.4.17',
+      }),
+      'utf8'
+    );
+  
+    await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: true });
+    unlinkSync(infraFileName);
+  
+    // Assertions
+    expect(writeParameters).toHaveBeenCalledWith('us-east-1', `/medplum/${tag}/`, {
+      apiPort: 8103,
+      name: tag,
+      region: 'us-east-1',
+      accountNumber: 'account-123',
+      stackName: 'TestStack',
+      domainName: 'test.example.com',
+      baseUrl: 'https://api.test.example.com/',
+      apiDomainName: 'api.test.example.com',
+      appDomainName: 'app.test.example.com',
+      storageDomainName: 'storage.test.example.com',
+      storageBucketName: 'storage.test.example.com',
+      maxAzs: 2,
+      rdsInstances: 1,
+      desiredServerCount: 1,
+      serverMemory: 512,
+      serverCpu: 256,
+      serverImage: 'medplum/medplum-server:2.4.17',
+    });
+  });
+
+  test('Auto confirm = false with mockReadline = y', async () => {
+    const tag = randomUUID();
+    const infraFileName = getConfigFileName(tag);
+  
+    writeFileSync(
+      infraFileName,
+      JSON.stringify({
+        apiPort: 8103,
+        name: tag,
+        region: 'us-east-1',
+        accountNumber: 'account-123',
+        stackName: 'TestStack',
+        domainName: 'test.example.com',
+        baseUrl: 'https://api.test.example.com/',
+        apiDomainName: 'api.test.example.com',
+        appDomainName: 'app.test.example.com',
+        storageDomainName: 'storage.test.example.com',
+        storageBucketName: 'storage.test.example.com',
+        maxAzs: 2,
+        rdsInstances: 1,
+        desiredServerCount: 1,
+        serverMemory: 512,
+        serverCpu: 256,
+        serverImage: 'medplum/medplum-server:2.4.17',
+      }),
+      'utf8'
+    );
+  
+    readline.createInterface = jest.fn(() =>
+      mockReadline(
+        'y' // Yes, write to Parameter Store
+      )
+    );
+  
+    await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: false });
+    unlinkSync(infraFileName);
+  
+    // Assertions
+    expect(writeParameters).toHaveBeenCalledWith('us-east-1', `/medplum/${tag}/`, {
+      apiPort: 8103,
+      name: tag,
+      region: 'us-east-1',
+      accountNumber: 'account-123',
+      stackName: 'TestStack',
+      domainName: 'test.example.com',
+      baseUrl: 'https://api.test.example.com/',
+      apiDomainName: 'api.test.example.com',
+      appDomainName: 'app.test.example.com',
+      storageDomainName: 'storage.test.example.com',
+      storageBucketName: 'storage.test.example.com',
+      maxAzs: 2,
+      rdsInstances: 1,
+      desiredServerCount: 1,
+      serverMemory: 512,
+      serverCpu: 256,
+      serverImage: 'medplum/medplum-server:2.4.17',
+    });
+  });
+
+  test('Auto confirm = false with mockReadline = n', async () => {
+    const tag = randomUUID();
+    const infraFileName = getConfigFileName(tag);
+  
+    writeFileSync(
+      infraFileName,
+      JSON.stringify({
+        apiPort: 8103,
+        name: tag,
+        region: 'us-east-1',
+        accountNumber: 'account-123',
+        stackName: 'TestStack',
+        domainName: 'test.example.com',
+        baseUrl: 'https://api.test.example.com/',
+        apiDomainName: 'api.test.example.com',
+        appDomainName: 'app.test.example.com',
+        storageDomainName: 'storage.test.example.com',
+        storageBucketName: 'storage.test.example.com',
+        maxAzs: 2,
+        rdsInstances: 1,
+        desiredServerCount: 1,
+        serverMemory: 512,
+        serverCpu: 256,
+        serverImage: 'medplum/medplum-server:2.4.17',
+      }),
+      'utf8'
+    );
+  
+    readline.createInterface = jest.fn(() =>
+      mockReadline(
+        'n' // No, do not write to Parameter Store
+      )
+    );
+  
+    await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: false });
+    unlinkSync(infraFileName);
+  
+    // Assertions
+    expect(writeParameters).not.toHaveBeenCalled();
+  });
+
 });
