@@ -59,6 +59,9 @@ export class LiteralAtom implements Atom {
 export class SymbolAtom implements Atom {
   constructor(public readonly name: string) {}
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    if (this.name === '$this') {
+      return input;
+    }
     const variableValue = this.getVariable(context);
     if (variableValue) {
       return [variableValue];
