@@ -1411,6 +1411,14 @@ describe('FHIRPath Test Suite', () => {
     test('testSubSetOf2', () => {
       expect(evalFhirPath('Patient.name.subsetOf($this.name.first()).not()', patient)).toEqual([true]);
     });
+
+    test('testSubSetOf3', () => {
+      expect(evalFhirPath('{}.subsetOf(Patient.name)', patient)).toEqual([true]);
+    });
+
+    test('testSubSetOf4', () => {
+      expect(evalFhirPath('Patient.name.subsetOf({})', patient)).toEqual([false]);
+    });
   });
 
   describe('testSuperSetOf', () => {
@@ -1420,6 +1428,13 @@ describe('FHIRPath Test Suite', () => {
 
     test('testSuperSetOf2', () => {
       expect(evalFhirPath('Patient.name.supersetOf($this.name.first())', patient)).toEqual([true]);
+    });
+    test('testSuperSetOf3', () => {
+      expect(evalFhirPath('{}.supersetOf(Patient.name)', patient)).toEqual([false]);
+    });
+
+    test('testSuperSetOf4', () => {
+      expect(evalFhirPath('Patient.name.supersetOf({})', patient)).toEqual([true]);
     });
   });
 
