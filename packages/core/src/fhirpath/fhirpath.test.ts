@@ -1385,7 +1385,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testAll', () => {
+  describe('testAll', () => {
     test('testAllTrue1', () => {
       expect(evalFhirPath('Patient.name.select(given.exists()).allTrue()', patient)).toEqual([true]);
     });
@@ -1403,7 +1403,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testSubSetOf', () => {
+  describe('testSubSetOf', () => {
     test('testSubSetOf1', () => {
       expect(evalFhirPath('Patient.name.first().subsetOf($this.name)', patient)).toEqual([true]);
     });
@@ -1413,7 +1413,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testSuperSetOf', () => {
+  describe('testSuperSetOf', () => {
     test('testSuperSetOf1', () => {
       expect(evalFhirPath('Patient.name.first().supersetOf($this.name).not()', patient)).toEqual([true]);
     });
@@ -2864,6 +2864,29 @@ describe('FHIRPath Test Suite', () => {
     test('testUnion8', () => {
       expect(evalFhirPath('1.combine(1).union(2).count() = 2', patient)).toEqual([true]);
     });
+    test('testUnion9', () => {
+      expect(evalFhirPath('Patient.name.family.union(Patient.name.given)', patient)).toEqual([
+        'Chalmers',
+        'Windsor',
+        'Peter',
+        'James',
+        'Jim',
+      ]);
+    });
+  });
+
+  describe('testCombine', () => {
+    test('testCombine1', () => {
+      expect(evalFhirPath('Patient.name.family.combine(Patient.name.given)', patient)).toEqual([
+        'Chalmers',
+        'Windsor',
+        'Peter',
+        'James',
+        'Jim',
+        'Peter',
+        'James',
+      ]);
+    });
   });
 
   describe('testIntersect', () => {
@@ -2903,6 +2926,11 @@ describe('FHIRPath Test Suite', () => {
 
     test('testExclude4', () => {
       expect(evalFhirPath('1.combine(1).exclude(2).count() = 2', patient)).toEqual([true]);
+    });
+    test('testExclude5', () => {
+      expect(
+        evalFhirPath("Patient.name.given.exclude(Patient.name.given.where(startsWith('J').not())).distinct()", patient)
+      ).toEqual(['James', 'Jim']);
     });
   });
 

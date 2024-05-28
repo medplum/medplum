@@ -173,7 +173,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: http://hl7.org/fhirpath/#subsetofother-collection-boolean
    * @param context - The evaluation context.
    * @param input - The input collection.
-   * @param other - The atom representing the collection of elements to check for membership.
+   * @param other - The atom representing the collection of elements.
    * @returns True if all items in the input collection are members of the other collection.
    */
   subsetOf: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
@@ -199,8 +199,23 @@ export const functions: Record<string, FhirPathFunction> = {
    * is empty ({ }), the result is false.
    *
    * See: http://hl7.org/fhirpath/#supersetofother-collection-boolean
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param other - The atom representing the collection of elements.
+   * @returns True if all items in the other collection are members of the input collection.
    */
-  supersetOf: stub,
+  supersetOf: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+    const otherArray = other.eval(context, getRootInput(context));
+    if (otherArray.length === 0) {
+      return booleanToTypedValue(true);
+    }
+
+    if (input.length === 0) {
+      return booleanToTypedValue(false);
+    }
+
+    return booleanToTypedValue(otherArray.every((e) => input.some((o) => o.value === e.value)));
+  },
 
   /**
    * Returns the integer count of the number of items in the input collection.
@@ -479,7 +494,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!otherArray.some((e) => e.value === value.value)) {
@@ -512,7 +527,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     return removeDuplicates([...input, ...otherArray]);
   },
 
@@ -533,7 +548,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     return [...input, ...otherArray];
   },
 
