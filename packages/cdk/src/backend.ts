@@ -266,7 +266,7 @@ export class BackEnd extends Construct {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['s3:ListBucket', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],
-          resources: [`arn:aws:s3:::${config.storageBucketName}`],
+          resources: ['arn:aws:s3:::*'],
         }),
 
         // IAM: Pass role to innvoke lambda functions
@@ -292,11 +292,17 @@ export class BackEnd extends Construct {
           resources: [`arn:aws:lambda:${region}:${accountNumber}:function:medplum-bot-lambda-*`],
         }),
 
-        // Lambda layers: List and get layer versions
-        // https://docs.aws.amazon.com/lambda/latest/dg/access-control-identity-based.html
+        // Lambda layers: List layer versions
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['lambda:ListLayerVersions', 'lambda:GetLayerVersion'],
+          actions: ['lambda:ListLayerVersions'],
+          resources: [`arn:aws:lambda:${region}:${accountNumber}:layer:medplum-bot-layer`],
+        }),
+
+        // Lambda layers: Get layer version
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:GetLayerVersion'],
           resources: [`arn:aws:lambda:${region}:${accountNumber}:layer:medplum-bot-layer:*`],
         }),
 
