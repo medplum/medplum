@@ -1,8 +1,8 @@
 import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
 import { Encounter, Patient } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Hl7Message> {
-  const input = event.input as Hl7Message;
+export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
+  const input = event.input;
   const systemString = 'www.myhospitalsystem.org/IDs';
 
   // Log Message Type
@@ -14,7 +14,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     return input.buildAck();
   }
 
-  //Only supported message types should be processed
+  // Only supported message types should be processed
   if (messageSubtype !== 'A01' && messageSubtype !== 'A08' && messageSubtype !== 'A30') {
     return input.buildAck();
   }

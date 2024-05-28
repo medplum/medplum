@@ -5,8 +5,8 @@ import { expect, test } from 'vitest';
 import { handler } from './adt-transfer-bot';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 
-//To run these tests from the command line
-//npm t src/adt-transfer-listener/adt-transfer-bot.test.ts
+// To run these tests from the command line
+// npm t src/adt-transfer-listener/adt-transfer-bot.test.ts
 
 describe('HL7 Bots', async () => {
   // start-block index-schema
