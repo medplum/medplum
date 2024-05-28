@@ -89,7 +89,16 @@ import { validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchImpl } from './search';
-import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery, periodToRangeString } from './sql';
+import {
+  Condition,
+  DeleteQuery,
+  Disjunction,
+  Expression,
+  InsertQuery,
+  SelectQuery,
+  TransactionIsolationLevel,
+  periodToRangeString,
+} from './sql';
 import { getBinaryStorage } from './storage';
 
 /**
@@ -1938,9 +1947,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  async withTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
+  async withTransaction<TResult>(
+    callback: (client: PoolClient) => Promise<TResult>,
+    options?: { isolation?: TransactionIsolationLevel }
+  ): Promise<TResult> {
     try {
-      const client = await this.beginTransaction();
+      const client = await this.beginTransaction(options?.isolation);
       const result = await callback(client);
       await this.commitTransaction();
       return result;
@@ -1976,12 +1988,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  private async beginTransaction(): Promise<PoolClient> {
+  private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
-      await conn.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+      await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
     } else {
       await conn.query('SAVEPOINT sp' + this.transactionDepth);
     }

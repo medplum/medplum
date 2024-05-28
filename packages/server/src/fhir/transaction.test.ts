@@ -1,9 +1,10 @@
-import { OperationOutcomeError, Operator } from '@medplum/core';
+import { OperationOutcomeError, Operator, parseSearchRequest, sleep } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { createTestProject, withTestContext } from '../test.setup';
-import { Repository } from './repo';
+import { Repository, getSystemRepo } from './repo';
+import { randomUUID } from 'node:crypto';
 
 describe('FHIR Repo Transactions', () => {
   let repo: Repository;
@@ -252,5 +253,115 @@ describe('FHIR Repo Transactions', () => {
         expect(searchCheck4).toBeDefined();
         expect(searchCheck4.entry).toHaveLength(0);
       });
+    }));
+
+  test('Conflicting concurrent writes', () =>
+    withTestContext(async () => {
+      const existing = await repo.createResource({ resourceType: 'Patient' });
+
+      const tx1 = repo.withTransaction(async () => {
+        await repo.updateResource({ ...existing, gender: 'unknown' });
+        await sleep(500);
+      });
+
+      const systemRepo = getSystemRepo();
+      const tx2 = systemRepo.withTransaction(async () => {
+        await sleep(250);
+        await systemRepo.updateResource({ ...existing, deceasedBoolean: false });
+      });
+
+      const results = await Promise.allSettled([tx1, tx2]);
+      expect(results[0].status).toEqual('fulfilled');
+      expect(results[1].status).toEqual('rejected');
+    }));
+
+  test('Allowed concurrent writes', () =>
+    withTestContext(async () => {
+      const existing = await repo.createResource({ resourceType: 'Patient' });
+
+      const tx1 = repo.withTransaction(
+        async () => {
+          await repo.updateResource({ ...existing, gender: 'unknown' });
+          await sleep(500);
+        },
+        { isolation: 'READ COMMITTED' }
+      );
+
+      const systemRepo = getSystemRepo();
+      const tx2 = systemRepo.withTransaction(
+        async () => {
+          await sleep(250);
+          await systemRepo.updateResource({ ...existing, deceasedBoolean: false });
+        },
+        { isolation: 'READ COMMITTED' }
+      );
+
+      const results = await Promise.allSettled([tx1, tx2]);
+      expect(results[0].status).toEqual('fulfilled');
+      expect(results[1].status).toEqual('fulfilled');
+    }));
+
+  test('Conflicting concurrent conditional creates', () =>
+    withTestContext(async () => {
+      const identifier = randomUUID();
+      const criteria = 'Patient?identifier=http://example.com/mrn|' + identifier;
+      const resource: Patient = {
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+      };
+      const tx1 = repo.withTransaction(
+        async () => {
+          const existing = await repo.searchResources(parseSearchRequest(criteria));
+          if (!existing.length) {
+            await repo.createResource(resource);
+          }
+          await sleep(500);
+        },
+        { isolation: 'SERIALIZABLE' }
+      );
+
+      const systemRepo = getSystemRepo();
+      const tx2 = systemRepo.withTransaction(
+        async () => {
+          await sleep(250);
+          const existing = await systemRepo.searchResources(parseSearchRequest(criteria));
+          if (!existing.length) {
+            await systemRepo.createResource(resource);
+          }
+        },
+        { isolation: 'SERIALIZABLE' }
+      );
+
+      const results = await Promise.allSettled([tx1, tx2]);
+      expect(results.map((r) => r.status)).toContain('rejected');
+    }));
+
+  test('Allowed concurrent conditional creates', () =>
+    withTestContext(async () => {
+      const identifier = randomUUID();
+      const criteria = 'Patient?identifier=http://example.com/mrn|' + identifier;
+      const resource: Patient = {
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+      };
+      const tx1 = repo.withTransaction(async () => {
+        const existing = await repo.searchResources(parseSearchRequest(criteria));
+        if (!existing.length) {
+          await repo.createResource(resource);
+        }
+        await sleep(500);
+      });
+
+      const systemRepo = getSystemRepo();
+      const tx2 = systemRepo.withTransaction(async () => {
+        await sleep(250);
+        const existing = await systemRepo.searchResources(parseSearchRequest(criteria));
+        if (!existing.length) {
+          await systemRepo.createResource(resource);
+        }
+      });
+
+      const results = await Promise.allSettled([tx1, tx2]);
+      expect(results.map((r) => r.status)).not.toContain('rejected');
     }));
 });
