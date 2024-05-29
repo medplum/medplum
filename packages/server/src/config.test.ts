@@ -22,7 +22,7 @@ describe('Config', () => {
     process.env.MEDPLUM_PORT = '3000';
     process.env.MEDPLUM_DATABASE_PORT = '5432';
     process.env.MEDPLUM_REDIS_TLS = '{}';
-    process.env.MEDPLUM_DATABASE_SSL = '{"require":true}'
+    process.env.MEDPLUM_DATABASE_SSL = '{"require":true}';
     const config = await loadConfig('env');
     expect(config).toBeDefined();
     expect(config.baseUrl).toEqual('http://localhost:3000');
