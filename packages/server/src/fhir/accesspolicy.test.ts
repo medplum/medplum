@@ -2546,4 +2546,37 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow(expectedError);
     })
   );
+
+  test('readResource with invalid access policy', async () =>
+    withTestContext(async () => {
+      const { repo, membership, client } = await createTestProject({
+        withRepo: true,
+        withClient: true,
+      });
+
+      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+            // criteria: 'Patient?i=completed',
+            readonly: true,
+          },
+        ],
+      });
+
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const ship = await systemRepo.updateResource<ProjectMembership>({
+        ...membership,
+        accessPolicy: createReference(accessPolicy),
+      });
+
+      const secondRepo = new Repository({
+        accessPolicy,
+      });
+
+      await expect(
+        repo.readResource('Patient', patient.id as string, { allowReadFrom: ['database'] })
+      ).rejects.toThrow();
+    }));
 });

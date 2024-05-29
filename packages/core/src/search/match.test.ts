@@ -65,7 +65,7 @@ describe('Search matching', () => {
         { resourceType: 'Patient' },
         { resourceType: 'Patient', filters: [{ code: 'unknown', operator: Operator.EQUALS, value: 'xyz' }] }
       )
-    ).toThrow('Unknown search parameter: unknown');
+    ).toThrow('Unknown search parameter: unknown for resource type Patient');
   });
 
   test('Token filter', () => {
