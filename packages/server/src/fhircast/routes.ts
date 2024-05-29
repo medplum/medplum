@@ -1,8 +1,16 @@
-import { FhircastMessagePayload, FhircastResourceType, badRequest, generateId } from '@medplum/core';
+import {
+  FhircastMessagePayload,
+  FhircastResourceType,
+  badRequest,
+  generateId,
+  getWebSocketUrl,
+  normalizeErrorString,
+} from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
+import { getLogger } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getRedis } from '../redis';
@@ -84,8 +92,8 @@ protectedCommonRoutes.post(
       return;
     }
 
-    const mode = req.body['hub.mode'];
-    if (mode !== 'subscribe') {
+    const mode = req.body['hub.mode'] as 'subscribe' | 'unsubscribe';
+    if (!(['subscribe', 'unsubscribe'] as const).includes(mode)) {
       sendOutcome(res, badRequest('Invalid hub.mode'));
       return;
     }
@@ -94,12 +102,34 @@ protectedCommonRoutes.post(
     const subscriptionEndpoint = topic; // TODO: Create separate subscription endpoint for topic
     const config = getConfig();
 
-    res.status(202).json({
-      'hub.channel.endpoint': new URL(`/ws/fhircast/${subscriptionEndpoint}`, config.baseUrl)
-        .toString()
-        .replace('http://', 'ws://')
-        .replace('https://', 'wss://'),
-    });
+    switch (mode) {
+      case 'subscribe':
+        res.status(202).json({
+          'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
+        });
+        break;
+      case 'unsubscribe':
+        res.status(202).json({
+          'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
+        });
+        getRedis()
+          .publish(
+            topic,
+            JSON.stringify({
+              'hub.mode': 'denied',
+              'hub.topic': topic,
+              'hub.events': req.body['hub.events'],
+              'hub.reason': 'Subscriber unsubscribed from topic',
+            })
+          )
+          .catch((err: Error) => {
+            getLogger().error(
+              `Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
+              { topic }
+            );
+          });
+        break;
+    }
   })
 );
 

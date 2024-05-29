@@ -78,6 +78,7 @@ const operatorNames: Record<Operator, string> = {
   'not-in': 'not in',
   'of-type': 'of type',
   missing: 'missing',
+  present: 'present',
   identifier: 'identifier',
   iterate: 'iterate',
 };

@@ -14,6 +14,8 @@ export enum ColumnType {
 
 export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
 
+export type TransactionIsolationLevel = 'READ COMMITTED' | 'REPEATABLE READ' | 'SERIALIZABLE';
+
 export const Operator = {
   '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.appendColumn(column);

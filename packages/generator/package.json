@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "3.1.5",
+  "version": "3.1.6",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -15,6 +15,7 @@
     "benchmark": "ts-node src/benchmarks.ts",
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
+    "compare": "ts-node src/compare.ts",
     "docs": "ts-node src/docs.ts && cd ../.. && patch -p1 apply src/ONC-compliance-text.patch",
     "fhirtypes": "ts-node src/index.ts",
     "generate": "npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient",
@@ -24,14 +25,14 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "3.1.5",
-    "@medplum/definitions": "3.1.5",
-    "@medplum/fhirtypes": "3.1.5",
+    "@medplum/core": "3.1.6",
+    "@medplum/definitions": "3.1.6",
+    "@medplum/fhirtypes": "3.1.6",
     "@types/json-schema": "7.0.15",
     "@types/pg": "8.11.6",
     "@types/unzipper": "0.10.9",
-    "fast-xml-parser": "4.3.6",
-    "fhirpath": "3.13.1",
+    "fast-xml-parser": "4.4.0",
+    "fhirpath": "3.13.2",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.11.5",

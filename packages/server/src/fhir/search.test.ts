@@ -68,7 +68,7 @@ describe('FHIR Search', () => {
       await shutdownApp();
     });
 
-    test('Search total', async () => {
+    test('Search total', async () =>
       withTestContext(async () => {
         await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -104,10 +104,7 @@ describe('FHIR Search', () => {
         });
         expect(result4.total).toBeDefined();
         expect(typeof result4.total).toBe('number');
-      }).catch((err) => {
-        throw err;
-      });
-    });
+      }));
 
     test('Search count=0', async () =>
       withTestContext(async () => {

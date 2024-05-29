@@ -1,18 +1,18 @@
+import { readFileSync, writeFileSync } from 'node:fs';
 import { evalFhirPath } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { XMLParser } from 'fast-xml-parser';
 import fhirpath from 'fhirpath';
-import fs from 'fs';
 
-const root = 'C:/Users/cody/dev/fhirpath-xml-to-json/';
+const root = './src/fhirpath/r4/';
 
-const xmlData = fs.readFileSync(root + 'tests/r4/tests-fhir-r4.xml', 'utf-8');
+const xmlData = readFileSync(root + 'tests-fhir-r4.xml', 'utf-8');
 
 const resources: Record<string, Resource> = {
-  observation: JSON.parse(fs.readFileSync(root + 'tests/r4/input/observation-example.json', 'utf-8')),
-  patient: JSON.parse(fs.readFileSync(root + 'tests/r4/input/patient-example.json', 'utf-8')),
-  questionnaire: JSON.parse(fs.readFileSync(root + 'tests/r4/input/questionnaire-example.json', 'utf-8')),
-  valueSet: JSON.parse(fs.readFileSync(root + 'tests/r4/input/valueset-example-expansion.json', 'utf-8')),
+  observation: JSON.parse(readFileSync(root + 'observation-example.json', 'utf-8')),
+  patient: JSON.parse(readFileSync(root + 'patient-example.json', 'utf-8')),
+  questionnaire: JSON.parse(readFileSync(root + 'questionnaire-example.json', 'utf-8')),
+  valueSet: JSON.parse(readFileSync(root + 'valueset-example-expansion.json', 'utf-8')),
 };
 
 const options = {
@@ -29,7 +29,6 @@ const options = {
 
 const parser = new XMLParser(options);
 const jsonObj = parser.parse(xmlData);
-fs.writeFileSync('compare.json', JSON.stringify(jsonObj, null, 2));
 
 const lines = [
   `
@@ -239,4 +238,4 @@ lines.push(`<tr><td></td><td></td><td>Good</td><td>${counts[0][0]}</td><td>${cou
 lines.push(`<tr><td></td><td></td><td>Mixed</td><td>${counts[0][1]}</td><td>${counts[1][1]}</td></tr>`);
 lines.push(`<tr><td></td><td></td><td>Bad</td><td>${counts[0][2]}</td><td>${counts[1][2]}</td></tr>`);
 lines.push('</tbody', '</table', '</body', '</html>');
-fs.writeFileSync('compare.html', lines.join('\n'));
+writeFileSync('compare.html', lines.join('\n'));

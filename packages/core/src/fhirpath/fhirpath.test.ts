@@ -3,6 +3,7 @@ import { Bundle } from '@medplum/fhirtypes';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath } from './parse';
 import { LOINC, SNOMED, UCUM } from '../constants';
+import { PropertyType, TypedValue } from '../types';
 
 const observation = {
   resourceType: 'Observation',
@@ -1384,7 +1385,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testAll', () => {
+  describe('testAll', () => {
     test('testAllTrue1', () => {
       expect(evalFhirPath('Patient.name.select(given.exists()).allTrue()', patient)).toEqual([true]);
     });
@@ -1402,7 +1403,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testSubSetOf', () => {
+  describe('testSubSetOf', () => {
     test('testSubSetOf1', () => {
       expect(evalFhirPath('Patient.name.first().subsetOf($this.name)', patient)).toEqual([true]);
     });
@@ -1410,15 +1411,30 @@ describe('FHIRPath Test Suite', () => {
     test('testSubSetOf2', () => {
       expect(evalFhirPath('Patient.name.subsetOf($this.name.first()).not()', patient)).toEqual([true]);
     });
+
+    test('testSubSetOf3', () => {
+      expect(evalFhirPath('{}.subsetOf(Patient.name)', patient)).toEqual([true]);
+    });
+
+    test('testSubSetOf4', () => {
+      expect(evalFhirPath('Patient.name.subsetOf({})', patient)).toEqual([false]);
+    });
   });
 
-  describe.skip('testSuperSetOf', () => {
+  describe('testSuperSetOf', () => {
     test('testSuperSetOf1', () => {
       expect(evalFhirPath('Patient.name.first().supersetOf($this.name).not()', patient)).toEqual([true]);
     });
 
     test('testSuperSetOf2', () => {
       expect(evalFhirPath('Patient.name.supersetOf($this.name.first())', patient)).toEqual([true]);
+    });
+    test('testSuperSetOf3', () => {
+      expect(evalFhirPath('{}.supersetOf(Patient.name)', patient)).toEqual([false]);
+    });
+
+    test('testSuperSetOf4', () => {
+      expect(evalFhirPath('Patient.name.supersetOf({})', patient)).toEqual([true]);
     });
   });
 
@@ -2863,6 +2879,29 @@ describe('FHIRPath Test Suite', () => {
     test('testUnion8', () => {
       expect(evalFhirPath('1.combine(1).union(2).count() = 2', patient)).toEqual([true]);
     });
+    test('testUnion9', () => {
+      expect(evalFhirPath('Patient.name.family.union(Patient.name.given)', patient)).toEqual([
+        'Chalmers',
+        'Windsor',
+        'Peter',
+        'James',
+        'Jim',
+      ]);
+    });
+  });
+
+  describe('testCombine', () => {
+    test('testCombine1', () => {
+      expect(evalFhirPath('Patient.name.family.combine(Patient.name.given)', patient)).toEqual([
+        'Chalmers',
+        'Windsor',
+        'Peter',
+        'James',
+        'Jim',
+        'Peter',
+        'James',
+      ]);
+    });
   });
 
   describe('testIntersect', () => {
@@ -2881,6 +2920,10 @@ describe('FHIRPath Test Suite', () => {
     test('testIntersect4', () => {
       expect(evalFhirPath('1.combine(1).intersect(1).count() = 1', patient)).toEqual([true]);
     });
+
+    test('testIntersect5', () => {
+      expect(evalFhirPath('Patient.name.given.intersect(Patient.name.given).count() = 3', patient)).toEqual([true]);
+    });
   });
 
   describe('testExclude', () => {
@@ -2898,6 +2941,11 @@ describe('FHIRPath Test Suite', () => {
 
     test('testExclude4', () => {
       expect(evalFhirPath('1.combine(1).exclude(2).count() = 2', patient)).toEqual([true]);
+    });
+    test('testExclude5', () => {
+      expect(
+        evalFhirPath("Patient.name.given.exclude(Patient.name.given.where(startsWith('J').not())).distinct()", patient)
+      ).toEqual(['James', 'Jim']);
     });
   });
 
@@ -3514,6 +3562,33 @@ describe('FHIRPath Test Suite', () => {
 
     test('testConformsTo', () => {
       expect(() => evalFhirPath("conformsTo('http://trash')", patient)).toThrow();
+    });
+  });
+
+  // a more "real-world" test of using FHIRPath to evaluate a hypothetical constraint on AccessPolicy
+  describe('testAccessPolicyConstraints', () => {
+    const validResource: TypedValue = {
+      type: PropertyType.BackboneElement,
+      value: { resourceType: 'Patient', hiddenFields: ['name.use', 'name.given'], readonlyFields: ['name'] },
+    };
+
+    const invalidResource: TypedValue = {
+      type: PropertyType.BackboneElement,
+      value: {
+        resourceType: 'Observation',
+        hiddenFields: ['category', 'component.code'],
+        // readonlyFields: ['component'], // this would make it valid
+      },
+    };
+
+    const RESOURCE_CONSTRAINT = "hiddenFields.select(substring(0, indexOf('.'))).distinct().subsetOf(readonlyFields)";
+
+    test('testAccessPolicyResourceConstraint positive', () => {
+      expect(evalFhirPath(RESOURCE_CONSTRAINT, validResource)).toEqual([true]);
+    });
+
+    test('testAccessPolicyResourceConstraint negative', () => {
+      expect(evalFhirPath(RESOURCE_CONSTRAINT, invalidResource)).toEqual([false]);
     });
   });
 });

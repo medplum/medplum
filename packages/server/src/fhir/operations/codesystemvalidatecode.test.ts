@@ -6,6 +6,7 @@ import { initTestAuth } from '../../test.setup';
 import request from 'supertest';
 import { randomUUID } from 'crypto';
 import { ContentType } from '@medplum/core';
+import { validateCodings } from './codesystemvalidatecode';
 
 const app = express();
 
@@ -264,5 +265,28 @@ describe('CodeSystem validate-code', () => {
       resourceType: 'Parameters',
       parameter: [{ name: 'result', valueBoolean: false }],
     });
+  });
+
+  test('validateCodings', async () => {
+    const result = await validateCodings(codeSystem, [
+      { system: codeSystem.url, code: '1' }, // valid
+      { system: codeSystem.url, code: '2' }, // valid
+      { system: codeSystem.url, code: 'invalid-code' }, // invalid
+      { system: 'incorrect-system', code: '1' }, // invalid
+      { system: codeSystem.url, code: undefined }, // invalid
+      { system: undefined, code: '1' }, // valid
+      { system: undefined, code: 'invalid-code' }, // invalid
+      { system: codeSystem.url, code: '2' }, // valid duplicate
+    ]);
+    expect(result).toMatchObject([
+      { system: codeSystem.url, code: '1', display: 'Biopsy of brain' },
+      { system: codeSystem.url, code: '2', display: 'Biopsy of head' },
+      undefined,
+      undefined,
+      undefined,
+      { system: codeSystem.url, code: '1', display: 'Biopsy of brain' },
+      undefined,
+      { system: codeSystem.url, code: '2', display: 'Biopsy of head' },
+    ]);
   });
 });

@@ -93,6 +93,12 @@ describe('FHIR Repo', () => {
     }
   });
 
+  test('Read invalid resource with `checkCacheOnly` set', async () => {
+    await expect(systemRepo.readResource('Subscription', randomUUID(), { checkCacheOnly: true })).rejects.toThrow(
+      new OperationOutcomeError(notFound)
+    );
+  });
+
   test('Repo read malformed reference', async () => {
     try {
       await systemRepo.readReference({ reference: undefined });

@@ -1,36 +1,37 @@
 import {
   AccessPolicyInteraction,
+  BackgroundJobContext,
+  BackgroundJobInteraction,
   ContentType,
+  OperationOutcomeError,
+  Operator,
   createReference,
   getExtension,
   getExtensionValue,
   getReferenceString,
   isGone,
-  matchesSearchRequest,
+  isNotFound,
   normalizeOperationOutcome,
-  OperationOutcomeError,
-  Operator,
-  parseSearchRequest,
+  resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   serverError,
   stringify,
 } from '@medplum/core';
-import { Bot, Project, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
+import { createHmac } from 'node:crypto';
 import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
-import { createSubEventNotification } from '../subscriptions/websockets';
+import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { BackgroundJobContext, BackgroundJobInteraction } from './context';
-import { createAuditEvent, findProjectMembership, isFhirCriteriaMet, isJobSuccessful } from './utils';
+import { createAuditEvent, findProjectMembership, getPreviousResource, isJobSuccessful } from './utils';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -54,7 +55,8 @@ const DEFAULT_RETRIES = 3;
 
 export interface SubscriptionJobData {
   readonly subscriptionId: string;
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
+  readonly channelType?: Subscription['channel']['type'];
   readonly id: string;
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
@@ -234,15 +236,22 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   const subscriptions = await getSubscriptions(resource, project);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
 
+  const wsEvents = [] as [Resource, string, SubEventsOptions][];
+
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
     if (criteria) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
         continue;
       }
+      if (subscription.channel.type === 'websocket') {
+        wsEvents.push([resource, subscription.id as string, { includeResource: true }]);
+        continue;
+      }
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
+        channelType: subscription.channel.type,
         id: resource.id as string,
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
@@ -251,6 +260,10 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         traceId: ctx?.traceId,
       });
     }
+  }
+
+  if (wsEvents.length) {
+    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(wsEvents));
   }
 }
 
@@ -267,73 +280,13 @@ async function matchesCriteria(
   context: BackgroundJobContext
 ): Promise<boolean> {
   const ctx = getRequestContext();
-  if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
-    ctx.logger.debug('Ignore resource in different account compartment');
-    return false;
-  }
-
-  if (!matchesChannelType(subscription)) {
-    ctx.logger.debug(`Ignore subscription without recognized channel type`);
-    return false;
-  }
-
-  const subscriptionCriteria = subscription.criteria;
-  if (!subscriptionCriteria) {
-    ctx.logger.debug(`Ignore rest hook missing criteria`);
-    return false;
-  }
-
-  const searchRequest = parseSearchRequest(subscriptionCriteria);
-  if (resource.resourceType !== searchRequest.resourceType) {
-    ctx.logger.debug(
-      `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
-    );
-    return false;
-  }
-
-  const fhirPathCriteria = await isFhirCriteriaMet(subscription, resource);
-  if (!fhirPathCriteria) {
-    ctx.logger.debug(`Ignore rest hook for criteria returning false`);
-    return false;
-  }
-
-  const supportedInteractionExtension = getExtension(
+  return resourceMatchesSubscriptionCriteria({
+    resource,
     subscription,
-    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
-  );
-  if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
-    ctx.logger.debug(
-      `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
-    );
-    return false;
-  }
-
-  return matchesSearchRequest(resource, searchRequest);
-}
-
-/**
- * Returns true if the subscription channel type is ok to execute.
- * @param subscription - The subscription resource.
- * @returns True if the subscription channel type is ok to execute.
- */
-function matchesChannelType(subscription: Subscription): boolean {
-  const channelType = subscription.channel?.type;
-
-  if (channelType === 'rest-hook') {
-    const url = subscription.channel?.endpoint;
-    if (!url) {
-      getLogger().debug(`Ignore rest-hook missing URL`);
-      return false;
-    }
-
-    return true;
-  }
-
-  if (channelType === 'websocket') {
-    return true;
-  }
-
-  return false;
+    context,
+    logger: ctx.logger,
+    getPreviousResource: getPreviousResource,
+  });
 }
 
 /**
@@ -395,9 +348,9 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const systemRepo = getSystemRepo();
-  const { subscriptionId, resourceType, id, versionId, interaction, requestTime } = job.data;
+  const { subscriptionId, channelType, resourceType, id, versionId, interaction, requestTime } = job.data;
 
-  const subscription = await tryGetSubscription(systemRepo, subscriptionId);
+  const subscription = await tryGetSubscription(systemRepo, subscriptionId, channelType);
   if (!subscription) {
     // If the subscription was deleted, then stop processing it.
     return;
@@ -432,12 +385,6 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
           await sendRestHook(job, subscription, versionedResource, interaction, requestTime);
         }
         break;
-      case 'websocket':
-        await getRedis().publish(
-          subscriptionId as string,
-          JSON.stringify(createSubEventNotification(versionedResource, subscriptionId, { includeResource: true }))
-        );
-        break;
       default:
         throw new OperationOutcomeError(serverError(new Error('Subscription type not currently supported.')));
     }
@@ -446,12 +393,20 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 }
 
-async function tryGetSubscription(systemRepo: Repository, subscriptionId: string): Promise<Subscription | undefined> {
+async function tryGetSubscription(
+  systemRepo: Repository,
+  subscriptionId: string,
+  channelType: SubscriptionJobData['channelType'] | undefined
+): Promise<Subscription | undefined> {
   try {
-    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
+    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
+      checkCacheOnly: channelType === 'websocket',
+    });
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
-    if (isGone(outcome)) {
+    // If the Subscription was marked as deleted in the database, this will return "gone"
+    // However, deleted WebSocket subscriptions will return "not found"
+    if (isGone(outcome) || isNotFound(outcome)) {
       // If the subscription was deleted, then stop processing it.
       return undefined;
     }
@@ -460,11 +415,11 @@ async function tryGetSubscription(systemRepo: Repository, subscriptionId: string
   }
 }
 
-async function tryGetCurrentVersion(
+async function tryGetCurrentVersion<T extends Resource = Resource>(
   systemRepo: Repository,
-  resourceType: string,
+  resourceType: T['resourceType'],
   id: string
-): Promise<Resource | undefined> {
+): Promise<T | undefined> {
   try {
     return await systemRepo.readResource(resourceType, id);
   } catch (err) {

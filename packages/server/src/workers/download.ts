@@ -1,5 +1,5 @@
 import { arrayify, crawlResource, isGone, normalizeOperationOutcome, TypedValue } from '@medplum/core';
-import { Attachment, Binary, Meta, Resource } from '@medplum/fhirtypes';
+import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
@@ -22,7 +22,7 @@ import { parseTraceparent } from '../traceparent';
  */
 
 export interface DownloadJobData {
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
   readonly requestId?: string;
@@ -156,14 +156,14 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * Executes a download job.
  * @param job - The download job details.
  */
-export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
+export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
   const systemRepo = getSystemRepo();
   const ctx = getRequestContext();
   const { resourceType, id, url } = job.data;
 
-  let resource;
+  let resource: T;
   try {
-    resource = await systemRepo.readResource(resourceType, id);
+    resource = await systemRepo.readResource<T>(resourceType, id);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
     if (isGone(outcome)) {

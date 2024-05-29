@@ -155,4 +155,35 @@ describe('CLI auth', () => {
       ['Project: My Project (Project/456)'],
     ]);
   });
+
+  test('Get access token -- logged in', async () => {
+    medplum = new MockClient({ storage: new FileSystemStorage('default') });
+
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      JSON.stringify({
+        activeLogin: JSON.stringify({
+          accessToken: 'abc',
+          refreshToken: 'xyz',
+          profile: {
+            reference: 'Practitioner/123',
+            display: 'Alice Smith',
+          },
+          project: {
+            reference: 'Project/456',
+            display: 'My Project',
+          },
+        }),
+      })
+    );
+
+    await main(['node', 'index.js', 'token']);
+    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([['Access token:'], [], [expect.any(String)]]);
+  });
+
+  test('Get access token -- needs auth (expired or not logged in)', async () => {
+    medplum = new MockClient({ profile: null });
+    await expect(main(['node', 'index.js', 'token'])).rejects.toThrow('Process exited with exit code 1');
+    expect(processError).toHaveBeenLastCalledWith(expect.stringContaining('Error: Not logged in'));
+  });
 });

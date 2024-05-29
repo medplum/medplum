@@ -33,11 +33,13 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
   const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
-  if (filter.operator === Operator.MISSING && searchParam) {
-    const values = evalFhirPath(searchParam.expression as string, resource);
-    return filter.value === 'true' ? !values.length : values.length > 0;
+  if (!searchParam) {
+    return false;
   }
-  switch (searchParam?.type) {
+  if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
+    return matchesMissingOrPresent(resource, filter, searchParam);
+  }
+  switch (searchParam.type) {
     case 'reference':
       return matchesReferenceFilter(resource, filter, searchParam);
     case 'string':
@@ -52,6 +54,15 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
       // Default fail the check
       return false;
   }
+}
+
+function matchesMissingOrPresent(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
+  const values = evalFhirPath(searchParam.expression as string, resource);
+  const exists = values.length > 0;
+  const desired =
+    (filter.operator === Operator.MISSING && filter.value === 'false') ||
+    (filter.operator === Operator.PRESENT && filter.value === 'true');
+  return desired === exists;
 }
 
 function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {

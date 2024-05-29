@@ -4,7 +4,7 @@ import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansion
 import { getAuthenticatedContext } from '../../context';
 import { getDatabasePool } from '../../database';
 import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery, Union } from '../sql';
-import { validateCoding } from './codesystemvalidatecode';
+import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
 import { abstractProperty, addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
@@ -253,7 +253,7 @@ async function computeExpansion(
     codeSystemCache[include.system] = codeSystem;
     if (include.concept) {
       const filteredCodings = filterCodings(include.concept, filter);
-      const validCodings = await Promise.all(filteredCodings.map((c) => validateCoding(codeSystem, c)));
+      const validCodings = await validateCodings(codeSystem, filteredCodings);
       for (const c of validCodings) {
         if (c) {
           c.id = undefined;

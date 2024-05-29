@@ -1,4 +1,4 @@
-import { accepted, concatUrls } from '@medplum/core';
+import { accepted, concatUrls, parseReference } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Group, Patient, Project } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
@@ -52,7 +52,7 @@ export async function groupExportResources(
       if (!member.entity?.reference) {
         continue;
       }
-      const [resourceType, memberId] = member.entity.reference.split('/') as [string, string];
+      const [resourceType, memberId] = parseReference(member.entity);
       try {
         if (resourceType === 'Patient') {
           const patient = await repo.readResource<Patient>('Patient', memberId);
