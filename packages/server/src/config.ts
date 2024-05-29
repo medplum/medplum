@@ -286,5 +286,5 @@ function isBooleanConfig(key: string): boolean {
 }
 
 function isObjectConfig(key: string): boolean {
-  return key === 'tls';
+  return key === 'tls' || key === 'ssl';
 }
