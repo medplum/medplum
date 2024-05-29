@@ -527,6 +527,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
+    if (resource.resourceType !== resourceType) {
+      throw new OperationOutcomeError(badRequest('Incorrect resource type'));
+    }
+    if (resource.id !== id) {
+      throw new OperationOutcomeError(badRequest('Incorrect ID'));
+    }
     await this.validateResource(resource);
 
     if (!this.canWriteResourceType(resourceType)) {
@@ -1026,6 +1032,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   ): Promise<T> {
     try {
       const resource = await this.readResourceImpl(resourceType, id);
+
+      if (patch.find((operation) => operation.path === '/resourceType')) {
+        throw new OperationOutcomeError(badRequest('Incorrect Resource Type'));
+      }
+      if (patch.find((operation) => operation.path === '/id')) {
+        throw new OperationOutcomeError(badRequest('Incorrect Id'));
+      }
 
       try {
         const patchResult = applyPatch(resource, patch).filter(Boolean);
