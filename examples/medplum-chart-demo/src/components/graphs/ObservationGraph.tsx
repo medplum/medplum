@@ -16,7 +16,7 @@ export function ObservationGraph(props: ObservationGraphProps): JSX.Element {
   const medplum = useMedplum();
 
   const { chartDatasets } = measurementsMeta[props.code.display as string];
-  const [chartData, setChartData] = useState<ChartData<'line', number[]>>();
+  const [chartData, setChartData] = useState<ChartData<'line', number[], string>>();
   const observations = medplum
     .searchResources('Observation', {
       code: props.code.code,

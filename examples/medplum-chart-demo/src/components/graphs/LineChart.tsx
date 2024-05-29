@@ -1,5 +1,5 @@
-import type { ChartData } from 'chart.js';
-import { lazy, Suspense } from 'react';
+import type { ChartData, ChartOptions } from 'chart.js';
+import { ComponentType, lazy, Suspense } from 'react';
 
 const lineChartOptions = {
   responsive: true,
@@ -16,7 +16,7 @@ const lineChartOptions = {
 };
 
 interface LineChartProps {
-  readonly chartData: ChartData<'line', number[]>;
+  readonly chartData: ChartData<'line', number[], string>;
 }
 
 const AsyncLine = lazy(async () => {
@@ -25,7 +25,9 @@ const AsyncLine = lazy(async () => {
   );
   Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
   const { Line } = await import('react-chartjs-2');
-  return { default: Line };
+  return {
+    default: Line as ComponentType<{ data: ChartData<'line', number[], string>; options: ChartOptions<'line'> }>,
+  };
 });
 
 export function LineChart({ chartData }: LineChartProps): JSX.Element {
