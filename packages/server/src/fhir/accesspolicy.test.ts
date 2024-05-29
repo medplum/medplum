@@ -37,7 +37,7 @@ import { getSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
   let testProject: Project;
-  const systemRepo = getSystemRepo();
+  let systemRepo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -46,6 +46,7 @@ describe('AccessPolicy', () => {
 
   beforeEach(async () => {
     testProject = (await createTestProject()).project;
+    systemRepo = getSystemRepo();
   });
 
   afterAll(async () => {
@@ -1598,7 +1599,7 @@ describe('AccessPolicy', () => {
 
       const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
 
-      const check1 = await repo2.readResource<Task>('Patient', patient.id as string);
+      const check1 = await repo2.readResource<Patient>('Patient', patient.id as string);
       expect(check1.id).toBe(patient.id);
 
       const check2 = await repo2.readResource<Project>('Project', project.id as string);

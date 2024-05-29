@@ -88,7 +88,16 @@ import { validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchImpl } from './search';
-import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery, periodToRangeString } from './sql';
+import {
+  Condition,
+  DeleteQuery,
+  Disjunction,
+  Expression,
+  InsertQuery,
+  SelectQuery,
+  TransactionIsolationLevel,
+  periodToRangeString,
+} from './sql';
 import { getBinaryStorage } from './storage';
 
 /**
@@ -1008,22 +1017,24 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[]
   ): Promise<T> {
     try {
-      const resource = await this.readResourceImpl(resourceType, id);
+      return this.withTransaction(async () => {
+        const resource = await this.readResourceFromDatabase<T>(resourceType, id);
 
-      try {
-        const patchResult = applyPatch(resource, patch).filter(Boolean);
-        if (patchResult.length > 0) {
-          throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+        try {
+          const patchResult = applyPatch(resource, patch).filter(Boolean);
+          if (patchResult.length > 0) {
+            throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+          }
+        } catch (err) {
+          throw new OperationOutcomeError(normalizeOperationOutcome(err));
         }
-      } catch (err) {
-        throw new OperationOutcomeError(normalizeOperationOutcome(err));
-      }
 
-      const result = await this.updateResourceImpl(resource, false);
-      await this.postCommit(async () => {
-        this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
+        const result = await this.updateResourceImpl(resource, false);
+        await this.postCommit(async () => {
+          this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
+        });
+        return result;
       });
-      return result;
     } catch (err) {
       this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
@@ -1945,9 +1956,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async withTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
+  async withTransaction<TResult>(
+    callback: (client: PoolClient) => Promise<TResult>,
+    options?: { isolation?: TransactionIsolationLevel }
+  ): Promise<TResult> {
     try {
-      const client = await (this.context.dbTransactions ? this.beginTransaction() : this.getConnection());
+      const client = await (this.context.dbTransactions
+        ? this.beginTransaction(options?.isolation)
+        : this.getConnection());
       const result = await callback(client);
       if (this.context.dbTransactions) {
         await this.commitTransaction();
@@ -1972,12 +1988,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async beginTransaction(): Promise<PoolClient> {
+  private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
-      await conn.query('BEGIN');
+      await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
     } else {
       await conn.query('SAVEPOINT sp' + this.transactionDepth);
     }
@@ -2130,11 +2146,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   close(): void {
-    if (this.transactionDepth > 0) {
-      throw new Error('Closing with active transaction');
-    }
     this.assertNotClosed();
     this.releaseConnection();
+    if (this.transactionDepth > 0) {
+      // Bad state, remove connection from pool
+      getRequestContext().logger.error('Closing Repository with active transaction');
+      this.releaseConnection(new Error('Closing Repository with active transaction'));
+    } else {
+      // Good state, return healthy connection to pool
+      this.releaseConnection();
+    }
     this.closed = true;
   }
 
