@@ -261,12 +261,20 @@ export class BackEnd extends Construct {
           resources: [`arn:aws:ses:${region}:${accountNumber}:identity/*`],
         }),
 
-        // S3: Read and write access to buckets
+        // S3: List storage bucket
         // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['s3:ListBucket', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],
-          resources: ['arn:aws:s3:::*'],
+          actions: ['s3:ListBucket'],
+          resources: [`arn:aws:s3:::${config.storageBucketName}`],
+        }),
+
+        // S3: Read, write, and delete access to storage bucket
+        // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+          resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
         }),
 
         // IAM: Pass role to innvoke lambda functions
