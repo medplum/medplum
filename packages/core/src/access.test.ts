@@ -143,7 +143,27 @@ describe('Access', () => {
         },
       ],
     };
-    expect(matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '1' }] } }, true));
-    expect(matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '2' }] } }, false));
+    expect(
+      matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '1' }] } }, true)
+    ).toEqual(true);
+    expect(
+      matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '2' }] } }, false)
+    ).toEqual(false);
+  });
+
+  test('Invalid SearchParameter in criteria in AccessPolicy', () => {
+    const ap: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          criteria: 'Patient?invalid=invalid',
+        },
+      ],
+    };
+
+    expect(() =>
+      matchesAccessPolicy(ap, { resourceType: 'Patient', name: [{ given: ['John'], family: 'Doe' }] }, false)
+    ).toThrow(/Unknown search parameter: invalid/);
   });
 });

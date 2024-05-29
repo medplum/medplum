@@ -426,7 +426,7 @@ async function tryGetSubscription(
 ): Promise<Subscription | undefined> {
   try {
     return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
-      checkCacheOnly: channelType === 'websocket',
+      allowReadFrom: channelType === 'websocket' ? ['cache'] : ['cache', 'database'],
     });
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
