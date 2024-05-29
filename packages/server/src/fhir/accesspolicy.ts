@@ -51,7 +51,6 @@ export async function getRepoForLogin(
     strictMode: project.strictMode,
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
-    dbTransactions: project.features?.includes('transactions'),
   });
 }
 

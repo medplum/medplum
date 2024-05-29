@@ -170,11 +170,6 @@ export interface RepositoryContext {
    * 3) "account" - Optional reference to a subaccount that owns the resource.
    */
   extendedMode?: boolean;
-
-  /**
-   * Optional flag determining whether database transactions should be used to isolate statements.
-   */
-  dbTransactions?: boolean;
 }
 
 export interface CacheEntry<T extends Resource = Resource> {
@@ -1067,7 +1062,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
       await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
-      await this.deleteCacheEntries(resourceType, ids);
+      await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
   }
 
@@ -1961,30 +1956,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     options?: { isolation?: TransactionIsolationLevel }
   ): Promise<TResult> {
     try {
-      const client = await (this.context.dbTransactions
-        ? this.beginTransaction(options?.isolation)
-        : this.getConnection());
+      const client = await this.beginTransaction(options?.isolation);
       const result = await callback(client);
-      if (this.context.dbTransactions) {
-        await this.commitTransaction();
-      } else {
-        this.releaseConnection();
-      }
+      await this.commitTransaction();
       return result;
     } catch (err) {
       const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(err), err);
-      if (this.context.dbTransactions) {
-        await this.rollbackTransaction(operationOutcomeError);
-      } else {
-        this.releaseConnection(operationOutcomeError);
-      }
+      await this.rollbackTransaction(operationOutcomeError);
       throw operationOutcomeError;
     } finally {
-      if (this.context.dbTransactions) {
-        this.endTransaction();
-      } else {
-        this.releaseConnection();
-      }
+      this.endTransaction();
     }
   }
 
@@ -2005,10 +1986,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
       await conn.query('COMMIT');
+      this.transactionDepth--;
       this.releaseConnection();
       await this.processPostCommit();
     } else {
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
+      this.transactionDepth--;
     }
   }
 
@@ -2017,15 +2000,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
+      this.transactionDepth--;
       this.releaseConnection(error);
     } else {
       await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+      this.transactionDepth--;
     }
   }
 
   private endTransaction(): void {
-    this.assertInTransaction();
-    this.transactionDepth--;
     if (this.transactionDepth === 0) {
       this.releaseConnection();
     }
@@ -2098,6 +2081,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async setCacheEntry(resource: Resource): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
+      // debugger;
       return;
     }
 

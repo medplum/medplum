@@ -13,7 +13,7 @@ describe('FHIR Repo Transactions', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    repo = (await createTestProject({ withRepo: true, project: { features: ['transactions'] } })).repo;
+    repo = (await createTestProject({ withRepo: true })).repo;
   });
 
   afterAll(async () => {

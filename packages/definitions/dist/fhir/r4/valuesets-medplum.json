@@ -163,11 +163,6 @@
             "code": "websocket-subscriptions",
             "display": "WebSocket Subscriptions",
             "definition": "WebSocket Subscriptions"
-          },
-          {
-            "code": "transactions",
-            "display": "Database Transactions",
-            "definition": "Use DB-level transactions to provide stronger data integrity"
           }
         ]
       }
