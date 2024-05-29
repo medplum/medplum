@@ -16,8 +16,8 @@ export interface BackboneElementInputProps extends BaseInputProps {
   /** (optional) Profile URL of the structure definition represented by the backbone element */
   readonly profileUrl?: string;
   /**
-   * (optional) If provided, inputs specified in `accessPolicy.readonlyFields` are not editable
-   * and inputs specified in `accessPolicy.hiddenFields` are not shown.
+   * (optional) If provided, inputs specified in `accessPolicyResource.readonlyFields` are not editable
+   * and inputs specified in `accessPolicyResource.hiddenFields` are not shown.
    */
   readonly accessPolicyResource?: AccessPolicyResource;
 }
