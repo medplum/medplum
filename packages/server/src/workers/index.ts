@@ -1,7 +1,7 @@
 import { Resource } from '@medplum/fhirtypes';
+import { BackgroundJobContext } from '@medplum/core';
 import { MedplumServerConfig } from '../config';
 import { globalLogger } from '../logger';
-import { BackgroundJobContext } from './context';
 import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
 import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
 import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';

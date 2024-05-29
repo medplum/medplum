@@ -28,6 +28,7 @@ packages/examples/dist/
 packages/fhir-router/dist/
 packages/generator/dist/
 packages/generator/output/
+packages/generator/compare.html
 packages/graphiql/dist/
 packages/graphiql/public/
 packages/health-gorilla/dist/

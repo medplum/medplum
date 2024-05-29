@@ -1,5 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
+import { allOk } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -136,6 +137,23 @@ describe('SuperAdminPage', () => {
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Database Stats', async () => {
+    setup();
+
+    medplum.router.add('POST', '$db-stats', async () => {
+      return [
+        allOk,
+        { resourceType: 'Parameters', parameter: [{ name: 'tableString', valueString: 'table1: 100\n' }] },
+      ];
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Get Database Stats' }));
+    });
+
+    expect(await screen.findByText('table1: 100')).toBeInTheDocument();
   });
 
   test('Access denied', async () => {

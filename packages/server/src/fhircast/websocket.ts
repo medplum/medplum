@@ -1,6 +1,6 @@
 import { generateId } from '@medplum/core';
-import { AsyncLocalStorage } from 'async_hooks';
-import { IncomingMessage } from 'http';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { IncomingMessage } from 'node:http';
 import ws from 'ws';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';

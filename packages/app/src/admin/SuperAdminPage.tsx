@@ -1,6 +1,8 @@
-import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
+import { Parameters } from '@medplum/fhirtypes';
 import {
   DateTimeInput,
   Document,
@@ -11,9 +13,13 @@ import {
   useMedplum,
 } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
+import { ReactNode, useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
+  const [opened, { open, close }] = useDisclosure(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalContent, setModalContent] = useState<ReactNode | undefined>();
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -57,6 +63,17 @@ export function SuperAdminPage(): JSX.Element {
     medplum
       .post('admin/super/setpassword', formData)
       .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function getDatabaseStats(): void {
+    medplum
+      .post('fhir/R4/$db-stats', {})
+      .then((params: Parameters) => {
+        setModalTitle('Database Stats');
+        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
+        open();
+      })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
@@ -159,6 +176,15 @@ export function SuperAdminPage(): JSX.Element {
           <Button type="submit">Force Set Password</Button>
         </Stack>
       </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Stats</Title>
+      <p>Query current table statistics from the database.</p>
+      <Form onSubmit={getDatabaseStats}>
+        <Button type="submit">Get Database Stats</Button>
+      </Form>
+      <Modal opened={opened} onClose={close} title={modalTitle} centered>
+        {modalContent}
+      </Modal>
     </Document>
   );
 }
