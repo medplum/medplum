@@ -60,7 +60,6 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger, getRequestContext } from '../context';
 import { getDatabasePool } from '../database';
-import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -91,7 +90,16 @@ import { validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchImpl } from './search';
-import { Condition, DeleteQuery, Disjunction, Expression, InsertQuery, SelectQuery, periodToRangeString } from './sql';
+import {
+  Condition,
+  DeleteQuery,
+  Disjunction,
+  Expression,
+  InsertQuery,
+  SelectQuery,
+  TransactionIsolationLevel,
+  periodToRangeString,
+} from './sql';
 import { getBinaryStorage } from './storage';
 
 /**
@@ -194,6 +202,8 @@ const lookupTables: LookupTable[] = [
  */
 export class Repository extends BaseRepository implements FhirRepository<PoolClient>, Disposable {
   private readonly context: RepositoryContext;
+  private conn?: PoolClient;
+  private transactionDepth = 0;
   private closed = false;
 
   constructor(context: RepositoryContext) {
@@ -1025,18 +1035,20 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     patch: Operation[]
   ): Promise<T> {
     try {
-      const resource = await this.readResourceImpl(resourceType, id);
+      const result = await this.withTransaction(async () => {
+        const resource = await this.readResourceFromDatabase<T>(resourceType, id);
 
-      try {
-        const patchResult = applyPatch(resource, patch).filter(Boolean);
-        if (patchResult.length > 0) {
-          throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+        try {
+          const patchResult = applyPatch(resource, patch).filter(Boolean);
+          if (patchResult.length > 0) {
+            throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+          }
+        } catch (err) {
+          throw new OperationOutcomeError(normalizeOperationOutcome(err));
         }
-      } catch (err) {
-        throw new OperationOutcomeError(normalizeOperationOutcome(err));
-      }
 
-      const result = await this.updateResourceImpl(resource, false);
+        return this.updateResourceImpl(resource, false);
+      });
       this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
@@ -1929,32 +1941,65 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    */
   getDatabaseClient(): Pool | PoolClient {
     this.assertNotClosed();
-    return getDatabasePool();
+    // If in a transaction, then use the transaction client.
+    // Otherwise, use the pool client.
+    return this.conn ?? getDatabasePool();
   }
 
-  async withTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
-    const conn = await getDatabasePool().connect();
+  /**
+   * Returns a proper database connection.
+   * Unlike getDatabaseClient(), this method always returns a PoolClient.
+   * @returns Database connection.
+   */
+  private async getConnection(): Promise<PoolClient> {
+    this.assertNotClosed();
+    if (!this.conn) {
+      this.conn = await getDatabasePool().connect();
+    }
+    return this.conn;
+  }
+
+  /**
+   * Releases the database connection.
+   * Include an error to remove the connection from the pool.
+   * See: https://github.com/brianc/node-postgres/blob/master/packages/pg-pool/index.js#L333
+   * @param err - Optional error to remove the connection from the pool.
+   */
+  private releaseConnection(err?: boolean | Error): void {
+    if (this.conn) {
+      this.conn.release(err);
+      this.conn = undefined;
+    }
+  }
+
+  async withTransaction<TResult>(
+    callback: (client: PoolClient) => Promise<TResult>,
+    options?: { isolation?: TransactionIsolationLevel }
+  ): Promise<TResult> {
     try {
-      await conn.query('BEGIN');
-      const result = await callback(conn);
-      await conn.query('COMMIT');
-      conn.release();
+      const client = await this.beginTransaction(options?.isolation);
+      const result = await callback(client);
+      await this.commitTransaction();
       return result;
     } catch (err: any) {
-      globalLogger.error('Transaction error', err);
       const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(err), err);
-      try {
-        await conn.query('ROLLBACK');
-      } catch (err2: any) {
-        globalLogger.error('Rollback error', err2);
-      }
-      conn.release(err);
+      await this.rollbackTransaction(operationOutcomeError);
       throw operationOutcomeError;
+    } finally {
+      this.endTransaction();
     }
   }
 
   close(): void {
     this.assertNotClosed();
+    if (this.transactionDepth > 0) {
+      // Bad state, remove connection from pool
+      getRequestContext().logger.error('Closing Repository with active transaction');
+      this.releaseConnection(new Error('Closing Repository with active transaction'));
+    } else {
+      // Good state, return healthy connection to pool
+      this.releaseConnection();
+    }
     this.closed = true;
   }
 
@@ -1965,6 +2010,54 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private assertNotClosed(): void {
     if (this.closed) {
       throw new Error('Already closed');
+    }
+  }
+
+  private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
+    this.assertNotClosed();
+    this.transactionDepth++;
+    const conn = await this.getConnection();
+    if (this.transactionDepth === 1) {
+      await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
+    } else {
+      await conn.query('SAVEPOINT sp' + this.transactionDepth);
+    }
+    return conn;
+  }
+
+  private async commitTransaction(): Promise<void> {
+    this.assertInTransaction();
+    const conn = await this.getConnection();
+    if (this.transactionDepth === 1) {
+      await conn.query('COMMIT');
+      this.releaseConnection();
+    } else {
+      await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
+    }
+  }
+
+  private async rollbackTransaction(error: Error): Promise<void> {
+    this.assertInTransaction();
+    const conn = await this.getConnection();
+    if (this.transactionDepth === 1) {
+      await conn.query('ROLLBACK');
+      this.releaseConnection(error);
+    } else {
+      await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+    }
+  }
+
+  private endTransaction(): void {
+    this.assertInTransaction();
+    this.transactionDepth--;
+    if (this.transactionDepth === 0) {
+      this.releaseConnection();
+    }
+  }
+
+  private assertInTransaction(): void {
+    if (this.transactionDepth <= 0) {
+      throw new Error('Not in transaction');
     }
   }
 }
