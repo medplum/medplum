@@ -13,6 +13,13 @@ export async function upgraderMain(argv: string[]): Promise<void> {
 
   // NOTE: Windows past this point, for now
 
+  if (!process.send) {
+    console.error('Upgrader not started as a child process with Node IPC enabled. Aborting...');
+    process.exit(1);
+  }
+
+  process.send({ type: 'STARTED' });
+
   // Make sure if version is given, it matches semver
   if (argv[3] && !/\d+\.\d+\.\d+/.test(argv[3])) {
     throw new Error('Invalid version specified');

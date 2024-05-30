@@ -529,8 +529,21 @@ export class App {
 
     try {
       const command = isSea() ? __filename : `${process.execPath} ${__filename}`;
-      child = spawn(command, { detached: true, stdio: [, , , 'pipe'] });
-      child.on('error');
+      child = spawn(command, { detached: true, stdio: [null, null, null, 'ipc'] });
+      await new Promise<void>((resolve, reject) => {
+        const childTimeout = setTimeout(
+          () => reject(new Error('Timed out while waiting for message from child')),
+          5000
+        );
+        child.on('message', () => {
+          resolve();
+          clearTimeout(childTimeout);
+        });
+      });
+
+      child.on('error', (err) => {
+        console.error(err);
+      });
     } catch (err) {
       const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}': ${normalizeErrorString(err)}`;
       this.log.error(errMsg);
