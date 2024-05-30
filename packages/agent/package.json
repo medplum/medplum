@@ -35,7 +35,7 @@
     "@types/async-eventemitter": "0.2.4",
     "@types/ws": "8.5.10",
     "mock-socket": "9.3.1",
-    "pkg": "5.8.1"
+    "postject": "1.0.0-alpha.6"
   },
   "engines": {
     "node": ">=18.0.0"
