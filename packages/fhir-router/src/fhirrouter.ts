@@ -201,12 +201,13 @@ export type RestInteraction =
   | CapabilityStatementRestInteraction['code']
   | CapabilityStatementRestResourceInteraction['code']
   | 'operation';
-type RouteMetadata = {
+
+export type FhirRouteMetadata = {
   interaction: RestInteraction;
 };
 
 export class FhirRouter extends EventTarget {
-  readonly router = new Router<FhirRouteHandler, RouteMetadata>();
+  readonly router = new Router<FhirRouteHandler, FhirRouteMetadata>();
   readonly options: FhirOptions;
 
   constructor(options = {}) {
@@ -232,7 +233,7 @@ export class FhirRouter extends EventTarget {
     this.router.add(method, path, handler, { interaction: interaction ?? 'operation' });
   }
 
-  find(method: HttpMethod, path: string): RouteResult<FhirRouteHandler, RouteMetadata> | undefined {
+  find(method: HttpMethod, path: string): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
     return this.router.find(method, path);
   }
 

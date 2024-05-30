@@ -880,7 +880,7 @@ describe('Batch', () => {
     });
 
     expect(bundle.entry).toHaveLength(1);
-    expect(bundle.entry?.[0]?.response?.status).toEqual('400');
+    expect(bundle.entry?.[0]?.response?.status).toEqual('404');
   });
 
   test('Process batch missing request.url', async () => {

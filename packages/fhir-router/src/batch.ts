@@ -11,9 +11,9 @@ import {
   splitN,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
+import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
 import { FhirRepository } from './repo';
-import { HttpMethod } from './urlrouter';
+import { HttpMethod, RouteResult } from './urlrouter';
 import { IncomingHttpHeaders } from 'node:http';
 
 /**
@@ -38,6 +38,12 @@ const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 const uuidUriPrefix = 'urn:uuid';
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
+
+// type BundlePreprocessInfo = {
+//   ordering: number[];
+//   requiresStrongTransaction: boolean;
+//   updates: number;
+// };
 
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
@@ -109,13 +115,22 @@ class BatchProcessor {
       throw new OperationOutcomeError(badRequest('Missing bundle entries'));
     }
 
-    const bucketedEntries: Record<BundleEntryRequest['method'], number[]> = {
-      DELETE: [],
-      POST: [],
-      PUT: [],
-      PATCH: [],
-      GET: [],
-      HEAD: [],
+    const bucketedEntries: Record<RestInteraction, number[]> = {
+      // Processed in order, by interaction type
+      transaction: [],
+      batch: [],
+      delete: [],
+      create: [],
+      update: [],
+      patch: [],
+      operation: [],
+      'search-system': [],
+      'search-type': [],
+      read: [],
+      vread: [],
+      'history-system': [],
+      'history-type': [],
+      'history-instance': [],
     };
     const seenIdentities = new Set<string>();
 
@@ -133,7 +148,8 @@ class BatchProcessor {
         results[i] = result;
         continue;
       }
-      bucketedEntries[method]?.push(i);
+      const route = this.getRouteForEntry(entry);
+      bucketedEntries[route?.data?.interaction as RestInteraction]?.push(i);
     }
 
     const result = [];
@@ -172,22 +188,28 @@ class BatchProcessor {
   }
 
   private async resolveIdentity(entry: BundleEntry, path: string): Promise<BundleEntryIdentity | undefined> {
-    switch (entry.request?.method) {
-      case 'POST':
-        return this.processCreate(entry);
-      case 'DELETE':
-      case 'PUT':
-      case 'PATCH':
-        return this.processModification(entry, path);
-      case 'GET':
-      case 'HEAD':
-        // Ignore read-only requests
-        return undefined;
-      default:
-        throw new OperationOutcomeError(
-          badRequest('Invalid batch request method: ' + entry.request?.method, path + '.request.method')
-        );
+    const route = this.getRouteForEntry(entry);
+    const interaction = route?.data?.interaction;
+    if (!interaction) {
+      throw new OperationOutcomeError(notFound);
     }
+
+    switch (interaction) {
+      case 'create':
+        return this.processCreate(entry);
+      case 'delete':
+      case 'update':
+      case 'patch':
+        return this.processModification(entry, path);
+      default:
+        // Ignore read-only and complex operations
+        return undefined;
+    }
+  }
+
+  private getRouteForEntry(entry: BundleEntry): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
+    const [requestPath] = splitN(entry.request?.url as string, '?', 2);
+    return this.router.find(entry.request?.method as HttpMethod, requestPath);
   }
 
   private async processCreate(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
@@ -240,7 +262,14 @@ class BatchProcessor {
    * @returns The bundle entry response.
    */
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
-    const [outcome, resource] = await this.performBatchOperation(entry);
+    const [requestPath] = splitN(entry.request?.url as string, '?', 2);
+    const route = this.router.find(entry.request?.method as HttpMethod, requestPath);
+
+    const request = this.parseBatchRequest(entry, route?.params);
+    const [outcome, resource] = route
+      ? await route.handler(request, this.repo, this.router, { batch: true })
+      : ([notFound] as [OperationOutcome]);
+
     if (!isOk(outcome) && this.bundle.type === 'transaction') {
       throw new OperationOutcomeError(outcome);
     }
@@ -279,17 +308,6 @@ class BatchProcessor {
       body,
       headers,
     };
-  }
-
-  private async performBatchOperation(entry: BundleEntry): Promise<FhirResponse> {
-    const [requestPath] = splitN(entry.request?.url as string, '?', 2);
-    const route = this.router.find(entry.request?.method as HttpMethod, requestPath);
-
-    const request = this.parseBatchRequest(entry, route?.params);
-    const response = route
-      ? await route.handler(request, this.repo, this.router, { batch: true })
-      : ([notFound] as [OperationOutcome]);
-    return response;
   }
 
   private parsePatchBody(entry: BundleEntry): any {
