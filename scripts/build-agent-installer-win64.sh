@@ -66,8 +66,12 @@ export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
 # Move into packages/agent
 pushd packages/agent
 
+pushd ../..
+
 # Build the executable
 ./scripts/build-agent-sea-win64.sh
+
+popd
 
 if [ ! SKIP_SIGNING ]; then
   # Download JSign
