@@ -33,7 +33,7 @@ export function FormSection(props: FormSectionProps): JSX.Element {
     <Input.Wrapper
       id={props.htmlFor}
       label={label}
-      classNames={{ label: props?.readonly && classes.dimmed }}
+      classNames={{ label: props?.readonly ? classes.dimmed : undefined }}
       description={props.description}
       withAsterisk={props.withAsterisk}
       error={getErrorsForInput(props.outcome, props.errorExpression ?? props.htmlFor)}

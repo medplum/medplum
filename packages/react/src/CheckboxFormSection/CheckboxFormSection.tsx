@@ -32,7 +32,7 @@ export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Elemen
         <Input.Wrapper
           id={props.htmlFor}
           label={label}
-          classNames={{ label: props?.readonly && classes.dimmed }}
+          classNames={{ label: props?.readonly ? classes.dimmed : undefined }}
           description={props.description}
           withAsterisk={props.withAsterisk}
         >
