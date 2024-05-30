@@ -23,7 +23,7 @@ npm run build
 node --experimental-sea-config sea-config.json
 
 # Copy the local node binary
-node -e "require('fs').copyFileSync(process.execPath, 'dist\medplum-agent-$MEDPLUM_VERSION-win64.exe')" 
+node -e "require('fs').copyFileSync(process.execPath, 'dist/medplum-agent-$MEDPLUM_VERSION-win64.exe')" 
 
 # Remove signature from binary
 signtool remove -s dist/medplum-agent-$MEDPLUM_VERSION-win64.exe
