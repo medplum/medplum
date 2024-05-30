@@ -519,11 +519,6 @@ async function createAuditEvent(
     return;
   }
 
-  const maxDescLength = 10 * 1024;
-  if (outcomeDesc.length > maxDescLength) {
-    outcomeDesc = outcomeDesc.substring(outcomeDesc.length - maxDescLength);
-  }
-
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
@@ -551,17 +546,25 @@ async function createAuditEvent(
     },
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
-    outcomeDesc,
     extension: buildTracingExtension(),
   };
 
+  const config = getConfig();
   const destination = bot.auditEventDestination ?? ['resource'];
   if (destination.includes('resource')) {
     const systemRepo = getSystemRepo();
-    await systemRepo.createResource<AuditEvent>(auditEvent);
+    const maxDescLength = config.maxBotLogLengthForResource ?? 10 * 1024;
+    await systemRepo.createResource<AuditEvent>({
+      ...auditEvent,
+      outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
+    });
   }
   if (destination.includes('log')) {
-    logAuditEvent(auditEvent);
+    const maxDescLength = config.maxBotLogLengthForLogs ?? 10 * 1024;
+    logAuditEvent({
+      ...auditEvent,
+      outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
+    });
   }
 }
 
