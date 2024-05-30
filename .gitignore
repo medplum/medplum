@@ -60,3 +60,4 @@ medplum-server.tar.gz
 
 # Agent artifacts
 packages/agent/*agent-*-linux*
+packages/agent/sea-prep.blob

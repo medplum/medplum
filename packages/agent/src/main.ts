@@ -1,6 +1,7 @@
 import { MedplumClient, parseLogLevel } from '@medplum/core';
 import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
+import { upgraderMain } from './upgrader';
 
 interface Args {
   baseUrl: string;
@@ -10,7 +11,7 @@ interface Args {
   logLevel?: string;
 }
 
-export async function main(argv: string[]): Promise<App> {
+export async function agentMain(argv: string[]): Promise<App> {
   let args: Args;
   if (argv.length >= 6) {
     args = readCommandLineArgs(argv);
@@ -52,7 +53,7 @@ export async function main(argv: string[]): Promise<App> {
   await app.start();
 
   process.on('SIGINT', async () => {
-    console.log('Gracefully shutting down from SIGINT (Crtl-C)');
+    console.log('Gracefully shutting down from SIGINT (Ctrl-C)');
     await app.stop();
     process.exit();
   });
@@ -75,5 +76,9 @@ function readPropertiesFile(fileName: string): Args {
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
-  main(process.argv).catch(console.error);
+  if (process.argv[2] === '--upgrade') {
+    upgraderMain(process.argv).catch(console.error);
+  } else {
+    agentMain(process.argv).catch(console.error);
+  }
 }

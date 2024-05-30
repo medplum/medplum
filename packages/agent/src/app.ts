@@ -17,17 +17,16 @@ import {
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { ChildProcess, ExecException, ExecOptions, Serializable, exec, fork } from 'node:child_process';
+import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:child_process';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
-import path from 'node:path';
+import { isSea } from 'node:sea';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-
-const UPGRADE_MANIFEST_PATH = path.resolve(__dirname, 'upgrade.json');
+import { UPGRADE_MANIFEST_PATH, checkIfValidMedplumVersion, fetchLatestVersionString } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -515,20 +514,23 @@ export class App {
 
   private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
     let child: ChildProcess;
-    try {
-      child = fork('../../agent-upgrader/dist/cjs/index.js', { detached: true });
 
-      // Wait for STARTED message from child
-      await new Promise<void>((resolve) => {
-        const listener = (msg: Serializable): void => {
-          const parsedMsg = JSON.parse(msg as string);
-          if (parsedMsg.type === 'STARTED') {
-            child.off('message', listener);
-            resolve();
-          }
-        };
-        child.on('message', listener);
-      });
+    // If there is an explicit version, check if it's valid
+    if (message.version && !(await checkIfValidMedplumVersion(message.version))) {
+      const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}'. '${message.version}' is not a valid version`;
+      this.log.error(errMsg);
+      this.addToWebSocketQueue({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
+    try {
+      const command = isSea() ? __filename : `${process.execPath} ${__filename}`;
+      child = spawn(command, { detached: true, stdio: [, , , 'pipe'] });
+      child.on('error');
     } catch (err) {
       const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}': ${normalizeErrorString(err)}`;
       this.log.error(errMsg);
@@ -547,7 +549,10 @@ export class App {
       // Write a manifest file
       writeFileSync(
         UPGRADE_MANIFEST_PATH,
-        JSON.stringify({ previousVersion: MEDPLUM_VERSION, targetVersion: message.version ?? 'latest' }),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion: message.version ?? (await fetchLatestVersionString()),
+        }),
         { encoding: 'utf-8' }
       );
 

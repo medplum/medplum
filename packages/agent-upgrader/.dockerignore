@@ -1,9 +1,0 @@
-# Ignore everything
-*
-
-# But not these files...
-!.gitignore
-!Dockerfile
-
-# ...even if they are in subdirectories
-!*/

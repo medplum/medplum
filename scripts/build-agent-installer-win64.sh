@@ -66,21 +66,8 @@ export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
 # Move into packages/agent
 pushd packages/agent
 
-# Build the agent
-npm run build
-
-pushd ../agent-upgrader
-
-# Build the upgrader
-npm run build
-
-popd
-
 # Build the executable
-npx pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe" --options no-warnings
-
-# Build the upgrader executable
-npx pkg ../agent-upgrader/dist/cjs/index.cjs --targets node18-win-x64 --output "dist/medplum-agent-upgrader-$MEDPLUM_VERSION-win64.exe" --options no-warnings
+./scripts/build-agent-sea-win64.sh
 
 if [ ! SKIP_SIGNING ]; then
   # Download JSign
@@ -98,13 +85,6 @@ if [ ! SKIP_SIGNING ]; then
     --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
     --alias "$SM_CERT_ALIAS" \
     "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe"
-
-  # Sign the upgrader executable
-  java -jar jsign-5.0.jar \
-    --storetype DIGICERTONE \
-    --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
-    --alias "$SM_CERT_ALIAS" \
-    "dist/medplum-agent-upgrader-$MEDPLUM_VERSION-win64.exe"
 fi
 
 # Download Shawl exe

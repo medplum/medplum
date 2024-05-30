@@ -1,7 +1,7 @@
 import { LogLevel } from '@medplum/core';
-import fs from 'fs';
+import fs from 'node:fs';
 import { App } from './app';
-import { main } from './main';
+import { agentMain } from './main';
 
 describe('Main', () => {
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe('Main', () => {
 
   test('Missing arguments', async () => {
     try {
-      await main(['node', 'index.js']);
+      await agentMain(['node', 'index.js']);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toBe('process.exit');
@@ -40,7 +40,7 @@ describe('Main', () => {
 
   test('Help command', async () => {
     try {
-      await main(['node', 'index.js', '--help']);
+      await agentMain(['node', 'index.js', '--help']);
     } catch (err: any) {
       expect(err.message).toBe('process.exit');
     }
@@ -50,7 +50,7 @@ describe('Main', () => {
     (console.log as jest.Mock).mockClear();
 
     try {
-      await main(['node', 'index.js', '-h']);
+      await agentMain(['node', 'index.js', '-h']);
     } catch (err: any) {
       expect(err.message).toBe('process.exit');
     }
@@ -59,7 +59,7 @@ describe('Main', () => {
   });
 
   test('Command line arguments success', async () => {
-    const app = await main(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
+    const app = await agentMain(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
     await app.stop();
     expect(process.exit).not.toHaveBeenCalled();
   });
@@ -68,7 +68,7 @@ describe('Main', () => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(true);
     jest.spyOn(fs, 'readFileSync').mockReturnValue('');
     try {
-      await main([]);
+      await agentMain([]);
       throw new Error('Expected error');
     } catch (err: any) {
       expect(err.message).toBe('process.exit');
@@ -90,7 +90,7 @@ describe('Main', () => {
           'logLevel=DEBUG',
         ].join('\n')
       );
-    const app = await main(['node', 'index.js']);
+    const app = await agentMain(['node', 'index.js']);
     expect(app.logLevel).toEqual(LogLevel.DEBUG);
     await app.stop();
     expect(process.exit).not.toHaveBeenCalled();
