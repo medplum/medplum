@@ -210,3 +210,9 @@ export interface ProjectMembershipAccessParameter {
    */
   valueReference?: Reference;
 }
+
+/**
+ * Value of the parameter - must be one of a constrained set of the data
+ * types (see [Extensibility](extensibility.html) for a list).
+ */
+export type ProjectMembershipAccessParameterValue = Reference | string;

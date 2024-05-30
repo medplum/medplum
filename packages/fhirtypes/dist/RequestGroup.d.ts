@@ -392,6 +392,11 @@ export interface RequestGroupAction {
 }
 
 /**
+ * An optional value describing when the action should be performed.
+ */
+export type RequestGroupActionTiming = Age | Duration | Period | Range | string | Timing;
+
+/**
  * An expression that describes applicability criteria, or start/stop
  * conditions for the action.
  */
@@ -508,3 +513,9 @@ export interface RequestGroupActionRelatedAction {
    */
   offsetRange?: Range;
 }
+
+/**
+ * A duration or range of durations to apply to the relationship. For
+ * example, 30-60 minutes before.
+ */
+export type RequestGroupActionRelatedActionOffset = Duration | Range;

@@ -828,3 +828,8 @@ export interface ValueSetExpansionParameter {
    */
   valueDateTime?: string;
 }
+
+/**
+ * The value of the parameter.
+ */
+export type ValueSetExpansionParameterValue = boolean | number | string;

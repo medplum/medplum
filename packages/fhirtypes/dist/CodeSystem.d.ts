@@ -495,6 +495,11 @@ export interface CodeSystemConceptProperty {
 }
 
 /**
+ * The value of this property.
+ */
+export type CodeSystemConceptPropertyValue = boolean | Coding | number | string;
+
+/**
  * A filter that can be used in a value set compose statement when
  * selecting concepts using a filter.
  */

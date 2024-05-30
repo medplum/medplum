@@ -241,3 +241,8 @@ export interface Media {
    */
   note?: Annotation[];
 }
+
+/**
+ * The date and time(s) at which the media was collected.
+ */
+export type MediaCreated = Period | string;

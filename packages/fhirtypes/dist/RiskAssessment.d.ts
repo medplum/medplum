@@ -203,6 +203,11 @@ export interface RiskAssessment {
 }
 
 /**
+ * The date (and possibly time) the risk assessment was performed.
+ */
+export type RiskAssessmentOccurrence = Period | string;
+
+/**
  * Describes the expected outcome for the subject.
  */
 export interface RiskAssessmentPrediction {
@@ -289,3 +294,14 @@ export interface RiskAssessmentPrediction {
    */
   rationale?: string;
 }
+
+/**
+ * Indicates how likely the outcome is (in the specified timeframe).
+ */
+export type RiskAssessmentPredictionProbability = number | Range;
+
+/**
+ * Indicates the period of time or age range of the subject to which the
+ * specified probability applies.
+ */
+export type RiskAssessmentPredictionWhen = Period | Range;

@@ -274,6 +274,18 @@ export interface SpecimenCollection {
 }
 
 /**
+ * Time when specimen was collected from subject - the physiologically
+ * relevant time.
+ */
+export type SpecimenCollectionCollected = Period | string;
+
+/**
+ * Abstinence or reduction from some or all food, drink, or both, for a
+ * period of time prior to sample collection.
+ */
+export type SpecimenCollectionFastingStatus = CodeableConcept | Duration;
+
+/**
  * The container holding the specimen.  The recursive nature of
  * containers; i.e. blood in tube in tray in rack is not addressed here.
  */
@@ -357,6 +369,12 @@ export interface SpecimenContainer {
 }
 
 /**
+ * Introduced substance to preserve, maintain or enhance the specimen.
+ * Examples: Formalin, Citrate, EDTA.
+ */
+export type SpecimenContainerAdditive = CodeableConcept | Reference<Substance>;
+
+/**
  * Details concerning processing and processing steps for the specimen.
  */
 export interface SpecimenProcessing {
@@ -425,3 +443,10 @@ export interface SpecimenProcessing {
    */
   timePeriod?: Period;
 }
+
+/**
+ * A record of the time or period when the specimen processing occurred.
+ * For example the time of sample fixation or the period of time the
+ * sample was in formalin.
+ */
+export type SpecimenProcessingTime = Period | string;

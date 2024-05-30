@@ -284,6 +284,17 @@ export interface ChargeItem {
 }
 
 /**
+ * Date/time(s) or duration when the charged service was applied.
+ */
+export type ChargeItemOccurrence = Period | string | Timing;
+
+/**
+ * Identifies the device, food, drug or other product being charged
+ * either by type code or reference to an instance.
+ */
+export type ChargeItemProduct = CodeableConcept | Reference<Device | Medication | Substance>;
+
+/**
  * Indicates who or what performed or participated in the charged
  * service.
  */

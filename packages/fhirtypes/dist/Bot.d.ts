@@ -170,3 +170,8 @@ export interface Bot {
    */
   code?: string;
 }
+
+/**
+ * A schedule for the bot to be executed.
+ */
+export type BotCron = string | Timing;

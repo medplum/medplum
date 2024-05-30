@@ -263,6 +263,11 @@ export interface MessageDefinition {
 }
 
 /**
+ * Event code or link to the EventDefinition.
+ */
+export type MessageDefinitionEvent = Coding | string;
+
+/**
  * Indicates what types of messages may be sent as an application-level
  * response to this message.
  */

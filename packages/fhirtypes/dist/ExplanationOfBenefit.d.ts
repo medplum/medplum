@@ -433,6 +433,11 @@ export interface ExplanationOfBenefitAccident {
 }
 
 /**
+ * The physical location of the accident event.
+ */
+export type ExplanationOfBenefitAccidentLocation = Address | Reference<Location>;
+
+/**
  * The first-tier service adjudications for payor added product or
  * service lines.
  */
@@ -594,6 +599,17 @@ export interface ExplanationOfBenefitAddItem {
    */
   detail?: ExplanationOfBenefitAddItemDetail[];
 }
+
+/**
+ * The date or dates when the service or product was supplied, performed
+ * or completed.
+ */
+export type ExplanationOfBenefitAddItemServiced = Period | string;
+
+/**
+ * Where the product or service was provided.
+ */
+export type ExplanationOfBenefitAddItemLocation = Address | CodeableConcept | Reference<Location>;
 
 /**
  * The second-tier service adjudications for payor added services.
@@ -940,6 +956,16 @@ export interface ExplanationOfBenefitBenefitBalanceFinancial {
 }
 
 /**
+ * The quantity of the benefit which is permitted under the coverage.
+ */
+export type ExplanationOfBenefitBenefitBalanceFinancialAllowed = Money | number | string;
+
+/**
+ * The quantity of the benefit which have been consumed to date.
+ */
+export type ExplanationOfBenefitBenefitBalanceFinancialUsed = Money | number;
+
+/**
  * The members of the team who provided the products and services.
  */
 export interface ExplanationOfBenefitCareTeam {
@@ -1083,6 +1109,12 @@ export interface ExplanationOfBenefitDiagnosis {
    */
   packageCode?: CodeableConcept;
 }
+
+/**
+ * The nature of illness or problem in a coded form or as a reference to
+ * an external defined Condition.
+ */
+export type ExplanationOfBenefitDiagnosisDiagnosis = CodeableConcept | Reference<Condition>;
 
 /**
  * Financial instruments for reimbursement for the health care products
@@ -1337,6 +1369,17 @@ export interface ExplanationOfBenefitItem {
    */
   detail?: ExplanationOfBenefitItemDetail[];
 }
+
+/**
+ * The date or dates when the service or product was supplied, performed
+ * or completed.
+ */
+export type ExplanationOfBenefitItemServiced = Period | string;
+
+/**
+ * Where the product or service was provided.
+ */
+export type ExplanationOfBenefitItemLocation = Address | CodeableConcept | Reference<Location>;
 
 /**
  * If this item is a group then the values here are a summary of the
@@ -1853,6 +1896,12 @@ export interface ExplanationOfBenefitProcedure {
 }
 
 /**
+ * The code or reference to a Procedure resource which identifies the
+ * clinical intervention performed.
+ */
+export type ExplanationOfBenefitProcedureProcedure = CodeableConcept | Reference<Procedure>;
+
+/**
  * A note that describes or explains adjudication results in a human
  * readable form.
  */
@@ -2082,6 +2131,18 @@ export interface ExplanationOfBenefitSupportingInfo {
    */
   reason?: Coding;
 }
+
+/**
+ * The date when or period to which this information refers.
+ */
+export type ExplanationOfBenefitSupportingInfoTiming = Period | string;
+
+/**
+ * Additional data or information such as resources, documents, images
+ * etc. including references to the data or the actual inclusion of the
+ * data.
+ */
+export type ExplanationOfBenefitSupportingInfoValue = Attachment | boolean | Quantity | Reference<Resource> | string;
 
 /**
  * Categorized monetary totals for the adjudication.

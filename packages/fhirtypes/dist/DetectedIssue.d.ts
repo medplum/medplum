@@ -178,6 +178,11 @@ export interface DetectedIssue {
 }
 
 /**
+ * The date or period when the detected issue was initially identified.
+ */
+export type DetectedIssueIdentified = Period | string;
+
+/**
  * Supporting evidence or manifestations that provide the basis for
  * identifying the detected issue such as a GuidanceResponse or
  * MeasureReport.

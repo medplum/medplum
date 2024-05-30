@@ -276,6 +276,19 @@ export interface MedicationDispense {
 }
 
 /**
+ * Indicates the reason why a dispense was not performed.
+ */
+export type MedicationDispenseStatusReason = CodeableConcept | Reference<DetectedIssue>;
+
+/**
+ * Identifies the medication being administered. This is either a link to
+ * a resource representing the details of the medication or a simple
+ * attribute carrying a code that identifies the medication from a known
+ * list of medications.
+ */
+export type MedicationDispenseMedication = CodeableConcept | Reference<Medication>;
+
+/**
  * Indicates who or what performed the event.
  */
 export interface MedicationDispensePerformer {

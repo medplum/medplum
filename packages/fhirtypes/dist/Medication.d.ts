@@ -265,3 +265,9 @@ export interface MedicationIngredient {
    */
   strength?: Ratio;
 }
+
+/**
+ * The actual ingredient - either a substance (simple ingredient) or
+ * another medication of a medication.
+ */
+export type MedicationIngredientItem = CodeableConcept | Reference<Substance | Medication>;

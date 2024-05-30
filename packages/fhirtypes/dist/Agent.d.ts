@@ -156,6 +156,11 @@ export interface AgentChannel {
 }
 
 /**
+ * The target resource where channel messages will be delivered.
+ */
+export type AgentChannelTarget = Reference<Bot> | string;
+
+/**
  * The settings for the agent.
  */
 export interface AgentSetting {
@@ -185,3 +190,8 @@ export interface AgentSetting {
    */
   valueInteger?: number;
 }
+
+/**
+ * The setting value.
+ */
+export type AgentSettingValue = boolean | number | string;

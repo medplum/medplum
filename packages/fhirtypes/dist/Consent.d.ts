@@ -199,6 +199,14 @@ export interface Consent {
 }
 
 /**
+ * The source on which this consent statement is based. The source might
+ * be a scanned original paper form, or a reference to a consent that
+ * links back to such a source, a reference to a document repository
+ * (e.g. XDS) that stores the original consent document.
+ */
+export type ConsentSource = Attachment | Reference<Consent | DocumentReference | Contract | QuestionnaireResponse>;
+
+/**
  * The references to the policies that are included in this consent
  * scope. Policies may be organizational, but are often defined
  * jurisdictionally, or in law.
