@@ -21,7 +21,6 @@ import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:chil
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
-import { isSea } from 'node:sea';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
@@ -528,7 +527,7 @@ export class App {
     }
 
     try {
-      const command = isSea() ? __filename : `${process.execPath} ${__filename}`;
+      const command = __filename;
       child = spawn(command, { detached: true, stdio: [null, null, null, 'ipc'] });
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
