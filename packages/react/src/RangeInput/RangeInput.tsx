@@ -1,13 +1,11 @@
 import { Group } from '@mantine/core';
 import { Range } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface RangeInputProps {
-  readonly name: string;
-  readonly defaultValue?: Range;
-  readonly onChange?: (value: Range) => void;
-}
+export interface RangeInputProps extends ComplexTypeInputProps<Range> {}
 
 /**
  * Renders a Range input.
@@ -17,6 +15,11 @@ export interface RangeInputProps {
  */
 export function RangeInput(props: RangeInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
+  const { getExtendedProps } = useContext(ElementsContext);
+  const [lowProps, highProps] = useMemo(
+    () => ['low', 'high'].map((field) => getExtendedProps(props.path + '.' + field)),
+    [getExtendedProps, props.path]
+  );
 
   function setValueWrapper(newValue: Range): void {
     setValue(newValue);
@@ -28,6 +31,8 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
   return (
     <Group gap="xs" grow wrap="nowrap">
       <QuantityInput
+        path={props.path + '.low'}
+        disabled={props.disabled || lowProps?.readonly}
         name={props.name + '-low'}
         defaultValue={value?.low}
         onChange={(v) =>
@@ -39,6 +44,8 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
       />
 
       <QuantityInput
+        path={props.path + '.high'}
+        disabled={props.disabled || highProps?.readonly}
         name={props.name + '-high'}
         defaultValue={value?.high}
         onChange={(v) =>

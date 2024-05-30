@@ -20,3 +20,9 @@ export const Patients = (): JSX.Element => (
     <ResourceInput name="foo" resourceType="Patient" defaultValue={createReference(HomerSimpson)} />
   </Document>
 );
+
+export const Disabled = (): JSX.Element => (
+  <Document>
+    <ResourceInput disabled name="foo" resourceType="Patient" defaultValue={createReference(HomerSimpson)} />
+  </Document>
+);

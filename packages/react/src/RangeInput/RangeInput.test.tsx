@@ -4,14 +4,16 @@ import { RangeInput } from './RangeInput';
 
 describe('RangeInput', () => {
   test('Renders', () => {
-    render(<RangeInput name="a" defaultValue={{ low: { value: 5, unit: 'mg' }, high: { value: 10, unit: 'mg' } }} />);
+    render(
+      <RangeInput path="" name="a" defaultValue={{ low: { value: 5, unit: 'mg' }, high: { value: 10, unit: 'mg' } }} />
+    );
     expect(screen.getByDisplayValue('5')).toBeDefined();
     expect(screen.getByDisplayValue('10')).toBeDefined();
     expect(screen.getAllByDisplayValue('mg').length).toBe(2);
   });
 
   test('Renders undefined value', () => {
-    render(<RangeInput name="a" />);
+    render(<RangeInput path="" name="a" />);
     expect(screen.getAllByPlaceholderText('Value').length).toBe(2);
     expect(screen.getAllByPlaceholderText('Unit').length).toBe(2);
   });
@@ -19,7 +21,7 @@ describe('RangeInput', () => {
   test('Set value', async () => {
     let lastValue: Range | undefined = undefined;
 
-    render(<RangeInput name="a" onChange={(value) => (lastValue = value)} />);
+    render(<RangeInput path="" name="a" onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
       fireEvent.change(screen.getAllByPlaceholderText('Value')[0], {

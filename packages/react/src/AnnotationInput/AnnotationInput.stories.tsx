@@ -21,6 +21,24 @@ export const Basic = (): JSX.Element => (
       }
       onChange={console.log}
       name="annotation"
+      path="Extension.value[x]"
+    />
+  </Document>
+);
+
+export const Disabled = (): JSX.Element => (
+  <Document>
+    <AnnotationInput
+      disabled={true}
+      defaultValue={
+        {
+          authorReference: createReference(DrAliceSmith),
+          text: 'This is an annotation',
+        } as Annotation
+      }
+      onChange={console.log}
+      name="annotation"
+      path="Extension.value[x]"
     />
   </Document>
 );

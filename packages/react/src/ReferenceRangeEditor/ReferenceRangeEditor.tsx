@@ -219,6 +219,7 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
             </Group>
 
             <RangeInput
+              path=""
               onChange={(range) => {
                 props.onChange(intervalGroup.id, { ...interval, range });
               }}
@@ -303,6 +304,7 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
         </Text>
         <div id={`div-age-${intervalGroup.id}`}>
           <RangeInput
+            path=""
             key={`age-${intervalGroup.id}`}
             name={`age-${intervalGroup.id}`}
             defaultValue={intervalGroup.filters['age']}

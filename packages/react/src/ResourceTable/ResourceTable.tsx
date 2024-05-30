@@ -1,8 +1,8 @@
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
-import { tryGetProfile } from '@medplum/core';
+import { AccessPolicyInteraction, satisfiedAccessPolicy, tryGetProfile } from '@medplum/core';
 
 export interface ResourceTableProps {
   /**
@@ -30,6 +30,7 @@ export interface ResourceTableProps {
 export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
   const { profileUrl } = props;
   const medplum = useMedplum();
+  const accessPolicy = medplum.getAccessPolicy();
   const value = useResource(props.value);
   const [schemaLoaded, setSchemaLoaded] = useState<string>();
 
@@ -63,6 +64,10 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
     }
   }, [medplum, profileUrl, value]);
 
+  const accessPolicyResource = useMemo(() => {
+    return value && satisfiedAccessPolicy(value, AccessPolicyInteraction.READ, accessPolicy);
+  }, [accessPolicy, value]);
+
   if (!schemaLoaded || !value) {
     return null;
   }
@@ -76,6 +81,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
       }}
       profileUrl={profileUrl}
       ignoreMissingValues={props.ignoreMissingValues}
+      accessPolicyResource={accessPolicyResource}
     />
   );
 }

@@ -1,10 +1,10 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import {
+  ExtendedInternalSchemaElement,
   applyDefaultValuesToElement,
   capitalize,
   getPathDifference,
   HTTP_HL7_ORG,
-  InternalSchemaElement,
   isComplexTypeCode,
   isEmpty,
   isPopulated,
@@ -40,12 +40,12 @@ import { getErrorsForInput } from '../utils/outcomes';
 import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
 
 export interface ResourcePropertyInputProps extends BaseInputProps {
-  readonly property: InternalSchemaElement;
+  readonly property: ExtendedInternalSchemaElement;
   readonly name: string;
   readonly defaultPropertyType?: string | undefined;
   readonly defaultValue: any;
   readonly arrayElement?: boolean | undefined;
-  readonly onChange: ((value: any, propName?: string) => void) | undefined;
+  readonly onChange?: (value: any, propName?: string) => void;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
@@ -58,7 +58,14 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
 
   if ((property.isArray || property.max > 1) && !props.arrayElement) {
     if (defaultPropertyType === PropertyType.Attachment) {
-      return <AttachmentArrayInput name={name} defaultValue={defaultValue} onChange={onChange} />;
+      return (
+        <AttachmentArrayInput
+          name={name}
+          defaultValue={defaultValue}
+          onChange={onChange}
+          disabled={property.readonly}
+        />
+      );
     }
 
     // Extensions are a special type of array that shouldn't be indented
@@ -95,6 +102,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         binding={property.binding}
         path={props.path}
         valuePath={props.valuePath}
+        readOnly={property.readonly}
       />
     );
   }
@@ -117,6 +125,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   return (
     <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <NativeSelect
+        disabled={props.property.readonly}
         style={{ width: '200px' }}
         defaultValue={selectedType.code}
         data-testid={props.name && props.name + '-selector'}
@@ -147,6 +156,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         binding={props.property.binding}
         path={props.property.path}
         valuePath={props.valuePath}
+        readOnly={props.property.readonly}
       />
     </Group>
   );
@@ -159,10 +169,11 @@ export interface ElementDefinitionTypeInputProps
   readonly min: number;
   readonly max: number;
   readonly binding: ElementDefinitionBinding | undefined;
+  readonly readOnly?: boolean;
 }
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const { name, onChange, outcome, binding, path, valuePath } = props;
+  const { name, onChange, outcome, binding, path, valuePath, readOnly } = props;
   const required = props.min !== undefined && props.min > 0;
 
   const propertyType = props.elementDefinitionType.code;
@@ -200,7 +211,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   }
 
   function getComplexInputProps(): ComplexTypeInputProps<any> {
-    return { name, defaultValue, onChange, outcome, path, valuePath };
+    return { name, defaultValue, onChange, outcome, path, valuePath, disabled: readOnly };
   }
 
   function getPrimitiveInputProps(): PrimitiveTypeInputProps {
@@ -212,6 +223,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       defaultValue,
       required,
       error,
+      disabled: readOnly,
     };
   }
 
@@ -262,7 +274,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       );
     case PropertyType.dateTime:
     case PropertyType.instant:
-      return <DateTimeInput name={name} defaultValue={defaultValue} onChange={onChange} outcome={outcome} />;
+      return <DateTimeInput {...getPrimitiveInputProps()} onChange={onChange} outcome={outcome} />;
     case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:

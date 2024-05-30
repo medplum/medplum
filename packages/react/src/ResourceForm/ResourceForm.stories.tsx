@@ -12,7 +12,7 @@ import { ResourceForm } from './ResourceForm';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { MedplumClient, RequestProfileSchemaOptions, deepClone, loadDataType } from '@medplum/core';
-import { OperationOutcome, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { AccessPolicy, OperationOutcome, Resource, StructureDefinition } from '@medplum/fhirtypes';
 
 export default {
   title: 'Medplum/ResourceForm',
@@ -29,6 +29,80 @@ export const Patient = (): JSX.Element => (
     />
   </Document>
 );
+
+function useFakeGetAccessPolicy(medplum: MedplumClient, accessPolicy: AccessPolicy): void {
+  useLayoutEffect(() => {
+    const realGetAccessPolicy = medplum.getAccessPolicy;
+    function fakeGetAccessPolicy(): AccessPolicy {
+      console.log('Fake medplum.getAccessPolicy invoked');
+      return accessPolicy;
+    }
+
+    medplum.getAccessPolicy = fakeGetAccessPolicy;
+
+    return () => {
+      medplum.getAccessPolicy = realGetAccessPolicy;
+    };
+  }, [medplum, accessPolicy]);
+}
+
+export const PartiallyReadonlyPatient = (): JSX.Element => {
+  const medplum = useMedplum();
+  const accessPolicy = useMemo<AccessPolicy>(
+    () => ({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonlyFields: ['identifier', 'name.given', 'name.family', 'telecom', 'birthDate', 'link', 'contact'],
+        },
+      ],
+    }),
+    []
+  );
+  const resource = {
+    ...HomerSimpson,
+    telecom: undefined,
+  };
+  useFakeGetAccessPolicy(medplum, accessPolicy);
+  return (
+    <Document>
+      <ResourceForm
+        defaultValue={resource}
+        onSubmit={(formData: Resource) => {
+          console.log('submit', formData);
+        }}
+      />
+    </Document>
+  );
+};
+
+export const PartiallyHiddenPatient = (): JSX.Element => {
+  const medplum = useMedplum();
+  const accessPolicy = useMemo<AccessPolicy>(
+    () => ({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          hiddenFields: ['identifier', 'name.use', 'name.prefix', 'name.suffix', 'birthDate', 'link', 'contact'],
+        },
+      ],
+    }),
+    []
+  );
+  useFakeGetAccessPolicy(medplum, accessPolicy);
+  return (
+    <Document>
+      <ResourceForm
+        defaultValue={HomerSimpson}
+        onSubmit={(formData: any) => {
+          console.log('submit', formData);
+        }}
+      />
+    </Document>
+  );
+};
 
 export const Organization = (): JSX.Element => (
   <Document>
@@ -211,6 +285,57 @@ export const USCorePatient = (): JSX.Element => {
   const homerSimpsonUSCorePatient = useMemo(() => {
     return deepClone(HomerSimpsonUSCorePatient);
   }, []);
+
+  if (!loaded) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Document>
+      <ResourceForm
+        defaultValue={homerSimpsonUSCorePatient}
+        onSubmit={(formData: any) => {
+          console.log('submit', formData);
+        }}
+        profileUrl={profileSD.url}
+      />
+    </Document>
+  );
+};
+
+export const USCorePatientExtensionReadonly = (): JSX.Element => {
+  const medplum = useMedplum();
+  useFakeRequestProfileSchema(medplum);
+  const { loaded } = useUSCoreDataTypes({ medplum });
+  const profileSD = useUSCoreProfile('USCorePatientProfile');
+
+  const homerSimpsonUSCorePatient = useMemo(() => {
+    const patient = deepClone(HomerSimpsonUSCorePatient);
+
+    if (patient.extension?.length) {
+      for (const urlFragment of ['genderIdentity', 'birthsex']) {
+        const idx = patient.extension?.findIndex((ext) => ext.url.includes(urlFragment));
+        if (idx !== -1) {
+          patient.extension.splice(idx, 1);
+        }
+      }
+    }
+
+    return patient;
+  }, []);
+  const accessPolicy = useMemo<AccessPolicy>(
+    () => ({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonlyFields: ['extension', 'active'],
+        },
+      ],
+    }),
+    []
+  );
+  useFakeGetAccessPolicy(medplum, accessPolicy);
 
   if (!loaded) {
     return <div>Loading...</div>;

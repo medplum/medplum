@@ -8,7 +8,7 @@ const medplum = new MockClient();
 function setup(args?: AttachmentInputProps): void {
   render(
     <MedplumProvider medplum={medplum}>
-      <AttachmentInput name="test" {...args} />
+      <AttachmentInput path="" name="test" {...args} />
     </MedplumProvider>
   );
 }
@@ -25,6 +25,7 @@ describe('AttachmentInput', () => {
   test('Renders attachments', async () => {
     await act(async () => {
       await setup({
+        path: '',
         name: 'test',
         defaultValue: {
           contentType: 'image/jpeg',
@@ -53,6 +54,7 @@ describe('AttachmentInput', () => {
   test('Remove attachment', async () => {
     await act(async () => {
       await setup({
+        path: '',
         name: 'test',
         defaultValue: {
           contentType: 'image/jpeg',
@@ -75,6 +77,7 @@ describe('AttachmentInput', () => {
     const onChange = jest.fn();
 
     setup({
+      path: '',
       name: 'test',
       onChange,
     });

@@ -13,6 +13,7 @@ import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisp
 import { useContext, useMemo } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { AccessPolicyResource } from '@medplum/fhirtypes';
 
 const EXTENSION_KEYS = ['extension', 'modifierExtension'];
 const IGNORED_PROPERTIES = DEFAULT_IGNORED_PROPERTIES.filter((prop) => !EXTENSION_KEYS.includes(prop));
@@ -26,6 +27,10 @@ export interface BackboneElementDisplayProps {
   readonly link?: boolean;
   /** (optional) Profile URL of the structure definition represented by the backbone element */
   readonly profileUrl?: string;
+  /**
+   * (optional) If provided, inputs specified in `accessPolicyResource.hiddenFields` are not shown.
+   */
+  readonly accessPolicyResource?: AccessPolicyResource;
 }
 
 export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.Element | null {
@@ -44,8 +49,9 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
       elements: typeSchema.elements,
       path: props.path,
       profileUrl: typeSchema.url,
+      accessPolicyResource: props.accessPolicyResource,
     });
-  }, [typeSchema, props.path, parentElementsContext]);
+  }, [typeSchema, parentElementsContext, props.path, props.accessPolicyResource]);
 
   if (isEmpty(value)) {
     return null;
