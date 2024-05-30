@@ -1,4 +1,4 @@
-import { Group, Stack } from '@mantine/core';
+import { Group, Stack, Text } from '@mantine/core';
 import {
   ExtendedInternalSchemaElement,
   ElementsContextType,
@@ -60,6 +60,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   // e.g. USCorePatientProfile -> USCoreEthnicityExtension -> {ombCategory, detailed, text}
   const indentedStack = isEmpty(slice.elements);
   const propertyDisplayName = getPropertyDisplayName(slice.name);
+  const showEmptyMessage = props.property.readonly && values.length === 0;
   return maybeWrapWithContext(
     ElementsContext.Provider,
     contextValue,
@@ -69,59 +70,64 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
       withAsterisk={required}
       fhirPath={`${property.path}:${slice.name}`}
       testId={props.testId}
+      readonly={props.property.readonly}
     >
-      <Stack className={indentedStack ? classes.indented : undefined}>
-        {values.map((value, valueIndex) => {
-          return (
-            <Group key={`${valueIndex}-${values.length}`} wrap="nowrap">
-              <div style={{ flexGrow: 1 }} data-testid={props.testId && `${props.testId}-elements-${valueIndex}`}>
-                <ElementDefinitionTypeInput
-                  elementDefinitionType={slice.type[0]}
-                  name={slice.name}
-                  defaultValue={value}
-                  onChange={(newValue) => {
-                    const newValues = [...values];
-                    newValues[valueIndex] = newValue;
-                    setValuesWrapper(newValues);
-                  }}
-                  outcome={props.outcome}
-                  min={slice.min}
-                  max={slice.max}
-                  binding={slice.binding}
-                  path={props.path}
-                  valuePath={undefined /* `valuePath` not supported in slices */}
-                  readOnly={props.property.readonly}
-                />
-              </div>
-              {!props.property.readonly && values.length > slice.min && (
-                <ArrayRemoveButton
-                  propertyDisplayName={propertyDisplayName}
-                  testId={props.testId && `${props.testId}-remove-${valueIndex}`}
-                  onClick={(e: MouseEvent) => {
-                    killEvent(e);
-                    const newValues = [...values];
-                    newValues.splice(valueIndex, 1);
-                    setValuesWrapper(newValues);
-                  }}
-                />
-              )}
+      {showEmptyMessage ? (
+        <Text c="dimmed">(empty)</Text>
+      ) : (
+        <Stack className={indentedStack ? classes.indented : undefined}>
+          {values.map((value, valueIndex) => {
+            return (
+              <Group key={`${valueIndex}-${values.length}`} wrap="nowrap">
+                <div style={{ flexGrow: 1 }} data-testid={props.testId && `${props.testId}-elements-${valueIndex}`}>
+                  <ElementDefinitionTypeInput
+                    elementDefinitionType={slice.type[0]}
+                    name={slice.name}
+                    defaultValue={value}
+                    onChange={(newValue) => {
+                      const newValues = [...values];
+                      newValues[valueIndex] = newValue;
+                      setValuesWrapper(newValues);
+                    }}
+                    outcome={props.outcome}
+                    min={slice.min}
+                    max={slice.max}
+                    binding={slice.binding}
+                    path={props.path}
+                    valuePath={undefined /* `valuePath` not supported in slices */}
+                    readOnly={props.property.readonly}
+                  />
+                </div>
+                {!props.property.readonly && values.length > slice.min && (
+                  <ArrayRemoveButton
+                    propertyDisplayName={propertyDisplayName}
+                    testId={props.testId && `${props.testId}-remove-${valueIndex}`}
+                    onClick={(e: MouseEvent) => {
+                      killEvent(e);
+                      const newValues = [...values];
+                      newValues.splice(valueIndex, 1);
+                      setValuesWrapper(newValues);
+                    }}
+                  />
+                )}
+              </Group>
+            );
+          })}
+          {!props.property.readonly && values.length < slice.max && (
+            <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
+              <ArrayAddButton
+                propertyDisplayName={propertyDisplayName}
+                onClick={(e: MouseEvent) => {
+                  killEvent(e);
+                  const newValues = [...values, undefined];
+                  setValuesWrapper(newValues);
+                }}
+                testId={props.testId && `${props.testId}-add`}
+              />
             </Group>
-          );
-        })}
-        {!props.property.readonly && values.length < slice.max && (
-          <Group wrap="nowrap" style={{ justifyContent: 'flex-start' }}>
-            <ArrayAddButton
-              propertyDisplayName={propertyDisplayName}
-              onClick={(e: MouseEvent) => {
-                killEvent(e);
-                const newValues = [...values, undefined];
-                setValuesWrapper(newValues);
-              }}
-              testId={props.testId && `${props.testId}-add`}
-            />
-          </Group>
-        )}
-      </Stack>
+          )}
+        </Stack>
+      )}
     </FormSection>
   );
 }

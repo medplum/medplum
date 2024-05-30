@@ -54,18 +54,22 @@ export const PartiallyReadonlyPatient = (): JSX.Element => {
       resource: [
         {
           resourceType: 'Patient',
-          readonlyFields: ['identifier', 'name.given', 'name.family', 'birthDate', 'link', 'contact'],
+          readonlyFields: ['identifier', 'name.given', 'name.family', 'telecom', 'birthDate', 'link', 'contact'],
         },
       ],
     }),
     []
   );
+  const resource = {
+    ...HomerSimpson,
+    telecom: undefined,
+  };
   useFakeGetAccessPolicy(medplum, accessPolicy);
   return (
     <Document>
       <ResourceForm
-        defaultValue={HomerSimpson}
-        onSubmit={(formData: any) => {
+        defaultValue={resource}
+        onSubmit={(formData: Resource) => {
           console.log('submit', formData);
         }}
       />
@@ -281,6 +285,57 @@ export const USCorePatient = (): JSX.Element => {
   const homerSimpsonUSCorePatient = useMemo(() => {
     return deepClone(HomerSimpsonUSCorePatient);
   }, []);
+
+  if (!loaded) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Document>
+      <ResourceForm
+        defaultValue={homerSimpsonUSCorePatient}
+        onSubmit={(formData: any) => {
+          console.log('submit', formData);
+        }}
+        profileUrl={profileSD.url}
+      />
+    </Document>
+  );
+};
+
+export const USCorePatientExtensionReadonly = (): JSX.Element => {
+  const medplum = useMedplum();
+  useFakeRequestProfileSchema(medplum);
+  const { loaded } = useUSCoreDataTypes({ medplum });
+  const profileSD = useUSCoreProfile('USCorePatientProfile');
+
+  const homerSimpsonUSCorePatient = useMemo(() => {
+    const patient = deepClone(HomerSimpsonUSCorePatient);
+
+    if (patient.extension?.length) {
+      for (const urlFragment of ['genderIdentity', 'birthsex']) {
+        const idx = patient.extension?.findIndex((ext) => ext.url.includes(urlFragment));
+        if (idx !== -1) {
+          patient.extension.splice(idx, 1);
+        }
+      }
+    }
+
+    return patient;
+  }, []);
+  const accessPolicy = useMemo<AccessPolicy>(
+    () => ({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonlyFields: ['extension', 'active'],
+        },
+      ],
+    }),
+    []
+  );
+  useFakeGetAccessPolicy(medplum, accessPolicy);
 
   if (!loaded) {
     return <div>Loading...</div>;

@@ -1,4 +1,4 @@
-import { Group, Stack } from '@mantine/core';
+import { Group, Stack, Text } from '@mantine/core';
 import { ExtendedInternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import { MouseEvent, useContext, useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ export interface ResourceArrayInputProps extends BaseInputProps {
   readonly hideNonSliceValues?: boolean;
 }
 
-export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element {
+export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element | null {
   const { property } = props;
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
@@ -71,9 +71,11 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   // Hide non-sliced values when handling sliced extensions
   const showNonSliceValues = !(props.hideNonSliceValues ?? (propertyTypeCode === 'Extension' && slices.length > 0));
   const propertyDisplayName = getPathDisplayName(property.path);
+  const showEmptyMessage = props.property.readonly && slices.length === 0 && defaultValue.length === 0;
 
   return (
     <Stack className={props.indent ? classes.indented : undefined}>
+      {showEmptyMessage && <Text c="dimmed">(empty)</Text>}
       {slices.map((slice, sliceIndex) => {
         return (
           <SliceInput
