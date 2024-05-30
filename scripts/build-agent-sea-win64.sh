@@ -12,12 +12,12 @@ export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
 # Build the agent
 npm run build
 
-# Check Node version
-# If not the expected default version, then warn
-nodeversion=$(node -v)
-if [$(echo nodeversion | cut -d '.' -f 1) != "v20"]; then
-  echo "Expected to be on v20.x.x but on $(node -v)"
-fi
+# # Check Node version
+# # If not the expected default version, then warn
+# nodeversion=$(node -v)
+# if [$(echo nodeversion | cut -d '.' -f 1) != "v20"]; then
+#   echo "Expected to be on v20.x.x but on $(node -v)"
+# fi
 
 # Generate blob to inject into node executable
 node --experimental-sea-config sea-config.json
