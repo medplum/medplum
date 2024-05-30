@@ -2,6 +2,7 @@ import { Group, Input } from '@mantine/core';
 import { ReactNode, useContext } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { READ_ONLY_TOOLTIP_TEXT, maybeWrapWithTooltip } from '../utils/maybeWrapWithTooltip';
+import classes from '../FormSection/FormSection.module.css';
 
 export interface CheckboxFormSectionProps {
   readonly htmlFor?: string;
@@ -31,6 +32,7 @@ export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Elemen
         <Input.Wrapper
           id={props.htmlFor}
           label={label}
+          classNames={{ label: props?.readonly && classes.dimmed }}
           description={props.description}
           withAsterisk={props.withAsterisk}
         >

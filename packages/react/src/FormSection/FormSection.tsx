@@ -4,6 +4,7 @@ import { ReactNode, useContext } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 import { READ_ONLY_TOOLTIP_TEXT, maybeWrapWithTooltip } from '../utils/maybeWrapWithTooltip';
+import classes from './FormSection.module.css';
 
 export interface FormSectionProps {
   readonly title?: string;
@@ -32,6 +33,7 @@ export function FormSection(props: FormSectionProps): JSX.Element {
     <Input.Wrapper
       id={props.htmlFor}
       label={label}
+      classNames={{ label: props?.readonly && classes.dimmed }}
       description={props.description}
       withAsterisk={props.withAsterisk}
       error={getErrorsForInput(props.outcome, props.errorExpression ?? props.htmlFor)}
