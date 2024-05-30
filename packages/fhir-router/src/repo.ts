@@ -147,7 +147,10 @@ export abstract class FhirRepository<TClient = unknown> {
    *
    * @param callback - The callback function to be run within a transaction.
    */
-  abstract withTransaction<TResult>(callback: (client: TClient) => Promise<TResult>): Promise<TResult>;
+  abstract withTransaction<TResult>(
+    callback: (client: TClient) => Promise<TResult>,
+    options?: { serializable?: boolean }
+  ): Promise<TResult>;
 
   /**
    * Searches for a single FHIR resource.

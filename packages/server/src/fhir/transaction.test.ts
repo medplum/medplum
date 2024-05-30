@@ -414,32 +414,7 @@ describe('FHIR Repo Transactions', () => {
       expect(results.map((r) => r.status)).toContain('rejected');
     }));
 
-  test.skip('Allowed concurrent writes', () =>
-    withTestContext(async () => {
-      const existing = await repo.createResource({ resourceType: 'Patient' });
-
-      const tx1 = repo.withTransaction(
-        async () => {
-          await repo.updateResource({ ...existing, gender: 'unknown' });
-          await sleep(500);
-        },
-        { isolation: 'READ COMMITTED' }
-      );
-
-      const systemRepo = getSystemRepo();
-      const tx2 = systemRepo.withTransaction(
-        async () => {
-          await sleep(250);
-          await systemRepo.updateResource({ ...existing, deceasedBoolean: false });
-        },
-        { isolation: 'READ COMMITTED' }
-      );
-
-      const results = await Promise.allSettled([tx1, tx2]);
-      expect(results.map((r) => r.status)).not.toContain('rejected');
-    }));
-
-  test.skip('Conflicting concurrent conditional creates', () =>
+  test('Conflicting concurrent conditional creates', () =>
     withTestContext(async () => {
       const identifier = randomUUID();
       const criteria = 'Patient?identifier=http://example.com/mrn|' + identifier;
@@ -455,7 +430,7 @@ describe('FHIR Repo Transactions', () => {
           }
           await sleep(500);
         },
-        { isolation: 'SERIALIZABLE' }
+        { serializable: true }
       );
 
       const systemRepo = getSystemRepo();
@@ -467,7 +442,7 @@ describe('FHIR Repo Transactions', () => {
             await systemRepo.createResource(resource);
           }
         },
-        { isolation: 'SERIALIZABLE' }
+        { serializable: true }
       );
 
       const results = await Promise.allSettled([tx1, tx2]);

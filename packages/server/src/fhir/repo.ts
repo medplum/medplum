@@ -1953,10 +1953,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async withTransaction<TResult>(
     callback: (client: PoolClient) => Promise<TResult>,
-    options?: { isolation?: TransactionIsolationLevel }
+    options?: { serializable: boolean }
   ): Promise<TResult> {
     try {
-      const client = await this.beginTransaction(options?.isolation);
+      const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
       const result = await callback(client);
       await this.commitTransaction();
       return result;

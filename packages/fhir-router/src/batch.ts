@@ -16,6 +16,9 @@ import { FhirRepository } from './repo';
 import { HttpMethod, RouteResult } from './urlrouter';
 import { IncomingHttpHeaders } from 'node:http';
 
+const maxUpdates = 50;
+const maxSerializableTransactionEntries = 8;
+
 /**
  * Processes a FHIR batch request.
  *
@@ -31,7 +34,22 @@ export async function processBatch(router: FhirRouter, repo: FhirRepository, bun
     throw new OperationOutcomeError(badRequest('Unrecognized bundle type: ' + bundleType));
   }
   const processor = new BatchProcessor(router, repo, bundle);
-  return bundleType === 'transaction' ? repo.withTransaction(() => processor.processBatch()) : processor.processBatch();
+  const resultEntries: (BundleEntry | OperationOutcome)[] = new Array(bundle.entry?.length ?? 0);
+  const bundleInfo = await processor.preprocessBundle(resultEntries);
+
+  if (bundleType === 'transaction') {
+    if (bundleInfo.updates > maxUpdates) {
+      throw new OperationOutcomeError(badRequest('Transaction contains more update operations than allowed'));
+    }
+    if (bundleInfo.requiresStrongTransaction && resultEntries.length > maxSerializableTransactionEntries) {
+      throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
+    }
+    return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
+      serializable: bundleInfo.requiresStrongTransaction,
+    });
+  } else {
+    return processor.processBatch(bundleInfo, resultEntries);
+  }
 }
 
 const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
@@ -39,11 +57,11 @@ const uuidUriPrefix = 'urn:uuid';
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
 
-// type BundlePreprocessInfo = {
-//   ordering: number[];
-//   requiresStrongTransaction: boolean;
-//   updates: number;
-// };
+type BundlePreprocessInfo = {
+  ordering: number[];
+  requiresStrongTransaction: boolean;
+  updates: number;
+};
 
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
@@ -68,16 +86,19 @@ class BatchProcessor {
 
   /**
    * Processes a FHIR batch request.
+   * @param bundleInfo - The preprocessed Bundle information.
+   * @param resultEntries - The array of results.
    * @returns The bundle response.
    */
-  async processBatch(): Promise<Bundle> {
+  async processBatch(
+    bundleInfo: BundlePreprocessInfo,
+    resultEntries: (BundleEntry | OperationOutcome)[]
+  ): Promise<Bundle> {
     const bundleType = this.bundle.type;
-    const resultEntries: (BundleEntry | OperationOutcome)[] = new Array(this.bundle.entry?.length ?? 0);
     let count = 0;
     let errors = 0;
 
-    const entryIndices = await this.preprocessBundle(resultEntries);
-    for (const entryIndex of entryIndices) {
+    for (const entryIndex of bundleInfo.ordering) {
       const entry = this.bundle.entry?.[entryIndex] as BundleEntry;
       const rewritten = this.rewriteIdsInObject(entry);
       try {
@@ -109,7 +130,7 @@ class BatchProcessor {
     };
   }
 
-  private async preprocessBundle(results: BundleEntry[]): Promise<number[]> {
+  async preprocessBundle(results: BundleEntry[]): Promise<BundlePreprocessInfo> {
     const entries = this.bundle.entry;
     if (!entries?.length) {
       throw new OperationOutcomeError(badRequest('Missing bundle entries'));
@@ -133,6 +154,8 @@ class BatchProcessor {
       'history-instance': [],
     };
     const seenIdentities = new Set<string>();
+    let requiresStrongTransaction = false;
+    let updates = 0;
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
@@ -149,14 +172,26 @@ class BatchProcessor {
         continue;
       }
       const route = this.getRouteForEntry(entry);
-      bucketedEntries[route?.data?.interaction as RestInteraction]?.push(i);
+      const interaction = route?.data?.interaction as RestInteraction;
+      if (interaction === 'create' && entry.request?.ifNoneExist) {
+        // Conditional create requires strong (serializable) transaction to
+        // guarantee uniqueness of created resource
+        requiresStrongTransaction = true;
+      } else if (interaction === 'update') {
+        updates++;
+      }
+      bucketedEntries[interaction]?.push(i);
     }
 
-    const result = [];
+    const ordering = [];
     for (const bucket of Object.values(bucketedEntries)) {
-      result.push(...bucket);
+      ordering.push(...bucket);
     }
-    return result;
+    return {
+      ordering,
+      requiresStrongTransaction,
+      updates,
+    };
   }
 
   private async preprocessEntry(
