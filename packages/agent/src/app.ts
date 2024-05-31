@@ -573,7 +573,7 @@ export class App {
       });
 
       child.on('error', (err) => {
-        console.error(err);
+        this.log.error(normalizeErrorString(err));
       });
     } catch (err) {
       const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}': ${normalizeErrorString(err)}`;
@@ -610,7 +610,8 @@ export class App {
         throw new Error('Upgrader child process has closed');
       }
 
-      this.log.info('Successfully sent STOPPED message to child');
+      this.log.info('Successfully sent STOPPED message to child. Closing IPC...');
+      child.disconnect();
     } catch (err: unknown) {
       this.log.error(
         `Error while stopping agent or messaging child process as part of upgrade: ${normalizeErrorString(err)}`

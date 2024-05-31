@@ -40,6 +40,23 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     globalLogger.info('Release successfully downloaded');
   }
 
+  globalLogger.info('Waiting to receive STOPPED message from parent...');
+  await new Promise<void>((resolve, reject) => {
+    const stoppedTimeout = setTimeout(
+      () => reject(new Error('Timed out while waiting for parent process to send STOPPED message')),
+      5000
+    );
+    process.on('message', (msg: string) => {
+      clearTimeout(stoppedTimeout);
+      const parsedMsg = JSON.parse(msg) as { type: string };
+      if (parsedMsg.type === 'STOPPED') {
+        resolve();
+      } else {
+        reject(new Error(`Invalid message type ${parsedMsg.type} received. Expected STOPPED`));
+      }
+    });
+  });
+
   try {
     // Stop service
     globalLogger.info('Stopping running agent service...');
