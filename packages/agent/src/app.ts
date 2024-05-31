@@ -575,13 +575,12 @@ export class App {
           () => reject(new Error('Timed out while waiting for message from child')),
           5000
         );
-        child.on('message', (msg: string) => {
+        child.on('message', (msg: { type: string }) => {
           clearTimeout(childTimeout);
-          const parsedMsg = JSON.parse(msg) as { type: string };
-          if (parsedMsg.type === 'STARTED') {
+          if (msg.type === 'STARTED') {
             resolve();
           } else {
-            reject(new Error(`Received unexpected message type ${parsedMsg.type} when expected type STARTED`));
+            reject(new Error(`Received unexpected message type ${msg.type} when expected type STARTED`));
           }
         });
       });

@@ -41,13 +41,12 @@ export async function upgraderMain(argv: string[]): Promise<void> {
       () => reject(new Error('Timed out while waiting for parent process to send STOPPED message')),
       5000
     );
-    process.on('message', (msg: string) => {
+    process.on('message', (msg: { type: string }) => {
       clearTimeout(stoppedTimeout);
-      const parsedMsg = JSON.parse(msg) as { type: string };
-      if (parsedMsg.type === 'STOPPED') {
+      if (msg.type === 'STOPPED') {
         resolve();
       } else {
-        reject(new Error(`Invalid message type ${parsedMsg.type} received. Expected STOPPED`));
+        reject(new Error(`Invalid message type ${msg.type} received. Expected STOPPED`));
       }
     });
   });
