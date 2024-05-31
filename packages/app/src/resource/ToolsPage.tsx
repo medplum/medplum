@@ -4,7 +4,7 @@ import { ContentType, formatDateTime, normalizeErrorString } from '@medplum/core
 import { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export function ToolsPage(): JSX.Element | null {
@@ -13,11 +13,21 @@ export function ToolsPage(): JSX.Element | null {
   const reference = useMemo(() => ({ reference: 'Agent/' + id }) as Reference<Agent>, [id]);
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [reloadingConfig, setReloadingConfig] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [status, setStatus] = useState<string>();
   const [version, setVersion] = useState<string>();
   const [lastUpdated, setLastUpdated] = useState<string>();
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    if (loadingStatus || reloadingConfig || upgrading || pinging) {
+      setWorking(true);
+      return;
+    }
+    setWorking(false);
+  }, [loadingStatus, reloadingConfig, upgrading, pinging]);
 
   const handleStatus = useCallback(() => {
     setLoadingStatus(true);
@@ -60,6 +70,17 @@ export function ToolsPage(): JSX.Element | null {
       .finally(() => setReloadingConfig(false));
   }, [medplum, id]);
 
+  const handleUpgrade = useCallback(() => {
+    setUpgrading(true);
+    medplum
+      .get(medplum.fhirUrl('Agent', id, '$upgrade'), { cache: 'reload' })
+      .then((_result: Bundle<Parameters>) => {
+        showSuccess('Agent upgraded successfully.');
+      })
+      .catch((err) => showError(normalizeErrorString(err)))
+      .finally(() => setUpgrading(false));
+  }, [medplum, id]);
+
   function showSuccess(message: string): void {
     showNotification({
       color: 'green',
@@ -90,7 +111,7 @@ export function ToolsPage(): JSX.Element | null {
         Retrieve the status of the agent. This tests whether the agent is connected to the Medplum server, and the last
         time it was able to communicate.
       </p>
-      <Button onClick={handleStatus} loading={loadingStatus}>
+      <Button onClick={handleStatus} loading={loadingStatus} disabled={working && !loadingStatus}>
         Get Status
       </Button>
       {!loadingStatus && status && (
@@ -119,8 +140,19 @@ export function ToolsPage(): JSX.Element | null {
         Reload the configuration of this agent, syncing it with the current version of the Agent resource on the Medplum
         server.
       </p>
-      <Button onClick={handleReloadConfig} loading={reloadingConfig} aria-label="Reload config">
+      <Button
+        onClick={handleReloadConfig}
+        loading={reloadingConfig}
+        disabled={working && !reloadingConfig}
+        aria-label="Reload config"
+      >
         Reload Config
+      </Button>
+      <Divider my="lg" />
+      <Title order={2}>Upgrade Agent</Title>
+      <p>Upgrade the version of this agent, to either the latest (default) or a specified version.</p>
+      <Button onClick={handleUpgrade} loading={upgrading} disabled={working && !upgrading} aria-label="Upgrade agent">
+        Upgrade Agent
       </Button>
       <Divider my="lg" />
       <Title order={2}>Ping from Agent</Title>
@@ -136,7 +168,15 @@ export function ToolsPage(): JSX.Element | null {
             placeholder="ex. 127.0.0.1"
             label="IP Address / Hostname"
             rightSection={
-              <ActionIcon size={24} radius="xl" variant="filled" type="submit" aria-label="Ping" loading={pinging}>
+              <ActionIcon
+                size={24}
+                radius="xl"
+                variant="filled"
+                type="submit"
+                aria-label="Ping"
+                loading={pinging}
+                disabled={working && !pinging}
+              >
                 <IconRouter style={{ width: '1rem', height: '1rem' }} stroke={1.5} />
               </ActionIcon>
             }
