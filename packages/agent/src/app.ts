@@ -90,13 +90,34 @@ export class App {
   private async maybeFinalizeUpgrade(): Promise<void> {
     if (existsSync(UPGRADE_MANIFEST_PATH)) {
       const upgradeFile = readFileSync(UPGRADE_MANIFEST_PATH, { encoding: 'utf-8' });
-      const upgradeDetails = JSON.parse(upgradeFile) as { previousVersion: string; targetVersion: string };
+      const upgradeDetails = JSON.parse(upgradeFile) as {
+        previousVersion: string;
+        targetVersion: string;
+        callback: string | null;
+      };
+
+      // If we are on the right version, send success response to Medplum
       if (upgradeDetails.targetVersion === MEDPLUM_VERSION) {
-        // Delete manifest
-        rmSync(UPGRADE_MANIFEST_PATH);
         // Send message
-        await this.sendToWebSocket({ type: 'agent:upgrade:response', statusCode: 200 } satisfies AgentUpgradeResponse);
+        await this.sendToWebSocket({
+          type: 'agent:upgrade:response',
+          statusCode: 200,
+          callback: upgradeDetails.callback ?? undefined,
+        } satisfies AgentUpgradeResponse);
+        this.log.info(`Successfully upgraded to version ${upgradeDetails.targetVersion}`);
+      } else {
+        // Otherwise if we are on the wrong version, send error
+        const errMsg = `Failed to upgrade to version ${upgradeDetails.targetVersion}. Agent still running with version ${MEDPLUM_VERSION}`;
+        await this.sendToWebSocket({
+          type: 'agent:error',
+          body: errMsg,
+          callback: upgradeDetails.callback ?? undefined,
+        } satisfies AgentError);
+        this.log.error(errMsg);
       }
+
+      // Delete manifest
+      rmSync(UPGRADE_MANIFEST_PATH);
     }
   }
 
@@ -557,13 +578,18 @@ export class App {
     try {
       // Stop the agent to prepare for service being restarted
       await this.stop();
+      this.log.info('Successfully stopped agent network services');
 
       // Write a manifest file
+      const targetVersion = message.version ?? (await fetchLatestVersionString());
+
+      this.log.info('Writing upgrade manifest...', { previousVersion: MEDPLUM_VERSION, targetVersion });
       writeFileSync(
         UPGRADE_MANIFEST_PATH,
         JSON.stringify({
           previousVersion: MEDPLUM_VERSION,
-          targetVersion: message.version ?? (await fetchLatestVersionString()),
+          targetVersion,
+          callback: message.callback ?? null,
         }),
         { encoding: 'utf-8' }
       );
@@ -572,6 +598,8 @@ export class App {
       if (!child.send({ type: 'STOPPED' })) {
         throw new Error('Upgrader child process has closed');
       }
+
+      this.log.info('Successfully sent STOPPED message to child');
     } catch (err: unknown) {
       this.log.error(
         `Error while stopping agent or messaging child process as part of upgrade: ${normalizeErrorString(err)}`

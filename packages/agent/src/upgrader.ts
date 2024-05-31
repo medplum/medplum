@@ -1,9 +1,10 @@
 import { Logger } from '@medplum/core';
 import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { createWriteStream, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { downloadRelease, fetchLatestVersionString, getOsString, getReleaseBinPath } from './upgrader-utils';
 
-const globalLogger = new Logger((msg) => console.log(msg));
+const UPGRADER_LOG_PATH = resolve(__dirname, `upgrader-logs-${new Date().toISOString().replace(/:\s*/g, '-')}.txt`);
 
 export async function upgraderMain(argv: string[]): Promise<void> {
   // TODO: Remove this when Linux auto-update is supported
@@ -13,8 +14,12 @@ export async function upgraderMain(argv: string[]): Promise<void> {
 
   // NOTE: Windows past this point, for now
 
+  const logStream = createWriteStream(UPGRADER_LOG_PATH, { flags: 'w+' });
+  logStream.setDefaultEncoding('utf-8');
+  const globalLogger = new Logger((msg) => logStream.write(`${msg}\n`));
+
   if (!process.send) {
-    console.error('Upgrader not started as a child process with Node IPC enabled. Aborting...');
+    globalLogger.error('Upgrader not started as a child process with Node IPC enabled. Aborting...');
     process.exit(1);
   }
 
@@ -30,14 +35,20 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   // If release in not locally downloaded, download it first
   if (!existsSync(binPath)) {
     // Download release
+    globalLogger.info(`Could not find binary at "${binPath}". Downloading release from GitHub...`);
     await downloadRelease(version, binPath);
+    globalLogger.info('Release successfully downloaded');
   }
 
   try {
     // Stop service
+    globalLogger.info('Stopping running agent service...');
     execSync('net stop "Medplum Agent"');
+    globalLogger.info('Agent service stopped succesfully');
     // Run installer
+    globalLogger.info('Running installer silently', { binPath });
     execSync(`${binPath} /S`);
+    globalLogger.info(`Agent version ${version} successfully installed`);
   } catch (err: unknown) {
     // Try to restart Agent service if anything goes wrong
     globalLogger.error('Failed to run installer, attempting to restart agent service...');
