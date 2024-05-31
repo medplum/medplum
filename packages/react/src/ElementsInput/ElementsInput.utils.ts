@@ -8,7 +8,6 @@ export const ElementsContext = createContext<ElementsContextType>({
   elements: Object.create(null),
   elementsByPath: Object.create(null),
   getExtendedProps: () => {
-    console.warn('Calling the placeholder getExtendedProps function');
     return { readonly: false, hidden: false };
   },
   accessPolicyResource: undefined,
