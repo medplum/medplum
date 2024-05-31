@@ -378,6 +378,21 @@ describe('Search Utils', () => {
     ).toEqual('?_include=Patient:organization');
   });
 
+  test('Format _include:iterate', () => {
+    expect(
+      formatSearchQuery({
+        resourceType: 'Patient',
+        include: [
+          {
+            resourceType: 'Patient',
+            searchParam: 'organization',
+            modifier: 'iterate',
+          },
+        ],
+      })
+    ).toEqual('?_include:iterate=Patient:organization');
+  });
+
   test.each<[string, SearchRequest]>([
     [
       'Patient?name:contains=Just',

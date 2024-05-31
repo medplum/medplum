@@ -38,7 +38,7 @@ export interface IncludeTarget {
   resourceType: string;
   searchParam: string;
   targetType?: string;
-  modifier?: string;
+  modifier?: 'iterate';
 }
 
 /**
@@ -535,7 +535,13 @@ function formatSortRules(sortRules: SortRule[]): string {
 
 function formatIncludeTarget(kind: '_include' | '_revinclude', target: IncludeTarget): string {
   return (
-    kind + '=' + target.resourceType + ':' + target.searchParam + (target.targetType ? ':' + target.targetType : '')
+    kind +
+    (target.modifier ? ':' + target.modifier : '') +
+    '=' +
+    target.resourceType +
+    ':' +
+    target.searchParam +
+    (target.targetType ? ':' + target.targetType : '')
   );
 }
 
