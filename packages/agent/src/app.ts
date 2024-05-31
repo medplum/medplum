@@ -14,7 +14,6 @@ import {
   MedplumClient,
   isValidHostname,
   normalizeErrorString,
-  sleep,
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
@@ -618,13 +617,7 @@ export class App {
         { encoding: 'utf-8' }
       );
 
-      // Send message to child to signal that we are ready to continue
-      if (!child.send({ type: 'STOPPED' })) {
-        throw new Error('Upgrader child process has closed');
-      }
-      this.log.info('Successfully sent STOPPED message to child. Closing IPC...');
-
-      await sleep(75);
+      this.log.info('Closing IPC...');
       child.disconnect();
     } catch (err: unknown) {
       this.log.error(

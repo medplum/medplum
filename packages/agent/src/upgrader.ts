@@ -41,13 +41,9 @@ export async function upgraderMain(argv: string[]): Promise<void> {
       () => reject(new Error('Timed out while waiting for parent process to send STOPPED message')),
       5000
     );
-    process.on('message', (msg: { type: string }) => {
+    process.on('disconnect', () => {
       clearTimeout(stoppedTimeout);
-      if (msg.type === 'STOPPED') {
-        resolve();
-      } else {
-        reject(new Error(`Invalid message type ${msg.type} received. Expected STOPPED`));
-      }
+      resolve();
     });
   });
 
