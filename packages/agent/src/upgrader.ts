@@ -66,7 +66,13 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     // Try to restart Agent service if anything goes wrong
     globalLogger.error(`Error while attempting to run installer: ${normalizeErrorString(err)}`);
     globalLogger.error('Failed to run installer, attempting to restart agent service...');
-    execSync('net start "Medplum Agent"');
-    globalLogger.info('Successfully restarted agent service');
+    try {
+      execSync('net start "Medplum Agent"');
+      globalLogger.info('Successfully restarted agent service');
+    } catch (err) {
+      globalLogger.info('Medplum agent already started, skipping restart');
+    }
   }
+
+  globalLogger.info('Finished upgrade');
 }
