@@ -14,6 +14,7 @@ import {
   MedplumClient,
   isValidHostname,
   normalizeErrorString,
+  sleep,
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
@@ -574,9 +575,14 @@ export class App {
           () => reject(new Error('Timed out while waiting for message from child')),
           5000
         );
-        child.on('message', () => {
-          resolve();
+        child.on('message', (msg: string) => {
           clearTimeout(childTimeout);
+          const parsedMsg = JSON.parse(msg) as { type: string };
+          if (parsedMsg.type === 'STARTED') {
+            resolve();
+          } else {
+            reject(new Error(`Received unexpected message type ${parsedMsg.type} when expected type STARTED`));
+          }
         });
       });
 
@@ -617,8 +623,9 @@ export class App {
       if (!child.send({ type: 'STOPPED' })) {
         throw new Error('Upgrader child process has closed');
       }
-
       this.log.info('Successfully sent STOPPED message to child. Closing IPC...');
+
+      await sleep(75);
       child.disconnect();
     } catch (err: unknown) {
       this.log.error(
