@@ -69,7 +69,7 @@ export class App {
   async start(): Promise<void> {
     this.log.info('Medplum service starting...');
 
-    this.startWebSocket();
+    await this.startWebSocket();
 
     // We do this after starting WebSockets so that we can send a message if we finished upgrading
     await this.maybeFinalizeUpgrade();
@@ -78,7 +78,7 @@ export class App {
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
-        this.connectWebSocket();
+        this.connectWebSocket().catch(this.log.error);
       } else {
         this.startWebSocketWorker();
       }
@@ -121,15 +121,15 @@ export class App {
     }
   }
 
-  private startWebSocket(): void {
-    this.connectWebSocket();
+  private async startWebSocket(): Promise<void> {
+    await this.connectWebSocket();
     this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatPeriod);
   }
 
   private async heartbeat(): Promise<void> {
     if (!(this.webSocket || this.reconnectTimer)) {
       this.log.warn('WebSocket not connected');
-      this.connectWebSocket();
+      this.connectWebSocket().catch(this.log.error);
       return;
     }
 
@@ -138,7 +138,7 @@ export class App {
     }
   }
 
-  private connectWebSocket(): void {
+  private async connectWebSocket(): Promise<void> {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = undefined;
@@ -245,6 +245,17 @@ export class App {
       } catch (err) {
         this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
       }
+    });
+
+    return new Promise<void>((resolve, reject) => {
+      const connectTimeout = setTimeout(
+        () => reject(new Error('Timeout when attempting to connect to server WebSocket')),
+        10000
+      );
+      this.webSocket?.addEventListener('open', () => {
+        clearTimeout(connectTimeout);
+        resolve();
+      });
     });
   }
 
