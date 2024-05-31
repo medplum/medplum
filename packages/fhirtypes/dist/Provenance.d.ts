@@ -176,6 +176,11 @@ export interface Provenance {
 }
 
 /**
+ * The period during which the activity occurred.
+ */
+export type ProvenanceOccurred = Period | string;
+
+/**
  * An actor taking a role in an activity  for which it can be assigned
  * some degree of responsibility for the activity taking place.
  */

@@ -322,6 +322,14 @@ export interface Procedure {
 }
 
 /**
+ * Estimated or actual date, date-time, period, or age when the procedure
+ * was performed.  Allows a period to support complex procedures that
+ * span more than one date, and also allows for the length of the
+ * procedure to be captured.
+ */
+export type ProcedurePerformed = Age | Period | Range | string;
+
+/**
  * A device that is implanted, removed or otherwise manipulated
  * (calibration, battery replacement, fitting a prosthesis, attaching a
  * wound-vac, etc.) as a focal portion of the Procedure.

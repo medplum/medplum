@@ -302,6 +302,12 @@ export interface MedicationKnowledgeAdministrationGuidelines {
 }
 
 /**
+ * Indication for use that apply to the specific administration
+ * guidelines.
+ */
+export type MedicationKnowledgeAdministrationGuidelinesIndication = CodeableConcept | Reference<ObservationDefinition>;
+
+/**
  * Dosage for the medication for the specific guidelines.
  */
 export interface MedicationKnowledgeAdministrationGuidelinesDosage {
@@ -411,6 +417,12 @@ export interface MedicationKnowledgeAdministrationGuidelinesPatientCharacteristi
    */
   value?: string[];
 }
+
+/**
+ * Specific characteristic that is relevant to the administration
+ * guideline (e.g. height, weight, gender).
+ */
+export type MedicationKnowledgeAdministrationGuidelinesPatientCharacteristicsCharacteristic = CodeableConcept | Quantity;
 
 /**
  * The price of the medication.
@@ -538,6 +550,11 @@ export interface MedicationKnowledgeDrugCharacteristic {
 }
 
 /**
+ * Description of the characteristic.
+ */
+export type MedicationKnowledgeDrugCharacteristicValue = CodeableConcept | Quantity | string;
+
+/**
  * Identifies a particular constituent of interest in the product.
  */
 export interface MedicationKnowledgeIngredient {
@@ -602,6 +619,12 @@ export interface MedicationKnowledgeIngredient {
    */
   strength?: Ratio;
 }
+
+/**
+ * The actual ingredient - either a substance (simple ingredient) or
+ * another medication.
+ */
+export type MedicationKnowledgeIngredientItem = CodeableConcept | Reference<Substance>;
 
 /**
  * The time course of drug absorption, distribution, metabolism and

@@ -261,6 +261,23 @@ export interface FamilyMemberHistory {
 }
 
 /**
+ * The actual or approximate date of birth of the relative.
+ */
+export type FamilyMemberHistoryBorn = Period | string;
+
+/**
+ * The age of the relative at the time the family member history is
+ * recorded.
+ */
+export type FamilyMemberHistoryAge = Age | Range | string;
+
+/**
+ * Deceased flag or the actual or approximate age of the relative at the
+ * time of death for the family member history record.
+ */
+export type FamilyMemberHistoryDeceased = Age | boolean | Range | string;
+
+/**
  * The significant Conditions (or condition) that the family member had.
  * This is a repeating section to allow a system to represent more than
  * one condition per resource, though there is nothing stopping multiple
@@ -357,3 +374,10 @@ export interface FamilyMemberHistoryCondition {
    */
   note?: Annotation[];
 }
+
+/**
+ * Either the age of onset, range of approximate age or descriptive
+ * string can be recorded.  For conditions with multiple occurrences,
+ * this describes the first known occurrence.
+ */
+export type FamilyMemberHistoryConditionOnset = Age | Period | Range | string;

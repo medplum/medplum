@@ -136,6 +136,8 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
   b.indentCount--;
   b.append('}');
 
+  writeChoiceOfTypeDefinitions(b, fhirType);
+
   const subTypes = fhirType.innerTypes;
   if (subTypes) {
     subTypes.sort((t1, t2) => t1.name.localeCompare(t2.name));
@@ -165,6 +167,21 @@ function writeInterfaceProperty(
     b.append(
       typeScriptProperty.name + (typeScriptProperty.required ? '' : '?') + ': ' + typeScriptProperty.typeName + ';'
     );
+  }
+}
+
+function writeChoiceOfTypeDefinitions(b: FileBuilder, fhirType: InternalTypeSchema): void {
+  for (const [path, property] of Object.entries(fhirType.elements)) {
+    if (property.type.length > 1) {
+      b.newLine();
+      generateJavadoc(b, property.description);
+      const unionName = fhirType.name + capitalize(path.replaceAll('[x]', ''));
+      const typesArray = getTypeScriptProperties(property, path, fhirType.name);
+      const typesSet = new Set(typesArray.map((t) => t.typeName));
+      const sortedTypesArray = Array.from(typesSet);
+      sortedTypesArray.sort((a, b) => a.localeCompare(b));
+      b.append(`export type ${unionName} = ${sortedTypesArray.join(' | ')};`);
+    }
   }
 }
 

@@ -376,6 +376,21 @@ export interface Observation {
 }
 
 /**
+ * The time or time-period the observed value is asserted as being true.
+ * For biological subjects - e.g. human patients - this is usually called
+ * the &quot;physiologically relevant time&quot;. This is usually either the time
+ * of the procedure or of specimen collection, but very often the source
+ * of the date/time is not known, only the date/time itself.
+ */
+export type ObservationEffective = Period | string | Timing;
+
+/**
+ * The information determined as a result of making the observation, if
+ * the information has a simple value.
+ */
+export type ObservationValue = boolean | CodeableConcept | number | Period | Quantity | Range | Ratio | SampledData | string;
+
+/**
  * Some observations have multiple component observations.  These
  * component observations are expressed as separate code value pairs that
  * share the same attributes.  Examples include systolic and diastolic
@@ -509,6 +524,12 @@ export interface ObservationComponent {
    */
   referenceRange?: ObservationReferenceRange[];
 }
+
+/**
+ * The information determined as a result of making the observation, if
+ * the information has a simple value.
+ */
+export type ObservationComponentValue = boolean | CodeableConcept | number | Period | Quantity | Range | Ratio | SampledData | string;
 
 /**
  * Guidance on how to interpret the value by comparison to a normal or

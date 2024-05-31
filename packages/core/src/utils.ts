@@ -4,6 +4,7 @@ import {
   Coding,
   Device,
   Extension,
+  ExtensionValue,
   Identifier,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
@@ -421,7 +422,7 @@ export function setIdentifier(resource: Resource & { identifier?: Identifier[] }
  * @param urls - Array of extension URLs.  Each entry represents a nested extension.
  * @returns The extension value if found; undefined otherwise.
  */
-export function getExtensionValue(resource: any, ...urls: string[]): string | undefined {
+export function getExtensionValue(resource: any, ...urls: string[]): ExtensionValue | undefined {
   const extension = getExtension(resource, ...urls);
   if (!extension) {
     return undefined;

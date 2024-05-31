@@ -197,3 +197,11 @@ export interface MedicinalProductContraindicationOtherTherapy {
    */
   medicationReference?: Reference<MedicinalProduct | Medication | Substance | SubstanceSpecification>;
 }
+
+/**
+ * Reference to a specific medication (active substance, medicinal
+ * product or class of products) as part of an indication or
+ * contraindication.
+ */
+export type MedicinalProductContraindicationOtherTherapyMedication = CodeableConcept | Reference<MedicinalProduct |
+    Medication | Substance | SubstanceSpecification>;

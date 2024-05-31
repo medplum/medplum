@@ -615,6 +615,14 @@ export interface TaskInput {
 }
 
 /**
+ * The value of the input parameter as a basic type.
+ */
+export type TaskInputValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
  * Outputs produced by the Task.
  */
 export interface TaskOutput {
@@ -909,6 +917,14 @@ export interface TaskOutput {
    */
   valueMeta?: Meta;
 }
+
+/**
+ * The value of the Output parameter as a basic type.
+ */
+export type TaskOutputValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
 
 /**
  * If the Task.focus is a request resource and the task is seeking

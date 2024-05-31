@@ -362,3 +362,12 @@ export interface Extension {
    */
   valueMeta?: Meta;
 }
+
+/**
+ * Value of extension - must be one of a constrained set of the data
+ * types (see [Extensibility](extensibility.html) for a list).
+ */
+export type ExtensionValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;

@@ -275,6 +275,14 @@ export interface InvoiceLineItem {
 }
 
 /**
+ * The ChargeItem contains information such as the billing code, date,
+ * amount etc. If no further details are required for the lineItem,
+ * inline billing codes can be added using the CodeableConcept data type
+ * instead of the Reference.
+ */
+export type InvoiceLineItemChargeItem = CodeableConcept | Reference<ChargeItem>;
+
+/**
  * The price for a ChargeItem may be calculated as a base price with
  * surcharges/deductions that apply in certain conditions. A
  * ChargeItemDefinition resource that defines the prices, factors and

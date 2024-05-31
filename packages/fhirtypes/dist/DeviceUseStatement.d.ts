@@ -196,3 +196,8 @@ export interface DeviceUseStatement {
    */
   note?: Annotation[];
 }
+
+/**
+ * How often the device was used.
+ */
+export type DeviceUseStatementTiming = Period | string | Timing;
