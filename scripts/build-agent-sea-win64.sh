@@ -3,11 +3,11 @@
 # Fail on error
 set -e
 
-# Move into packages/agent
-pushd packages/agent
-
 # Get the current version number
 export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
+
+# Move into packages/agent
+pushd packages/agent
 
 # Build the agent
 npm run build
