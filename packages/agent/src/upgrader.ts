@@ -53,9 +53,14 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     globalLogger.info('Stopping running agent service...');
     execSync('net stop "Medplum Agent"');
     globalLogger.info('Agent service stopped succesfully');
+  } catch (err) {
+    globalLogger.info('Agent service not running, skipping stopping the service');
+  }
+
+  try {
     // Run installer
     globalLogger.info('Running installer silently', { binPath });
-    execSync(`${binPath} -S`);
+    execSync(`${binPath} /S`);
     globalLogger.info(`Agent version ${version} successfully installed`);
   } catch (err: unknown) {
     // Try to restart Agent service if anything goes wrong
