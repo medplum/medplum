@@ -1,4 +1,4 @@
-import { Logger } from '@medplum/core';
+import { Logger, normalizeErrorString } from '@medplum/core';
 import { execSync } from 'node:child_process';
 import { createWriteStream, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -47,12 +47,13 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     globalLogger.info('Agent service stopped succesfully');
     // Run installer
     globalLogger.info('Running installer silently', { binPath });
-    execSync(`${binPath} /S`);
+    execSync(`${binPath} -S`);
     globalLogger.info(`Agent version ${version} successfully installed`);
   } catch (err: unknown) {
     // Try to restart Agent service if anything goes wrong
+    globalLogger.error(`Error while attempting to run installer: ${normalizeErrorString(err)}`);
     globalLogger.error('Failed to run installer, attempting to restart agent service...');
     execSync('net start "Medplum Agent"');
-    throw err;
+    globalLogger.info('Successfully restarted agent service');
   }
 }
