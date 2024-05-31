@@ -4,6 +4,7 @@ import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
 
 const DEFAULT_UPGRADE_TIMEOUT = 15000;
+const MAX_UPGRADE_TIMEOUT = 45000;
 
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -57,11 +58,16 @@ export type AgentUpgradeOptions = {
 };
 
 async function upgradeAgent(agent: Agent, options?: AgentUpgradeOptions): Promise<FhirResponse> {
+  let timeout = options?.timeout ?? DEFAULT_UPGRADE_TIMEOUT;
+  if (timeout > MAX_UPGRADE_TIMEOUT) {
+    timeout = MAX_UPGRADE_TIMEOUT;
+  }
+
   // Send agent message
   const [outcome, result] = await publishAgentRequest<AgentUpgradeResponse>(
     agent,
     { type: 'agent:upgrade:request', ...(options?.version ? { version: options.version } : undefined) },
-    { waitForResponse: true, timeout: options?.timeout ?? DEFAULT_UPGRADE_TIMEOUT }
+    { waitForResponse: true, timeout }
   );
 
   if (!result || result.type === 'agent:upgrade:response') {
