@@ -56,4 +56,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     execSync('net start "Medplum Agent"');
     globalLogger.info('Successfully restarted agent service');
   }
+
+  // Make sure to flush log stream
+  logStream.end();
 }
