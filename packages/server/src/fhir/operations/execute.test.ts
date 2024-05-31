@@ -427,8 +427,6 @@ exports.handler = async function (medplum, event) {
     const res = await request(app)
       .get(`/fhir/R4/Bot/${bots[2].id}/$execute`)
       .set('Authorization', 'Bearer ' + accessToken);
-    console.log('CODY res.body', res.body);
-    console.log('CODY res.text', res.text);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toEqual('Hello, world!');
