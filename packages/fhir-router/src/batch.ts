@@ -214,10 +214,12 @@ class BatchProcessor {
     }
     if (resolved) {
       this.resolvedIdentities[resolved.placeholder] = resolved.reference;
-      if (seenIdentities.has(resolved.reference)) {
-        throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
+      if (this.bundle.type === 'transaction') {
+        if (seenIdentities.has(resolved.reference)) {
+          throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
+        }
+        seenIdentities.add(resolved.reference);
       }
-      seenIdentities.add(resolved.reference);
     }
     return undefined;
   }

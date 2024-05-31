@@ -744,7 +744,7 @@ describe('Batch', () => {
     );
   });
 
-  test('Process batch patch wrong pach type', async () => {
+  test('Process batch patch wrong patch type', async () => {
     const bundle = await processBatch(router, repo, {
       resourceType: 'Bundle',
       type: 'batch',
@@ -771,7 +771,7 @@ describe('Batch', () => {
     );
   });
 
-  test('Process batch patch wrong pach type', async () => {
+  test('Process batch patch wrong patch type', async () => {
     const bundle = await processBatch(router, repo, {
       resourceType: 'Bundle',
       type: 'batch',
@@ -1292,38 +1292,6 @@ describe('Batch', () => {
               coding: [{ system: 'http://snomed.info/sct', code: '83157008' }],
               text: 'FFI',
             },
-          },
-        },
-        {
-          request: {
-            method: 'POST',
-            url: 'Observation',
-          },
-          resource: {
-            resourceType: 'Observation',
-            status: 'final',
-            code: {
-              coding: [{ system: 'http://loinc.org', code: '31989-7' }],
-              text: 'Prion test',
-            },
-            subject: { reference: 'urn:uuid:' + patientIdentifier },
-            valueCodeableConcept: {
-              coding: [{ system: 'http://loinc.org', code: 'LA6576-8', display: 'Positive' }],
-            },
-          },
-        },
-        {
-          request: {
-            method: 'POST',
-            url: 'Task',
-          },
-          resource: {
-            resourceType: 'Task',
-            status: 'requested',
-            intent: 'plan',
-            encounter: { reference: 'urn:uuid:' + encounterIdentifier },
-            owner: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
-            description: 'Follow up with B. Tables regarding prognosis',
           },
         },
       ],
