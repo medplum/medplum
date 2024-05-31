@@ -198,8 +198,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/:id/$reload-config', agentReloadConfigHandler);
 
   // Agent $upgrade operation
-  router.add('GET', '/Agent/$reload-config', agentUpgradeHandler);
-  router.add('GET', '/Agent/:id/$reload-config', agentUpgradeHandler);
+  router.add('GET', '/Agent/$upgrade', agentUpgradeHandler);
+  router.add('GET', '/Agent/:id/$upgrade', agentUpgradeHandler);
 
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);

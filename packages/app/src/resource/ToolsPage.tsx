@@ -152,7 +152,7 @@ export function ToolsPage(): JSX.Element | null {
       <Title order={2}>Upgrade Agent</Title>
       <p>Upgrade the version of this agent, to either the latest (default) or a specified version.</p>
       <Button onClick={handleUpgrade} loading={upgrading} disabled={working && !upgrading} aria-label="Upgrade agent">
-        Upgrade Agent
+        Upgrade
       </Button>
       <Divider my="lg" />
       <Title order={2}>Ping from Agent</Title>
