@@ -528,7 +528,7 @@ export class App {
 
     try {
       const command = __filename;
-      child = spawn(`${command} --upgrade`, { detached: true, stdio: [null, null, null, 'ipc'] });
+      child = spawn(command, ['--upgrade'], { detached: true, stdio: [null, null, null, 'ipc'] });
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
           () => reject(new Error('Timed out while waiting for message from child')),
