@@ -3,6 +3,8 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
 
+const DEFAULT_UPGRADE_TIMEOUT = 15000;
+
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   name: 'agent-upgrade',
@@ -14,7 +16,11 @@ export const operation: OperationDefinition = {
   system: false,
   type: true,
   instance: true,
-  parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' }],
+  parameter: [
+    { use: 'in', name: 'version', type: 'string', min: 0, max: '1' },
+    { use: 'in', name: 'timeout', type: 'integer', min: 0, max: '1' },
+    { use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' },
+  ],
 };
 
 /**
@@ -28,17 +34,34 @@ export const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function agentUpgradeHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { version } = req.query;
+  const { version, timeout: _timeout } = req.query;
   req.query.version = undefined;
-  return handleBulkAgentOperation(req, async (agent: Agent) => upgradeAgent(agent, version));
+  req.query.timeout = undefined;
+
+  let timeout: number | undefined;
+  if (_timeout) {
+    timeout = Number.parseInt(_timeout, 10);
+    if (Number.isNaN(timeout)) {
+      throw new OperationOutcomeError(
+        badRequest("'timeout' must be an integer representing a duration in milliseconds, if defined")
+      );
+    }
+  }
+
+  return handleBulkAgentOperation(req, async (agent: Agent) => upgradeAgent(agent, { version, timeout }));
 }
 
-async function upgradeAgent(agent: Agent, version?: string): Promise<FhirResponse> {
+export type AgentUpgradeOptions = {
+  version?: string;
+  timeout?: number;
+};
+
+async function upgradeAgent(agent: Agent, options?: AgentUpgradeOptions): Promise<FhirResponse> {
   // Send agent message
   const [outcome, result] = await publishAgentRequest<AgentUpgradeResponse>(
     agent,
-    { type: 'agent:upgrade:request', ...(version ? { version } : undefined) },
-    { waitForResponse: true }
+    { type: 'agent:upgrade:request', ...(options?.version ? { version: options.version } : undefined) },
+    { waitForResponse: true, timeout: options?.timeout ?? DEFAULT_UPGRADE_TIMEOUT }
   );
 
   if (!result || result.type === 'agent:upgrade:response') {

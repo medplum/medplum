@@ -102,7 +102,7 @@ export class App {
       };
 
       // If we are on the right version, send success response to Medplum
-      if (upgradeDetails.targetVersion === MEDPLUM_VERSION) {
+      if (upgradeDetails.targetVersion === MEDPLUM_VERSION.split('-')[0]) {
         // Send message
         await this.sendToWebSocket({
           type: 'agent:upgrade:response',
