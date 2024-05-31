@@ -93,6 +93,7 @@ async function createResource(
 ): Promise<FhirResponse> {
   const { resourceType } = req.params;
   const resource = req.body as Resource;
+  const assignedId = Boolean(options?.batch);
 
   if (req.headers?.['if-none-exist']) {
     let ifNoneExist = req.headers['if-none-exist'];
@@ -100,11 +101,13 @@ async function createResource(
       ifNoneExist = ifNoneExist[0];
     }
 
-    const result = await repo.conditionalCreate(resource, parseSearchRequest(`${resourceType}?${ifNoneExist}`));
+    const result = await repo.conditionalCreate(resource, parseSearchRequest(`${resourceType}?${ifNoneExist}`), {
+      assignedId,
+    });
     return [result.outcome, result.resource];
   }
 
-  return createResourceImpl(resourceType as ResourceType, resource, repo, { assignedId: Boolean(options?.batch) });
+  return createResourceImpl(resourceType as ResourceType, resource, repo, { assignedId });
 }
 
 export async function createResourceImpl<T extends Resource>(

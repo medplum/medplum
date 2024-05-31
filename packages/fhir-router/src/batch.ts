@@ -17,7 +17,7 @@ import { HttpMethod, RouteResult } from './urlrouter';
 import { IncomingHttpHeaders } from 'node:http';
 
 const maxUpdates = 50;
-const maxSerializableTransactionEntries = 8;
+const maxSerializableTransactionEntries = 4;
 
 /**
  * Processes a FHIR batch request.

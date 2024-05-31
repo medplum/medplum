@@ -193,23 +193,26 @@ export abstract class FhirRepository<TClient = unknown> {
       throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
     }
 
-    return this.withTransaction(async () => {
-      const matches = await this.searchResources(search);
-      if (matches.length === 1) {
-        const existing = matches[0];
-        if (!options?.assignedId && resource.id && resource.id !== existing.id) {
-          throw new OperationOutcomeError(
-            badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
-          );
+    return this.withTransaction(
+      async () => {
+        const matches = await this.searchResources(search);
+        if (matches.length === 1) {
+          const existing = matches[0];
+          if (!options?.assignedId && resource.id && resource.id !== existing.id) {
+            throw new OperationOutcomeError(
+              badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+            );
+          }
+          return { resource: matches[0], outcome: allOk };
+        } else if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
         }
-        return { resource: matches[0], outcome: allOk };
-      } else if (matches.length > 1) {
-        throw new OperationOutcomeError(multipleMatches);
-      }
 
-      resource = await this.createResource(resource, options);
-      return { resource, outcome: created };
-    });
+        resource = await this.createResource(resource, options);
+        return { resource, outcome: created };
+      },
+      { serializable: true } // Requires strong transactional guarantees to ensure unique resource creation
+    );
   }
 
   async conditionalUpdate<T extends Resource>(

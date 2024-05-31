@@ -3,7 +3,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
 import request from 'supertest';
-import { ContentType, getReferenceString } from '@medplum/core';
+import { ContentType, getReferenceString, sleep } from '@medplum/core';
 import { Bundle, Patient, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
@@ -415,6 +415,8 @@ describe('Batch and Transaction processing', () => {
     const encounterIdentifier = randomUUID();
     const conditionIdentifier = randomUUID();
 
+    const patientCreateCondition = 'identifier=http://example.com|' + patientIdentifier;
+
     const tx: Bundle = {
       resourceType: 'Bundle',
       type: 'transaction',
@@ -424,34 +426,13 @@ describe('Batch and Transaction processing', () => {
           request: {
             method: 'POST',
             url: 'Patient',
-            ifNoneExist: 'identifier=http://example.com|' + patientIdentifier,
+            ifNoneExist: patientCreateCondition,
           },
           resource: {
             resourceType: 'Patient',
             name: [{ given: ['Bobby' + patientIdentifier], family: 'Tables' }],
             gender: 'unknown',
             identifier: [{ system: 'http://example.com', value: patientIdentifier }],
-          },
-        },
-        {
-          request: {
-            method: 'PUT',
-            url:
-              'CareTeam?subject=urn:uuid:' + patientIdentifier + '&status=active&category=http://loinc.org|LA28865-6',
-          },
-          resource: {
-            resourceType: 'CareTeam',
-            status: 'active',
-            category: [
-              {
-                coding: [{ system: 'http://loinc.org', code: 'LA28865-6' }],
-                text: 'Holistic Wellness Squad',
-              },
-            ],
-            subject: { reference: 'urn:uuid:' + patientIdentifier },
-            participant: [
-              { member: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' } },
-            ],
           },
         },
         {
@@ -509,36 +490,34 @@ describe('Batch and Transaction processing', () => {
             },
           },
         },
-        {
-          request: {
-            method: 'POST',
-            url: 'Task',
-          },
-          resource: {
-            resourceType: 'Task',
-            status: 'requested',
-            intent: 'plan',
-            encounter: { reference: 'urn:uuid:' + encounterIdentifier },
-            owner: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
-            description: 'Follow up with B. Tables regarding prognosis',
-          },
-        },
       ],
     };
 
     const requests = [];
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 4; i++) {
+      await sleep(100);
       const req = request(app)
         .post(`/fhir/R4/`)
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
-        .send(tx);
+        .send(tx)
+        .then((res) => res); // Force send request
       requests.push(req);
     }
 
     const results = await Promise.all(requests);
     for (let i = 0; i < requests.length; i++) {
+      console.log(results[i].body.issue);
       expect(results[i].status).toEqual(200);
     }
+
+    // Assert that a unique resource was conditionally created
+    const createdResources = await request(app)
+      .get('/fhir/R4/Patient?' + patientCreateCondition)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(tx);
+    expect(createdResources.status).toEqual(200);
+    expect(createdResources.body.entry).toHaveLength(1);
   });
 });

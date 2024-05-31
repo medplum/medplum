@@ -96,6 +96,7 @@ import {
   InsertQuery,
   SelectQuery,
   TransactionIsolationLevel,
+  normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
@@ -1961,7 +1962,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.commitTransaction();
       return result;
     } catch (err) {
-      const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(normalizeDatabaseError(err)));
       await this.rollbackTransaction(operationOutcomeError);
       throw operationOutcomeError;
     } finally {
