@@ -403,8 +403,12 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
     throw new OperationOutcomeError(badRequest('Google authentication is required'));
   }
 
+  // TODO: Do we really need to check IP access rules inside this method?
+  // Or could this be done closer to call site?
+  // This method is used internally in a bunch of places that do not need to check IP access rules
+
   // Get the access policy
-  const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
+  const accessPolicy = await getAccessPolicyForLogin({ project, login, membership });
 
   // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);

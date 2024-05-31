@@ -84,6 +84,11 @@ export interface Meta {
   author?: Reference;
 
   /**
+   * The individual, device, or organization for whom the change was made.
+   */
+  onBehalfOf?: Reference;
+
+  /**
    * Optional account reference that can be used for sub-project
    * compartments.
    */
