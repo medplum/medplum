@@ -7,6 +7,7 @@ import {
   allOk,
   badRequest,
   createReference,
+  getStatus,
   isOk,
   isOperationOutcome,
   isResource,
@@ -99,18 +100,18 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
       sendOutcome(res, result);
       return;
     }
-    if (isResource(result) && result.resourceType === 'Binary') {
-      const outcome = result.success ? allOk : badRequest(result.logResult);
-      await sendResponse(req, res, outcome, result);
+
+    const responseBody = getResponseBodyFromResult(result);
+    const outcome = result.success ? allOk : badRequest(result.logResult);
+
+    if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
+      await sendResponse(req, res, outcome, responseBody);
       return;
     }
-    const responseBody = getResponseBodyFromResult(result);
+
     // Send the response
     // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
-    res
-      .status(result.success ? 200 : 400)
-      .type(getResponseContentType(req))
-      .send(responseBody);
+    res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
   }
 });
 
