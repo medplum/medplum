@@ -1,5 +1,5 @@
 import { ContentType, allOk, badRequest, sleep } from '@medplum/core';
-import { AsyncJob, Binary, Bot, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import { AsyncJob, Bot, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request, { Response } from 'supertest';
