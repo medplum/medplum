@@ -87,6 +87,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <QuantityInput
           name={name}
+          path=""
           defaultValue={tryParseQuantity(props.defaultValue)}
           autoFocus={props.autoFocus}
           onChange={(newQuantity: Quantity | undefined) => {

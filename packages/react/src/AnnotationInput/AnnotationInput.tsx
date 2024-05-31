@@ -3,12 +3,9 @@ import { createReference } from '@medplum/core';
 import { Annotation } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import { useState } from 'react';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface AnnotationInputProps {
-  readonly name: string;
-  readonly defaultValue?: Annotation;
-  readonly onChange?: (value: Annotation) => void;
-}
+export interface AnnotationInputProps extends ComplexTypeInputProps<Annotation> {}
 
 export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
   const author = useMedplumProfile();
@@ -31,6 +28,7 @@ export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
 
   return (
     <TextInput
+      disabled={props.disabled}
       name={props.name}
       placeholder="Annotation text"
       defaultValue={value.text}

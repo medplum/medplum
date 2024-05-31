@@ -384,6 +384,13 @@ export interface Measure {
 }
 
 /**
+ * The intended subjects for the measure. If this element is not
+ * provided, a Patient subject is assumed, but the subject of the measure
+ * can be anything.
+ */
+export type MeasureSubject = CodeableConcept | Reference<Group>;
+
+/**
  * A group of population criteria for the measure.
  */
 export interface MeasureGroup {

@@ -33,3 +33,17 @@ export const DefaultValue = (): JSX.Element => (
     />
   </Document>
 );
+
+export const Disabled = (): JSX.Element => (
+  <Document>
+    <CodeableConceptInput
+      disabled
+      name="foo"
+      binding={valueSet}
+      defaultValue={{ coding: [{ code: 'M', display: 'Married' }] }}
+      onChange={console.log}
+      path={'Patient.maritalStatus'}
+      outcome={undefined}
+    />
+  </Document>
+);

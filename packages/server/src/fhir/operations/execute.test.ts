@@ -1,4 +1,4 @@
-import { ContentType, badRequest, sleep } from '@medplum/core';
+import { ContentType, allOk, badRequest, sleep } from '@medplum/core';
 import { AsyncJob, Bot, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -52,6 +52,26 @@ exports.handler = async function (medplum, event) {
   } else {
     throw new Error('Invalid boolean');
   }
+};
+`,
+    ],
+    [
+      `
+export async function handler(medplum, event) {
+  return {
+    resourceType: 'Binary',
+    contentType: 'text/plain',
+    data: '${Buffer.from('Hello, world!').toString('base64')}'
+  };
+}
+  `,
+      `
+exports.handler = async function (medplum, event) {
+  return {
+    resourceType: 'Binary',
+    contentType: 'text/plain',
+    data: '${Buffer.from('Hello, world!').toString('base64')}'
+  };
 };
 `,
     ],
@@ -261,9 +281,6 @@ exports.handler = async function (medplum, event) {
   });
 
   test('VM context bot success', async () => {
-    // Temporarily enable VM context bots
-    getConfig().vmContextBotsEnabled = true;
-
     // Create a bot with empty code
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
@@ -353,12 +370,11 @@ exports.handler = async function (medplum, event) {
       .send({});
     expect(res7.status).toBe(400);
     expect(res7.body.issue[0].details.text).toEqual('VM Context bots not enabled on this server');
+
+    getConfig().vmContextBotsEnabled = true;
   });
 
   test('Handle number response', async () => {
-    // Temporarily enable VM context bots
-    getConfig().vmContextBotsEnabled = true;
-
     // Create a bot with empty code
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
@@ -394,20 +410,29 @@ exports.handler = async function (medplum, event) {
       .send({});
     expect(res6.status).toBe(200);
     expect(res6.body).toEqual(42);
+  });
 
-    // Disable VM context bots
-    getConfig().vmContextBotsEnabled = false;
+  test('OperationOutcome response', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(allOk);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+    expect(res.body).toMatchObject(allOk);
+  });
+
+  test('Binary response', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Bot/${bots[2].id}/$execute`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
+    expect(res.text).toEqual('Hello, world!');
   });
 
   describe('Prefer: respond-async', () => {
-    beforeAll(() => {
-      getConfig().vmContextBotsEnabled = true;
-    });
-
-    afterAll(() => {
-      getConfig().vmContextBotsEnabled = false;
-    });
-
     test('Plain text -- Prefer: respond-async', async () => {
       const res = await request(app)
         .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)

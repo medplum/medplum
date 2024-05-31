@@ -210,3 +210,10 @@ export interface TimingRepeat {
    */
   offset?: number;
 }
+
+/**
+ * Either a duration for the length of the timing schedule, a range of
+ * possible length, or outer bounds for start and/or end limits of the
+ * timing schedule.
+ */
+export type TimingRepeatBounds = Duration | Period | Range;

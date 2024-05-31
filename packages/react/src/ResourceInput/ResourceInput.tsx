@@ -81,6 +81,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly loadOnFocus?: boolean;
   readonly required?: boolean;
   readonly onChange?: (value: T | undefined) => void;
+  readonly disabled?: boolean;
 }
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
@@ -131,6 +132,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
 
   return (
     <AsyncAutocomplete<T>
+      disabled={props.disabled}
       name={props.name}
       required={props.required}
       itemComponent={ItemComponent}

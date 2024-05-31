@@ -208,6 +208,17 @@ export interface Patient {
 }
 
 /**
+ * Indicates if the individual is deceased or not.
+ */
+export type PatientDeceased = boolean | string;
+
+/**
+ * Indicates whether the patient is part of a multiple (boolean) or
+ * indicates the actual birth order (integer).
+ */
+export type PatientMultipleBirth = boolean | number;
+
+/**
  * A language which may be used to communicate with the patient about his
  * or her health.
  */

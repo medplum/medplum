@@ -476,6 +476,11 @@ export interface AuditEventEntityDetail {
 }
 
 /**
+ * The  value of the extra detail.
+ */
+export type AuditEventEntityDetailValue = string;
+
+/**
  * The system that is reporting the event.
  */
 export interface AuditEventSource {

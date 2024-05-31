@@ -9,6 +9,7 @@ import {
   PropertyType,
   SortRule,
   splitN,
+  splitSearchOnComma,
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
@@ -413,7 +414,7 @@ function buildSimpleToken(
  */
 function buildWhereExpression(tableName: string, filter: Filter): Expression | undefined {
   const subExpressions = [];
-  for (const option of filter.value.split(',')) {
+  for (const option of splitSearchOnComma(filter.value)) {
     const expression = buildWhereCondition(tableName, filter.operator, option);
     if (expression) {
       subExpressions.push(expression);

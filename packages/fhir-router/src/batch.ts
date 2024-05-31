@@ -359,7 +359,16 @@ class BatchProcessor {
       throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
     }
 
-    return this.rewriteIdsInArray(JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8')));
+    const body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
+    if (!body) {
+      throw new OperationOutcomeError(badRequest('Empty patch body'));
+    }
+
+    if (!Array.isArray(body)) {
+      throw new OperationOutcomeError(badRequest('Patch body must be an array'));
+    }
+
+    return this.rewriteIdsInArray(body);
   }
 
   private rewriteIds(input: any): any {

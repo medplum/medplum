@@ -507,7 +507,6 @@ describe('Batch and Transaction processing', () => {
 
     const results = await Promise.all(requests);
     for (let i = 0; i < requests.length; i++) {
-      console.log(results[i].body.issue);
       expect(results[i].status).toEqual(200);
     }
 

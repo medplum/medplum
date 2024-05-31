@@ -209,6 +209,11 @@ export interface Goal {
 }
 
 /**
+ * The date or event after which the goal should begin being pursued.
+ */
+export type GoalStart = CodeableConcept | string;
+
+/**
  * Indicates what should be done by when.
  */
 export interface GoalTarget {
@@ -343,3 +348,20 @@ export interface GoalTarget {
    */
   dueDuration?: Duration;
 }
+
+/**
+ * The target value of the focus to be achieved to signify the
+ * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+ * or both values of the range can be specified. When a low value is
+ * missing, it indicates that the goal is achieved at any focus value at
+ * or below the high value. Similarly, if the high value is missing, it
+ * indicates that the goal is achieved at any focus value at or above the
+ * low value.
+ */
+export type GoalTargetDetail = boolean | CodeableConcept | number | Quantity | Range | Ratio | string;
+
+/**
+ * Indicates either the date or the duration after start by which the
+ * goal should be met.
+ */
+export type GoalTargetDue = Duration | string;

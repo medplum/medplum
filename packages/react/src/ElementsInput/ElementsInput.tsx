@@ -68,6 +68,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
               htmlFor={key}
               fhirPath={element.path}
               withAsterisk={required}
+              readonly={element.readonly}
             >
               {resourcePropertyInput}
             </CheckboxFormSection>
@@ -84,6 +85,7 @@ export function ElementsInput(props: ElementsInputProps): JSX.Element {
             outcome={props.outcome}
             fhirPath={element.path}
             errorExpression={valuePath}
+            readonly={element.readonly}
           >
             {resourcePropertyInput}
           </FormSection>

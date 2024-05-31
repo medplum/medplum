@@ -489,6 +489,11 @@ export interface QuestionnaireItemAnswerOption {
 }
 
 /**
+ * A potential answer that's allowed as the answer to this question.
+ */
+export type QuestionnaireItemAnswerOptionValue = Coding | number | Reference<Resource> | string;
+
+/**
  * A constraint indicating that this item should only be enabled
  * (displayed/allow answers to be captured) when the specified condition
  * is true.
@@ -603,6 +608,12 @@ export interface QuestionnaireItemEnableWhen {
 }
 
 /**
+ * A value that the referenced question is tested using the specified
+ * operator in order for the item to be enabled.
+ */
+export type QuestionnaireItemEnableWhenAnswer = boolean | Coding | number | Quantity | Reference<Resource> | string;
+
+/**
  * One or more values that should be pre-populated in the answer when
  * initially rendering the questionnaire for user input.
  */
@@ -703,3 +714,8 @@ export interface QuestionnaireItemInitial {
    */
   valueReference?: Reference<Resource>;
 }
+
+/**
+ * The actual value to for an initial answer.
+ */
+export type QuestionnaireItemInitialValue = Attachment | boolean | Coding | number | Quantity | Reference<Resource> | string;

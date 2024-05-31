@@ -340,6 +340,11 @@ export interface ClaimAccident {
 }
 
 /**
+ * The physical location of the accident event.
+ */
+export type ClaimAccidentLocation = Address | Reference<Location>;
+
+/**
  * The members of the team who provided the products and services.
  */
 export interface ClaimCareTeam {
@@ -483,6 +488,12 @@ export interface ClaimDiagnosis {
    */
   packageCode?: CodeableConcept;
 }
+
+/**
+ * The nature of illness or problem in a coded form or as a reference to
+ * an external defined Condition.
+ */
+export type ClaimDiagnosisDiagnosis = CodeableConcept | Reference<Condition>;
 
 /**
  * Financial instruments for reimbursement for the health care products
@@ -749,6 +760,17 @@ export interface ClaimItem {
    */
   detail?: ClaimItemDetail[];
 }
+
+/**
+ * The date or dates when the service or product was supplied, performed
+ * or completed.
+ */
+export type ClaimItemServiced = Period | string;
+
+/**
+ * Where the product or service was provided.
+ */
+export type ClaimItemLocation = Address | CodeableConcept | Reference<Location>;
 
 /**
  * A claim detail line. Either a simple (a product or service) or a
@@ -1100,6 +1122,12 @@ export interface ClaimProcedure {
 }
 
 /**
+ * The code or reference to a Procedure resource which identifies the
+ * clinical intervention performed.
+ */
+export type ClaimProcedureProcedure = CodeableConcept | Reference<Procedure>;
+
+/**
  * Other claims which are related to this claim such as prior submissions
  * or claims for related services or for the same event.
  */
@@ -1267,3 +1295,15 @@ export interface ClaimSupportingInfo {
    */
   reason?: CodeableConcept;
 }
+
+/**
+ * The date when or period to which this information refers.
+ */
+export type ClaimSupportingInfoTiming = Period | string;
+
+/**
+ * Additional data or information such as resources, documents, images
+ * etc. including references to the data or the actual inclusion of the
+ * data.
+ */
+export type ClaimSupportingInfoValue = Attachment | boolean | Quantity | Reference<Resource> | string;

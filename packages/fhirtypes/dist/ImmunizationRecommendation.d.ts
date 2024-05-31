@@ -245,6 +245,17 @@ export interface ImmunizationRecommendationRecommendation {
 }
 
 /**
+ * Nominal position of the recommended dose in a series (e.g. dose 2 is
+ * the next recommended dose).
+ */
+export type ImmunizationRecommendationRecommendationDoseNumber = number | string;
+
+/**
+ * The recommended number of doses to achieve immunity.
+ */
+export type ImmunizationRecommendationRecommendationSeriesDoses = number | string;
+
+/**
  * Vaccine date recommendations.  For example, earliest date to
  * administer, latest date to administer, etc.
  */

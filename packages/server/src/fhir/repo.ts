@@ -2,6 +2,7 @@ import {
   AccessPolicyInteraction,
   OperationOutcomeError,
   Operator,
+  PropertyType,
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
@@ -20,6 +21,7 @@ import {
   gone,
   isGone,
   isNotFound,
+  isObject,
   isOk,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -1833,7 +1835,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     for (const field of fieldsToRestore) {
       this.removeField(input, field);
-      if (original) {
+      // only top-level fields can be restored.
+      // choice-of-type fields technically aren't allowed in readonlyFields/hiddenFields,
+      // but that isn't currently enforced at write time, so exclude them here
+      if (original && !field.includes('.') && !field.endsWith('[x]')) {
         const value = original[field as keyof T];
         if (value) {
           input[field as keyof T] = value;
@@ -1844,18 +1849,40 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
-   * Removes a field from the input resource.
-   * Uses JSONPatch to process the remove operation, which supports nested fields.
+   * Removes a field from the input resource; supports nested fields.
    * @param input - The input resource.
-   * @param path - The path to the field to remove.
-   * @returns The new document with the field removed.
+   * @param path - The path to the field to remove
    */
-  private removeField<T extends Resource>(input: T, path: string): T {
-    const patch: Operation[] = [{ op: 'remove', path: `/${path.replaceAll('.', '/')}` }];
-    // applyPatch returns errors if the value is missing
-    // but we don't care if the value is missing in this case
-    applyPatch(input, patch);
-    return input;
+  private removeField<T extends Resource>(input: T, path: string): void {
+    let last: any[] = [input];
+    const pathParts = path.split('.');
+    for (let i = 0; i < pathParts.length; i++) {
+      const pathPart = pathParts[i];
+
+      if (i === pathParts.length - 1) {
+        // final key part
+        last.forEach((item) => {
+          resolveFieldName(item, pathPart).forEach((k) => {
+            delete item[k];
+          });
+        });
+      } else {
+        // intermediate key part
+        const next: any[] = [];
+        for (const lastItem of last) {
+          for (const k of resolveFieldName(lastItem, pathPart)) {
+            if (lastItem[k] !== undefined) {
+              if (Array.isArray(lastItem[k])) {
+                next.push(...lastItem[k]);
+              } else if (isObject(lastItem[k])) {
+                next.push(lastItem[k]);
+              }
+            }
+          }
+        }
+        last = next;
+      }
+    }
   }
 
   private isSuperAdmin(): boolean {
@@ -2132,7 +2159,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   close(): void {
     this.assertNotClosed();
-    this.releaseConnection();
     if (this.transactionDepth > 0) {
       // Bad state, remove connection from pool
       getRequestContext().logger.error('Closing Repository with active transaction');
@@ -2216,5 +2242,26 @@ export function getSystemRepo(): Repository {
       reference: 'system',
     },
     // System repo does not have an associated Project; it can write to any
+  });
+}
+
+function lowercaseFirstLetter(str: string): string {
+  return str.charAt(0).toLowerCase() + str.slice(1);
+}
+
+function resolveFieldName(input: any, fieldName: string): string[] {
+  if (!fieldName.endsWith('[x]')) {
+    return [fieldName];
+  }
+
+  const baseKey = fieldName.slice(0, -3);
+  return Object.keys(input).filter((k) => {
+    if (k.startsWith(baseKey)) {
+      const maybePropertyType = k.substring(baseKey.length);
+      if (maybePropertyType in PropertyType || lowercaseFirstLetter(maybePropertyType) in PropertyType) {
+        return true;
+      }
+    }
+    return false;
   });
 }

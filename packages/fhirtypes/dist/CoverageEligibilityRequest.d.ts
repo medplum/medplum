@@ -195,6 +195,12 @@ export interface CoverageEligibilityRequest {
 }
 
 /**
+ * The date or dates when the enclosed suite of services were performed
+ * or completed.
+ */
+export type CoverageEligibilityRequestServiced = Period | string;
+
+/**
  * Financial instruments for reimbursement for the health care products
  * and services.
  */
@@ -406,6 +412,12 @@ export interface CoverageEligibilityRequestItemDiagnosis {
    */
   diagnosisReference?: Reference<Condition>;
 }
+
+/**
+ * The nature of illness or problem in a coded form or as a reference to
+ * an external defined Condition.
+ */
+export type CoverageEligibilityRequestItemDiagnosisDiagnosis = CodeableConcept | Reference<Condition>;
 
 /**
  * Additional information codes regarding exceptions, special

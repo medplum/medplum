@@ -246,6 +246,11 @@ export interface CommunicationRequest {
 }
 
 /**
+ * The time when this communication is to occur.
+ */
+export type CommunicationRequestOccurrence = Period | string;
+
+/**
  * Text, attachment(s), or resource(s) to be communicated to the
  * recipient.
  */
@@ -304,3 +309,9 @@ export interface CommunicationRequestPayload {
    */
   contentReference?: Reference<Resource>;
 }
+
+/**
+ * The communicated content (or for multi-part communications, one
+ * portion of the communication).
+ */
+export type CommunicationRequestPayloadContent = Attachment | Reference<Resource> | string;

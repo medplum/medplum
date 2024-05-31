@@ -73,3 +73,8 @@ export interface Population {
    */
   physiologicalCondition?: CodeableConcept;
 }
+
+/**
+ * The age of the specific population.
+ */
+export type PopulationAge = CodeableConcept | Range;

@@ -242,6 +242,11 @@ export interface DeviceDefinition {
 }
 
 /**
+ * A name of the manufacturer.
+ */
+export type DeviceDefinitionManufacturer = Reference<Organization> | string;
+
+/**
  * Device capabilities.
  */
 export interface DeviceDefinitionCapability {

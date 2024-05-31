@@ -256,6 +256,12 @@ export interface GroupCharacteristic {
 }
 
 /**
+ * The value of the trait that holds (or does not hold - see 'exclude')
+ * for members of the group.
+ */
+export type GroupCharacteristicValue = boolean | CodeableConcept | Quantity | Range | Reference;
+
+/**
  * Identifies the resource instances that are members of the group.
  */
 export interface GroupMember {

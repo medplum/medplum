@@ -195,6 +195,12 @@ async function deleteResource(req: FhirRequest, repo: FhirRepository): Promise<F
 async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
   const patch = req.body as Operation[];
+  if (!patch) {
+    return [badRequest('Empty patch body')];
+  }
+  if (!Array.isArray(patch)) {
+    return [badRequest('Patch body must be an array')];
+  }
   const resource = await repo.patchResource(resourceType, id, patch);
   return [allOk, resource];
 }

@@ -10,6 +10,7 @@ export interface ResourceTypeInputProps {
   readonly testId?: string;
   readonly maxValues?: number;
   readonly onChange?: (value: ResourceType | undefined) => void;
+  readonly disabled?: boolean;
 }
 
 export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
@@ -28,6 +29,7 @@ export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
 
   return (
     <CodeInput
+      disabled={props.disabled}
       data-autofocus={props.autoFocus}
       data-testid={props.testId}
       defaultValue={resourceType}

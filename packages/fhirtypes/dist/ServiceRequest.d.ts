@@ -360,3 +360,21 @@ export interface ServiceRequest {
    */
   relevantHistory?: Reference<Provenance>[];
 }
+
+/**
+ * An amount of service being requested which can be a quantity ( for
+ * example $1,500 home modification), a ratio ( for example, 20 half day
+ * visits per month), or a range (2.0 to 1.8 Gy per fraction).
+ */
+export type ServiceRequestQuantity = Quantity | Range | Ratio;
+
+/**
+ * The date/time at which the requested service should occur.
+ */
+export type ServiceRequestOccurrence = Period | string | Timing;
+
+/**
+ * If a CodeableConcept is present, it indicates the pre-condition for
+ * performing the service.  For example &quot;pain&quot;, &quot;on flare-up&quot;, etc.
+ */
+export type ServiceRequestAsNeeded = boolean | CodeableConcept;

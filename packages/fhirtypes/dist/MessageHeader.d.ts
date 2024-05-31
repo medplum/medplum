@@ -183,6 +183,15 @@ export interface MessageHeader {
 }
 
 /**
+ * Code that identifies the event this message represents and connects it
+ * with its definition. Events defined as part of the FHIR specification
+ * have the system value
+ * &quot;http://terminology.hl7.org/CodeSystem/message-events&quot;.  Alternatively
+ * uri to the EventDefinition.
+ */
+export type MessageHeaderEvent = Coding | string;
+
+/**
  * The destination application which the message is intended for.
  */
 export interface MessageHeaderDestination {

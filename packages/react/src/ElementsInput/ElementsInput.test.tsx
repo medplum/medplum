@@ -25,6 +25,7 @@ const elementsContext: ElementsContextType = {
   },
   path: 'elements',
   profileUrl: 'testProfileUrl',
+  getExtendedProps: () => undefined,
 };
 
 const onChange = jest.fn();

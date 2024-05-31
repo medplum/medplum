@@ -2317,6 +2317,67 @@ export interface ElementDefinition {
 }
 
 /**
+ * The value that should be used if there is no value stated in the
+ * instance (e.g. 'if not otherwise specified, the abstract is false').
+ */
+export type ElementDefinitionDefaultValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding
+    | ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
+ * Specifies a value that SHALL be exactly the value  for this element in
+ * the instance. For purposes of comparison, non-significant whitespace
+ * is ignored, and all values must be an exact match (case and accent
+ * sensitive). Missing elements/attributes must also be missing.
+ */
+export type ElementDefinitionFixed = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
+ * Specifies a value that the value in the instance SHALL follow - that
+ * is, any value in the pattern must be found in the instance. Other
+ * additional values may be found too. This is effectively constraint by
+ * example.
+ *
+ * When pattern[x] is used to constrain a primitive, it means that the
+ * value provided in the pattern[x] must match the instance value
+ * exactly.
+ *
+ * When pattern[x] is used to constrain an array, it means that each
+ * element provided in the pattern[x] array must (recursively) match at
+ * least one element from the instance array.
+ *
+ * When pattern[x] is used to constrain a complex object, it means that
+ * each property in the pattern must be present in the complex object,
+ * and its value must recursively match -- i.e.,
+ *
+ * 1. If primitive: it must match exactly the pattern value
+ * 2. If a complex object: it must match (recursively) the pattern value
+ * 3. If an array: it must match (recursively) the pattern value.
+ */
+export type ElementDefinitionPattern = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
+ * The minimum allowed value for the element. The value is inclusive.
+ * This is allowed for the types date, dateTime, instant, time, decimal,
+ * integer, and Quantity.
+ */
+export type ElementDefinitionMinValue = number | Quantity | string;
+
+/**
+ * The maximum allowed value for the element. The value is inclusive.
+ * This is allowed for the types date, dateTime, instant, time, decimal,
+ * integer, and Quantity.
+ */
+export type ElementDefinitionMaxValue = number | Quantity | string;
+
+/**
  * Information about the base definition of the element, provided to make
  * it unnecessary for tools to trace the deviation of the element through
  * the derived and related profiles. When the element definition is not
@@ -2797,6 +2858,15 @@ export interface ElementDefinitionExample {
    */
   valueMeta?: Meta;
 }
+
+/**
+ * The actual value for the element, which must be one of the types
+ * allowed for this element.
+ */
+export type ElementDefinitionExampleValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding
+    | ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
 
 /**
  * Identifies a concept from an external specification that roughly

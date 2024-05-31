@@ -854,6 +854,14 @@ export interface StructureMapGroupRuleSource {
 }
 
 /**
+ * A value to use if there is no existing value in the source object.
+ */
+export type StructureMapGroupRuleSourceDefaultValue = Address | Age | Annotation | Attachment | boolean |
+    CodeableConcept | Coding | ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage |
+    Duration | Expression | HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range
+    | Ratio | Reference | RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
  * Content to create because of this mapping rule.
  */
 export interface StructureMapGroupRuleTarget {
@@ -1000,6 +1008,11 @@ export interface StructureMapGroupRuleTargetParameter {
    */
   valueDecimal?: number;
 }
+
+/**
+ * Parameter value - variable or literal.
+ */
+export type StructureMapGroupRuleTargetParameterValue = boolean | number | string;
 
 /**
  * A structure definition used by this map. The structure definition may

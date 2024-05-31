@@ -260,3 +260,18 @@ export interface MedicationStatement {
    */
   dosage?: Dosage[];
 }
+
+/**
+ * Identifies the medication being administered. This is either a link to
+ * a resource representing the details of the medication or a simple
+ * attribute carrying a code that identifies the medication from a known
+ * list of medications.
+ */
+export type MedicationStatementMedication = CodeableConcept | Reference<Medication>;
+
+/**
+ * The interval of time during which it is being asserted that the
+ * patient is/was/will be taking the medication (or was not taking, when
+ * the MedicationStatement.taken element is No).
+ */
+export type MedicationStatementEffective = Period | string;
