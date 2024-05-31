@@ -18,6 +18,14 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     process.exit(1);
   }
 
+  let rejectOnTimeout!: () => void;
+  const disconnectedPromise = new Promise<void>((resolve, reject) => {
+    rejectOnTimeout = () => reject(new Error('Timed out while waiting for IPC to disconnect'));
+    process.once('disconnect', () => {
+      resolve();
+    });
+  });
+
   process.send({ type: 'STARTED' });
 
   // Make sure if version is given, it matches semver
@@ -35,17 +43,10 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     globalLogger.info('Release successfully downloaded');
   }
 
-  globalLogger.info('Waiting to receive STOPPED message from parent...');
-  await new Promise<void>((resolve, reject) => {
-    const stoppedTimeout = setTimeout(
-      () => reject(new Error('Timed out while waiting for parent process to send STOPPED message')),
-      5000
-    );
-    process.on('disconnect', () => {
-      clearTimeout(stoppedTimeout);
-      resolve();
-    });
-  });
+  globalLogger.info('Waiting for parent to disconnect from IPC...');
+  const disconnectTimeout = setTimeout(rejectOnTimeout, 5000);
+  await disconnectedPromise;
+  clearTimeout(disconnectTimeout);
 
   try {
     // Stop service
