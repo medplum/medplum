@@ -25,6 +25,7 @@ import {
   SearchRequest,
   SortRule,
   splitN,
+  splitSearchOnComma,
   subsetResource,
   toPeriod,
   toTypedValue,
@@ -631,11 +632,11 @@ function buildNormalSearchFilterExpression(
   } else if (filter.operator === Operator.PRESENT) {
     return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '!=' : '=', null);
   } else if (param.type === 'string') {
-    return buildStringSearchFilter(table, details, filter.operator, filter.value.split(','));
+    return buildStringSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
   } else if (param.type === 'token' || param.type === 'uri') {
-    return buildTokenSearchFilter(table, details, filter.operator, filter.value.split(','));
+    return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
   } else if (param.type === 'reference') {
-    return buildReferenceSearchFilter(table, details, filter.value.split(','));
+    return buildReferenceSearchFilter(table, details, splitSearchOnComma(filter.value));
   } else if (param.type === 'date') {
     return buildDateSearchFilter(table, details, filter);
   } else if (param.type === 'quantity') {
@@ -645,11 +646,9 @@ function buildNormalSearchFilterExpression(
       filter.value
     );
   } else {
-    const values = filter.value
-      .split(',')
-      .map(
-        (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
-      );
+    const values = splitSearchOnComma(filter.value).map(
+      (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
+    );
     const expr = new Disjunction(values);
     return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
   }
@@ -677,7 +676,7 @@ function trySpecialSearchParameter(
         table,
         { columnName: 'id', type: SearchParameterType.UUID },
         filter.operator,
-        filter.value.split(',')
+        splitSearchOnComma(filter.value)
       );
     case '_lastUpdated':
       return buildDateSearchFilter(table, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
@@ -687,7 +686,7 @@ function trySpecialSearchParameter(
         table,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
         filter.operator,
-        filter.value.split(',')
+        splitSearchOnComma(filter.value)
       );
     case '_filter':
       return buildFilterParameterExpression(selectQuery, resourceType, table, parseFilterParameter(filter.value));

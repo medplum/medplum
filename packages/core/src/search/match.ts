@@ -2,7 +2,7 @@ import { CodeableConcept, Coding, Identifier, Reference, Resource, SearchParamet
 import { evalFhirPath } from '../fhirpath/parse';
 import { PropertyType, globalSchema } from '../types';
 import { SearchParameterType, getSearchParameterDetails } from './details';
-import { Filter, Operator, SearchRequest } from './search';
+import { Filter, Operator, SearchRequest, splitSearchOnComma } from './search';
 
 /**
  * Determines if the resource matches the search request.
@@ -78,7 +78,7 @@ function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam:
   // Normalize the values array into reference strings
   const references = values.map((value) => (typeof value === 'string' ? value : value.reference));
 
-  for (const filterValue of filter.value.split(',')) {
+  for (const filterValue of splitSearchOnComma(filter.value)) {
     let match = references.includes(filterValue);
     if (!match && filter.code === '_compartment') {
       // Backwards compability for compartment search parameter
@@ -121,7 +121,7 @@ function matchesStringFilter(
   const details = getSearchParameterDetails(resource.resourceType, searchParam);
   const searchParamElementType = details.elementDefinitions?.[0].type?.[0].code;
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
-  const filterValues = filter.value.split(',');
+  const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
@@ -202,7 +202,7 @@ function matchesTokenCodeableConceptValue(
 
 function matchesDateFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
-  const filterValues = filter.value.split(',');
+  const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {

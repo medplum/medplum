@@ -10,6 +10,7 @@ import {
   parseSearchRequest,
   parseSearchUrl,
   parseXFhirQuery,
+  splitSearchOnComma,
 } from './search';
 
 describe('Search Utils', () => {
@@ -423,5 +424,19 @@ describe('Search Utils', () => {
     };
     const actual = parseXFhirQuery(query, { '%patient': { type: 'Patient', value: patient } });
     expect(actual).toEqual(expected);
+  });
+
+  test('Split search value on comma', () => {
+    expect(splitSearchOnComma('')).toEqual(['']);
+    expect(splitSearchOnComma('x')).toEqual(['x']);
+    expect(splitSearchOnComma('x,y')).toEqual(['x', 'y']);
+    expect(splitSearchOnComma('x,y,z')).toEqual(['x', 'y', 'z']);
+    expect(splitSearchOnComma('x,')).toEqual(['x', '']);
+    expect(splitSearchOnComma(',y')).toEqual(['', 'y']);
+    expect(splitSearchOnComma('x,,y')).toEqual(['x', '', 'y']);
+    expect(splitSearchOnComma('x\\,y')).toEqual(['x,y']);
+    expect(splitSearchOnComma('x\\,')).toEqual(['x,']);
+    expect(splitSearchOnComma('\\,y')).toEqual([',y']);
+    expect(splitSearchOnComma('x\\,,y')).toEqual(['x,', 'y']);
   });
 });

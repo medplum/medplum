@@ -24,6 +24,7 @@ import {
   DiagnosticReport,
   Encounter,
   Goal,
+  Location,
   MeasureReport,
   Observation,
   Organization,
@@ -791,6 +792,30 @@ describe('FHIR Search', () => {
         });
         expect(bundle2.entry?.length).toEqual(1);
         expect((bundle2.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
+      }));
+
+    test('String filter with escaped commas', async () =>
+      withTestContext(async () => {
+        // Create a name with commas
+        const name = randomUUID().replaceAll('-', ',');
+
+        const location = await repo.createResource<Location>({
+          resourceType: 'Location',
+          name,
+        });
+
+        const bundle = await repo.search<Location>({
+          resourceType: 'Location',
+          filters: [
+            {
+              code: 'name',
+              operator: Operator.EXACT,
+              value: name.replaceAll(',', '\\,'),
+            },
+          ],
+        });
+        expect(bundle.entry?.length).toEqual(1);
+        expect(bundleContains(bundle, location)).toBe(true);
       }));
 
     test('Filter by _id', () =>
