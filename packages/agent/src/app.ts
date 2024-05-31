@@ -30,6 +30,7 @@ import {
   UPGRADE_MANIFEST_PATH,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
+  getOsString,
 } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -549,13 +550,24 @@ export class App {
   }
 
   private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
+    if (getOsString() !== 'windows') {
+      const errMsg = 'Currently auto-upgrading is only supported on Windows';
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
     let child: ChildProcess;
 
     // If there is an explicit version, check if it's valid
     if (message.version && !(await checkIfValidMedplumVersion(message.version))) {
       const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}'. '${message.version}' is not a valid version`;
       this.log.error(errMsg);
-      this.addToWebSocketQueue({
+      await this.sendToWebSocket({
         type: 'agent:error',
         callback: message.callback,
         body: errMsg,
@@ -590,7 +602,7 @@ export class App {
     } catch (err) {
       const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}': ${normalizeErrorString(err)}`;
       this.log.error(errMsg);
-      this.addToWebSocketQueue({
+      await this.sendToWebSocket({
         type: 'agent:error',
         callback: message.callback,
         body: errMsg,
@@ -623,6 +635,10 @@ export class App {
       this.log.error(
         `Error while stopping agent or messaging child process as part of upgrade: ${normalizeErrorString(err)}`
       );
+      // Attempt to exit process...
+      // If we already wrote a manifest, then when service restarts
+      // We SHOULD send an error back to the server on the callback
+      process.exit(1);
     }
   }
 
