@@ -9,6 +9,10 @@ export type SupportedOs = 'windows' | 'linux';
 let _osString: SupportedOs;
 
 export const UPGRADE_MANIFEST_PATH = resolve(__dirname, 'upgrade.json');
+export const UPGRADER_LOG_PATH = resolve(
+  __dirname,
+  `upgrader-logs-${new Date().toISOString().replace(/:\s*/g, '-')}.txt`
+);
 export const GITHUB_RELEASES_URL = 'https://api.github.com/repos/medplum/medplum/releases';
 export const RELEASES_PATH = resolve(__dirname);
 

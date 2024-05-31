@@ -18,14 +18,19 @@ import {
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { UPGRADE_MANIFEST_PATH, checkIfValidMedplumVersion, fetchLatestVersionString } from './upgrader-utils';
+import {
+  UPGRADER_LOG_PATH,
+  UPGRADE_MANIFEST_PATH,
+  checkIfValidMedplumVersion,
+  fetchLatestVersionString,
+} from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -560,7 +565,10 @@ export class App {
 
     try {
       const command = __filename;
-      child = spawn(command, ['--upgrade'], { detached: true, stdio: [null, null, null, 'ipc'] });
+      const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
+      child = spawn(command, ['--upgrade'], { detached: true, stdio: ['ignore', logFile, logFile, 'ipc'] });
+      child.unref();
+
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
           () => reject(new Error('Timed out while waiting for message from child')),
