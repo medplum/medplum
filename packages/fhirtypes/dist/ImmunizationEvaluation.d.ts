@@ -177,3 +177,13 @@ export interface ImmunizationEvaluation {
    */
   seriesDosesString?: string;
 }
+
+/**
+ * Nominal position in a series.
+ */
+export type ImmunizationEvaluationDoseNumber = number | string;
+
+/**
+ * The recommended number of doses to achieve immunity.
+ */
+export type ImmunizationEvaluationSeriesDoses = number | string;

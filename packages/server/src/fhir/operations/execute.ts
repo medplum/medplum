@@ -7,8 +7,10 @@ import {
   allOk,
   badRequest,
   createReference,
+  getStatus,
   isOk,
   isOperationOutcome,
+  isResource,
   normalizeErrorString,
   resolveId,
   serverError,
@@ -45,6 +47,7 @@ import { MockConsole } from '../../util/console';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
+import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
@@ -97,13 +100,18 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
       sendOutcome(res, result);
       return;
     }
+
     const responseBody = getResponseBodyFromResult(result);
+    const outcome = result.success ? allOk : badRequest(result.logResult);
+
+    if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
+      await sendResponse(req, res, outcome, responseBody);
+      return;
+    }
+
     // Send the response
     // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
-    res
-      .status(result.success ? 200 : 400)
-      .type(getResponseContentType(req))
-      .send(responseBody);
+    res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
   }
 });
 
@@ -519,11 +527,6 @@ async function createAuditEvent(
     return;
   }
 
-  const maxDescLength = 10 * 1024;
-  if (outcomeDesc.length > maxDescLength) {
-    outcomeDesc = outcomeDesc.substring(outcomeDesc.length - maxDescLength);
-  }
-
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
@@ -551,17 +554,25 @@ async function createAuditEvent(
     },
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
-    outcomeDesc,
     extension: buildTracingExtension(),
   };
 
+  const config = getConfig();
   const destination = bot.auditEventDestination ?? ['resource'];
   if (destination.includes('resource')) {
     const systemRepo = getSystemRepo();
-    await systemRepo.createResource<AuditEvent>(auditEvent);
+    const maxDescLength = config.maxBotLogLengthForResource ?? 10 * 1024;
+    await systemRepo.createResource<AuditEvent>({
+      ...auditEvent,
+      outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
+    });
   }
   if (destination.includes('log')) {
-    logAuditEvent(auditEvent);
+    const maxDescLength = config.maxBotLogLengthForLogs ?? 10 * 1024;
+    logAuditEvent({
+      ...auditEvent,
+      outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
+    });
   }
 }
 

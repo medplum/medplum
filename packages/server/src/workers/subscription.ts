@@ -11,6 +11,7 @@ import {
   getReferenceString,
   isGone,
   isNotFound,
+  isString,
   normalizeOperationOutcome,
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
@@ -529,7 +530,7 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
   const secret =
     getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret') ||
     getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
-  if (secret) {
+  if (secret && isString(secret)) {
     const body = stringify(resource);
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
   }

@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
 import { RewriteMode, rewriteAttachments } from './rewrite';
+import { getBinaryStorage } from './storage';
 
 export function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is(ContentType.JSON) || req.is(ContentType.FHIR_JSON));
@@ -34,6 +35,22 @@ export async function sendResponse(
   body: Resource
 ): Promise<void> {
   sendResponseHeaders(req, res, outcome, body);
+
+  const acceptHeader = req.get('Accept');
+  if (body.resourceType === 'Binary' && req.method === 'GET' && !acceptHeader?.startsWith(ContentType.FHIR_JSON)) {
+    // When the read request has some other type in the Accept header,
+    // then the content should be returned with the content type stated in the resource in the Content-Type header.
+    // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
+    res.contentType(body.contentType as string);
+    if (body.data) {
+      res.send(Buffer.from(body.data, 'base64'));
+    } else {
+      const stream = await getBinaryStorage().readBinary(body);
+      stream.pipe(res);
+    }
+    return;
+  }
+
   res.set('Content-Type', ContentType.FHIR_JSON);
 
   const ctx = getAuthenticatedContext();

@@ -266,6 +266,20 @@ export interface Condition {
 }
 
 /**
+ * Estimated or actual date or date-time  the condition began, in the
+ * opinion of the clinician.
+ */
+export type ConditionOnset = Age | Period | Range | string;
+
+/**
+ * The date or estimated date that the condition resolved or went into
+ * remission. This is called &quot;abatement&quot; because of the many overloaded
+ * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
+ * are never really resolved, but they can abate.
+ */
+export type ConditionAbatement = Age | Period | Range | string;
+
+/**
  * Supporting evidence / manifestations that are the basis of the
  * Condition's verification status, such as evidence that confirmed or
  * refuted the condition.

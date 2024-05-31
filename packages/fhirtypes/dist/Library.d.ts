@@ -322,3 +322,9 @@ export interface Library {
    */
   content?: Attachment[];
 }
+
+/**
+ * A code or group definition that describes the intended subject of the
+ * contents of the library.
+ */
+export type LibrarySubject = CodeableConcept | Reference<Group>;

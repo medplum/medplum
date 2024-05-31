@@ -362,6 +362,20 @@ export interface Contract {
 }
 
 /**
+ * Narrows the range of legal concerns to focus on the achievement of
+ * specific contractual objectives.
+ */
+export type ContractTopic = CodeableConcept | Reference<Resource>;
+
+/**
+ * Legally binding Contract: This is the signed and legally recognized
+ * representation of the Contract, which is considered the &quot;source of
+ * truth&quot; and which would be the basis for legal action related to
+ * enforcement of this Contract.
+ */
+export type ContractLegallyBinding = Attachment | Reference<Composition | DocumentReference | QuestionnaireResponse | Contract>;
+
+/**
  * Precusory content developed with a focus and intent of supporting the
  * formation a Contract instance, which may be associated with and
  * transformable into a Contract.
@@ -507,6 +521,13 @@ export interface ContractFriendly {
 }
 
 /**
+ * Human readable rendering of this Contract in a format and
+ * representation intended to enhance comprehension and ensure
+ * understandability.
+ */
+export type ContractFriendlyContent = Attachment | Reference<Composition | DocumentReference | QuestionnaireResponse>;
+
+/**
  * List of Legal expressions or representations of this Contract.
  */
 export interface ContractLegal {
@@ -556,6 +577,11 @@ export interface ContractLegal {
    */
   contentReference?: Reference<Composition | DocumentReference | QuestionnaireResponse>;
 }
+
+/**
+ * Contract legal text in human renderable form.
+ */
+export type ContractLegalContent = Attachment | Reference<Composition | DocumentReference | QuestionnaireResponse>;
 
 /**
  * List of Computable Policy Rule Language Representations of this
@@ -610,6 +636,12 @@ export interface ContractRule {
    */
   contentReference?: Reference<DocumentReference>;
 }
+
+/**
+ * Computable Contract conveyed using a policy rule language (e.g. XACML,
+ * DKAL, SecPal).
+ */
+export type ContractRuleContent = Attachment | Reference<DocumentReference>;
 
 /**
  * Parties with legal standing in the Contract, including the principal
@@ -784,6 +816,11 @@ export interface ContractTerm {
    */
   group?: ContractTerm[];
 }
+
+/**
+ * The entity that the term applies to.
+ */
+export type ContractTermTopic = CodeableConcept | Reference<Resource>;
 
 /**
  * An actor taking a role in an activity for which it can be assigned
@@ -961,6 +998,11 @@ export interface ContractTermAction {
    */
   securityLabelNumber?: number[];
 }
+
+/**
+ * When action happens.
+ */
+export type ContractTermActionOccurrence = Period | string | Timing;
 
 /**
  * Entity of the action.
@@ -1326,6 +1368,11 @@ export interface ContractTermAssetValuedItem {
 }
 
 /**
+ * Specific type of Contract Valued Item that may be priced.
+ */
+export type ContractTermAssetValuedItemEntity = CodeableConcept | Reference<Resource>;
+
+/**
  * The matter of concern in the context of this provision of the
  * agrement.
  */
@@ -1559,6 +1606,14 @@ export interface ContractTermOfferAnswer {
    */
   valueReference?: Reference<Resource>;
 }
+
+/**
+ * Response to an offer clause or question text,  which enables selection
+ * of values to be agreed to, e.g., the period of participation, the date
+ * of occupancy of a rental, warrently duration, or whether biospecimen
+ * may be used for further research.
+ */
+export type ContractTermOfferAnswerValue = Attachment | boolean | Coding | number | Quantity | Reference<Resource> | string;
 
 /**
  * Offer Recipient.

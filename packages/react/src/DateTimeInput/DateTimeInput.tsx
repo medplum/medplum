@@ -3,14 +3,13 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import { ChangeEvent } from 'react';
 import { getErrorsForInput } from '../utils/outcomes';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
+import { PrimitiveTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface DateTimeInputProps {
-  readonly name?: string;
+export interface DateTimeInputProps extends PrimitiveTypeInputProps {
   readonly label?: string;
   readonly placeholder?: string;
   readonly defaultValue?: string;
   readonly autoFocus?: boolean;
-  readonly required?: boolean;
   readonly outcome?: OperationOutcome;
   readonly onChange?: (value: string) => void;
 }
@@ -30,9 +29,10 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
       name={props.name}
       label={props.label}
       data-autofocus={props.autoFocus}
-      data-testid={props.name}
+      data-testid={props['data-testid'] ?? props.name}
       placeholder={props.placeholder}
       required={props.required}
+      disabled={props.disabled}
       type={getInputType()}
       defaultValue={convertIsoToLocal(props.defaultValue)}
       autoFocus={props.autoFocus}

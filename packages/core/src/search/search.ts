@@ -38,7 +38,7 @@ export interface IncludeTarget {
   resourceType: string;
   searchParam: string;
   targetType?: string;
-  modifier?: string;
+  modifier?: 'iterate';
 }
 
 /**
@@ -535,6 +535,45 @@ function formatSortRules(sortRules: SortRule[]): string {
 
 function formatIncludeTarget(kind: '_include' | '_revinclude', target: IncludeTarget): string {
   return (
-    kind + '=' + target.resourceType + ':' + target.searchParam + (target.targetType ? ':' + target.targetType : '')
+    kind +
+    (target.modifier ? ':' + target.modifier : '') +
+    '=' +
+    target.resourceType +
+    ':' +
+    target.searchParam +
+    (target.targetType ? ':' + target.targetType : '')
   );
+}
+
+/**
+ * Splits a FHIR search value on commas.
+ * Respects backslash escape.
+ *
+ * See: https://hl7.org/fhir/r4/search.html#escaping
+ *
+ * @param input - The FHIR search value to split.
+ * @returns The individual search values.
+ */
+export function splitSearchOnComma(input: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let escaped = false;
+
+  for (const c of input) {
+    if (escaped) {
+      current += c;
+      escaped = false;
+    } else if (c === '\\') {
+      escaped = true;
+    } else if (c === ',') {
+      result.push(current);
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+
+  // Push the last segment
+  result.push(current);
+  return result;
 }

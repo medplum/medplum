@@ -8,7 +8,7 @@ import {
   preconditionFailed,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, OperationOutcome, SearchParameter, Patient } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, OperationOutcome, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { FhirRequest, FhirRouter } from './fhirrouter';
 import { FhirRepository, MemoryRepository } from './repo';
@@ -245,5 +245,63 @@ describe('FHIR Router', () => {
     );
     expect(res).toMatchObject(created);
     expect(resource).toMatchObject(patient);
+  });
+
+  test('Patch resource', async () => {
+    const [res1, patient] = await router.handleRequest(
+      {
+        method: 'POST',
+        pathname: '/Patient',
+        body: {
+          resourceType: 'Patient',
+          name: [{ given: ['John'], family: 'Doe' }],
+        },
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res1).toMatchObject(created);
+    expect(patient).toBeDefined();
+
+    const [res2, patient2] = await router.handleRequest(
+      {
+        method: 'PATCH',
+        pathname: `/Patient/${patient?.id}`,
+        body: [{ op: 'add', path: '/active', value: true }],
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res2).toMatchObject(allOk);
+    expect(patient2).toBeDefined();
+    expect((patient2 as Patient).active).toEqual(true);
+
+    const [res3, patient3] = await router.handleRequest(
+      {
+        method: 'PATCH',
+        pathname: `/Patient/${patient?.id}`,
+        body: null,
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res3).toMatchObject(badRequest('Empty patch body'));
+    expect(patient3).toBeUndefined();
+
+    const [res4, patient4] = await router.handleRequest(
+      {
+        method: 'PATCH',
+        pathname: `/Patient/${patient?.id}`,
+        body: { foo: 'bar' },
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res4).toMatchObject(badRequest('Patch body must be an array'));
+    expect(patient4).toBeUndefined();
   });
 });

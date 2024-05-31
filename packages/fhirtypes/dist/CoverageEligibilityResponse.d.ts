@@ -193,6 +193,12 @@ export interface CoverageEligibilityResponse {
 }
 
 /**
+ * The date or dates when the enclosed suite of services were performed
+ * or completed.
+ */
+export type CoverageEligibilityResponseServiced = Period | string;
+
+/**
  * Errors encountered during the processing of the request.
  */
 export interface CoverageEligibilityResponseError {
@@ -505,3 +511,13 @@ export interface CoverageEligibilityResponseInsuranceItemBenefit {
    */
   usedMoney?: Money;
 }
+
+/**
+ * The quantity of the benefit which is permitted under the coverage.
+ */
+export type CoverageEligibilityResponseInsuranceItemBenefitAllowed = Money | number | string;
+
+/**
+ * The quantity of the benefit which have been consumed to date.
+ */
+export type CoverageEligibilityResponseInsuranceItemBenefitUsed = Money | number | string;

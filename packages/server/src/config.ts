@@ -67,6 +67,12 @@ export interface MedplumServerConfig {
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
 
+  /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
+  maxBotLogLengthForResource?: number;
+
+  /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
+  maxBotLogLengthForLogs?: number;
+
   /** Temporary feature flag, to be removed */
   chainedSearchWithReferenceTables?: boolean;
 
@@ -286,5 +292,5 @@ function isBooleanConfig(key: string): boolean {
 }
 
 function isObjectConfig(key: string): boolean {
-  return key === 'tls';
+  return key === 'tls' || key === 'ssl';
 }

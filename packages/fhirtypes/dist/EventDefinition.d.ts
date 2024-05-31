@@ -295,3 +295,9 @@ export interface EventDefinition {
    */
   trigger: TriggerDefinition[];
 }
+
+/**
+ * A code or group definition that describes the intended subject of the
+ * event definition.
+ */
+export type EventDefinitionSubject = CodeableConcept | Reference<Group>;

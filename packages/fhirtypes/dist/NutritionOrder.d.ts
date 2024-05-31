@@ -392,6 +392,12 @@ export interface NutritionOrderEnteralFormulaAdministration {
 }
 
 /**
+ * The rate of administration of formula via a feeding pump, e.g. 60 mL
+ * per hour, according to the specified schedule.
+ */
+export type NutritionOrderEnteralFormulaAdministrationRate = Quantity | Ratio;
+
+/**
  * Diet given orally in contrast to enteral (tube) feeding.
  */
 export interface NutritionOrderOralDiet {

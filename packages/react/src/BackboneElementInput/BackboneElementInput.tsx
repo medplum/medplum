@@ -4,6 +4,7 @@ import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { AccessPolicyResource } from '@medplum/fhirtypes';
 
 export interface BackboneElementInputProps extends BaseInputProps {
   /** Type name the backbone element represents */
@@ -14,6 +15,11 @@ export interface BackboneElementInputProps extends BaseInputProps {
   readonly onChange?: (value: any) => void;
   /** (optional) Profile URL of the structure definition represented by the backbone element */
   readonly profileUrl?: string;
+  /**
+   * (optional) If provided, inputs specified in `accessPolicyResource.readonlyFields` are not editable
+   * and inputs specified in `accessPolicyResource.hiddenFields` are not shown.
+   */
+  readonly accessPolicyResource?: AccessPolicyResource;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
@@ -32,8 +38,9 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
       elements: typeSchema.elements,
       path: props.path,
       profileUrl: typeSchema.url,
+      accessPolicyResource: props.accessPolicyResource,
     });
-  }, [typeSchema, props.path, parentElementsContext]);
+  }, [typeSchema, parentElementsContext, props.path, props.accessPolicyResource]);
 
   if (!typeSchema) {
     return <div>{type}&nbsp;not implemented</div>;

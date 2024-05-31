@@ -352,6 +352,11 @@ export interface SubstanceSpecificationMoiety {
 }
 
 /**
+ * Quantitative value for this moiety.
+ */
+export type SubstanceSpecificationMoietyAmount = Quantity | string;
+
+/**
  * Names applicable to this substance.
  */
 export interface SubstanceSpecificationName {
@@ -585,6 +590,17 @@ export interface SubstanceSpecificationProperty {
 }
 
 /**
+ * A substance upon which a defining property depends (e.g. for
+ * solubility: in water, in alcohol).
+ */
+export type SubstanceSpecificationPropertyDefiningSubstance = CodeableConcept | Reference<SubstanceSpecification | Substance>;
+
+/**
+ * Quantitative value for this property.
+ */
+export type SubstanceSpecificationPropertyAmount = Quantity | string;
+
+/**
  * A link between this substance and another, with details of the
  * relationship.
  */
@@ -693,6 +709,19 @@ export interface SubstanceSpecificationRelationship {
    */
   source?: Reference<DocumentReference>[];
 }
+
+/**
+ * A pointer to another substance, as a resource or just a
+ * representational code.
+ */
+export type SubstanceSpecificationRelationshipSubstance = CodeableConcept | Reference<SubstanceSpecification>;
+
+/**
+ * A numeric factor for the relationship, for instance to express that
+ * the salt of a substance has some percentage of the active substance in
+ * relation to some other.
+ */
+export type SubstanceSpecificationRelationshipAmount = Quantity | Range | Ratio | string;
 
 /**
  * Structural information.

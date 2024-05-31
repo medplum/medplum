@@ -78,3 +78,8 @@ export interface TriggerDefinition {
    */
   condition?: Expression;
 }
+
+/**
+ * The timing of the event (if this is a periodic trigger).
+ */
+export type TriggerDefinitionTiming = Reference<Schedule> | string | Timing;

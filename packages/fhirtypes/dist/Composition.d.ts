@@ -382,6 +382,11 @@ export interface CompositionRelatesTo {
 }
 
 /**
+ * The target composition/document of this relationship.
+ */
+export type CompositionRelatesToTarget = Identifier | Reference<Composition>;
+
+/**
  * The root of the sections that make up the composition.
  */
 export interface CompositionSection {

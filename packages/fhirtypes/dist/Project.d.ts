@@ -220,6 +220,11 @@ export interface ProjectSetting {
 }
 
 /**
+ * The secret value.
+ */
+export type ProjectSettingValue = boolean | number | string;
+
+/**
  * Web application or web site that is associated with the project.
  */
 export interface ProjectSite {

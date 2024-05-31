@@ -884,12 +884,58 @@ describe('AccessPolicy', () => {
       const writeResource = await repo2.updateResource<Patient>({
         ...readResource,
         active: true,
-        name: [{ given: ['Bob'], family: 'Smith' }],
+        name: [{ given: ['Morty'], family: 'Smith' }],
       });
       expect(writeResource).toMatchObject({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
+        active: true,
+      });
+    }));
+
+  test.skip('Readonly choice-of-type fields on write', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        birthDate: '1970-01-01',
+        multipleBirthInteger: 2,
+      });
+
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+            readonlyFields: ['multipleBirth[x]'],
+          },
+        ],
+      };
+
+      const repo2 = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
+
+      const readResource = await repo2.readResource<Patient>('Patient', patient.id as string);
+      expect(readResource).toMatchObject({
+        resourceType: 'Patient',
+        birthDate: '1970-01-01',
+        multipleBirthInteger: 2,
+      });
+
+      // multipleBirthInteger is readonly and should be ignored
+      const writeResource = await repo2.updateResource<Patient>({
+        ...readResource,
+        active: true,
+        multipleBirthInteger: 3,
+      });
+      expect(writeResource).toMatchObject({
+        resourceType: 'Patient',
+        birthDate: '1970-01-01',
+        multipleBirthInteger: 2,
         active: true,
       });
     }));
@@ -923,6 +969,37 @@ describe('AccessPolicy', () => {
         identifier: [{ system: 'https://example.com/', value }],
       });
       expect(patient.identifier).toBeUndefined();
+    }));
+
+  test.skip('Try to create with readonly choice-of-type property', () =>
+    withTestContext(async () => {
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+            readonlyFields: ['multipleBirth[x]'],
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        active: false,
+        multipleBirthBoolean: true,
+      });
+      expect(patient.multipleBirthBoolean).toBeUndefined();
+      expect(patient).toMatchObject({
+        resourceType: 'Patient',
+        active: false,
+      });
     }));
 
   test('Try to add readonly property', () =>
@@ -1045,6 +1122,42 @@ describe('AccessPolicy', () => {
       expect(bundle2.entry?.length).toEqual(1);
     }));
 
+  test.skip('Try to remove readonly choice-of-type property', () =>
+    withTestContext(async () => {
+      // Create a patient with an identifier
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Identifier'], family: 'Test' }],
+        multipleBirthInteger: 2,
+      });
+
+      // AccessPolicy with Patient.identifier readonly
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+            readonlyFields: ['multipleBirth[x]'],
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        author: { reference: 'Practitioner/123' },
+        accessPolicy,
+      });
+
+      const { multipleBirthInteger, ...rest } = patient1;
+      expect(multipleBirthInteger).toEqual(2);
+      expect((rest as Patient).multipleBirthInteger).toBeUndefined();
+
+      // Try to update the patient without multipleBirth[x]
+      // Effectively, try to remove it
+      // This returns success, but multipleBirth[x] is still there
+      const patient2 = await repo.updateResource<Patient>(rest);
+      expect(patient2.multipleBirthInteger).toEqual(2);
+    }));
+
   test('Hidden fields on read', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({
@@ -1158,6 +1271,34 @@ describe('AccessPolicy', () => {
       expect(historyBundle.entry?.[0]?.resource?.subject?.display).toBeUndefined();
     }));
 
+  test('Nested hidden fields on array element', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient', hiddenFields: ['name.family'] }],
+      };
+
+      const repo2 = new Repository({
+        author: { reference: 'Practitioner/123' },
+        accessPolicy,
+      });
+
+      const readResource = await repo2.readResource<Patient>('Patient', patient.id as string);
+      expect(readResource).toMatchObject({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'] }],
+      });
+
+      expect(readResource.name?.[0]).toBeDefined();
+      expect(readResource.name?.[0].given).toEqual(['Alice']);
+      expect(readResource.name?.[0].family).toBeUndefined();
+    }));
+
   test('Hidden fields on possible missing values', () =>
     withTestContext(async () => {
       // Create an Observation with a valueQuantity
@@ -1179,7 +1320,7 @@ describe('AccessPolicy', () => {
         valueString: 'test',
       });
 
-      // AccessPolicy that hides ServiceRequest subject.display
+      // AccessPolicy that hides Observation valueQuantity.value
       const accessPolicy: AccessPolicy = {
         resourceType: 'AccessPolicy',
         resource: [
@@ -1277,6 +1418,59 @@ describe('AccessPolicy', () => {
       expect(historyBundle.entry?.[0]?.resource?.subject).toBeDefined();
       expect(historyBundle.entry?.[0]?.resource?.subject?.reference).toBeDefined();
       expect(historyBundle.entry?.[0]?.resource?.subject?.display).toBeUndefined();
+    }));
+
+  test.skip('Hidden choice-of-type field', () =>
+    withTestContext(async () => {
+      // Create an Observation with a valueQuantity
+      const obsQuantity = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        valueQuantity: {
+          value: 123,
+          unit: 'mmHg',
+        },
+      });
+
+      // Create an Observation with a valueString
+      const obsString = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        valueString: 'test',
+      });
+
+      // AccessPolicy that hides Observation.value[x]
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Observation',
+            hiddenFields: ['value[x]'],
+          },
+        ],
+      };
+
+      const repo2 = new Repository({ author: { reference: 'Practitioner/123' }, accessPolicy });
+
+      const readResource1 = await repo2.readResource<Observation>('Observation', obsQuantity.id as string);
+      expect(readResource1).toMatchObject({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+      });
+      expect(readResource1.valueQuantity).toBeUndefined();
+      expect(readResource1.valueString).toBeUndefined();
+
+      const readResource2 = await repo2.readResource<Observation>('Observation', obsString.id as string);
+      expect(readResource2).toMatchObject({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+      });
+      expect(readResource2.valueQuantity).toBeUndefined();
+      expect(readResource2.valueString).toBeDefined();
     }));
 
   test('Identifier criteria', () =>

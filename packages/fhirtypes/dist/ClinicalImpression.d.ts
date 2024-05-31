@@ -238,6 +238,11 @@ export interface ClinicalImpression {
 }
 
 /**
+ * The point in time or period over which the subject was assessed.
+ */
+export type ClinicalImpressionEffective = Period | string;
+
+/**
  * Specific findings or diagnoses that were considered likely or relevant
  * to ongoing treatment.
  */

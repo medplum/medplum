@@ -226,3 +226,9 @@ export interface GuidanceResponse {
    */
   dataRequirement?: DataRequirement[];
 }
+
+/**
+ * An identifier, CodeableConcept or canonical reference to the guidance
+ * that was requested.
+ */
+export type GuidanceResponseModule = CodeableConcept | string;

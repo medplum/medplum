@@ -516,3 +516,15 @@ export interface CarePlanActivityDetail {
    */
   description?: string;
 }
+
+/**
+ * The period, timing or frequency upon which the described activity is
+ * to occur.
+ */
+export type CarePlanActivityDetailScheduled = Period | string | Timing;
+
+/**
+ * Identifies the food, drug or other product to be consumed or supplied
+ * in the activity.
+ */
+export type CarePlanActivityDetailProduct = CodeableConcept | Reference<Medication | Substance>;

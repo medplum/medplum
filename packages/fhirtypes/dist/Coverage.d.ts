@@ -328,6 +328,11 @@ export interface CoverageCostToBeneficiary {
 }
 
 /**
+ * The amount due from the patient for the cost category.
+ */
+export type CoverageCostToBeneficiaryValue = Money | Quantity;
+
+/**
  * A suite of codes indicating exceptions or reductions to patient costs
  * and their effective periods.
  */

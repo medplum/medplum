@@ -184,6 +184,12 @@ export interface UserConfigurationOption {
 }
 
 /**
+ * Value of option - must be one of a constrained set of the data types
+ * (see [Extensibility](extensibility.html) for a list).
+ */
+export type UserConfigurationOptionValue = boolean | number | string;
+
+/**
  * Shortcut links to URLs.
  */
 export interface UserConfigurationSearch {

@@ -102,6 +102,14 @@ export interface SubstanceAmount {
 }
 
 /**
+ * Used to capture quantitative values for a variety of elements. If only
+ * limits are given, the arithmetic mean would be the average. If only a
+ * single definite value for a given element is given, it would be
+ * captured in this field.
+ */
+export type SubstanceAmountAmount = Quantity | Range | string;
+
+/**
  * Reference range of possible or expected values.
  */
 export interface SubstanceAmountReferenceRange {

@@ -318,3 +318,8 @@ export interface MedicinalProductAuthorizationProcedure {
    */
   application?: MedicinalProductAuthorizationProcedure[];
 }
+
+/**
+ * Date of procedure.
+ */
+export type MedicinalProductAuthorizationProcedureDate = Period | string;
