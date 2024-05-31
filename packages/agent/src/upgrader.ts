@@ -1,5 +1,5 @@
 import { Logger, normalizeErrorString } from '@medplum/core';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { downloadRelease, fetchLatestVersionString, getOsString, getReleaseBinPath } from './upgrader-utils';
 
@@ -60,7 +60,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   try {
     // Run installer
     globalLogger.info('Running installer silently', { binPath });
-    execSync(`${binPath} /S`);
+    spawnSync(binPath, ['/S']);
     globalLogger.info(`Agent version ${version} successfully installed`);
   } catch (err: unknown) {
     // Try to restart Agent service if anything goes wrong
