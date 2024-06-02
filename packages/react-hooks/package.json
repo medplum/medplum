@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react-hooks",
-  "version": "3.1.6",
+  "version": "3.1.7",
   "description": "Medplum React Hooks Library",
   "keywords": [
     "medplum",
@@ -57,10 +57,10 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "3.1.6",
-    "@medplum/definitions": "3.1.6",
-    "@medplum/fhirtypes": "3.1.6",
-    "@medplum/mock": "3.1.6",
+    "@medplum/core": "3.1.7",
+    "@medplum/definitions": "3.1.7",
+    "@medplum/fhirtypes": "3.1.7",
+    "@medplum/mock": "3.1.7",
     "@testing-library/dom": "10.1.0",
     "@testing-library/jest-dom": "6.4.5",
     "@testing-library/react": "15.0.7",
@@ -77,7 +77,7 @@
     "typescript": "5.4.5"
   },
   "peerDependencies": {
-    "@medplum/core": "3.1.6",
+    "@medplum/core": "3.1.7",
     "react": "^17.0.2 || ^18.0.0",
     "react-dom": "^17.0.2 || ^18.0.0"
   },

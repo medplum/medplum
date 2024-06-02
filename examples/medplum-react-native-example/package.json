@@ -1,6 +1,6 @@
 {
   "name": "medplum-react-native-example",
-  "version": "3.1.6",
+  "version": "3.1.7",
   "main": "src/main.ts",
   "scripts": {
     "android": "expo start --android",
@@ -20,10 +20,10 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "3.2.1",
-    "@medplum/core": "3.1.6",
-    "@medplum/expo-polyfills": "3.1.6",
-    "@medplum/fhirtypes": "3.1.6",
-    "@medplum/react-hooks": "3.1.6",
+    "@medplum/core": "3.1.7",
+    "@medplum/expo-polyfills": "3.1.7",
+    "@medplum/fhirtypes": "3.1.7",
+    "@medplum/react-hooks": "3.1.7",
     "expo": "51.0.8",
     "expo-status-bar": "1.12.1",
     "react": "18.2.0",
