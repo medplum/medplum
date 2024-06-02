@@ -367,7 +367,7 @@ export interface BackgroundJobContext {
   interaction: BackgroundJobInteraction;
 }
 
-type ResourceMatchesSubscriptionCriteria = {
+export type ResourceMatchesSubscriptionCriteria = {
   resource: Resource;
   subscription: Subscription;
   context: BackgroundJobContext;
