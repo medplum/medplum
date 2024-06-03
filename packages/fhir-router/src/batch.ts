@@ -39,30 +39,29 @@ export async function processBatch(router: FhirRouter, repo: FhirRepository, bun
   const resultEntries: (BundleEntry | OperationOutcome)[] = new Array(bundle.entry?.length ?? 0);
   const bundleInfo = await processor.preprocessBundle(resultEntries);
 
-  if (bundleType === 'transaction') {
-    if (bundleInfo.updates > maxUpdates) {
-      throw new OperationOutcomeError(badRequest('Transaction contains more update operations than allowed'));
-    }
-    if (bundleInfo.requiresStrongTransaction && resultEntries.length > maxSerializableTransactionEntries) {
-      throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
-    }
-
-    try {
-      const result = await repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
-        serializable: bundleInfo.requiresStrongTransaction,
-      });
-      return result;
-    } catch (err: any) {
-      await sleep(25 + 25 * Math.random()); // Brief 25-50 ms delay to hopefully avoid further conflicts
-      if (err instanceof OperationOutcomeError && isConflict(err.outcome)) {
-        return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
-          serializable: bundleInfo.requiresStrongTransaction,
-        });
-      }
-      throw err;
-    }
-  } else {
+  if (bundleType !== 'transaction') {
     return processor.processBatch(bundleInfo, resultEntries);
+  }
+
+  if (bundleInfo.updates > maxUpdates) {
+    throw new OperationOutcomeError(badRequest('Transaction contains more update operations than allowed'));
+  }
+  if (bundleInfo.requiresStrongTransaction && resultEntries.length > maxSerializableTransactionEntries) {
+    throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
+  }
+
+  const transactionOptions = {
+    serializable: bundleInfo.requiresStrongTransaction,
+  };
+
+  try {
+    return await repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), transactionOptions);
+  } catch (err: any) {
+    await sleep(25 + 25 * Math.random()); // Brief 25-50 ms delay to hopefully avoid further conflicts
+    if (err instanceof OperationOutcomeError && isConflict(err.outcome)) {
+      return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), transactionOptions);
+    }
+    throw err;
   }
 }
 

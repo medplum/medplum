@@ -1013,7 +1013,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[]
   ): Promise<T> {
     try {
-      return this.withTransaction(async () => {
+      return await this.withTransaction(async () => {
         const resource = await this.readResourceFromDatabase<T>(resourceType, id);
 
         try {
@@ -2107,7 +2107,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async setCacheEntry(resource: Resource): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
-      // debugger;
       return;
     }
 
