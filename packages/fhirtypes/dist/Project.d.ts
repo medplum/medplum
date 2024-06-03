@@ -135,7 +135,8 @@ export interface Project {
   /**
    * A list of optional features that are enabled for the project.
    */
-  features?: ('bots' | 'cron' | 'email' | 'google-auth-required' | 'graphql-introspection' | 'terminology' | 'websocket-subscriptions')[];
+  features?: ('aws-comprehend' | 'aws-textract' | 'bots' | 'cron' | 'email' | 'google-auth-required' |
+      'graphql-introspection' | 'terminology' | 'websocket-subscriptions')[];
 
   /**
    * The default access policy for patients using open registration.

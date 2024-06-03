@@ -10,7 +10,15 @@ import {
   useMedplum,
   useMedplumNavigate,
 } from '@medplum/react';
-import { IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTrash } from '@tabler/icons-react';
+import {
+  IconBrain,
+  IconEdit,
+  IconListDetails,
+  IconPin,
+  IconPinnedOff,
+  IconTextRecognition,
+  IconTrash,
+} from '@tabler/icons-react';
 import { ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -51,6 +59,20 @@ export function TimelinePage(): JSX.Element | null {
     navigate(`/${version.resourceType}/${version.id}/_history/${version.meta?.versionId}`);
   }
 
+  function onAwsTextract(resource: Resource, reloadTimeline: () => void): void {
+    medplum
+      .post(medplum.fhirUrl(resource.resourceType, resource.id as string, '$aws-textract'), {})
+      .then(reloadTimeline)
+      .catch(console.error);
+  }
+
+  function onAwsComprehend(resource: Resource, reloadTimeline: () => void): void {
+    medplum
+      .post(medplum.fhirUrl(resource.resourceType, resource.id as string, '$aws-comprehend'), {})
+      .then(reloadTimeline)
+      .catch(console.error);
+  }
+
   function getMenu(context: ResourceTimelineMenuItemContext): ReactNode {
     const { primaryResource, currentResource, reloadTimeline } = context;
 
@@ -65,6 +87,8 @@ export function TimelinePage(): JSX.Element | null {
 
     const canEdit = !isHistoryResource;
     const canDelete = !isHistoryResource;
+
+    const showAwsAi = currentResource.resourceType === 'DocumentReference' || currentResource.resourceType === 'Media';
 
     return (
       <Menu.Dropdown>
@@ -113,6 +137,26 @@ export function TimelinePage(): JSX.Element | null {
           >
             Edit
           </Menu.Item>
+        )}
+        {showAwsAi && (
+          <>
+            <Menu.Divider />
+            <Menu.Label>AI</Menu.Label>
+            <Menu.Item
+              leftSection={<IconTextRecognition size={14} />}
+              onClick={() => onAwsTextract(currentResource, reloadTimeline)}
+              aria-label={`AWS Textract ${getReferenceString(currentResource)}`}
+            >
+              AWS Textract
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconBrain size={14} />}
+              onClick={() => onAwsComprehend(currentResource, reloadTimeline)}
+              aria-label={`AWS Comprehend ${getReferenceString(currentResource)}`}
+            >
+              AWS Comprehend
+            </Menu.Item>
+          </>
         )}
         {canDelete && (
           <>
