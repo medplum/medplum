@@ -764,6 +764,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     create: boolean
   ): Promise<T | undefined> {
+    if (create) {
+      return undefined;
+    }
     try {
       return await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
@@ -772,7 +775,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(outcome, err);
       }
 
-      if (!create && isNotFound(outcome) && !this.canSetId()) {
+      if (isNotFound(outcome) && !this.canSetId()) {
         throw new OperationOutcomeError(outcome, err);
       }
 
@@ -1989,7 +1992,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.commitTransaction();
       return result;
     } catch (err) {
-      const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(normalizeDatabaseError(err)));
+      const operationOutcomeError = normalizeDatabaseError(err);
       await this.rollbackTransaction(operationOutcomeError);
       throw operationOutcomeError;
     } finally {

@@ -53,6 +53,7 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
   if (bundle.resourceType !== 'Bundle') {
     return [badRequest('Not a bundle')];
   }
+
   const result = await processBatch(router, repo, bundle);
   return [allOk, result];
 }

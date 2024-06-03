@@ -9,6 +9,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   splitN,
+  isConflict,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
@@ -44,9 +45,20 @@ export async function processBatch(router: FhirRouter, repo: FhirRepository, bun
     if (bundleInfo.requiresStrongTransaction && resultEntries.length > maxSerializableTransactionEntries) {
       throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
     }
-    return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
-      serializable: bundleInfo.requiresStrongTransaction,
-    });
+
+    try {
+      const result = await repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
+        serializable: bundleInfo.requiresStrongTransaction,
+      });
+      return result;
+    } catch (err: any) {
+      if (err instanceof OperationOutcomeError && isConflict(err.outcome)) {
+        return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
+          serializable: bundleInfo.requiresStrongTransaction,
+        });
+      }
+      throw err;
+    }
   } else {
     return processor.processBatch(bundleInfo, resultEntries);
   }

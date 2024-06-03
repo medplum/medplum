@@ -3,8 +3,8 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
 import request from 'supertest';
-import { ContentType, getReferenceString, sleep } from '@medplum/core';
-import { Bundle, Patient, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
+import { ContentType, getReferenceString } from '@medplum/core';
+import { Bundle, BundleEntryResponse, Patient, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
 describe('Batch and Transaction processing', () => {
@@ -493,24 +493,29 @@ describe('Batch and Transaction processing', () => {
       ],
     };
 
-    const requests = [];
-    for (let i = 0; i < 4; i++) {
-      await sleep(100);
-      const req = request(app)
+    // Issue several identical transaction requests, essentially in parallel
+    const requests = new Array(8);
+    for (let i = 0; i < requests.length; i++) {
+      requests[i] = request(app)
         .post(`/fhir/R4/`)
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(tx)
         .then((res) => res); // Force send request
-      requests.push(req);
     }
 
     const results = await Promise.all(requests);
+    const statusCounts = Object.create(null);
     for (let i = 0; i < requests.length; i++) {
       expect(results[i].status).toEqual(200);
+      const ccreateResult = results[i].body.entry[0].response as BundleEntryResponse;
+      statusCounts[ccreateResult.status] = (statusCounts[ccreateResult.status] ?? 0) + 1;
     }
+    // Only one transaction should report that it created the resource
+    expect(statusCounts[201]).toEqual(1);
+    expect(statusCounts[200]).toEqual(requests.length - 1);
 
-    // Assert that a unique resource was conditionally created
+    // Ensure that only one copy of the resource was actually created
     const createdResources = await request(app)
       .get('/fhir/R4/Patient?' + patientCreateCondition)
       .set('Authorization', 'Bearer ' + accessToken)
