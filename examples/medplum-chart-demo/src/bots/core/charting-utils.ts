@@ -2,7 +2,6 @@ import { getReferenceString } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
-  BundleEntryRequest,
   ClinicalImpression,
   Coding,
   Condition,
