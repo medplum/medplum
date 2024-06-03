@@ -25,9 +25,9 @@
     "@babel/preset-env": "7.24.6",
     "@babel/preset-react": "7.24.6",
     "@babel/preset-typescript": "7.24.6",
-    "@mantine/core": "7.10.0",
-    "@mantine/hooks": "7.10.0",
-    "@mantine/notifications": "7.10.0",
+    "@mantine/core": "7.10.1",
+    "@mantine/hooks": "7.10.1",
+    "@mantine/notifications": "7.10.1",
     "@medplum/core": "3.1.7",
     "@medplum/eslint-config": "3.1.7",
     "@medplum/fhirtypes": "3.1.7",
@@ -37,7 +37,7 @@
     "@testing-library/jest-dom": "6.4.5",
     "@testing-library/react": "15.0.7",
     "@types/jest": "29.5.12",
-    "@types/node": "20.12.12",
+    "@types/node": "20.14.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.0",
@@ -55,6 +55,6 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.23.1",
     "typescript": "5.4.5",
-    "vite": "5.2.11"
+    "vite": "5.2.12"
   }
 }
