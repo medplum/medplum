@@ -551,7 +551,7 @@ export class App {
 
   private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
     if (getOsString() !== 'windows') {
-      const errMsg = 'Currently auto-upgrading is only supported on Windows';
+      const errMsg = 'Auto-upgrading is currently only supported on Windows';
       this.log.error(errMsg);
       await this.sendToWebSocket({
         type: 'agent:error',

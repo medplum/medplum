@@ -3,8 +3,8 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
 
-const DEFAULT_UPGRADE_TIMEOUT = 30000;
-const MAX_UPGRADE_TIMEOUT = 45000;
+const DEFAULT_UPGRADE_TIMEOUT = 45000;
+const MAX_UPGRADE_TIMEOUT = 56000;
 
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
