@@ -6,7 +6,7 @@ import { printConfigNotFound, writeParameters } from './utils';
 export interface UpdateConfigOptions {
   file?: string;
   dryrun?: boolean;
-  autoConfirm?: boolean; // Add the autoConfirm parameter
+  yes?: boolean;
 }
 
 /**
@@ -45,7 +45,7 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
       )
     );
 
-    if (options.autoConfirm || (await yesOrNo('Do you want to store these values in AWS Parameter Store?'))) {
+    if (options.yes || (await yesOrNo('Do you want to store these values in AWS Parameter Store?'))) {
       await writeParameters(
         infraConfig.region,
         `/medplum/${infraConfig.name}/`,

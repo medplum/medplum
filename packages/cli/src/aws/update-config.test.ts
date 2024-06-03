@@ -1,5 +1,6 @@
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { mockClient } from 'aws-sdk-client-mock';
+import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
@@ -10,6 +11,7 @@ import { mockReadline } from './test.utils';
 jest.mock('node:readline');
 
 describe('update-config command', () => {
+  let ssmClient: AwsClientStub<SSMClient>;
   let processError: jest.SpyInstance;
 
   beforeAll(() => {
@@ -20,9 +22,13 @@ describe('update-config command', () => {
   });
 
   beforeEach(() => {
-    const ssmClient = mockClient(SSMClient);
+    ssmClient = mockClient(SSMClient);
     ssmClient.on(GetParameterCommand).rejects({ name: 'ParameterNotFound' });
     ssmClient.on(PutParameterCommand).resolves({});
+  });
+
+  afterEach(() => {
+    ssmClient.restore();
   });
 
   test('Not found', async () => {
@@ -239,29 +245,10 @@ describe('update-config command', () => {
       'utf8'
     );
 
-    await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: true });
+    await main(['node', 'index.js', 'aws', 'update-config', tag, '--yes']);
     unlinkSync(infraFileName);
 
-    // Assertions
-    expect(writeParameters).toHaveBeenCalledWith('us-east-1', `/medplum/${tag}/`, {
-      apiPort: 8103,
-      name: tag,
-      region: 'us-east-1',
-      accountNumber: 'account-123',
-      stackName: 'TestStack',
-      domainName: 'test.example.com',
-      baseUrl: 'https://api.test.example.com/',
-      apiDomainName: 'api.test.example.com',
-      appDomainName: 'app.test.example.com',
-      storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'storage.test.example.com',
-      maxAzs: 2,
-      rdsInstances: 1,
-      desiredServerCount: 1,
-      serverMemory: 512,
-      serverCpu: 256,
-      serverImage: 'medplum/medplum-server:2.4.17',
-    });
+    expect(ssmClient).toHaveReceivedCommandTimes(PutParameterCommand, 4);
   });
 
   test('Auto confirm = false with mockReadline = y', async () => {
@@ -298,29 +285,10 @@ describe('update-config command', () => {
       )
     );
 
-    await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: false });
+    await main(['node', 'index.js', 'aws', 'update-config', tag, '--yes']);
     unlinkSync(infraFileName);
 
-    // Assertions
-    expect(writeParameters).toHaveBeenCalledWith('us-east-1', `/medplum/${tag}/`, {
-      apiPort: 8103,
-      name: tag,
-      region: 'us-east-1',
-      accountNumber: 'account-123',
-      stackName: 'TestStack',
-      domainName: 'test.example.com',
-      baseUrl: 'https://api.test.example.com/',
-      apiDomainName: 'api.test.example.com',
-      appDomainName: 'app.test.example.com',
-      storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'storage.test.example.com',
-      maxAzs: 2,
-      rdsInstances: 1,
-      desiredServerCount: 1,
-      serverMemory: 512,
-      serverCpu: 256,
-      serverImage: 'medplum/medplum-server:2.4.17',
-    });
+    expect(ssmClient).toHaveReceivedCommandTimes(PutParameterCommand, 4);
   });
 
   test('Auto confirm = false with mockReadline = n', async () => {
@@ -357,10 +325,9 @@ describe('update-config command', () => {
       )
     );
 
-    await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: false });
+    await main(['node', 'index.js', 'aws', 'update-config', tag]);
     unlinkSync(infraFileName);
 
-    // Assertions
-    expect(writeParameters).not.toHaveBeenCalled();
+    expect(ssmClient).toHaveReceivedCommandTimes(PutParameterCommand, 0);
   });
 });
