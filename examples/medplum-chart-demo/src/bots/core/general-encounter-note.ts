@@ -1,7 +1,9 @@
 import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Bundle,
+  ClinicalImpression,
   CodeableConcept,
+  Condition,
   Encounter,
   Observation,
   Practitioner,
@@ -9,15 +11,16 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import {
-  calculateBMI,
   ClinicalImpressionData,
   ConditionData,
-  createClinicalImpressionEntry,
-  createConditionEntries,
-  createObservationEntries,
+  createBundle,
+  createClinicalImpressions,
+  createConditions,
+  createObservations,
   handleBloodPressure,
   ObservationData,
 } from './charting-utils';
+import { calculateBMI } from './observation-utils';
 
 export interface GeneralObservationData extends ObservationData {
   hotFlash?: boolean;
@@ -69,27 +72,22 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     assessment: answers['assessment']?.valueString,
   };
 
-  // Take the objects and create bundle entries from the data for each resource
+  // Take the objects and create full resources of each type
   const partialObservations = createPartialGeneralObservations(observationData, generalCodes);
-  const observationEntries = createObservationEntries(observationData, encounter, user, partialObservations);
-  const conditionEntries = createConditionEntries(conditionData, encounter, user);
-  const clinicalImpressionEntries = createClinicalImpressionEntry(clinicalImpressionData, encounter, user);
+  const observations = createObservations(observationData, encounter, user, partialObservations);
+  const conditions = createConditions(conditionData, encounter, user);
+  const clinicalImpressions = createClinicalImpressions(clinicalImpressionData, encounter, user);
 
-  // Create an array of all entries
-  const entry = [...observationEntries, ...conditionEntries];
-  if (clinicalImpressionEntries) {
-    entry.push(clinicalImpressionEntries);
+  // Create an array of all resources
+  const resources: (Condition | Observation | ClinicalImpression)[] = [...observations, ...conditions];
+  if (clinicalImpressions) {
+    resources.push(clinicalImpressions);
   }
 
-  // Create the bundle
-  const encounterNoteBatch: Bundle = {
-    resourceType: 'Bundle',
-    type: 'batch',
-    entry,
-  };
+  const bundle = createBundle(resources);
 
   // Execute the batch to create all resources at once
-  const responseBundle = await medplum.executeBatch(encounterNoteBatch);
+  const responseBundle = await medplum.executeBatch(bundle);
   return responseBundle;
 }
 

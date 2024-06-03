@@ -17,7 +17,7 @@ const borderColor = 'rgba(29, 112, 214, 1)';
 const secondBackgroundColor = 'rgba(255, 119, 0, 0.7)';
 const secondBorderColor = 'rgba(255, 119, 0, 1)';
 
-export const measurementsMeta: Record<string, ObservationType> = {
+export const measurementStyles: Record<string, ObservationType> = {
   'blood-pressure': {
     id: 'blood-pressure',
     code: '85354-9',

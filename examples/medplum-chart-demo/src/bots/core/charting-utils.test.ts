@@ -2,7 +2,8 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@med
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Encounter, Observation, Practitioner, Quantity, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { calculateBMI, createObservationEntries, ObservationData } from './charting-utils';
+import { createObservations, ObservationData } from './charting-utils';
+import { calculateBMI } from './observation-utils';
 
 describe('Bot utility function tests', async () => {
   beforeAll(() => {
@@ -73,6 +74,6 @@ describe('Bot utility function tests', async () => {
       resourceType: 'Practitioner',
     });
 
-    expect(() => createObservationEntries(noCode, encounter, practitioner, partials)).toThrow(/^No code provided$/);
+    expect(() => createObservations(noCode, encounter, practitioner, partials)).toThrow(/^No code provided$/);
   });
 });

@@ -1,8 +1,10 @@
 import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Bundle,
+  ClinicalImpression,
   CodeableConcept,
   Coding,
+  Condition,
   Encounter,
   Observation,
   Practitioner,
@@ -11,15 +13,16 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import {
-  calculateBMI,
   ClinicalImpressionData,
   ConditionData,
-  createClinicalImpressionEntry,
-  createConditionEntries,
-  createObservationEntries,
+  createBundle,
+  createClinicalImpressions,
+  createConditions,
+  createObservations,
   handleBloodPressure,
   ObservationData,
 } from './charting-utils';
+import { calculateBMI } from './observation-utils';
 
 export interface ObstetricObservationData extends ObservationData {
   gravida?: number;
@@ -73,22 +76,18 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   // Take the above objects and create bundle entries for each resource type.
   const partialObservations = createPartialObstetricObservations(observationData, obstetricCodes);
-  const observationEntries = createObservationEntries(observationData, encounter, user, partialObservations);
-  const conditionEntries = createConditionEntries(conditionData, encounter, user);
-  const clinicalImpressionEntry = createClinicalImpressionEntry(clinicalImpressionData, encounter, user);
+  const observations = createObservations(observationData, encounter, user, partialObservations);
+  const conditions = createConditions(conditionData, encounter, user);
+  const clinicalImpressions = createClinicalImpressions(clinicalImpressionData, encounter, user);
 
   // Create an entry array of all the bundle entries
-  const entry = observationEntries.concat(conditionEntries);
-  if (clinicalImpressionEntry) {
-    entry.push(clinicalImpressionEntry);
+  const resources: (Observation | Condition | ClinicalImpression)[] = [...observations, ...conditions];
+  if (clinicalImpressions) {
+    resources.push(clinicalImpressions);
   }
 
   // Build the bundle
-  const bundle: Bundle = {
-    resourceType: 'Bundle',
-    type: 'batch',
-    entry,
-  };
+  const bundle = createBundle(resources);
 
   // Execute the bundle as a batch to create all of the Observation, Condition, and ClinicalImpression resources at once
   const responseBundle = await medplum.executeBatch(bundle);

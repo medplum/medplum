@@ -1,5 +1,6 @@
-import { generateId, getReferenceString } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import {
+  Bundle,
   BundleEntry,
   BundleEntryRequest,
   ClinicalImpression,
@@ -12,7 +13,9 @@ import {
   Practitioner,
   Quantity,
   Reference,
+  Resource,
 } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 
 export interface ObservationData {
   bloodPressure: {
@@ -46,24 +49,24 @@ export interface ClinicalImpressionData {
  * @param partialObservations - An array of the partial Observations containing the code and value for each given observation
  * @returns An array of bundle entries which can be added to a batch transaction
  */
-export function createObservationEntries(
+export function createObservations(
   observationData: ObservationData,
   encounter: Encounter,
   user: Practitioner,
   partialObservations: Partial<Observation>[]
-): BundleEntry[] {
-  const entries: BundleEntry[] = [];
+): Observation[] {
+  const observations: Observation[] = [];
   for (const partial of partialObservations) {
     const code = partial.code;
     if (!code) {
       throw new Error('No code provided');
     }
-    const request: BundleEntryRequest = {
-      method: 'PUT',
-      url: code.coding?.[0].code
-        ? `Observation?encounter=${getReferenceString(encounter)}&code=${code.coding?.[0].code}`
-        : `Observation?encounter=${getReferenceString(encounter)}`,
-    };
+    // const request: BundleEntryRequest = {
+    //   method: 'PUT',
+    //   url: code.coding?.[0].code
+    //     ? `Observation?encounter=${getReferenceString(encounter)}&code=${code.coding?.[0].code}`
+    //     : `Observation?encounter=${getReferenceString(encounter)}`,
+    // };
 
     const observation: Observation = {
       ...partial,
@@ -76,14 +79,10 @@ export function createObservationEntries(
       effectiveDateTime: observationData.date,
     };
 
-    entries.push({
-      fullUrl: generateId(),
-      request,
-      resource: observation,
-    });
+    observations.push(observation);
   }
 
-  return entries;
+  return observations;
 }
 
 /**
@@ -132,17 +131,12 @@ export function handleBloodPressure(observationData: ObservationData): Observati
  * @param user - The user creating the Condition resource
  * @returns An array of bundle entries containing the Condition resource that can be created in a batch request.
  */
-export function createConditionEntries(
-  conditionData: ConditionData,
-  encounter: Encounter,
-  user: Practitioner
-): BundleEntry[] {
-  const code = conditionData.reasonForVisit.code;
-  const entries: BundleEntry[] = [];
-  const request: BundleEntryRequest = {
-    method: 'PUT',
-    url: `Condition?encounter=${getReferenceString(encounter)}&code=${code}`,
-  };
+export function createConditions(conditionData: ConditionData, encounter: Encounter, user: Practitioner): Condition[] {
+  const conditions: Condition[] = [];
+  // const request: BundleEntryRequest = {
+  //   method: 'PUT',
+  //   url: `Condition?encounter=${getReferenceString(encounter)}&code=${code}`,
+  // };
   // Create a condition for the encounter diagnosis
   const encounterDiagnosis: Condition = {
     resourceType: 'Condition',
@@ -164,52 +158,48 @@ export function createConditionEntries(
     ],
   };
 
-  entries.push({ fullUrl: generateId(), request, resource: encounterDiagnosis });
+  conditions.push(encounterDiagnosis);
 
   // If the problem list question was checked, create an additional condition for it
   if (conditionData.problemList) {
-    entries.push({
-      fullUrl: generateId(),
-      request,
-      resource: {
-        resourceType: 'Condition',
-        subject: encounter.subject as Reference<Patient>,
-        encounter: { reference: getReferenceString(encounter) },
-        recorder: { reference: getReferenceString(user) },
-        asserter: { reference: getReferenceString(user) },
-        code: conditionData.reasonForVisit,
-        category: [
-          {
-            coding: [
-              {
-                system: 'http://hl7.org/fhir/ValueSet/condition-category',
-                code: 'problem-list-item',
-                display: 'Problem List Item',
-              },
-            ],
-          },
-        ],
-      },
+    conditions.push({
+      resourceType: 'Condition',
+      subject: encounter.subject as Reference<Patient>,
+      encounter: { reference: getReferenceString(encounter) },
+      recorder: { reference: getReferenceString(user) },
+      asserter: { reference: getReferenceString(user) },
+      code: conditionData.reasonForVisit,
+      category: [
+        {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/ValueSet/condition-category',
+              code: 'problem-list-item',
+              display: 'Problem List Item',
+            },
+          ],
+        },
+      ],
     });
   }
 
-  return entries;
+  return conditions;
 }
 
 /**
- * This function takes ClinicalImpression data and creates a bundle entry so that it can be added to a batch transaction. The
- * ClinicalImpression resource represents any notes on an encounter in this context.
+ * This function takes ClinicalImpression data and creates a ClinicalImpression resource. The ClinicalImpression resource
+ * represents any notes on an encounter in this context.
  *
  * @param clinicalImpressionData - Data object containing codes and values for the ClinicalImpression resources
  * @param encounter - The encounter that the data is derived from
  * @param user - The user creating the ClinicalImpressions
  * @returns A bundle entry with the ClinicalImpression resource that can be used in a batch transaction
  */
-export function createClinicalImpressionEntry(
+export function createClinicalImpressions(
   clinicalImpressionData: ClinicalImpressionData,
   encounter: Encounter,
   user: Practitioner
-): BundleEntry | undefined {
+): ClinicalImpression | undefined {
   if (!clinicalImpressionData.assessment) {
     return undefined;
   }
@@ -224,71 +214,69 @@ export function createClinicalImpressionEntry(
     note: [{ text: clinicalImpressionData.assessment }],
   };
 
-  // Return the clinical impression in a bundle entry
-  return {
-    fullUrl: generateId(),
-    request: { method: 'PUT', url: `ClinicalImpression?encounter=${getReferenceString(encounter)}` },
-    resource: clinicalImpression,
-  };
+  // Return the clinical impressions
+  return clinicalImpression;
 }
 
 /**
- * This function calculates the BMI of a patient based on their height and weight. Reference: https://my.clevelandclinic.org/health/articles/9464-body-mass-index-bmi
+ * This function takes an array of resources and creates a bundle that can be executed to create multiple resources at
+ * once. It will perform an upsert on the resources so that they are not duplicated.
  *
- * @param height - The height of the patient
- * @param weight - The weight of the patient
- * @returns The BMI of the patient
+ * @param resources - An array of Conditions, Observations, and ClinicalImpressions to be added to the bundle
+ * @returns A bundle entry that can be executed to simultaneously create all the necessary Conditions, Observations, and
+ * ClinicalImpressions
  */
-export function calculateBMI(height: Quantity, weight: Quantity): Quantity {
-  if (!height?.value || !weight?.value) {
-    throw new Error('All values must be provided');
-  }
-  const heightM = getHeightInMeters(height);
-  const weightKg = getWeightInKilograms(weight);
-
-  const bmi = Math.round((weightKg / heightM ** 2) * 10) / 10;
-  return {
-    value: bmi,
-    unit: 'kg/m^2',
+export function createBundle(resources: (Condition | Observation | ClinicalImpression)[]): Bundle {
+  const bundle: Bundle = {
+    resourceType: 'Bundle',
+    type: 'transaction',
   };
+
+  const entries: BundleEntry[] = resources.map((resource) => {
+    const entry: BundleEntry = {
+      fullUrl: `urn:uuid:${randomUUID()}`,
+      request: { method: 'PUT', url: getUrl(resource) },
+      resource,
+    };
+
+    return entry;
+  });
+
+  bundle.entry = entries;
+
+  return bundle;
 }
 
-function getWeightInKilograms(weight: Quantity): number {
-  if (!weight.unit) {
-    throw new Error('No unit defined');
-  }
-  const unit = weight.unit;
-  const weightVal = weight.value as number;
+function getUrl(resource: Resource): string {
+  if (resource.resourceType === 'Observation') {
+    const code = resource.code;
+    if (!code) {
+      throw new Error('No code provided');
+    }
+    if (!resource.encounter) {
+      throw new Error('No linked encounter');
+    }
+    const url = code.coding?.[0].code
+      ? `Observation?encounter=${getReferenceString(resource.encounter)}&code=${code.coding?.[0].code}`
+      : `Observation?encounter=${getReferenceString(resource.encounter)}`;
 
-  switch (unit) {
-    case 'lb':
-      return weightVal / 2.2;
-    case 'kg':
-      return weightVal;
-    default:
-      throw new Error('Unknown unit. Please provide weight in one of the following units: Pounds or kilograms.');
-  }
-}
+    return url;
+  } else if (resource.resourceType === 'Condition') {
+    const code = resource.code;
+    if (!code) {
+      throw new Error('No code provided');
+    }
+    if (!resource.encounter) {
+      throw new Error('No linked encounter');
+    }
 
-function getHeightInMeters(height: Quantity): number {
-  if (!height.unit) {
-    throw new Error('No unit defined');
-  }
-  const unit = height.unit;
-  const heightVal = height.value as number;
-
-  switch (unit) {
-    case 'in':
-      return (heightVal * 2.54) / 100;
-    case 'ft':
-      return (heightVal * 12 * 2.54) / 100;
-    case 'cm':
-      return heightVal / 100;
-    case 'm':
-      return heightVal;
-    default:
-      throw new Error(
-        'Unknown unit. Please provide height in one of the following units: Inches, feet, centimeters, or meters.'
-      );
+    return `Condition?encounter=${getReferenceString(resource.encounter)}&code=${code}`;
+  } else if (resource.resourceType === 'ClinicalImpression') {
+    if (!resource.encounter) {
+      throw new Error('No linked encounter');
+    }
+    return `ClinicalImpression?encounter=${getReferenceString(resource.encounter)}`;
+  } else {
+    throw new Error('Invalid resource type');
   }
 }
