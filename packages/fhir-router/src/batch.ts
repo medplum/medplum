@@ -10,6 +10,7 @@ import {
   notFound,
   splitN,
   isConflict,
+  sleep,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
@@ -18,7 +19,7 @@ import { HttpMethod, RouteResult } from './urlrouter';
 import { IncomingHttpHeaders } from 'node:http';
 
 const maxUpdates = 50;
-const maxSerializableTransactionEntries = 4;
+const maxSerializableTransactionEntries = 8;
 
 /**
  * Processes a FHIR batch request.
@@ -52,6 +53,7 @@ export async function processBatch(router: FhirRouter, repo: FhirRepository, bun
       });
       return result;
     } catch (err: any) {
+      await sleep(25 + 25 * Math.random()); // Brief 25-50 ms delay to hopefully avoid further conflicts
       if (err instanceof OperationOutcomeError && isConflict(err.outcome)) {
         return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
           serializable: bundleInfo.requiresStrongTransaction,
@@ -190,6 +192,11 @@ class BatchProcessor {
         // guarantee uniqueness of created resource
         requiresStrongTransaction = true;
       } else if (interaction === 'update') {
+        if (entry.request?.url.includes('?')) {
+          // Conditional update requires strong (serializable) transaction to
+          // guarantee uniqueness of possibly-created resource
+          requiresStrongTransaction = true;
+        }
         updates++;
       }
       bucketedEntries[interaction]?.push(i);

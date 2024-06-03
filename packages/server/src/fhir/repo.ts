@@ -519,7 +519,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    const existing = await this.checkExistingResource<T>(resourceType, id, create);
+    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing);
       if (!this.canWriteToResource(existing)) {
@@ -756,17 +756,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    *  - Previous version does not exist, and user does have permission to create by ID
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
-   * @param create - Flag for "creating" vs "updating".
    * @returns The existing resource, if found.
    */
   private async checkExistingResource<T extends Resource>(
     resourceType: T['resourceType'],
-    id: string,
-    create: boolean
+    id: string
   ): Promise<T | undefined> {
-    if (create) {
-      return undefined;
-    }
     try {
       return await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {

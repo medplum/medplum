@@ -3,7 +3,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
 import request from 'supertest';
-import { ContentType, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntryResponse, Patient, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
@@ -490,6 +490,162 @@ describe('Batch and Transaction processing', () => {
             },
           },
         },
+        {
+          request: {
+            method: 'POST',
+            url: 'Task',
+          },
+          resource: {
+            resourceType: 'Task',
+            status: 'requested',
+            intent: 'plan',
+            encounter: { reference: 'urn:uuid:' + encounterIdentifier },
+            owner: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            description: 'Follow up with B. Tables regarding prognosis',
+          },
+        },
+      ],
+    };
+
+    // Issue several identical transaction requests, essentially in parallel
+    const requests = new Array(4);
+    for (let i = 0; i < requests.length; i++) {
+      requests[i] = request(app)
+        .post(`/fhir/R4/`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(tx)
+        .then((res) => res); // Force send request
+    }
+
+    const results = await Promise.all(requests);
+    const statusCounts = Object.create(null);
+    for (let i = 0; i < requests.length; i++) {
+      expect(results[i].status).toEqual(200);
+      const ccreateResult = results[i].body.entry[0].response as BundleEntryResponse;
+      statusCounts[ccreateResult.status] = (statusCounts[ccreateResult.status] ?? 0) + 1;
+    }
+    // Only one transaction should report that it created the resource
+    expect(statusCounts[201]).toEqual(1);
+    expect(statusCounts[200]).toEqual(requests.length - 1);
+
+    // Ensure that only one copy of the resource was actually created
+    const createdResources = await request(app)
+      .get('/fhir/R4/Patient?' + patientCreateCondition)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(tx);
+    expect(createdResources.status).toEqual(200);
+    expect(createdResources.body.entry).toHaveLength(1);
+  });
+
+  test('Concurrent conditional update in transactions', async () => {
+    const encounterIdentifier = randomUUID();
+    const conditionIdentifier = randomUUID();
+
+    const createdPatient = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(createdPatient.status).toEqual(201);
+    const patient = createdPatient.body;
+    const patientReference = createReference(patient);
+    const careTeamCondition = 'CareTeam?subject=' + patientReference.reference;
+
+    const tx: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          request: {
+            method: 'PUT',
+            url: careTeamCondition,
+          },
+          resource: {
+            resourceType: 'CareTeam',
+            status: 'active',
+            category: [
+              {
+                coding: [{ system: 'http://loinc.org', code: 'LA28865-6' }],
+                text: 'Holistic Wellness Squad',
+              },
+            ],
+            subject: patientReference,
+            participant: [
+              { member: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' } },
+            ],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:' + encounterIdentifier,
+          request: {
+            method: 'POST',
+            url: 'Encounter',
+          },
+          resource: {
+            resourceType: 'Encounter',
+            status: 'finished',
+            class: {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+              code: 'AMB',
+            },
+            subject: patientReference,
+            diagnosis: [{ condition: { reference: 'urn:uuid:' + conditionIdentifier } }],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:' + conditionIdentifier,
+          request: {
+            method: 'POST',
+            url: 'Condition',
+          },
+          resource: {
+            resourceType: 'Condition',
+            verificationStatus: {
+              coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status', code: 'confirmed' }],
+            },
+            subject: patientReference,
+            encounter: { reference: 'urn:uuid:' + encounterIdentifier },
+            asserter: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            code: {
+              coding: [{ system: 'http://snomed.info/sct', code: '83157008' }],
+              text: 'FFI',
+            },
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Observation',
+          },
+          resource: {
+            resourceType: 'Observation',
+            status: 'final',
+            code: {
+              coding: [{ system: 'http://loinc.org', code: '31989-7' }],
+              text: 'Prion test',
+            },
+            subject: patientReference,
+            valueCodeableConcept: {
+              coding: [{ system: 'http://loinc.org', code: 'LA6576-8', display: 'Positive' }],
+            },
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Task',
+          },
+          resource: {
+            resourceType: 'Task',
+            status: 'requested',
+            intent: 'plan',
+            encounter: { reference: 'urn:uuid:' + encounterIdentifier },
+            owner: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            description: 'Follow up with B. Tables regarding prognosis',
+          },
+        },
       ],
     };
 
@@ -517,7 +673,7 @@ describe('Batch and Transaction processing', () => {
 
     // Ensure that only one copy of the resource was actually created
     const createdResources = await request(app)
-      .get('/fhir/R4/Patient?' + patientCreateCondition)
+      .get('/fhir/R4/' + careTeamCondition)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(tx);
