@@ -214,7 +214,7 @@ describe('update-config command', () => {
   test('Auto confirm without mockReadline (Auto Update)', async () => {
     const tag = randomUUID();
     const infraFileName = getConfigFileName(tag);
-  
+
     writeFileSync(
       infraFileName,
       JSON.stringify({
@@ -238,10 +238,10 @@ describe('update-config command', () => {
       }),
       'utf8'
     );
-  
+
     await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: true });
     unlinkSync(infraFileName);
-  
+
     // Assertions
     expect(writeParameters).toHaveBeenCalledWith('us-east-1', `/medplum/${tag}/`, {
       apiPort: 8103,
@@ -267,7 +267,7 @@ describe('update-config command', () => {
   test('Auto confirm = false with mockReadline = y', async () => {
     const tag = randomUUID();
     const infraFileName = getConfigFileName(tag);
-  
+
     writeFileSync(
       infraFileName,
       JSON.stringify({
@@ -291,16 +291,16 @@ describe('update-config command', () => {
       }),
       'utf8'
     );
-  
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
         'y' // Yes, write to Parameter Store
       )
     );
-  
+
     await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: false });
     unlinkSync(infraFileName);
-  
+
     // Assertions
     expect(writeParameters).toHaveBeenCalledWith('us-east-1', `/medplum/${tag}/`, {
       apiPort: 8103,
@@ -326,7 +326,7 @@ describe('update-config command', () => {
   test('Auto confirm = false with mockReadline = n', async () => {
     const tag = randomUUID();
     const infraFileName = getConfigFileName(tag);
-  
+
     writeFileSync(
       infraFileName,
       JSON.stringify({
@@ -350,18 +350,17 @@ describe('update-config command', () => {
       }),
       'utf8'
     );
-  
+
     readline.createInterface = jest.fn(() =>
       mockReadline(
         'n' // No, do not write to Parameter Store
       )
     );
-  
+
     await main(['node', 'index.js', 'aws', 'update-config', tag], { autoConfirm: false });
     unlinkSync(infraFileName);
-  
+
     // Assertions
     expect(writeParameters).not.toHaveBeenCalled();
   });
-
 });
