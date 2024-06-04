@@ -25,7 +25,7 @@ The mission of the Developer Experience Engineer is to establish Medplum as the 
 ## About You
 * You live and breathe community engagement and love building relationships with developers!
 * You have 3+ years of full stack TypeScript and React experience
-* You're an excellent communicator, with a knack for breaking down complex topics into digestible content
+* You're an excellent communicator, with a knack for breaking down complex topics into digestible content, and have 2+ years of experience in a role that requires external communication
 * You're a strong problem-solver who enjoys diving deep into technical issues and providing best practices
 * You're based in the SF Bay Area, ready for twice-weekly in-person collaboration
 * Bonus: media production experience, health tech background, and/or an existing developer community presence. 🎥
