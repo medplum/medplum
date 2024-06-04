@@ -7,7 +7,6 @@ interface GeneralNoteDisplayProps {
 }
 
 export interface GeneralAnswers {
-  noteType: 'general';
   subjective: [string, boolean][];
   selfReportedHistory?: CodeableConcept;
   assessment: Annotation[];
@@ -67,7 +66,6 @@ function parseGeneralAnswers(answers: Record<string, QuestionnaireResponseItemAn
 
   return {
     assessment,
-    noteType: 'general',
     subjective,
     selfReportedHistory,
   };

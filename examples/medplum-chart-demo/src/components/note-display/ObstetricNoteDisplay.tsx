@@ -12,7 +12,6 @@ export interface ObstetricAnswers {
   para?: number;
   gestationalWeeks?: number;
   gestationalDays?: number;
-  noteType: 'obstetric';
   assessment: Annotation[];
 }
 
@@ -79,7 +78,6 @@ function parseObstetricAnswers(answers: Record<string, QuestionnaireResponseItem
     gestationalWeeks,
     gestationalDays,
     assessment,
-    noteType: 'obstetric',
   };
 }
 

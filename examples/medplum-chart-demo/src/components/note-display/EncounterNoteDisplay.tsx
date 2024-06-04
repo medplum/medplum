@@ -2,10 +2,10 @@ import { Group, Stack, Title } from '@mantine/core';
 import { formatDate, getQuestionnaireAnswers } from '@medplum/core';
 import { Encounter, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Document, QuantityDisplay, useMedplum } from '@medplum/react';
-import { parseGenericAnswers } from './utils';
 import { GeneralNoteDisplay } from './GeneralNoteDisplay';
 import { GynecologyNoteDisplay } from './GynecologyNoteDisplay';
 import { ObstetricNoteDisplay } from './ObstetricNoteDisplay';
+import { parseGenericAnswers } from './utils';
 
 interface EncounterNoteDisplayProps {
   response: QuestionnaireResponse;
@@ -26,6 +26,12 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
   }
   checkForValidResponse();
 
+  /**
+   * This function gets the questionnaire response for the linked encounter and returns the type of the note. This is used to determine
+   * what additional data should be displayed on the page.
+   *
+   * @returns The code for the type of encounter note to be displayed
+   */
   function getNoteType(): string {
     const response = props.response;
     // Get the questionnaire the response is linked to
@@ -36,20 +42,17 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
       return 'general';
     }
 
-    // Check the use contexts. In this demo, we have a gynecology, obstetric, and general note type
-    for (const use of questionnaire.useContext) {
-      // Check for gynecology
-      if (use.valueCodeableConcept?.coding?.[0].code === '83607001') {
-        return 'gynecology';
-      }
-      // Check for obstetric
-      if (use.valueCodeableConcept?.coding?.[0].code === '163497009') {
-        return 'obstetric';
-      }
+    const focus = questionnaire.useContext.find((code) => code.code.code === 'focus');
+
+    const code = focus ? focus.valueCodeableConcept?.coding?.[0].code : undefined;
+
+    // If the code is not for gynecology or obstetrics, return the code for the general encounter
+    if (code !== '83607001' && code !== '163497009') {
+      return '1287706006';
     }
 
-    // If the use context is not gynecology or obstetric, use the general as a default.
-    return 'general';
+    // Otherwise, return the code.
+    return code;
   }
 
   const noteType = getNoteType();
@@ -88,9 +91,9 @@ export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Elem
               <QuantityDisplay value={displayValues.weight} />
             </Group>
           </Stack>
-          {noteType === 'general' && <GeneralNoteDisplay answers={answers} />}
-          {noteType === 'gynecology' && <GynecologyNoteDisplay answers={answers} />}
-          {noteType === 'obstetric' && <ObstetricNoteDisplay answers={answers} />}
+          {noteType === '1287706006' && <GeneralNoteDisplay answers={answers} />}
+          {noteType === '83607001' && <GynecologyNoteDisplay answers={answers} />}
+          {noteType === '163497009' && <ObstetricNoteDisplay answers={answers} />}
         </Stack>
       </Stack>
     </Document>

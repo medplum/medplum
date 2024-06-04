@@ -1,4 +1,4 @@
-import { Annotation, CodeableConcept, Coding, Quantity, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, Quantity, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 
 export interface Answers {
   reasonForVisit: CodeableConcept;
@@ -13,7 +13,7 @@ export function parseGenericAnswers(
   answers: Record<string, QuestionnaireResponseItemAnswer>,
   noteType: string
 ): Answers {
-  if (noteType !== 'general' && noteType !== 'obstetric' && noteType !== 'gynecology') {
+  if (noteType !== '1287706006' && noteType !== '83607001' && noteType !== '163497009') {
     throw new Error('Invalid note type');
   }
 

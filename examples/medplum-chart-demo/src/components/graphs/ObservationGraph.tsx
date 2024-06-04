@@ -4,7 +4,7 @@ import { Coding, Observation, ObservationComponent, Patient } from '@medplum/fhi
 import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { LineChart } from './LineChart';
-import { measurementStyles } from './measurement-constants';
+import { measurementStyles, ObservationType } from './measurement-constants';
 import { ChartData, ChartDataset } from 'chart.js';
 
 interface ObservationGraphProps {
@@ -16,8 +16,17 @@ export function ObservationGraph(props: ObservationGraphProps): JSX.Element {
   const medplum = useMedplum();
 
   // Get the chartDataset codes and units
-  const { chartDatasets } = measurementStyles[props.code.display as string];
+  const { chartDatasets } = getMeasurementStyles(props.code);
   const [chartData, setChartData] = useState<ChartData<'line', number[], string>>();
+
+  function getMeasurementStyles(code: Coding): ObservationType {
+    const display = code.display;
+    if (!display) {
+      throw new Error('Invalid code');
+    }
+
+    return measurementStyles[display];
+  }
 
   // Get all of the observations for the current code and patient
   const observations = medplum
@@ -51,6 +60,15 @@ export function ObservationGraph(props: ObservationGraphProps): JSX.Element {
   return <div>{chartData && <LineChart chartData={chartData} />}</div>;
 }
 
+/**
+ * This function takes the observations to be graphed as well as other relevant data and adds the values to datasets that can be
+ * used in Chart.js
+ *
+ * @param observations - An array of observations whose data will be graphed
+ * @param labels - The labels that will appear on the axes of the graph
+ * @param chartDatasets - Data about the graph, including the name, code, units, and color details
+ * @param datasets - An array of datasets that will have the observation values added to them
+ */
 function getObservationValues(
   observations: Observation[],
   labels: string[],

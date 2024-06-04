@@ -15,7 +15,6 @@ export interface GynecologyAnswers {
   drugUse?: Coding;
   housingStatus?: Coding;
   visitLength?: number;
-  noteType: 'gynecology';
   assessment: Annotation[];
 }
 
@@ -85,7 +84,6 @@ function parseGynecologyAnswers(answers: Record<string, QuestionnaireResponseIte
     housingStatus,
     visitLength,
     assessment,
-    noteType: 'gynecology',
   };
 }
 
