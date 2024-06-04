@@ -42,7 +42,8 @@ describe('FHIR Repo', () => {
     resourceType: 'Project',
     id: randomUUID(),
   };
-  const systemRepo = getSystemRepo();
+
+  let systemRepo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -51,6 +52,10 @@ describe('FHIR Repo', () => {
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  beforeEach(() => {
+    systemRepo = getSystemRepo();
   });
 
   test('getRepoForLogin', async () => {

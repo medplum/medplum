@@ -190,7 +190,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.extract as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -258,7 +258,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.extract as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -322,7 +322,7 @@ describe('update-app command', () => {
       );
 
     // Mock the tar extract
-    (tar.extract as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
