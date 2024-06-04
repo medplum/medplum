@@ -207,6 +207,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private transactionDepth = 0;
   private closed = false;
 
+  private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
 
   constructor(context: RepositoryContext) {
@@ -553,9 +554,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     resultMeta.compartment = this.getCompartments(result);
 
-    if (this.context.checkReferencesOnWrite) {
-      await validateReferences(result, this.context.projects);
-    }
+    const fullResource = { ...result, meta: { ...resultMeta } };
+    await this.preCommit(async () => {
+      if (this.context.checkReferencesOnWrite) {
+        await validateReferences(fullResource, this);
+      }
+    });
 
     if (this.isNotModified(existing, result)) {
       this.removeHiddenFields(existing);
@@ -569,9 +573,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     await this.handleMaybeCacheOnly(result, create);
     await this.postCommit(async () => {
-      await this.handleBinaryUpdate(existing, result);
-      await this.setCacheEntry(result);
-      await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
+      await this.handleBinaryUpdate(existing, fullResource);
+      await this.setCacheEntry(fullResource);
+      await addBackgroundJobs(fullResource, { interaction: create ? 'create' : 'update' });
     });
     this.removeHiddenFields(result);
     return result;
@@ -2011,6 +2015,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.assertInTransaction();
     const conn = await this.getConnection();
     if (this.transactionDepth === 1) {
+      await this.processPreCommit();
       await conn.query('COMMIT');
       this.transactionDepth--;
       this.releaseConnection();
@@ -2046,7 +2051,23 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async postCommit(fn: () => Promise<void>): Promise<void> {
+  private async preCommit(fn: () => Promise<void>): Promise<void> {
+    if (this.transactionDepth) {
+      this.preCommitCallbacks.push(fn);
+    } else {
+      await fn();
+    }
+  }
+
+  private async processPreCommit(): Promise<void> {
+    const callbacks = this.preCommitCallbacks;
+    this.preCommitCallbacks = [];
+    for (const cb of callbacks) {
+      await cb();
+    }
+  }
+
+  private async postCommit(fn: () => Promise<void>): Promise<void> {
     if (this.transactionDepth) {
       this.postCommitCallbacks.push(fn);
     } else {

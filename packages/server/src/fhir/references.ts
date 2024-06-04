@@ -7,25 +7,22 @@ import {
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
-import { OperationOutcomeIssue, Project, Reference, Resource } from '@medplum/fhirtypes';
+import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getSystemRepo } from './repo';
+import { Repository } from './repo';
 
-export async function validateReferences<T extends Resource>(
-  resource: T,
-  allowedProjects?: Project['id'][]
-): Promise<void> {
-  return new FhirReferenceValidator(resource, allowedProjects).validate();
+export async function validateReferences<T extends Resource>(resource: T, repo: Repository): Promise<void> {
+  return new FhirReferenceValidator(resource, repo).validate();
 }
 
 export class FhirReferenceValidator<T extends Resource> {
   private readonly issues: OperationOutcomeIssue[];
-  private readonly allowedProjects?: Project['id'][];
+  private repo: Repository;
   private readonly root: T;
 
-  constructor(root: T, allowedProjects?: Project['id'][]) {
+  constructor(root: T, repo: Repository) {
     this.issues = [];
-    this.allowedProjects = allowedProjects;
+    this.repo = repo;
     this.root = root;
   }
 
@@ -75,29 +72,12 @@ export class FhirReferenceValidator<T extends Resource> {
   }
 
   private async checkReference(path: string, reference: Reference): Promise<void> {
-    const refStr = reference.reference;
-    if (!refStr) {
-      return;
-    }
-
-    const refParts = refStr.split('/');
-    if (refParts.length !== 2) {
-      return;
-    }
-    if (!this.root.meta?.project) {
+    if (reference.reference?.split?.('/')?.length !== 2) {
       return;
     }
 
     try {
-      const systemRepo = getSystemRepo();
-      const target = await systemRepo.readReference(reference);
-      if (
-        target.meta?.project &&
-        target.meta.project !== this.root.meta.project &&
-        !this.allowedProjects?.includes(target.meta.project)
-      ) {
-        this.issues.push(createStructureIssue(path, `Invalid reference (Not found)`));
-      }
+      await this.repo.readReference(reference);
     } catch (err) {
       this.issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
     }

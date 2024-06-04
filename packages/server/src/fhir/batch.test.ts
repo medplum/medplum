@@ -680,4 +680,100 @@ describe('Batch and Transaction processing', () => {
     expect(createdResources.status).toEqual(200);
     expect(createdResources.body.entry).toHaveLength(1);
   });
+
+  test('Resolved intra-Bundle reference cycle with referential integrity validation', async () => {
+    const identity1 = 'urn:uuid:c5db5c3b-bd41-4c39-aa8e-2d2a9a038167';
+    const identity2 = 'urn:uuid:f897f22a-c8d0-4e47-911b-1bb82bfbdae6';
+    const transaction: Bundle<Patient> = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: identity1,
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            link: [{ other: { reference: identity2 }, type: 'seealso' }],
+          },
+        },
+        {
+          fullUrl: identity2,
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            link: [{ other: { reference: identity1 }, type: 'seealso' }],
+          },
+        },
+      ],
+    };
+
+    const accessToken = await initTestAuth({ project: { checkReferencesOnWrite: true } });
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toEqual('Bundle');
+  });
+
+  test('Failed referential integrity check in transaction Bundle', async () => {
+    const identity1 = 'urn:uuid:c5db5c3b-bd41-4c39-aa8e-2d2a9a038167';
+    const identity2 = 'urn:uuid:f897f22a-c8d0-4e47-911b-1bb82bfbdae6';
+    const transaction: Bundle<Patient> = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: identity1,
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{ system: 'http://example.com/test-identity', value: identity1 }],
+            link: [{ other: { reference: identity2 }, type: 'seealso' }],
+          },
+        },
+        {
+          fullUrl: identity2,
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            link: [
+              { other: { reference: identity1 }, type: 'seealso' },
+              { other: { reference: 'Patient/missing' }, type: 'replaced-by' },
+            ],
+          },
+        },
+      ],
+    };
+
+    const accessToken = await initTestAuth({ project: { checkReferencesOnWrite: true } });
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+    expect(res.status).toBe(400);
+    expect(res.body.resourceType).toEqual('OperationOutcome');
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/Patient?identifier=http://example.com/test-identity|${identity1}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send();
+    expect(res2.status).toBe(200);
+    expect(res2.body.entry).toHaveLength(0);
+  });
 });
