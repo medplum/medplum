@@ -39,4 +39,4 @@ The mission of a Medplum Solutions Engineer is to do whatever it takes to help M
 
 <Benefits/>
 
-Join us in our mission to revolutionize healthcare. If you're excited about driving customer success, building strategic relationships, and shaping the future of our Solutions Engineering team, we'd love to hear from you!
+Join us in our mission to revolutionize healthcare. If you're excited about driving customer success, building strategic relationships, and shaping the future of our Solutions Engineering team, we'd love to hear from you! Reach out to careers@medplum.com.
