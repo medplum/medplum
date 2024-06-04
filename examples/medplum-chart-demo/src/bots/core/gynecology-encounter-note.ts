@@ -12,13 +12,10 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import {
-  ClinicalImpressionData,
-  ConditionData,
   createBundle,
   createClinicalImpressions,
   createConditions,
   createObservations,
-  handleBloodPressure,
   ObservationData,
 } from './charting-utils';
 import { calculateBMI } from './observation-utils';
@@ -66,21 +63,32 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     observationData.bmi = calculateBMI(observationData.height, observationData.weight);
   }
 
-  const conditionData: ConditionData = {
-    reasonForVisit: answers['reason-for-visit'].valueCoding,
-    problemList: answers['problem-list']?.valueBoolean ?? false,
+  const problemList = answers['problem-list']?.valueBoolean ?? false;
+
+  const partialCondition: Partial<Condition> = {
+    resourceType: 'Condition',
+    code: answers['reason-for-visit'].valueCoding,
   };
 
-  const clinicalImpressionData: ClinicalImpressionData = {
-    visitLength: answers['visit-length']?.valueInteger,
-    assessment: answers['assessment']?.valueString,
+  const note = answers['assessment']?.valueString;
+
+  const observationTypes: { [key: string]: string } = {
+    height: 'valueQuantity',
+    weight: 'valueQuantity',
+    bmi: 'valueQuantity',
+    lastPeriod: 'valueDateTime',
+    contraception: 'valueCodeableConcept',
+    lastMammogram: 'valueDateTime',
+    smokingStatus: 'valueCodeableConcept',
+    drugUse: 'valueCodeableConcept',
+    housingStatus: 'valueCodeableConcept',
   };
 
   // Create bundle entries from the above objects
-  const partialObservations = createPartialGynecologyObservations(observationData, gynecologyCodes);
-  const observations = createObservations(observationData, encounter, user, partialObservations);
-  const conditions = createConditions(conditionData, encounter, user);
-  const clinicalImpressions = createClinicalImpressions(clinicalImpressionData, encounter, user);
+  // const partialObservations = createPartialGynecologyObservations(observationData, gynecologyCodes);
+  const observations = createObservations(observationData, gynecologyCodes, observationTypes, encounter, user);
+  const conditions = createConditions(partialCondition, encounter, user, problemList);
+  const clinicalImpressions = createClinicalImpressions(encounter, user, note);
 
   // Create an array of bundle entries for all resource types
   const resources: (Observation | Condition | ClinicalImpression)[] = [...observations, ...conditions];
@@ -93,60 +101,6 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   // Execute the batch to create all resources at once
   const responseBundle = await medplum.executeBatch(bundle);
   return responseBundle;
-}
-
-function createPartialGynecologyObservations(
-  observationData: GynecologyObservationData,
-  codes: Record<string, CodeableConcept>
-): Partial<Observation>[] {
-  const partials: Partial<Observation>[] = [];
-  for (const [key, value] of Object.entries(observationData)) {
-    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
-      continue;
-    }
-
-    const resource: Partial<Observation> = {
-      code: codes[key],
-    };
-
-    switch (key) {
-      case 'lastPeriod':
-        resource.valueDateTime = observationData.lastPeriod;
-        break;
-      case 'contraception':
-        resource.valueCodeableConcept = observationData.contraception;
-        break;
-      case 'lastMammogram':
-        resource.valueDateTime = observationData.lastMammogram;
-        break;
-      case 'smokingStatus':
-        resource.valueCodeableConcept = observationData.smokingStatus;
-        break;
-      case 'drugUse':
-        resource.valueCodeableConcept = observationData.drugUse;
-        break;
-      case 'housingStatus':
-        resource.valueCodeableConcept = observationData.housingStatus;
-        break;
-      case 'height':
-        resource.valueQuantity = observationData.height;
-        break;
-      case 'weight':
-        resource.valueQuantity = observationData.weight;
-        break;
-      case 'bloodPressure':
-        // Add the blood pressure as a component instead of a value
-        resource.component = handleBloodPressure(observationData);
-        break;
-      case 'bmi':
-        resource.valueQuantity = observationData.bmi;
-        break;
-    }
-
-    partials.push(resource);
-  }
-
-  return partials;
 }
 
 const gynecologyCodes: Record<string, CodeableConcept> = {

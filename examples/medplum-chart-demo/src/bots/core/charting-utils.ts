@@ -3,7 +3,7 @@ import {
   Bundle,
   BundleEntry,
   ClinicalImpression,
-  Coding,
+  CodeableConcept,
   Condition,
   Encounter,
   Observation,
@@ -27,54 +27,67 @@ export interface ObservationData {
   date?: string;
 }
 
-export interface ConditionData {
-  reasonForVisit: Coding;
-  problemList: boolean;
-}
-
-export interface ClinicalImpressionData {
-  visitLength?: number;
-  assessment?: string;
-}
-
 /**
- * This function takes partial observations with the code and value and fills them out with generic observation data. It then creates a
- * bundle entry and adds that to an array. These bundle entries can then be used in a batch transaction to create all of the necessary
- * Observations at once.
+ * This function takes data about observations and returns an array of Observation resources.
  *
- * @param observationData - The values to be added to the created Observations
+ * @param observationData - An easily parseable object containing data for various observation resources
+ * @param codes - A map of observation types to their coding
+ * @param observationTypes - A map of observations types to their type of value
  * @param encounter - The encounter the observations are derived from
- * @param user - The user creating the Observations
- * @param partialObservations - An array of the partial Observations containing the code and value for each given observation
- * @returns An array of bundle entries which can be added to a batch transaction
+ * @param user - The user creating the observations
+ * @returns An array of Observation resources.
  */
 export function createObservations(
   observationData: ObservationData,
+  codes: Record<string, CodeableConcept>,
+  observationTypes: { [key: string]: string },
   encounter: Encounter,
-  user: Practitioner,
-  partialObservations: Partial<Observation>[]
+  user: Practitioner
 ): Observation[] {
   const observations: Observation[] = [];
-  for (const partial of partialObservations) {
-    const code = partial.code;
+
+  for (const [key, value] of Object.entries(observationData)) {
+    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
+      continue;
+    }
+
+    const code =
+      key === 'selfReportedHistory'
+        ? getSelfReportedCode(observationData['selfReportedHistory' as keyof ObservationData] as string)
+        : codes[key];
+
     if (!code) {
       throw new Error('No code provided');
     }
-    // const request: BundleEntryRequest = {
-    //   method: 'PUT',
-    //   url: code.coding?.[0].code
-    //     ? `Observation?encounter=${getReferenceString(encounter)}&code=${code.coding?.[0].code}`
-    //     : `Observation?encounter=${getReferenceString(encounter)}`,
-    // };
+
+    const obsKey = observationTypes[key] as keyof Observation;
+
+    const resource: Record<string, any> = {
+      code,
+    };
+
+    if (key !== 'bloodPressure') {
+      resource[obsKey] = observationData[key as keyof ObservationData];
+    }
+
+    if (key === 'bloodPressure') {
+      resource.component = handleBloodPressure(
+        observationData.bloodPressure.systolic,
+        observationData.bloodPressure.diastolic
+      );
+    }
 
     const observation: Observation = {
-      ...partial,
+      ...resource,
       resourceType: 'Observation',
+      code:
+        key === 'selfReportedHistory'
+          ? getSelfReportedCode(observationData['selfReportedHistory' as keyof ObservationData] as string)
+          : codes[key],
       status: 'final',
-      code,
       subject: encounter.subject,
-      encounter: { reference: getReferenceString(encounter) },
       performer: [{ reference: getReferenceString(user) }],
+      encounter: { reference: getReferenceString(encounter) },
       effectiveDateTime: observationData.date,
     };
 
@@ -85,33 +98,34 @@ export function createObservations(
 }
 
 /**
- * This function handles adding blood pressure measurements to an observation since there are often both systolic and diastolic
- * measurements which need to be added to the component element.
+ * This function handles adding blood pressure measurements to an observation since there are often both systolic and diastolic.
+ * Blood pressure is handled specially because it is a single `Observation` with two `components`. See the U.S. Core Guidelines
+ * for more details (https://hl7.org/fhir/us/core/StructureDefinition-us-core-blood-pressure.html)
  *
- * @param observationData - The data object containing the blood pressure values
+ * @param systolic - The systolic blood pressure value
+ * @param diastolic - The diastolic blood pressure value
  * @returns An Observation component element with diastolic, systolic, or both blood pressure measurements
  */
-export function handleBloodPressure(observationData: ObservationData): ObservationComponent[] {
+export function handleBloodPressure(systolic?: number, diastolic?: number): ObservationComponent[] {
   const components: ObservationComponent[] = [];
-  const bloodPressure = observationData.bloodPressure;
 
   // If a diastolic measurement exists, add it
-  if (bloodPressure.diastolic) {
+  if (diastolic) {
     components.push({
       code: { coding: [{ code: '8462-4', system: 'http://loinc.org', display: 'Diastolic blood pressure' }] },
       valueQuantity: {
-        value: bloodPressure.diastolic,
+        value: diastolic,
         unit: 'mm[Hg]',
       },
     });
   }
 
   // If a systolic measurement exists, add it
-  if (bloodPressure.systolic) {
+  if (systolic) {
     components.push({
       code: { coding: [{ code: '8480-6', system: 'http://loinc.org', display: 'Systolic blood pressure' }] },
       valueQuantity: {
-        value: bloodPressure.systolic,
+        value: systolic,
         unit: 'mm[Hg]',
       },
     });
@@ -121,29 +135,32 @@ export function handleBloodPressure(observationData: ObservationData): Observati
 }
 
 /**
- * This function takes condition data and turns it into an array of bundle entries that can be used in a batch transaction. If the
+ * This function takes condition data and turns it into an array of Condition resources. If the
  * Condition is being added to the problem list, then an additional Condition resource will be created. For more details see the
  * Representing Diagnoses docs here: https://www.medplum.com/docs/charting/representing-diagnoses
  *
- * @param conditionData - Data object containg codes and values for a condition/reason for the visit.
+ * @param partialCondition - A partial Condition resource to be added to
  * @param encounter - The encounter the data is derived from.
  * @param user - The user creating the Condition resource
- * @returns An array of bundle entries containing the Condition resource that can be created in a batch request.
+ * @param problemList - A boolean indicating if the condition should be added to the patient's problem list
+ * @returns An array of Condition resources.
  */
-export function createConditions(conditionData: ConditionData, encounter: Encounter, user: Practitioner): Condition[] {
+export function createConditions(
+  partialCondition: Partial<Condition>,
+  encounter: Encounter,
+  user: Practitioner,
+  problemList: boolean
+): Condition[] {
   const conditions: Condition[] = [];
-  // const request: BundleEntryRequest = {
-  //   method: 'PUT',
-  //   url: `Condition?encounter=${getReferenceString(encounter)}&code=${code}`,
-  // };
+
   // Create a condition for the encounter diagnosis
   const encounterDiagnosis: Condition = {
+    ...partialCondition,
     resourceType: 'Condition',
     subject: encounter.subject as Reference<Patient>,
     encounter: { reference: getReferenceString(encounter) },
     recorder: { reference: getReferenceString(user) },
     asserter: { reference: getReferenceString(user) },
-    code: conditionData.reasonForVisit,
     category: [
       {
         coding: [
@@ -160,14 +177,14 @@ export function createConditions(conditionData: ConditionData, encounter: Encoun
   conditions.push(encounterDiagnosis);
 
   // If the problem list question was checked, create an additional condition for it
-  if (conditionData.problemList) {
+  if (problemList) {
     conditions.push({
+      ...partialCondition,
       resourceType: 'Condition',
       subject: encounter.subject as Reference<Patient>,
       encounter: { reference: getReferenceString(encounter) },
       recorder: { reference: getReferenceString(user) },
       asserter: { reference: getReferenceString(user) },
-      code: conditionData.reasonForVisit,
       category: [
         {
           coding: [
@@ -189,17 +206,17 @@ export function createConditions(conditionData: ConditionData, encounter: Encoun
  * This function takes ClinicalImpression data and creates a ClinicalImpression resource. The ClinicalImpression resource
  * represents any notes on an encounter in this context.
  *
- * @param clinicalImpressionData - Data object containing codes and values for the ClinicalImpression resources
  * @param encounter - The encounter that the data is derived from
  * @param user - The user creating the ClinicalImpressions
- * @returns A bundle entry with the ClinicalImpression resource that can be used in a batch transaction
+ * @param note - A string of any notes that a Practitioner may have taken during the encounter
+ * @returns A ClinicalImpression resource
  */
 export function createClinicalImpressions(
-  clinicalImpressionData: ClinicalImpressionData,
   encounter: Encounter,
-  user: Practitioner
+  user: Practitioner,
+  note?: string
 ): ClinicalImpression | undefined {
-  if (!clinicalImpressionData.assessment) {
+  if (!note) {
     return undefined;
   }
 
@@ -210,7 +227,7 @@ export function createClinicalImpressions(
     subject: encounter.subject as Reference<Patient>,
     encounter: { reference: getReferenceString(encounter) },
     assessor: { reference: getReferenceString(user) },
-    note: [{ text: clinicalImpressionData.assessment }],
+    note: [{ text: note }],
   };
 
   // Return the clinical impressions
@@ -234,7 +251,7 @@ export function createBundle(resources: (Condition | Observation | ClinicalImpre
   const entries: BundleEntry[] = resources.map((resource) => {
     const entry: BundleEntry = {
       fullUrl: `urn:uuid:${randomUUID()}`,
-      request: { method: 'PUT', url: getUrl(resource) },
+      request: { method: 'PUT', url: getUpsertUrl(resource) },
       resource,
     };
 
@@ -246,7 +263,12 @@ export function createBundle(resources: (Condition | Observation | ClinicalImpre
   return bundle;
 }
 
-function getUrl(resource: Resource): string {
+/**
+ *
+ * @param resource - The resource that is being upserted
+ * @returns A search url that can be used to upsert a resource
+ */
+function getUpsertUrl(resource: Resource): string {
   if (resource.resourceType === 'Observation') {
     const code = resource.code;
     if (!code) {
@@ -269,7 +291,7 @@ function getUrl(resource: Resource): string {
       throw new Error('No linked encounter');
     }
 
-    return `Condition?encounter=${getReferenceString(resource.encounter)}&code=${code}`;
+    return `Condition?encounter=${getReferenceString(resource.encounter)}&code=${code.coding?.[0].code}`;
   } else if (resource.resourceType === 'ClinicalImpression') {
     if (!resource.encounter) {
       throw new Error('No linked encounter');
@@ -278,4 +300,63 @@ function getUrl(resource: Resource): string {
   } else {
     throw new Error('Invalid resource type');
   }
+}
+
+/**
+ *
+ * @param reportedHistory - The value provided in the questionnaire for a patient's self-reported history
+ * @returns A codeable concept to identify the reported history in the observation
+ */
+function getSelfReportedCode(reportedHistory: string): CodeableConcept {
+  const code: CodeableConcept = {
+    coding: [],
+  };
+
+  // Add the appropriate code based on the answer provided for self-reported history
+  switch (reportedHistory) {
+    case 'Blood clots':
+      code.coding?.push({
+        code: 'I74.9',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Embolism and thrombosis of unspecified artery',
+      });
+      break;
+    case 'Stroke':
+      code.coding?.push({
+        code: 'I63.9',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Cerebral infarction, unspecified',
+      });
+      break;
+    case 'Breast cancer':
+      code.coding?.push({
+        code: 'D05.10',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Intraductal carcinoma in situ of unspecified breast',
+      });
+      break;
+    case 'Endometrial cancer':
+      code.coding?.push({
+        code: 'C54.1',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Malignant neoplasm of endometrium',
+      });
+      break;
+    case 'Irregular bleeding':
+      code.coding?.push({
+        code: 'N92.1',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Excessive and frequent menstruation with irregular cycle',
+      });
+      break;
+    case 'BMI > 30':
+      code.coding?.push({
+        code: 'E66.9',
+        system: 'http://hl7.org/fhir/sid/icd-10',
+        display: 'Obesity, unspecified',
+      });
+      break;
+  }
+
+  return code;
 }

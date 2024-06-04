@@ -11,13 +11,10 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import {
-  ClinicalImpressionData,
-  ConditionData,
   createBundle,
   createClinicalImpressions,
   createConditions,
   createObservations,
-  handleBloodPressure,
   ObservationData,
 } from './charting-utils';
 import { calculateBMI } from './observation-utils';
@@ -63,20 +60,31 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     observationData.bmi = calculateBMI(observationData.height, observationData.weight);
   }
 
-  const conditionData: ConditionData = {
-    reasonForVisit: answers['reason-for-visit']?.valueCoding,
-    problemList: answers['problem-list']?.valueBoolean || false,
+  const problemList = answers['problem-list']?.valueBoolean ?? false;
+
+  const partialCondition: Partial<Condition> = {
+    resourceType: 'Condition',
+    code: answers['reason-for-visit'].valueCoding,
   };
 
-  const clinicalImpressionData: ClinicalImpressionData = {
-    assessment: answers['assessment']?.valueString,
+  const note = answers['assessment']?.valueString;
+
+  const observationTypes: { [key: string]: string } = {
+    height: 'valueQuantity',
+    weight: 'valueQuantity',
+    bmi: 'valueQuantity',
+    hotFlash: 'valueBoolean',
+    moodSwings: 'valueBoolean',
+    vaginalDryness: 'valueBoolean',
+    sleepDisturbance: 'valueBoolean',
+    selfReportedHistory: 'valueString',
   };
 
   // Take the objects and create full resources of each type
-  const partialObservations = createPartialGeneralObservations(observationData, generalCodes);
-  const observations = createObservations(observationData, encounter, user, partialObservations);
-  const conditions = createConditions(conditionData, encounter, user);
-  const clinicalImpressions = createClinicalImpressions(clinicalImpressionData, encounter, user);
+  // const partialObservations = createPartialGeneralObservations(observationData, generalCodes);
+  const observations = createObservations(observationData, generalCodes, observationTypes, encounter, user);
+  const conditions = createConditions(partialCondition, encounter, user, problemList);
+  const clinicalImpressions = createClinicalImpressions(encounter, user, note);
 
   // Create an array of all resources
   const resources: (Condition | Observation | ClinicalImpression)[] = [...observations, ...conditions];
@@ -91,113 +99,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   return responseBundle;
 }
 
-function createPartialGeneralObservations(
-  observationData: GeneralObservationData,
-  codes: Record<string, CodeableConcept>
-): Partial<Observation>[] {
-  const partials: Partial<Observation>[] = [];
-  for (const [key, value] of Object.entries(observationData)) {
-    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
-      continue;
-    }
-
-    const resource: Partial<Observation> = {
-      code:
-        key === 'selfReportedHistory' ? getSelfReportedCode(observationData.selfReportedHistory as string) : codes[key],
-    };
-
-    switch (key) {
-      case 'height':
-        resource.valueQuantity = observationData.height;
-        break;
-      case 'weight':
-        resource.valueQuantity = observationData.weight;
-        break;
-      case 'hotFlash':
-        resource.valueBoolean = observationData.hotFlash;
-        break;
-      case 'moodSwings':
-        resource.valueBoolean = observationData.moodSwings;
-        break;
-      case 'vaginalDryness':
-        resource.valueBoolean = observationData.vaginalDryness;
-        break;
-      case 'sleepDisturbance':
-        resource.valueBoolean = observationData.sleepDisturbance;
-        break;
-      case 'bloodPressure':
-        // Add the blood pressure as a component instead of a value
-        resource.component = handleBloodPressure(observationData);
-        break;
-      case 'bmi':
-        resource.valueQuantity = observationData.bmi;
-        break;
-      case 'selfReportedHistory':
-        resource.valueString = observationData.selfReportedHistory;
-        break;
-    }
-
-    partials.push(resource);
-  }
-
-  return partials;
-}
-
-function getSelfReportedCode(reportedHistory: string): CodeableConcept {
-  const code: CodeableConcept = {
-    coding: [],
-  };
-
-  // Add the appropriate code based on the answer provided for self-reported history
-  switch (reportedHistory) {
-    case 'Blood clots':
-      code.coding?.push({
-        code: 'I74.9',
-        system: 'http://hl7.org/fhir/sid/icd-10',
-        display: 'Embolism and thrombosis of unspecified artery',
-      });
-      break;
-    case 'Stroke':
-      code.coding?.push({
-        code: 'I63.9',
-        system: 'http://hl7.org/fhir/sid/icd-10',
-        display: 'Cerebral infarction, unspecified',
-      });
-      break;
-    case 'Breast cancer':
-      code.coding?.push({
-        code: 'D05.10',
-        system: 'http://hl7.org/fhir/sid/icd-10',
-        display: 'Intraductal carcinoma in situ of unspecified breast',
-      });
-      break;
-    case 'Endometrial cancer':
-      code.coding?.push({
-        code: 'C54.1',
-        system: 'http://hl7.org/fhir/sid/icd-10',
-        display: 'Malignant neoplasm of endometrium',
-      });
-      break;
-    case 'Irregular bleeding':
-      code.coding?.push({
-        code: 'N92.1',
-        system: 'http://hl7.org/fhir/sid/icd-10',
-        display: 'Excessive and frequent menstruation with irregular cycle',
-      });
-      break;
-    case 'BMI > 30':
-      code.coding?.push({
-        code: 'E66.9',
-        system: 'http://hl7.org/fhir/sid/icd-10',
-        display: 'Obesity, unspecified',
-      });
-      break;
-  }
-
-  return code;
-}
-
-const generalCodes: Record<string, CodeableConcept> = {
+export const generalCodes: Record<string, CodeableConcept> = {
   height: {
     coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
   },

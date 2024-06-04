@@ -1,6 +1,6 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Encounter, Observation, Practitioner, Quantity, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, CodeableConcept, Encounter, Practitioner, Quantity, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { createObservations, ObservationData } from './charting-utils';
 import { calculateBMI } from './observation-utils';
@@ -64,7 +64,13 @@ describe('Bot utility function tests', async () => {
         diastolic: 99,
       },
     };
-    const partials: Partial<Observation>[] = [{ valueInteger: 99 }];
+
+    const codes: Record<string, CodeableConcept> = {
+      height: {
+        coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
+      },
+    };
+    // const partials: Partial<Observation>[] = [{ valueInteger: 99 }];
     const encounter: Encounter = await medplum.createResource({
       resourceType: 'Encounter',
       status: 'finished',
@@ -74,6 +80,19 @@ describe('Bot utility function tests', async () => {
       resourceType: 'Practitioner',
     });
 
-    expect(() => createObservations(noCode, encounter, practitioner, partials)).toThrow(/^No code provided$/);
+    expect(() => createObservations(noCode, codes, observationTypes, encounter, practitioner)).toThrow(
+      /^No code provided$/
+    );
   });
 });
+
+const observationTypes: { [key: string]: string } = {
+  height: 'valueQuantity',
+  weight: 'valueQuantity',
+  hotFlash: 'valueBoolean',
+  moodSwings: 'valueBoolean',
+  vaginalDryness: 'valueBoolean',
+  sleepDisturbance: 'valueBoolean',
+  bmi: 'valueQuantity',
+  selfReportedHistory: 'valueString',
+};
