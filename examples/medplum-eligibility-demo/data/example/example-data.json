@@ -58,9 +58,14 @@
       "resource": {
         "resourceType": "Coverage",
         "status": "active",
-        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0" },
-        "beneficiary": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0" },
-        "payor": [{ "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8" }],
+        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0", "display": "Homer Simpson" },
+        "beneficiary": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0", "display": "Homer Simpson" },
+        "payor": [
+          {
+            "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+            "display": "Independence Blue Cross Blue Shield"
+          }
+        ],
         "relationship": {
           "coding": [
             {
@@ -78,9 +83,14 @@
       "resource": {
         "resourceType": "Coverage",
         "status": "active",
-        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0" },
-        "beneficiary": { "reference": "urn:uuid:edce39eb-cb45-4739-ac55-ac896d804913" },
-        "payor": [{ "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8" }],
+        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0", "display": "Homer Simpson" },
+        "beneficiary": { "reference": "urn:uuid:edce39eb-cb45-4739-ac55-ac896d804913", "display": "Bart Simpson" },
+        "payor": [
+          {
+            "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+            "display": "Independence Blue Cross Blue Shield"
+          }
+        ],
         "relationship": {
           "coding": [
             {
@@ -98,9 +108,14 @@
       "resource": {
         "resourceType": "Coverage",
         "status": "active",
-        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0" },
-        "beneficiary": { "reference": "urn:uuid:f65d6583-0716-4d29-ba4b-9b4661e9de56" },
-        "payor": [{ "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8" }],
+        "subscriber": { "reference": "urn:uuid:32b6ef90-9351-42d1-8e66-8ee6e2fdafb0", "display": "Homer Simpson" },
+        "beneficiary": { "reference": "urn:uuid:f65d6583-0716-4d29-ba4b-9b4661e9de56", "display": "Marge Simpson" },
+        "payor": [
+          {
+            "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+            "display": "Independence Blue Cross Blue Shield"
+          }
+        ],
         "relationship": {
           "coding": [
             {
@@ -130,9 +145,14 @@
       "resource": {
         "resourceType": "Coverage",
         "status": "active",
-        "beneficiary": { "reference": "urn:uuid:3b565ddd-0463-497a-a9e1-0ccbfb20e748" },
-        "payor": [{ "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8" }],
-        "subscriber": { "reference": "urn:uuid:3b565ddd-0463-497a-a9e1-0ccbfb20e748" },
+        "beneficiary": { "reference": "urn:uuid:3b565ddd-0463-497a-a9e1-0ccbfb20e748", "display": "John Smith" },
+        "payor": [
+          {
+            "reference": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+            "display": "Independence Blue Cross Blue Shield"
+          }
+        ],
+        "subscriber": { "reference": "urn:uuid:3b565ddd-0463-497a-a9e1-0ccbfb20e748", "display": "John Smith" },
         "relationship": {
           "coding": [
             {

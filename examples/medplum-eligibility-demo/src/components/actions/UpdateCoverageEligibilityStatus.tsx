@@ -1,7 +1,7 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString, PatchOperation } from '@medplum/core';
 import {
   Coding,
   CoverageEligibilityRequest,
@@ -21,6 +21,8 @@ interface UpdateCoverageEligibilityStatus {
 export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibilityStatus): JSX.Element {
   const medplum = useMedplum();
   const [opened, handlers] = useDisclosure(false);
+  const eligibilityCheckDate = props.coverageEligibility.created;
+  const patient = props.coverageEligibility.patient;
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
     // Get the status selected from the questionnaire
@@ -33,21 +35,21 @@ export function UpdateCoverageEligibilityStatus(props: UpdateCoverageEligibility
     handlers.close();
   };
 
-  const handleStatusUpdate = async (
-    coverageEligibility: CoverageEligibilityRequest | CoverageEligibilityResponse,
-    status: Coding
-  ): Promise<void> => {
-    const coverageEligibilityId = coverageEligibility.id as string;
+  const handleStatusUpdate = async (coverageEligibility: CoverageEligibilityRequest, status: Coding): Promise<void> => {
+    const statusCode = status.code as CoverageEligibilityRequest['status'];
 
-    // We use a patch operation here to avoid race conditions. This ensures that if multiple users try to add a note simultaneously, only one will be successful.
-    const ops: PatchOperation[] = [
-      { op: 'test', path: '/meta/versionId', value: coverageEligibility.meta?.versionId },
-      { op: 'replace', path: '/status', value: status.code },
-    ];
+    // We use an upsert operation here to ensure that the eligibility request gets updated, or if it does not exist, it will be created.
+    const updatedCoverageEligibility: CoverageEligibilityRequest = {
+      ...coverageEligibility,
+      status: statusCode,
+    };
 
     // Update the resource on the server using a patch request. See https://www.medplum.com/docs/sdk/core.medplumclient.patchresource
     try {
-      const result = await medplum.patchResource(coverageEligibility.resourceType, coverageEligibilityId, ops);
+      const result = await medplum.upsertResource(
+        updatedCoverageEligibility,
+        `CoverageEligibilityRequest?created=${eligibilityCheckDate}&patient=${getReferenceString(patient)}`
+      );
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
