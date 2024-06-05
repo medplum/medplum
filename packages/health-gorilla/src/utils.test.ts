@@ -1,5 +1,6 @@
-import { ContentType, allOk, append } from '@medplum/core';
-import { RequestGroup } from '@medplum/fhirtypes';
+import { ContentType, allOk, append, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, RequestGroup, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   HealthGorillaConfig,
@@ -28,6 +29,13 @@ const testConfig: HealthGorillaConfig = {
 
 describe('Health Gorilla utils', () => {
   const OLD_ENV = process.env;
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  });
 
   beforeEach(() => {
     jest.resetModules();
@@ -104,7 +112,9 @@ describe('Health Gorilla utils', () => {
     const healthGorilla = new MockClient();
     const requestGroup = await healthGorilla.createResource<RequestGroup>({
       resourceType: 'RequestGroup',
-    } as RequestGroup);
+      status: 'active',
+      intent: 'order',
+    });
 
     healthGorilla.router.router.add('GET', 'RequestGroup/:id/$abn', async () => {
       return [allOk, { resourceType: 'Parameters', parameter: [{ name: 'url', valueString: 'https://example.com' }] }];
