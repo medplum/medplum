@@ -1076,7 +1076,7 @@ describe('Batch', () => {
             },
             resource: {
               resourceType: 'Patient',
-              status: 'active',
+              active: true,
             } as Patient,
           },
           {
@@ -1088,7 +1088,7 @@ describe('Batch', () => {
             resource: {
               id: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
               resourceType: 'Patient',
-              status: 'active',
+              active: true,
               name: [{ given: ['Jane'], family: 'Doe' }],
             } as Patient,
           },
