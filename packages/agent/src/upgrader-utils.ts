@@ -1,3 +1,4 @@
+import { normalizeErrorString } from '@medplum/core';
 import { createWriteStream } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
@@ -5,8 +6,6 @@ import { Readable } from 'node:stream';
 
 export type ReleaseManifest = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
 export type SupportedOs = 'windows' | 'linux';
-
-let _osString: SupportedOs;
 
 export const UPGRADE_MANIFEST_PATH = resolve(__dirname, 'upgrade.json');
 export const UPGRADER_LOG_PATH = resolve(
@@ -18,24 +17,42 @@ export const RELEASES_PATH = resolve(__dirname);
 
 const releaseManifests = new Map<string, ReleaseManifest>();
 
+export function clearReleaseCache(): void {
+  releaseManifests.clear();
+}
+
 export function getOsString(): SupportedOs {
-  if (!_osString) {
-    switch (platform()) {
-      case 'win32':
-        _osString = 'windows';
-        break;
-      case 'linux':
-        _osString = 'linux';
-        break;
-      default:
-        throw new Error(`Unsupported platform: ${platform()}`);
-    }
+  switch (platform()) {
+    case 'win32':
+      return 'windows';
+    case 'linux':
+      return 'linux';
+    default:
+      throw new Error(`Unsupported platform: ${platform()}`);
   }
-  return _osString;
 }
 
 export function isValidSemver(version: string): boolean {
-  return /\d+\.\d+\.\d+/.test(version);
+  return /^\d+\.\d+\.\d+$/.test(version);
+}
+
+export function assertReleaseManifest(candidate: unknown): asserts candidate is ReleaseManifest {
+  const manifest = candidate as ReleaseManifest;
+  if (!manifest.tag_name) {
+    throw new Error('Manifest missing tag_name');
+  }
+  const assets = manifest.assets;
+  if (!assets?.length) {
+    throw new Error('Manifest missing assets list');
+  }
+  for (const asset of assets) {
+    if (!asset.browser_download_url) {
+      throw new Error('Asset missing browser download URL');
+    }
+    if (!asset.name) {
+      throw new Error('Asset missing name');
+    }
+  }
 }
 
 export async function checkIfValidMedplumVersion(version: string): Promise<boolean> {
@@ -83,15 +100,28 @@ export async function downloadRelease(version: string, path: string): Promise<vo
  * @param version - The version to fetch. If no `version` is provided, defaults to the `latest` version.
  * @returns - The manifest for the specified or latest version.
  */
-async function fetchVersionManifest(version?: string): Promise<ReleaseManifest> {
+export async function fetchVersionManifest(version?: string): Promise<ReleaseManifest> {
   let manifest = releaseManifests.get(version ?? 'latest');
   if (!manifest) {
     const res = await fetch(`${GITHUB_RELEASES_URL}/${version ? `tags/v${version}` : 'latest'}`);
-    manifest = (await res.json()) as ReleaseManifest;
-    if (!manifest) {
-      throw new Error(version ? `No release found with tag v${version}` : 'No releases found in repo');
+    if (res.status !== 200) {
+      let message: string | undefined;
+      try {
+        message = ((await res.json()) as { message: string }).message;
+      } catch (err) {
+        console.error(`Failed to parse message from body: ${normalizeErrorString(err)}`);
+      }
+      throw new Error(
+        `Received status code ${res.status} while fetching manifest for version '${version ?? 'latest'}'. Message: ${message}`
+      );
     }
+    const response = (await res.json()) as ReleaseManifest;
+    assertReleaseManifest(response);
+    manifest = response;
     releaseManifests.set(version ?? 'latest', manifest);
+    if (!version) {
+      releaseManifests.set(manifest.tag_name.slice(1), manifest);
+    }
   }
   return manifest;
 }

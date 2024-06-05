@@ -1,7 +1,13 @@
 import { Logger, normalizeErrorString } from '@medplum/core';
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { downloadRelease, fetchLatestVersionString, getOsString, getReleaseBinPath } from './upgrader-utils';
+import {
+  downloadRelease,
+  fetchLatestVersionString,
+  getOsString,
+  getReleaseBinPath,
+  isValidSemver,
+} from './upgrader-utils';
 
 export async function upgraderMain(argv: string[]): Promise<void> {
   // TODO: Remove this when Linux auto-update is supported
@@ -29,7 +35,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   process.send({ type: 'STARTED' });
 
   // Make sure if version is given, it matches semver
-  if (argv[3] && !/\d+\.\d+\.\d+/.test(argv[3])) {
+  if (argv[3] && !isValidSemver(argv[3])) {
     throw new Error('Invalid version specified');
   }
   const version = argv[3] ?? (await fetchLatestVersionString());
