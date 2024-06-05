@@ -1,6 +1,14 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, CodeableConcept, Encounter, Practitioner, Quantity, SearchParameter } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  CodeableConcept,
+  Encounter,
+  Practitioner,
+  Quantity,
+  QuestionnaireResponse,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { createObservations, ObservationData } from './charting-utils';
 import { calculateBMI } from './observation-utils';
@@ -65,6 +73,11 @@ describe('Bot utility function tests', async () => {
       },
     };
 
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+    };
+
     const codes: Record<string, CodeableConcept> = {
       height: {
         coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
@@ -80,7 +93,7 @@ describe('Bot utility function tests', async () => {
       resourceType: 'Practitioner',
     });
 
-    expect(() => createObservations(noCode, codes, observationTypes, encounter, practitioner)).toThrow(
+    expect(() => createObservations(noCode, codes, observationTypes, encounter, practitioner, response)).toThrow(
       /^No code provided$/
     );
   });

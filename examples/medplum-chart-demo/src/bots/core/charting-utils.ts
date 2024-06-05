@@ -11,6 +11,7 @@ import {
   Patient,
   Practitioner,
   Quantity,
+  QuestionnaireResponse,
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
@@ -42,7 +43,8 @@ export function createObservations(
   codes: Record<string, CodeableConcept>,
   observationTypes: { [key: string]: string },
   encounter: Encounter,
-  user: Practitioner
+  user: Practitioner,
+  response: QuestionnaireResponse
 ): Observation[] {
   const observations: Observation[] = [];
 
@@ -89,6 +91,7 @@ export function createObservations(
       performer: [{ reference: getReferenceString(user) }],
       encounter: { reference: getReferenceString(encounter) },
       effectiveDateTime: observationData.date,
+      derivedFrom: [{ reference: getReferenceString(response) }],
     };
 
     observations.push(observation);

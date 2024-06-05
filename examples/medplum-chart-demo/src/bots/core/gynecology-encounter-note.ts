@@ -86,7 +86,14 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   // Create bundle entries from the above objects
   // const partialObservations = createPartialGynecologyObservations(observationData, gynecologyCodes);
-  const observations = createObservations(observationData, gynecologyCodes, observationTypes, encounter, user);
+  const observations = createObservations(
+    observationData,
+    gynecologyCodes,
+    observationTypes,
+    encounter,
+    user,
+    response
+  );
   const conditions = createConditions(partialCondition, encounter, user, problemList);
   const clinicalImpressions = createClinicalImpressions(encounter, user, note);
 

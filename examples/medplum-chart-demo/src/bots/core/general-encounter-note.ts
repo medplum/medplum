@@ -82,7 +82,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   // Take the objects and create full resources of each type
   // const partialObservations = createPartialGeneralObservations(observationData, generalCodes);
-  const observations = createObservations(observationData, generalCodes, observationTypes, encounter, user);
+  const observations = createObservations(observationData, generalCodes, observationTypes, encounter, user, response);
   const conditions = createConditions(partialCondition, encounter, user, problemList);
   const clinicalImpressions = createClinicalImpressions(encounter, user, note);
 
