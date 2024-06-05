@@ -1,5 +1,13 @@
-import { ContentType, MedplumClient, createReference, getStatus, isOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import {
+  ContentType,
+  MedplumClient,
+  createReference,
+  getStatus,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+  isOperationOutcome,
+} from '@medplum/core';
+import { Bundle, OperationOutcome, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
 import { Mock, vi } from 'vitest';
 import {
   linkPatientRecords,
@@ -8,6 +16,7 @@ import {
   unlinkPatientRecords,
   updateResourceReferences,
 } from './merge-matching-patients';
+import { readJson } from '@medplum/definitions';
 
 function mockFetch(
   status: number,
@@ -31,6 +40,13 @@ function mockFetch(
 describe('Deduplication', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+  });
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
   });
 
   test('should link two patient records correctly', () => {

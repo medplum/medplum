@@ -67,12 +67,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   entries.push(createEntry(createWelcomeMessage(patient, practitioner)));
 
   console.log('Creating history...');
-  const result = await medplum.executeBatch({
+  await medplum.executeBatch({
     resourceType: 'Bundle',
     type: 'batch',
     entry: entries,
   });
-  console.log(result.entry?.map((entry) => entry.response?.status));
 }
 
 /**
