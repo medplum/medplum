@@ -253,6 +253,20 @@ export abstract class FhirRepository<TClient = unknown> {
       { serializable: true }
     );
   }
+
+  async conditionalDelete(search: SearchRequest): Promise<void> {
+    await this.withTransaction(async () => {
+      const matches = await this.searchResources(search);
+      if (matches.length > 1) {
+        throw new OperationOutcomeError(multipleMatches);
+      } else if (!matches.length) {
+        return;
+      }
+
+      const resource = matches[0];
+      await this.deleteResource(resource.resourceType, resource.id as string);
+    });
+  }
 }
 
 export class MemoryRepository extends FhirRepository {

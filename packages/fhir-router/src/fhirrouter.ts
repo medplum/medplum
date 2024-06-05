@@ -192,6 +192,16 @@ async function deleteResource(req: FhirRequest, repo: FhirRepository): Promise<F
   return [allOk];
 }
 
+// Conditional delete
+async function conditionalDelete(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  const { resourceType } = req.params;
+  const params = req.query;
+
+  const search = parseSearchRequest(resourceType as ResourceType, params);
+  await repo.conditionalDelete(search);
+  return [allOk];
+}
+
 // Patch resource
 async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
@@ -235,6 +245,7 @@ export class FhirRouter extends EventTarget {
     this.router.add('PUT', ':resourceType/:id', updateResource, { interaction: 'update' });
     this.router.add('PUT', ':resourceType', conditionalUpdate, { interaction: 'update' });
     this.router.add('DELETE', ':resourceType/:id', deleteResource, { interaction: 'delete' });
+    this.router.add('DELETE', ':resourceType', conditionalDelete, { interaction: 'delete' });
     this.router.add('PATCH', ':resourceType/:id', patchResource, { interaction: 'patch' });
     this.router.add('POST', '$graphql', graphqlHandler, { interaction: 'operation' });
   }

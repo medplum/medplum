@@ -831,7 +831,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'DELETE',
-            url: 'Patient',
+            url: 'Patientx/12',
           },
         },
       ],

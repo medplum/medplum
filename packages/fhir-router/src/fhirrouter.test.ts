@@ -4,6 +4,7 @@ import {
   created,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  multipleMatches,
   notFound,
   preconditionFailed,
 } from '@medplum/core';
@@ -301,5 +302,65 @@ describe('FHIR Router', () => {
     );
     expect(res4).toMatchObject(badRequest('Patch body must be an array'));
     expect(patient4).toBeUndefined();
+  });
+
+  test('Conditional delete', async () => {
+    const mrn = randomUUID();
+    const patient: Patient = {
+      resourceType: 'Patient',
+      gender: 'unknown',
+      identifier: [{ system: 'http://example.com/mrn', value: mrn }],
+    };
+
+    await repo.createResource(patient);
+    await repo.createResource({ ...patient, identifier: undefined });
+
+    // Multiple matching resources, expected error response
+    const [res3, resource3] = await router.handleRequest(
+      {
+        method: 'DELETE',
+        pathname: '/Patient',
+        body: patient,
+        params: {},
+        query: {
+          gender: 'unknown',
+        },
+      },
+      repo
+    );
+    expect(res3).toMatchObject(multipleMatches);
+    expect(resource3).toBeUndefined();
+
+    // Matching resource to be deleted
+    const [res, resource] = await router.handleRequest(
+      {
+        method: 'DELETE',
+        pathname: '/Patient',
+        body: patient,
+        params: {},
+        query: {
+          identifier: 'http://example.com/mrn|' + mrn,
+        },
+      },
+      repo
+    );
+    expect(res).toMatchObject(allOk);
+    expect(resource).toBeUndefined();
+
+    // No matching resource, ignored
+    const [res2, resource2] = await router.handleRequest(
+      {
+        method: 'DELETE',
+        pathname: '/Patient',
+        body: patient,
+        params: {},
+        query: {
+          identifier: 'http://example.com/mrn|' + randomUUID(),
+        },
+      },
+      repo
+    );
+    expect(res2).toMatchObject(allOk);
+    expect(resource2).toBeUndefined();
   });
 });
