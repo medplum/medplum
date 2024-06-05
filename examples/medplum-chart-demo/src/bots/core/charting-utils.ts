@@ -36,6 +36,7 @@ export interface ObservationData {
  * @param observationTypes - A map of observations types to their type of value
  * @param encounter - The encounter the observations are derived from
  * @param user - The user creating the observations
+ * @param response - The QuestionnaireResponse that the observations are being created from
  * @returns An array of Observation resources.
  */
 export function createObservations(
