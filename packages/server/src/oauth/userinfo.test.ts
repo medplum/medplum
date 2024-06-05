@@ -89,13 +89,11 @@ describe('OAuth2 UserInfo', () => {
         },
       ]);
     expect(res3.status).toBe(200);
-    console.log(res3.body);
 
     const res4 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + res2.body.access_token);
     expect(res4.status).toBe(200);
-    console.log(res4.body);
     expect(res4.body.phone_number).toBe(telecom[1].value);
   });
 

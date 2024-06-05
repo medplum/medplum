@@ -414,6 +414,20 @@ describe('Batch and Transaction processing', () => {
     const patientIdentifier = randomUUID();
     const encounterIdentifier = randomUUID();
     const conditionIdentifier = randomUUID();
+    const practitionerIdentifier = randomUUID();
+
+    const createdPractitioner = await request(app)
+      .post('/fhir/R4/Practitioner')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+    expect(createdPractitioner.status).toEqual(201);
+    const practitionerReference = {
+      reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
+    };
 
     const patientCreateCondition = 'identifier=http://example.com|' + patientIdentifier;
 
@@ -465,7 +479,7 @@ describe('Batch and Transaction processing', () => {
             },
             subject: { reference: 'urn:uuid:' + patientIdentifier },
             encounter: { reference: 'urn:uuid:' + encounterIdentifier },
-            asserter: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            asserter: practitionerReference,
             code: {
               coding: [{ system: 'http://snomed.info/sct', code: '83157008' }],
               text: 'FFI',
@@ -500,7 +514,7 @@ describe('Batch and Transaction processing', () => {
             status: 'requested',
             intent: 'plan',
             encounter: { reference: 'urn:uuid:' + encounterIdentifier },
-            owner: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            owner: practitionerReference,
             description: 'Follow up with B. Tables regarding prognosis',
           },
         },
@@ -508,7 +522,7 @@ describe('Batch and Transaction processing', () => {
     };
 
     // Issue several identical transaction requests, essentially in parallel
-    const requests = new Array(4);
+    const requests = new Array(8);
     for (let i = 0; i < requests.length; i++) {
       requests[i] = request(app)
         .post(`/fhir/R4/`)
@@ -542,6 +556,20 @@ describe('Batch and Transaction processing', () => {
   test('Concurrent conditional update in transactions', async () => {
     const encounterIdentifier = randomUUID();
     const conditionIdentifier = randomUUID();
+    const practitionerIdentifier = randomUUID();
+
+    const createdPractitioner = await request(app)
+      .post('/fhir/R4/Practitioner')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+    expect(createdPractitioner.status).toEqual(201);
+    const practitionerReference = {
+      reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
+    };
 
     const createdPatient = await request(app)
       .post('/fhir/R4/Patient')
@@ -572,9 +600,7 @@ describe('Batch and Transaction processing', () => {
               },
             ],
             subject: patientReference,
-            participant: [
-              { member: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' } },
-            ],
+            participant: [{ member: practitionerReference }],
           },
         },
         {
@@ -607,7 +633,7 @@ describe('Batch and Transaction processing', () => {
             },
             subject: patientReference,
             encounter: { reference: 'urn:uuid:' + encounterIdentifier },
-            asserter: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            asserter: practitionerReference,
             code: {
               coding: [{ system: 'http://snomed.info/sct', code: '83157008' }],
               text: 'FFI',
@@ -642,7 +668,7 @@ describe('Batch and Transaction processing', () => {
             status: 'requested',
             intent: 'plan',
             encounter: { reference: 'urn:uuid:' + encounterIdentifier },
-            owner: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            owner: practitionerReference,
             description: 'Follow up with B. Tables regarding prognosis',
           },
         },
@@ -775,5 +801,51 @@ describe('Batch and Transaction processing', () => {
       .send();
     expect(res2.status).toBe(200);
     expect(res2.body.entry).toHaveLength(0);
+  });
+
+  test('Conditional reference resolution', async () => {
+    const accessToken = await initTestAuth({ project: { checkReferencesOnWrite: true } });
+    const practitionerIdentifier = randomUUID();
+
+    const createdPractitioner = await request(app)
+      .post('/fhir/R4/Practitioner')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+    expect(createdPractitioner.status).toEqual(201);
+    const practitionerReference = {
+      reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
+    };
+
+    const transaction: Bundle<Patient> = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            generalPractitioner: [practitionerReference],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toEqual('Bundle');
+
+    const patient = (res.body as Bundle).entry?.[0]?.resource as Patient;
+    expect(patient.generalPractitioner?.[0].reference).toEqual(getReferenceString(createdPractitioner.body));
   });
 });

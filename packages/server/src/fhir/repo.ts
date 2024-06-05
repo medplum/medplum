@@ -6,6 +6,7 @@ import {
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
+  TypedValue,
   allOk,
   badRequest,
   canReadResourceType,
@@ -86,7 +87,7 @@ import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
-import { validateReferences } from './references';
+import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchImpl } from './search';
@@ -532,9 +533,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
+    let updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
     });
+    updated = await replaceConditionalReferences(updated, this);
 
     const resultMeta = {
       ...updated.meta,
@@ -1019,15 +1021,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     try {
       return await this.withTransaction(async () => {
         const resource = await this.readResourceFromDatabase<T>(resourceType, id);
-
-        try {
-          const patchResult = applyPatch(resource, patch).filter(Boolean);
-          if (patchResult.length > 0) {
-            throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
-          }
-        } catch (err) {
-          throw new OperationOutcomeError(normalizeOperationOutcome(err));
-        }
+        patchObject(resource, patch);
 
         const result = await this.updateResourceImpl(resource, false);
         await this.postCommit(async () => {
@@ -2282,4 +2276,23 @@ function resolveFieldName(input: any, fieldName: string): string[] {
     }
     return false;
   });
+}
+
+export function setTypedPropertyValue(target: TypedValue, path: string, replacement: TypedValue): void {
+  let patchPath = '/' + path.replaceAll(/\[|\]\.|\./g, '/');
+  if (patchPath.endsWith(']')) {
+    patchPath = patchPath.slice(0, -1);
+  }
+  patchObject(target.value, [{ op: 'replace', path: patchPath, value: replacement.value }]);
+}
+
+function patchObject(obj: any, patch: Operation[]): void {
+  try {
+    const patchErrors = applyPatch(obj, patch).filter(Boolean);
+    if (patchErrors.length) {
+      throw new OperationOutcomeError(badRequest(patchErrors.map((e) => (e as Error).message).join('\n')));
+    }
+  } catch (err) {
+    throw new OperationOutcomeError(normalizeOperationOutcome(err));
+  }
 }
