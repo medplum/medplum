@@ -23,8 +23,8 @@ jobs:
                repo: context.repo.repo,
                run_id: context.payload.workflow_run.id,
             });
-            let matchArtifactLinux = allArtifacts.data.artifacts.filter((artifact) => {
-              return artifact.name == "medplum-code-coverage-linux"
+            let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
+              return artifact.name == "medplum-code-coverage"
             })[0];
             let download = await github.rest.actions.downloadArtifact({
                owner: context.repo.owner,

@@ -12,67 +12,9 @@ on:
   merge_group:
     types: [checks_requested]
 jobs:
-  build-linux:
-    name: Build - Linux
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      pull-requests: write
-    strategy:
-      matrix:
-        node-version: [18, 20]
-    env:
-      NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: ${{ matrix.node-version }}
-      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          registry-url: 'https://registry.npmjs.org'
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - name: Setup TurboRepo
-        # Conditionally setup turborepo
-        # In the past, turborepo would silently ignore empty environment variables
-        # This is no longer the case, so we need to check if the secret is set
-        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
-        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
-        run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
-          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
-      - name: Log npm stats
-        run: |
-          echo "node version: $(node --version)"
-          echo "npm version: $(npm --version)"
-      - name: Install
-        run: npm ci --maxsockets 1
-      - name: Build Project
-        run: npm run build
-        env:
-          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
-          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
-          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
-          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
-          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
-
-  build-windows:
-    name: Build - Windows
-    runs-on: windows-latest
     timeout-minutes: 45
     permissions:
       pull-requests: write
@@ -132,7 +74,7 @@ jobs:
     name: Run eslint
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [build-linux]
+    needs: [build]
     env:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     outputs:
@@ -206,11 +148,11 @@ jobs:
 
           exit 1
 
-  test-linux:
-    name: Run tests - Linux
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [build-linux]
+    needs: [build]
     strategy:
       matrix:
         node-version: [18, 20]
@@ -288,92 +230,7 @@ jobs:
         if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         uses: actions/upload-artifact@v4
         with:
-          name: medplum-code-coverage-linux
-          path: coverage/lcov.info
-
-  test-windows:
-    name: Run tests - Windows
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    needs: [build-windows]
-    strategy:
-      matrix:
-        node-version: [18, 20]
-        pg-version: [12, 14, 16]
-        redis-version: [6, 7]
-    env:
-      NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: ${{ matrix.node-version }}
-      PG_VERSION: ${{ matrix.pg-version }}
-      REDIS_VERSION: ${{ matrix.redis-version }}
-      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-    services:
-      postgres:
-        image: postgres:${{ matrix.pg-version }}
-        env:
-          POSTGRES_DB: medplum_test
-          POSTGRES_USER: medplum
-          POSTGRES_PASSWORD: medplum
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432/tcp
-      redis:
-        image: redis:${{ matrix.redis-version }}
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          registry-url: 'https://registry.npmjs.org'
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - id: install
-        name: Install deps
-        run: npm ci --maxsockets 1
-      - name: Setup TurboRepo
-        # Conditionally setup turborepo
-        # In the past, turborepo would silently ignore empty environment variables
-        # This is no longer the case, so we need to check if the secret is set
-        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
-        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
-        run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
-          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
-      - name: Test
-        run: ./scripts/test.sh
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
-          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
-      - name: Upload code coverage
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: medplum-code-coverage-windows
+          name: medplum-code-coverage
           path: coverage/lcov.info
 
   build-docs:
@@ -424,75 +281,3 @@ jobs:
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
-
-  combine-coverage:
-    runs-on: [ubuntu-latest]
-    name: Combine all platform coverage
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          registry-url: 'https://registry.npmjs.org'
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - id: install
-        name: Install deps
-        run: npm ci --maxsockets 1
-      - name: 'Download code coverage'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               run_id: context.payload.workflow_run.id,
-            });
-            let matchArtifactLinux = allArtifacts.data.artifacts.filter((artifact) => {
-              return artifact.name == "medplum-code-coverage-linux"
-            })[0];
-            let matchArtifactWindows = allArtifacts.data.artifacts.filter((artifact) => {
-              return artifact.name == "medplum-code-coverage-windows"
-            })[0];
-            let downloadLinux = await github.rest.actions.downloadArtifact({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               artifact_id: matchArtifact.id,
-               archive_format: 'zip',
-            });
-            let downloadWindows = await github.rest.actions.downloadArtifact({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              artifact_id: matchArtifact.id,
-              archive_format: 'zip',
-            });
-            let fs = require('fs');
-            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/medplum-code-coverage-linux.zip`, Buffer.from(downloadLinux.data));
-            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/medplum-code-coverage-windows.zip`, Buffer.from(downloadWindows.data));
-      - name: 'Unzip code coverage'
-        run: |
-          mkdir -p coverage/platforms/linux
-          mkdir -p coverage/platforms/windows
-          unzip medplum-code-coverage-linux.zip -d coverage/platforms/linux
-          unzip medplum-code-coverage-windows.zip -d coverage/platforms/windows
-      - name: 'Combine coverage'
-        run: |
-          npx nyc merge coverage/platforms coverage/combined/coverage.json
-          npx nyc report -t coverage/combined --report-dir coverage --reporter=lcov
-      - name: Upload code coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: medplum-code-coverage
-          path: coverage/lcov.info
