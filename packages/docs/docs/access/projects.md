@@ -21,13 +21,21 @@ Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own u
 
 [`Projects`](/docs/api/fhir/medplum/project) can each be configured with own global settings and secrets (see [Project Settings](#settings) below).
 
-:::tip Server Shared resources
+## Project Linking
 
-For performance and convenience, the Medplum server provides some system level, read-only resources that are shared between projects. Examples include [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) and [`ValueSets`](/docs/api/fhir/resources/valueset).
+Certain Medplum features, including first-party integrations, require access to shared sets of resources, such as [`CodeSystem`](/docs/api/fhir/resources/codesystem), [`ValueSet`](/docs/api/fhir/resources/valueset), and [`Organization`](/docs/api/fhir/resources/organization).
 
-While they _do_ cross the [`Project`](/docs/api/fhir/medplum/project) isolation boundary, most application developers will not have to interact these resources.
+Medplum super administrators can *link* shared projects into a target project, providing users with a *read-only* view of all resources in the linked projects.
 
-:::
+A common use case for project linking is the Medplum terminology service. When enabled, Medplum links the shared UMLS Project, which contains [`CodeSystem`](/docs/api/fhir/resources/codesystem) resources for major UMLS code systems:
+- [ICD-10](/docs/charting/representing-diagnoses)
+- [RxNORM](/docs/medications/medication-codes#rxnorm)
+- [LOINC](/docs/careplans/loinc)
+
+You can see linked Projects in the Medplum App by:
+- Navigating to [app.medplum.com/Project](https://app.medplum.com/Project)
+- Selecting your Project
+- Selecting the "Details" tab
 
 ## The SuperAdmin `Project` {#superadmin}
 
