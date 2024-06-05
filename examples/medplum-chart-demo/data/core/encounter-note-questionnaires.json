@@ -72,15 +72,17 @@
             "item": [
               {
                 "linkId": "systolic",
-                "type": "integer",
+                "type": "quantity",
                 "text": "Systolic Blood Pressure",
-                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }]
+                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }],
+                "initial": [{ "valueQuantity": { "unit": "mm[Hg]" } }]
               },
               {
                 "linkId": "diastolic",
-                "type": "integer",
+                "type": "quantity",
                 "text": "Diastolic Blood Pressure",
-                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }]
+                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }],
+                "initial": [{ "valueQuantity": { "unit": "mm[Hg]" } }]
               },
               {
                 "linkId": "height",
@@ -240,15 +242,17 @@
             "item": [
               {
                 "linkId": "systolic",
-                "type": "integer",
+                "type": "quantity",
                 "text": "Systolic Blood Pressure",
-                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }]
+                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }],
+                "initial": [{ "valueQuantity": { "unit": "mm[Hg]" } }]
               },
               {
                 "linkId": "diastolic",
-                "type": "integer",
+                "type": "quantity",
                 "text": "Diastolic Blood Pressure",
-                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }]
+                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }],
+                "initial": [{ "valueQuantity": { "unit": "mm[Hg]" } }]
               },
               {
                 "linkId": "height",
@@ -550,15 +554,17 @@
             "item": [
               {
                 "linkId": "systolic",
-                "type": "integer",
+                "type": "quantity",
                 "text": "Systolic Blood Pressure",
-                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }]
+                "code": [{ "code": "8480-6", "system": "http://loinc.org", "display": "Sytolic blood pressure" }],
+                "initial": [{ "valueQuantity": { "unit": "mm[Hg]" } }]
               },
               {
                 "linkId": "diastolic",
-                "type": "integer",
+                "type": "quantity",
                 "text": "Diastolic Blood Pressure",
-                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }]
+                "code": [{ "code": "8462-4", "system": "http://loinc.org", "display": "Diastolic blood pressure" }],
+                "initial": [{ "valueQuantity": { "unit": "mm[Hg]" } }]
               },
               {
                 "linkId": "height",

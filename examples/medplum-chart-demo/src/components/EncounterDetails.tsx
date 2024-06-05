@@ -4,7 +4,7 @@ import { Encounter, Patient, Questionnaire, QuestionnaireResponse, Reference } f
 import { Document, Loading, QuestionnaireForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EncounterNoteDisplay } from './note-display/EncounterNoteDisplay';
+import { EncounterNoteDisplay } from './EncounterNoteDisplay';
 
 interface EncounterDetailsProps {
   encounter: Encounter;
