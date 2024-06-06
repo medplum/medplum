@@ -35,9 +35,8 @@ export const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function agentUpgradeHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { version, timeout: _timeout } = req.query;
-  req.query.version = undefined;
-  req.query.timeout = undefined;
+  const { version, timeout: _timeout, ...rest } = req.query;
+  req.query = rest;
 
   let timeout: number | undefined;
   if (_timeout) {
