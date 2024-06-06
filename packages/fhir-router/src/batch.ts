@@ -9,8 +9,6 @@ import {
   normalizeOperationOutcome,
   notFound,
   splitN,
-  isConflict,
-  sleep,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
@@ -20,6 +18,17 @@ import { IncomingHttpHeaders } from 'node:http';
 
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
+
+const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+const uuidUriPrefix = 'urn:uuid';
+
+type BundleEntryIdentity = { placeholder: string; reference: string };
+
+type BundlePreprocessInfo = {
+  ordering: number[];
+  requiresStrongTransaction: boolean;
+  updates: number;
+};
 
 /**
  * Processes a FHIR batch request.
@@ -50,35 +59,14 @@ export async function processBatch(router: FhirRouter, repo: FhirRepository, bun
     throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
   }
 
-  const transactionOptions = {
+  return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
     serializable: bundleInfo.requiresStrongTransaction,
-  };
-
-  try {
-    return await repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), transactionOptions);
-  } catch (err: any) {
-    await sleep(25 + 25 * Math.random()); // Brief 25-50 ms delay to hopefully avoid further conflicts
-    if (err instanceof OperationOutcomeError && isConflict(err.outcome)) {
-      return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), transactionOptions);
-    }
-    throw err;
-  }
+  });
 }
-
-const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
-const uuidUriPrefix = 'urn:uuid';
-
-type BundleEntryIdentity = { placeholder: string; reference: string };
-
-type BundlePreprocessInfo = {
-  ordering: number[];
-  requiresStrongTransaction: boolean;
-  updates: number;
-};
 
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
- * In particular, it tracks rewritten ID's as necessary.
+ * In particular, it tracks rewritten IDs as necessary.
  */
 class BatchProcessor {
   private readonly resolvedIdentities: Record<string, string>;
@@ -98,51 +86,12 @@ class BatchProcessor {
   }
 
   /**
-   * Processes a FHIR batch request.
-   * @param bundleInfo - The preprocessed Bundle information.
-   * @param resultEntries - The array of results.
-   * @returns The bundle response.
+   * Scans the Bundle in order to ensure entries are processed in the correct sequence,
+   * as well as to identify any operations that might require specific handling.
+   *
+   * @param results - The array of result entries, to track partial results.
+   * @returns The information gathered from scanning the Bundle.
    */
-  async processBatch(
-    bundleInfo: BundlePreprocessInfo,
-    resultEntries: (BundleEntry | OperationOutcome)[]
-  ): Promise<Bundle> {
-    const bundleType = this.bundle.type;
-    let count = 0;
-    let errors = 0;
-
-    for (const entryIndex of bundleInfo.ordering) {
-      const entry = this.bundle.entry?.[entryIndex] as BundleEntry;
-      const rewritten = this.rewriteIdsInObject(entry);
-      try {
-        count++;
-        resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
-      } catch (err) {
-        if (bundleType !== 'transaction') {
-          errors++;
-          resultEntries[entryIndex] = buildBundleResponse(normalizeOperationOutcome(err));
-          continue;
-        }
-        throw err;
-      }
-    }
-
-    const event: BatchEvent = {
-      type: 'batch',
-      bundleType,
-      count,
-      errors,
-      size: JSON.stringify(this.bundle).length,
-    };
-    this.router.dispatchEvent(event);
-
-    return {
-      resourceType: 'Bundle',
-      type: `${bundleType}-response` as Bundle['type'],
-      entry: resultEntries,
-    };
-  }
-
   async preprocessBundle(results: BundleEntry[]): Promise<BundlePreprocessInfo> {
     const entries = this.bundle.entry;
     if (!entries?.length) {
@@ -179,11 +128,15 @@ class BatchProcessor {
         );
         continue;
       }
-      const result = await this.preprocessEntry(entry, i, seenIdentities);
-      if (result) {
-        results[i] = result;
-        continue;
+      const outcome = await this.preprocessEntry(entry, i, seenIdentities);
+      if (outcome) {
+        if (this.bundle.type !== 'transaction') {
+          results[i] = buildBundleResponse(outcome);
+          continue;
+        }
+        throw new OperationOutcomeError(outcome);
       }
+
       const route = this.getRouteForEntry(entry);
       const interaction = route?.data?.interaction as RestInteraction;
       if (interaction === 'create' && entry.request?.ifNoneExist) {
@@ -197,6 +150,9 @@ class BatchProcessor {
           requiresStrongTransaction = true;
         }
         updates++;
+      } else if (interaction === 'delete' && entry.request?.url.includes('?')) {
+        // Conditional delete requires strong (serializable) transaction
+        requiresStrongTransaction = true;
       }
       bucketedEntries[interaction]?.push(i);
     }
@@ -212,26 +168,39 @@ class BatchProcessor {
     };
   }
 
+  /**
+   * Resolves the resource identity associated with an entry, and tracks it for later reference rewriting.
+   * @see https://www.hl7.org/fhir/R4/http.html#trules
+   *
+   * @param entry - The entry to resolve.
+   * @param index - The index of the Bundle entry.
+   * @param seenIdentities - The set of resolved identities that have already been seen in preprocessing.
+   * @returns - The (error) result for the entry, if it could not be preprocessed.
+   */
   private async preprocessEntry(
     entry: BundleEntry,
     index: number,
     seenIdentities: Set<string>
-  ): Promise<BundleEntry | undefined> {
+  ): Promise<OperationOutcome | undefined> {
     if (!entry.request?.url) {
-      return buildBundleResponse(badRequest('Missing Bundle entry request URL', `Bundle.entry[${index}].request.url`));
+      return badRequest('Missing Bundle entry request URL', `Bundle.entry[${index}].request.url`);
     }
 
     let resolved: { placeholder: string; reference: string } | undefined;
     try {
       resolved = await this.resolveIdentity(entry, `Bundle.entry[${index}]`);
     } catch (err: any) {
-      if (err instanceof OperationOutcomeError && this.bundle.type !== 'transaction') {
-        return buildBundleResponse(err.outcome);
+      if (err instanceof OperationOutcomeError) {
+        return err.outcome;
       }
       throw err;
     }
+
     if (resolved) {
+      // Track resolved identity for reference rewriting
       this.resolvedIdentities[resolved.placeholder] = resolved.reference;
+
+      // If in a transaction, ensure identity is unique
       if (this.bundle.type === 'transaction') {
         if (seenIdentities.has(resolved.reference)) {
           throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
@@ -251,11 +220,12 @@ class BatchProcessor {
 
     switch (interaction) {
       case 'create':
-        return this.processCreate(entry);
+        // Ensure that resources to be created have a
+        return this.resolveCreateIdentity(entry);
       case 'delete':
       case 'update':
       case 'patch':
-        return this.processModification(entry, path);
+        return this.resolveModificationIdentity(entry, path);
       default:
         // Ignore read-only and complex operations
         return undefined;
@@ -267,7 +237,7 @@ class BatchProcessor {
     return this.router.find(entry.request?.method as HttpMethod, requestPath);
   }
 
-  private async processCreate(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
+  private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
     if (entry.request?.ifNoneExist) {
       const existing = await this.repo.searchResources(
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
@@ -286,29 +256,92 @@ class BatchProcessor {
     return undefined;
   }
 
-  private async processModification(entry: BundleEntry, path: string): Promise<BundleEntryIdentity | undefined> {
-    if (entry.request?.url?.includes('?')) {
+  private async resolveModificationIdentity(
+    entry: BundleEntry,
+    path: string
+  ): Promise<BundleEntryIdentity | undefined> {
+    if (entry.request?.url?.includes('?') && entry.fullUrl?.startsWith(uuidUriPrefix)) {
       const method = entry.request.method;
+
       // Resolve conditional update via search
       const resolved = await this.repo.searchResources(parseSearchRequest(entry.request.url));
       if (resolved.length !== 1) {
         if (resolved.length === 0 && method === 'DELETE') {
           return undefined;
         }
-        if (resolved.length === 0 && method === 'PUT' && !entry.resource?.id) {
-          return undefined; // create by update for conditional PUT
+
+        if (resolved.length === 0 && method === 'PUT') {
+          if (entry.resource && !entry.resource.id) {
+            entry.resource.id = this.repo.generateId();
+            return {
+              placeholder: entry.fullUrl,
+              reference: getReferenceString(entry.resource),
+            };
+          }
+          return undefined;
         }
+
         throw new OperationOutcomeError(
           badRequest(`Conditional ${entry.request.method} matched ${resolved.length} resources`, path + '.request.url')
         );
       }
+
       const reference = getReferenceString(resolved[0]);
       entry.request.url = reference;
-      return { placeholder: entry.request.url, reference };
-    } else if (entry.request?.url.includes('/')) {
+      return { placeholder: entry.fullUrl, reference };
+    }
+
+    if (entry.request?.url.includes('/')) {
       return { placeholder: entry.request.url, reference: entry.request.url };
     }
     return undefined;
+  }
+
+  /**
+   * Processes a FHIR batch request.
+   * @param bundleInfo - The preprocessed Bundle information.
+   * @param resultEntries - The array of results.
+   * @returns The bundle response.
+   */
+  async processBatch(
+    bundleInfo: BundlePreprocessInfo,
+    resultEntries: (BundleEntry | OperationOutcome)[]
+  ): Promise<Bundle> {
+    const bundleType = this.bundle.type;
+    let count = 0;
+    let errors = 0;
+
+    for (const entryIndex of bundleInfo.ordering) {
+      const entry = this.bundle.entry?.[entryIndex] as BundleEntry;
+      const rewritten = this.rewriteIdsInObject(entry);
+      try {
+        count++;
+        resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
+      } catch (err) {
+        if (bundleType === 'transaction') {
+          throw err;
+        }
+
+        errors++;
+        resultEntries[entryIndex] = buildBundleResponse(normalizeOperationOutcome(err));
+        continue;
+      }
+    }
+
+    const event: BatchEvent = {
+      type: 'batch',
+      bundleType,
+      count,
+      errors,
+      size: JSON.stringify(this.bundle).length,
+    };
+    this.router.dispatchEvent(event);
+
+    return {
+      resourceType: 'Bundle',
+      type: `${bundleType}-response` as Bundle['type'],
+      entry: resultEntries,
+    };
   }
 
   /**
@@ -319,11 +352,12 @@ class BatchProcessor {
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
     const [requestPath] = splitN(entry.request?.url as string, '?', 2);
     const route = this.router.find(entry.request?.method as HttpMethod, requestPath);
+    if (!route) {
+      throw new OperationOutcomeError(notFound);
+    }
 
     const request = this.parseBatchRequest(entry, route?.params);
-    const [outcome, resource] = route
-      ? await route.handler(request, this.repo, this.router, { batch: true })
-      : ([notFound] as [OperationOutcome]);
+    const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true });
 
     if (!isOk(outcome) && this.bundle.type === 'transaction') {
       throw new OperationOutcomeError(outcome);
@@ -331,6 +365,12 @@ class BatchProcessor {
     return buildBundleResponse(outcome, resource);
   }
 
+  /**
+   * Constructs the equivalent HTTP request for a Bundle entry, based on its `request` field.
+   * @param entry - The Bundle entry to parse.
+   * @param params - Route path parameters
+   * @returns The HTTP request to perform the operation specified by the given batch entry.
+   */
   parseBatchRequest(entry: BundleEntry, params?: Record<string, string>): FhirRequest {
     const request = entry.request as BundleEntryRequest;
     const headers = Object.create(null) as IncomingHttpHeaders;
@@ -367,25 +407,16 @@ class BatchProcessor {
 
   private parsePatchBody(entry: BundleEntry): any {
     const patchResource = entry.resource;
-    if (!patchResource) {
-      throw new OperationOutcomeError(badRequest('Missing entry.resource'));
+    if (patchResource?.resourceType !== 'Binary') {
+      throw new OperationOutcomeError(badRequest('Patch operation must include a Binary resource'));
     }
-
-    if (patchResource.resourceType !== 'Binary') {
-      throw new OperationOutcomeError(badRequest('Patch resource must be a Binary'));
-    }
-
     if (!patchResource.data) {
       throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
     }
 
     const body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
-    if (!body) {
-      throw new OperationOutcomeError(badRequest('Empty patch body'));
-    }
-
     if (!Array.isArray(body)) {
-      throw new OperationOutcomeError(badRequest('Patch body must be an array'));
+      throw new OperationOutcomeError(badRequest('Patch operation body must be an array'));
     }
 
     return this.rewriteIdsInArray(body);

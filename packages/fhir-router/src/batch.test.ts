@@ -617,9 +617,9 @@ describe('Batch', () => {
     expect(results.length).toEqual(3);
     expect(results[0].response?.status).toEqual('200');
     expect(results[1].response?.status).toEqual('400');
-    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Empty patch body');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch operation body must be an array');
     expect(results[2].response?.status).toEqual('400');
-    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
+    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch operation body must be an array');
   });
 
   test('JSONPath error messages', async () => {
@@ -740,7 +740,7 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Missing entry.resource'
+      'Patch operation must include a Binary resource'
     );
   });
 
@@ -767,7 +767,7 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Patch resource must be a Binary'
+      'Patch operation must include a Binary resource'
     );
   });
 

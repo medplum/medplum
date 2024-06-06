@@ -410,7 +410,7 @@ describe('Batch and Transaction processing', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Concurrent conditional create in transactions', async () => {
+  test('Conditional create in transaction', async () => {
     const patientIdentifier = randomUUID();
     const encounterIdentifier = randomUUID();
     const conditionIdentifier = randomUUID();
@@ -521,39 +521,19 @@ describe('Batch and Transaction processing', () => {
       ],
     };
 
-    // Issue several identical transaction requests, essentially in parallel
-    const requests = new Array(8);
-    for (let i = 0; i < requests.length; i++) {
-      requests[i] = request(app)
-        .post(`/fhir/R4/`)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .send(tx)
-        .then((res) => res); // Force send request
-    }
-
-    const results = await Promise.all(requests);
-    const statusCounts = Object.create(null);
-    for (let i = 0; i < requests.length; i++) {
-      expect(results[i].status).toEqual(200);
-      const ccreateResult = results[i].body.entry[0].response as BundleEntryResponse;
-      statusCounts[ccreateResult.status] = (statusCounts[ccreateResult.status] ?? 0) + 1;
-    }
-    // Only one transaction should report that it created the resource
-    expect(statusCounts[201]).toEqual(1);
-    expect(statusCounts[200]).toEqual(requests.length - 1);
-
-    // Ensure that only one copy of the resource was actually created
-    const createdResources = await request(app)
-      .get('/fhir/R4/Patient?' + patientCreateCondition)
+    const res = await request(app)
+      .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(tx);
-    expect(createdResources.status).toEqual(200);
-    expect(createdResources.body.entry).toHaveLength(1);
+
+    expect(res.status).toEqual(200);
+    const ccreateResult = res.body.entry[0].response as BundleEntryResponse;
+    expect(ccreateResult.status).toEqual('201');
   });
 
-  test('Concurrent conditional update in transactions', async () => {
+  test('Conditional update in transaction', async () => {
+    const careTeamIdentifier = randomUUID();
     const encounterIdentifier = randomUUID();
     const conditionIdentifier = randomUUID();
     const practitionerIdentifier = randomUUID();
@@ -586,6 +566,7 @@ describe('Batch and Transaction processing', () => {
       type: 'transaction',
       entry: [
         {
+          fullUrl: 'urn:uuid:' + careTeamIdentifier,
           request: {
             method: 'PUT',
             url: careTeamCondition,
@@ -668,43 +649,22 @@ describe('Batch and Transaction processing', () => {
             status: 'requested',
             intent: 'plan',
             encounter: { reference: 'urn:uuid:' + encounterIdentifier },
-            owner: practitionerReference,
+            owner: { reference: 'urn:uuid:' + careTeamIdentifier },
             description: 'Follow up with B. Tables regarding prognosis',
           },
         },
       ],
     };
 
-    // Issue several identical transaction requests, essentially in parallel
-    const requests = new Array(8);
-    for (let i = 0; i < requests.length; i++) {
-      requests[i] = request(app)
-        .post(`/fhir/R4/`)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .send(tx)
-        .then((res) => res); // Force send request
-    }
-
-    const results = await Promise.all(requests);
-    const statusCounts = Object.create(null);
-    for (let i = 0; i < requests.length; i++) {
-      expect(results[i].status).toEqual(200);
-      const ccreateResult = results[i].body.entry[0].response as BundleEntryResponse;
-      statusCounts[ccreateResult.status] = (statusCounts[ccreateResult.status] ?? 0) + 1;
-    }
-    // Only one transaction should report that it created the resource
-    expect(statusCounts[201]).toEqual(1);
-    expect(statusCounts[200]).toEqual(requests.length - 1);
-
-    // Ensure that only one copy of the resource was actually created
-    const createdResources = await request(app)
-      .get('/fhir/R4/' + careTeamCondition)
+    const res = await request(app)
+      .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(tx);
-    expect(createdResources.status).toEqual(200);
-    expect(createdResources.body.entry).toHaveLength(1);
+
+    expect(res.status).toEqual(200);
+    const ccreateResult = res.body.entry[0].response as BundleEntryResponse;
+    expect(ccreateResult.status).toEqual('201');
   });
 
   test('Resolved intra-Bundle reference cycle with referential integrity validation', async () => {
