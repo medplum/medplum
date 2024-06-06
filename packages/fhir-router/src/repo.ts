@@ -193,6 +193,10 @@ export abstract class FhirRepository<TClient = unknown> {
       throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
     }
 
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
     return this.withTransaction(
       async () => {
         const matches = await this.searchResources(search);
@@ -218,22 +222,26 @@ export abstract class FhirRepository<TClient = unknown> {
   async conditionalUpdate<T extends Resource>(
     resource: T,
     search: SearchRequest,
-    options?: UpdateResourceOptions
+    options?: CreateResourceOptions & UpdateResourceOptions
   ): Promise<{ resource: T; outcome: OperationOutcome }> {
     if (search.resourceType !== resource.resourceType) {
       throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
     }
 
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
     return this.withTransaction(
       async () => {
         const matches = await this.searchResources(search);
         if (matches.length === 0) {
-          if (resource.id) {
+          if (resource.id && !options?.assignedId) {
             throw new OperationOutcomeError(
               badRequest('Cannot perform create as update with client-assigned ID', resource.resourceType + '.id')
             );
           }
-          resource = await this.createResource(resource);
+          resource = await this.createResource(resource, options);
           return { resource, outcome: created };
         } else if (matches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
@@ -255,6 +263,10 @@ export abstract class FhirRepository<TClient = unknown> {
   }
 
   async conditionalDelete(search: SearchRequest): Promise<void> {
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
     await this.withTransaction(async () => {
       const matches = await this.searchResources(search);
       if (matches.length > 1) {

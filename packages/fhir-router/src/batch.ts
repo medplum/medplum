@@ -271,7 +271,11 @@ class BatchProcessor {
         }
 
         if (resolved.length === 0 && method === 'PUT') {
-          if (entry.resource && !entry.resource.id) {
+          if (entry.resource) {
+            if (entry.resource.id) {
+              throw new OperationOutcomeError(badRequest('Cannot provide ID for create by update'));
+            }
+
             entry.resource.id = this.repo.generateId();
             return {
               placeholder: entry.fullUrl,

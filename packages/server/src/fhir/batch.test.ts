@@ -4,7 +4,16 @@ import { loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
 import request from 'supertest';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import { Bundle, BundleEntryResponse, Patient, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  BundleEntryResponse,
+  CareTeam,
+  Patient,
+  Practitioner,
+  RelatedPerson,
+  Task,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
 describe('Batch and Transaction processing', () => {
@@ -662,9 +671,15 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(tx);
 
+    console.log(res.body.issue);
     expect(res.status).toEqual(200);
     const ccreateResult = res.body.entry[0].response as BundleEntryResponse;
     expect(ccreateResult.status).toEqual('201');
+
+    // Ensure that ID replacement was performed correctly
+    const createdCareTeam = res.body.entry[0].resource as CareTeam;
+    const createdTask = res.body.entry[(tx.entry as BundleEntry[]).length - 1].resource as Task;
+    expect(createdTask.owner?.reference).toEqual(getReferenceString(createdCareTeam));
   });
 
   test('Resolved intra-Bundle reference cycle with referential integrity validation', async () => {
