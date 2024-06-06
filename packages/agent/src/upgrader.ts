@@ -1,6 +1,7 @@
 import { Logger, normalizeErrorString } from '@medplum/core';
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import process from 'node:process';
 import {
   downloadRelease,
   fetchLatestVersionString,
@@ -10,7 +11,6 @@ import {
 } from './upgrader-utils';
 
 export async function upgraderMain(argv: string[]): Promise<void> {
-  // TODO: Remove this when Linux auto-update is supported
   if (getOsString() === 'linux') {
     throw new Error('Auto-upgrading is not currently supported for Linux');
   }
@@ -59,7 +59,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     globalLogger.info('Stopping running agent service...');
     execSync('net stop "Medplum Agent"');
     globalLogger.info('Agent service stopped succesfully');
-  } catch (err) {
+  } catch (_err: unknown) {
     globalLogger.info('Agent service not running, skipping stopping the service');
   }
 
@@ -75,9 +75,10 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     try {
       execSync('net start "Medplum Agent"');
       globalLogger.info('Successfully restarted agent service');
-    } catch (err) {
+    } catch (_err: unknown) {
       globalLogger.info('Medplum agent already started, skipping restart');
     }
+    return;
   }
 
   globalLogger.info('Finished upgrade');
