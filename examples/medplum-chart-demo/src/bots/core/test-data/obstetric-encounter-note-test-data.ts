@@ -19,8 +19,8 @@ export const fullResponse: QuestionnaireResponse = {
       answer: [{ valueCoding: { code: '112233', system: 'http://hl7.org/fhir/sid/icd-10', display: 'DIAG-4' } }],
     },
     { linkId: 'problem-list', answer: [{ valueBoolean: true }] },
-    { linkId: 'systolic', answer: [{ valueInteger: 180 }] },
-    { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
+    { linkId: 'systolic', answer: [{ valueQuantity: { value: 180 } }] },
+    { linkId: 'diastolic', answer: [{ valueQuantity: { value: 180 } }] },
     {
       id: 'id-23',
       linkId: 'g15',
@@ -67,8 +67,8 @@ export const responseWithNoAssessment: QuestionnaireResponse = {
       answer: [{ valueCoding: { code: '112233', system: 'http://hl7.org/fhir/sid/icd-10', display: 'DIAG-4' } }],
     },
     { linkId: 'problem-list', answer: [{ valueBoolean: true }] },
-    { linkId: 'systolic', answer: [{ valueInteger: 180 }] },
-    { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
+    { linkId: 'systolic', answer: [{ valueQuantity: { value: 180 } }] },
+    { linkId: 'diastolic', answer: [{ valueQuantity: { value: 180 } }] },
     {
       id: 'id-23',
       linkId: 'g15',
@@ -133,8 +133,8 @@ export const noCondition: QuestionnaireResponse = {
       linkId: 'date',
       answer: [{ valueDateTime: '2024-02-14T11:18:05.446Z' }],
     },
-    { linkId: 'systolic', answer: [{ valueInteger: 180 }] },
-    { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
+    { linkId: 'systolic', answer: [{ valueQuantity: { value: 180 } }] },
+    { linkId: 'diastolic', answer: [{ valueQuantity: { value: 180 } }] },
     {
       id: 'id-23',
       linkId: 'g15',
@@ -230,7 +230,7 @@ export const oneBloodPressureMeasurement: QuestionnaireResponse = {
       answer: [{ valueCoding: { code: '112233', system: 'http://hl7.org/fhir/sid/icd-10', display: 'DIAG-4' } }],
     },
     { linkId: 'problem-list', answer: [{ valueBoolean: true }] },
-    { linkId: 'diastolic', answer: [{ valueInteger: 180 }] },
+    { linkId: 'diastolic', answer: [{ valueQuantity: { value: 180 } }] },
     {
       id: 'id-23',
       linkId: 'g15',

@@ -7,10 +7,11 @@ import {
   Practitioner,
   Quantity,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { createObservations, ObservationData } from './charting-utils';
+import { createObservations } from './charting-utils';
 import { calculateBMI } from './observation-utils';
 
 describe('Bot utility function tests', async () => {
@@ -66,11 +67,9 @@ describe('Bot utility function tests', async () => {
 
   test('Create entries with no code', async () => {
     const medplum = new MockClient();
-    const noCode: ObservationData = {
-      bloodPressure: {
-        systolic: 99,
-        diastolic: 99,
-      },
+    const noCode: Record<string, QuestionnaireResponseItemAnswer> = {
+      height: { valueQuantity: { value: 99 } },
+      weight: { valueQuantity: { value: 99 } },
     };
 
     const response: QuestionnaireResponse = {
@@ -79,8 +78,8 @@ describe('Bot utility function tests', async () => {
     };
 
     const codes: Record<string, CodeableConcept> = {
-      height: {
-        coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
+      bmi: {
+        coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
       },
     };
     // const partials: Partial<Observation>[] = [{ valueInteger: 99 }];
@@ -93,19 +92,6 @@ describe('Bot utility function tests', async () => {
       resourceType: 'Practitioner',
     });
 
-    expect(() => createObservations(noCode, codes, observationTypes, encounter, practitioner, response)).toThrow(
-      /^No code provided$/
-    );
+    expect(() => createObservations(noCode, codes, encounter, practitioner, response)).toThrow(/^No code provided$/);
   });
 });
-
-const observationTypes: { [key: string]: string } = {
-  height: 'valueQuantity',
-  weight: 'valueQuantity',
-  hotFlash: 'valueBoolean',
-  moodSwings: 'valueBoolean',
-  vaginalDryness: 'valueBoolean',
-  sleepDisturbance: 'valueBoolean',
-  bmi: 'valueQuantity',
-  selfReportedHistory: 'valueString',
-};

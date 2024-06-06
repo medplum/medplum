@@ -7,7 +7,7 @@ import { Quantity } from '@medplum/fhirtypes';
  * @param weight - The weight of the patient
  * @returns The BMI of the patient
  */
-export function calculateBMI(height: Quantity, weight: Quantity): Quantity {
+export function calculateBMI(height?: Quantity, weight?: Quantity): Quantity {
   if (!height?.value || !weight?.value) {
     throw new Error('All values must be provided');
   }

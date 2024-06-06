@@ -12,20 +12,15 @@ import {
   Practitioner,
   Quantity,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
-export interface ObservationData {
-  bloodPressure: {
-    systolic?: number;
-    diastolic?: number;
-  };
-  height?: Quantity;
-  weight?: Quantity;
-  bmi?: Quantity;
-  date?: string;
+export interface BloodPressure {
+  systolic?: Quantity;
+  diastolic?: Quantity;
 }
 
 /**
@@ -33,16 +28,14 @@ export interface ObservationData {
  *
  * @param observationData - An easily parseable object containing data for various observation resources
  * @param codes - A map of observation types to their coding
- * @param observationTypes - A map of observations types to their type of value
  * @param encounter - The encounter the observations are derived from
  * @param user - The user creating the observations
  * @param response - The QuestionnaireResponse that the observations are being created from
  * @returns An array of Observation resources.
  */
 export function createObservations(
-  observationData: ObservationData,
+  observationData: Record<string, QuestionnaireResponseItemAnswer>,
   codes: Record<string, CodeableConcept>,
-  observationTypes: { [key: string]: string },
   encounter: Encounter,
   user: Practitioner,
   response: QuestionnaireResponse
@@ -50,48 +43,35 @@ export function createObservations(
   const observations: Observation[] = [];
 
   for (const [key, value] of Object.entries(observationData)) {
-    if (!value || (key === 'bloodPressure' && !value.systolic && !value.diastolic) || key === 'date') {
+    if (!value || key === 'date') {
       continue;
     }
 
     const code =
       key === 'selfReportedHistory'
-        ? getSelfReportedCode(observationData['selfReportedHistory' as keyof ObservationData] as string)
+        ? getSelfReportedCode(observationData['selfReportedHistory'].valueString)
         : codes[key];
 
     if (!code) {
       throw new Error('No code provided');
     }
 
-    const obsKey = observationTypes[key] as keyof Observation;
+    // const obsKey = observationTypes[key] as keyof Observation;
 
     const resource: Record<string, any> = {
       code,
+      ...observationData[key],
     };
-
-    if (key !== 'bloodPressure') {
-      resource[obsKey] = observationData[key as keyof ObservationData];
-    }
-
-    if (key === 'bloodPressure') {
-      resource.component = handleBloodPressure(
-        observationData.bloodPressure.systolic,
-        observationData.bloodPressure.diastolic
-      );
-    }
 
     const observation: Observation = {
       ...resource,
       resourceType: 'Observation',
-      code:
-        key === 'selfReportedHistory'
-          ? getSelfReportedCode(observationData['selfReportedHistory' as keyof ObservationData] as string)
-          : codes[key],
+      code,
       status: 'final',
       subject: encounter.subject,
       performer: [{ reference: getReferenceString(user) }],
       encounter: { reference: getReferenceString(encounter) },
-      effectiveDateTime: observationData.date,
+      effectiveDateTime: observationData.date.valueDateTime,
       derivedFrom: [{ reference: getReferenceString(response) }],
     };
 
@@ -99,6 +79,45 @@ export function createObservations(
   }
 
   return observations;
+}
+
+/**
+ * Blood pressure is a special case, since it can often have two components - systolic and diastolic. Because of this it is handled on its own so both measurements can be added to the same Observation
+ *
+ * @param bloodPressure - The blood pressure measurements
+ * @param encounter - The linked encounter that the blood pressure measurements were taken at
+ * @param user - The user creating the blood pressure observations
+ * @param date - The date of the observations
+ * @param response - The QuestionnaireResponse that the answers are derived from
+ * @returns A blood pressure Observation resource
+ */
+export function createBloodPressureObservation(
+  bloodPressure: BloodPressure,
+  encounter: Encounter,
+  user: Practitioner,
+  date: string,
+  response: QuestionnaireResponse
+): Observation | undefined {
+  const { systolic, diastolic } = bloodPressure;
+  if (!systolic && !diastolic) {
+    return undefined;
+  }
+  const component = handleBloodPressure(systolic, diastolic);
+  const bloodPressureObservation: Observation = {
+    resourceType: 'Observation',
+    status: 'final',
+    code: {
+      coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
+    },
+    subject: encounter.subject,
+    performer: [{ reference: getReferenceString(user) }],
+    encounter: { reference: getReferenceString(encounter) },
+    effectiveDateTime: date,
+    derivedFrom: [{ reference: getReferenceString(response) }],
+    component,
+  };
+
+  return bloodPressureObservation;
 }
 
 /**
@@ -110,17 +129,14 @@ export function createObservations(
  * @param diastolic - The diastolic blood pressure value
  * @returns An Observation component element with diastolic, systolic, or both blood pressure measurements
  */
-export function handleBloodPressure(systolic?: number, diastolic?: number): ObservationComponent[] {
+function handleBloodPressure(systolic?: Quantity, diastolic?: Quantity): ObservationComponent[] {
   const components: ObservationComponent[] = [];
 
   // If a diastolic measurement exists, add it
   if (diastolic) {
     components.push({
       code: { coding: [{ code: '8462-4', system: 'http://loinc.org', display: 'Diastolic blood pressure' }] },
-      valueQuantity: {
-        value: diastolic,
-        unit: 'mm[Hg]',
-      },
+      valueQuantity: diastolic,
     });
   }
 
@@ -128,10 +144,7 @@ export function handleBloodPressure(systolic?: number, diastolic?: number): Obse
   if (systolic) {
     components.push({
       code: { coding: [{ code: '8480-6', system: 'http://loinc.org', display: 'Systolic blood pressure' }] },
-      valueQuantity: {
-        value: systolic,
-        unit: 'mm[Hg]',
-      },
+      valueQuantity: systolic,
     });
   }
 
@@ -311,10 +324,14 @@ function getUpsertUrl(resource: Resource): string {
  * @param reportedHistory - The value provided in the questionnaire for a patient's self-reported history
  * @returns A codeable concept to identify the reported history in the observation
  */
-function getSelfReportedCode(reportedHistory: string): CodeableConcept {
+function getSelfReportedCode(reportedHistory?: string): CodeableConcept {
   const code: CodeableConcept = {
     coding: [],
   };
+
+  if (!reportedHistory) {
+    throw new Error('No self-reported history');
+  }
 
   // Add the appropriate code based on the answer provided for self-reported history
   switch (reportedHistory) {

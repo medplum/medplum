@@ -3,31 +3,23 @@ import {
   Bundle,
   ClinicalImpression,
   CodeableConcept,
-  Coding,
   Condition,
   Encounter,
   Observation,
   Practitioner,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
 import {
+  BloodPressure,
+  createBloodPressureObservation,
   createBundle,
   createClinicalImpressions,
   createConditions,
   createObservations,
-  ObservationData,
 } from './charting-utils';
 import { calculateBMI } from './observation-utils';
-
-export interface GynecologyObservationData extends ObservationData {
-  lastPeriod?: string;
-  contraception?: Coding;
-  lastMammogram?: string;
-  smokingStatus?: Coding;
-  drugUse?: Coding;
-  housingStatus?: Coding;
-}
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
@@ -42,25 +34,29 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     throw new Error('Must provide a reason for the visit');
   }
 
+  const date = answers['date'].valueDateTime as string;
+
   // Parse the answers into more easily usable objects
-  const observationData: GynecologyObservationData = {
-    lastPeriod: answers['last-period']?.valueDate,
-    contraception: answers['contraception']?.valueCoding,
-    lastMammogram: answers['mammogram']?.valueDate,
-    smokingStatus: answers['smoking']?.valueCoding,
-    drugUse: answers['drugs']?.valueCoding,
-    housingStatus: answers['housing']?.valueCoding,
-    bloodPressure: {
-      systolic: answers['systolic']?.valueInteger,
-      diastolic: answers['diastolic']?.valueInteger,
-    },
-    height: answers['height']?.valueQuantity,
-    weight: answers['weight']?.valueQuantity,
-    date: answers['date']?.valueDateTime,
+  const observationData: Record<string, QuestionnaireResponseItemAnswer> = {
+    lastPeriod: answers['last-period'],
+    contraception: answers['contraception'],
+    lastMammogram: answers['mammogram'],
+    smokingStatus: answers['smoking'],
+    drugUse: answers['drugs'],
+    housingStatus: answers['housing'],
+
+    height: answers['height'],
+    weight: answers['weight'],
+    date: answers['date'],
+  };
+
+  const bloodPressure: BloodPressure = {
+    systolic: answers['systolic']?.valueQuantity,
+    diastolic: answers['diastolic']?.valueQuantity,
   };
 
   if (observationData.height && observationData.weight) {
-    observationData.bmi = calculateBMI(observationData.height, observationData.weight);
+    observationData.bmi = calculateBMI(observationData.height.valueQuantity, observationData.weight.valueQuantity);
   }
 
   const problemList = answers['problem-list']?.valueBoolean ?? false;
@@ -72,33 +68,17 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   const note = answers['assessment']?.valueString;
 
-  const observationTypes: { [key: string]: string } = {
-    height: 'valueQuantity',
-    weight: 'valueQuantity',
-    bmi: 'valueQuantity',
-    lastPeriod: 'valueDateTime',
-    contraception: 'valueCodeableConcept',
-    lastMammogram: 'valueDateTime',
-    smokingStatus: 'valueCodeableConcept',
-    drugUse: 'valueCodeableConcept',
-    housingStatus: 'valueCodeableConcept',
-  };
-
-  // Create bundle entries from the above objects
-  // const partialObservations = createPartialGynecologyObservations(observationData, gynecologyCodes);
-  const observations = createObservations(
-    observationData,
-    gynecologyCodes,
-    observationTypes,
-    encounter,
-    user,
-    response
-  );
+  // Create resources from the above objects
+  const observations = createObservations(observationData, gynecologyCodes, encounter, user, response);
+  const bloodPressureObservation = createBloodPressureObservation(bloodPressure, encounter, user, date, response);
   const conditions = createConditions(partialCondition, encounter, user, problemList);
   const clinicalImpressions = createClinicalImpressions(encounter, user, note);
 
   // Create an array of bundle entries for all resource types
   const resources: (Observation | Condition | ClinicalImpression)[] = [...observations, ...conditions];
+  if (bloodPressureObservation) {
+    resources.push(bloodPressureObservation);
+  }
   if (clinicalImpressions) {
     resources.push(clinicalImpressions);
   }

@@ -8,24 +8,18 @@ import {
   Observation,
   Practitioner,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
 import {
+  BloodPressure,
+  createBloodPressureObservation,
   createBundle,
   createClinicalImpressions,
   createConditions,
   createObservations,
-  ObservationData,
 } from './charting-utils';
 import { calculateBMI } from './observation-utils';
-
-export interface GeneralObservationData extends ObservationData {
-  hotFlash?: boolean;
-  moodSwings?: boolean;
-  vaginalDryness?: boolean;
-  sleepDisturbance?: boolean;
-  selfReportedHistory?: string;
-}
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
@@ -40,24 +34,27 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     throw new Error('Must provide a reason for the visit');
   }
 
+  const date = answers['date'].valueDateTime as string;
+
   // Parse the answers into more easily usable objects
-  const observationData: GeneralObservationData = {
-    bloodPressure: {
-      diastolic: answers['diastolic']?.valueInteger,
-      systolic: answers['systolic']?.valueInteger,
-    },
-    height: answers['height']?.valueQuantity,
-    weight: answers['weight']?.valueQuantity,
-    hotFlash: answers['hot-flashes']?.valueBoolean,
-    moodSwings: answers['mood-swings']?.valueBoolean,
-    vaginalDryness: answers['vaginal-dryness']?.valueBoolean,
-    sleepDisturbance: answers['sleep-disturbance']?.valueBoolean,
-    selfReportedHistory: answers['self-reported-history']?.valueString,
-    date: answers['date']?.valueDateTime,
+  const observationData: Record<string, QuestionnaireResponseItemAnswer> = {
+    height: answers['height'],
+    weight: answers['weight'],
+    hotFlash: answers['hot-flashes'],
+    moodSwings: answers['mood-swings'],
+    vaginalDryness: answers['vaginal-dryness'],
+    sleepDisturbance: answers['sleep-disturbance'],
+    selfReportedHistory: answers['self-reported-history'],
+    date: answers['date'],
+  };
+
+  const bloodPressure: BloodPressure = {
+    systolic: answers['systolic']?.valueQuantity,
+    diastolic: answers['diastolic']?.valueQuantity,
   };
 
   if (observationData.height && observationData.weight) {
-    observationData.bmi = calculateBMI(observationData.height, observationData.weight);
+    observationData.bmi = calculateBMI(observationData.height.valueQuantity, observationData.weight.valueQuantity);
   }
 
   const problemList = answers['problem-list']?.valueBoolean ?? false;
@@ -69,25 +66,17 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   const note = answers['assessment']?.valueString;
 
-  const observationTypes: { [key: string]: string } = {
-    height: 'valueQuantity',
-    weight: 'valueQuantity',
-    bmi: 'valueQuantity',
-    hotFlash: 'valueBoolean',
-    moodSwings: 'valueBoolean',
-    vaginalDryness: 'valueBoolean',
-    sleepDisturbance: 'valueBoolean',
-    selfReportedHistory: 'valueString',
-  };
-
   // Take the objects and create full resources of each type
-  // const partialObservations = createPartialGeneralObservations(observationData, generalCodes);
-  const observations = createObservations(observationData, generalCodes, observationTypes, encounter, user, response);
+  const observations = createObservations(observationData, generalCodes, encounter, user, response);
+  const bloodPressureObservation = createBloodPressureObservation(bloodPressure, encounter, user, date, response);
   const conditions = createConditions(partialCondition, encounter, user, problemList);
   const clinicalImpressions = createClinicalImpressions(encounter, user, note);
 
   // Create an array of all resources
   const resources: (Condition | Observation | ClinicalImpression)[] = [...observations, ...conditions];
+  if (bloodPressureObservation) {
+    resources.push(bloodPressureObservation);
+  }
   if (clinicalImpressions) {
     resources.push(clinicalImpressions);
   }

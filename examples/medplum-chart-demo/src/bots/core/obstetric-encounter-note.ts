@@ -7,26 +7,18 @@ import {
   Encounter,
   Observation,
   Practitioner,
-  Quantity,
   QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
 import {
+  createBloodPressureObservation,
   createBundle,
   createClinicalImpressions,
   createConditions,
   createObservations,
-  ObservationData,
 } from './charting-utils';
 import { calculateBMI } from './observation-utils';
-
-export interface ObstetricObservationData extends ObservationData {
-  gravida?: number;
-  para?: number;
-  gestationalDays?: number;
-  gestationalWeeks?: number;
-  totalWeightGain?: Quantity;
-}
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
@@ -41,24 +33,28 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     throw new Error('Must provide a reason for the visit');
   }
 
+  const date = answers['date'].valueDateTime as string;
+
   // Parse the answers into more easily usable objects
-  const observationData: ObstetricObservationData = {
-    gravida: answers['gravida']?.valueInteger,
-    para: answers['para']?.valueInteger,
-    gestationalDays: answers['gestational-age-days']?.valueInteger,
-    gestationalWeeks: answers['gestational-age-weeks']?.valueInteger,
-    height: answers['height']?.valueQuantity,
-    weight: answers['weight']?.valueQuantity,
-    totalWeightGain: answers['total-weight-gain']?.valueQuantity,
-    bloodPressure: {
-      systolic: answers['systolic']?.valueInteger,
-      diastolic: answers['diastolic']?.valueInteger,
-    },
-    date: answers['date']?.valueDateTime,
+  const observationData: Record<string, QuestionnaireResponseItemAnswer> = {
+    gravida: answers['gravida'],
+    para: answers['para'],
+    gestationalDays: answers['gestational-age-days'],
+    gestationalWeeks: answers['gestational-age-weeks'],
+    height: answers['height'],
+    weight: answers['weight'],
+    totalWeightGain: answers['total-weight-gain'],
+
+    date: answers['date'],
+  };
+
+  const bloodPressure = {
+    systolic: answers['systolic']?.valueQuantity,
+    diastolic: answers['diastolic']?.valueQuantity,
   };
 
   if (observationData.height && observationData.weight) {
-    observationData.bmi = calculateBMI(observationData.height, observationData.weight);
+    observationData.bmi = calculateBMI(observationData.height.valueQuantity, observationData.weight.valueQuantity);
   }
 
   const problemList = answers['problem-list']?.valueBoolean ?? false;
@@ -70,24 +66,17 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   const note = answers['assessment']?.valueString;
 
-  const observationTypes: { [key: string]: string } = {
-    height: 'valueQuantity',
-    weight: 'valueQuantity',
-    bmi: 'valueQuantity',
-    gravida: 'valueInteger',
-    para: 'valueInteger',
-    gestationalDays: 'valueInteger',
-    gestationalWeeks: 'valueInteger',
-    totalWeightGain: 'valueQuantity',
-  };
-
   // Take the above objects and create resources for each type
-  const observations = createObservations(observationData, obstetricCodes, observationTypes, encounter, user, response);
+  const observations = createObservations(observationData, obstetricCodes, encounter, user, response);
+  const bloodPressureObservation = createBloodPressureObservation(bloodPressure, encounter, user, date, response);
   const conditions = createConditions(partialCondition, encounter, user, problemList);
   const clinicalImpressions = createClinicalImpressions(encounter, user, note);
 
   // Create an entry array of all the bundle entries
   const resources: (Observation | Condition | ClinicalImpression)[] = [...observations, ...conditions];
+  if (bloodPressureObservation) {
+    resources.push(bloodPressureObservation);
+  }
   if (clinicalImpressions) {
     resources.push(clinicalImpressions);
   }
