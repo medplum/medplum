@@ -50,9 +50,16 @@ export async function replaceConditionalReferences<T extends Resource>(resource:
       return undefined;
     }
 
-    const matches = await repo.searchResources(parseSearchRequest(reference.reference));
+    const searchCriteria = parseSearchRequest(reference.reference);
+    searchCriteria.count = 2;
+    const matches = await repo.searchResources(searchCriteria);
     if (matches.length !== 1) {
-      throw new OperationOutcomeError(badRequest(`Conditional reference matched ${matches.length} resources`, path));
+      throw new OperationOutcomeError(
+        badRequest(
+          `Conditional reference '${reference.reference}' ${matches.length ? 'matched multiple' : 'did not match any'} resources`,
+          path
+        )
+      );
     }
 
     const resolvedReference = createReference(matches[0]);
