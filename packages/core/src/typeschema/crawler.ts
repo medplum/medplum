@@ -147,7 +147,7 @@ export function getNestedProperty(
   return propertyValues;
 }
 
-function getTypedPropertyValueWithPath(
+export function getTypedPropertyValueWithPath(
   input: TypedValue | TypedValueWithPath,
   path: string,
   options?: GetTypedPropertyValueOptions

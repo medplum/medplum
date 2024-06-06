@@ -6,6 +6,7 @@ import {
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
+  TypedValue,
   allOk,
   badRequest,
   canReadResourceType,
@@ -88,7 +89,7 @@ import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
-import { validateReferences } from './references';
+import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchImpl } from './search';
@@ -557,9 +558,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       }
     }
 
-    const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
+    let updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
     });
+    updated = await replaceConditionalReferences(updated, this);
 
     const resultMeta = {
       ...updated.meta,
@@ -580,7 +582,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resultMeta.compartment = this.getCompartments(result);
 
     if (this.context.checkReferencesOnWrite) {
-      await validateReferences(result, this.context.projects);
+      await validateReferences(result, this);
     }
 
     if (this.isNotModified(existing, result)) {
@@ -2241,4 +2243,23 @@ function resolveFieldName(input: any, fieldName: string): string[] {
     }
     return false;
   });
+}
+
+export function setTypedPropertyValue(target: TypedValue, path: string, replacement: TypedValue): void {
+  let patchPath = '/' + path.replaceAll(/\[|\]\.|\./g, '/');
+  if (patchPath.endsWith(']')) {
+    patchPath = patchPath.slice(0, -1);
+  }
+  patchObject(target.value, [{ op: 'replace', path: patchPath, value: replacement.value }]);
+}
+
+function patchObject(obj: any, patch: Operation[]): void {
+  try {
+    const patchErrors = applyPatch(obj, patch).filter(Boolean);
+    if (patchErrors.length) {
+      throw new OperationOutcomeError(badRequest(patchErrors.map((e) => (e as Error).message).join('\n')));
+    }
+  } catch (err) {
+    throw new OperationOutcomeError(normalizeOperationOutcome(err));
+  }
 }

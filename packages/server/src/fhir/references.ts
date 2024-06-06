@@ -1,105 +1,126 @@
 import {
+  badRequest,
+  createReference,
   createStructureIssue,
-  getTypedPropertyValue,
+  getTypedPropertyValueWithPath,
   normalizeErrorString,
   OperationOutcomeError,
+  parseSearchRequest,
   PropertyType,
   toTypedValue,
   TypedValue,
+  TypedValueWithPath,
 } from '@medplum/core';
-import { OperationOutcomeIssue, Project, Reference, Resource } from '@medplum/fhirtypes';
+import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getSystemRepo } from './repo';
+import { Repository, setTypedPropertyValue } from './repo';
 
-export async function validateReferences<T extends Resource>(
-  resource: T,
-  allowedProjects?: Project['id'][]
-): Promise<void> {
-  return new FhirReferenceValidator(resource, allowedProjects).validate();
+type ScanFn = (tv: TypedValue, path: string) => Promise<TypedValue | undefined>;
+
+export async function validateReferences<T extends Resource>(resource: T, repo: Repository): Promise<void> {
+  const issues: OperationOutcomeIssue[] = [];
+  await new FhirResourceScanner(resource).forEach(PropertyType.Reference, async (value, path) => {
+    const reference = value.value as Reference;
+    if (reference.reference?.split?.('/')?.length !== 2) {
+      return undefined;
+    }
+
+    try {
+      await repo.readReference(reference);
+    } catch (err) {
+      issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
+    }
+    return undefined;
+  });
+
+  if (issues.length > 0) {
+    throw new OperationOutcomeError({
+      resourceType: 'OperationOutcome',
+      id: randomUUID(),
+      issue: issues,
+    });
+  }
 }
 
-export class FhirReferenceValidator<T extends Resource> {
-  private readonly issues: OperationOutcomeIssue[];
-  private readonly allowedProjects?: Project['id'][];
-  private readonly root: T;
-
-  constructor(root: T, allowedProjects?: Project['id'][]) {
-    this.issues = [];
-    this.allowedProjects = allowedProjects;
-    this.root = root;
-  }
-
-  async validate(): Promise<void> {
-    const resource = this.root;
-    const resourceType = resource.resourceType;
-    await this.validateObject(resourceType, toTypedValue(resource));
-
-    if (this.issues.length > 0) {
-      throw new OperationOutcomeError({
-        resourceType: 'OperationOutcome',
-        id: randomUUID(),
-        issue: this.issues,
-      });
+export async function replaceConditionalReferences<T extends Resource>(resource: T, repo: Repository): Promise<T> {
+  const scanner = new FhirResourceScanner(resource);
+  await scanner.forEach(PropertyType.Reference, async (value, path) => {
+    const reference = value.value as Reference;
+    if (!reference.reference?.includes?.('?')) {
+      return undefined;
     }
+
+    const matches = await repo.searchResources(parseSearchRequest(reference.reference));
+    if (matches.length !== 1) {
+      throw new OperationOutcomeError(badRequest(`Conditional reference matched ${matches.length} resources`, path));
+    }
+
+    const resolvedReference = createReference(matches[0]);
+    return { type: PropertyType.Reference, value: resolvedReference };
+  });
+
+  return resource;
+}
+
+export class FhirResourceScanner {
+  private readonly root: TypedValue;
+
+  constructor(root: Resource) {
+    this.root = toTypedValue(root);
   }
 
-  private async validateObject(path: string, typedValue: TypedValue): Promise<void> {
+  async forEach(targetType: keyof typeof PropertyType, fn: ScanFn): Promise<void> {
+    const resourceType = this.root.value.resourceType;
+    await this.scanObject(resourceType, this.root, targetType, fn);
+  }
+
+  private async scanObject(
+    path: string,
+    typedValue: TypedValue,
+    targetType: keyof typeof PropertyType,
+    fn: ScanFn
+  ): Promise<void> {
     const object = typedValue.value as Record<string, unknown>;
     for (const key of Object.keys(object)) {
-      await this.checkProperty(path, key, typedValue);
+      await this.checkProperty(path, key, typedValue, targetType, fn);
     }
   }
 
-  private async checkProperty(basePath: string, propertyName: string, typedValue: TypedValue): Promise<void> {
+  private async checkProperty(
+    basePath: string,
+    propertyName: string,
+    typedValue: TypedValue,
+    targetType: keyof typeof PropertyType,
+    fn: ScanFn
+  ): Promise<void> {
     const path = basePath + '.' + propertyName;
-    const value = getTypedPropertyValue(typedValue, propertyName);
+    const value = getTypedPropertyValueWithPath(typedValue, propertyName);
     if (Array.isArray(value)) {
       for (const item of value) {
-        await this.checkPropertyValue(path, item);
+        await this.checkPropertyValue(path, item, targetType, fn);
       }
     } else if (value) {
-      await this.checkPropertyValue(path, value);
+      await this.checkPropertyValue(path, value, targetType, fn);
     }
   }
 
-  private async checkPropertyValue(path: string, typedValue: TypedValue): Promise<void> {
+  private async checkPropertyValue(
+    path: string,
+    typedValue: TypedValueWithPath,
+    targetType: keyof typeof PropertyType,
+    fn: ScanFn
+  ): Promise<void> {
     if (typedValue.type === PropertyType.Meta) {
       return;
     }
     if (typedValue.type === PropertyType.Reference) {
-      await this.checkReference(path, typedValue.value as Reference);
+      const replacement = await fn(typedValue, path);
+      if (replacement) {
+        setTypedPropertyValue(this.root, typedValue.path, replacement);
+      }
     }
     if (typeof typedValue.value === 'object') {
-      await this.validateObject(path, typedValue);
-    }
-  }
-
-  private async checkReference(path: string, reference: Reference): Promise<void> {
-    const refStr = reference.reference;
-    if (!refStr) {
-      return;
-    }
-
-    const refParts = refStr.split('/');
-    if (refParts.length !== 2) {
-      return;
-    }
-    if (!this.root.meta?.project) {
-      return;
-    }
-
-    try {
-      const systemRepo = getSystemRepo();
-      const target = await systemRepo.readReference(reference);
-      if (
-        target.meta?.project &&
-        target.meta.project !== this.root.meta.project &&
-        !this.allowedProjects?.includes(target.meta.project)
-      ) {
-        this.issues.push(createStructureIssue(path, `Invalid reference (Not found)`));
-      }
-    } catch (err) {
-      this.issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
+      await this.scanObject(path, typedValue, targetType, fn);
     }
   }
 }
