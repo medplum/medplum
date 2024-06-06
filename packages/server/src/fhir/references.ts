@@ -121,12 +121,14 @@ export class FhirResourceScanner {
     if (typedValue.type === PropertyType.Meta) {
       return;
     }
-    if (typedValue.type === PropertyType.Reference) {
+
+    if (typedValue.type === targetType) {
       const replacement = await fn(typedValue, path);
       if (replacement) {
         setTypedPropertyValue(this.root, typedValue.path, replacement);
       }
     }
+
     if (typeof typedValue.value === 'object') {
       await this.scanObject(path, typedValue, targetType, fn);
     }
