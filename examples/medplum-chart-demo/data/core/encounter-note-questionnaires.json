@@ -639,27 +639,27 @@
                 "text": "Self-reported history",
                 "answerOption": [
                   {
-                    "id": "id-76",
+                    "id": "bloodClots",
                     "valueString": "Blood clots"
                   },
                   {
-                    "id": "id-77",
+                    "id": "stroke",
                     "valueString": "Stroke"
                   },
                   {
-                    "id": "id-78",
+                    "id": "breastCancer",
                     "valueString": "Breast cancer"
                   },
                   {
-                    "id": "id-79",
+                    "id": "endometrialCancer",
                     "valueString": "Endometrial cancer"
                   },
                   {
-                    "id": "id-80",
+                    "id": "irregularBleeding",
                     "valueString": "Irregular bleeding"
                   },
                   {
-                    "id": "id-81",
+                    "id": "obesity",
                     "valueString": "BMI > 30"
                   }
                 ]

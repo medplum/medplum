@@ -44,7 +44,6 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     smokingStatus: answers['smoking'],
     drugUse: answers['drugs'],
     housingStatus: answers['housing'],
-
     height: answers['height'],
     weight: answers['weight'],
     date: answers['date'],

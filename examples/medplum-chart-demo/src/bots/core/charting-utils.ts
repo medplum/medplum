@@ -46,17 +46,15 @@ export function createObservations(
     if (!value || key === 'date') {
       continue;
     }
+    if (key === 'selfReportedHistory' && !value?.valueString) {
+      throw new Error('Invalid reported history');
+    }
 
-    const code =
-      key === 'selfReportedHistory'
-        ? getSelfReportedCode(observationData['selfReportedHistory'].valueString)
-        : codes[key];
+    const code = key === 'selfReportedHistory' ? selfReportedHistory[value.valueString as string] : codes[key];
 
     if (!code) {
       throw new Error('No code provided');
     }
-
-    // const obsKey = observationTypes[key] as keyof Observation;
 
     const resource: Record<string, any> = {
       code,
@@ -288,20 +286,18 @@ export function createBundle(resources: (Condition | Observation | ClinicalImpre
 function getUpsertUrl(resource: Resource): string {
   if (resource.resourceType === 'Observation') {
     const code = resource.code;
-    if (!code) {
+    if (!code.coding?.[0].code) {
       throw new Error('No code provided');
     }
     if (!resource.encounter) {
       throw new Error('No linked encounter');
     }
-    const url = code.coding?.[0].code
-      ? `Observation?encounter=${getReferenceString(resource.encounter)}&code=${code.coding?.[0].code}`
-      : `Observation?encounter=${getReferenceString(resource.encounter)}`;
+    const url = `Observation?encounter=${getReferenceString(resource.encounter)}&code=${code.coding?.[0].code}`;
 
     return url;
   } else if (resource.resourceType === 'Condition') {
     const code = resource.code;
-    if (!code) {
+    if (!code?.coding?.[0].code) {
       throw new Error('No code provided');
     }
     if (!resource.encounter) {
@@ -319,65 +315,60 @@ function getUpsertUrl(resource: Resource): string {
   }
 }
 
-/**
- *
- * @param reportedHistory - The value provided in the questionnaire for a patient's self-reported history
- * @returns A codeable concept to identify the reported history in the observation
- */
-function getSelfReportedCode(reportedHistory?: string): CodeableConcept {
-  const code: CodeableConcept = {
-    coding: [],
-  };
-
-  if (!reportedHistory) {
-    throw new Error('No self-reported history');
-  }
-
-  // Add the appropriate code based on the answer provided for self-reported history
-  switch (reportedHistory) {
-    case 'Blood clots':
-      code.coding?.push({
+// A map of self-reported history types to the relevant coding.
+const selfReportedHistory: Record<string, CodeableConcept> = {
+  'Blood clots': {
+    coding: [
+      {
         code: 'I74.9',
         system: 'http://hl7.org/fhir/sid/icd-10',
         display: 'Embolism and thrombosis of unspecified artery',
-      });
-      break;
-    case 'Stroke':
-      code.coding?.push({
+      },
+    ],
+  },
+  Stroke: {
+    coding: [
+      {
         code: 'I63.9',
         system: 'http://hl7.org/fhir/sid/icd-10',
         display: 'Cerebral infarction, unspecified',
-      });
-      break;
-    case 'Breast cancer':
-      code.coding?.push({
+      },
+    ],
+  },
+  'Breast cancer': {
+    coding: [
+      {
         code: 'D05.10',
         system: 'http://hl7.org/fhir/sid/icd-10',
         display: 'Intraductal carcinoma in situ of unspecified breast',
-      });
-      break;
-    case 'Endometrial cancer':
-      code.coding?.push({
+      },
+    ],
+  },
+  'Endometrial cancer': {
+    coding: [
+      {
         code: 'C54.1',
         system: 'http://hl7.org/fhir/sid/icd-10',
         display: 'Malignant neoplasm of endometrium',
-      });
-      break;
-    case 'Irregular bleeding':
-      code.coding?.push({
+      },
+    ],
+  },
+  'Irregular bleeding': {
+    coding: [
+      {
         code: 'N92.1',
         system: 'http://hl7.org/fhir/sid/icd-10',
         display: 'Excessive and frequent menstruation with irregular cycle',
-      });
-      break;
-    case 'BMI > 30':
-      code.coding?.push({
+      },
+    ],
+  },
+  'BMI > 30': {
+    coding: [
+      {
         code: 'E66.9',
         system: 'http://hl7.org/fhir/sid/icd-10',
         display: 'Obesity, unspecified',
-      });
-      break;
-  }
-
-  return code;
-}
+      },
+    ],
+  },
+};
