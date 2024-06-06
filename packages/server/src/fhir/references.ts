@@ -51,6 +51,7 @@ export async function replaceConditionalReferences<T extends Resource>(resource:
     }
 
     const searchCriteria = parseSearchRequest(reference.reference);
+    searchCriteria.sortRules = undefined;
     searchCriteria.count = 2;
     const matches = await repo.searchResources(searchCriteria);
     if (matches.length !== 1) {
