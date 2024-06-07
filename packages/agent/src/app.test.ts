@@ -1267,8 +1267,9 @@ describe('App', () => {
       expect(state.agentError.body).toEqual('Auto-upgrading is currently only supported on Windows');
 
       await app.stop();
-      await app.stop();
-      mockServer.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
 
       platformSpy.mockRestore();
     });
@@ -1376,8 +1377,9 @@ describe('App', () => {
       expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
 
       await app.stop();
-      await app.stop();
-      mockServer.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
@@ -1489,8 +1491,9 @@ describe('App', () => {
       expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
 
       await app.stop();
-      await app.stop();
-      mockServer.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
@@ -1581,8 +1584,9 @@ describe('App', () => {
       expect(state.agentError.body).toMatch(/'medplum' is not a valid version/);
 
       await app.stop();
-      await app.stop();
-      mockServer.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
@@ -1677,8 +1681,9 @@ describe('App', () => {
       expect(state.agentError.body).toEqual("Error during upgrading to version 'v3.1.6': Unable to open file");
 
       await app.stop();
-      await app.stop();
-      mockServer.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
@@ -1771,8 +1776,9 @@ describe('App', () => {
       expect(rmSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrade.json'));
 
       await app.stop();
-      await app.stop();
-      mockServer.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
 
       rmSyncSpy.mockRestore();
       console.log = originalConsoleLog;
@@ -1862,8 +1868,9 @@ describe('App', () => {
       expect(rmSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrade.json'));
 
       await app.stop();
-      await app.stop();
-      mockServer.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
 
       rmSyncSpy.mockRestore();
       console.log = originalConsoleLog;
