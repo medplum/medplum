@@ -229,4 +229,48 @@ describe('ToolsPage', () => {
 
     await expect(screen.findByText('Error')).resolves.toBeInTheDocument();
   });
+
+  test('Upgrade -- Success', async () => {
+    medplum = new MockClient();
+    // We don't need to mock the full signature since we don't do anything with the result as long
+    medplum.router.router.add('GET', 'Agent/:id/$upgrade', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [],
+      },
+    ]);
+    agent = await medplum.createResource<Agent>({ resourceType: 'Agent', name: 'Agente', status: 'active' });
+
+    await act(async () => {
+      setup(`/${getReferenceString(agent)}/tools`);
+    });
+
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
+    });
+
+    await expect(screen.findByText('Success')).resolves.toBeInTheDocument();
+  });
+
+  test('Upgrade -- Error', async () => {
+    medplum = new MockClient();
+    // We don't need to mock the full signature since we don't do anything with the result as long
+    medplum.router.router.add('GET', 'Agent/:id/$upgrade', async () => [serverError(new Error('Something is broken'))]);
+    agent = await medplum.createResource<Agent>({ resourceType: 'Agent', name: 'Agente', status: 'active' });
+
+    await act(async () => {
+      setup(`/${getReferenceString(agent)}/tools`);
+    });
+
+    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
+    });
+
+    await expect(screen.findByText('Error')).resolves.toBeInTheDocument();
+  });
 });
