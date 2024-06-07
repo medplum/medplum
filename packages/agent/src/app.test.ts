@@ -1365,7 +1365,7 @@ describe('App', () => {
       clearTimeout(timeout);
 
       child.emit('message', { type: 'STARTED' });
-      await sleep(100);
+      await sleep(250);
 
       expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
         detached: true,
@@ -1479,7 +1479,7 @@ describe('App', () => {
       clearTimeout(timeout);
 
       child.emit('message', { type: 'STARTED' });
-      await sleep(100);
+      await sleep(250);
 
       expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
         detached: true,
