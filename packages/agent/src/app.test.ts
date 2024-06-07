@@ -1284,6 +1284,7 @@ describe('App', () => {
         mySocket: undefined as Client | undefined,
         gotAgentUpgradeResponse: false,
         agentError: null as AgentError | null,
+        disconnectCalled: false,
       };
 
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
@@ -1292,6 +1293,9 @@ describe('App', () => {
       const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
         jest.fn(() => {
           child = new MockChildProcess();
+          child.onDisconnect = () => {
+            state.disconnectCalled = true;
+          };
           return child;
         })
       );
@@ -1362,10 +1366,15 @@ describe('App', () => {
         }
         await sleep(100);
       }
-      clearTimeout(timeout);
 
       child.emit('message', { type: 'STARTED' });
-      await sleep(500);
+      while (!state.disconnectCalled) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for disconnect');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
 
       expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
         detached: true,
@@ -1397,6 +1406,7 @@ describe('App', () => {
         mySocket: undefined as Client | undefined,
         gotAgentUpgradeResponse: false,
         agentError: null as AgentError | null,
+        disconnectCalled: false,
       };
 
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
@@ -1405,6 +1415,9 @@ describe('App', () => {
       const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
         jest.fn(() => {
           child = new MockChildProcess();
+          child.onDisconnect = () => {
+            state.disconnectCalled = true;
+          };
           return child;
         })
       );
@@ -1476,10 +1489,15 @@ describe('App', () => {
         }
         await sleep(100);
       }
-      clearTimeout(timeout);
 
       child.emit('message', { type: 'STARTED' });
-      await sleep(500);
+      while (!state.disconnectCalled) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for disconnect');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
 
       expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
         detached: true,
@@ -1882,7 +1900,9 @@ class MockChildProcess extends EventEmitter implements ChildProcess {
   send = jest.fn();
   unref = jest.fn();
   ref = jest.fn();
-  disconnect = jest.fn();
+  disconnect = jest.fn(() => {
+    this.onDisconnect?.();
+  });
   stdin = new Writable();
   stdout = new Readable();
   stderr = new Readable();
@@ -1899,6 +1919,7 @@ class MockChildProcess extends EventEmitter implements ChildProcess {
   spawnfile = 'node';
   kill = (() => false) as ChildProcess['kill'];
   [Symbol.dispose](): void {}
+  onDisconnect?: () => void;
 }
 
 function getNextMinorVersion(version: string): string {
