@@ -355,6 +355,26 @@ For example:
 npx medplum aws update-server demo
 ```
 
+### Update the Server Config
+
+Use the Medplum CLI to update the [server configuration settings](/docs/self-hosting/config-settings#server-config).
+
+First, create a new configuration file called `medplum.[env name].server.json` to store the server config settings.
+
+Then run the `update-config` command.
+
+```bash
+npx medplum aws update-config medplum.[env name].server.json
+```
+
+For example:
+
+```bash
+npx medplum aws update-config medplum.demo.server.json
+```
+
+Check out our documentation [server configuration settings](/docs/self-hosting/config-settings#server-config) to see a full reference of of settings.
+
 ## Troubleshooting
 
 ### Cannot assume role
