@@ -8,36 +8,46 @@
 
 This example app demonstrates the following:
 
-- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display a chart that provides visibility on a patient
+- Managing the lifecylce of an encounter and its corresponding notes.
+- Creating and displaying Encounter Notes using the [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression) resource.
+- Converting notes into structured data ([`Observations`](/docs/api/fhir/resources/observation) and [`Conditions`](/docs/api/fhir/resources/condition)) for easy retrieval and longitudinal tracking.
+- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display a chart that provides visibility on a patient and their medical encounters.
   - More information on a [charting experience](https://www.medplum.com/docs/charting)
-- Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
 
-### Components of the Patient Chart
+### Code Organization
 
-The Patient Chart has 3 distinct panels
+This repo is organized into two main directories: `src` and `data`.
+
+The `src` directory contains the React app that implements the charting UX. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) to implement the parsing of notes into structured data.
+
+The `data` directory contains data that can be uploaded for use in the demo. The `example` directory contains data that is meant to be used for testing and learning, while the `core` directory contains resources, terminologies, and more that are necessary to use the demo.
+
+### Components of the Encounter Chart
+
+The Encounter Chart has 3 distinct panels
 
 1. Clinical Chart
-  The left panel shows the patient history and their status. Notable information in the clinical chart includes the following Resources:
-    - Patient Information
-    - Upcoming Appointments
-    - Documented Visits 
-    - List of Allergies
-    - List of Problems
-    - Medication Requests
-    - Smoking Status
-    - Vitals 
+   The left panel shows the patient history and their status. Notable information in the clinical chart includes the following Resources:
 
-2. Tasks
-  The center panel shows list of the Task resource with a different focus resource. See our [Tasks Guide](https://www.medplum.com/docs/careplans/tasks) for more details.
-    - Each focus is interactive to either review or fill out
-    - This example project demonstrates interactions of the following resources:
-      - Questionnaire
-      - QuestionnaireResponse
-      - DiagnosticReport 
-      - CarePlan
+   - Patient Information
+   - Upcoming Appointments
+   - Documented Visits
+   - List of Allergies
+   - List of Problems
+   - Medication Requests
+   - Smoking Status
+   - Vitals
 
-3. SOAP Note
-  The right most panel documents an enounter with the patient through a questionnaire. Filling out and submitting the questionnaire automatically creates a task, with the response as the focus to be reviewed.
+2. Encounter Note
+   The center panel allows users to create a note or view it if it already exists. The note allows users to:
+
+- Enter objective data about the condition relevant to the encounter.
+- Enter subjective data about symptoms that the patient is experiencing.
+- Add their own free text notes about the encounter.
+- Store contextualizing data such as the date of the encounter.
+
+3. Encounter Actions
+   The right-hand panel allows users to make changes to the encounter, including editing the type of encounter.
 
 ### Getting Started
 
