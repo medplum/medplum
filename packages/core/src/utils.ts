@@ -1195,6 +1195,25 @@ export function addProfileToResource<T extends Resource = Resource>(resource: T,
 }
 
 /**
+ * Returns a Map of resources from a bundle, using the specified identifier system as the key.
+ * @param resourceBundle - The bundle of resources.
+ * @param identifierSystem - The identifier system to use for keys.
+ * @returns Map of resources keyed by identifier value for the specified system.
+ */
+export function mapByIdentifier<T extends Resource = Resource>(
+  resourceBundle: Bundle<T>,
+  identifierSystem: string
+): Map<string, T> {
+  const resourceMap = new Map<string, T>(
+    resourceBundle.entry?.filter(e => !!e.resource).map(e => [
+      getIdentifier(e.resource as Resource, identifierSystem) as string,
+      e.resource as T
+    ])
+  );
+  return resourceMap;
+}
+
+/**
  * Removes the supplied profileUrl from the resource.meta.profile if it is present
  * @param resource - A FHIR resource
  * @param profileUrl - The profile URL to remove
