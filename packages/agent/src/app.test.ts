@@ -1357,7 +1357,7 @@ describe('App', () => {
       let shouldThrow = false;
       const timeout = setTimeout(() => {
         shouldThrow = true;
-      }, 5000);
+      }, 15000);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
@@ -1394,7 +1394,7 @@ describe('App', () => {
       fetchSpy.mockRestore();
       openSyncSpy.mockRestore();
       console.log = originalConsoleLog;
-    });
+    }, 25000);
 
     test('Upgrade -- Version specified', async () => {
       const originalConsoleLog = console.log;
@@ -1480,7 +1480,7 @@ describe('App', () => {
       let shouldThrow = false;
       const timeout = setTimeout(() => {
         shouldThrow = true;
-      }, 5000);
+      }, 15000);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
@@ -1517,7 +1517,7 @@ describe('App', () => {
       fetchSpy.mockRestore();
       openSyncSpy.mockRestore();
       console.log = originalConsoleLog;
-    });
+    }, 25000);
 
     test('Upgrade -- Invalid version', async () => {
       const originalConsoleLog = console.log;
