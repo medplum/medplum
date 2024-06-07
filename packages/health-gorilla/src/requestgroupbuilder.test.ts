@@ -1,7 +1,8 @@
-import { createReference } from '@medplum/core';
+import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import {
   Account,
   AccountCoverage,
+  Bundle,
   Coverage,
   Organization,
   Patient,
@@ -9,14 +10,23 @@ import {
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   RelatedPerson,
+  SearchParameter,
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { HEALTH_GORILLA_SYSTEM } from './constants';
 import { HealthGorillaRequestGroupBuilder } from './requestgroupbuilder';
 import { HealthGorillaConfig } from './utils';
+import { readJson } from '@medplum/definitions';
 
 describe('Health Gorilla RequestGroup builder', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  });
+
   test('Happy path', async () => {
     const medplum = new MockClient();
 
@@ -177,15 +187,22 @@ describe('Health Gorilla RequestGroup builder', () => {
       ],
     });
 
-    const medplumPayor = await medplum.createResource<Organization>({
+    const medplumPayor1 = await medplum.createResource<Organization>({
       resourceType: 'Organization',
       name: 'Medicare',
     });
 
+    const medplumPayor2 = await medplum.createResource<Organization>({
+      resourceType: 'Organization',
+      name: 'Acme Insurance',
+    });
+
     const medplumCoverage1 = await medplum.createResource<Coverage>({
       resourceType: 'Coverage',
-      payor: [createReference(medplumPayor)],
-    } as Coverage);
+      payor: [createReference(medplumPayor1)],
+      status: 'active',
+      beneficiary: { display: 'Homer Simpson' },
+    });
 
     const medplumRelatedPerson = await medplum.createResource<RelatedPerson>({
       resourceType: 'RelatedPerson',
@@ -196,14 +213,18 @@ describe('Health Gorilla RequestGroup builder', () => {
     const medplumCoverage2 = await medplum.createResource<Coverage>({
       resourceType: 'Coverage',
       subscriber: createReference(medplumRelatedPerson),
-    } as Coverage);
+      status: 'active',
+      beneficiary: { display: 'Homer Simpson' },
+      payor: [createReference(medplumPayor2)],
+    });
 
     const medplumAccount = await medplum.createResource<Account>({
       resourceType: 'Account',
       type: { coding: [{ code: 'patient' }] },
       subject: [createReference(medplumPatient)],
       coverage: [{ coverage: createReference(medplumCoverage1) }, { coverage: createReference(medplumCoverage2) }],
-    } as Account);
+      status: 'active',
+    });
 
     const healthGorilla = new MockClient();
 

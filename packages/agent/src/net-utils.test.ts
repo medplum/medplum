@@ -5,10 +5,12 @@ import {
   allOk,
   ContentType,
   generateId,
+  indexStructureDefinitionBundle,
   LogLevel,
   sleep,
 } from '@medplum/core';
-import { Agent, Resource } from '@medplum/fhirtypes';
+import { readJson } from '@medplum/definitions';
+import { Agent, Bundle, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
 import child_process, { ChildProcess } from 'node:child_process';
@@ -22,6 +24,10 @@ describe('Agent Net Utils', () => {
   let originalLog: typeof console.log;
 
   beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+
     originalLog = console.log;
     console.log = jest.fn();
   });

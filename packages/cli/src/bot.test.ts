@@ -1,10 +1,11 @@
-import { allOk } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import { allOk, indexStructureDefinitionBundle } from '@medplum/core';
+import { Bot, Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import * as cli from '.';
 import { createMedplumClient } from './util/client';
+import { readJson } from '@medplum/definitions';
 
 const { main } = cli;
 
@@ -25,6 +26,12 @@ describe('CLI Bots', () => {
   const env = process.env;
   let medplum: MockClient;
   let processError: jest.SpyInstance;
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+  });
 
   beforeAll(() => {
     process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {

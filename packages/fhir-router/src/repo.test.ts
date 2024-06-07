@@ -7,7 +7,17 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import {
+  AccessPolicy,
+  Account,
+  Binary,
+  Bot,
+  Bundle,
+  Observation,
+  Patient,
+  Resource,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 
@@ -17,6 +27,7 @@ describe('MemoryRepository', () => {
   beforeAll(async () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
     indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
   });
 
@@ -73,7 +84,7 @@ describe('MemoryRepository', () => {
 
   test('Count and offset', async () => {
     for (let i = 0; i < 10; i++) {
-      await repo.createResource<Observation>({ resourceType: 'Observation' } as Observation);
+      await repo.createResource<Observation>({ resourceType: 'Observation', status: 'final', code: { text: 'obs' } });
     }
 
     const bundle = await repo.search({ resourceType: 'Observation', offset: 1, count: 1 });
@@ -115,27 +126,36 @@ describe('MemoryRepository', () => {
   test('clears all resources', async () => {
     repo.clear();
 
-    const resourceTypes: ResourceType[] = ['Patient', 'Observation', 'AccessPolicy', 'Account', 'Binary', 'Bot'];
+    const resourceTypes: Resource[] = [
+      { resourceType: 'Patient' } satisfies Patient,
+      { resourceType: 'Observation', status: 'final', code: { text: 'obs' } } satisfies Observation,
+      { resourceType: 'AccessPolicy' } satisfies AccessPolicy,
+      { resourceType: 'Account', status: 'active' } satisfies Account,
+      { resourceType: 'Binary', contentType: 'image/png' } satisfies Binary,
+      { resourceType: 'Bot' } satisfies Bot,
+    ];
     let expectedTotalResourceCount = 0;
     await Promise.all(
-      resourceTypes.map(async (rt) => {
+      resourceTypes.map(async (resource) => {
         const count = randomInt(9) + 1;
         for (let i = 0; i < count; i++) {
-          await repo.createResource<any>({ resourceType: rt });
+          await repo.createResource<Resource>(resource);
         }
         expectedTotalResourceCount += count;
       })
     );
 
     const resourcesListBefore = await Promise.all(
-      resourceTypes.map((rt) => repo.searchResources({ resourceType: rt }))
+      resourceTypes.map((resource) => repo.searchResources({ resourceType: resource.resourceType }))
     );
     const actualResourceCountBefore = resourcesListBefore.reduce((count, resources) => (count += resources.length), 0);
     expect(actualResourceCountBefore).toBe(expectedTotalResourceCount);
 
     repo.clear();
 
-    const resourcesListAfter = await Promise.all(resourceTypes.map((rt) => repo.searchResources({ resourceType: rt })));
+    const resourcesListAfter = await Promise.all(
+      resourceTypes.map((resource) => repo.searchResources({ resourceType: resource.resourceType }))
+    );
     const actualResourceCountAfter = resourcesListAfter.reduce((count, resources) => (count += resources.length), 0);
     expect(actualResourceCountAfter).toBe(0);
   });

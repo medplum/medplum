@@ -13,6 +13,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   preconditionFailed,
+  validateResource,
 } from '@medplum/core';
 import { Bundle, BundleEntry, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
@@ -213,14 +214,19 @@ export abstract class BaseRepository {
   }
 }
 
+interface MemoryRepositoryOptions {
+  validateResources?: boolean;
+}
 export class MemoryRepository extends BaseRepository implements FhirRepository {
   private readonly resources: Map<string, Map<string, Resource>>;
   private readonly history: Map<string, Map<string, Resource[]>>;
+  private readonly validateResources: boolean;
 
-  constructor() {
+  constructor(options?: MemoryRepositoryOptions) {
     super();
     this.resources = new Map();
     this.history = new Map();
+    this.validateResources = options?.validateResources ?? true;
   }
 
   clear(): void {
@@ -229,6 +235,10 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
+    if (this.validateResources) {
+      validateResource(resource);
+    }
+
     const result = deepClone(resource);
 
     if (!result.id) {
@@ -272,6 +282,10 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   }
 
   updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T> {
+    if (this.validateResources) {
+      validateResource(resource);
+    }
+
     const result = deepClone(resource);
     if (versionId && result.meta?.versionId !== versionId) {
       throw new OperationOutcomeError(preconditionFailed);

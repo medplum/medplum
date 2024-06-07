@@ -40,7 +40,7 @@ describe('GraphQL', () => {
     getRootSchema();
 
     // Create a profile picture
-    binary = await repo.createResource<Binary>({ resourceType: 'Binary' } as Binary);
+    binary = await repo.createResource<Binary>({ resourceType: 'Binary', contentType: 'image/jpeg' } as Binary);
 
     // Creat a simple patient
     patient = await repo.createResource<Patient>({
@@ -1375,7 +1375,31 @@ describe('GraphQL', () => {
       facility: {
         display: 'test',
       },
-    } as ExplanationOfBenefit);
+      status: 'active',
+      use: 'claim',
+      patient: {
+        display: 'John Doe',
+      },
+      provider: {
+        display: 'Acme Hospital',
+      },
+      created: '1970-01-01T00:00:01',
+      type: {
+        text: 'payment',
+      },
+      insurer: {
+        display: 'Acme Insurance',
+      },
+      outcome: 'complete',
+      insurance: [
+        {
+          focal: true,
+          coverage: {
+            display: 'Acme Insurance Plan',
+          },
+        },
+      ],
+    });
     const request: FhirRequest = {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',

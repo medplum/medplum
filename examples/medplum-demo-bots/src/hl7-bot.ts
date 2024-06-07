@@ -44,7 +44,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     ];
     patient.address = [
       {
-        line: [addressLine],
+        line: addressLine?.length > 0 ? [addressLine] : undefined,
         city: city,
         state: state,
         postalCode: postalCode,
@@ -69,7 +69,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       ],
       address: [
         {
-          line: [addressLine],
+          line: addressLine?.length > 0 ? [addressLine] : undefined,
           city: city,
           state: state,
           postalCode: postalCode,

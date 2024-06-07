@@ -8,9 +8,11 @@ import {
   allOk,
   createReference,
   getReferenceString,
+  indexStructureDefinitionBundle,
   sleep,
 } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import { readJson } from '@medplum/definitions';
+import { Agent, Bot, Bundle, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
@@ -24,6 +26,10 @@ const medplum = new MockClient();
 
 describe('App', () => {
   beforeAll(async () => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+
     console.log = jest.fn();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -156,6 +162,7 @@ describe('App', () => {
   });
 
   test('Empty endpoint URL', async () => {
+    const medplum = new MockClient({ validateResources: false });
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
     });

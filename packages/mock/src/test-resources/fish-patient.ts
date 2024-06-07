@@ -2344,53 +2344,6 @@ const FISH_PATIENT_PROFILE_SD: ProfileStructureDefinition = {
       },
     ],
   },
-  differential: {
-    element: [
-      {
-        id: 'Patient.extension',
-        path: 'Patient.extension',
-        slicing: {
-          discriminator: [
-            {
-              type: 'value',
-              path: 'url',
-            },
-          ],
-          ordered: false,
-          rules: 'open',
-        },
-      },
-      {
-        id: 'Patient.extension:species',
-        path: 'Patient.extension',
-        sliceName: 'species',
-        definition: 'The species of the fish.',
-        min: 0,
-        max: '1',
-        type: [
-          {
-            code: 'Extension',
-            profile: ['http://example.org/fhir/fish/StructureDefinition/fish-species'],
-          },
-        ],
-      },
-      {
-        id: 'Patient.name',
-        path: 'Patient.name',
-        min: 1,
-      },
-      {
-        id: 'Patient.maritalStatus',
-        path: 'Patient.maritalStatus',
-        max: '0',
-      },
-      {
-        id: 'Patient.communication',
-        path: 'Patient.communication',
-        max: '0',
-      },
-    ],
-  },
 };
 
 const FISH_SPECIES_EXTENSION_SD: ProfileStructureDefinition = {

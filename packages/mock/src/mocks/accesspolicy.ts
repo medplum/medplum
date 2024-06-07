@@ -13,6 +13,7 @@ export const ExampleStatusValueSet: ValueSet = {
   compose: {
     include: [
       {
+        system: 'http://example.com/order-status',
         concept: [
           { code: 'ORDERED' },
           { code: 'SENT_TO_CUSTOMER' },

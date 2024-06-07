@@ -22,10 +22,11 @@ import { MockClient } from '@medplum/mock';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { FACILITY_ORDER_CODE_SYSTEM, FACILITY_ORDER_ID, FACILITY_PATIENT_ID, handler } from './receive-orm-message';
 
-describe('Send to Partner Lab', () => {
+describe('Receive from to Partner Lab', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
       indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
     }

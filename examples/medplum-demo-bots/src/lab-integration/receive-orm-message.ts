@@ -133,7 +133,7 @@ function parseEncounter(message: Hl7Message, patient: Patient, practitioners: Pr
     resourceType: 'Encounter',
     status: 'finished',
     class: {
-      system: '	http://terminology.hl7.org/ValueSet/v3-ActEncounterCode',
+      system: 'http://terminology.hl7.org/ValueSet/v3-ActEncounterCode',
       code: 'AMB',
     },
     subject: createReference(patient),

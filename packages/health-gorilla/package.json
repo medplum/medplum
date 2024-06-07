@@ -43,7 +43,8 @@
     "@medplum/fhirtypes": "3.1.7"
   },
   "devDependencies": {
-    "@medplum/mock": "3.1.7"
+    "@medplum/mock": "3.1.7",
+    "@medplum/definitions": "3.1.7"
   },
   "engines": {
     "node": ">=18.0.0"

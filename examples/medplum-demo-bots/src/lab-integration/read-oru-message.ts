@@ -164,7 +164,7 @@ export async function processOruMessage(
   const report: DiagnosticReport = existingReport ?? {
     resourceType: 'DiagnosticReport',
     status: 'preliminary',
-    code: serviceRequest.code as CodeableConcept,
+    code: serviceRequest.code ?? { text: 'report' },
     subject: serviceRequest.subject,
     basedOn: [createReference(serviceRequest)],
     performer: [createReference(performer)],

@@ -49,6 +49,12 @@ const properties = [
   'component',
   'referenceRange',
   'contentReference',
+  'status',
+  'url',
+  'baseDefinition',
+  'abstract',
+  'definition',
+  'description',
 ];
 
 const searchParams = [
@@ -122,21 +128,8 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
   for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
-      removeBaseFromElements(resource);
+      // removeBaseFromElements(resource);
       output.push(resource);
-    }
-  }
-}
-
-function removeBaseFromElements(sd: StructureDefinition): void {
-  for (const element of sd.snapshot?.element ?? []) {
-    if (
-      element.base &&
-      element.path === element.base.path &&
-      element.min === element.base.min &&
-      element.max === element.base.max
-    ) {
-      element.base = undefined;
     }
   }
 }
@@ -165,6 +158,10 @@ function writeSearchParameters(): void {
 function keyReplacer(key: string, value: any): any {
   if (key !== '' && !/\d+/.exec(key) && !resourceTypes.includes(key) && !properties.includes(key)) {
     return undefined;
+  }
+  // These are required fields, but can be long strings. replace them with the empty string
+  if (['definition', 'description', 'baseDefinition', 'url'].includes(key)) {
+    return '0';
   }
   return value;
 }

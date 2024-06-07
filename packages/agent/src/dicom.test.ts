@@ -1,5 +1,6 @@
-import { LogLevel, allOk, createReference } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import { ContentType, LogLevel, allOk, createReference, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Agent, Bot, Bundle, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dimse from 'dcmjs-dimse';
 import { Server } from 'mock-socket';
@@ -14,6 +15,10 @@ let endpoint: Endpoint;
 
 describe('DICOM', () => {
   beforeAll(async () => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+
     console.log = jest.fn();
     dimse.log.transports.forEach((t) => (t.silent = true));
 
@@ -25,7 +30,10 @@ describe('DICOM', () => {
 
     endpoint = await medplum.createResource<Endpoint>({
       resourceType: 'Endpoint',
+      status: 'active',
       address: 'dicom://0.0.0.0:8104',
+      connectionType: { code: ContentType.DICOM },
+      payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
     } as Endpoint);
   });
 
@@ -49,6 +57,8 @@ describe('DICOM', () => {
 
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
       channel: [
         {
           name: 'test',

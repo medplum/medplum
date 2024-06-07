@@ -86,6 +86,7 @@ import { MockSubscriptionManager } from './subscription-manager';
 
 export interface MockClientOptions extends MedplumClientOptions {
   readonly debug?: boolean;
+  readonly validateResources?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
    * MedplumContext.profile returning undefined as if no one were logged in.
@@ -105,7 +106,7 @@ export class MockClient extends MedplumClient {
 
   constructor(clientOptions?: MockClientOptions) {
     const router = new FhirRouter();
-    const repo = new MemoryRepository();
+    const repo = new MemoryRepository({ validateResources: clientOptions?.validateResources ?? true });
 
     const baseUrl = clientOptions?.baseUrl ?? 'https://example.com/';
     const client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);

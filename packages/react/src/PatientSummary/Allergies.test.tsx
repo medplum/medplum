@@ -44,6 +44,24 @@ describe('PatientSummary - Allergies', () => {
           {
             resourceType: 'AllergyIntolerance',
             id: 'peanut',
+            clinicalStatus: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                  code: 'active',
+                  display: 'Active',
+                },
+              ],
+            },
+            verificationStatus: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-verification',
+                  code: 'confirmed',
+                  display: 'Confirmed',
+                },
+              ],
+            },
             patient: { reference: 'Patient/123' },
             code: { text: 'Peanut' },
           },
@@ -95,6 +113,24 @@ describe('PatientSummary - Allergies', () => {
     const allergy: AllergyIntolerance = {
       resourceType: 'AllergyIntolerance',
       id: 'peanut',
+      clinicalStatus: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+            code: 'active',
+            display: 'Active',
+          },
+        ],
+      },
+      verificationStatus: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-verification',
+            code: 'confirmed',
+            display: 'Confirmed',
+          },
+        ],
+      },
       patient: createReference(HomerSimpson),
       code: { text: 'Peanut' },
     };

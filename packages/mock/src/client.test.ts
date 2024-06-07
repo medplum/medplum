@@ -13,7 +13,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import {
   Agent,
   Bot,
@@ -34,7 +34,10 @@ describe('MockClient', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
 
     Object.defineProperty(global, 'TextEncoder', {
       value: TextEncoder,
@@ -483,7 +486,10 @@ describe('MockClient', () => {
 
     const resource1 = await client.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       orderDetail: [{ text: 'foo' }],
+      subject: { display: 'Jane Doe' },
     } as ServiceRequest);
     expect(resource1).toBeDefined();
 
