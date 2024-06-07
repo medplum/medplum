@@ -58,8 +58,6 @@ a valid `CodeSystem` resource on the server:
 }
 ```
 
-#### Finding Existing ValueSet Resources
-
 ### Binding to the Input
 
 The `ValueSetAutocomplete` React component provides the basic functionality for connecting an input field with a
