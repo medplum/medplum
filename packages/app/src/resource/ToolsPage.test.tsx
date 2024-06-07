@@ -186,7 +186,6 @@ describe('ToolsPage', () => {
 
   test('Reload config -- Success', async () => {
     medplum = new MockClient();
-    // We don't need to mock the full signature since we don't do anything with the result as long
     medplum.router.router.add('GET', 'Agent/:id/$reload-config', async () => [
       allOk,
       {
@@ -211,7 +210,6 @@ describe('ToolsPage', () => {
 
   test('Reload config -- Error', async () => {
     medplum = new MockClient();
-    // We don't need to mock the full signature since we don't do anything with the result as long
     medplum.router.router.add('GET', 'Agent/:id/$reload-config', async () => [
       serverError(new Error('Something is broken')),
     ]);
@@ -232,7 +230,6 @@ describe('ToolsPage', () => {
 
   test('Upgrade -- Success', async () => {
     medplum = new MockClient();
-    // We don't need to mock the full signature since we don't do anything with the result as long
     medplum.router.router.add('GET', 'Agent/:id/$upgrade', async () => [
       allOk,
       {
@@ -257,7 +254,6 @@ describe('ToolsPage', () => {
 
   test('Upgrade -- Error', async () => {
     medplum = new MockClient();
-    // We don't need to mock the full signature since we don't do anything with the result as long
     medplum.router.router.add('GET', 'Agent/:id/$upgrade', async () => [serverError(new Error('Something is broken'))]);
     agent = await medplum.createResource<Agent>({ resourceType: 'Agent', name: 'Agente', status: 'active' });
 
