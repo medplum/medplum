@@ -1,15 +1,8 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString, PatchOperation } from '@medplum/core';
-import {
-  Coding,
-  CoverageEligibilityRequest,
-  CoverageEligibilityResponse,
-  Questionnaire,
-  QuestionnaireResponse,
-  Resource,
-} from '@medplum/fhirtypes';
+import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { Coding, CoverageEligibilityRequest, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
