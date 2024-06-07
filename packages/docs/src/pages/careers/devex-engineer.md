@@ -10,7 +10,7 @@ import Benefits from './_benefits.mdx';
 
 # Founding Developer Experience Engineer
 
-<AboutMedplum />
+![Developer Experience](/img/careers/developer-experience.webp)
 
 ## About the Role
 The mission of the Developer Experience Engineer is to establish Medplum as the standard platform for healthcare development through a combination of awareness, education, and community engagement. As the founder of the Medplum Developer Experience team, you will shape what "excellent" looks like for future team members and define the processes and playbooks for the team.
@@ -29,6 +29,9 @@ The mission of the Developer Experience Engineer is to establish Medplum as the 
 * You're a strong problem-solver who enjoys diving deep into technical issues and providing best practices
 * You're based in the SF Bay Area, ready for twice-weekly in-person collaboration
 * Bonus: media production experience, health tech background, and/or an existing developer community presence. 🎥
+
+
+<AboutMedplum />
 
 <Benefits/>
 

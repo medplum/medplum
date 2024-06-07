@@ -9,7 +9,7 @@ import Benefits from './_benefits.mdx';
 
 # Founding Solutions Engineer
 
-<AboutMedplum />
+![Developer Experience](/img/careers/solutions-engineer.webp)
 
 ## About the Role
 
@@ -36,6 +36,7 @@ The mission of a Medplum Solutions Engineer is to do whatever it takes to help M
 * You're based in the SF Bay Area, ready for twice-weekly in-person collaboration.
 * Bonus: Experience deploying developer products, and/or health tech industry experience.
 
+<AboutMedplum />
 
 <Benefits/>
 
