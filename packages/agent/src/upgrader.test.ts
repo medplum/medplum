@@ -11,7 +11,9 @@ jest.mock('node:process', () => {
     send = jest.fn().mockImplementation((msg) => {
       this.emit('childSend', msg);
     });
-    exit = jest.fn();
+    exit = jest.fn(() => {
+      throw new Error('process.exit');
+    });
   })();
 });
 
@@ -155,21 +157,123 @@ describe('Upgrader', () => {
       }
       console.log = originalConsoleLog;
     });
+
+    test('Specified version', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const fetchSpy = mockFetchForUpgrader();
+      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
+        jest.fn(() => {
+          throw new Error('Failed to stop the service');
+        })
+      );
+      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+
+      const receivedMsgPromise = new Promise<{ type: string }>((resolve) => {
+        process.on('childSend', (msg) => {
+          process.emit('disconnect');
+          resolve(msg);
+        });
+      });
+
+      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', '3.1.5'])).resolves.toBeUndefined();
+      await expect(receivedMsgPromise).resolves.toEqual({ type: 'STARTED' });
+      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.5.exe'));
+      expect(getReleaseBinPath('3.1.5').endsWith('medplum-agent-installer-3.1.5.exe')).toEqual(true);
+      expect(spawnSyncSpy).toHaveBeenLastCalledWith(getReleaseBinPath('3.1.5'), ['/S']);
+      expect(execSyncSpy).toHaveBeenNthCalledWith(1, 'net stop "Medplum Agent"');
+      expect(execSyncSpy).toHaveBeenLastCalledWith('net start "Medplum Agent"');
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to run installer, attempting to restart agent service...')
+      );
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(console.log).not.toHaveBeenLastCalledWith(expect.stringContaining('Finished upgrade'));
+
+      for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
+        spy.mockRestore();
+      }
+      console.log = originalConsoleLog;
+    });
+
+    test('Invalid version', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const fetchSpy = mockFetchForUpgrader();
+      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
+        jest.fn(() => {
+          throw new Error('Failed to stop the service');
+        })
+      );
+      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+
+      const receivedMsgPromise = new Promise<{ type: string }>((resolve) => {
+        process.on('childSend', (msg) => {
+          process.emit('disconnect');
+          resolve(msg);
+        });
+      });
+
+      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', 'INVALID'])).rejects.toThrow(
+        'Invalid version specified'
+      );
+      await expect(receivedMsgPromise).resolves.toEqual({ type: 'STARTED' });
+
+      for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
+        spy.mockRestore();
+      }
+      console.log = originalConsoleLog;
+    });
+
+    test('Not in child process -- Missing process.send', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+      const originalProcessSend = process.send;
+      process.send = undefined;
+
+      const fetchSpy = mockFetchForUpgrader();
+      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
+        jest.fn(() => {
+          throw new Error('Failed to stop the service');
+        })
+      );
+      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+
+      const receivedMsgPromise = new Promise<void>((resolve, reject) => {
+        process.on('childSend', (msg) => {
+          reject(new Error(`Expected not to receive message, got: ${JSON.stringify(msg)}`));
+        });
+        setTimeout(() => resolve(), 500);
+      });
+
+      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', 'INVALID'])).rejects.toThrow('process.exit');
+      await expect(receivedMsgPromise).resolves.toBeUndefined();
+
+      for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
+        spy.mockRestore();
+      }
+      console.log = originalConsoleLog;
+      process.send = originalProcessSend;
+    });
   });
 });
 
-function mockFetchForUpgrader(): jest.SpyInstance {
+function mockFetchForUpgrader(version?: string): jest.SpyInstance {
   let count = 0;
 
   const manifest = {
-    tag_name: 'v3.1.6',
+    tag_name: `v${version ?? '3.1.6'}`,
     assets: [
       {
-        name: 'medplum-agent-3.1.6-linux',
+        name: `medplum-agent-${version ?? '3.1.6'}-linux'`,
         browser_download_url: 'https://example.com/linux',
       },
       {
-        name: 'medplum-agent-installer-3.1.6-windows.exe',
+        name: `medplum-agent-installer-${version ?? '3.1.6'}-windows.exe`,
         browser_download_url: 'https://example.com/windows',
       },
     ],
