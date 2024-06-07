@@ -17,7 +17,7 @@ export const parameters = {
   },
 };
 
-// wrap intialization of MockClient and initial page navigation
+// wrap initialization of MockClient and initial page navigation
 // so that resources created in MockFetchClient#initMockRepo have
 // consistent timestamps between storybook runs
 const clock = createGlobalTimer();
