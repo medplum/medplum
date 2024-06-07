@@ -72,6 +72,8 @@ describe('Bot utility function tests', async () => {
       weight: { valueQuantity: { value: 99 } },
     };
 
+    const date = new Date().toISOString();
+
     const response: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
       status: 'completed',
@@ -92,6 +94,8 @@ describe('Bot utility function tests', async () => {
       resourceType: 'Practitioner',
     });
 
-    expect(() => createObservations(noCode, codes, encounter, practitioner, response)).toThrow(/^No code provided$/);
+    expect(() => createObservations(noCode, codes, encounter, practitioner, response, date)).toThrow(
+      /^No code provided$/
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, LOINC, MedplumClient, SNOMED } from '@medplum/core';
 import {
   Bundle,
   ClinicalImpression,
@@ -11,13 +11,7 @@ import {
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
-import {
-  createBloodPressureObservation,
-  createBundle,
-  createClinicalImpressions,
-  createConditions,
-  createObservations,
-} from './charting-utils';
+import { createBundle, createClinicalImpression, createConditions, createObservations } from './charting-utils';
 import { calculateBMI } from './observation-utils';
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
@@ -44,20 +38,15 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     height: answers['height'],
     weight: answers['weight'],
     totalWeightGain: answers['total-weight-gain'],
-
-    date: answers['date'],
-  };
-
-  const bloodPressure = {
-    systolic: answers['systolic']?.valueQuantity,
-    diastolic: answers['diastolic']?.valueQuantity,
+    systolic: answers['systolic'],
+    diastolic: answers['diastolic'],
   };
 
   if (observationData.height && observationData.weight) {
     observationData.bmi = calculateBMI(observationData.height.valueQuantity, observationData.weight.valueQuantity);
   }
 
-  const problemList = answers['problem-list']?.valueBoolean ?? false;
+  const addToProblemList = answers['problem-list']?.valueBoolean ?? false;
 
   const partialCondition: Partial<Condition> = {
     resourceType: 'Condition',
@@ -67,16 +56,12 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   const note = answers['assessment']?.valueString;
 
   // Take the above objects and create resources for each type
-  const observations = createObservations(observationData, obstetricCodes, encounter, user, response);
-  const bloodPressureObservation = createBloodPressureObservation(bloodPressure, encounter, user, date, response);
-  const conditions = createConditions(partialCondition, encounter, user, problemList);
-  const clinicalImpressions = createClinicalImpressions(encounter, user, note);
+  const observations = createObservations(observationData, obstetricCodes, encounter, user, response, date);
+  const conditions = createConditions(partialCondition, encounter, user, addToProblemList);
+  const clinicalImpressions = createClinicalImpression(encounter, user, note);
 
   // Create an entry array of all the bundle entries
   const resources: (Observation | Condition | ClinicalImpression)[] = [...observations, ...conditions];
-  if (bloodPressureObservation) {
-    resources.push(bloodPressureObservation);
-  }
   if (clinicalImpressions) {
     resources.push(clinicalImpressions);
   }
@@ -91,30 +76,30 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
 const obstetricCodes: Record<string, CodeableConcept> = {
   height: {
-    coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
+    coding: [{ code: '8302-2', system: LOINC, display: 'Body height' }],
   },
   weight: {
-    coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
+    coding: [{ code: '29463-7', system: LOINC, display: 'Body weight' }],
   },
   bloodPressure: {
-    coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
+    coding: [{ code: '35094-2', system: LOINC, display: 'Blood pressure panel' }],
   },
   bmi: {
-    coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
+    coding: [{ code: '39156-5', system: LOINC, display: 'Body Mass Index (BMI)' }],
   },
   gravida: {
-    coding: [{ code: '161732006', system: 'http://snomed.info/sct', display: 'Gravida' }],
+    coding: [{ code: '161732006', system: SNOMED, display: 'Gravida' }],
   },
   para: {
-    coding: [{ code: '118212000', system: 'http://snomed.info/sct', display: 'Parity finding' }],
+    coding: [{ code: '118212000', system: SNOMED, display: 'Parity finding' }],
   },
   gestationalDays: {
-    coding: [{ code: '49052-4', system: 'http://loinc.org', display: 'Gestational age in days' }],
+    coding: [{ code: '49052-4', system: LOINC, display: 'Gestational age in days' }],
   },
   gestationalWeeks: {
-    coding: [{ code: '49051-6', system: 'http://loinc.org', display: 'Gestational age in weeks' }],
+    coding: [{ code: '49051-6', system: LOINC, display: 'Gestational age in weeks' }],
   },
   totalWeightGain: {
-    coding: [{ code: '56078-9', system: 'http://loinc.org', display: 'Weight gain [Mass] --during current pregnancy' }],
+    coding: [{ code: '56078-9', system: LOINC, display: 'Weight gain [Mass] --during current pregnancy' }],
   },
 };

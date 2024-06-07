@@ -1,4 +1,4 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, MedplumClient, LOINC } from '@medplum/core';
 import {
   Bundle,
   ClinicalImpression,
@@ -11,14 +11,7 @@ import {
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
-import {
-  BloodPressure,
-  createBloodPressureObservation,
-  createBundle,
-  createClinicalImpressions,
-  createConditions,
-  createObservations,
-} from './charting-utils';
+import { createBundle, createClinicalImpression, createConditions, createObservations } from './charting-utils';
 import { calculateBMI } from './observation-utils';
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
@@ -45,19 +38,15 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     vaginalDryness: answers['vaginal-dryness'],
     sleepDisturbance: answers['sleep-disturbance'],
     selfReportedHistory: answers['self-reported-history'],
-    date: answers['date'],
-  };
-
-  const bloodPressure: BloodPressure = {
-    systolic: answers['systolic']?.valueQuantity,
-    diastolic: answers['diastolic']?.valueQuantity,
+    systolic: answers['systolic'],
+    diastolic: answers['diastolic'],
   };
 
   if (observationData.height && observationData.weight) {
     observationData.bmi = calculateBMI(observationData.height.valueQuantity, observationData.weight.valueQuantity);
   }
 
-  const problemList = answers['problem-list']?.valueBoolean ?? false;
+  const addToProblemList = answers['problem-list']?.valueBoolean ?? false;
 
   const partialCondition: Partial<Condition> = {
     resourceType: 'Condition',
@@ -67,16 +56,12 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   const note = answers['assessment']?.valueString;
 
   // Take the objects and create full resources of each type
-  const observations = createObservations(observationData, generalCodes, encounter, user, response);
-  const bloodPressureObservation = createBloodPressureObservation(bloodPressure, encounter, user, date, response);
-  const conditions = createConditions(partialCondition, encounter, user, problemList);
-  const clinicalImpressions = createClinicalImpressions(encounter, user, note);
+  const observations = createObservations(observationData, generalCodes, encounter, user, response, date);
+  const conditions = createConditions(partialCondition, encounter, user, addToProblemList);
+  const clinicalImpressions = createClinicalImpression(encounter, user, note);
 
   // Create an array of all resources
   const resources: (Condition | Observation | ClinicalImpression)[] = [...observations, ...conditions];
-  if (bloodPressureObservation) {
-    resources.push(bloodPressureObservation);
-  }
   if (clinicalImpressions) {
     resources.push(clinicalImpressions);
   }
@@ -90,27 +75,27 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
 export const generalCodes: Record<string, CodeableConcept> = {
   height: {
-    coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
+    coding: [{ code: '8302-2', system: LOINC, display: 'Body height' }],
   },
   weight: {
-    coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
+    coding: [{ code: '29463-7', system: LOINC, display: 'Body weight' }],
   },
   bloodPressure: {
-    coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
+    coding: [{ code: '35094-2', system: LOINC, display: 'Blood pressure panel' }],
   },
   bmi: {
-    coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
+    coding: [{ code: '39156-5', system: LOINC, display: 'Body Mass Index (BMI)' }],
   },
   hotFlash: {
-    coding: [{ code: '70376-9', system: 'http://loinc.org', display: 'I have hot flashes in the last 7 days' }],
+    coding: [{ code: '70376-9', system: LOINC, display: 'I have hot flashes in the last 7 days' }],
   },
   moodSwings: {
-    coding: [{ code: '70805-7', system: 'http://loing.org', display: 'I have mood swings in the last 7 days' }],
+    coding: [{ code: '70805-7', system: LOINC, display: 'I have mood swings in the last 7 days' }],
   },
   vaginalDryness: {
-    coding: [{ code: '70802-4', system: 'http://loing.org', display: 'I have vaginal dryness in the last 7 days' }],
+    coding: [{ code: '70802-4', system: LOINC, display: 'I have vaginal dryness in the last 7 days' }],
   },
   sleepDisturbance: {
-    coding: [{ code: '77712-8', system: 'http://loing.org', display: 'Sleep disturbance indicator in the last week' }],
+    coding: [{ code: '77712-8', system: LOINC, display: 'Sleep disturbance indicator in the last week' }],
   },
 };

@@ -31,6 +31,7 @@ export interface BloodPressure {
  * @param encounter - The encounter the observations are derived from
  * @param user - The user creating the observations
  * @param response - The QuestionnaireResponse that the observations are being created from
+ * @param date - The date the measurements were taken
  * @returns An array of Observation resources.
  */
 export function createObservations(
@@ -38,12 +39,22 @@ export function createObservations(
   codes: Record<string, CodeableConcept>,
   encounter: Encounter,
   user: Practitioner,
-  response: QuestionnaireResponse
+  response: QuestionnaireResponse,
+  date: string
 ): Observation[] {
   const observations: Observation[] = [];
+  const bloodPressure: BloodPressure = {
+    systolic: observationData.systolic?.valueQuantity,
+    diastolic: observationData.diastolic?.valueQuantity,
+  };
+
+  const bloodPressureObservation = createBloodPressureObservation(bloodPressure, encounter, user, date, response);
+  if (bloodPressureObservation) {
+    observations.push(bloodPressureObservation);
+  }
 
   for (const [key, value] of Object.entries(observationData)) {
-    if (!value || key === 'date') {
+    if (!value || key === 'systolic' || key === 'diastolic') {
       continue;
     }
     if (key === 'selfReportedHistory' && !value?.valueString) {
@@ -69,7 +80,7 @@ export function createObservations(
       subject: encounter.subject,
       performer: [{ reference: getReferenceString(user) }],
       encounter: { reference: getReferenceString(encounter) },
-      effectiveDateTime: observationData.date.valueDateTime,
+      effectiveDateTime: date,
       derivedFrom: [{ reference: getReferenceString(response) }],
     };
 
@@ -226,7 +237,7 @@ export function createConditions(
  * @param note - A string of any notes that a Practitioner may have taken during the encounter
  * @returns A ClinicalImpression resource
  */
-export function createClinicalImpressions(
+export function createClinicalImpression(
   encounter: Encounter,
   user: Practitioner,
   note?: string
@@ -297,7 +308,7 @@ function getUpsertUrl(resource: Resource): string {
     return url;
   } else if (resource.resourceType === 'Condition') {
     const code = resource.code;
-    if (!code?.coding?.[0].code) {
+    if (!code) {
       throw new Error('No code provided');
     }
     if (!resource.encounter) {

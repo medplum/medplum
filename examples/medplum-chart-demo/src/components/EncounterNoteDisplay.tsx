@@ -51,9 +51,7 @@ function getItemDisplay(item: QuestionnaireResponseItem, order: TitleOrder): JSX
       <Stack key={item.linkId}>
         {answer && answer.length > 0
           ? getAnswerDisplay(answer[0])
-          : nestedAnswers?.map((nestedAnswer) =>
-              getItemDisplay(nestedAnswer, order >= 6 ? 6 : ((order + 1) as TitleOrder))
-            )}
+          : nestedAnswers?.map((nestedAnswer) => getItemDisplay(nestedAnswer, Math.min(order + 1, 6) as TitleOrder))}
       </Stack>
     </Stack>
   );

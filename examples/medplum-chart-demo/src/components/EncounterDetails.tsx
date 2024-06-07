@@ -23,7 +23,8 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
   // Get the encounter type so the correct questionnaire can be retrieved
-  const code = props.encounter.type?.[0].coding?.[0].code;
+  const encounterType = props.encounter.type?.[0].coding?.[0].code;
+  const GENERAL_ENCOUNTER_CODE = '1287706006';
 
   useEffect(() => {
     // Search for a response if there is one
@@ -38,11 +39,11 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
     medplum
       .searchOne('Questionnaire', {
         // If the code is for gynecology or obstetrics, use it, otherwise search for the default
-        context: code === '163497009' || code === '83607001' ? code : '1287706006',
+        context: encounterType ?? GENERAL_ENCOUNTER_CODE,
       })
       .then(setQuestionnaire)
       .catch(console.error);
-  }, [response, questionnaire, code, medplum, props.encounter]);
+  }, [response, questionnaire, encounterType, medplum, props.encounter]);
 
   function handleTabChange(newTab: string | null): void {
     navigate(`/Encounter/${id}/${newTab ?? ''}`);
@@ -63,6 +64,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
       const response = await medplum.createResource(encounterNote);
       setResponse(response);
 
+      // If an answer was provided for the visit length, update the encounter to include the length
       const updatedEncounter: Encounter = {
         ...props.encounter,
         length: answers['visit-length']?.valueInteger

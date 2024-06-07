@@ -1,4 +1,4 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, LOINC, MedplumClient, SNOMED } from '@medplum/core';
 import {
   Bundle,
   ClinicalImpression,
@@ -11,14 +11,7 @@ import {
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
-import {
-  BloodPressure,
-  createBloodPressureObservation,
-  createBundle,
-  createClinicalImpressions,
-  createConditions,
-  createObservations,
-} from './charting-utils';
+import { createBundle, createClinicalImpression, createConditions, createObservations } from './charting-utils';
 import { calculateBMI } from './observation-utils';
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
@@ -46,19 +39,15 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     housingStatus: answers['housing'],
     height: answers['height'],
     weight: answers['weight'],
-    date: answers['date'],
-  };
-
-  const bloodPressure: BloodPressure = {
-    systolic: answers['systolic']?.valueQuantity,
-    diastolic: answers['diastolic']?.valueQuantity,
+    systolic: answers['systolic'],
+    diastolic: answers['diastolic'],
   };
 
   if (observationData.height && observationData.weight) {
     observationData.bmi = calculateBMI(observationData.height.valueQuantity, observationData.weight.valueQuantity);
   }
 
-  const problemList = answers['problem-list']?.valueBoolean ?? false;
+  const addToProblemList = answers['problem-list']?.valueBoolean ?? false;
 
   const partialCondition: Partial<Condition> = {
     resourceType: 'Condition',
@@ -68,16 +57,12 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   const note = answers['assessment']?.valueString;
 
   // Create resources from the above objects
-  const observations = createObservations(observationData, gynecologyCodes, encounter, user, response);
-  const bloodPressureObservation = createBloodPressureObservation(bloodPressure, encounter, user, date, response);
-  const conditions = createConditions(partialCondition, encounter, user, problemList);
-  const clinicalImpressions = createClinicalImpressions(encounter, user, note);
+  const observations = createObservations(observationData, gynecologyCodes, encounter, user, response, date);
+  const conditions = createConditions(partialCondition, encounter, user, addToProblemList);
+  const clinicalImpressions = createClinicalImpression(encounter, user, note);
 
   // Create an array of bundle entries for all resource types
   const resources: (Observation | Condition | ClinicalImpression)[] = [...observations, ...conditions];
-  if (bloodPressureObservation) {
-    resources.push(bloodPressureObservation);
-  }
   if (clinicalImpressions) {
     resources.push(clinicalImpressions);
   }
@@ -91,33 +76,33 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
 const gynecologyCodes: Record<string, CodeableConcept> = {
   lastPeriod: {
-    coding: [{ code: '8665-2', system: 'http://loinc.org', display: 'Last menstrual period start date' }],
+    coding: [{ code: '8665-2', system: LOINC, display: 'Last menstrual period start date' }],
   },
   contraception: {
-    coding: [{ code: '8659-5', system: 'http://loinc.org', display: 'Birth control method - Reported' }],
+    coding: [{ code: '8659-5', system: LOINC, display: 'Birth control method - Reported' }],
   },
   lastMammogram: {
-    coding: [{ code: '429736008', system: 'http://snomed.info/sct', display: 'Date of last mammogram' }],
+    coding: [{ code: '429736008', system: SNOMED, display: 'Date of last mammogram' }],
   },
   smokingStatus: {
-    coding: [{ code: '72166-2', system: 'http://loinc.org', display: 'Tobacco smoking status' }],
+    coding: [{ code: '72166-2', system: LOINC, display: 'Tobacco smoking status' }],
   },
   drugUse: {
-    coding: [{ code: '74204-9', system: 'http://loinc.org', display: 'Drug use' }],
+    coding: [{ code: '74204-9', system: LOINC, display: 'Drug use' }],
   },
   housingStatus: {
-    coding: [{ code: '71802-3', system: 'http://loinc.org', display: 'Housing status' }],
+    coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }],
   },
   height: {
-    coding: [{ code: '8302-2', system: 'http://loinc.org', display: 'Body height' }],
+    coding: [{ code: '8302-2', system: LOINC, display: 'Body height' }],
   },
   weight: {
-    coding: [{ code: '29463-7', system: 'http://loinc.org', display: 'Body weight' }],
+    coding: [{ code: '29463-7', system: LOINC, display: 'Body weight' }],
   },
   bloodPressure: {
-    coding: [{ code: '35094-2', system: 'http://loinc.org', display: 'Blood pressure panel' }],
+    coding: [{ code: '35094-2', system: LOINC, display: 'Blood pressure panel' }],
   },
   bmi: {
-    coding: [{ code: '39156-5', system: 'http://loinc.org', display: 'Body Mass Index (BMI)' }],
+    coding: [{ code: '39156-5', system: LOINC, display: 'Body Mass Index (BMI)' }],
   },
 };
