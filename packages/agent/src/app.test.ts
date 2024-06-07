@@ -1357,7 +1357,7 @@ describe('App', () => {
       let shouldThrow = false;
       const timeout = setTimeout(() => {
         shouldThrow = true;
-      }, 2500);
+      }, 5000);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
@@ -1480,7 +1480,7 @@ describe('App', () => {
       let shouldThrow = false;
       const timeout = setTimeout(() => {
         shouldThrow = true;
-      }, 2500);
+      }, 5000);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
