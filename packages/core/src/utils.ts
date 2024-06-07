@@ -1,5 +1,6 @@
 import {
   Attachment,
+  Bundle,
   CodeableConcept,
   Coding,
   Device,
@@ -1205,10 +1206,10 @@ export function mapByIdentifier<T extends Resource = Resource>(
   identifierSystem: string
 ): Map<string, T> {
   const resourceMap = new Map<string, T>(
-    resourceBundle.entry?.filter(e => !!e.resource).map(e => [
-      getIdentifier(e.resource as Resource, identifierSystem) as string,
-      e.resource as T
-    ])
+    resourceBundle.entry
+      ?.filter((e) => !!e.resource)
+      .map((e) => [getIdentifier(e.resource as Resource, identifierSystem) as string, e.resource as T])
+      .filter(([i]) => i !== undefined) as [string, T][]
   );
   return resourceMap;
 }

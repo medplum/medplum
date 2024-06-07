@@ -1468,8 +1468,8 @@ describe('mapByIdentifier', () => {
     const map = mapByIdentifier(bundle, 'http://example.com');
 
     expect(map.size).toBe(2);
-    expect(map.get('123')).toEqual(bundle.entry[0].resource);
-    expect(map.get('456')).toEqual(bundle.entry[1].resource);
+    expect(map.get('123')).toEqual(bundle.entry?.[0].resource);
+    expect(map.get('456')).toEqual(bundle.entry?.[1].resource);
   });
 
   test('returns empty Map when no matching identifier system', () => {
