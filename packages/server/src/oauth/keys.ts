@@ -205,20 +205,13 @@ export function generateAccessToken(
 /**
  * Generates a refresh token JWT.
  * @param claims - The refresh token claims.
- * @param refreshExpiry - The refresh token expiry.
+ * @param refreshLifetime - The refresh token duration.
  * @returns A well-formed JWT that can be used as a refresh token.
  */
-export function generateRefreshToken(claims: MedplumRefreshTokenClaims, refreshExpiry?: string): Promise<string> {
-  let exp: number | string = '2w';
+export function generateRefreshToken(claims: MedplumRefreshTokenClaims, refreshLifetime?: string): Promise<string> {
+  const duration = refreshLifetime ?? '2w';
 
-  if (refreshExpiry) {
-    const timestamp = Date.parse(refreshExpiry);
-    if (typeof timestamp === 'number') {
-      exp = Math.floor(timestamp / 1000); // exp claim is in seconds
-    }
-  }
-
-  return generateJwt(exp, claims);
+  return generateJwt(duration, claims);
 }
 
 /**
@@ -227,9 +220,14 @@ export function generateRefreshToken(claims: MedplumRefreshTokenClaims, refreshE
  * @param claims - The key/value pairs to include in the payload section.
  * @returns Promise to generate and sign the JWT.
  */
-async function generateJwt(exp: number | string, claims: JWTPayload): Promise<string> {
+async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
   if (!signingKey || !issuer) {
     throw new Error('Signing key not initialized');
+  }
+
+  const regex = /^[0-9]+[smhdwy]$/;
+  if (!regex.test(exp)) {
+    throw new Error('Invalid token duration');
   }
 
   return new SignJWT(claims)

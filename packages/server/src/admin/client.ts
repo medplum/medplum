@@ -14,12 +14,12 @@ import { Repository, getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
-export const createClientValidator = makeValidationMiddleware([
+export const saveClientValidator = makeValidationMiddleware([
   body('name').notEmpty().withMessage('Client name is required'),
-  body('refreshTokenExpiry')
+  body('refreshTokenLifetime')
     .optional()
-    .isDate()
-    .withMessage('Refresh token expiry must be a valid date'),
+    .matches(/^[0-9]+[smhdwy]$/)
+    .withMessage('Token lifetime must be a valid string representing time duration (eg. 2w, 1h)'),
 ]);
 
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
@@ -46,7 +46,7 @@ export interface CreateClientRequest {
   readonly redirectUri?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly identityProvider?: IdentityProvider;
-  readonly refreshTokenExpiry?: string;
+  readonly refreshTokenLifetime?: string;
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<ClientApplication> {
@@ -60,7 +60,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     description: request.description,
     redirectUri: request.redirectUri,
     identityProvider: request.identityProvider,
-    refreshTokenExpiry: request.refreshTokenExpiry,
+    refreshTokenLifetime: request.refreshTokenLifetime,
   });
 
   const systemRepo = getSystemRepo();

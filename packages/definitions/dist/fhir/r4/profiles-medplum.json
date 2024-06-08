@@ -825,16 +825,16 @@
             }
           },
           {
-            "id" : "ClientApplication.refreshTokenExpiry",
-            "path" : "ClientApplication.refreshTokenExpiry",
-            "definition" : "Optional configuration to set the refresh token expiry",
+            "id" : "ClientApplication.refreshTokenLifetime",
+            "path" : "ClientApplication.refreshTokenLifetime",
+            "definition" : "Optional configuration to set the refresh token duration",
             "min" : 0,
             "max" : "1",
             "type" : [{
-              "code" : "date"
+              "code" : "string"
             }],
             "base": {
-              "path" : "ClientApplication.refreshTokenExpiry",
+              "path" : "ClientApplication.refreshTokenLifetime",
               "min" : 0,
               "max" : "1"
             }

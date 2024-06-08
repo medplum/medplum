@@ -9,7 +9,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmailInProject } from '../oauth/utils';
 import { createBotHandler, createBotValidator } from './bot';
-import { createClientHandler, createClientValidator } from './client';
+import { createClientHandler, saveClientValidator } from './client';
 import { inviteHandler, inviteValidator } from './invite';
 import { verifyProjectAdmin } from './utils';
 
@@ -51,7 +51,7 @@ projectAdminRouter.post(
 );
 
 projectAdminRouter.post('/:projectId/bot', createBotValidator, asyncWrap(createBotHandler));
-projectAdminRouter.post('/:projectId/client', createClientValidator, asyncWrap(createClientHandler));
+projectAdminRouter.post('/:projectId/client', saveClientValidator, asyncWrap(createClientHandler));
 projectAdminRouter.post('/:projectId/invite', inviteValidator, asyncWrap(inviteHandler));
 
 /**

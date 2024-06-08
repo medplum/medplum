@@ -496,7 +496,11 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
   });
 }
 
-export async function getAuthTokens(login: Login, profile: Reference<ProfileResource>, refreshExpiry?: string): Promise<TokenResult> {
+export async function getAuthTokens(
+  login: Login,
+  profile: Reference<ProfileResource>,
+  refreshLifetime?: string
+): Promise<TokenResult> {
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
@@ -535,11 +539,14 @@ export async function getAuthTokens(login: Login, profile: Reference<ProfileReso
   });
 
   const refreshToken = login.refreshSecret
-    ? await generateRefreshToken({
-        client_id: clientId,
-        login_id: login.id as string,
-        refresh_secret: login.refreshSecret,
-      }, refreshExpiry)
+    ? await generateRefreshToken(
+        {
+          client_id: clientId,
+          login_id: login.id as string,
+          refresh_secret: login.refreshSecret,
+        },
+        refreshLifetime
+      )
     : undefined;
 
   return {

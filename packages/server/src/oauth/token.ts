@@ -150,7 +150,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  await sendTokenResponse(res, login, membership, client.refreshTokenExpiry);
+  await sendTokenResponse(res, login, membership, client.refreshTokenLifetime);
 }
 
 /**
@@ -247,7 +247,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-  await sendTokenResponse(res, login, membership, client?.refreshTokenExpiry);
+  await sendTokenResponse(res, login, membership, client?.refreshTokenLifetime);
 }
 
 /**
@@ -313,7 +313,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   let client: ClientApplication | undefined;
   if (login.client) {
-    const clientId = resolveId(login.client) ?? "";
+    const clientId = resolveId(login.client) ?? '';
     try {
       client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
     } catch (err) {
@@ -322,7 +322,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
-  const refreshTokenExpiry = client?.refreshTokenExpiry;
+  const refreshTokenLifetime = client?.refreshTokenLifetime;
 
   // Refresh token rotation
   // Generate a new refresh secret and update the login
@@ -337,7 +337,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     login.membership as Reference<ProjectMembership>
   );
 
-  await sendTokenResponse(res, updatedLogin, membership, refreshTokenExpiry);
+  await sendTokenResponse(res, updatedLogin, membership, refreshTokenLifetime);
 }
 
 /**
@@ -424,7 +424,7 @@ export async function exchangeExternalAuthToken(
     login.membership as Reference<ProjectMembership>
   );
 
-  await sendTokenResponse(res, login, membership, client.refreshTokenExpiry);
+  await sendTokenResponse(res, login, membership, client.refreshTokenLifetime);
 }
 
 /**
@@ -574,11 +574,16 @@ async function validateClientIdAndSecret(
  * @param res - The HTTP response.
  * @param login - The user login.
  * @param membership - The project membership.
- * @param refreshExpiry - The refresh token expiry.
+ * @param refreshLifetime - The refresh token duration.
  */
-async function sendTokenResponse(res: Response, login: Login, membership: ProjectMembership, refreshExpiry?: string): Promise<void> {
+async function sendTokenResponse(
+  res: Response,
+  login: Login,
+  membership: ProjectMembership,
+  refreshLifetime?: string
+): Promise<void> {
   const config = getConfig();
-  const tokens = await getAuthTokens(login, membership.profile as Reference<ProfileResource>, refreshExpiry);
+  const tokens = await getAuthTokens(login, membership.profile as Reference<ProfileResource>, refreshLifetime);
   let patient = undefined;
   let encounter = undefined;
 

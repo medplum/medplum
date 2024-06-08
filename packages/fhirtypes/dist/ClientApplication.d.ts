@@ -143,7 +143,7 @@ export interface ClientApplication {
   identityProvider?: IdentityProvider;
 
   /**
-   * Optional configuration to set the refresh token expiry
+   * Optional configuration to set the refresh token duration
    */
-  refreshTokenExpiry?: string;
+  refreshTokenLifetime?: string;
 }
