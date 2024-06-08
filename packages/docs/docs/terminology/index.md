@@ -9,7 +9,7 @@ example, [LOINC][loinc] is a code system for laboratory tests, measurements, sur
 observable healthcare data. Code systems are often defined by large, national or international organizations; however,
 FHIR makes it simple to leverage the same systems for your own locally-defined code systems as well.
 
-[loinc]: https://loinc.org/
+[loinc]: /docs/careplans/loinc
 
 ## Representing Coded Values
 
@@ -52,8 +52,8 @@ FHIR represents this grouping, and it is the most common representation of coded
 ```
 
 [fhir-code]: https://www.hl7.org/fhir/r4/datatypes.html#code
-[fhir-coding]: https://www.hl7.org/fhir/r4/datatypes.html#Coding
-[fhir-codeableconcept]: https://www.hl7.org/fhir/r4/datatypes.html#codeableconcept
+[fhir-coding]: /docs/api/fhir/datatypes/coding
+[fhir-codeableconcept]: /docs/api/fhir/datatypes/codeableconcept
 
 ## Defining and Using Code Systems
 
@@ -74,6 +74,7 @@ in the examples, a `CodeSystem` is primarily identified in FHIR by its `url`.
       "code": "364075005",
       "display": "Heart rate (observable entity)"
     }
+    // ...
   ]
 }
 ```
@@ -93,6 +94,7 @@ identified primarily by its `url`.
   "status": "active",
   "compose": {
     "include": [
+      // Include an explicit list of codes
       {
         "system": "http://loinc.org",
         "concept": [
@@ -103,6 +105,7 @@ identified primarily by its `url`.
           { "code": "9279-1", "display": "Respiratory rate" }
         ]
       },
+      // Includes codes by their relationships or properties within the code system
       {
         "system": "http://snomed.info/sct",
         "filter": [
@@ -118,5 +121,5 @@ identified primarily by its `url`.
 }
 ```
 
-[fhir-codesystem]: https://www.hl7.org/fhir/r4/codesystem.html
-[fhir-valueset]: https://www.hl7.org/fhir/r4/valueset.html
+[fhir-codesystem]: /docs/api/fhir/resources/codesystem
+[fhir-valueset]: /docs/api/fhir/resources/valueset

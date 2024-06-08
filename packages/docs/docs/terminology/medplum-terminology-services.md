@@ -60,16 +60,18 @@ a valid `CodeSystem` resource on the server:
 
 ### Binding to the Input
 
-The `ValueSetAutocomplete` React component provides the basic functionality for connecting an input field with a
-`ValueSet` for typeahead.
+The `CodeInput`, `CodingInput`, and `CodeableConceptInput` React components provide the ability to connect an input
+field with a `ValueSet` for typeahead, returning whichever data type is needed by the application.
 
 ```jsx
-import { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { Coding } from '@medplum/fhirtypes';
+import { CodingInput } from '@medplum/react';
 
-<ValueSetAutocomplete
+<CodingInput
+  name="vital-sign-code"
   binding="http://example.com/ValueSet/vitals"
-  onChange={(options: ValueSetExpansionContains[]) => {
-    console.log(options.map((o) => o.display + ' (' + o.system + '|' + o.code + ')').join('\n'));
+  onChange={(c: Coding) => {
+    console.log('User selected: ' + c.display + ' (' + c.system + '|' + c.code + ')');
   }}
 />
 ```
