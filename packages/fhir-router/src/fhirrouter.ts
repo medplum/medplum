@@ -30,6 +30,7 @@ export type FhirRouteHandler = (req: FhirRequest, repo: FhirRepository, router: 
 
 export interface FhirOptions {
   introspectionEnabled?: boolean;
+  graphqlMaxDepth?: number;
 }
 
 // Execute batch

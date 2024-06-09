@@ -5,7 +5,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config';
-import { getAuthenticatedContext } from '../context';
+import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
@@ -125,11 +125,12 @@ protectedRoutes.use('/job', jobRouter);
 /**
  * Returns the internal FHIR router.
  * This function will be executed on every request.
+ * @param ctx - The authenticated request context.
  * @returns The lazy initialized internal FHIR router.
  */
-function getInternalFhirRouter(): FhirRouter {
+function getInternalFhirRouter(ctx: AuthenticatedRequestContext): FhirRouter {
   if (!internalFhirRouter) {
-    internalFhirRouter = initInternalFhirRouter();
+    internalFhirRouter = initInternalFhirRouter(ctx);
   }
   return internalFhirRouter;
 }
@@ -137,10 +138,14 @@ function getInternalFhirRouter(): FhirRouter {
 /**
  * Returns a new FHIR router.
  * This function should only be called once on the first request.
+ * @param ctx - The authenticated request context.
  * @returns A new FHIR router with all the internal operations.
  */
-function initInternalFhirRouter(): FhirRouter {
-  const router = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+function initInternalFhirRouter(ctx: AuthenticatedRequestContext): FhirRouter {
+  const router = new FhirRouter({
+    introspectionEnabled: getConfig().introspectionEnabled,
+    graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
+  });
 
   // Project $export
   router.add('GET', '/$export', bulkExportHandler);
@@ -307,7 +312,7 @@ protectedRoutes.use(
       ctx.repo.setMode(RepositoryMode.READER);
     }
 
-    const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
+    const result = await getInternalFhirRouter(ctx).handleRequest(request, ctx.repo);
     if (result.length === 1) {
       if (!isOk(result[0])) {
         throw new OperationOutcomeError(result[0]);
