@@ -40,7 +40,9 @@ export async function createProfile(
   let photo: Attachment[] | undefined = undefined;
   if (email) {
     telecom = [{ system: 'email', use: 'work', value: email }];
-    photo = [{ url: getGravatar(email), contentType: 'image/png', title: 'profile.png' }];
+    if (!project.setting?.find((setting) => setting.name === 'disableGravatarProfiles')?.valueBoolean) {
+      photo = [{ url: getGravatar(email), contentType: 'image/png', title: 'profile.png' }];
+    }
   }
 
   const systemRepo = getSystemRepo();
