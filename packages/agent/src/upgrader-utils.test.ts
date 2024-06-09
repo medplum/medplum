@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, rmdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { resolve } from 'node:path';
 import {
@@ -352,7 +352,7 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
     });
 
     afterAll(() => {
-      rmdirSync(resolve(__dirname, 'tmp'), { recursive: true });
+      rmSync(resolve(__dirname, 'tmp'), { recursive: true, force: true });
     });
 
     beforeEach(() => {

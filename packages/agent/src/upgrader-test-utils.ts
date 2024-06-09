@@ -33,37 +33,10 @@ export function mockFetchForUpgrader(version?: string): jest.SpyInstance {
           case 1:
             count++;
             resolve(
-              new Response(
-                new ReadableStream({
-                  start(controller) {
-                    const textEncoder = new TextEncoder();
-                    const chunks: Uint8Array[] = [
-                      textEncoder.encode('Hello'),
-                      textEncoder.encode(', '),
-                      textEncoder.encode('Medplum!'),
-                    ];
-
-                    let streamIdx = 0;
-
-                    // The following function handles each data chunk
-                    function push(): void {
-                      if (streamIdx === chunks.length) {
-                        controller.close();
-                        return;
-                      }
-                      controller.enqueue(chunks[streamIdx]);
-                      streamIdx++;
-                      push();
-                    }
-
-                    push();
-                  },
-                }),
-                {
-                  status: 200,
-                  headers: { 'content-type': 'application/octet-stream' },
-                }
-              )
+              new Response(createMockReadableStream('Hello', ', ', 'Medplum!'), {
+                status: 200,
+                headers: { 'content-type': 'application/octet-stream' },
+              })
             );
             break;
           default:
@@ -72,4 +45,30 @@ export function mockFetchForUpgrader(version?: string): jest.SpyInstance {
       });
     })
   );
+}
+
+function createMockReadableStream(...chunks: string[]): ReadableStream {
+  return new ReadableStream({
+    start(controller) {
+      const textEncoder = new TextEncoder();
+      const encodedChunks: Uint8Array[] = chunks.map((chunk) => {
+        return textEncoder.encode(chunk);
+      });
+
+      let streamIdx = 0;
+
+      // The following function handles each data chunk
+      function push(): void {
+        if (streamIdx === encodedChunks.length) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(encodedChunks[streamIdx]);
+        streamIdx++;
+        push();
+      }
+
+      push();
+    },
+  });
 }

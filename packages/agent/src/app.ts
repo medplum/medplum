@@ -566,7 +566,8 @@ export class App {
 
     // If there is an explicit version, check if it's valid
     if (message.version && !(await checkIfValidMedplumVersion(message.version))) {
-      const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}'. '${message.version}' is not a valid version`;
+      const versionTag = message.version ? `v${message.version}` : 'latest';
+      const errMsg = `Error during upgrading to version '${versionTag}'. '${message.version}' is not a valid version`;
       this.log.error(errMsg);
       await this.sendToWebSocket({
         type: 'agent:error',
@@ -601,7 +602,8 @@ export class App {
         this.log.error(normalizeErrorString(err));
       });
     } catch (err) {
-      const errMsg = `Error during upgrading to version '${message.version ? `v${message.version}` : 'latest'}': ${normalizeErrorString(err)}`;
+      const versionTag = message.version ? `v${message.version}` : 'latest';
+      const errMsg = `Error during upgrading to version '${versionTag}': ${normalizeErrorString(err)}`;
       this.log.error(errMsg);
       await this.sendToWebSocket({
         type: 'agent:error',

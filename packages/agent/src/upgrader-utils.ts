@@ -103,7 +103,8 @@ export async function downloadRelease(version: string, path: string): Promise<vo
 export async function fetchVersionManifest(version?: string): Promise<ReleaseManifest> {
   let manifest = releaseManifests.get(version ?? 'latest');
   if (!manifest) {
-    const res = await fetch(`${GITHUB_RELEASES_URL}/${version ? `tags/v${version}` : 'latest'}`);
+    const versionTag = version ? `tags/v${version}` : 'latest';
+    const res = await fetch(`${GITHUB_RELEASES_URL}/${versionTag}`);
     if (res.status !== 200) {
       let message: string | undefined;
       try {
