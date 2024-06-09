@@ -4,6 +4,7 @@ import {
   AgentReloadConfigRequest,
   AgentTransmitResponse,
   AgentUpgradeRequest,
+  AgentUpgradeResponse,
   ContentType,
   Hl7Message,
   LogLevel,
@@ -38,11 +39,12 @@ jest.mock('node:process', () => {
   })();
 });
 
-const medplum = new MockClient();
-
 describe('App', () => {
-  beforeAll(async () => {
+  let medplum: MockClient;
+
+  beforeEach(async () => {
     console.log = jest.fn();
+    medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
     });
@@ -1290,6 +1292,7 @@ describe('App', () => {
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
       const fetchSpy = mockFetchForUpgrader();
       const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
+      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
       const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
         jest.fn(() => {
           child = new MockChildProcess();
@@ -1347,17 +1350,19 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+
       state.mySocket.send(
         JSON.stringify({
           type: 'agent:upgrade:request',
-          callback: getReferenceString(agent) + '-' + randomUUID(),
+          callback,
         } satisfies AgentUpgradeRequest)
       );
 
       let shouldThrow = false;
       const timeout = setTimeout(() => {
         shouldThrow = true;
-      }, 15000);
+      }, 2500);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
@@ -1367,6 +1372,7 @@ describe('App', () => {
         await sleep(100);
       }
 
+      await sleep(100);
       child.emit('message', { type: 'STARTED' });
       while (!state.disconnectCalled) {
         if (shouldThrow) {
@@ -1383,6 +1389,16 @@ describe('App', () => {
       expect(openSyncSpy).toHaveBeenCalled();
       expect(child.unref).toHaveBeenCalled();
       expect(child.disconnect).toHaveBeenCalled();
+
+      expect(writeFileSyncSpy).toHaveBeenLastCalledWith(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion: '3.1.6',
+          callback,
+        }),
+        { encoding: 'utf8', flag: 'w+' }
+      );
       expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
 
       await app.stop();
@@ -1390,11 +1406,11 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
-      fetchSpy.mockRestore();
-      openSyncSpy.mockRestore();
+      for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, spawnSpy]) {
+        spy.mockRestore();
+      }
       console.log = originalConsoleLog;
-    }, 25000);
+    });
 
     test('Upgrade -- Version specified', async () => {
       const originalConsoleLog = console.log;
@@ -1404,7 +1420,7 @@ describe('App', () => {
 
       const state = {
         mySocket: undefined as Client | undefined,
-        gotAgentUpgradeResponse: false,
+        agentUpgradeResponse: null as AgentUpgradeResponse | null,
         agentError: null as AgentError | null,
         disconnectCalled: false,
       };
@@ -1412,6 +1428,8 @@ describe('App', () => {
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
       const fetchSpy = mockFetchForUpgrader();
       const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
+      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
+      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
       const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
         jest.fn(() => {
           child = new MockChildProcess();
@@ -1439,7 +1457,7 @@ describe('App', () => {
               if (command.statusCode !== 200) {
                 throw new Error('Invalid status code. Expected 200');
               }
-              state.gotAgentUpgradeResponse = true;
+              state.agentUpgradeResponse = command;
               break;
 
             case 'agent:error':
@@ -1469,10 +1487,12 @@ describe('App', () => {
         await sleep(100);
       }
 
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+
       state.mySocket.send(
         JSON.stringify({
           type: 'agent:upgrade:request',
-          callback: getReferenceString(agent) + '-' + randomUUID(),
+          callback,
           version: '3.1.6',
         } satisfies AgentUpgradeRequest)
       );
@@ -1480,7 +1500,7 @@ describe('App', () => {
       let shouldThrow = false;
       const timeout = setTimeout(() => {
         shouldThrow = true;
-      }, 15000);
+      }, 2500);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
@@ -1506,18 +1526,30 @@ describe('App', () => {
       expect(openSyncSpy).toHaveBeenCalled();
       expect(child.unref).toHaveBeenCalled();
       expect(child.disconnect).toHaveBeenCalled();
+
+      expect(writeFileSyncSpy).toHaveBeenLastCalledWith(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion: '3.1.6',
+          callback,
+        }),
+        { encoding: 'utf8', flag: 'w+' }
+      );
       expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+
+      expect(state.agentError).toEqual(null);
 
       await app.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
-      fetchSpy.mockRestore();
-      openSyncSpy.mockRestore();
+      for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, rmSyncSpy, spawnSpy]) {
+        spy.mockRestore();
+      }
       console.log = originalConsoleLog;
-    }, 25000);
+    });
 
     test('Upgrade -- Invalid version', async () => {
       const originalConsoleLog = console.log;
@@ -1599,7 +1631,9 @@ describe('App', () => {
         await sleep(100);
       }
       clearTimeout(timeout);
+
       expect(state.agentError.body).toMatch(/'medplum' is not a valid version/);
+      expect(state.gotAgentUpgradeResponse).toEqual(false);
 
       await app.stop();
       await new Promise<void>((resolve) => {
@@ -1727,7 +1761,7 @@ describe('App', () => {
           targetVersion: getNextMinorVersion(MEDPLUM_VERSION),
           callback: randomUUID(),
         }),
-        { flag: 'w+' }
+        { flag: 'w+', encoding: 'utf-8' }
       );
 
       function mockConnectionHandler(socket: Client): void {
