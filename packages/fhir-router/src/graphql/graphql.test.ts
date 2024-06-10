@@ -585,7 +585,9 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter();
+    const fhirRouter = new FhirRouter({
+      graphqlMaxDepth: 12,
+    });
     const res1 = await graphqlHandler(request1, repo, fhirRouter);
     expect(res1[0]).toMatchObject(allOk);
 
