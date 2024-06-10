@@ -2909,13 +2909,20 @@ describe('FHIR Search', () => {
     test('_filter with chained search', () =>
       withTestContext(async () => {
         const mrn = randomUUID();
+        const npi = randomUUID();
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Eve'] }],
           identifier: [{ system: 'http://example.com/mrn', value: mrn }],
         });
 
-        const observation = await repo.createResource<Observation>({
+        const practitioner = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+          name: [{ given: ['Yves'] }],
+          identifier: [{ system: 'http://example.com/npi', value: npi }],
+        });
+
+        const observation1 = await repo.createResource<Observation>({
           resourceType: 'Observation',
           status: 'final',
           code: {
@@ -2924,19 +2931,30 @@ describe('FHIR Search', () => {
           subject: createReference(patient),
         });
 
+        const observation2 = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: {
+            coding: [{ system: 'http://example.com/obs', code: 'STRP' }],
+          },
+          performer: [createReference(practitioner)],
+        });
+
         const result = await repo.search({
           resourceType: 'Observation',
           filters: [
             {
               code: '_filter',
               operator: Operator.EQUALS,
-              value: `subject:Patient.identifier eq http://example.com/mrn|${mrn}`,
+              value: `subject:Patient.identifier eq http://example.com/mrn|${mrn} or performer:Practitioner.identifier eq http://example.com/npi|${npi}`,
             },
           ],
         });
 
-        expect(result.entry).toHaveLength(1);
-        expect(result.entry?.[0]?.resource?.id).toEqual(observation.id);
+        expect(result.entry).toHaveLength(2);
+        expect(result.entry?.map((e) => e.resource?.id)).toEqual(
+          expect.arrayContaining([observation1.id, observation2.id])
+        );
       }));
 
     test('Lookup table exact match with comma disjunction', () =>

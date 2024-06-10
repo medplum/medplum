@@ -1039,7 +1039,7 @@ function buildChainedSearchUsingReferenceTable(
     }
 
     const referenceTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.innerJoin(
+    selectQuery.leftJoin(
       referenceTableName,
       referenceTableAlias,
       new Conjunction([
@@ -1049,7 +1049,7 @@ function buildChainedSearchUsingReferenceTable(
     );
 
     const nextTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.innerJoin(
+    selectQuery.leftJoin(
       link.resourceType,
       nextTableAlias,
       new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
@@ -1086,7 +1086,7 @@ function buildChainedSearchUsingReferenceStrings(
   for (const link of param.chain) {
     const nextTable = selectQuery.getNextJoinAlias();
     const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-    selectQuery.innerJoin(link.resourceType, nextTable, joinCondition);
+    selectQuery.leftJoin(link.resourceType, nextTable, joinCondition);
 
     currentTable = nextTable;
     currentResourceType = link.resourceType;
