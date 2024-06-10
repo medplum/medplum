@@ -1060,7 +1060,6 @@ function buildChainedSearchUsingReferenceTable(
 
     if (link.filter) {
       return buildSearchFilterExpression(selectQuery, link.resourceType as ResourceType, nextTableAlias, link.filter);
-      // selectQuery.whereExpr(endCondition);
     }
   }
   throw new OperationOutcomeError(badRequest('Unterminated chained search'));
@@ -1094,7 +1093,6 @@ function buildChainedSearchUsingReferenceStrings(
 
     if (link.filter) {
       return buildSearchFilterExpression(selectQuery, link.resourceType as ResourceType, nextTable, link.filter);
-      // selectQuery.whereExpr(endCondition);
     }
   }
   throw new OperationOutcomeError(badRequest('Unterminated chained search'));
