@@ -75,5 +75,6 @@
     "react-dom": "18.2.0",
     "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@1.4.15",
     "trim": "0.0.3"
-  }
+  },
+  "packageManager": "npm@10.8.1"
 }
