@@ -149,15 +149,17 @@ export function useQuestionnaireForm(
 
   function getInputProps(item: QuestionnaireItem, options?: GetInputPropsOptions): QuestionnaireItemInputProps {
     const fieldName = item.linkId;
+    const { onChange: defaultOnChange, ...rest } = form.getInputProps(fieldName, options);
     return {
-      ...form.getInputProps(fieldName, options),
+      ...rest,
       onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+        defaultOnChange(event);
         handleChange(fieldName, event.target.value);
       },
-      onBlur: () => {
+      onBlur: (_event: React.FocusEvent<HTMLInputElement>) => {
         console.log('Blur', fieldName);
       },
-      onFocus: () => {
+      onFocus: (_event: React.FocusEvent<HTMLInputElement>) => {
         console.log('Focus', fieldName);
       },
     };
