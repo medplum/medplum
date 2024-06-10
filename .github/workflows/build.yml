@@ -171,7 +171,6 @@ jobs:
           POSTGRES_DB: medplum_test
           POSTGRES_USER: medplum
           POSTGRES_PASSWORD: medplum
-          POSTGRES_HOST: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -224,7 +223,7 @@ jobs:
       - name: Test
         run: ./scripts/test.sh
         env:
-          POSTGRES_HOST: postgres
+          POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Upload code coverage
