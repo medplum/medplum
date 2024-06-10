@@ -22,6 +22,9 @@ export type FhirRequest = {
   params: Record<string, string>;
   query: Record<string, string>;
   headers?: IncomingHttpHeaders;
+  config: {
+    graphqlMaxDepth?: number;
+  };
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
@@ -30,7 +33,6 @@ export type FhirRouteHandler = (req: FhirRequest, repo: FhirRepository, router: 
 
 export interface FhirOptions {
   introspectionEnabled?: boolean;
-  graphqlMaxDepth?: number;
 }
 
 // Execute batch
