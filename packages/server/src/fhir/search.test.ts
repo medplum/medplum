@@ -2906,6 +2906,39 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
 
+    test('_filter with chained search', () =>
+      withTestContext(async () => {
+        const mrn = randomUUID();
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Eve'] }],
+          identifier: [{ system: 'http://example.com/mrn', value: mrn }],
+        });
+
+        const observation = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: {
+            text: 'Strep test',
+          },
+          subject: createReference(patient),
+        });
+
+        const result = await repo.search({
+          resourceType: 'Observation',
+          filters: [
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: `subject:Patient.identifier eq http://example.com/mrn|${mrn}`,
+            },
+          ],
+        });
+
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toEqual(observation.id);
+      }));
+
     test('Lookup table exact match with comma disjunction', () =>
       withTestContext(async () => {
         const family = randomUUID();
