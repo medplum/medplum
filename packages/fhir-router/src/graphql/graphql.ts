@@ -100,7 +100,7 @@ export async function graphqlHandler(
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule(router.options.graphqlMaxDepth)];
+  const validationRules = [...specifiedRules, MaxDepthRule(req.config.graphqlMaxDepth)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
