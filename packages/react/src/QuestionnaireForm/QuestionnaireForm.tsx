@@ -1,150 +1,184 @@
-import { Title } from '@mantine/core';
-import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
-import {
-  Encounter,
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  Reference,
-} from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
-import { useEffect, useState } from 'react';
-import { Form } from '../Form/Form';
-import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
-import { QuestionnaireFormContext } from './QuestionnaireForm.context';
-import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
+import { Button, Checkbox, TextInput } from '@mantine/core';
+import { Encounter, Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
+import { QuantityInput } from '../QuantityInput/QuantityInput';
+import { QuestionnaireItemType } from '../utils/questionnaire';
+import { GetQuestionnaireItemInputProps, useQuestionnaireForm } from './useQuestionnaireForm';
 
 export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
   readonly subject?: Reference;
   readonly encounter?: Reference<Encounter>;
   readonly submitButtonText?: string;
+  readonly initialResponse?: QuestionnaireResponse;
   readonly onSubmit: (response: QuestionnaireResponse) => void;
 }
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
-  const medplum = useMedplum();
-  const source = medplum.getProfile();
-  const [schemaLoaded, setSchemaLoaded] = useState(false);
-  const questionnaire = useResource(props.questionnaire);
-  const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
-  const [activePage, setActivePage] = useState(0);
-
-  useEffect(() => {
-    medplum
-      .requestSchema('Questionnaire')
-      .then(() => medplum.requestSchema('QuestionnaireResponse'))
-      .then(() => setSchemaLoaded(true))
-      .catch(console.log);
-  }, [medplum]);
-
-  useEffect(() => {
-    setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
-  }, [questionnaire]);
-
-  function setItems(newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void {
-    const currentItems = response?.item ?? [];
-    const mergedItems = mergeItems(
-      currentItems,
-      Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
-    );
-
-    const newResponse: QuestionnaireResponse = {
-      resourceType: 'QuestionnaireResponse',
-      status: 'in-progress',
-      item: mergedItems,
-    };
-
-    setResponse(newResponse);
-  }
-
-  function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
-    return isQuestionEnabled(item, response?.item ?? []);
-  }
-
-  if (!schemaLoaded || !questionnaire || !response) {
+  const { getInputProps, handleSubmit, questionnaire } = useQuestionnaireForm(
+    props.questionnaire,
+    props.initialResponse
+  );
+  if (!questionnaire) {
     return null;
   }
-
-  const numberOfPages = getNumberOfPages(questionnaire);
-  const nextStep = (): void => setActivePage((current) => current + 1);
-  const prevStep = (): void => setActivePage((current) => current - 1);
-
   return (
-    <QuestionnaireFormContext.Provider value={{ subject: props.subject, encounter: props.encounter }}>
-      <Form
-        testid="questionnaire-form"
-        onSubmit={() => {
-          if (props.onSubmit && response) {
-            props.onSubmit({
-              ...response,
-              questionnaire: getReferenceString(questionnaire),
-              subject: props.subject,
-              source: createReference(source as ProfileResource),
-              authored: new Date().toISOString(),
-              status: 'completed',
-            });
-          }
-        }}
-      >
-        {questionnaire.title && <Title>{questionnaire.title}</Title>}
-        <QuestionnairePageSequence
-          items={questionnaire.item ?? []}
-          response={response}
-          onChange={setItems}
-          renderPages={numberOfPages > 1}
-          activePage={activePage}
-          numberOfPages={numberOfPages}
-          submitButtonText={props.submitButtonText}
-          checkForQuestionEnabled={checkForQuestionEnabled}
-          nextStep={nextStep}
-          prevStep={prevStep}
-        />
-      </Form>
-    </QuestionnaireFormContext.Provider>
+    <form onSubmit={handleSubmit(props.onSubmit)}>
+      {questionnaire.item?.map((item) => (
+        <div key={item.linkId}>
+          <TextInput label={item.text} required={item.required} {...getInputProps<'string'>(item)} />
+        </div>
+      ))}
+      <Button type="submit">{props.submitButtonText ?? 'Submit'}</Button>
+    </form>
   );
 }
 
-function mergeIndividualItems(
-  prevItem: QuestionnaireResponseItem,
-  newItem: QuestionnaireResponseItem
-): QuestionnaireResponseItem {
-  // Recursively merge the nested items based on their ids.
-  const mergedNestedItems = mergeItems(prevItem.item ?? [], newItem.item ?? []);
+function getInputForItem(item: QuestionnaireItem, getInputProps: GetQuestionnaireItemInputProps): React.ReactNode {
+  const linkId = item.linkId;
+  const text = item.text;
 
-  return {
-    ...newItem,
-    item: mergedNestedItems.length > 0 ? mergedNestedItems : undefined,
-    answer: newItem.answer && newItem.answer.length > 0 ? newItem.answer : prevItem.answer,
-  };
-}
-
-function mergeItems(
-  prevItems: QuestionnaireResponseItem[],
-  newItems: QuestionnaireResponseItem[]
-): QuestionnaireResponseItem[] {
-  const result: QuestionnaireResponseItem[] = [];
-  const usedIds = new Set<string>();
-
-  for (const prevItem of prevItems) {
-    const itemId = prevItem.id;
-    const newItem = newItems.find((item) => item.id === itemId);
-
-    if (newItem) {
-      result.push(mergeIndividualItems(prevItem, newItem));
-      usedIds.add(newItem.id as string);
-    } else {
-      result.push(prevItem);
-    }
+  switch (item.type) {
+    case QuestionnaireItemType.display:
+      return <p {...getInputProps(item)}>{item.text}</p>;
+    case 'boolean':
+      return (
+        <CheckboxFormSection key={linkId} title={text} htmlFor={linkId}>
+          <Checkbox id={linkId} name={linkId} {...getInputProps(item, { type: 'checkbox' })} />
+        </CheckboxFormSection>
+      );
+    case 'decimal':
+      return (
+        <TextInput
+          type="number"
+          step="any"
+          id={linkId}
+          name={linkId}
+          required={item.required}
+          {...getInputProps<'decimal'>(item)}
+        />
+      );
+    case QuestionnaireItemType.integer:
+      return (
+        <TextInput
+          type="number"
+          step={1}
+          id={name}
+          name={name}
+          required={item.required}
+          defaultValue={defaultValue?.value}
+          onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber })}
+        />
+      );
+    case QuestionnaireItemType.date:
+      return (
+        <TextInput
+          type="date"
+          id={name}
+          name={name}
+          required={item.required}
+          defaultValue={defaultValue?.value}
+          onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value })}
+        />
+      );
+    case QuestionnaireItemType.dateTime:
+      return (
+        <DateTimeInput
+          name={name}
+          required={item.required}
+          defaultValue={defaultValue?.value}
+          onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue })}
+        />
+      );
+    case QuestionnaireItemType.time:
+      return (
+        <TextInput
+          type="time"
+          id={name}
+          name={name}
+          required={item.required}
+          defaultValue={defaultValue?.value}
+          onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value })}
+        />
+      );
+    case QuestionnaireItemType.string:
+    case QuestionnaireItemType.url:
+      return (
+        <TextInput
+          id={name}
+          name={name}
+          required={item.required}
+          defaultValue={defaultValue?.value}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
+        />
+      );
+    case QuestionnaireItemType.text:
+      return (
+        <Textarea
+          id={name}
+          name={name}
+          required={item.required}
+          defaultValue={defaultValue?.value}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
+        />
+      );
+    case QuestionnaireItemType.attachment:
+      return (
+        <Group py={4}>
+          <AttachmentInput
+            path=""
+            name={name}
+            defaultValue={defaultValue?.value}
+            onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue })}
+          />
+        </Group>
+      );
+    case QuestionnaireItemType.reference:
+      return (
+        <ReferenceInput
+          name={name}
+          required={item.required}
+          targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
+          searchCriteria={getQuestionnaireItemReferenceFilter(item, context.subject, context.encounter)}
+          defaultValue={defaultValue?.value}
+          onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
+        />
+      );
+    case QuestionnaireItemType.quantity:
+      return (
+        <QuantityInput
+          path=""
+          name={name}
+          required={item.required}
+          defaultValue={defaultValue?.value}
+          onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
+          disableWheel
+        />
+      );
+    case QuestionnaireItemType.choice:
+    case QuestionnaireItemType.openChoice:
+      if (isDropDownChoice(item) && !item.answerValueSet) {
+        return (
+          <QuestionnaireChoiceDropDownInput
+            name={name}
+            item={item}
+            initial={initial}
+            response={response}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
+          />
+        );
+      } else {
+        return (
+          <QuestionnaireChoiceSetInput
+            name={name}
+            item={item}
+            initial={initial}
+            response={response}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
+          />
+        );
+      }
+    default:
+      return null;
   }
-
-  // Add items from newItems that were not in prevItems.
-  for (const newItem of newItems) {
-    if (!usedIds.has(newItem.id as string)) {
-      result.push(newItem);
-    }
-  }
-
-  return result;
 }
