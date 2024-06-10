@@ -3,12 +3,7 @@ import { readJson } from '@medplum/definitions';
 import { Bot, Bundle, CoverageEligibilityRequest, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import {
-  generalBenefitsCheck,
-  otherEligibilityCheck,
-  requestData,
-  requestWithNoCoverage,
-} from '../../data/example/bot-testing-data';
+import { generalBenefitsCheck, otherEligibilityCheck, requestData, requestWithNoCoverage } from './bot-testing-data';
 import { handler } from './process-eligibility-request';
 
 describe('Process Eligibility Request', async () => {
