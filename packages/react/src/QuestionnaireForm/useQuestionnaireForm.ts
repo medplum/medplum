@@ -1,9 +1,7 @@
 import { useForm, UseFormReturnType } from '@mantine/form';
-import { GetInputPropsReturnType, GetInputPropsOptions } from '@mantine/form/lib/types';
+import { GetInputPropsOptions, GetInputPropsReturnType } from '@mantine/form/lib/types';
 import { createReference, ProfileResource } from '@medplum/core';
 import {
-  Attachment,
-  Quantity,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireResponse,
@@ -39,43 +37,40 @@ function getValuesFromResponse(responses: QuestionnaireResponseItem[] | undefine
   return values;
 }
 
-type QuestionnaireAnswerTypes = Pick<
-  {
-    string: string;
-    quantity: Quantity;
-    choice: string;
-    'open-choice': string;
-    group: never;
-    display: never;
-    boolean: boolean;
-    reference: Reference;
-    question: never;
-    decimal: number;
-    integer: number;
-    date: string;
-    dateTime: string;
-    time: string;
-    text: string;
-    url: string;
-    attachment: Attachment;
-  },
-  QuestionnaireItem['type']
->;
+// type QuestionnaireAnswerTypes = Pick<
+//   {
+//     string: string;
+//     quantity: Quantity;
+//     choice: string;
+//     'open-choice': string;
+//     group: never;
+//     display: never;
+//     boolean: boolean;
+//     reference: Reference;
+//     question: never;
+//     decimal: number;
+//     integer: number;
+//     date: string;
+//     dateTime: string;
+//     time: string;
+//     text: string;
+//     url: string;
+//     attachment: Attachment;
+//   },
+//   QuestionnaireItem['type']
+// >;
 
-export interface QuestionnaireItemInputProps<T extends keyof QuestionnaireAnswerTypes> extends GetInputPropsReturnType {
-  value?: QuestionnaireAnswerTypes[T] | undefined;
+export interface QuestionnaireItemInputProps extends GetInputPropsReturnType {
   error?: ReactNode | undefined;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur: (event: React.FocusEvent<HTMLInputElement>) => void;
   onFocus: (event: React.FocusEvent<HTMLInputElement>) => void;
 }
 
-export type GetQuestionnaireItemInputProps = <T extends keyof QuestionnaireAnswerTypes>(
-  item: QuestionnaireItem & {
-    type: T;
-  },
+export type GetQuestionnaireItemInputProps = (
+  item: QuestionnaireItem,
   options?: GetInputPropsOptions
-) => QuestionnaireItemInputProps<T>;
+) => QuestionnaireItemInputProps;
 
 interface UseQuestionnaireFormReturn extends Omit<UseFormReturnType<QuestionnaireFormValues>, 'getInputProps'> {
   schemaLoaded: boolean;
@@ -152,10 +147,7 @@ export function useQuestionnaireForm(
     [form]
   );
 
-  function getInputProps<T extends keyof QuestionnaireAnswerTypes>(
-    item: QuestionnaireItem & { type: T },
-    options?: GetInputPropsOptions
-  ): QuestionnaireItemInputProps<T> {
+  function getInputProps(item: QuestionnaireItem, options?: GetInputPropsOptions): QuestionnaireItemInputProps {
     const fieldName = item.linkId;
     return {
       ...form.getInputProps(fieldName, options),
