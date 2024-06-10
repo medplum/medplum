@@ -119,7 +119,7 @@ jobs:
         id: fmt
         run: |
           rm -f .failed
-          NODE_OPTIONS='--max-old-space-size=8192' npm run lint 2> eslint.err > eslint1.err || echo 'failed' > .failed 
+          npm run lint 2> eslint.err > eslint1.err || echo 'failed' > .failed 
 
           if [ -s .failed ]; then
             delimiter="$(openssl rand -hex 8)"
