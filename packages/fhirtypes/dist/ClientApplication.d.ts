@@ -141,4 +141,9 @@ export interface ClientApplication {
    * Optional external Identity Provider (IdP) for the client application.
    */
   identityProvider?: IdentityProvider;
+
+  /**
+   * Optional configuration to set the refresh token duration
+   */
+  refreshTokenLifetime?: string;
 }

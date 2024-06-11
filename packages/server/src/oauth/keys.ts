@@ -79,6 +79,7 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
  * This is the algorithm used by AWS Cognito and Auth0.
  */
 const ALG = 'RS256';
+const DEFAULT_REFRESH_LIFETIME = '2w';
 
 let issuer: string | undefined;
 const publicKeys: Record<string, KeyLike> = {};
@@ -205,10 +206,13 @@ export function generateAccessToken(
 /**
  * Generates a refresh token JWT.
  * @param claims - The refresh token claims.
+ * @param refreshLifetime - The refresh token duration.
  * @returns A well-formed JWT that can be used as a refresh token.
  */
-export function generateRefreshToken(claims: MedplumRefreshTokenClaims): Promise<string> {
-  return generateJwt('2w', claims);
+export function generateRefreshToken(claims: MedplumRefreshTokenClaims, refreshLifetime?: string): Promise<string> {
+  const duration = refreshLifetime ?? DEFAULT_REFRESH_LIFETIME;
+
+  return generateJwt(duration, claims);
 }
 
 /**
@@ -217,9 +221,14 @@ export function generateRefreshToken(claims: MedplumRefreshTokenClaims): Promise
  * @param claims - The key/value pairs to include in the payload section.
  * @returns Promise to generate and sign the JWT.
  */
-async function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
+async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
   if (!signingKey || !issuer) {
     throw new Error('Signing key not initialized');
+  }
+
+  const regex = /^[0-9]+[smhdwy]$/;
+  if (!regex.test(exp)) {
+    throw new Error('Invalid token duration');
   }
 
   return new SignJWT(claims)
