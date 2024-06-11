@@ -1,13 +1,13 @@
-import { Bundle, Parameters, Subscription, SubscriptionStatus, Resource } from '@medplum/fhirtypes';
+import { Bundle, Parameters, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
-import { OperationOutcomeError, serverError, validationError } from '../outcomes';
-import { ProfileResource, getExtension, getReferenceString, resolveId } from '../utils';
-import { Logger } from '../logger';
-import { matchesSearchRequest } from '../search/match';
-import { toTypedValue } from '../fhirpath/utils';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { toTypedValue } from '../fhirpath/utils';
+import { Logger } from '../logger';
+import { OperationOutcomeError, serverError, validationError } from '../outcomes';
+import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
+import { ProfileResource, getExtension, getReferenceString, resolveId } from '../utils';
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -470,6 +470,5 @@ export async function isFhirCriteriaMet(
     '%previous': toTypedValue(previous ?? {}),
   };
   const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
-  console.log(evalValue);
   return evalValue?.[0]?.value === true;
 }
