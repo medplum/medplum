@@ -79,6 +79,7 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
  * This is the algorithm used by AWS Cognito and Auth0.
  */
 const ALG = 'RS256';
+const DEFAULT_REFRESH_LIFETIME = '2w';
 
 let issuer: string | undefined;
 const publicKeys: Record<string, KeyLike> = {};
@@ -209,7 +210,7 @@ export function generateAccessToken(
  * @returns A well-formed JWT that can be used as a refresh token.
  */
 export function generateRefreshToken(claims: MedplumRefreshTokenClaims, refreshLifetime?: string): Promise<string> {
-  const duration = refreshLifetime ?? '2w';
+  const duration = refreshLifetime ?? DEFAULT_REFRESH_LIFETIME;
 
   return generateJwt(duration, claims);
 }

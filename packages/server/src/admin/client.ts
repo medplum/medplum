@@ -16,10 +16,6 @@ import { makeValidationMiddleware } from '../util/validator';
 
 export const createClientValidator = makeValidationMiddleware([
   body('name').notEmpty().withMessage('Client name is required'),
-  body('refreshTokenLifetime')
-    .optional()
-    .matches(/^[0-9]+[smhdwy]$/)
-    .withMessage('Token lifetime must be a valid string representing time duration (eg. 2w, 1h)'),
 ]);
 
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
