@@ -18,36 +18,75 @@ export interface ResourceVisitor {
   ) => void;
 }
 
+export interface AsyncResourceVisitor {
+  onEnterObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
+  onExitObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
+  onEnterResource?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
+  onExitResource?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
+  visitPropertyAsync?: (
+    parent: TypedValueWithPath,
+    key: string,
+    path: string,
+    value: TypedValueWithPath | TypedValueWithPath[],
+    schema: InternalTypeSchema
+  ) => Promise<void>;
+}
+
+function isSchema(obj: any): obj is InternalTypeSchema {
+  return Boolean(obj.elements);
+}
+
 export function crawlResource(
   resource: Resource,
   visitor: ResourceVisitor,
   schema?: InternalTypeSchema,
   initialPath?: string
-): void {
-  new ResourceCrawler(resource, visitor, schema, initialPath).crawl();
+): void;
+export function crawlResource(
+  resource: Resource,
+  visitor: AsyncResourceVisitor,
+  options: ResourceCrawlerOptions
+): Promise<void>;
+export function crawlResource(
+  resource: Resource,
+  visitor: ResourceVisitor | AsyncResourceVisitor,
+  schema?: InternalTypeSchema | ResourceCrawlerOptions,
+  initialPath?: string
+): Promise<void> | void {
+  let options: ResourceCrawlerOptions | undefined;
+  if (isSchema(schema)) {
+    options = { schema, initialPath };
+  } else {
+    options = schema;
+  }
+
+  if ((visitor as AsyncResourceVisitor).visitPropertyAsync) {
+    return new AsyncResourceCrawler(resource, visitor as AsyncResourceVisitor, options).crawl();
+  }
+  new ResourceCrawler(resource, visitor, options).crawl();
+  return undefined;
 }
+
+export type ResourceCrawlerOptions = {
+  excludeMissingProperties?: boolean;
+  schema?: InternalTypeSchema;
+  initialPath?: string;
+};
 
 class ResourceCrawler {
   private readonly rootResource: Resource;
   private readonly visitor: ResourceVisitor;
   private readonly schema: InternalTypeSchema;
   private readonly initialPath: string;
+  private readonly excludeMissingProperties?: boolean;
 
-  constructor(rootResource: Resource, visitor: ResourceVisitor, schema?: InternalTypeSchema, initialPath?: string) {
+  constructor(rootResource: Resource, visitor: ResourceVisitor, options?: ResourceCrawlerOptions) {
     this.rootResource = rootResource;
     this.visitor = visitor;
 
-    if (schema) {
-      this.schema = schema;
-    } else {
-      this.schema = getDataType(rootResource.resourceType);
-    }
-
-    if (initialPath) {
-      this.initialPath = initialPath;
-    } else {
-      this.initialPath = rootResource.resourceType;
-    }
+    this.schema = options?.schema ?? getDataType(rootResource.resourceType);
+    this.initialPath = options?.initialPath ?? rootResource.resourceType;
+    this.excludeMissingProperties = options?.excludeMissingProperties;
   }
 
   crawl(): void {
@@ -65,8 +104,14 @@ class ResourceCrawler {
       this.visitor.onEnterObject(path, obj, schema);
     }
 
-    for (const key of Object.keys(schema.elements)) {
-      this.crawlProperty(obj, key, schema, `${path}.${key}`);
+    if (this.excludeMissingProperties) {
+      for (const key of Object.keys(obj)) {
+        this.crawlProperty(obj, key, schema, `${path}.${key}`);
+      }
+    } else {
+      for (const key of Object.keys(schema.elements)) {
+        this.crawlProperty(obj, key, schema, `${path}.${key}`);
+      }
     }
 
     if (this.visitor.onExitObject) {
@@ -98,6 +143,91 @@ class ResourceCrawler {
       // Recursively crawl as the expected data type
       const type = getDataType(value.type);
       this.crawlObject(value, type, path);
+    }
+  }
+}
+
+class AsyncResourceCrawler {
+  private readonly rootResource: Resource;
+  private readonly visitor: AsyncResourceVisitor;
+  private readonly schema: InternalTypeSchema;
+  private readonly initialPath: string;
+  private readonly excludeMissingProperties?: boolean;
+
+  constructor(rootResource: Resource, visitor: AsyncResourceVisitor, options?: ResourceCrawlerOptions) {
+    this.rootResource = rootResource;
+    this.visitor = visitor;
+
+    this.schema = options?.schema ?? getDataType(rootResource.resourceType);
+    this.initialPath = options?.initialPath ?? rootResource.resourceType;
+    this.excludeMissingProperties = options?.excludeMissingProperties;
+  }
+
+  async crawl(): Promise<void> {
+    return this.crawlObject(
+      { ...toTypedValue(this.rootResource), path: this.initialPath },
+      this.schema,
+      this.initialPath
+    );
+  }
+
+  private async crawlObject(obj: TypedValueWithPath, schema: InternalTypeSchema, path: string): Promise<void> {
+    const objIsResource = isResource(obj.value);
+
+    if (objIsResource && this.visitor.onEnterResource) {
+      await this.visitor.onEnterResource(path, obj, schema);
+    }
+
+    if (this.visitor.onEnterObject) {
+      await this.visitor.onEnterObject(path, obj, schema);
+    }
+
+    if (this.excludeMissingProperties) {
+      for (const key of Object.keys(obj)) {
+        await this.crawlProperty(obj, key, schema, `${path}.${key}`);
+      }
+    } else {
+      for (const key of Object.keys(schema.elements)) {
+        await this.crawlProperty(obj, key, schema, `${path}.${key}`);
+      }
+    }
+
+    if (this.visitor.onExitObject) {
+      await this.visitor.onExitObject(path, obj, schema);
+    }
+
+    if (objIsResource && this.visitor.onExitResource) {
+      await this.visitor.onExitResource(path, obj, schema);
+    }
+  }
+
+  private async crawlProperty(
+    parent: TypedValueWithPath,
+    key: string,
+    schema: InternalTypeSchema,
+    path: string
+  ): Promise<void> {
+    const propertyValues = getNestedProperty(parent, key, { withPath: true });
+    if (this.visitor.visitPropertyAsync) {
+      for (const propertyValue of propertyValues) {
+        await this.visitor.visitPropertyAsync(parent, key, path, propertyValue, schema);
+      }
+    }
+
+    for (const propertyValue of propertyValues) {
+      if (propertyValue) {
+        for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
+          await this.crawlPropertyValue(value, path);
+        }
+      }
+    }
+  }
+
+  private async crawlPropertyValue(value: TypedValueWithPath, path: string): Promise<void> {
+    if (!isLowerCase(value.type.charAt(0))) {
+      // Recursively crawl as the expected data type
+      const type = getDataType(value.type);
+      await this.crawlObject(value, type, path);
     }
   }
 }
