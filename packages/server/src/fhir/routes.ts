@@ -39,7 +39,6 @@ import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { saveClientValidator } from '../admin/client';
 
 export const fhirRouter = Router();
 
@@ -119,9 +118,6 @@ protectedRoutes.use('/bulkdata', bulkDataRouter);
 
 // Async Job
 protectedRoutes.use('/job', jobRouter);
-
-// Validate data before updating ClientApplication
-protectedRoutes.put('/ClientApplication/:id', saveClientValidator);
 
 /**
  * Returns the internal FHIR router.

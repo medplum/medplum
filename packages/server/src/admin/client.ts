@@ -14,7 +14,7 @@ import { Repository, getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
-export const saveClientValidator = makeValidationMiddleware([
+export const createClientValidator = makeValidationMiddleware([
   body('name').notEmpty().withMessage('Client name is required'),
   body('refreshTokenLifetime')
     .optional()
