@@ -10,19 +10,12 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import React, { ReactNode, useCallback, useEffect, useState } from 'react';
-
-export interface GetQuestionnaireItemInputPropsReturnType extends GetInputPropsReturnType {
-  error?: ReactNode | undefined;
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur: (event: React.FocusEvent<HTMLInputElement>) => void;
-  onFocus: (event: React.FocusEvent<HTMLInputElement>) => void;
-}
+import React, { createContext, useCallback, useEffect, useState } from 'react';
 
 export type GetQuestionnaireItemInputPropsFunction = (
   item: QuestionnaireItem,
   options?: GetInputPropsOptions
-) => GetQuestionnaireItemInputPropsReturnType;
+) => GetInputPropsReturnType;
 
 type QuestionnaireFormValues = Record<string, QuestionnaireResponseItemAnswerValue>;
 type QuestionnaireFormValuesTransformer = (values: QuestionnaireFormValues) => QuestionnaireResponse;
@@ -58,13 +51,12 @@ export function useQuestionnaireForm({
       .catch(console.log);
   }, [medplum]);
 
-  const validateForm = useCallback(
-    (values: QuestionnaireFormValues) => validate(values, questionnaire?.item ?? []),
-    [questionnaire]
-  );
   const form = useForm<QuestionnaireFormValues, QuestionnaireFormValuesTransformer>({
-    initialValues: {},
-    validate: validateForm,
+    mode: 'controlled',
+    initialValues: {
+      ...(initialResponse ? getValuesFromResponse(initialResponse) : {}),
+    },
+    validate: (values: QuestionnaireFormValues) => validate(values, questionnaire?.item ?? []),
     transformValues: (values) => createQuestionnaireResponse(values, questionnaire, source, 'completed'),
   });
 
@@ -86,24 +78,9 @@ export function useQuestionnaireForm({
     [form]
   );
 
-  function getInputProps(
-    item: QuestionnaireItem,
-    options?: GetInputPropsOptions
-  ): GetQuestionnaireItemInputPropsReturnType {
+  function getInputProps(item: QuestionnaireItem, options?: GetInputPropsOptions): GetInputPropsReturnType {
     const fieldName = item.linkId;
-    const { onChange: defaultOnChange, ...rest } = form.getInputProps(fieldName, options);
-    return {
-      ...rest,
-      onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-        defaultOnChange(event);
-      },
-      onBlur: (_event: React.FocusEvent<HTMLInputElement>) => {
-        console.log('Blur', fieldName);
-      },
-      onFocus: (_event: React.FocusEvent<HTMLInputElement>) => {
-        console.log('Focus', fieldName);
-      },
-    };
+    return form.getInputProps(fieldName, options);
   }
 
   return {
@@ -114,6 +91,8 @@ export function useQuestionnaireForm({
     setValuesFromResponse,
   };
 }
+
+export const QuestionnaireFormContext = createContext<UseQuestionnaireFormReturn | null>(null);
 
 type Validator = (value: any, values: QuestionnaireFormValues) => React.ReactNode;
 function getItemValidator(item: QuestionnaireItem): Validator {

@@ -1,10 +1,7 @@
+import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
 import { QuestionnaireForm } from './QuestionnaireForm';
-import { Button, TextInput } from '@mantine/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { useQuestionnaireForm } from './useQuestionnaireForm';
-import { on } from 'events';
 
 export default {
   title: 'Medplum/QuestionnaireForm',
@@ -56,19 +53,19 @@ export function PatientIntakeForm(): JSX.Element {
     status: 'in-progress',
     item: [
       {
-        linkId: '1',
+        linkId: 'first-name',
         answer: [{ valueString: 'John' }],
       },
       {
-        linkId: '2',
+        linkId: 'last-name',
         answer: [{ valueString: 'Doe' }],
       },
       {
-        linkId: '3',
+        linkId: 'dob',
         answer: [{ valueString: '1990-01-01' }],
       },
       {
-        linkId: '4',
+        linkId: 'address',
         answer: [{ valueString: '123 Main St' }],
       },
     ],
@@ -82,7 +79,7 @@ export function PatientIntakeForm(): JSX.Element {
     console.log('Questionnaire Response:', response);
   };
 
-  return <QuestionnaireForm onSubmit={onSubmit} questionnaire={questionnaire} intialResponse={initialResponse} />;
+  return <QuestionnaireForm onSubmit={onSubmit} questionnaire={questionnaire} initialResponse={initialResponse} />;
 }
 
 // export const Basic = (): JSX.Element => (
