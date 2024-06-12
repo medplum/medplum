@@ -52,6 +52,7 @@ export class App {
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
+  private keepAlive = false;
   private config: Agent | undefined;
 
   constructor(
@@ -68,7 +69,7 @@ export class App {
 
     this.startWebSocket();
 
-    await this.hydrateListeners();
+    await this.reloadConfig();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -179,7 +180,7 @@ export class App {
           case 'agent:reloadconfig:request':
             try {
               this.log.info('Reloading config...');
-              await this.hydrateListeners();
+              await this.reloadConfig();
               await this.sendToWebSocket({
                 type: 'agent:reloadconfig:response',
                 statusCode: 200,
@@ -205,13 +206,32 @@ export class App {
     });
   }
 
-  private async hydrateListeners(): Promise<void> {
+  private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
-    this.config = agent;
-    const pendingRemoval = new Set(this.channels.keys());
-    let channels = agent.channel ?? [];
+    const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
-    if (agent.status === 'off') {
+    if (!keepAlive && this.hl7Clients.size !== 0) {
+      for (const client of this.hl7Clients.values()) {
+        client.close();
+      }
+    }
+
+    this.config = agent;
+    this.keepAlive = keepAlive ?? false;
+
+    await this.hydrateListeners();
+  }
+
+  /**
+   * This method should only be called by {@link App.reloadConfig}
+   */
+  private async hydrateListeners(): Promise<void> {
+    const config = this.config as Agent;
+
+    const pendingRemoval = new Set(this.channels.keys());
+    let channels = config.channel ?? [];
+
+    if (config.status === 'off') {
       channels = [];
       this.log.warn(
         "Agent status is currently 'off'. All channels are disconnected until status is set back to 'active'"
@@ -525,8 +545,8 @@ export class App {
     if (this.hl7Clients.has(message.remote)) {
       client = this.hl7Clients.get(message.remote) as Hl7Client;
     } else {
-      const keepAlive = this.config?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
       const encoding = address.searchParams.get('encoding') ?? undefined;
+      const keepAlive = this.keepAlive;
       client = new Hl7Client({
         host: address.hostname,
         port: Number.parseInt(address.port, 10),

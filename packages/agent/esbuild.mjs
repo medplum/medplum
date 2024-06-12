@@ -12,7 +12,7 @@ const options = {
   resolveExtensions: ['.js', '.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
-  external: ['iconv-lite', 'pdfmake'],
+  external: ['pdfmake'],
 };
 
 // The single executable application feature only supports running a single embedded CommonJS file.
