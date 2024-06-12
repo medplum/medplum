@@ -523,20 +523,30 @@ export class App {
     let client: Hl7Client;
 
     if (this.hl7Clients.has(message.remote)) {
-      console.log('reusing existing connection');
       client = this.hl7Clients.get(message.remote) as Hl7Client;
     } else {
+      const keepAlive = this.config?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
+      const encoding = address.searchParams.get('encoding') ?? undefined;
       client = new Hl7Client({
         host: address.hostname,
         port: Number.parseInt(address.port, 10),
-        encoding: address.searchParams.get('encoding') ?? undefined,
-        keepAlive: this.config?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean,
+        encoding,
+        keepAlive,
       });
+      this.log.info(`Client created for remote '${message.remote}'`, { keepAlive, encoding });
+
       if (client.keepAlive) {
         this.hl7Clients.set(message.remote, client);
         client.addEventListener('close', () => {
           this.hl7Clients.delete(message.remote);
           this.log.info(`Persistent connection to remote '${message.remote}' closed`);
+        });
+        client.addEventListener('error', () => {
+          this.hl7Clients.delete(message.remote);
+          this.log.info(
+            `Persistent connection to remote '${message.remote}' encountered an error... Closing connection...`
+          );
+          client.close();
         });
       }
     }

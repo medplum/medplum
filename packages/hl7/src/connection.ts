@@ -3,7 +3,7 @@ import { decode, encode } from 'iconv-lite';
 import net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
-import { Hl7ErrorEvent, Hl7MessageEvent } from './events';
+import { Hl7CloseEvent, Hl7ErrorEvent, Hl7MessageEvent } from './events';
 
 // iconv-lite docs have great examples and explanations for how to use Buffers with iconv-lite:
 // See: https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding
@@ -88,6 +88,7 @@ export class Hl7Connection extends Hl7Base {
   close(): void {
     this.socket.end();
     this.socket.destroy();
+    this.dispatchEvent(new Hl7CloseEvent());
   }
 
   private appendData(data: Buffer): void {
