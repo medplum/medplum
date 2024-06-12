@@ -39,7 +39,7 @@ npm install
 
 Then, build the bots
 ```bash
-npm run build
+npm run build:bots
 ```
 
 Then, run the app
