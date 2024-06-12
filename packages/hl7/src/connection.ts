@@ -8,8 +8,15 @@ import { Hl7ErrorEvent, Hl7MessageEvent } from './events';
 // iconv-lite docs have great examples and explanations for how to use Buffers with iconv-lite:
 // See: https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding
 
+export type Hl7MessageQueueItem = {
+  message: Hl7Message;
+  resolve?: (reply: Hl7Message) => void;
+  reject?: (err: Error) => void;
+};
+
 export class Hl7Connection extends Hl7Base {
   private chunks: Buffer[] = [];
+  private messageQueue: Hl7MessageQueueItem[] = [];
 
   constructor(
     readonly socket: net.Socket,
@@ -37,9 +44,26 @@ export class Hl7Connection extends Hl7Base {
       this.resetBuffer();
       this.dispatchEvent(new Hl7ErrorEvent(err));
     });
+
+    this.addEventListener('message', (event) => {
+      // Get the queue item at the head of the queue
+      const next = this.messageQueue.shift();
+      // If there isn't an item, then
+      if (!next) {
+        this.dispatchEvent(
+          new Hl7ErrorEvent(
+            new Error(`Received a message when no pending messages were in the queue. Message: ${event.message}`)
+          )
+        );
+        return;
+      }
+      // Resolve the promise if there is one pending for this message
+      next.resolve?.(event.message);
+    });
   }
 
-  send(reply: Hl7Message): void {
+  private sendImpl(reply: Hl7Message, queueItem: Hl7MessageQueueItem): void {
+    this.messageQueue.push(queueItem);
     const replyString = reply.toString();
     const replyBuffer = encode(replyString, this.encoding);
     const outputBuffer = Buffer.alloc(replyBuffer.length + 3);
@@ -50,17 +74,15 @@ export class Hl7Connection extends Hl7Base {
     this.socket.write(outputBuffer);
   }
 
-  async sendAndWait(msg: Hl7Message): Promise<Hl7Message> {
-    const promise = new Promise<Hl7Message>((resolve) => {
-      function handler(event: Hl7MessageEvent): void {
-        (event.target as Hl7Connection).removeEventListener('message', handler);
-        resolve(event.message);
-      }
-      this.addEventListener('message', handler);
-    });
+  send(reply: Hl7Message): void {
+    this.sendImpl(reply, { message: reply });
+  }
 
-    this.send(msg);
-    return promise;
+  async sendAndWait(msg: Hl7Message): Promise<Hl7Message> {
+    return new Promise<Hl7Message>((resolve, reject) => {
+      const queueItem = { message: msg, resolve, reject };
+      this.sendImpl(msg, queueItem);
+    });
   }
 
   close(): void {

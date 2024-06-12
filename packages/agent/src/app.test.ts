@@ -18,8 +18,6 @@ import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import { AgentHl7Channel } from './hl7';
 
-jest.mock('node-windows');
-
 const medplum = new MockClient();
 
 describe('App', () => {

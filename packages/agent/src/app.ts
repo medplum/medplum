@@ -44,6 +44,7 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
+  readonly hl7Clients = new Map<string, Hl7Client>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
@@ -518,11 +519,27 @@ export class App {
     }
 
     const address = new URL(message.remote);
-    const client = new Hl7Client({
-      host: address.hostname,
-      port: Number.parseInt(address.port, 10),
-      encoding: address.searchParams.get('encoding') ?? undefined,
-    });
+
+    let client: Hl7Client;
+
+    if (this.hl7Clients.has(message.remote)) {
+      console.log('reusing existing connection');
+      client = this.hl7Clients.get(message.remote) as Hl7Client;
+    } else {
+      client = new Hl7Client({
+        host: address.hostname,
+        port: Number.parseInt(address.port, 10),
+        encoding: address.searchParams.get('encoding') ?? undefined,
+        keepAlive: this.config?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean,
+      });
+      if (client.keepAlive) {
+        this.hl7Clients.set(message.remote, client);
+        client.addEventListener('close', () => {
+          this.hl7Clients.delete(message.remote);
+          this.log.info(`Persistent connection to remote '${message.remote}' closed`);
+        });
+      }
+    }
 
     client
       .sendAndWait(Hl7Message.parse(message.body))
@@ -549,9 +566,16 @@ export class App {
           statusCode: 400,
           body: normalizeErrorString(err),
         } satisfies AgentTransmitResponse);
+
+        if (client.keepAlive) {
+          this.hl7Clients.delete(message.remote);
+          client.close();
+        }
       })
       .finally(() => {
-        client.close();
+        if (!client.keepAlive) {
+          client.close();
+        }
       });
   }
 }
