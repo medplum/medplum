@@ -24,6 +24,7 @@ describe('ResourceCrawler', () => {
         onExitObject: () => (exitedObject = true),
         onEnterResource: () => (enteredResource = true),
         onExitResource: () => (exitedResource = true),
+        visitProperty: () => {},
       }
     );
 

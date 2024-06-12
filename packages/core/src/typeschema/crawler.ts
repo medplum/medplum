@@ -9,7 +9,7 @@ export interface ResourceVisitor {
   onExitObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void;
   onEnterResource?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void;
   onExitResource?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => void;
-  visitProperty?: (
+  visitProperty: (
     parent: TypedValueWithPath,
     key: string,
     path: string,
@@ -23,7 +23,7 @@ export interface AsyncResourceVisitor {
   onExitObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
   onEnterResource?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
   onExitResource?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
-  visitPropertyAsync?: (
+  visitPropertyAsync: (
     parent: TypedValueWithPath,
     key: string,
     path: string,
@@ -73,7 +73,7 @@ export function crawlResource(
 }
 
 export type ResourceCrawlerOptions = {
-  excludeMissingProperties?: boolean;
+  skipMissingProperties?: boolean;
   schema?: InternalTypeSchema;
   initialPath?: string;
 };
@@ -91,7 +91,7 @@ class ResourceCrawler {
 
     this.schema = options?.schema ?? getDataType(rootResource.resourceType);
     this.initialPath = options?.initialPath ?? rootResource.resourceType;
-    this.excludeMissingProperties = options?.excludeMissingProperties;
+    this.excludeMissingProperties = options?.skipMissingProperties;
   }
 
   crawl(): void {
@@ -165,7 +165,7 @@ class AsyncResourceCrawler {
 
     this.schema = options?.schema ?? getDataType(rootResource.resourceType);
     this.initialPath = options?.initialPath ?? rootResource.resourceType;
-    this.excludeMissingProperties = options?.excludeMissingProperties;
+    this.excludeMissingProperties = options?.skipMissingProperties;
   }
 
   async crawl(): Promise<void> {
