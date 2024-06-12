@@ -1,6 +1,6 @@
 import { useForm, UseFormReturnType } from '@mantine/form';
 import { GetInputPropsOptions, GetInputPropsReturnType } from '@mantine/form/lib/types';
-import { createReference, ProfileResource } from '@medplum/core';
+import { createReference, evalFhirPathTyped, isResource, ProfileResource } from '@medplum/core';
 import {
   Questionnaire,
   QuestionnaireItem,
@@ -12,87 +12,42 @@ import {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { ReactNode, useCallback, useEffect, useState } from 'react';
 
-export const getInitialValues = (items: QuestionnaireItem[]): Record<string, any> => {
-  const initialValues: Record<string, any> = {};
-  items.forEach((item) => {
-    if (item.type === 'group' && item.item) {
-      initialValues[item.linkId] = getInitialValues(item.item);
-    } else {
-      initialValues[item.linkId] = item.initial?.[0]?.valueString ?? '';
-    }
-  });
-  return initialValues;
-};
-
-function getValuesFromResponse(responses: QuestionnaireResponseItem[] | undefined): Record<string, any> {
-  const values: Record<string, string> = {};
-  responses?.forEach((item) => {
-    if (item.answer) {
-      values[item.linkId] = item.answer[0].valueString ?? '';
-    }
-    if (item.item) {
-      Object.assign(values, getValuesFromResponse(item.item));
-    }
-  });
-  return values;
-}
-
-// type QuestionnaireAnswerTypes = Pick<
-//   {
-//     string: string;
-//     quantity: Quantity;
-//     choice: string;
-//     'open-choice': string;
-//     group: never;
-//     display: never;
-//     boolean: boolean;
-//     reference: Reference;
-//     question: never;
-//     decimal: number;
-//     integer: number;
-//     date: string;
-//     dateTime: string;
-//     time: string;
-//     text: string;
-//     url: string;
-//     attachment: Attachment;
-//   },
-//   QuestionnaireItem['type']
-// >;
-
-export interface QuestionnaireItemInputProps extends GetInputPropsReturnType {
+export interface GetQuestionnaireItemInputPropsReturnType extends GetInputPropsReturnType {
   error?: ReactNode | undefined;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur: (event: React.FocusEvent<HTMLInputElement>) => void;
   onFocus: (event: React.FocusEvent<HTMLInputElement>) => void;
 }
 
-export type GetQuestionnaireItemInputProps = (
+export type GetQuestionnaireItemInputPropsFunction = (
   item: QuestionnaireItem,
   options?: GetInputPropsOptions
-) => QuestionnaireItemInputProps;
+) => GetQuestionnaireItemInputPropsReturnType;
 
-interface UseQuestionnaireFormReturn extends Omit<UseFormReturnType<QuestionnaireFormValues>, 'getInputProps'> {
+type QuestionnaireFormValues = Record<string, QuestionnaireResponseItemAnswerValue>;
+type QuestionnaireFormValuesTransformer = (values: QuestionnaireFormValues) => QuestionnaireResponse;
+
+interface UseQuestionnaireFormReturn
+  extends Omit<UseFormReturnType<QuestionnaireFormValues, QuestionnaireFormValuesTransformer>, 'getInputProps'> {
   schemaLoaded: boolean;
   questionnaire: Questionnaire | undefined;
-  handleChange: (name: string, value: QuestionnaireResponseItemAnswerValue) => void;
-  handleSubmit: (
-    onSubmit: (response: QuestionnaireResponse) => void
-  ) => (event: React.FormEvent<HTMLFormElement>) => void;
-  getInputProps: GetQuestionnaireItemInputProps;
+  getInputProps: GetQuestionnaireItemInputPropsFunction;
   setValuesFromResponse: (response: QuestionnaireResponse) => void;
 }
 
-type QuestionnaireFormValues = Record<string, QuestionnaireResponseItemAnswerValue>;
+interface UseQuestionnaireFormInput {
+  questionnaire: Questionnaire | Reference<Questionnaire>;
+  initialResponse?: QuestionnaireResponse;
+}
 
-export function useQuestionnaireForm(
-  resource: Questionnaire | Reference<Questionnaire>,
-  initialResponse?: QuestionnaireResponse
-): UseQuestionnaireFormReturn {
+export function useQuestionnaireForm({
+  initialResponse,
+  ...props
+}: UseQuestionnaireFormInput): UseQuestionnaireFormReturn {
   const medplum = useMedplum();
   const source = medplum.getProfile();
   const [schemaLoaded, setSchemaLoaded] = useState(false);
-  const questionnaire = useResource(resource);
+  const questionnaire = useResource(props.questionnaire);
   // const [activePage, setActivePage] = useState(0);
 
   useEffect(() => {
@@ -107,16 +62,18 @@ export function useQuestionnaireForm(
     (values: QuestionnaireFormValues) => validate(values, questionnaire?.item ?? []),
     [questionnaire]
   );
-  const form = useForm<QuestionnaireFormValues>({
+  const form = useForm<QuestionnaireFormValues, QuestionnaireFormValuesTransformer>({
     initialValues: {},
     validate: validateForm,
+    transformValues: (values) => createQuestionnaireResponse(values, questionnaire, source, 'completed'),
   });
 
   useEffect(() => {
     if (questionnaire) {
-      const initialValues = initialResponse
-        ? getValuesFromResponse(initialResponse.item)
-        : getInitialValues(questionnaire.item ?? []);
+      const initialValues = {
+        ...getInitialValues(questionnaire),
+        ...(initialResponse ? getValuesFromResponse(initialResponse) : {}),
+      };
       form.initialize(initialValues);
     }
   }, [questionnaire, form, initialResponse]);
@@ -129,32 +86,16 @@ export function useQuestionnaireForm(
     [form]
   );
 
-  const handleSubmit = useCallback(
-    (onSubmit: (response: QuestionnaireResponse) => void) =>
-      form.onSubmit((values) => {
-        if (Object.keys(form.errors).length === 0) {
-          const questionnaireResponse = createQuestionnaireResponse(values, questionnaire?.item ?? [], source);
-          onSubmit(questionnaireResponse);
-        }
-      }),
-    [form, questionnaire, source]
-  );
-
-  const handleChange = useCallback(
-    (name: string, value: any) => {
-      form.setFieldValue(name, value);
-    },
-    [form]
-  );
-
-  function getInputProps(item: QuestionnaireItem, options?: GetInputPropsOptions): QuestionnaireItemInputProps {
+  function getInputProps(
+    item: QuestionnaireItem,
+    options?: GetInputPropsOptions
+  ): GetQuestionnaireItemInputPropsReturnType {
     const fieldName = item.linkId;
     const { onChange: defaultOnChange, ...rest } = form.getInputProps(fieldName, options);
     return {
       ...rest,
       onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
         defaultOnChange(event);
-        handleChange(fieldName, event.target.value);
       },
       onBlur: (_event: React.FocusEvent<HTMLInputElement>) => {
         console.log('Blur', fieldName);
@@ -169,8 +110,6 @@ export function useQuestionnaireForm(
     ...form,
     questionnaire,
     schemaLoaded,
-    handleChange,
-    handleSubmit,
     getInputProps,
     setValuesFromResponse,
   };
@@ -207,7 +146,7 @@ const validate = (values: Record<string, any>, items: QuestionnaireItem[]): Reco
 
 function createQuestionnaireResponse(
   values: Record<string, any>,
-  items: QuestionnaireItem[],
+  questionnaire: Questionnaire | undefined,
   source: ProfileResource | undefined,
   status: QuestionnaireResponse['status'] = 'completed'
 ): QuestionnaireResponse {
@@ -215,12 +154,81 @@ function createQuestionnaireResponse(
     resourceType: 'QuestionnaireResponse',
     status,
     source: source && createReference(source),
-    item: items.map((item) => ({
-      linkId: item.linkId,
-      answer:
-        item.type === 'group' && item.item
-          ? [{ item: createQuestionnaireResponse(values[item.linkId], item.item, source).item }]
-          : [{ valueString: values[item.linkId] }],
-    })),
+    item:
+      questionnaire &&
+      forEachItem(questionnaire, (item, _ancestors, _root, childAnswers) => ({
+        linkId: item.linkId,
+        answer: item.type === 'group' ? childAnswers : [{ valueString: values[item.linkId] }],
+      })),
   };
+}
+
+const getInitialValues = (questionnaire: Questionnaire): Record<string, any> => {
+  const initialValues: Record<string, any> = {};
+
+  forEachItem(questionnaire, (currentItem) => {
+    if (currentItem.type !== 'group' && currentItem.type !== 'display') {
+      initialValues[currentItem.linkId] = evalFhirPathTyped('initial.value', [
+        { type: 'QuestionnaireItem', value: currentItem },
+      ]);
+    }
+    return null;
+  });
+
+  return initialValues;
+};
+
+function getValuesFromResponse(
+  responses: QuestionnaireResponse | QuestionnaireResponseItem[] | undefined
+): Record<string, any> {
+  const values: Record<string, string> = {};
+  const items = isResource(responses) ? responses.item : responses;
+  items?.forEach((item) => {
+    if (item.answer) {
+      values[item.linkId] = item.answer[0].valueString ?? '';
+    }
+    if (item.item) {
+      Object.assign(values, getValuesFromResponse(item.item));
+    }
+  });
+  return values;
+}
+
+type QuestionnaireItemType<R> = R extends Questionnaire ? QuestionnaireItem : QuestionnaireResponseItem;
+type QuestionnaireItemsType<R> = R extends Questionnaire ? QuestionnaireItem[] : QuestionnaireResponseItem[];
+
+type QuestionnaireIteratorCallback<T, R extends Questionnaire | QuestionnaireResponse> = (
+  currentItem: QuestionnaireItemType<R>,
+  ancestors: QuestionnaireItemType<R>[],
+  rootResource: R,
+  childrenResults: T[],
+  currentValues?: Record<string, QuestionnaireResponseItemAnswerValue>
+) => T;
+
+export function forEachItem<T, R extends Questionnaire | QuestionnaireResponse>(
+  resource: R,
+  callback: QuestionnaireIteratorCallback<T, R>,
+  currentValues?: Readonly<Record<string, QuestionnaireResponseItemAnswerValue>>,
+  items?: QuestionnaireItemsType<R>,
+  ancestors: QuestionnaireItemType<R>[] = []
+): T[] {
+  const results: T[] = [];
+
+  const rootItems = (isResource(resource) ? resource.item : items) ?? [];
+
+  for (const item of rootItems) {
+    const childrenResults: T[] = [];
+    if (item.item) {
+      childrenResults.push(
+        ...forEachItem(resource, callback, currentValues, item.item as QuestionnaireItemsType<R>, [
+          item as QuestionnaireItemType<R>,
+          ...ancestors,
+        ])
+      );
+    }
+    const result = callback(item as QuestionnaireItemType<R>, ancestors, resource, childrenResults, currentValues);
+    results.push(result);
+  }
+
+  return results;
 }
