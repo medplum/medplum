@@ -36,6 +36,10 @@ function isSchema(obj: any): obj is InternalTypeSchema {
   return Boolean(obj.elements);
 }
 
+function isAsync(visitor: ResourceVisitor | AsyncResourceVisitor): visitor is AsyncResourceVisitor {
+  return Boolean((visitor as AsyncResourceVisitor).visitPropertyAsync);
+}
+
 export function crawlResource(
   resource: Resource,
   visitor: ResourceVisitor,
@@ -54,17 +58,18 @@ export function crawlResource(
   initialPath?: string
 ): Promise<void> | void {
   let options: ResourceCrawlerOptions | undefined;
-  if (isSchema(schema)) {
+  if (schema && isSchema(schema)) {
     options = { schema, initialPath };
   } else {
     options = schema;
   }
 
-  if ((visitor as AsyncResourceVisitor).visitPropertyAsync) {
-    return new AsyncResourceCrawler(resource, visitor as AsyncResourceVisitor, options).crawl();
+  if (isAsync(visitor)) {
+    return new AsyncResourceCrawler(resource, visitor, options).crawl();
+  } else {
+    new ResourceCrawler(resource, visitor, options).crawl();
+    return undefined;
   }
-  new ResourceCrawler(resource, visitor, options).crawl();
-  return undefined;
 }
 
 export type ResourceCrawlerOptions = {
@@ -105,7 +110,7 @@ class ResourceCrawler {
     }
 
     if (this.excludeMissingProperties) {
-      for (const key of Object.keys(obj)) {
+      for (const key of Object.keys(obj.value)) {
         this.crawlProperty(obj, key, schema, `${path}.${key}`);
       }
     } else {
@@ -183,7 +188,7 @@ class AsyncResourceCrawler {
     }
 
     if (this.excludeMissingProperties) {
-      for (const key of Object.keys(obj)) {
+      for (const key of Object.keys(obj.value)) {
         await this.crawlProperty(obj, key, schema, `${path}.${key}`);
       }
     } else {

@@ -1,5 +1,6 @@
 import {
   badRequest,
+  crawlResource,
   createReference,
   createStructureIssue,
   getTypedPropertyValueWithPath,
@@ -17,21 +18,50 @@ import { Repository, setTypedPropertyValue } from './repo';
 
 type ScanFn = (tv: TypedValue, path: string) => Promise<TypedValue | undefined>;
 
+async function validateReference(
+  reference: Reference,
+  repo: Repository,
+  issues: OperationOutcomeIssue[],
+  path: string
+): Promise<void> {
+  if (reference.reference?.split?.('/')?.length !== 2) {
+    return;
+  }
+
+  try {
+    await repo.readReference(reference);
+  } catch (err) {
+    issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
+  }
+}
+
 export async function validateReferences<T extends Resource>(resource: T, repo: Repository): Promise<void> {
   const issues: OperationOutcomeIssue[] = [];
-  await new FhirResourceScanner(resource).forEach(PropertyType.Reference, async (value, path) => {
-    const reference = value.value as Reference;
-    if (reference.reference?.split?.('/')?.length !== 2) {
-      return undefined;
-    }
+  await crawlResource(
+    resource,
+    {
+      async visitPropertyAsync(parent, _key, path, propertyValue, _schema) {
+        const valueType = Array.isArray(propertyValue) ? propertyValue[0].type : propertyValue.type;
+        if (valueType !== PropertyType.Reference) {
+          return;
+        }
+        if (parent.type === PropertyType.Meta) {
+          return;
+        }
 
-    try {
-      await repo.readReference(reference);
-    } catch (err) {
-      issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
-    }
-    return undefined;
-  });
+        if (Array.isArray(propertyValue)) {
+          for (let i = 0; i < propertyValue.length; i++) {
+            const reference = propertyValue[i].value as Reference;
+            await validateReference(reference, repo, issues, path + '[' + i + ']');
+          }
+        } else {
+          const reference = propertyValue.value as Reference;
+          await validateReference(reference, repo, issues, path);
+        }
+      },
+    },
+    { excludeMissingProperties: true }
+  );
 
   if (issues.length > 0) {
     throw new OperationOutcomeError({
