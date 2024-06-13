@@ -376,6 +376,12 @@ export class App {
       this.webSocket = undefined;
     }
 
+    if (this.hl7Clients.size !== 0) {
+      for (const client of this.hl7Clients.values()) {
+        client.close();
+      }
+    }
+
     const channelStopPromises = [];
     for (const channel of this.channels.values()) {
       channelStopPromises.push(channel.stop());

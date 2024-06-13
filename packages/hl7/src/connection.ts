@@ -45,10 +45,14 @@ export class Hl7Connection extends Hl7Base {
       this.dispatchEvent(new Hl7ErrorEvent(err));
     });
 
+    socket.on('end', () => {
+      this.close();
+    });
+
     this.addEventListener('message', (event) => {
       // Get the queue item at the head of the queue
       const next = this.messageQueue.shift();
-      // If there isn't an item, then
+      // If there isn't an item, then throw an error
       if (!next) {
         this.dispatchEvent(
           new Hl7ErrorEvent(
