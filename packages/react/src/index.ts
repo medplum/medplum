@@ -61,6 +61,8 @@ export * from './QuantityDisplay/QuantityDisplay';
 export * from './QuantityInput/QuantityInput';
 export * from './QuestionnaireBuilder/QuestionnaireBuilder';
 export * from './QuestionnaireForm/QuestionnaireForm';
+export * from './QuestionnaireForm/QuestionnaireForm.context';
+export * from './QuestionnaireForm/QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 export * from './RangeDisplay/RangeDisplay';
 export * from './RangeInput/RangeInput';
 export * from './ReferenceDisplay/ReferenceDisplay';
