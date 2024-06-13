@@ -15,9 +15,6 @@ import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../ut
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
 import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
-export { QuestionnaireFormContext } from './QuestionnaireForm.context';
-export { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
-
 export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
   readonly subject?: Reference;
