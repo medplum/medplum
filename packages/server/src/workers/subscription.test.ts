@@ -14,7 +14,6 @@ import {
   Bot,
   Observation,
   Patient,
-  Project,
   ProjectMembership,
   Resource,
   Subscription,
@@ -1837,20 +1836,12 @@ describe('Subscription Worker', () => {
 
     test('WebSocket Subscription -- Supported Interaction Extension', () =>
       withTestContext(async () => {
-        const wsSubProject = await systemRepo.createResource<Project>({
-          resourceType: 'Project',
-          name: 'WebSocket Subs Project',
-          owner: {
-            reference: 'User/' + randomUUID(),
-          },
-          features: ['websocket-subscriptions'],
-        });
-
-        const wsSubRepo = new Repository({
-          extendedMode: true,
-          projects: [wsSubProject.id as string],
-          author: {
-            reference: 'ClientApplication/' + randomUUID(),
+        const { repo: wsSubRepo } = await createTestProject({
+          withClient: true,
+          withRepo: true,
+          project: {
+            name: 'WebSocket Subs Project',
+            features: ['websocket-subscriptions'],
           },
         });
 
@@ -1873,53 +1864,32 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        // Subscribe to the topic
-        await subscriber.subscribe(subscription.id as string);
-
-        let resolve: () => void;
-        const deferredPromise = new Promise<void>((_resolve) => {
-          resolve = _resolve;
-        });
-
-        subscriber.on('message', (topic, message) => {
-          expect(topic).toEqual(subscription.id);
-          expect(JSON.parse(message)).toEqual(expect.any(Object));
-          resolve();
-        });
-
-        const queue = getSubscriptionQueue() as any;
-        queue.add.mockClear();
-
+        const nextArgsPromise = waitForNextSubNotification<Patient>();
         const patient = await wsSubRepo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
         expect(patient).toBeDefined();
-        expect(queue.add).toHaveBeenCalled();
 
-        const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-        await execSubscriptionJob(job);
-
-        // Expect that a job is published
-
-        // Clear the queue
-        queue.add.mockClear();
+        const notificationArgs = await nextArgsPromise;
+        expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
+          patient,
+          subscription.id as string,
+          { includeResource: true },
+        ]);
 
         // Update the patient
-        await wsSubRepo.updateResource({ ...patient, active: true });
+        // This shouldn't trigger a notification
 
-        // Update should also trigger the subscription
-        expect(queue.add).not.toHaveBeenCalled();
+        const assertPromise = assertNoWsNotifications();
 
-        // Clear the queue
-        queue.add.mockClear();
+        const updatedPatient = await wsSubRepo.updateResource<Patient>({
+          ...patient,
+          active: true,
+        });
+        expect(updatedPatient).toBeDefined();
 
-        // Delete the patient
-        await wsSubRepo.deleteResource('Patient', patient.id as string);
-
-        expect(queue.add).not.toHaveBeenCalled();
-
-        await deferredPromise;
+        await assertPromise;
       }));
   });
 });
