@@ -11,7 +11,6 @@ import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
-import net from 'node:net';
 import { App } from './app';
 
 const medplum = new MockClient();
@@ -464,7 +463,7 @@ describe('HL7', () => {
 
   test('keepAlive: Remote closes connection', async () => {
     const originalConsoleLog = console.log;
-    // console.log = jest.fn();
+    console.log = jest.fn();
 
     const state = {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -574,15 +573,19 @@ describe('HL7', () => {
     await app.stop();
     mockServer.stop();
 
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining("Persistent connection to remote 'mllp://localhost:57001' closed")
+    );
+
     console.log = originalConsoleLog;
   });
+
   test('keepAlive: Error occurs', async () => {
     const originalConsoleLog = console.log;
-    // console.log = jest.fn();
+    console.log = jest.fn();
 
     const state = {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
-      hl7Socket: null as net.Socket | null,
     };
 
     const mockServer = new Server('wss://example.com/ws/agent');
@@ -624,18 +627,25 @@ describe('HL7', () => {
     // Start an HL7 listener
     const hl7Messages = [];
 
+    // This is the mode for the HL7 server when a new connection is created
+    // We start with no timeout so we can test the error functionality
+    // But on the second connection we want it to timeout
+    let mode = 'NO_TIMEOUT' as 'TIMEOUT' | 'NO_TIMEOUT';
+
     const hl7Server = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         hl7Messages.push(message);
         conn.send(message.buildAck());
       });
-      // Set timeout so keep-alive won't keep server open when connection is inactive
-      conn.socket.setTimeout(500);
-      conn.socket.on('timeout', () => {
-        conn.socket.end();
-        conn.socket.destroy();
-      });
-      state.hl7Socket = conn.socket;
+
+      if (mode === 'TIMEOUT') {
+        const socket = conn.socket;
+        socket.setTimeout(500);
+        socket.on('timeout', () => {
+          socket.end();
+          socket.destroy();
+        });
+      }
     });
     hl7Server.start(57001);
 
@@ -680,15 +690,13 @@ describe('HL7', () => {
     expect(hl7Messages.length).toBe(1);
     expect(app.hl7Clients.size).toEqual(1);
 
-    while (!state.hl7Socket) {
-      await sleep(0);
-    }
-    expect(state.hl7Socket).toBeDefined();
-
     // An error happened
-    state.hl7Socket.emit('error', new Error('Something is broken'));
-    state.hl7Socket.end();
-    state.hl7Socket.destroy();
+    const hl7Client = app.hl7Clients.get('mllp://localhost:57001');
+    expect(hl7Client).toBeDefined();
+    expect(hl7Client?.connection).toBeDefined();
+    expect(hl7Client?.connection?.socket).toBeDefined();
+
+    hl7Client?.connection?.socket.emit('error', new Error('Something bad happened'));
 
     // We should no longer have an open client to the given server
     // Since an error has occurred
@@ -696,6 +704,9 @@ describe('HL7', () => {
       await sleep(20);
     }
     expect(app.hl7Clients.size).toEqual(0);
+
+    // Set the socket to timeout on inactivity since we are not going to manually close the connection
+    mode = 'TIMEOUT';
 
     // Next request to server should make a new client
     wsClient.send(
@@ -723,6 +734,12 @@ describe('HL7', () => {
     await hl7Server.stop();
     await app.stop();
     mockServer.stop();
+
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `Persistent connection to remote 'mllp://localhost:57001' encountered an error... Closing connection...`
+      )
+    );
 
     console.log = originalConsoleLog;
   });
