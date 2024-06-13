@@ -93,15 +93,15 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
   }
 
   const output: CodeSystemLookupOutput = {
-    name: resolved.title as string,
-    display: resolved.display as string,
+    name: resolved.title,
+    display: resolved.display ?? '',
   };
   for (const property of result) {
     if (property.code && property.value) {
       output.property = append(output.property, {
-        code: property.code as string,
-        description: property.description as string,
-        value: { type: property.type, value: property.value } as TypedValue,
+        code: property.code,
+        description: property.description,
+        value: { type: property.type, value: property.value },
       });
     }
   }

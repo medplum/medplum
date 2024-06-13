@@ -34,6 +34,20 @@ only `code` or `coding.code` need to be provided.
 
 The operation returns a `Parameters` resource containing the resolved information for the code.
 
+| Parameter Name | Type                 | Description                                            | Required |
+| -------------- | -------------------- | ------------------------------------------------------ | -------- |
+| `name`         | `string`             | The full name of the code system                       | Yes      |
+| `display`      | `string`             | The display string associated with the code            | Yes      |
+| `property`     | `Part[]` (see below) | A property associated with the code by the code system | No       |
+
+Any `property` parameters contain 2-3 nested `part` parameters:
+
+| Parameter Name | Type     | Description                                     | Required |
+| -------------- | -------- | ----------------------------------------------- | -------- |
+| `code`         | `code`   | The name of the parameter                       | Yes      |
+| `value`        | \*       | The value of the property                       | Yes      |
+| `description`  | `string` | What the property means, or how to interpret it | No       |
+
 **Request**:
 
 ```http
