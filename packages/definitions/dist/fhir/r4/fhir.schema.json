@@ -59633,6 +59633,10 @@
         "identityProvider": {
           "description": "Optional external Identity Provider (IdP) for the client application.",
           "$ref": "#/definitions/IdentityProvider"
+        },
+        "refreshTokenLifetime": {
+          "description": "Optional configuration to set the refresh token duration",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,

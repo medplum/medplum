@@ -36,10 +36,10 @@
     "@medplum/mock": "3.1.8",
     "@medplum/react": "3.1.8",
     "@tabler/icons-react": "3.5.0",
-    "@types/node": "20.14.0",
+    "@types/node": "20.14.2",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
-    "@vitejs/plugin-react": "4.3.0",
+    "@vitejs/plugin-react": "4.3.1",
     "postcss": "8.4.38",
     "postcss-preset-mantine": "1.15.0",
     "react": "18.2.0",
@@ -48,7 +48,7 @@
     "rimraf": "5.0.7",
     "ts-node": "10.9.2",
     "typescript": "5.4.5",
-    "vite": "5.2.12",
+    "vite": "5.2.13",
     "vitest": "1.6.0"
   }
 }
