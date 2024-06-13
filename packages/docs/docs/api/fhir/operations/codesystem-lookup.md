@@ -56,6 +56,9 @@ GET /CodeSystem/$lookup?system=http://loinc.org&code=8867-4
 
 **Response** (200 OK):
 
+<details open>
+<summary>Response JSON</summary>
+
 ```js
 {
   "resourceType": "Parameters",
@@ -240,6 +243,8 @@ GET /CodeSystem/$lookup?system=http://loinc.org&code=8867-4
   ]
 }
 ```
+
+</details>
 
 ### Error Response
 
