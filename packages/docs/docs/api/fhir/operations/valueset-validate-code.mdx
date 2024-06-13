@@ -50,12 +50,9 @@ The operation returns a `Parameters` resource containing the validation result.
 
 ### Error Responses
 
-**Example**: Specified `ValueSet` could not be found by URL
+**Example**: Specified `ValueSet` could not be found by URL (400 Bad Request)
 
-```http
-HTTP/1.1 400 Bad Request
-Content-Type: application/fhir+json
-
+```js
 {
     "resourceType": "OperationOutcome",
     "issue": [
@@ -93,12 +90,9 @@ curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
   </TabItem>
 </Tabs>
 
-**Response**:
+**Response**: (200 OK)
 
-```http
-HTTP/1.1 200 OK
-Content-Type: application/fhir+json
-
+```js
 {
   "resourceType": "Parameters",
   "parameter": [
