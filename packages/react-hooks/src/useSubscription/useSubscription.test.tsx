@@ -6,14 +6,16 @@ import 'jest-websocket-mock';
 import { ReactNode, StrictMode, useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { useSubscription } from './useSubscription';
+import { UseSubscriptionOptions, useSubscription } from './useSubscription';
 
 function TestComponent({
   criteria,
   callback,
+  options,
 }: {
   criteria?: string;
   callback?: (bundle: Bundle) => void;
+  options?: UseSubscriptionOptions;
 }): JSX.Element {
   const [lastReceived, setLastReceived] = useState<Bundle>();
   useSubscription(
@@ -21,7 +23,8 @@ function TestComponent({
     callback ??
       ((bundle: Bundle) => {
         setLastReceived(bundle);
-      })
+      }),
+    options
   );
   return (
     <div>
@@ -38,8 +41,11 @@ describe('useSubscription()', () => {
   let medplum: MockClient;
 
   beforeAll(() => {
-    medplum = new MockClient();
     jest.useFakeTimers();
+  });
+
+  beforeEach(() => {
+    medplum = new MockClient();
   });
 
   afterAll(() => {
@@ -192,6 +198,7 @@ describe('useSubscription()', () => {
       />
     );
 
+    // Emit an event that would trigger the current callback to be called based on the criteria
     act(() => {
       medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
         type: 'message',
@@ -199,11 +206,13 @@ describe('useSubscription()', () => {
       });
     });
 
+    // Make sure it was called
     expect(lastFromCb1?.resourceType).toEqual('Bundle');
     expect(lastFromCb1?.type).toEqual('history');
     expect(lastFromCb1?.id).toEqual(id1);
     expect(lastFromCb2).not.toBeDefined();
 
+    // Re-render with a new criteria that does not overlap
     rerender(
       <TestComponent
         criteria="DiagnosticReport"
@@ -213,6 +222,7 @@ describe('useSubscription()', () => {
       />
     );
 
+    // Emit an event that would trigger the old criteria
     act(() => {
       medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
         type: 'message',
@@ -220,11 +230,13 @@ describe('useSubscription()', () => {
       });
     });
 
+    // Make sure it doesn't get called
     expect(lastFromCb1?.resourceType).toEqual('Bundle');
     expect(lastFromCb1?.type).toEqual('history');
     expect(lastFromCb1?.id).toEqual(id1);
     expect(lastFromCb2).not.toBeDefined();
 
+    // Emit an event for the new criteria
     act(() => {
       medplum.getSubscriptionManager().emitEventForCriteria<'message'>('DiagnosticReport', {
         type: 'message',
@@ -232,10 +244,117 @@ describe('useSubscription()', () => {
       });
     });
 
+    // Make sure old criteria still has first event as last received message
     expect(lastFromCb1?.resourceType).toEqual('Bundle');
     expect(lastFromCb1?.type).toEqual('history');
     expect(lastFromCb1?.id).toEqual(id1);
 
+    // Make sure last event was received on the callback for the current criteria
+    expect(lastFromCb2?.resourceType).toEqual('Bundle');
+    expect(lastFromCb2?.type).toEqual('history');
+    expect(lastFromCb2?.id).toEqual(id3);
+  });
+
+  test('Options changed', () => {
+    let lastFromCb1: Bundle | undefined;
+    let lastFromCb2: Bundle | undefined;
+    const id1 = generateId();
+    const id2 = generateId();
+    const id3 = generateId();
+
+    const { rerender } = setup(
+      <TestComponent
+        criteria="Communication"
+        callback={(bundle: Bundle) => {
+          lastFromCb1 = bundle;
+        }}
+        options={{
+          subscriptionProps: {
+            extension: [
+              {
+                url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+                valueCode: 'create',
+              },
+            ],
+          },
+        }}
+      />
+    );
+
+    // Emit an event that would trigger the current callback to be called based on the criteria
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>(
+        'Communication',
+        {
+          type: 'message',
+          payload: { resourceType: 'Bundle', id: id1, type: 'history' },
+        },
+        {
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+              valueCode: 'create',
+            },
+          ],
+        }
+      );
+    });
+
+    // Make sure it was called
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+    expect(lastFromCb2).not.toBeDefined();
+
+    // Re-render with a new criteria + options combo that does not overlap
+    rerender(
+      <TestComponent
+        criteria="Communication"
+        callback={(bundle: Bundle) => {
+          lastFromCb2 = bundle;
+        }}
+      />
+    );
+
+    // Emit an event that would trigger the old criteria + options
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>(
+        'Communication',
+        {
+          type: 'message',
+          payload: { resourceType: 'Bundle', id: id2, type: 'history' },
+        },
+        {
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+              valueCode: 'create',
+            },
+          ],
+        }
+      );
+    });
+
+    // Make sure it doesn't get called
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+    expect(lastFromCb2).not.toBeDefined();
+
+    // Emit an event for the new criteria
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: id3, type: 'history' },
+      });
+    });
+
+    // Make sure old criteria still has first event as last received message
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+
+    // Make sure last event was received on the callback for the current criteria
     expect(lastFromCb2?.resourceType).toEqual('Bundle');
     expect(lastFromCb2?.type).toEqual('history');
     expect(lastFromCb2?.id).toEqual(id3);
