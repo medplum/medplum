@@ -1,14 +1,13 @@
----
-sidebar_position: 1
----
-
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/operation-framework.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
-# Operation Framework
+import DocCardList from '@theme/DocCardList';
+import { useCurrentSidebarCategory } from '@docusaurus/theme-common';
+
+# FHIR Operation Framework
 
 In addition to the standard API endpoints for creating, reading, and updating resources, FHIR offers a variety of
 RPC-like [Operation APIs](https://www.hl7.org/fhir/operations.html) to expose arbitrary functionality as a FHIR API.
@@ -231,3 +230,10 @@ For example, if the specified `ValueSet` could not be found by URL:
     ]
 }
 ```
+
+## Operation Documentation
+
+Details about the FHIR Operations supported by Medplum server are linked below. For information about other available
+operations, see the [complete list](https://www.hl7.org/fhir/R4/operationslist.html) from the FHIR specification.
+
+<DocCardList items={useCurrentSidebarCategory().items} />

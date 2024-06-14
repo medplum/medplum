@@ -6,9 +6,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # ValueSet Validate Code
 
-Validating whether a given coding is in a specified set forms the backbone of FHIR terminology bindings: many resource
-properties can be required to have their values drawn from a given set of values specified by a [`ValueSet`](/docs/api/fhir/resources/valueset),
-which may need to be [expanded](/docs/api/fhir/operations/valueset-expand) behind the scenes.
+Validates whether a specified coding is included in the given `ValueSet`.
 
 ```
 [baseUrl]/ValueSet/$validate-code
