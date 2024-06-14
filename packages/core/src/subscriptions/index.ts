@@ -142,6 +142,7 @@ class CriteriaEntry {
   refCount: number;
   readonly subscriptionProps?: Partial<Subscription>;
   subscriptionId?: string;
+  token?: string;
 
   constructor(criteria: string, subscriptionProps?: Partial<Subscription>) {
     this.criteria = criteria;
@@ -361,7 +362,7 @@ export class SubscriptionManager {
   }
 
   private removeCriteriaEntry(criteriaEntry: CriteriaEntry): void {
-    const { criteria, subscriptionProps, subscriptionId } = criteriaEntry;
+    const { criteria, subscriptionProps, subscriptionId, token } = criteriaEntry;
     if (!this.criteriaEntries.has(criteria)) {
       return;
     }
@@ -380,6 +381,9 @@ export class SubscriptionManager {
     }
     if (subscriptionId) {
       this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
+    }
+    if (token) {
+      this.ws.send(JSON.stringify({ type: 'unbind-from-token', payload: { token } }));
     }
   }
 
@@ -400,6 +404,7 @@ export class SubscriptionManager {
     this.getTokenForCriteria(newCriteriaEntry)
       .then(([subscriptionId, token]) => {
         newCriteriaEntry.subscriptionId = subscriptionId;
+        newCriteriaEntry.token = token;
         this.criteriaEntriesBySubscriptionId.set(subscriptionId, newCriteriaEntry);
         // Emit connect event
         this.emitConnect(newCriteriaEntry);

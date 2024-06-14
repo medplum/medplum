@@ -503,50 +503,54 @@ describe('SubscriptionManager', () => {
       console.warn = originalWarn;
     });
 
-    test('should not clean up a criteria if there are outstanding listeners', (done) => {
+    test('should not clean up a criteria if there are outstanding listeners', async () => {
       let success = false;
       const emitter = manager.addCriteria('Communication');
       expect(emitter).toBeInstanceOf(SubscriptionEmitter);
 
+      let receivedDisconnect = false;
       const handler = (): void => {
         emitter.removeEventListener('disconnect', handler);
         if (!success) {
-          done(new Error('Received `disconnect` when not expected'));
+          receivedDisconnect = true;
         }
       };
       emitter.addEventListener('disconnect', handler);
 
       manager.removeCriteria('Communication');
 
-      sleep(200)
-        .then(() => {
-          emitter.removeEventListener('disconnect', handler);
-          success = true;
-          done();
-        })
-        .catch(console.error);
+      await sleep(500);
+      expect(wsServer).not.toHaveReceivedMessages([{ type: 'unbind-from-token', payload: { token: 'token-123' } }]);
+
+      emitter.removeEventListener('disconnect', handler);
+      success = true;
+
+      if (receivedDisconnect) {
+        throw new Error('Received `disconnect` when not expected');
+      }
     });
 
-    test('should clean up for a criteria if we are the last subscriber', (done) => {
+    test('should clean up for a criteria if we are the last subscriber', async () => {
       let success = false;
+
       const handler = (): void => {
         emitter.removeEventListener('disconnect', handler);
         expect(true).toBeTruthy();
         success = true;
-        done();
       };
       emitter.addEventListener('disconnect', handler);
 
       manager.removeCriteria('Communication');
 
-      sleep(200)
-        .then(() => {
-          emitter.removeEventListener('disconnect', handler);
-          if (!success) {
-            done(new Error('Expected to receive `disconnect` message'));
-          }
-        })
-        .catch(console.error);
+      // Give time for the async tasks to complete before checking for success
+      await sleep(200);
+
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
+
+      emitter.removeEventListener('disconnect', handler);
+      if (!success) {
+        throw new Error('Expected to receive `disconnect` message');
+      }
     });
   });
 

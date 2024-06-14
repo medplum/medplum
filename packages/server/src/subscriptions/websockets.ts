@@ -1,4 +1,4 @@
-import { badRequest, createReference } from '@medplum/core';
+import { badRequest, createReference, normalizeErrorString } from '@medplum/core';
 import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
@@ -22,6 +22,13 @@ export interface BindWithTokenMsg extends BaseSubscriptionClientMsg {
   payload: { token: string };
 }
 
+export interface UnbindFromTokenMsg extends BaseSubscriptionClientMsg {
+  type: 'unbind-from-token';
+  payload: { token: string };
+}
+
+export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg;
+
 const wsToSubLookup = new Map<ws.WebSocket, Set<string>>();
 const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
 let redisSubscriber: Redis | undefined;
@@ -42,6 +49,17 @@ async function setupSubscriptionHandler(): Promise<void> {
   await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
 }
 
+function ensureHeartbeatHandler(): void {
+  if (!heartbeatHandler) {
+    heartbeatHandler = (): void => {
+      for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
+        ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
+      }
+    };
+    heartbeat.addEventListener('heartbeat', heartbeatHandler);
+  }
+}
+
 function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string): void {
   let wsSet = subToWsLookup.get(subscriptionId);
   let subIdSet = wsToSubLookup.get(ws);
@@ -57,14 +75,21 @@ function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string): vo
   subIdSet.add(subscriptionId);
 }
 
-function ensureHeartbeatHandler(): void {
-  if (!heartbeatHandler) {
-    heartbeatHandler = (): void => {
-      for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
-        ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
-      }
-    };
-    heartbeat.addEventListener('heartbeat', heartbeatHandler);
+function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string): void {
+  // Check for WebSocket in map for this subscription ID
+  const wsSet = subToWsLookup.get(subscriptionId);
+  wsSet?.delete(ws);
+  // Cleanup entry for this subscriptionId if empty
+  if (subToWsLookup.size === 0) {
+    subToWsLookup.delete(subscriptionId);
+  }
+
+  // Check for subscription in map for this WebSocket
+  const subIdSet = wsToSubLookup.get(ws);
+  subIdSet?.delete(subscriptionId);
+  // Cleanup entry for this WebSocket if empty
+  if (wsToSubLookup.size === 0) {
+    wsToSubLookup.delete(ws);
   }
 }
 
@@ -87,6 +112,14 @@ function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
   }
   wsToSubLookup.delete(ws);
 }
+
+// NOTE(ThatOneBro - 06/13/24): Although many parts of the WebSocket Subscription system are set up for multiple subscribers to one subscription
+// The current flow will always mark an unbound subscription as inactive (see `markInMemorySubscriptionsInactive`), which will remove it from the list of active
+// Subscriptions for the associated project and it will not be evaluated against resource interactions
+//
+// In order for this to be possible in the future, we should probably move from Redis Sets to Redis Hashes, where
+// Each project entry becomes a map of subscriptions to their current ref count (how many subscribers each has)
+// This seems like it is potentially error prone without ensured atomicity of Redis operations between server instances but I'm sure there are existing solutions for this
 
 export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
   const redis = getRedis();
@@ -125,30 +158,68 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     };
   };
 
+  const onUnbind = async (tokenPayload: JWTPayload & Partial<AdditionalWsBindingClaims>): Promise<void> => {
+    const subscriptionId = tokenPayload?.subscription_id;
+    if (!subscriptionId) {
+      socket.send(
+        JSON.stringify(badRequest('Token claims missing subscription_id. Make sure you are sending the correct token.'))
+      );
+      socket.terminate();
+      return;
+    }
+
+    unsubscribeWsFromSubscription(socket, subscriptionId);
+    const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
+    if (!cacheEntryStr) {
+      globalLogger.error('[WS] Failed to retrieve subscription cache entry when unbinding from token');
+      return;
+    }
+    const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+    await markInMemorySubscriptionsInactive(cacheEntry.projectId, new Set([subscriptionId]));
+  };
+
   socket.on('message', async (data: ws.RawData) => {
     const rawDataStr = (data as Buffer).toString();
     globalLogger.debug('[WS] received data', { data: rawDataStr });
-    const msg = JSON.parse(rawDataStr) as BindWithTokenMsg;
-    switch (msg.type) {
-      // It's actually ok to rebind to the same token...
-      // Since it will essentially tell redis to subscribe to these channels
-      // Which the current client is already subscribed to
-      case 'bind-with-token': {
-        const token = msg?.payload?.token;
-        if (!token) {
-          globalLogger.error('[WS]: invalid client message - missing token', { data, socket });
-          return;
-        }
-        try {
-          const { payload } = await verifyJwt(token);
-          await onBind(payload);
-        } catch (_err) {
-          socket.send(JSON.stringify(badRequest('Token failed to validate. Check token expiry.')));
-        }
-        break;
+    const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
+    if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
+      const token = msg?.payload?.token;
+      if (!token) {
+        globalLogger.error('[WS]: invalid client message - missing token', { data, socket });
+        return;
       }
-      default:
-        globalLogger.error('[WS]: invalid client message', { data, socket });
+
+      let tokenPayload: JWTPayload;
+      try {
+        const { payload } = await verifyJwt(token);
+        tokenPayload = payload;
+      } catch (err) {
+        globalLogger.error(`[WS]: Error occurred while verifying client message token: ${normalizeErrorString(err)}`);
+        socket.send(JSON.stringify(badRequest('Token failed to validate. Check token expiry.')));
+        return;
+      }
+
+      // It's actually ok to rebind or unbind to the same token...
+      // Since it will essentially tell Redis to subscribe or unsubscribe to these channels
+      // Which the current client is already subscribed or unsubscribed from
+      switch (msg.type) {
+        case 'bind-with-token':
+          try {
+            await onBind(tokenPayload);
+          } catch (err: unknown) {
+            globalLogger.error(`[WS]: Error while binding with token: ${normalizeErrorString(err)}`);
+          }
+          break;
+        case 'unbind-from-token':
+          try {
+            await onUnbind(tokenPayload);
+          } catch (err: unknown) {
+            globalLogger.error(`[WS]: Error while unbinding from token: ${normalizeErrorString(err)}`);
+          }
+          break;
+      }
+    } else {
+      globalLogger.error('[WS]: invalid client message', { data, socket });
     }
   });
 
