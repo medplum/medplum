@@ -1,9 +1,10 @@
 import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Encounter, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, ChargeItemDefinition, Encounter, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
-import { handler } from './superbill';
+import { getServiceDisplayString, getServiceFee, handler } from './superbill';
+import { testData } from './test-data';
 
 const medplum = new MockClient();
 
@@ -17,30 +18,14 @@ describe('Superbill tests', () => {
   });
 
   beforeEach(() => {
-    medplum.executeBatch(testData);
+    medplum.executeBatch(chargeItemDefinitions);
   });
 
   test('Show answers', async () => {
-    const encounterData: Encounter = {
-      resourceType: 'Encounter',
-      status: 'finished',
-      class: {
-        system: 'http://ama-assn.org/go/cpt',
-        code: '99204',
-        display: 'New patient office visit',
-      },
-      serviceType: {
-        coding: [
-          {
-            system: 'http://ama-assn.org/go/cpt',
-            code: '71045',
-            display: 'Radiological examination, chest; single view ',
-          },
-        ],
-      },
-    };
-
-    const encounter = await medplum.createResource(encounterData);
+    await medplum.executeBatch(testData);
+    const encounter = (await medplum.searchOne('Encounter', {
+      identifier: 'example-encounter',
+    })) as Encounter;
 
     const response: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
@@ -59,9 +44,31 @@ describe('Superbill tests', () => {
       secrets: {},
     });
   });
+
+  test('Invalid charge item code', async () => {
+    const chargeItemDefinition: ChargeItemDefinition = {
+      resourceType: 'ChargeItemDefinition',
+      url: 'http://example.org',
+      status: 'active',
+    };
+
+    expect(() => getServiceDisplayString(chargeItemDefinition)).toThrowError(
+      /^Invalid code on charge item definition$/
+    );
+  });
+
+  test('No fee provided', async () => {
+    const chargeItemDefinition: ChargeItemDefinition = {
+      resourceType: 'ChargeItemDefinition',
+      url: 'http://example.org',
+      status: 'active',
+    };
+
+    expect(() => getServiceFee(chargeItemDefinition)).toThrowError(/^No fee specified for this service$/);
+  });
 });
 
-const testData: Bundle = {
+const chargeItemDefinitions: Bundle = {
   resourceType: 'Bundle',
   type: 'transaction',
   entry: [
