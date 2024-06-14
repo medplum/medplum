@@ -171,7 +171,9 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     unsubscribeWsFromSubscription(socket, subscriptionId);
     const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
     if (!cacheEntryStr) {
-      globalLogger.error('[WS] Failed to retrieve subscription cache entry when unbinding from token');
+      globalLogger.error('[WS] Failed to retrieve subscription cache entry when unbinding from token', {
+        subscriptionId,
+      });
       return;
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;

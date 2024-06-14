@@ -267,6 +267,14 @@ describe('WebSockets Subscriptions', () => {
           }
           expect(subActive).toEqual(false);
         })
+        // Call unbind again to test that it doesn't break anything
+        .sendJson({ type: 'unbind-from-token', payload: { token } })
+        .exec(async () => {
+          await sleep(150);
+          expect(console.log).toHaveBeenCalledWith(
+            expect.stringContaining('[WS] Failed to retrieve subscription cache entry when unbinding from token')
+          );
+        })
         .close()
         .expectClosed();
     }));
