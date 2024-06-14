@@ -183,7 +183,7 @@ curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
   -d '{"resourceType":"Parameters","parameter":[{"name":"url","valueUri":"http://hl7.org/fhir/ValueSet/condition-severity"},{"name":"system","valueUri":"http://snomed.info/sct"},{"name":"code","valueCode":"255604002"}]}'
 
 curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
-  -X GET \
+  --get \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
   -d 'url=http://hl7.org/fhir/ValueSet/condition-severity' \
   -d 'system=http://snomed.info/sct' \

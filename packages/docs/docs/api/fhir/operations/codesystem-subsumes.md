@@ -17,7 +17,7 @@ ancestor of the other.
 | `codeA`   | `code`   | One of the codes to test.                                 | Yes             |
 | `codeB`   | `code`   | The other code to test.                                   | Yes             |
 
-<sup>*</sup> If no `system` is specified, the operation must be invoked on a specific `CodeSystem` instance by ID.
+<sup>\*</sup> If no `system` is specified, the operation must be invoked on a specific `CodeSystem` instance by ID.
 
 ## Output
 
@@ -42,6 +42,15 @@ To check whether SNOMED code `364075005` (Heart rate) is a descendant code of `3
 
 ```http
 GET https://api.medplum.com/fhir/R4/CodeSystem/$subsumes?system=http://snomed.info/sct&codeA=364075005&codeB=363787002
+```
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/CodeSystem/$subsumes' \
+  --get \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
+  -d 'system=http://snomed.info/sct' \
+  -d 'codeA=364075005' \
+  -d 'codeB=363787002'
 ```
 
 **Response** (200 OK):
