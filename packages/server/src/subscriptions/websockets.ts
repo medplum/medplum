@@ -78,18 +78,22 @@ function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string): vo
 function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string): void {
   // Check for WebSocket in map for this subscription ID
   const wsSet = subToWsLookup.get(subscriptionId);
-  wsSet?.delete(ws);
-  // Cleanup entry for this subscriptionId if empty
-  if (subToWsLookup.size === 0) {
-    subToWsLookup.delete(subscriptionId);
+  if (wsSet) {
+    wsSet.delete(ws);
+    // Cleanup entry for this subscriptionId if empty
+    if (wsSet.size === 0) {
+      subToWsLookup.delete(subscriptionId);
+    }
   }
 
   // Check for subscription in map for this WebSocket
   const subIdSet = wsToSubLookup.get(ws);
-  subIdSet?.delete(subscriptionId);
-  // Cleanup entry for this WebSocket if empty
-  if (wsToSubLookup.size === 0) {
-    wsToSubLookup.delete(ws);
+  if (subIdSet) {
+    subIdSet.delete(subscriptionId);
+    // Cleanup entry for this WebSocket if empty
+    if (subIdSet.size === 0) {
+      wsToSubLookup.delete(ws);
+    }
   }
 }
 
