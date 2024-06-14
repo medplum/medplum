@@ -15,15 +15,15 @@ Validates whether a specified coding is included in the given `ValueSet`.
 
 ## Parameters
 
-| Name              | Type              | Description                                                                                                         | Required        |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `url`             | `uri`             | The canonical URL of the ValueSet to validate against                                                               | No<sup>\*</sup> |
-| `code`            | `string`          | The code to look up.                                                                                                | No              |
-| `system`          | `string`          | The canonical URL of the code system the code belongs to.                                                           | No              |
-| `coding`          | `Coding`          | Look up via full Coding.                                                                                            | No              |
-| `codeableConcept` | `CodeableConcept` | Look up multiple related codes.                                                                                     | No              |
-| `display`         | `string`          | Additionally validate the given display text                                                                        | No              |
-| `abstract`        | `boolean`         | Whether codes labeled as abstract, i.e. representing broad concepts rather than specific values, should be included | No              |
+| Name              | Type              | Description                                                                                                                                                    | Required        |
+| ----------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `url`             | `uri`             | The canonical URL of the ValueSet to validate against                                                                                                          | No<sup>\*</sup> |
+| `code`            | `string`          | The code to look up.                                                                                                                                           | No              |
+| `system`          | `string`          | The canonical URL of the code system the code belongs to.                                                                                                      | No              |
+| `coding`          | `Coding`          | Look up via full Coding.                                                                                                                                       | No              |
+| `codeableConcept` | `CodeableConcept` | Look up multiple related codes.                                                                                                                                | No              |
+| `display`         | `string`          | Additionally validate the given display text                                                                                                                   | No              |
+| `abstract`        | `boolean`         | Whether codes labeled as abstract should be included. Abstract codes represent broad categories or groupings rather than specific concepts, e.g. "Vital Signs" | No              |
 
 <sup>*</sup> If no `url` is provided, the operation must be invoked on a specific `ValueSet` instance.
 
