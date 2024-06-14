@@ -201,7 +201,7 @@ export class App {
             this.log.error(`Unknown message type: ${command.type}`);
         }
       } catch (err) {
-        this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+        this.log.error(`WebSocket error on incoming message: ${normalizeErrorString(err)}`);
       }
     });
   }
@@ -423,7 +423,7 @@ export class App {
           try {
             await this.sendToWebSocket(msg);
           } catch (err) {
-            this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+            this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
             this.webSocketQueue.unshift(msg);
             throw err;
           }
