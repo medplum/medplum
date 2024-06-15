@@ -4,7 +4,7 @@ Validates whether a specified code is part of the given `CodeSystem`.
 
 ```
 [baseUrl]/CodeSystem/$validate-code
-[baseUrl]/CodeSystem/[id]$validate-code
+[baseUrl]/CodeSystem/[id]/$validate-code
 ```
 
 ## Parameters
