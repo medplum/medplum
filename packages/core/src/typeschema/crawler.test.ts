@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Attachment, Bundle, Patient } from '@medplum/fhirtypes';
 import { TypedValue } from '../types';
-import { arrayify } from '../utils';
+import { arrayify, sleep } from '../utils';
 import { crawlResource } from './crawler';
 import { indexStructureDefinitionBundle } from './types';
 
@@ -65,5 +65,36 @@ describe('ResourceCrawler', () => {
     });
 
     expect(attachments).toHaveLength(2);
+  });
+
+  test('Async crawler over only existing properties', async () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      photo: [
+        {
+          contentType: 'image/png',
+          url: 'https://example.com/photo.png',
+        },
+        {
+          contentType: 'image/png',
+          data: 'base64data',
+        },
+      ],
+    };
+
+    const paths: string[] = [];
+    await crawlResource(
+      patient,
+      {
+        visitPropertyAsync: async (_parent, _key, path, _propertyValues) => {
+          await sleep(5);
+          paths.push(path);
+        },
+      },
+      { skipMissingProperties: true }
+    );
+
+    expect(paths).toContain('Patient.photo.contentType');
+    expect(paths).not.toContain('Patient.gender');
   });
 });

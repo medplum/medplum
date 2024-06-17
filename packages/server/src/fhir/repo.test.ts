@@ -10,6 +10,7 @@ import {
   OperationOutcomeError,
   Operator,
   preconditionFailed,
+  toTypedValue,
 } from '@medplum/core';
 import {
   BundleEntry,
@@ -34,7 +35,7 @@ import { loadTestConfig } from '../config';
 import { getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository } from './repo';
+import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
 
 jest.mock('hibp');
 
@@ -1089,4 +1090,23 @@ describe('FHIR Repo', () => {
       };
       await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
     }));
+
+  test('setTypedValue', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      photo: [
+        {
+          contentType: 'image/png',
+          url: 'https://example.com/photo.png',
+        },
+        {
+          contentType: 'image/png',
+          data: 'base64data',
+        },
+      ],
+    };
+
+    setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
+    expect(patient.photo?.[1].contentType).toEqual('image/jpeg');
+  });
 });
