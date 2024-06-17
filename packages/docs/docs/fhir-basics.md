@@ -172,6 +172,9 @@ A [`CodeableConcept`][codeableconcept] consists of two parts:
 
 FHIR [`CodeableConcepts`][codeableconcept] use the `system` element to identify each code system within the `coding` array. By convention, FHIR uses absolute URLs to enforce that these systems are a globally unique namespace. _However, these URLs do not always point to hosted web sites._
 
+More detailed information about using coded values with FHIR are available in our
+[Terminology Services documentation](/docs/terminology).
+
 Refer to [this blog post](/blog/demystifying-fhir-systems) for a longer discussion of `system` strings.
 
 Refer to the [FHIR official documentation](https://hl7.org/fhir/R4/terminologies-systems.html) for a list of `systems` for common healthcare code systems.

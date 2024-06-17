@@ -12,24 +12,26 @@ import type {
 import { getConfig } from './config';
 import { getJsonSchemaDefinitions } from './fhir/jsonschema';
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type OpenAPIObjectWithPaths = OpenAPIObject & { paths: PathsObject };
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
-let cachedSpec: any;
+let cachedSpec: OpenAPIObjectWithPaths;
 
 export function openApiHandler(_req: Request, res: Response): void {
   res.status(200).json(getSpec());
 }
 
-function getSpec(): any {
+function getSpec(): OpenAPIObjectWithPaths {
   if (!cachedSpec) {
     cachedSpec = buildSpec();
   }
   return cachedSpec;
 }
 
-function buildSpec(): any {
+function buildSpec(): OpenAPIObjectWithPaths {
   const result = buildBaseSpec();
   const definitions = getJsonSchemaDefinitions();
   Object.entries(definitions).forEach(([name, definition]) => buildFhirType(result, name, definition));
