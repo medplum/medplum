@@ -2,6 +2,7 @@ import {
   BinarySource,
   ContentType,
   CreateBinaryOptions,
+  IClientStorage,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -91,6 +92,7 @@ export interface MockClientOptions extends MedplumClientOptions {
    * MedplumContext.profile returning undefined as if no one were logged in.
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
+  readonly storage?: IClientStorage;
 }
 
 export class MockClient extends MedplumClient {
