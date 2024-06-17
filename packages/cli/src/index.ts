@@ -1,6 +1,7 @@
 import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { Command, CommanderError } from 'commander';
 import dotenv from 'dotenv';
+import { agent } from './agent';
 import { login, token, whoami } from './auth';
 import { buildAwsCommand } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
@@ -37,6 +38,9 @@ export async function main(argv: string[]): Promise<void> {
 
   // Bot Commands
   index.addCommand(bot);
+
+  // Agent Commands
+  index.addCommand(agent);
 
   // Deprecated Bot Commands
   index.addCommand(saveBotDeprecate);
