@@ -212,4 +212,5 @@ export * from './UserConfiguration';
 export * from './UserSecurityRequest';
 export * from './ValueSet';
 export * from './VerificationResult';
+export * from './ViewDefinition';
 export * from './VisionPrescription';

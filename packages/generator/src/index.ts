@@ -26,7 +26,7 @@ export function main(): void {
   writeResourceTypeFile();
 
   for (const type of Object.values(getAllDataTypes())) {
-    if (isResourceTypeSchema(type) || type.kind === 'complex-type') {
+    if (isResourceTypeSchema(type) || type.kind === 'complex-type' || type.kind === 'logical') {
       writeInterfaceFile(type);
     }
   }
