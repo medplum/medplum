@@ -54,13 +54,13 @@
     "jsdom": "24.1.0",
     "npm-check-updates": "16.14.20",
     "nyc": "17.0.0",
-    "prettier": "3.3.1",
+    "prettier": "3.3.2",
     "rimraf": "5.0.7",
     "sort-package-json": "2.10.0",
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.2",
     "tslib": "2.6.3",
-    "turbo": "2.0.3",
+    "turbo": "2.0.4",
     "typescript": "5.4.5"
   },
   "engines": {
