@@ -1,5 +1,5 @@
 import { Operator, created, parseSearchRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse, getFhirRequestParams } from '@medplum/fhir-router';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   Measure,
   MeasureGroup,
@@ -42,7 +42,7 @@ interface EvaluateMeasureParameters {
  */
 export async function evaluateMeasureHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  const { id } = getFhirRequestParams<{ id: string }>(req);
+  const { id } = req.params;
   const measure = await ctx.repo.readResource<Measure>('Measure', id);
   const params = parseInputParameters<EvaluateMeasureParameters>(operation, req);
   const measureReport = await evaluateMeasure(ctx.repo, params, measure);

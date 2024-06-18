@@ -12,7 +12,7 @@ import {
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse, getFhirRequestParams } from '@medplum/fhir-router';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   GraphDefinition,
   GraphDefinitionLink,
@@ -35,7 +35,7 @@ import { Repository } from '../repo';
  */
 export async function resourceGraphHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  const { resourceType, id } = getFhirRequestParams<{ resourceType: string; id: string }>(req);
+  const { resourceType, id } = req.params;
   const definition = await validateQueryParameters(req);
   if (!definition.start || definition.start !== resourceType) {
     throw new OperationOutcomeError(badRequest('Missing or incorrect `start` type'));

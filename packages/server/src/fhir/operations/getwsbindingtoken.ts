@@ -1,5 +1,5 @@
 import { allOk, badRequest, normalizeErrorString, resolveId } from '@medplum/core';
-import { FhirRequest, FhirResponse, getFhirRequestParams } from '@medplum/fhir-router';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Subscription } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
@@ -150,7 +150,7 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
     return [badRequest('Login missing user')];
   }
 
-  const { id: subscriptionId } = getFhirRequestParams<{ id: string }>(req);
+  const { id: subscriptionId } = req.params;
 
   try {
     await repo.readResource<Subscription>('Subscription', subscriptionId);

@@ -1,5 +1,5 @@
 import { accepted, allOk, concatUrls, forbidden, getResourceTypes, Operator } from '@medplum/core';
-import { FhirRequest, FhirResponse, getFhirRequestParams } from '@medplum/fhir-router';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
@@ -20,7 +20,7 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
     return [forbidden];
   }
 
-  const { resourceType, id } = getFhirRequestParams<{ id: string; resourceType: string }>(req);
+  const { resourceType, id } = req.params;
   const { everything } = req.query;
   if (everything === 'true') {
     const { baseUrl } = getConfig();
