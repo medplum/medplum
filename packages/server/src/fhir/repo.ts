@@ -1838,6 +1838,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @returns The resource with restored hidden fields.
    */
   private restoreReadonlyFields<T extends Resource>(input: T, original: T | undefined): T {
+    debugger;
     const policy = satisfiedAccessPolicy(
       original ?? input,
       original ? AccessPolicyInteraction.UPDATE : AccessPolicyInteraction.CREATE,
