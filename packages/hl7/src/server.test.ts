@@ -99,4 +99,9 @@ describe('HL7 Server', () => {
     // Shut down
     await server.stop();
   });
+
+  test('Stop called when server not running', async () => {
+    const hl7Server = new Hl7Server((_conn) => undefined);
+    await expect(hl7Server.stop()).rejects.toThrow('Stop was called but there is no server running');
+  });
 });
