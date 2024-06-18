@@ -5,7 +5,7 @@
 
 import esbuild from 'esbuild';
 import { glob } from 'glob';
-import botLayer from '@medplum/bot-layer/package.json' assert { type: 'json' };
+import botLayer from '@medplum/bot-layer/package.json' with { type: 'json' };
 
 // Find all TypeScript files in your source directory
 const entryPoints = glob.sync('./src/**/*.ts').filter((file) => !file.endsWith('test.ts'));
