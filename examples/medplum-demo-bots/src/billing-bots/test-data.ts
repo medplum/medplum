@@ -15,6 +15,7 @@ export const testData: Bundle = {
             family: 'Simpson',
           },
         ],
+        gender: 'male',
         birthDate: '2003-02-24T14:33:34.326Z',
         telecom: [
           {

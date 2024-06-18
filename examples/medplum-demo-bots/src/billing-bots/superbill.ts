@@ -58,7 +58,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const providerInfoSection = getProviderInfo(provider);
   const feeTable = createFeeTable(chargeDefinitions, serviceDate);
 
-  debugger;
   const pdfData: CreatePdfOptions = {
     docDefinition: {
       content: [...patientInfoSection, ...coverageInfoSection, ...providerInfoSection, ...feeTable],
@@ -101,7 +100,7 @@ function getProviderInfo(provider?: Practitioner): Content[] {
         body: [
           ['Physician Name:', providerName],
           ['Title:', providerTitle],
-          ['Date:', new Date().toISOString()],
+          ['Date:', formatDate(new Date().toISOString())],
         ],
       },
       layout: 'noBorders',
@@ -135,6 +134,7 @@ function getPatientInfo(patient: Patient): Content[] {
   const email = getEmailAddress(patient) ?? '';
   const phoneNumber = getPhoneNumber(patient) ?? '';
   const address = patient.address ? formatAddress(patient.address[0]) : '';
+  const genderDisplay = patient.gender ? patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1) : '';
 
   return [
     { text: 'Patient Information', style: 'header' },
@@ -143,7 +143,7 @@ function getPatientInfo(patient: Patient): Content[] {
         body: [
           ['Name:', name],
           ['Age:', age],
-          ['Gender:', patient.gender ?? ''],
+          ['Gender:', genderDisplay],
           ['Date of Birth:', dob],
           ['Phone Number:', phoneNumber],
           ['Email Address:', email],
@@ -164,13 +164,17 @@ function createFeeTable(chargeDefinitions: ChargeItemDefinition[], serviceDate: 
     const dateCell = { text: serviceDate, noWrap: true };
     const fee = getServiceFee(chargeDefinition);
     totalFee += fee;
-    const feeCell = { text: fee.toString(), noWrap: true };
+    const feeCell = { text: '$' + fee.toString(), noWrap: true, alignment: 'right' };
     const serviceCell = serviceDisplay;
     const bodyRow = [dateCell, serviceCell, feeCell];
     body.push(bodyRow);
   }
 
-  body.push([{ text: 'Total', colSpan: 2, style: 'tableHeader' }, '', { text: totalFee, style: 'tableHeader' }]);
+  body.push([
+    { text: 'Total', colSpan: 2, style: 'tableHeader' },
+    '',
+    { text: '$' + totalFee, style: 'tableHeader', alignment: 'right' },
+  ]);
   return [
     {
       table: {
