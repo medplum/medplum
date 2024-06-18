@@ -561,7 +561,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     let updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
     });
-    updated = await replaceConditionalReferences(updated, this);
+    updated = await replaceConditionalReferences(this, updated);
 
     const resultMeta = {
       ...updated.meta,
@@ -582,7 +582,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resultMeta.compartment = this.getCompartments(result);
 
     if (this.context.checkReferencesOnWrite) {
-      await validateReferences(result, this);
+      await validateReferences(this, result);
     }
 
     if (this.isNotModified(existing, result)) {

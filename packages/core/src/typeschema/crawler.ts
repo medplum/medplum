@@ -32,8 +32,8 @@ export interface AsyncResourceVisitor {
   ) => Promise<void>;
 }
 
-function isSchema(obj: any): obj is InternalTypeSchema {
-  return Boolean(obj.elements);
+function isSchema(obj: InternalTypeSchema | ResourceCrawlerOptions): obj is InternalTypeSchema {
+  return 'elements' in obj;
 }
 
 function isAsync(visitor: ResourceVisitor | AsyncResourceVisitor): visitor is AsyncResourceVisitor {

@@ -14,8 +14,8 @@ import { randomUUID } from 'crypto';
 import { Repository } from './repo';
 
 async function validateReference(
-  reference: Reference,
   repo: Repository,
+  reference: Reference,
   issues: OperationOutcomeIssue[],
   path: string
 ): Promise<void> {
@@ -35,7 +35,7 @@ function isCheckableReference(propertyValue: TypedValue | TypedValue[], parent: 
   return valueType === PropertyType.Reference && parent.type !== PropertyType.Meta;
 }
 
-export async function validateReferences<T extends Resource>(resource: T, repo: Repository): Promise<void> {
+export async function validateReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
   const issues: OperationOutcomeIssue[] = [];
   await crawlResource(
     resource,
@@ -48,11 +48,11 @@ export async function validateReferences<T extends Resource>(resource: T, repo: 
         if (Array.isArray(propertyValue)) {
           for (let i = 0; i < propertyValue.length; i++) {
             const reference = propertyValue[i].value as Reference;
-            await validateReference(reference, repo, issues, path + '[' + i + ']');
+            await validateReference(repo, reference, issues, path + '[' + i + ']');
           }
         } else {
           const reference = propertyValue.value as Reference;
-          await validateReference(reference, repo, issues, path);
+          await validateReference(repo, reference, issues, path);
         }
       },
     },
@@ -69,8 +69,8 @@ export async function validateReferences<T extends Resource>(resource: T, repo: 
 }
 
 async function resolveReplacementReference(
-  reference: Reference,
   repo: Repository,
+  reference: Reference,
   path: string
 ): Promise<Reference | undefined> {
   if (!reference.reference?.includes?.('?')) {
@@ -93,7 +93,7 @@ async function resolveReplacementReference(
   return createReference(matches[0]);
 }
 
-export async function replaceConditionalReferences<T extends Resource>(resource: T, repo: Repository): Promise<T> {
+export async function replaceConditionalReferences<T extends Resource>(repo: Repository, resource: T): Promise<T> {
   await crawlResource(
     resource,
     {
@@ -105,7 +105,7 @@ export async function replaceConditionalReferences<T extends Resource>(resource:
         if (Array.isArray(propertyValue)) {
           for (let i = 0; i < propertyValue.length; i++) {
             const reference = propertyValue[i].value as Reference;
-            const replacement = await resolveReplacementReference(reference, repo, path + '[' + i + ']');
+            const replacement = await resolveReplacementReference(repo, reference, path + '[' + i + ']');
 
             if (replacement) {
               parent.value[key][i] = replacement;
@@ -113,7 +113,7 @@ export async function replaceConditionalReferences<T extends Resource>(resource:
           }
         } else {
           const reference = propertyValue.value as Reference;
-          const replacement = await resolveReplacementReference(reference, repo, path);
+          const replacement = await resolveReplacementReference(repo, reference, path);
 
           if (replacement) {
             parent.value[key] = replacement;
