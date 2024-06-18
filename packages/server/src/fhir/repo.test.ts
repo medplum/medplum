@@ -10,6 +10,7 @@ import {
   OperationOutcomeError,
   Operator,
   preconditionFailed,
+  toTypedValue,
 } from '@medplum/core';
 import {
   BundleEntry,
@@ -18,6 +19,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   Questionnaire,
@@ -33,7 +35,7 @@ import { loadTestConfig } from '../config';
 import { getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository } from './repo';
+import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
 
 jest.mock('hibp');
 
@@ -1038,4 +1040,73 @@ describe('FHIR Repo', () => {
       await systemRepo.deleteResource(patient.resourceType, patient.id as string);
       await expect(systemRepo.deleteResource(patient.resourceType, patient.id as string)).resolves.toBeUndefined();
     }));
+
+  test('Conditional reference resolution', async () =>
+    withTestContext(async () => {
+      const practitionerIdentifier = randomUUID();
+      const practitioner = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        generalPractitioner: [
+          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
+        ],
+      });
+      expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
+    }));
+
+  test('Conditional reference resolution failure', async () =>
+    withTestContext(async () => {
+      const practitionerIdentifier = randomUUID();
+      const patient: Patient = {
+        resourceType: 'Patient',
+        generalPractitioner: [
+          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
+        ],
+      };
+      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow('f');
+    }));
+
+  test('Conditional reference resolution multiple matches', async () =>
+    withTestContext(async () => {
+      const practitionerIdentifier = randomUUID();
+      await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+      await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        generalPractitioner: [
+          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
+        ],
+      };
+      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
+    }));
+
+  test('setTypedValue', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      photo: [
+        {
+          contentType: 'image/png',
+          url: 'https://example.com/photo.png',
+        },
+        {
+          contentType: 'image/png',
+          data: 'base64data',
+        },
+      ],
+    };
+
+    setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
+    expect(patient.photo?.[1].contentType).toEqual('image/jpeg');
+  });
 });

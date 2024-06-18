@@ -1792,7 +1792,7 @@ describe('AccessPolicy', () => {
 
       const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
 
-      const check1 = await repo2.readResource<Task>('Patient', patient.id as string);
+      const check1 = await repo2.readResource<Patient>('Patient', patient.id as string);
       expect(check1.id).toBe(patient.id);
 
       const check2 = await repo2.readResource<Project>('Project', project.id as string);
@@ -2086,7 +2086,7 @@ describe('AccessPolicy', () => {
         await repo2.createResource({ resourceType: 'Patient', generalPractitioner: [createReference(practitioner)] });
         throw new Error('Should have failed reference check');
       } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Invalid reference (Not found) (Patient.generalPractitioner)');
+        expect(normalizeErrorString(err)).toEqual('Invalid reference (Not found) (Patient.generalPractitioner[0])');
       }
     }));
 

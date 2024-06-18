@@ -329,7 +329,7 @@ async function getSearchIncludeEntries(
   const includedResources = readResult.filter(isResource);
 
   const canonicalReferences = fhirPathResult
-    .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type))
+    .filter((typedValue) => ([PropertyType.canonical, PropertyType.uri] as string[]).includes(typedValue.type))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
     const canonicalSearches = (searchParam.target || []).map((resourceType) =>
