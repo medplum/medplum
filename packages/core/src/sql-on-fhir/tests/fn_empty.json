@@ -1,0 +1,56 @@
+{
+  "title": "fn_empty",
+  "description": "TBD",
+  "fhirVersion": ["5.0.0", "4.0.1", "3.0.2"],
+  "resources": [
+    {
+      "resourceType": "Patient",
+      "id": "p1",
+      "name": [
+        {
+          "use": "official",
+          "family": "f1"
+        }
+      ]
+    },
+    {
+      "resourceType": "Patient",
+      "id": "p2"
+    }
+  ],
+  "tests": [
+    {
+      "title": "empty names",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "name_empty",
+                "path": "name.empty()",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "p1",
+          "name_empty": false
+        },
+        {
+          "id": "p2",
+          "name_empty": true
+        }
+      ]
+    }
+  ]
+}

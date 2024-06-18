@@ -1,0 +1,75 @@
+{
+  "title": "fn_first",
+  "description": "FHIRPath `first` function.",
+  "fhirVersion": ["5.0.0", "4.0.1", "3.0.2"],
+  "resources": [
+    {
+      "resourceType": "Patient",
+      "name": [
+        {
+          "use": "official",
+          "family": "f1",
+          "given": ["g1.1", "g1.2"]
+        },
+        {
+          "use": "usual",
+          "given": ["g2.1"]
+        },
+        {
+          "use": "maiden",
+          "family": "f3",
+          "given": ["g3.1", "g3.2"],
+          "period": {
+            "end": "2002"
+          }
+        }
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "title": "table level first()",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "name.first().use",
+                "name": "use",
+                "type": "code"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "use": "official"
+        }
+      ]
+    },
+    {
+      "title": "table and field level first()",
+      "view": {
+        "resource": "Patient",
+        "select": [
+          {
+            "column": [
+              {
+                "path": "name.first().given.first()",
+                "name": "given",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "given": "g1.1"
+        }
+      ]
+    }
+  ]
+}
