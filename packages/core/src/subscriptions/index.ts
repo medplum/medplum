@@ -7,7 +7,7 @@ import { Logger } from '../logger';
 import { OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
-import { ProfileResource, getExtension, getReferenceString, resolveId } from '../utils';
+import { ProfileResource, deepEquals, getExtension, getReferenceString, resolveId } from '../utils';
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -140,14 +140,22 @@ class CriteriaEntry {
   readonly criteria: string;
   readonly emitter: SubscriptionEmitter;
   refCount: number;
+  readonly subscriptionProps?: Partial<Subscription>;
   subscriptionId?: string;
 
-  constructor(criteria: string) {
+  constructor(criteria: string, subscriptionProps?: Partial<Subscription>) {
     this.criteria = criteria;
     this.emitter = new SubscriptionEmitter(criteria);
     this.refCount = 1;
+    this.subscriptionProps = subscriptionProps
+      ? {
+          ...subscriptionProps,
+        }
+      : undefined;
   }
 }
+
+type CriteriaMapEntry = { bareCriteria?: CriteriaEntry; criteriaWithProps: CriteriaEntry[] };
 
 export interface SubManagerOptions {
   RobustWebSocket: IRobustWebSocketCtor;
@@ -157,7 +165,7 @@ export class SubscriptionManager {
   private readonly medplum: MedplumClient;
   private ws: IRobustWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
-  private criteriaEntries: Map<string, CriteriaEntry>; // Map<criteriaStr, CriteriaEntry>
+  private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
 
@@ -176,7 +184,7 @@ export class SubscriptionManager {
     this.medplum = medplum;
     this.ws = ws;
     this.masterSubEmitter = new SubscriptionEmitter();
-    this.criteriaEntries = new Map<string, CriteriaEntry>();
+    this.criteriaEntries = new Map<string, CriteriaMapEntry>();
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
     this.wsClosed = false;
 
@@ -208,7 +216,7 @@ export class SubscriptionManager {
         console.error(err);
         const errorEvent = { type: 'error', payload: err as Error } as SubscriptionEventMap['error'];
         this.masterSubEmitter?.dispatchEvent(errorEvent);
-        for (const { emitter } of this.criteriaEntries.values()) {
+        for (const emitter of this.getAllCriteriaEmitters()) {
           emitter.dispatchEvent(errorEvent);
         }
       }
@@ -220,7 +228,7 @@ export class SubscriptionManager {
         payload: new OperationOutcomeError(serverError(new Error('WebSocket error'))),
       } as SubscriptionEventMap['error'];
       this.masterSubEmitter?.dispatchEvent(errorEvent);
-      for (const { emitter } of this.criteriaEntries.values()) {
+      for (const emitter of this.getAllCriteriaEmitters()) {
         emitter.dispatchEvent(errorEvent);
       }
     });
@@ -230,24 +238,43 @@ export class SubscriptionManager {
       if (this.wsClosed) {
         this.masterSubEmitter?.dispatchEvent(closeEvent);
       }
-      for (const { emitter } of this.criteriaEntries.values()) {
+      for (const emitter of this.getAllCriteriaEmitters()) {
         emitter.dispatchEvent(closeEvent);
       }
     });
   }
 
-  private emitConnect(subscriptionId: string): void {
-    const connectEvent = { type: 'connect', payload: { subscriptionId } } as SubscriptionEventMap['connect'];
+  private emitConnect(criteriaEntry: CriteriaEntry): void {
+    const connectEvent = {
+      type: 'connect',
+      payload: { subscriptionId: criteriaEntry.subscriptionId as string },
+    } as SubscriptionEventMap['connect'];
     this.masterSubEmitter?.dispatchEvent(connectEvent);
-    for (const { emitter } of this.criteriaEntries.values()) {
+    for (const emitter of this.getAllCriteriaEmitters()) {
       emitter.dispatchEvent(connectEvent);
     }
   }
 
-  private emitError(criteria: string, error: Error): void {
+  private emitError(criteriaEntry: CriteriaEntry, error: Error): void {
     const errorEvent = { type: 'error', payload: error } as SubscriptionEventMap['error'];
     this.masterSubEmitter?.dispatchEvent(errorEvent);
-    this.criteriaEntries.get(criteria)?.emitter?.dispatchEvent(errorEvent);
+    criteriaEntry.emitter.dispatchEvent(errorEvent);
+  }
+
+  private maybeEmitDisconnect(criteriaEntry: CriteriaEntry): void {
+    const { subscriptionId } = criteriaEntry;
+    if (subscriptionId) {
+      const disconnectEvent = {
+        type: 'disconnect',
+        payload: { subscriptionId },
+      } as SubscriptionEventMap['disconnect'];
+      // Emit disconnect on master
+      this.masterSubEmitter?.dispatchEvent(disconnectEvent);
+      // Emit disconnect on criteria emitter
+      criteriaEntry.emitter.dispatchEvent(disconnectEvent);
+    } else {
+      console.warn('Called disconnect for `CriteriaEntry` before `subscriptionId` was present.');
+    }
   }
 
   private async getTokenForCriteria(criteriaEntry: CriteriaEntry): Promise<[string, string]> {
@@ -255,11 +282,12 @@ export class SubscriptionManager {
     if (!subscriptionId) {
       // Make a new subscription
       const subscription = await this.medplum.createResource<Subscription>({
+        ...criteriaEntry.subscriptionProps,
         resourceType: 'Subscription',
         status: 'active',
         reason: `WebSocket subscription for ${getReferenceString(this.medplum.getProfile() as ProfileResource)}`,
-        criteria: criteriaEntry.criteria,
         channel: { type: 'websocket' },
+        criteria: criteriaEntry.criteria,
       });
       subscriptionId = subscription.id as string;
     }
@@ -281,38 +309,114 @@ export class SubscriptionManager {
     return [subscriptionId, token];
   }
 
-  addCriteria(criteria: string): SubscriptionEmitter {
+  private maybeGetCriteriaEntry(
+    criteria: string,
+    subscriptionProps?: Partial<Subscription>
+  ): CriteriaEntry | undefined {
+    const entries = this.criteriaEntries.get(criteria);
+    if (!entries) {
+      return undefined;
+    }
+    if (!subscriptionProps) {
+      return entries.bareCriteria;
+    }
+    for (const entry of entries.criteriaWithProps) {
+      if (deepEquals(subscriptionProps, entry.subscriptionProps)) {
+        return entry;
+      }
+    }
+    return undefined;
+  }
+
+  private getAllCriteriaEmitters(): SubscriptionEmitter[] {
+    const emitters = [];
+    for (const mapEntry of this.criteriaEntries.values()) {
+      if (mapEntry.bareCriteria) {
+        emitters.push(mapEntry.bareCriteria.emitter);
+      }
+      for (const entry of mapEntry.criteriaWithProps) {
+        emitters.push(entry.emitter);
+      }
+    }
+    return emitters;
+  }
+
+  private addCriteriaEntry(criteriaEntry: CriteriaEntry): void {
+    const { criteria, subscriptionProps } = criteriaEntry;
+    let mapEntry: CriteriaMapEntry;
+    if (!this.criteriaEntries.has(criteria)) {
+      mapEntry = { criteriaWithProps: [] as CriteriaEntry[] };
+      this.criteriaEntries.set(criteria, mapEntry);
+    } else {
+      mapEntry = this.criteriaEntries.get(criteria) as CriteriaMapEntry;
+    }
+    // We can assume because this will be "guarded" by `maybeGetCriteriaEntry()`,
+    // that we don't need to check if a matching `CriteriaEntry` exists
+    // We just need to put the given one into the right spot
+    if (!subscriptionProps) {
+      mapEntry.bareCriteria = criteriaEntry;
+    } else {
+      mapEntry.criteriaWithProps.push(criteriaEntry);
+    }
+  }
+
+  private removeCriteriaEntry(criteriaEntry: CriteriaEntry): void {
+    const { criteria, subscriptionProps, subscriptionId } = criteriaEntry;
+    if (!this.criteriaEntries.has(criteria)) {
+      return;
+    }
+    const mapEntry = this.criteriaEntries.get(criteria) as CriteriaMapEntry;
+    if (!subscriptionProps) {
+      mapEntry.bareCriteria = undefined;
+    } else {
+      mapEntry.criteriaWithProps = mapEntry.criteriaWithProps.filter((otherEntry): boolean => {
+        const otherProps = otherEntry.subscriptionProps as Partial<Subscription>;
+        return !deepEquals(subscriptionProps, otherProps);
+      });
+    }
+    if (!mapEntry.bareCriteria && mapEntry.criteriaWithProps.length === 0) {
+      this.criteriaEntries.delete(criteria);
+      this.masterSubEmitter?._removeCriteria(criteria);
+    }
+    if (subscriptionId) {
+      this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
+    }
+  }
+
+  addCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
     if (this.masterSubEmitter) {
       this.masterSubEmitter._addCriteria(criteria);
     }
-    const criteriaEntry = this.criteriaEntries.get(criteria);
+
+    const criteriaEntry = this.maybeGetCriteriaEntry(criteria, subscriptionProps);
     if (criteriaEntry) {
       criteriaEntry.refCount += 1;
       return criteriaEntry.emitter;
     }
-    const newCriteriaEntry = new CriteriaEntry(criteria);
-    this.criteriaEntries.set(criteria, newCriteriaEntry);
+
+    const newCriteriaEntry = new CriteriaEntry(criteria, subscriptionProps);
+    this.addCriteriaEntry(newCriteriaEntry);
 
     this.getTokenForCriteria(newCriteriaEntry)
       .then(([subscriptionId, token]) => {
         newCriteriaEntry.subscriptionId = subscriptionId;
         this.criteriaEntriesBySubscriptionId.set(subscriptionId, newCriteriaEntry);
         // Emit connect event
-        this.emitConnect(subscriptionId);
+        this.emitConnect(newCriteriaEntry);
         // Send binding message
         this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
       })
       .catch((err) => {
         console.error(err.message);
-        this.emitError(criteria, err);
-        this.criteriaEntries.delete(criteria);
+        this.emitError(newCriteriaEntry, err);
+        this.removeCriteriaEntry(newCriteriaEntry);
       });
 
     return newCriteriaEntry.emitter;
   }
 
-  removeCriteria(criteria: string): void {
-    const criteriaEntry = this.criteriaEntries.get(criteria);
+  removeCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): void {
+    const criteriaEntry = this.maybeGetCriteriaEntry(criteria, subscriptionProps);
     if (!criteriaEntry) {
       console.warn('Criteria not known to `SubscriptionManager`. Possibly called remove too many times.');
       return;
@@ -323,22 +427,9 @@ export class SubscriptionManager {
       return;
     }
 
-    // If actually removing
-    const subscriptionId = this.criteriaEntries.get(criteria)?.subscriptionId;
-    const disconnectEvent = { type: 'disconnect', payload: { subscriptionId } } as SubscriptionEventMap['disconnect'];
-    // Remove from master
-    if (this.masterSubEmitter) {
-      this.masterSubEmitter._removeCriteria(criteria);
-
-      // Emit disconnect on master
-      this.masterSubEmitter.dispatchEvent(disconnectEvent);
-    }
-    // Emit disconnect on criteria emitter
-    this.criteriaEntries.get(criteria)?.emitter?.dispatchEvent(disconnectEvent);
-    this.criteriaEntries.delete(criteria);
-    if (subscriptionId) {
-      this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
-    }
+    // If actually removing (refcount === 0)
+    this.maybeEmitDisconnect(criteriaEntry);
+    this.removeCriteriaEntry(criteriaEntry);
   }
 
   closeWebSocket(): void {
@@ -350,7 +441,7 @@ export class SubscriptionManager {
   }
 
   getCriteriaCount(): number {
-    return this.criteriaEntries.size;
+    return this.getAllCriteriaEmitters().length;
   }
 
   getMasterEmitter(): SubscriptionEmitter {

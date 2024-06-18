@@ -29,6 +29,7 @@ import {
   Resource,
   SearchParameter,
   StructureDefinition,
+  Subscription,
   UserConfiguration,
 } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -264,12 +265,12 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
     return this.subManager;
   }
 
-  subscribeToCriteria(criteria: string): SubscriptionEmitter {
-    return this.getSubscriptionManager().addCriteria(criteria);
+  subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
+    return this.getSubscriptionManager().addCriteria(criteria, subscriptionProps);
   }
 
-  unsubscribeFromCriteria(criteria: string): void {
-    this.getSubscriptionManager().removeCriteria(criteria);
+  unsubscribeFromCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): void {
+    this.getSubscriptionManager().removeCriteria(criteria, subscriptionProps);
   }
 
   getMasterSubscriptionEmitter(): SubscriptionEmitter {
