@@ -1328,6 +1328,41 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /*
+   * Additional string functions
+   * See: https://build.fhir.org/ig/HL7/FHIRPath/#additional-string-functions
+   * STU Note: the contents of this section are Standard for Trial Use (STU)
+   */
+
+  encode: stub,
+  decode: stub,
+  escape: stub,
+  unescape: stub,
+  trim: stub,
+  split: stub,
+
+  /**
+   * The join function takes a collection of strings and joins them into a single string, optionally using the given separator.
+   *
+   * If the input is empty, the result is empty.
+   *
+   * If no separator is specified, the strings are directly concatenated.
+   *
+   * See: https://build.fhir.org/ig/HL7/FHIRPath/#joinseparator-string--string
+   *
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param separatorAtom - Optional separator atom.
+   * @returns The joined string.
+   */
+  join: (context: AtomContext, input: TypedValue[], separatorAtom: Atom): TypedValue[] => {
+    const separator = separatorAtom?.eval(context, input)[0]?.value ?? '';
+    if (typeof separator !== 'string') {
+      throw new Error('Separator must be a string.');
+    }
+    return [{ type: PropertyType.string, value: input.map((i) => i.value?.toString() ?? '').join(separator) }];
+  },
+
+  /*
    * 5.7. Math
    */
 
