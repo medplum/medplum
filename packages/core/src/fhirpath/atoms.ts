@@ -32,7 +32,7 @@ export class FhirPathAtom implements Atom {
         return this.child.eval(context, []);
       }
     } catch (error) {
-      throw new Error(`FhirPathError on "${this.original}": ${error}`);
+      throw new Error(`FhirPathError on "${this.original}": ${error}`, { cause: error });
     }
   }
 

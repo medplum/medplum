@@ -571,6 +571,26 @@ describe('FHIRPath functions', () => {
     expect(functions.toChars(context, [toTypedValue('xyz')])).toEqual([TYPED_X, TYPED_Y, TYPED_Z]);
   });
 
+  // Additional string functions
+  // STU Note: the contents of this section are Standard for Trial Use (STU)
+
+  test('join', () => {
+    expect(functions.join(context, [toTypedValue('')])).toEqual([toTypedValue('')]);
+    expect(functions.join(context, [toTypedValue('a'), toTypedValue('b'), toTypedValue('c')])).toEqual([
+      toTypedValue('abc'),
+    ]);
+    expect(
+      functions.join(
+        context,
+        [toTypedValue('a'), toTypedValue('b'), toTypedValue('c')],
+        new LiteralAtom(toTypedValue(','))
+      )
+    ).toEqual([toTypedValue('a,b,c')]);
+    expect(() => functions.join(context, [toTypedValue('')], new LiteralAtom(toTypedValue(1)))).toThrow(
+      'Separator must be a string'
+    );
+  });
+
   // 5.7. Math
 
   test('abs', () => {
