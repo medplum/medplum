@@ -20,7 +20,7 @@ class MockRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> impl
   }
 }
 
-type MockCriteriaEntry = {
+export type MockCriteriaEntry = {
   criteria: string;
   subscriptionProps?: Partial<Subscription>;
   emitter: SubscriptionEmitter;
