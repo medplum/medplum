@@ -1355,7 +1355,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns The joined string.
    */
   join: (context: AtomContext, input: TypedValue[], separatorAtom: Atom): TypedValue[] => {
-    const separator = separatorAtom?.eval(context, input)[0]?.value ?? '';
+    const separator = separatorAtom?.eval(context, getRootInput(context))[0]?.value ?? '';
     if (typeof separator !== 'string') {
       throw new Error('Separator must be a string.');
     }
