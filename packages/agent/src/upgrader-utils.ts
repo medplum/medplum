@@ -3,6 +3,7 @@ import { createWriteStream } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
+import streamWeb from 'node:stream/web';
 
 export type ReleaseManifest = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
 export type SupportedOs = 'windows' | 'linux';
@@ -87,8 +88,7 @@ export async function downloadRelease(version: string, path: string): Promise<vo
     throw new Error('Body not present on Response');
   }
 
-  // @ts-expect-error Slight type mismatch
-  const readable = Readable.fromWeb(body);
+  const readable = Readable.fromWeb(body as streamWeb.ReadableStream);
   const writeStream = readable.pipe(createWriteStream(path));
 
   return new Promise<void>((resolve) => {
