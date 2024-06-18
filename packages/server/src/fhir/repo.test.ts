@@ -18,6 +18,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   Questionnaire,
@@ -455,8 +456,7 @@ describe('FHIR Repo', () => {
 
       (patient as Patient).name = [{ family: 'TestUpdated' }];
 
-      const versionId = patient.meta?.versionId;
-      await systemRepo.updateResource<Patient>(patient, versionId);
+      await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
       expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
     }));
 
@@ -468,7 +468,7 @@ describe('FHIR Repo', () => {
       });
 
       try {
-        await systemRepo.updateResource<Patient>(patient1, 'bad-id');
+        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
@@ -1037,5 +1037,55 @@ describe('FHIR Repo', () => {
       const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
       await systemRepo.deleteResource(patient.resourceType, patient.id as string);
       await expect(systemRepo.deleteResource(patient.resourceType, patient.id as string)).resolves.toBeUndefined();
+    }));
+
+  test('Conditional reference resolution', async () =>
+    withTestContext(async () => {
+      const practitionerIdentifier = randomUUID();
+      const practitioner = await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        generalPractitioner: [
+          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
+        ],
+      });
+      expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
+    }));
+
+  test('Conditional reference resolution failure', async () =>
+    withTestContext(async () => {
+      const practitionerIdentifier = randomUUID();
+      const patient: Patient = {
+        resourceType: 'Patient',
+        generalPractitioner: [
+          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
+        ],
+      };
+      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow('f');
+    }));
+
+  test('Conditional reference resolution multiple matches', async () =>
+    withTestContext(async () => {
+      const practitionerIdentifier = randomUUID();
+      await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+      await systemRepo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
+      });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        generalPractitioner: [
+          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
+        ],
+      };
+      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
     }));
 });

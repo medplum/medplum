@@ -94,7 +94,7 @@ export const PropertyType = {
   uri: 'uri',
   url: 'url',
   uuid: 'uuid',
-};
+} as const;
 
 /**
  * An IndexedStructureDefinition is a lookup-optimized version of a StructureDefinition.

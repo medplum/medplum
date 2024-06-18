@@ -150,7 +150,7 @@ async function followFhirPathLink(
 
   // The only kinds of links we can follow are 'reference search parameters'. This includes elements of type
   // Reference and type canonical
-  if (!elements.every((elem) => [PropertyType.Reference, PropertyType.canonical].includes(elem.type))) {
+  if (!elements.every((elem) => ([PropertyType.Reference, PropertyType.canonical] as string[]).includes(elem.type))) {
     throw new OperationOutcomeError(badRequest('Invalid link path. Must return a path to a Reference type'));
   }
 

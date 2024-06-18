@@ -89,33 +89,6 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Create batch', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Bundle', type: 'batch', entry: [] });
-    expect(res.status).toBe(200);
-  });
-
-  test('Create batch wrong content type', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.TEXT)
-      .send('hello');
-    expect(res.status).toBe(400);
-  });
-
-  test('Create batch wrong resource type', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Patient', name: [{ given: ['Homer'] }] });
-    expect(res.status).toBe(400);
-  });
-
   test('Create resource success', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)

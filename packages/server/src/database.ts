@@ -26,7 +26,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-    max: 50,
+    max: config.maxConnectionsPerServer ?? 50,
   };
 
   if (serverConfig.databaseProxyEndpoint) {
