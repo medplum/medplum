@@ -20,6 +20,7 @@ packages/cdk/dist/
 packages/cli/dist/
 packages/core/dist/
 packages/core/docs/
+packages/core/src/sql-on-fhir/test_report.json
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
