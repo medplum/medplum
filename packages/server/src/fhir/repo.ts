@@ -61,7 +61,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getAuthenticatedContext, getLogger, getRequestContext } from '../context';
+import { getLogger, getRequestContext } from '../context';
 import { getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
