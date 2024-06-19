@@ -11,7 +11,22 @@ import {
 } from '@medplum/core';
 import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Repository } from './repo';
+import { getSystemRepo, Repository } from './repo';
+
+/**
+ * Exceptional, system-level references that should use systemRepo for validation
+ *
+ * Project.owner:
+ * `User` reference which typically does not have meta.compartment specified
+ * and is not technically in the project and thus would not be visible through
+ * the non-system repo.
+ *
+ * Project.link.project:
+ * The synthetic Project policy from `applyProjectAdminAccessPolicy` applies
+ * a criteria that requires Project.id matches the admin's ProjectMembership.project
+ * reference which will always fail for linked projects.
+ */
+const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project'];
 
 async function validateReference(
   repo: Repository,
@@ -24,7 +39,8 @@ async function validateReference(
   }
 
   try {
-    await repo.readReference(reference);
+    const validatingRepo = SYSTEM_REFERENCE_PATHS.includes(path) ? getSystemRepo() : repo;
+    await validatingRepo.readReference(reference);
   } catch (err) {
     issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
   }
