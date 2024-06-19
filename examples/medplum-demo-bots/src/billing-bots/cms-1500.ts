@@ -9,7 +9,6 @@ import {
   MedplumClient,
 } from '@medplum/core';
 import {
-  Address,
   Claim,
   Coverage,
   Device,
@@ -18,23 +17,7 @@ import {
   Practitioner,
   PractitionerRole,
   RelatedPerson,
-  ServiceRequest,
 } from '@medplum/fhirtypes';
-import { info } from 'console';
-
-interface CMS1500Output {
-  insuranceProgramName: string;
-  insuredIdNumber: string;
-  patientName: string;
-  patientDob: string;
-  patientGender: string;
-  insuredName: string;
-  patientAddress: Address;
-  patientRelation: string;
-  insuredAddress: Address;
-  // otherInsured: string;
-  // patientConditionRelationData: string;
-}
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Claim>) {
   const claim = event.input;
@@ -79,12 +62,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Claim>) {
     resubmissionCode,
     originalReference,
     priorAuthRefNumber,
+    outsideLab,
+    outsideLabCharges,
   } = getClaimInfo(claim);
   const { otherPolicy, otherPolicyName, otherInsuredName } = getOtherInfo(otherCoverage, otherInsured);
   const { referrerName, referrerNpi } = getReferralInfo(referrer);
-
-  const taxId = insurer.identifier?.find((id) => id.type === 'TAX')?.value ?? '';
-  const serviceFacility = insurer.address ? formatAddress(insurer.address[0]) : '';
+  const { serviceNpi, serviceLocation, fedTaxNumber, fedTaxType } = getInsurerInfo(insurer);
+  const { billingLocation, billingPhoneNumber, providerNpi } = getProviderInfo(provider);
 
   const cms1500Lines = [
     '1,Insurance Program Name,Indicates type of health insurance coverage applicable to the claim,' + insuranceType,
@@ -127,8 +111,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Claim>) {
     '18,Hospitalization Dates Related to Current Services,Dates of hospitalization related to current services,' +
       `${hospitalizationStart} - ${hospitalizationEnd}`,
     '19,Additional Claim Information,Additional claim information,',
-    '20,Outside Lab?,Indicates if outside lab services were used,',
-    '20,Laboratory Charges,Charges for laboratory services,',
+    '20,Outside Lab?,Indicates if outside lab services were used,' + outsideLab,
+    '20,Laboratory Charges,Charges for laboratory services,' + outsideLabCharges,
     '21,Diagnosis or Nature of Illness or Injury,Diagnosis codes,' + diagnosis,
     '22,Resubmission Code,Resubmission code,' + resubmissionCode,
     '22,Original Reference Number,Original reference number,' + originalReference,
@@ -144,18 +128,21 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Claim>) {
     '24H,EPSDT Family Plan,EPSDT family plan indicator,' + familyPlanIndicator,
     '24I,ID Qualifier,ID qualifier,',
     '24J,Rendering Provider ID #,Rendering provider ID number,',
-    '25,Federal Tax ID Number,Federal tax ID number,' + taxId,
+    '25,Federal Tax ID Number,Federal tax ID number,' + fedTaxNumber,
+    '25,Federal Tax ID Type,Federal tax ID type,' + fedTaxType,
     "26,Patient's Account Number,Patient's account number," + patientAccountNumber,
     '27,Accept Assignment?,Indicates if provider accepts assignment,',
     '28,Total Charge,Total charge for services,' + totalCharge,
     '29,Amount Paid,Amount paid,' + patientPaid,
     '30,Rsvd for NUCC Use,Reserved for NUCC use,',
     '31,Signature of Physician or Supplier,Signature of physician or supplier,',
-    '32,Service Facility Location Information,Location of service facility,' + serviceFacility,
-    '32a,Service Facility NPI,NPI of service facility,',
+    '32,Service Facility Location Information,Location of service facility,' + serviceLocation,
+    '32a,Service Facility NPI,NPI of service facility,' + serviceNpi,
     '32b,Other ID #,Other ID number of service facility,',
-    '33,Billing Provider Info & Ph #,Billing provider information and phone number,',
-    '33a,Billing Provider NPI,NPI of billing provider,',
+    '33,Billing Provider Info & Ph #,Billing provider information and phone number,' +
+      billingLocation +
+      billingPhoneNumber,
+    '33a,Billing Provider NPI,NPI of billing provider,' + providerNpi,
     '33b,Other ID #,Other ID number of billing provider,',
   ];
 
@@ -221,7 +208,8 @@ function getInsuredInfo(insured: Patient | RelatedPerson | undefined): Record<st
 
 function getClaimInfo(claim: Claim): Record<string, string | boolean> {
   const claimInfo: Record<string, string | boolean> = {};
-  claimInfo.employmentRelated = claim.supportingInfo?.some((info) => info.category === 'employment') ?? false;
+  claimInfo.employmentRelated =
+    claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
   claimInfo.autoAccident = claim.accident?.type?.coding?.some((code) => code.code === 'MVA') ?? false;
   claimInfo.accidentLocation = claim.accident?.locationAddress ? formatAddress(claim.accident.locationAddress) : '';
   claimInfo.otherAccident = !claimInfo.autoAccident && !!claim.accident;
@@ -281,6 +269,15 @@ function getClaimInfo(claim: Claim): Record<string, string | boolean> {
   claimInfo.originalReference = claim.related?.[0].claim?.display ?? '';
   claimInfo.priorAuthRefNumber = claim.insurance[0].preAuthRef?.[0] ?? '';
 
+  const outsideLab = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'outsidelab');
+  if (outsideLab) {
+    claimInfo.outsideLab = !!outsideLab;
+    claimInfo.outsideLabCharges = formatQuantity(outsideLab.valueQuantity);
+  } else {
+    claimInfo.outsideLab = '';
+    claimInfo.outsideLabCharges = '';
+  }
+
   return claimInfo;
 }
 
@@ -309,7 +306,9 @@ function getOtherInfo(
   return otherInfo;
 }
 
-function getReferralInfo(referrer?: Practitioner | Organization | Device | Patient | RelatedPerson | PractitionerRole) {
+function getReferralInfo(
+  referrer?: Practitioner | Organization | Device | Patient | RelatedPerson | PractitionerRole
+): Record<string, string> {
   const referralInfo: Record<string, string> = {};
   if (
     !referrer ||
@@ -331,4 +330,43 @@ function getReferralInfo(referrer?: Practitioner | Organization | Device | Patie
   referralInfo.referrerNpi = referrer?.identifier?.find((id) => id.type?.coding?.[0].code === 'NPI')?.value ?? '';
 
   return referralInfo;
+}
+
+function getInsurerInfo(insurer: Organization | Patient | RelatedPerson): Record<string, string> {
+  const insurerInfo: Record<string, string> = {};
+  if (insurer.resourceType === 'Patient' || insurer.resourceType === 'RelatedPerson') {
+    insurerInfo.serviceNPI = '';
+    insurerInfo.serviceLocation = '';
+    insurerInfo.fedTaxNumber = '';
+    insurerInfo.fedTaxType = '';
+    return insurerInfo;
+  }
+
+  insurerInfo.serviceNpi =
+    insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'NPI'))?.id ?? '';
+  insurerInfo.serviceLocation = insurer.address ? formatAddress(insurer.address[0]) : '';
+
+  const taxIdentifier = insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
+  insurerInfo.fedTaxNumber = taxIdentifier?.value ?? '';
+  insurerInfo.fedTaxType = taxIdentifier?.system ?? '';
+
+  return insurerInfo;
+}
+
+function getProviderInfo(provider: Practitioner | Organization | PractitionerRole): Record<string, string> {
+  const providerInfo: Record<string, string> = {};
+  if (provider.resourceType === 'PractitionerRole') {
+    return {
+      billingLocation: '',
+      billingPhoneNumber: '',
+      providerNpi: '',
+    };
+  }
+
+  providerInfo.billingLocation = provider?.address?.[0] ? formatAddress(provider.address?.[0]) : '';
+  const phoneNumber = provider.telecom?.find((comm) => comm.system === 'phone');
+  providerInfo.billingPhoneNumber = phoneNumber?.value ?? '';
+  providerInfo.providerNpi = provider.identifier?.find((id) => id.value === 'NPI')?.value ?? '';
+
+  return providerInfo;
 }
