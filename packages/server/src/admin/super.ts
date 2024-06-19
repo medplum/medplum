@@ -95,25 +95,6 @@ superAdminRouter.post(
   })
 );
 
-// POST to /admin/super/compartments
-// to rebuild compartments for a resource type.
-// Run this after major changes to how compartments are constructed.
-superAdminRouter.post(
-  '/compartments',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
-
-    const resourceType = req.body.resourceType;
-    validateResourceType(resourceType);
-
-    await sendAsyncResponse(req, res, async () => {
-      const systemRepo = getSystemRepo();
-      await systemRepo.rebuildCompartmentsForResourceType(resourceType);
-    });
-  })
-);
-
 // POST to /admin/super/setpassword
 // to force set a User password.
 superAdminRouter.post(

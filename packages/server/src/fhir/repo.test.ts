@@ -555,22 +555,6 @@ describe('FHIR Repo', () => {
       expect(entries[2].resource).toBeDefined();
     }));
 
-  test('Reindex resource type as non-admin', async () => {
-    const repo = new Repository({
-      projects: [randomUUID()],
-      author: {
-        reference: 'Practitioner/' + randomUUID(),
-      },
-    });
-
-    try {
-      await repo.reindexResourceType('Practitioner');
-      fail('Expected error');
-    } catch (err) {
-      expect(isOk(err as OperationOutcome)).toBe(false);
-    }
-  });
-
   test('Reindex resource as non-admin', async () => {
     const { repo } = await createTestProject({ withRepo: true });
 
@@ -590,32 +574,6 @@ describe('FHIR Repo', () => {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
   });
-
-  test('Reindex success', async () =>
-    withTestContext(async () => {
-      await systemRepo.reindexResourceType('Practitioner');
-    }));
-
-  test('Rebuild compartments as non-admin', async () => {
-    const repo = new Repository({
-      projects: [randomUUID()],
-      author: {
-        reference: 'Practitioner/' + randomUUID(),
-      },
-    });
-
-    try {
-      await repo.rebuildCompartmentsForResourceType('Practitioner');
-      fail('Expected error');
-    } catch (err) {
-      expect(isOk(err as OperationOutcome)).toBe(false);
-    }
-  });
-
-  test('Rebuild compartments success', () =>
-    withTestContext(async () => {
-      await systemRepo.rebuildCompartmentsForResourceType('Practitioner');
-    }));
 
   test('Remove property', () =>
     withTestContext(async () => {

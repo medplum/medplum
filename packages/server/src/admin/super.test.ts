@@ -342,57 +342,6 @@ describe('Super Admin routes', () => {
     );
   });
 
-  test('Rebuild compartments access denied', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
-      });
-
-    expect(res.status).toBe(403);
-  });
-
-  test('Rebuild compartments require async', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
-      });
-
-    expect(res.status).toEqual(400);
-    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
-  });
-
-  test('Rebuild compartments invalid resource type', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'XYZ',
-      });
-
-    expect(res.status).toBe(400);
-  });
-
-  test('Rebuild compartments with respond-async', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .set('Prefer', 'respond-async')
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
-      });
-
-    expect(res.status).toEqual(202);
-    expect(res.headers['content-location']).toBeDefined();
-  });
-
   test('Set password access denied', async () => {
     const res = await request(app)
       .post('/admin/super/setpassword')
