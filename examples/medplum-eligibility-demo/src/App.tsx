@@ -1,5 +1,5 @@
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconDatabaseImport, IconFileCheck, IconFileImport, IconUser } from '@tabler/icons-react';
+import { IconDatabaseImport, IconFileCheck, IconFileImport, IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { CoveragePage } from './pages/CoveragePage';
@@ -34,6 +34,7 @@ export function App(): JSX.Element | null {
           links: [
             { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
             { icon: <IconFileImport />, label: 'Upload Example Data', href: '/upload/example' },
+            { icon: <IconRobot />, label: 'Upload Bots', href: '/upload/bots' },
           ],
         },
       ]}

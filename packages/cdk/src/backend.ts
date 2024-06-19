@@ -33,7 +33,7 @@ export class BackEnd extends Construct {
   rdsCluster?: rds.DatabaseCluster;
   rdsProxy?: rds.DatabaseProxy;
   redisSubnetGroup: elasticache.CfnSubnetGroup;
-  redisSecurityGroup: ec2.SecurityGroup;
+  redisSecurityGroup: ec2.ISecurityGroup;
   redisPassword: secretsmanager.ISecret;
   redisCluster: elasticache.CfnReplicationGroup;
   redisSecrets: secretsmanager.ISecret;
@@ -165,11 +165,19 @@ export class BackEnd extends Construct {
       subnetIds: this.vpc.privateSubnets.map((subnet) => subnet.subnetId),
     });
 
-    this.redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
-      vpc: this.vpc,
-      description: 'Redis Security Group',
-      allowAllOutbound: false,
-    });
+    if (config.cacheSecurityGroupId) {
+      this.redisSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+        this,
+        'RedisSecurityGroup',
+        config.cacheSecurityGroupId
+      );
+    } else {
+      this.redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
+        vpc: this.vpc,
+        description: 'Redis Security Group',
+        allowAllOutbound: false,
+      });
+    }
 
     this.redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
       generateSecretString: {
@@ -439,11 +447,21 @@ export class BackEnd extends Construct {
       targets: [this.fargateService],
     });
 
+    let loadBalancerSecurityGroup: ec2.ISecurityGroup | undefined = undefined;
+    if (config.loadBalancerSecurityGroupId) {
+      loadBalancerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+        this,
+        'LoadBalancerSecurityGroup',
+        config.loadBalancerSecurityGroupId
+      );
+    }
+
     // Load Balancer
     this.loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
       vpc: this.vpc,
       internetFacing: config.apiInternetFacing !== false, // default true
       http2Enabled: true,
+      securityGroup: loadBalancerSecurityGroup,
     });
 
     if (config.loadBalancerLoggingBucket) {

@@ -1,4 +1,4 @@
-import { MedplumClient, MockAsyncClientStorage, ProfileResource, getDisplayString } from '@medplum/core';
+import { MockAsyncClientStorage, ProfileResource, getDisplayString, sleep } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import { MedplumProvider } from './MedplumProvider';
@@ -36,18 +36,23 @@ describe('MedplumProvider', () => {
     expect(screen.getByText('Profile: true')).toBeInTheDocument();
   });
 
-  test('Sets loading to false until medplum.initialized is set', async () => {
+  test('Loading is always in sync with isLoading()', async () => {
     function MyComponent(): JSX.Element {
       const { loading } = useMedplumContext();
       return loading ? <div>Loading...</div> : <div>Loaded!</div>;
     }
 
     let storage: MockAsyncClientStorage;
-    let medplum: MedplumClient;
+    let medplum!: MockClient;
 
     act(() => {
       storage = new MockAsyncClientStorage();
-      medplum = new MedplumClient({ fetch: () => Promise.resolve(), storage });
+      medplum = new MockClient({ storage });
+    });
+
+    expect(medplum.isLoading()).toEqual(true);
+
+    act(() => {
       render(
         <MedplumProvider medplum={medplum}>
           <MyComponent />
@@ -56,9 +61,25 @@ describe('MedplumProvider', () => {
     });
 
     expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(medplum.isLoading()).toEqual(true);
+
+    // Sleep to make sure that loading doesn't go to false before we set storage to initialized
+    await act(async () => {
+      await sleep(500);
+    });
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(medplum.isLoading()).toEqual(true);
+
+    // Finally set storage to initialized
     act(() => {
       storage.setInitialized();
     });
+
     expect(await screen.findByText('Loaded!')).toBeInTheDocument();
+    expect(medplum.isLoading()).toEqual(false);
+
+    // Make sure we are actually authed after loading === false
+    expect(medplum.getProfile()).toBeDefined();
   });
 });

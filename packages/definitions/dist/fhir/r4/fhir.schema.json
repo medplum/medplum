@@ -167,7 +167,8 @@
       "AsyncJob": "#/definitions/AsyncJob",
       "Agent": "#/definitions/Agent",
       "IdentityProvider": "#/definitions/IdentityProvider",
-      "UserSecurityRequest": "#/definitions/UserSecurityRequest"
+      "UserSecurityRequest": "#/definitions/UserSecurityRequest",
+      "ViewDefinition": "#/definitions/ViewDefinition"
     }
   },
   "oneOf": [
@@ -659,6 +660,9 @@
     },
     {
       "$ref": "#/definitions/UserSecurityRequest"
+    },
+    {
+      "$ref": "#/definitions/ViewDefinition"
     }
   ],
   "definitions": {
@@ -1152,6 +1156,9 @@
         },
         {
           "$ref": "#/definitions/UserSecurityRequest"
+        },
+        {
+          "$ref": "#/definitions/ViewDefinition"
         }
       ]
     },
@@ -59633,6 +59640,10 @@
         "identityProvider": {
           "description": "Optional external Identity Provider (IdP) for the client application.",
           "$ref": "#/definitions/IdentityProvider"
+        },
+        "refreshTokenLifetime": {
+          "description": "Optional configuration to set the refresh token duration",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,
@@ -61103,6 +61114,271 @@
       },
       "additionalProperties": false,
       "required": ["resourceType", "user", "secret"]
+    },
+    "ViewDefinition": {
+      "description": "View definitions represent a tabular projection of a FHIR resource, where the columns and inclusion \ncriteria are defined by FHIRPath expressions. ",
+      "properties": {
+        "url": {
+          "description": "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "$ref": "#/definitions/uri"
+        },
+        "identifier": {
+          "description": "Additional identifier for the view definition",
+          "$ref": "#/definitions/Identifier"
+        },
+        "name": {
+          "description": "Name of the view definition, must be in a database-friendly format.",
+          "$ref": "#/definitions/string"
+        },
+        "title": {
+          "description": "A optional human-readable description of the view.",
+          "$ref": "#/definitions/string"
+        },
+        "meta": {
+          "description": "Metadata about the view definition",
+          "$ref": "#/definitions/Meta"
+        },
+        "status": {
+          "description": "draft | active | retired | unknown",
+          "enum": ["draft", "active", "retired", "unknown"]
+        },
+        "experimental": {
+          "description": "For testing purposes, not real usage",
+          "$ref": "#/definitions/boolean"
+        },
+        "publisher": {
+          "description": "Name of the publisher/steward (organization or individual)",
+          "$ref": "#/definitions/string"
+        },
+        "contact": {
+          "description": "Contact details for the publisher",
+          "items": {
+            "$ref": "#/definitions/ContactDetail"
+          },
+          "type": "array"
+        },
+        "description": {
+          "description": "Natural language description of the view definition",
+          "$ref": "#/definitions/markdown"
+        },
+        "useContext": {
+          "description": "The context that the content is intended to support",
+          "items": {
+            "$ref": "#/definitions/UsageContext"
+          },
+          "type": "array"
+        },
+        "copyright": {
+          "description": "Use and/or publishing restrictions",
+          "$ref": "#/definitions/markdown"
+        },
+        "resource": {
+          "description": "The FHIR resource that the view is based upon, e.g. \u0027Patient\u0027 or \u0027Observation\u0027.",
+          "enum": [
+            "Account",
+            "ActivityDefinition",
+            "AdverseEvent",
+            "AllergyIntolerance",
+            "Appointment",
+            "AppointmentResponse",
+            "AuditEvent",
+            "Basic",
+            "Binary",
+            "BiologicallyDerivedProduct",
+            "BodyStructure",
+            "Bundle",
+            "CapabilityStatement",
+            "CarePlan",
+            "CareTeam",
+            "CatalogEntry",
+            "ChargeItem",
+            "ChargeItemDefinition",
+            "Claim",
+            "ClaimResponse",
+            "ClinicalImpression",
+            "CodeSystem",
+            "Communication",
+            "CommunicationRequest",
+            "CompartmentDefinition",
+            "Composition",
+            "ConceptMap",
+            "Condition",
+            "Consent",
+            "Contract",
+            "Coverage",
+            "CoverageEligibilityRequest",
+            "CoverageEligibilityResponse",
+            "DetectedIssue",
+            "Device",
+            "DeviceDefinition",
+            "DeviceMetric",
+            "DeviceRequest",
+            "DeviceUseStatement",
+            "DiagnosticReport",
+            "DocumentManifest",
+            "DocumentReference",
+            "DomainResource",
+            "EffectEvidenceSynthesis",
+            "Encounter",
+            "Endpoint",
+            "EnrollmentRequest",
+            "EnrollmentResponse",
+            "EpisodeOfCare",
+            "EventDefinition",
+            "Evidence",
+            "EvidenceVariable",
+            "ExampleScenario",
+            "ExplanationOfBenefit",
+            "FamilyMemberHistory",
+            "Flag",
+            "Goal",
+            "GraphDefinition",
+            "Group",
+            "GuidanceResponse",
+            "HealthcareService",
+            "ImagingStudy",
+            "Immunization",
+            "ImmunizationEvaluation",
+            "ImmunizationRecommendation",
+            "ImplementationGuide",
+            "InsurancePlan",
+            "Invoice",
+            "Library",
+            "Linkage",
+            "List",
+            "Location",
+            "Measure",
+            "MeasureReport",
+            "Media",
+            "Medication",
+            "MedicationAdministration",
+            "MedicationDispense",
+            "MedicationKnowledge",
+            "MedicationRequest",
+            "MedicationStatement",
+            "MedicinalProduct",
+            "MedicinalProductAuthorization",
+            "MedicinalProductContraindication",
+            "MedicinalProductIndication",
+            "MedicinalProductIngredient",
+            "MedicinalProductInteraction",
+            "MedicinalProductManufactured",
+            "MedicinalProductPackaged",
+            "MedicinalProductPharmaceutical",
+            "MedicinalProductUndesirableEffect",
+            "MessageDefinition",
+            "MessageHeader",
+            "MolecularSequence",
+            "NamingSystem",
+            "NutritionOrder",
+            "Observation",
+            "ObservationDefinition",
+            "OperationDefinition",
+            "OperationOutcome",
+            "Organization",
+            "OrganizationAffiliation",
+            "Parameters",
+            "Patient",
+            "PaymentNotice",
+            "PaymentReconciliation",
+            "Person",
+            "PlanDefinition",
+            "Practitioner",
+            "PractitionerRole",
+            "Procedure",
+            "Provenance",
+            "Questionnaire",
+            "QuestionnaireResponse",
+            "RelatedPerson",
+            "RequestGroup",
+            "ResearchDefinition",
+            "ResearchElementDefinition",
+            "ResearchStudy",
+            "ResearchSubject",
+            "Resource",
+            "RiskAssessment",
+            "RiskEvidenceSynthesis",
+            "Schedule",
+            "SearchParameter",
+            "ServiceRequest",
+            "Slot",
+            "Specimen",
+            "SpecimenDefinition",
+            "StructureDefinition",
+            "StructureMap",
+            "Subscription",
+            "Substance",
+            "SubstanceNucleicAcid",
+            "SubstancePolymer",
+            "SubstanceProtein",
+            "SubstanceReferenceInformation",
+            "SubstanceSourceMaterial",
+            "SubstanceSpecification",
+            "SupplyDelivery",
+            "SupplyRequest",
+            "Task",
+            "TerminologyCapabilities",
+            "TestReport",
+            "TestScript",
+            "ValueSet",
+            "VerificationResult",
+            "VisionPrescription"
+          ]
+        },
+        "fhirVersion": {
+          "description": "The FHIR version(s) for the FHIR resource. The value of this element is the\nformal version of the specification, without the revision number, e.g.\n[publication].[major].[minor].",
+          "items": {
+            "enum": [
+              "0.01",
+              "0.05",
+              "0.06",
+              "0.11",
+              "0.0.80",
+              "0.0.81",
+              "0.0.82",
+              "0.4.0",
+              "0.5.0",
+              "1.0.0",
+              "1.0.1",
+              "1.0.2",
+              "1.1.0",
+              "1.4.0",
+              "1.6.0",
+              "1.8.0",
+              "3.0.0",
+              "3.0.1",
+              "3.3.0",
+              "3.5.0",
+              "4.0.0",
+              "4.0.1"
+            ]
+          },
+          "type": "array"
+        },
+        "constant": {
+          "description": "A constant is a value that is injected into a FHIRPath expression through the use of a FHIRPath\nexternal constant with the same name.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionConstant"
+          },
+          "type": "array"
+        },
+        "select": {
+          "description": "The select structure defines the columns to be used in the resulting view. These are expressed\nin the `column` structure below, or in nested `select`s for nested resources.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionSelect"
+          },
+          "type": "array"
+        },
+        "where": {
+          "description": "A series of zero or more FHIRPath constraints to filter resources for the view. Every constraint\nmust evaluate to true for the resource to be included in the view.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionWhere"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["status", "resource", "select"]
     }
   }
 }

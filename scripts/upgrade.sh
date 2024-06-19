@@ -49,6 +49,12 @@ gh pr ready
 # "latest" - Upgrade to whatever the package's "latest" git tag points to.
 npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target latest
 
+# Check for changes in the working directory
+if git diff --quiet; then
+  echo "No active changes. Exiting the script."
+  exit 0
+fi
+
 # Commit and push before running NPM install
 git add -u .
 git commit -m "Dependency upgrades - step 3"

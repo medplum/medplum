@@ -1,16 +1,11 @@
 import { Paper } from '@mantine/core';
-import {
-  DEFAULT_SEARCH_COUNT,
-  Filter,
-  formatSearchQuery,
-  parseSearchRequest,
-  SearchRequest,
-  SortRule,
-} from '@medplum/core';
+import { useDisclosure } from '@mantine/hooks';
+import { Filter, formatSearchQuery, parseSearchRequest, SearchRequest, SortRule } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CreateEncounter } from '../components/actions/CreateEncounter';
 import classes from './SearchPage.module.css';
 
 export function SearchPage(): JSX.Element {
@@ -18,13 +13,22 @@ export function SearchPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
+  const [opened, handlers] = useDisclosure(false);
 
   useEffect(() => {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
+    if (!parsedSearch.resourceType) {
+      // If there is no search, go to the Encounter search page by default
+      navigate('/Encounter');
+      return;
+    }
+
+    // Populate the search with default values as necessary
     const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
 
     if (
+      // If the current url matches the search, set the search, otherwise navigate to the correct url
       location.pathname === `/${populatedSearch.resourceType}` &&
       location.search === formatSearchQuery(populatedSearch)
     ) {
@@ -41,14 +45,18 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
+      <CreateEncounter opened={opened} handlers={handlers} />
       <MemoizedSearchControl
-        checkboxesEnabled={true}
+        checkboxesEnabled={false}
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
+        hideFilters={true}
+        hideToolbar={search.resourceType !== 'Encounter'}
+        onNew={handlers.open}
       />
     </Paper>
   );
@@ -56,11 +64,9 @@ export function SearchPage(): JSX.Element {
 
 function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);
-  const fields = search.fields ?? ['_id', '_lastUpdated'];
+  const fields = search.fields ?? getDefaultFields(search.resourceType);
   const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
-  const offset = search.offset ?? 0;
-  const count = search.count ?? DEFAULT_SEARCH_COUNT;
 
   return {
     ...search,
@@ -68,8 +74,6 @@ function addSearchValues(search: SearchRequest, config: UserConfiguration | unde
     fields,
     filters,
     sortRules,
-    offset,
-    count,
   };
 }
 
@@ -101,4 +105,17 @@ function getLastSearch(resourceType: string): SearchRequest | undefined {
 function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem('defaultResourceType', search.resourceType);
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
+}
+
+function getDefaultFields(resourceType: string): string[] {
+  switch (resourceType) {
+    case 'Encounter':
+      return ['class', 'type', 'subject', 'period'];
+    case 'Patient':
+      return ['name', 'gender', 'birthDate', '_lastUpdated'];
+    case 'Practitioner':
+      return ['name', '_lastUpdated'];
+    default:
+      return ['_id', '_lastUpdated'];
+  }
 }

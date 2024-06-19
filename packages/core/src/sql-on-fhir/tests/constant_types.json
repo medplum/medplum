@@ -1,0 +1,1018 @@
+{
+  "title": "constant types",
+  "description": "tests for all types of constants",
+  "resources": [
+    {
+      "resourceType": "Organization",
+      "name": "o1",
+      "id": "o1"
+    },
+    {
+      "resourceType": "Device",
+      "id": "d1",
+      "udiCarrier": [
+        {
+          "carrierAIDC": "aGVsbG8K"
+        }
+      ]
+    },
+    {
+      "resourceType": "Device",
+      "id": "d2",
+      "udiCarrier": [
+        {
+          "carrierAIDC": "YnllCg=="
+        }
+      ]
+    },
+    {
+      "resourceType": "Device",
+      "id": "d3"
+    },
+    {
+      "resourceType": "Patient",
+      "id": "pt1",
+      "gender": "female",
+      "birthDate": "1978-03-12"
+    },
+    {
+      "resourceType": "Patient",
+      "id": "pt2",
+      "gender": "male",
+      "birthDate": "1941-09-09"
+    },
+    {
+      "resourceType": "Patient",
+      "id": "pt3"
+    },
+    {
+      "resourceType": "ClaimResponse",
+      "id": "cr1",
+      "use": "claim",
+      "patient": { "reference": "Patient/p1" },
+      "created": "2021-09-02",
+      "insurer": { "reference": "Organization/o1" },
+      "type": { "text": "type" },
+      "outcome": "complete",
+      "status": "active",
+      "item": [
+        {
+          "itemSequence": 1,
+          "adjudication": [
+            {
+              "category": { "text": "category" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "ClaimResponse",
+      "id": "cr2",
+      "use": "claim",
+      "patient": { "reference": "Patient/p1" },
+      "created": "2021-09-02",
+      "insurer": { "reference": "Organization/o1" },
+      "type": { "text": "type" },
+      "outcome": "complete",
+      "status": "active",
+      "item": [
+        {
+          "itemSequence": 2,
+          "adjudication": [
+            {
+              "category": { "text": "category" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "ClaimResponse",
+      "id": "cr3",
+      "use": "claim",
+      "patient": { "reference": "Patient/p1" },
+      "created": "2021-09-02",
+      "insurer": { "reference": "Organization/o1" },
+      "type": { "text": "type" },
+      "outcome": "complete",
+      "status": "active"
+    },
+    {
+      "resourceType": "DetectedIssue",
+      "id": "di1",
+      "status": "final",
+      "identifiedDateTime": "2023-02-08"
+    },
+    {
+      "resourceType": "DetectedIssue",
+      "id": "di2",
+      "status": "final",
+      "identifiedDateTime": "2016-11-12"
+    },
+    {
+      "resourceType": "DetectedIssue",
+      "id": "di3",
+      "status": "final"
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o1",
+      "status": "final",
+      "code": { "text": "code" },
+      "valueQuantity": { "value": 1.0 },
+      "effectiveInstant": "2015-02-07T13:28:17.239+02:00"
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o2",
+      "status": "final",
+      "code": { "text": "code" },
+      "valueQuantity": { "value": 1.8 },
+      "effectiveInstant": "2022-02-07T13:28:17.239+02:00"
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o3",
+      "status": "final",
+      "code": { "text": "code" }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o4",
+      "status": "final",
+      "code": { "text": "code" },
+      "valueTime": "18:12:00"
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o5",
+      "status": "final",
+      "code": { "text": "code" },
+      "valueTime": "18:32:00"
+    },
+    {
+      "resourceType": "ImagingStudy",
+      "id": "is1",
+      "status": "available",
+      "subject": { "reference": "Patient/p1" },
+      "numberOfSeries": 9
+    },
+    {
+      "resourceType": "ImagingStudy",
+      "id": "is2",
+      "status": "available",
+      "subject": { "reference": "Patient/p1" },
+      "numberOfSeries": 12
+    },
+    {
+      "resourceType": "ImagingStudy",
+      "id": "is3",
+      "status": "available",
+      "subject": { "reference": "Patient/p1" }
+    },
+    {
+      "resourceType": "Measure",
+      "id": "m1",
+      "url": "urn:uuid:53fefa32-fcbb-4ff8-8a92-55ee120877b7",
+      "status": "active"
+    },
+    {
+      "resourceType": "Measure",
+      "id": "m2",
+      "url": "urn:uuid:c4669fc3-0d14-4e54-a77f-525f6d4e8385",
+      "status": "active"
+    },
+    {
+      "resourceType": "Measure",
+      "id": "m3",
+      "status": "active"
+    },
+    {
+      "resourceType": "Task",
+      "id": "t1",
+      "intent": "order",
+      "status": "requested",
+      "output": [
+        {
+          "type": { "text": "type" },
+          "valueUrl": "http://example.org"
+        }
+      ]
+    },
+    {
+      "resourceType": "Task",
+      "id": "t2",
+      "intent": "order",
+      "status": "requested",
+      "output": [
+        {
+          "type": { "text": "type" },
+          "valueUrl": "http://another.example.org"
+        }
+      ]
+    },
+    {
+      "resourceType": "Task",
+      "id": "t3",
+      "intent": "order",
+      "status": "requested"
+    },
+    {
+      "resourceType": "Task",
+      "id": "t4",
+      "intent": "order",
+      "status": "requested",
+      "output": [
+        {
+          "type": { "text": "type" },
+          "valueOid": "urn:oid:1.0"
+        }
+      ]
+    },
+    {
+      "resourceType": "Task",
+      "id": "t5",
+      "intent": "order",
+      "status": "requested",
+      "output": [
+        {
+          "type": { "text": "type" },
+          "valueOid": "urn:oid:1.2.3"
+        }
+      ]
+    },
+    {
+      "resourceType": "Task",
+      "id": "t6",
+      "intent": "order",
+      "status": "requested",
+      "output": [
+        {
+          "type": { "text": "type" },
+          "valueUuid": "urn:uuid:53fefa32-fcbb-4ff8-8a92-55ee120877b7"
+        }
+      ]
+    },
+    {
+      "resourceType": "Task",
+      "id": "t7",
+      "intent": "order",
+      "status": "requested",
+      "output": [
+        {
+          "type": { "text": "type" },
+          "valueUuid": "urn:uuid:c4669fc3-0d14-4e54-a77f-525f6d4e8385"
+        }
+      ]
+    },
+    {
+      "resourceType": "Task",
+      "id": "t8",
+      "intent": "order",
+      "status": "requested",
+      "output": [
+        {
+          "type": { "text": "type" },
+          "valueId": "id1"
+        }
+      ]
+    },
+    {
+      "resourceType": "Task",
+      "id": "t9",
+      "intent": "order",
+      "status": "requested",
+      "output": [
+        {
+          "type": { "text": "type" },
+          "valueId": "id2"
+        }
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "title": "base64Binary",
+      "view": {
+        "resource": "Device",
+        "status": "active",
+        "constant": [
+          {
+            "name": "aidc",
+            "valueBase64Binary": "aGVsbG8K"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "aidc",
+                "path": "udiCarrier.first().carrierAIDC = %aidc",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "d1",
+          "aidc": true
+        },
+        {
+          "id": "d2",
+          "aidc": false
+        },
+        {
+          "id": "d3",
+          "aidc": null
+        }
+      ]
+    },
+    {
+      "title": "code",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "constant": [
+          {
+            "name": "gender",
+            "valueCode": "female"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "gender = %gender",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1",
+          "bool": true
+        },
+        {
+          "id": "pt2",
+          "bool": false
+        },
+        {
+          "id": "pt3",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "date",
+      "view": {
+        "resource": "Patient",
+        "status": "active",
+        "constant": [
+          {
+            "name": "bd",
+            "valueDate": "1978-03-12"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "birthDate = %bd",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "pt1",
+          "bool": true
+        },
+        {
+          "id": "pt2",
+          "bool": false
+        },
+        {
+          "id": "pt3",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "dateTime",
+      "view": {
+        "resource": "DetectedIssue",
+        "status": "active",
+        "constant": [
+          {
+            "name": "id_time",
+            "valueDate": "2016-11-12"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "identified.ofType(DateTime) = %id_time",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "di1",
+          "bool": false
+        },
+        {
+          "id": "di2",
+          "bool": true
+        },
+        {
+          "id": "di3",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "decimal",
+      "view": {
+        "resource": "Observation",
+        "status": "active",
+        "constant": [
+          {
+            "name": "v",
+            "valueDecimal": 1.2
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "value.ofType(Quantity).value < %v",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "o1",
+          "bool": true
+        },
+        {
+          "id": "o2",
+          "bool": false
+        },
+        {
+          "id": "o3",
+          "bool": null
+        },
+        {
+          "id": "o4",
+          "bool": null
+        },
+        {
+          "id": "o5",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "id",
+      "view": {
+        "resource": "Task",
+        "status": "active",
+        "constant": [
+          {
+            "name": "id",
+            "valueUuid": "id1"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "output.first().value.ofType(id) = %id",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "t1",
+          "bool": null
+        },
+        {
+          "id": "t2",
+          "bool": null
+        },
+        {
+          "id": "t3",
+          "bool": null
+        },
+        {
+          "id": "t4",
+          "bool": null
+        },
+        {
+          "id": "t5",
+          "bool": null
+        },
+        {
+          "id": "t6",
+          "bool": null
+        },
+        {
+          "id": "t7",
+          "bool": null
+        },
+        {
+          "id": "t8",
+          "bool": true
+        },
+        {
+          "id": "t9",
+          "bool": false
+        }
+      ]
+    },
+    {
+      "title": "instant",
+      "view": {
+        "resource": "Observation",
+        "status": "active",
+        "constant": [
+          {
+            "name": "eff",
+            "valueInstant": "2015-02-07T13:28:17.239+02:00"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "effective.ofType(Instant) = %eff",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "o1",
+          "bool": true
+        },
+        {
+          "id": "o2",
+          "bool": false
+        },
+        {
+          "id": "o3",
+          "bool": null
+        },
+        {
+          "id": "o4",
+          "bool": null
+        },
+        {
+          "id": "o5",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "oid",
+      "view": {
+        "resource": "Task",
+        "status": "active",
+        "constant": [
+          {
+            "name": "oid",
+            "valueUrl": "urn:oid:1.0"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "output.first().value.ofType(oid) = %oid",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "t1",
+          "bool": null
+        },
+        {
+          "id": "t2",
+          "bool": null
+        },
+        {
+          "id": "t3",
+          "bool": null
+        },
+        {
+          "id": "t4",
+          "bool": true
+        },
+        {
+          "id": "t5",
+          "bool": false
+        },
+        {
+          "id": "t6",
+          "bool": null
+        },
+        {
+          "id": "t7",
+          "bool": null
+        },
+        {
+          "id": "t8",
+          "bool": null
+        },
+        {
+          "id": "t9",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "positiveInt",
+      "view": {
+        "resource": "ClaimResponse",
+        "status": "active",
+        "constant": [
+          {
+            "name": "seq",
+            "valuePositiveInt": 1
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "item.first().itemSequence = %seq",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "cr1",
+          "bool": true
+        },
+        {
+          "id": "cr2",
+          "bool": false
+        },
+        {
+          "id": "cr3",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "time",
+      "view": {
+        "resource": "Observation",
+        "status": "active",
+        "constant": [
+          {
+            "name": "t",
+            "valueTime": "18:12:00"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "value.ofType(Time) = %t",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "o1",
+          "bool": null
+        },
+        {
+          "id": "o2",
+          "bool": null
+        },
+        {
+          "id": "o3",
+          "bool": null
+        },
+        {
+          "id": "o4",
+          "bool": true
+        },
+        {
+          "id": "o5",
+          "bool": false
+        }
+      ]
+    },
+    {
+      "title": "unsignedInt",
+      "view": {
+        "resource": "ImagingStudy",
+        "status": "active",
+        "constant": [
+          {
+            "name": "series",
+            "valueUnsignedInt": 9
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "numberOfSeries = %series",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "is1",
+          "bool": true
+        },
+        {
+          "id": "is2",
+          "bool": false
+        },
+        {
+          "id": "is3",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "uri",
+      "view": {
+        "resource": "Measure",
+        "status": "active",
+        "constant": [
+          {
+            "name": "uri",
+            "valueUri": "urn:uuid:53fefa32-fcbb-4ff8-8a92-55ee120877b7"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "url = %uri",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "m1",
+          "bool": true
+        },
+        {
+          "id": "m2",
+          "bool": false
+        },
+        {
+          "id": "m3",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "url",
+      "view": {
+        "resource": "Task",
+        "status": "active",
+        "constant": [
+          {
+            "name": "url",
+            "valueUrl": "http://example.org"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "output.first().value.ofType(url) = %url",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "t1",
+          "bool": true
+        },
+        {
+          "id": "t2",
+          "bool": false
+        },
+        {
+          "id": "t3",
+          "bool": null
+        },
+        {
+          "id": "t4",
+          "bool": null
+        },
+        {
+          "id": "t5",
+          "bool": null
+        },
+        {
+          "id": "t6",
+          "bool": null
+        },
+        {
+          "id": "t7",
+          "bool": null
+        },
+        {
+          "id": "t8",
+          "bool": null
+        },
+        {
+          "id": "t9",
+          "bool": null
+        }
+      ]
+    },
+    {
+      "title": "uuid",
+      "view": {
+        "resource": "Task",
+        "status": "active",
+        "constant": [
+          {
+            "name": "uuid",
+            "valueUuid": "urn:uuid:53fefa32-fcbb-4ff8-8a92-55ee120877b7"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "bool",
+                "path": "output.first().value.ofType(uuid) = %uuid",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "t1",
+          "bool": null
+        },
+        {
+          "id": "t2",
+          "bool": null
+        },
+        {
+          "id": "t3",
+          "bool": null
+        },
+        {
+          "id": "t4",
+          "bool": null
+        },
+        {
+          "id": "t5",
+          "bool": null
+        },
+        {
+          "id": "t6",
+          "bool": true
+        },
+        {
+          "id": "t7",
+          "bool": false
+        },
+        {
+          "id": "t8",
+          "bool": null
+        },
+        {
+          "id": "t9",
+          "bool": null
+        }
+      ]
+    }
+  ]
+}

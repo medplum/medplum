@@ -31,6 +31,7 @@ export function buildAwsCommand(): Command {
       '--dryrun',
       'Displays the operations that would be performed using the specified command without actually running them.'
     )
+    .option('--yes', 'Automatically confirm the update')
     .action(updateConfigCommand);
 
   aws.addCommand(

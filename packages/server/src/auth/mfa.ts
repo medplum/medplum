@@ -3,6 +3,7 @@ import { Login, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
+import { toDataURL } from 'qrcode';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -44,6 +45,7 @@ mfaRouter.get(
     res.json({
       enrolled: false,
       enrollUri: otp,
+      enrollQrCode: await toDataURL(otp),
     });
   })
 );

@@ -44,6 +44,7 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
+  readonly hl7Clients = new Map<string, Hl7Client>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
@@ -51,6 +52,7 @@ export class App {
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
+  private keepAlive = false;
   private config: Agent | undefined;
 
   constructor(
@@ -67,7 +69,7 @@ export class App {
 
     this.startWebSocket();
 
-    await this.hydrateListeners();
+    await this.reloadConfig();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -178,7 +180,7 @@ export class App {
           case 'agent:reloadconfig:request':
             try {
               this.log.info('Reloading config...');
-              await this.hydrateListeners();
+              await this.reloadConfig();
               await this.sendToWebSocket({
                 type: 'agent:reloadconfig:response',
                 statusCode: 200,
@@ -199,18 +201,37 @@ export class App {
             this.log.error(`Unknown message type: ${command.type}`);
         }
       } catch (err) {
-        this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+        this.log.error(`WebSocket error on incoming message: ${normalizeErrorString(err)}`);
       }
     });
   }
 
-  private async hydrateListeners(): Promise<void> {
+  private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
-    this.config = agent;
-    const pendingRemoval = new Set(this.channels.keys());
-    let channels = agent.channel ?? [];
+    const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
-    if (agent.status === 'off') {
+    if (!keepAlive && this.hl7Clients.size !== 0) {
+      for (const client of this.hl7Clients.values()) {
+        client.close();
+      }
+    }
+
+    this.config = agent;
+    this.keepAlive = keepAlive ?? false;
+
+    await this.hydrateListeners();
+  }
+
+  /**
+   * This method should only be called by {@link App.reloadConfig}
+   */
+  private async hydrateListeners(): Promise<void> {
+    const config = this.config as Agent;
+
+    const pendingRemoval = new Set(this.channels.keys());
+    let channels = config.channel ?? [];
+
+    if (config.status === 'off') {
       channels = [];
       this.log.warn(
         "Agent status is currently 'off'. All channels are disconnected until status is set back to 'active'"
@@ -355,6 +376,12 @@ export class App {
       this.webSocket = undefined;
     }
 
+    if (this.hl7Clients.size !== 0) {
+      for (const client of this.hl7Clients.values()) {
+        client.close();
+      }
+    }
+
     const channelStopPromises = [];
     for (const channel of this.channels.values()) {
       channelStopPromises.push(channel.stop());
@@ -396,7 +423,7 @@ export class App {
           try {
             await this.sendToWebSocket(msg);
           } catch (err) {
-            this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+            this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
             this.webSocketQueue.unshift(msg);
             throw err;
           }
@@ -518,11 +545,37 @@ export class App {
     }
 
     const address = new URL(message.remote);
-    const client = new Hl7Client({
-      host: address.hostname,
-      port: Number.parseInt(address.port, 10),
-      encoding: address.searchParams.get('encoding') ?? undefined,
-    });
+
+    let client: Hl7Client;
+
+    if (this.hl7Clients.has(message.remote)) {
+      client = this.hl7Clients.get(message.remote) as Hl7Client;
+    } else {
+      const encoding = address.searchParams.get('encoding') ?? undefined;
+      const keepAlive = this.keepAlive;
+      client = new Hl7Client({
+        host: address.hostname,
+        port: Number.parseInt(address.port, 10),
+        encoding,
+        keepAlive,
+      });
+      this.log.info(`Client created for remote '${message.remote}'`, { keepAlive, encoding });
+
+      if (client.keepAlive) {
+        this.hl7Clients.set(message.remote, client);
+        client.addEventListener('close', () => {
+          this.hl7Clients.delete(message.remote);
+          this.log.info(`Persistent connection to remote '${message.remote}' closed`);
+        });
+        client.addEventListener('error', () => {
+          this.hl7Clients.delete(message.remote);
+          this.log.info(
+            `Persistent connection to remote '${message.remote}' encountered an error... Closing connection...`
+          );
+          client.close();
+        });
+      }
+    }
 
     client
       .sendAndWait(Hl7Message.parse(message.body))
@@ -549,9 +602,16 @@ export class App {
           statusCode: 400,
           body: normalizeErrorString(err),
         } satisfies AgentTransmitResponse);
+
+        if (client.keepAlive) {
+          this.hl7Clients.delete(message.remote);
+          client.close();
+        }
       })
       .finally(() => {
-        client.close();
+        if (!client.keepAlive) {
+          client.close();
+        }
       });
   }
 }

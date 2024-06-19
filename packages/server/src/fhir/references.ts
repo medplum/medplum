@@ -1,105 +1,128 @@
 import {
+  badRequest,
+  crawlResource,
+  createReference,
   createStructureIssue,
-  getTypedPropertyValue,
   normalizeErrorString,
   OperationOutcomeError,
+  parseSearchRequest,
   PropertyType,
-  toTypedValue,
   TypedValue,
 } from '@medplum/core';
-import { OperationOutcomeIssue, Project, Reference, Resource } from '@medplum/fhirtypes';
+import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getSystemRepo } from './repo';
+import { Repository } from './repo';
 
-export async function validateReferences<T extends Resource>(
-  resource: T,
-  allowedProjects?: Project['id'][]
+async function validateReference(
+  repo: Repository,
+  reference: Reference,
+  issues: OperationOutcomeIssue[],
+  path: string
 ): Promise<void> {
-  return new FhirReferenceValidator(resource, allowedProjects).validate();
+  if (reference.reference?.split?.('/')?.length !== 2) {
+    return;
+  }
+
+  try {
+    await repo.readReference(reference);
+  } catch (err) {
+    issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
+  }
 }
 
-export class FhirReferenceValidator<T extends Resource> {
-  private readonly issues: OperationOutcomeIssue[];
-  private readonly allowedProjects?: Project['id'][];
-  private readonly root: T;
+function isCheckableReference(propertyValue: TypedValue | TypedValue[], parent: TypedValue): boolean {
+  const valueType = Array.isArray(propertyValue) ? propertyValue[0].type : propertyValue.type;
+  return valueType === PropertyType.Reference && parent.type !== PropertyType.Meta;
+}
 
-  constructor(root: T, allowedProjects?: Project['id'][]) {
-    this.issues = [];
-    this.allowedProjects = allowedProjects;
-    this.root = root;
+export async function validateReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
+  const issues: OperationOutcomeIssue[] = [];
+  await crawlResource(
+    resource,
+    {
+      async visitPropertyAsync(parent, _key, path, propertyValue, _schema) {
+        if (!isCheckableReference(propertyValue, parent)) {
+          return;
+        }
+
+        if (Array.isArray(propertyValue)) {
+          for (let i = 0; i < propertyValue.length; i++) {
+            const reference = propertyValue[i].value as Reference;
+            await validateReference(repo, reference, issues, path + '[' + i + ']');
+          }
+        } else {
+          const reference = propertyValue.value as Reference;
+          await validateReference(repo, reference, issues, path);
+        }
+      },
+    },
+    { skipMissingProperties: true }
+  );
+
+  if (issues.length > 0) {
+    throw new OperationOutcomeError({
+      resourceType: 'OperationOutcome',
+      id: randomUUID(),
+      issue: issues,
+    });
+  }
+}
+
+async function resolveReplacementReference(
+  repo: Repository,
+  reference: Reference,
+  path: string
+): Promise<Reference | undefined> {
+  if (!reference.reference?.includes?.('?')) {
+    return undefined;
   }
 
-  async validate(): Promise<void> {
-    const resource = this.root;
-    const resourceType = resource.resourceType;
-    await this.validateObject(resourceType, toTypedValue(resource));
-
-    if (this.issues.length > 0) {
-      throw new OperationOutcomeError({
-        resourceType: 'OperationOutcome',
-        id: randomUUID(),
-        issue: this.issues,
-      });
-    }
+  const searchCriteria = parseSearchRequest(reference.reference);
+  searchCriteria.sortRules = undefined;
+  searchCriteria.count = 2;
+  const matches = await repo.searchResources(searchCriteria);
+  if (matches.length !== 1) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Conditional reference '${reference.reference}' ${matches.length ? 'matched multiple' : 'did not match any'} resources`,
+        path
+      )
+    );
   }
 
-  private async validateObject(path: string, typedValue: TypedValue): Promise<void> {
-    const object = typedValue.value as Record<string, unknown>;
-    for (const key of Object.keys(object)) {
-      await this.checkProperty(path, key, typedValue);
-    }
-  }
+  return createReference(matches[0]);
+}
 
-  private async checkProperty(basePath: string, propertyName: string, typedValue: TypedValue): Promise<void> {
-    const path = basePath + '.' + propertyName;
-    const value = getTypedPropertyValue(typedValue, propertyName);
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        await this.checkPropertyValue(path, item);
-      }
-    } else if (value) {
-      await this.checkPropertyValue(path, value);
-    }
-  }
+export async function replaceConditionalReferences<T extends Resource>(repo: Repository, resource: T): Promise<T> {
+  await crawlResource(
+    resource,
+    {
+      async visitPropertyAsync(parent, key, path, propertyValue, _schema) {
+        if (!isCheckableReference(propertyValue, parent)) {
+          return;
+        }
 
-  private async checkPropertyValue(path: string, typedValue: TypedValue): Promise<void> {
-    if (typedValue.type === PropertyType.Meta) {
-      return;
-    }
-    if (typedValue.type === PropertyType.Reference) {
-      await this.checkReference(path, typedValue.value as Reference);
-    }
-    if (typeof typedValue.value === 'object') {
-      await this.validateObject(path, typedValue);
-    }
-  }
+        if (Array.isArray(propertyValue)) {
+          for (let i = 0; i < propertyValue.length; i++) {
+            const reference = propertyValue[i].value as Reference;
+            const replacement = await resolveReplacementReference(repo, reference, path + '[' + i + ']');
 
-  private async checkReference(path: string, reference: Reference): Promise<void> {
-    const refStr = reference.reference;
-    if (!refStr) {
-      return;
-    }
+            if (replacement) {
+              parent.value[key][i] = replacement;
+            }
+          }
+        } else {
+          const reference = propertyValue.value as Reference;
+          const replacement = await resolveReplacementReference(repo, reference, path);
 
-    const refParts = refStr.split('/');
-    if (refParts.length !== 2) {
-      return;
-    }
-    if (!this.root.meta?.project) {
-      return;
-    }
+          if (replacement) {
+            parent.value[key] = replacement;
+          }
+        }
+      },
+    },
+    { skipMissingProperties: true }
+  );
 
-    try {
-      const systemRepo = getSystemRepo();
-      const target = await systemRepo.readReference(reference);
-      if (
-        target.meta?.project &&
-        target.meta.project !== this.root.meta.project &&
-        !this.allowedProjects?.includes(target.meta.project)
-      ) {
-        this.issues.push(createStructureIssue(path, `Invalid reference (Not found)`));
-      }
-    } catch (err) {
-      this.issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
-    }
-  }
+  return resource;
 }

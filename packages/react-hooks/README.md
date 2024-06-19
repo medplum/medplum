@@ -9,6 +9,7 @@ Most users will want the full Medplum React Component Library, `@medplum/react`.
 - `useMedplum` - handles shared global instance of `MedplumClient`
 - `useResource` - reads a resource by ID or reference with intelligent caching
 - `useSearch` - performs a FHIR search with intelligent state management
+- `useSubscription` - subscribes to a FHIR search criteria and calls a given callback upon receiving a relevant notification
 
 ## Installation
 
@@ -83,10 +84,127 @@ function MyComponent(): JSX.Element {
 }
 ```
 
+## `useSubscription`
+
+`useSubscription` creates an in-memory `Subscription` resource with the given criteria on the Medplum server and calls the given callback when an event notification is triggered by a resource interaction.
+
+Subscriptions created with this hook are lightweight and are automatically untracked and cleaned up when the containing component is no longer mounted.
+
+```tsx
+function MyComponent(): JSX.Element {
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  useSubscription(
+    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456', 
+    (bundle: Bundle) => {
+      console.log('Received a message from Practitioner/abc-123!');
+      handleNotificationBundle(bundle); // Do something with the bundle
+      setNotificationCount(s => s + 1);
+    }
+  );
+
+  return <div>Notifications received: {notificationCount}</div>;
+}
+```
+
+### Subscription Extensions
+
+Any [Subscription extension](https://www.medplum.com/docs/subscriptions/subscription-extensions) supported by Medplum can be attached to a `Subscription` created by the `useSubscription` hook via a 3rd optional parameter to the hook, `options`, which takes an optional `subscriptionProps`.
+
+```tsx
+type UseSubscriptionOptions = {
+  subscriptionProps?: Partial<Subscription>;
+}
+```
+
+Here's how you would subscribe to only `create` interactions for a criteria:
+
+```tsx
+function MyComponent(): JSX.Element {
+  const [createCount, setCreateCount] = useState(0);
+
+  useSubscription(
+    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
+    (_bundle) => {
+      console.log('Received a new message from Practitioner/abc-123!');
+      setCreateCount(s => s + 1);
+    },
+    { 
+      subscriptionProps: {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      }
+    }
+  );
+
+  return (
+    <>
+      <div>Create notifications received: {createCount}</div>
+    </>
+  );
+}
+```
+
+Subscriptions with the same criteria are tracked separately if they have differing `subscriptionProps`. This means you can create one `Subscription` to listen for `create` interactions and another for `update` interactions and they will not interfere with each other.
+
+```tsx
+function MyComponent(): JSX.Element {
+  const [createCount, setCreateCount] = useState(0);
+  const [updateCount, setUpdateCount] = useState(0);
+
+  useSubscription(
+    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
+    (_bundle) => {
+      console.log('Received a new message from Practitioner/abc-123!');
+      setCreateCount(s => s + 1);
+    },
+    { 
+      subscriptionProps: {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      }
+    }
+  );
+
+  useSubscription(
+    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
+    (_bundle) => {
+      console.log('Received an update to message from Practitioner/abc-123!');
+      setUpdateCount(s => s + 1);
+    },
+    { 
+      subscriptionProps: {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'update',
+          },
+        ],
+      }
+    }
+  );
+
+  return (
+    <>
+      <div>Create notifications received: {createCount}</div>
+      <div>Update notifications received: {updateCount}</div>
+    </>
+  );
+}
+```
+
 ## About Medplum
 
 Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2023
+Apache 2.0. Copyright &copy; Medplum 2024
