@@ -1,0 +1,6364 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "CodeSystem",
+        "status": "active",
+        "url": "urn:ietf:bcp:13",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "application/1d-interleaved-parityfec"
+          },
+          {
+            "code": "application/3gpdash-qoe-report+xml"
+          },
+          {
+            "code": "application/3gppHal+json"
+          },
+          {
+            "code": "application/3gppHalForms+json"
+          },
+          {
+            "code": "application/3gpp-ims+xml"
+          },
+          {
+            "code": "application/A2L"
+          },
+          {
+            "code": "application/ace-groupcomm+cbor"
+          },
+          {
+            "code": "application/ace+cbor"
+          },
+          {
+            "code": "application/ace+json"
+          },
+          {
+            "code": "application/activemessage"
+          },
+          {
+            "code": "application/activity+json"
+          },
+          {
+            "code": "application/aif+cbor"
+          },
+          {
+            "code": "application/aif+json"
+          },
+          {
+            "code": "application/alto-cdni+json"
+          },
+          {
+            "code": "application/alto-cdnifilter+json"
+          },
+          {
+            "code": "application/alto-costmap+json"
+          },
+          {
+            "code": "application/alto-costmapfilter+json"
+          },
+          {
+            "code": "application/alto-directory+json"
+          },
+          {
+            "code": "application/alto-endpointprop+json"
+          },
+          {
+            "code": "application/alto-endpointpropparams+json"
+          },
+          {
+            "code": "application/alto-endpointcost+json"
+          },
+          {
+            "code": "application/alto-endpointcostparams+json"
+          },
+          {
+            "code": "application/alto-error+json"
+          },
+          {
+            "code": "application/alto-networkmapfilter+json"
+          },
+          {
+            "code": "application/alto-networkmap+json"
+          },
+          {
+            "code": "application/alto-propmap+json"
+          },
+          {
+            "code": "application/alto-propmapparams+json"
+          },
+          {
+            "code": "application/alto-tips+json"
+          },
+          {
+            "code": "application/alto-tipsparams+json"
+          },
+          {
+            "code": "application/alto-updatestreamcontrol+json"
+          },
+          {
+            "code": "application/alto-updatestreamparams+json"
+          },
+          {
+            "code": "application/AML"
+          },
+          {
+            "code": "application/andrew-inset"
+          },
+          {
+            "code": "application/applefile"
+          },
+          {
+            "code": "application/at+jwt"
+          },
+          {
+            "code": "application/ATF"
+          },
+          {
+            "code": "application/ATFX"
+          },
+          {
+            "code": "application/atom+xml"
+          },
+          {
+            "code": "application/atomcat+xml"
+          },
+          {
+            "code": "application/atomdeleted+xml"
+          },
+          {
+            "code": "application/atomicmail"
+          },
+          {
+            "code": "application/atomsvc+xml"
+          },
+          {
+            "code": "application/atsc-dwd+xml"
+          },
+          {
+            "code": "application/atsc-dynamic-event-message"
+          },
+          {
+            "code": "application/atsc-held+xml"
+          },
+          {
+            "code": "application/atsc-rdt+json"
+          },
+          {
+            "code": "application/atsc-rsat+xml"
+          },
+          {
+            "code": "application/ATXML"
+          },
+          {
+            "code": "application/auth-policy+xml"
+          },
+          {
+            "code": "application/automationml-aml+xml"
+          },
+          {
+            "code": "application/automationml-amlx+zip"
+          },
+          {
+            "code": "application/bacnet-xdd+zip"
+          },
+          {
+            "code": "application/batch-SMTP"
+          },
+          {
+            "code": "application/beep+xml"
+          },
+          {
+            "code": "application/c2pa"
+          },
+          {
+            "code": "application/calendar+json"
+          },
+          {
+            "code": "application/calendar+xml"
+          },
+          {
+            "code": "application/call-completion"
+          },
+          {
+            "code": "application/CALS-1840"
+          },
+          {
+            "code": "application/captive+json"
+          },
+          {
+            "code": "application/cbor"
+          },
+          {
+            "code": "application/cbor-seq"
+          },
+          {
+            "code": "application/cccex"
+          },
+          {
+            "code": "application/ccmp+xml"
+          },
+          {
+            "code": "application/ccxml+xml"
+          },
+          {
+            "code": "application/cda+xml"
+          },
+          {
+            "code": "application/CDFX+XML"
+          },
+          {
+            "code": "application/cdmi-capability"
+          },
+          {
+            "code": "application/cdmi-container"
+          },
+          {
+            "code": "application/cdmi-domain"
+          },
+          {
+            "code": "application/cdmi-object"
+          },
+          {
+            "code": "application/cdmi-queue"
+          },
+          {
+            "code": "application/cdni"
+          },
+          {
+            "code": "application/CEA"
+          },
+          {
+            "code": "application/cea-2018+xml"
+          },
+          {
+            "code": "application/cellml+xml"
+          },
+          {
+            "code": "application/cfw"
+          },
+          {
+            "code": "application/cid-edhoc+cbor-seq"
+          },
+          {
+            "code": "application/city+json"
+          },
+          {
+            "code": "application/clr"
+          },
+          {
+            "code": "application/clue_info+xml"
+          },
+          {
+            "code": "application/clue+xml"
+          },
+          {
+            "code": "application/cms"
+          },
+          {
+            "code": "application/cnrp+xml"
+          },
+          {
+            "code": "application/coap-group+json"
+          },
+          {
+            "code": "application/coap-payload"
+          },
+          {
+            "code": "application/commonground"
+          },
+          {
+            "code": "application/concise-problem-details+cbor"
+          },
+          {
+            "code": "application/conference-info+xml"
+          },
+          {
+            "code": "application/cpl+xml"
+          },
+          {
+            "code": "application/cose"
+          },
+          {
+            "code": "application/cose-key"
+          },
+          {
+            "code": "application/cose-key-set"
+          },
+          {
+            "code": "application/cose-x509"
+          },
+          {
+            "code": "application/csrattrs"
+          },
+          {
+            "code": "application/csta+xml"
+          },
+          {
+            "code": "application/CSTAdata+xml"
+          },
+          {
+            "code": "application/csvm+json"
+          },
+          {
+            "code": "application/cwl"
+          },
+          {
+            "code": "application/cwl+json"
+          },
+          {
+            "code": "application/cwl+yaml"
+          },
+          {
+            "code": "application/cwt"
+          },
+          {
+            "code": "application/cybercash"
+          },
+          {
+            "code": "application/dash+xml"
+          },
+          {
+            "code": "application/dash-patch+xml"
+          },
+          {
+            "code": "application/dashdelta"
+          },
+          {
+            "code": "application/davmount+xml"
+          },
+          {
+            "code": "application/dca-rft"
+          },
+          {
+            "code": "application/DCD"
+          },
+          {
+            "code": "application/dec-dx"
+          },
+          {
+            "code": "application/dialog-info+xml"
+          },
+          {
+            "code": "application/dicom"
+          },
+          {
+            "code": "application/dicom+json"
+          },
+          {
+            "code": "application/dicom+xml"
+          },
+          {
+            "code": "application/DII"
+          },
+          {
+            "code": "application/DIT"
+          },
+          {
+            "code": "application/dns"
+          },
+          {
+            "code": "application/dns+json"
+          },
+          {
+            "code": "application/dns-message"
+          },
+          {
+            "code": "application/dots+cbor"
+          },
+          {
+            "code": "application/dpop+jwt"
+          },
+          {
+            "code": "application/dskpp+xml"
+          },
+          {
+            "code": "application/dssc+der"
+          },
+          {
+            "code": "application/dssc+xml"
+          },
+          {
+            "code": "application/dvcs"
+          },
+          {
+            "code": "application/ecmascript"
+          },
+          {
+            "code": "application/edhoc+cbor-seq"
+          },
+          {
+            "code": "application/EDI-consent"
+          },
+          {
+            "code": "application/EDIFACT"
+          },
+          {
+            "code": "application/EDI-X12"
+          },
+          {
+            "code": "application/efi"
+          },
+          {
+            "code": "application/elm+json"
+          },
+          {
+            "code": "application/elm+xml"
+          },
+          {
+            "code": "application/EmergencyCallData.cap+xml"
+          },
+          {
+            "code": "application/EmergencyCallData.Comment+xml"
+          },
+          {
+            "code": "application/EmergencyCallData.Control+xml"
+          },
+          {
+            "code": "application/EmergencyCallData.DeviceInfo+xml"
+          },
+          {
+            "code": "application/EmergencyCallData.eCall.MSD"
+          },
+          {
+            "code": "application/EmergencyCallData.LegacyESN+json"
+          },
+          {
+            "code": "application/EmergencyCallData.ProviderInfo+xml"
+          },
+          {
+            "code": "application/EmergencyCallData.ServiceInfo+xml"
+          },
+          {
+            "code": "application/EmergencyCallData.SubscriberInfo+xml"
+          },
+          {
+            "code": "application/EmergencyCallData.VEDS+xml"
+          },
+          {
+            "code": "application/emma+xml"
+          },
+          {
+            "code": "application/emotionml+xml"
+          },
+          {
+            "code": "application/encaprtp"
+          },
+          {
+            "code": "application/epp+xml"
+          },
+          {
+            "code": "application/epub+zip"
+          },
+          {
+            "code": "application/eshop"
+          },
+          {
+            "code": "application/example"
+          },
+          {
+            "code": "application/exi"
+          },
+          {
+            "code": "application/expect-ct-report+json"
+          },
+          {
+            "code": "application/express"
+          },
+          {
+            "code": "application/fastinfoset"
+          },
+          {
+            "code": "application/fastsoap"
+          },
+          {
+            "code": "application/fdf"
+          },
+          {
+            "code": "application/fdt+xml"
+          },
+          {
+            "code": "application/fhir+json"
+          },
+          {
+            "code": "application/fhir+xml"
+          },
+          {
+            "code": "application/fits"
+          },
+          {
+            "code": "application/flexfec"
+          },
+          {
+            "code": "application/font-sfnt"
+          },
+          {
+            "code": "application/font-tdpfr"
+          },
+          {
+            "code": "application/font-woff"
+          },
+          {
+            "code": "application/framework-attributes+xml"
+          },
+          {
+            "code": "application/geo+json"
+          },
+          {
+            "code": "application/geo+json-seq"
+          },
+          {
+            "code": "application/geopackage+sqlite3"
+          },
+          {
+            "code": "application/geoxacml+json"
+          },
+          {
+            "code": "application/geoxacml+xml"
+          },
+          {
+            "code": "application/gltf-buffer"
+          },
+          {
+            "code": "application/gml+xml"
+          },
+          {
+            "code": "application/gnap-binding-jws"
+          },
+          {
+            "code": "application/gnap-binding-jwsd"
+          },
+          {
+            "code": "application/gnap-binding-rotation-jws"
+          },
+          {
+            "code": "application/gnap-binding-rotation-jwsd"
+          },
+          {
+            "code": "application/gzip"
+          },
+          {
+            "code": "application/H224"
+          },
+          {
+            "code": "application/held+xml"
+          },
+          {
+            "code": "application/hl7v2+xml"
+          },
+          {
+            "code": "application/http"
+          },
+          {
+            "code": "application/hyperstudio"
+          },
+          {
+            "code": "application/ibe-key-request+xml"
+          },
+          {
+            "code": "application/ibe-pkg-reply+xml"
+          },
+          {
+            "code": "application/ibe-pp-data"
+          },
+          {
+            "code": "application/iges"
+          },
+          {
+            "code": "application/im-iscomposing+xml"
+          },
+          {
+            "code": "application/index"
+          },
+          {
+            "code": "application/index.cmd"
+          },
+          {
+            "code": "application/index.obj"
+          },
+          {
+            "code": "application/index.response"
+          },
+          {
+            "code": "application/index.vnd"
+          },
+          {
+            "code": "application/inkml+xml"
+          },
+          {
+            "code": "application/IOTP"
+          },
+          {
+            "code": "application/ipfix"
+          },
+          {
+            "code": "application/ipp"
+          },
+          {
+            "code": "application/ISUP"
+          },
+          {
+            "code": "application/its+xml"
+          },
+          {
+            "code": "application/java-archive"
+          },
+          {
+            "code": "application/javascript"
+          },
+          {
+            "code": "application/jf2feed+json"
+          },
+          {
+            "code": "application/jose"
+          },
+          {
+            "code": "application/jose+json"
+          },
+          {
+            "code": "application/jrd+json"
+          },
+          {
+            "code": "application/jscalendar+json"
+          },
+          {
+            "code": "application/jscontact+json"
+          },
+          {
+            "code": "application/json"
+          },
+          {
+            "code": "application/json-patch+json"
+          },
+          {
+            "code": "application/json-seq"
+          },
+          {
+            "code": "application/jsonpath"
+          },
+          {
+            "code": "application/jwk+json"
+          },
+          {
+            "code": "application/jwk-set+json"
+          },
+          {
+            "code": "application/jwt"
+          },
+          {
+            "code": "application/kpml-request+xml"
+          },
+          {
+            "code": "application/kpml-response+xml"
+          },
+          {
+            "code": "application/ld+json"
+          },
+          {
+            "code": "application/lgr+xml"
+          },
+          {
+            "code": "application/link-format"
+          },
+          {
+            "code": "application/linkset"
+          },
+          {
+            "code": "application/linkset+json"
+          },
+          {
+            "code": "application/load-control+xml"
+          },
+          {
+            "code": "application/logout+jwt"
+          },
+          {
+            "code": "application/lost+xml"
+          },
+          {
+            "code": "application/lostsync+xml"
+          },
+          {
+            "code": "application/lpf+zip"
+          },
+          {
+            "code": "application/LXF"
+          },
+          {
+            "code": "application/mac-binhex40"
+          },
+          {
+            "code": "application/macwriteii"
+          },
+          {
+            "code": "application/mads+xml"
+          },
+          {
+            "code": "application/manifest+json"
+          },
+          {
+            "code": "application/marc"
+          },
+          {
+            "code": "application/marcxml+xml"
+          },
+          {
+            "code": "application/mathematica"
+          },
+          {
+            "code": "application/mathml+xml"
+          },
+          {
+            "code": "application/mathml-content+xml"
+          },
+          {
+            "code": "application/mathml-presentation+xml"
+          },
+          {
+            "code": "application/mbms-associated-procedure-description+xml"
+          },
+          {
+            "code": "application/mbms-deregister+xml"
+          },
+          {
+            "code": "application/mbms-envelope+xml"
+          },
+          {
+            "code": "application/mbms-msk-response+xml"
+          },
+          {
+            "code": "application/mbms-msk+xml"
+          },
+          {
+            "code": "application/mbms-protection-description+xml"
+          },
+          {
+            "code": "application/mbms-reception-report+xml"
+          },
+          {
+            "code": "application/mbms-register-response+xml"
+          },
+          {
+            "code": "application/mbms-register+xml"
+          },
+          {
+            "code": "application/mbms-schedule+xml"
+          },
+          {
+            "code": "application/mbms-user-service-description+xml"
+          },
+          {
+            "code": "application/mbox"
+          },
+          {
+            "code": "application/media_control+xml"
+          },
+          {
+            "code": "application/media-policy-dataset+xml"
+          },
+          {
+            "code": "application/mediaservercontrol+xml"
+          },
+          {
+            "code": "application/merge-patch+json"
+          },
+          {
+            "code": "application/metalink4+xml"
+          },
+          {
+            "code": "application/mets+xml"
+          },
+          {
+            "code": "application/MF4"
+          },
+          {
+            "code": "application/mikey"
+          },
+          {
+            "code": "application/mipc"
+          },
+          {
+            "code": "application/missing-blocks+cbor-seq"
+          },
+          {
+            "code": "application/mmt-aei+xml"
+          },
+          {
+            "code": "application/mmt-usd+xml"
+          },
+          {
+            "code": "application/mods+xml"
+          },
+          {
+            "code": "application/moss-keys"
+          },
+          {
+            "code": "application/moss-signature"
+          },
+          {
+            "code": "application/mosskey-data"
+          },
+          {
+            "code": "application/mosskey-request"
+          },
+          {
+            "code": "application/mp21"
+          },
+          {
+            "code": "application/mp4"
+          },
+          {
+            "code": "application/mpeg4-generic"
+          },
+          {
+            "code": "application/mpeg4-iod"
+          },
+          {
+            "code": "application/mpeg4-iod-xmt"
+          },
+          {
+            "code": "application/mrb-consumer+xml"
+          },
+          {
+            "code": "application/mrb-publish+xml"
+          },
+          {
+            "code": "application/msc-ivr+xml"
+          },
+          {
+            "code": "application/msc-mixer+xml"
+          },
+          {
+            "code": "application/msword"
+          },
+          {
+            "code": "application/mud+json"
+          },
+          {
+            "code": "application/multipart-core"
+          },
+          {
+            "code": "application/mxf"
+          },
+          {
+            "code": "application/n-quads"
+          },
+          {
+            "code": "application/n-triples"
+          },
+          {
+            "code": "application/nasdata"
+          },
+          {
+            "code": "application/news-checkgroups"
+          },
+          {
+            "code": "application/news-groupinfo"
+          },
+          {
+            "code": "application/news-transmission"
+          },
+          {
+            "code": "application/nlsml+xml"
+          },
+          {
+            "code": "application/node"
+          },
+          {
+            "code": "application/nss"
+          },
+          {
+            "code": "application/oauth-authz-req+jwt"
+          },
+          {
+            "code": "application/oblivious-dns-message"
+          },
+          {
+            "code": "application/ocsp-request"
+          },
+          {
+            "code": "application/ocsp-response"
+          },
+          {
+            "code": "application/octet-stream"
+          },
+          {
+            "code": "application/ODA"
+          },
+          {
+            "code": "application/odm+xml"
+          },
+          {
+            "code": "application/ODX"
+          },
+          {
+            "code": "application/oebps-package+xml"
+          },
+          {
+            "code": "application/ogg"
+          },
+          {
+            "code": "application/ohttp-keys"
+          },
+          {
+            "code": "application/opc-nodeset+xml"
+          },
+          {
+            "code": "application/oscore"
+          },
+          {
+            "code": "application/oxps"
+          },
+          {
+            "code": "application/p21"
+          },
+          {
+            "code": "application/p21+zip"
+          },
+          {
+            "code": "application/p2p-overlay+xml"
+          },
+          {
+            "code": "application/parityfec"
+          },
+          {
+            "code": "application/passport"
+          },
+          {
+            "code": "application/patch-ops-error+xml"
+          },
+          {
+            "code": "application/pdf"
+          },
+          {
+            "code": "application/PDX"
+          },
+          {
+            "code": "application/pem-certificate-chain"
+          },
+          {
+            "code": "application/pgp-encrypted"
+          },
+          {
+            "code": "application/pgp-keys"
+          },
+          {
+            "code": "application/pgp-signature"
+          },
+          {
+            "code": "application/pidf-diff+xml"
+          },
+          {
+            "code": "application/pidf+xml"
+          },
+          {
+            "code": "application/pkcs10"
+          },
+          {
+            "code": "application/pkcs7-mime"
+          },
+          {
+            "code": "application/pkcs7-signature"
+          },
+          {
+            "code": "application/pkcs8"
+          },
+          {
+            "code": "application/pkcs8-encrypted"
+          },
+          {
+            "code": "application/pkcs12"
+          },
+          {
+            "code": "application/pkix-attr-cert"
+          },
+          {
+            "code": "application/pkix-cert"
+          },
+          {
+            "code": "application/pkix-crl"
+          },
+          {
+            "code": "application/pkix-pkipath"
+          },
+          {
+            "code": "application/pkixcmp"
+          },
+          {
+            "code": "application/pls+xml"
+          },
+          {
+            "code": "application/poc-settings+xml"
+          },
+          {
+            "code": "application/postscript"
+          },
+          {
+            "code": "application/ppsp-tracker+json"
+          },
+          {
+            "code": "application/private-token-issuer-directory"
+          },
+          {
+            "code": "application/private-token-request"
+          },
+          {
+            "code": "application/private-token-response"
+          },
+          {
+            "code": "application/problem+json"
+          },
+          {
+            "code": "application/problem+xml"
+          },
+          {
+            "code": "application/provenance+xml"
+          },
+          {
+            "code": "application/prs.alvestrand.titrax-sheet"
+          },
+          {
+            "code": "application/prs.cww"
+          },
+          {
+            "code": "application/prs.cyn"
+          },
+          {
+            "code": "application/prs.hpub+zip"
+          },
+          {
+            "code": "application/prs.implied-document+xml"
+          },
+          {
+            "code": "application/prs.implied-executable"
+          },
+          {
+            "code": "application/prs.implied-object+json"
+          },
+          {
+            "code": "application/prs.implied-object+json-seq"
+          },
+          {
+            "code": "application/prs.implied-object+yaml"
+          },
+          {
+            "code": "application/prs.implied-structure"
+          },
+          {
+            "code": "application/prs.nprend"
+          },
+          {
+            "code": "application/prs.plucker"
+          },
+          {
+            "code": "application/prs.rdf-xml-crypt"
+          },
+          {
+            "code": "application/prs.vcfbzip2"
+          },
+          {
+            "code": "application/prs.xsf+xml"
+          },
+          {
+            "code": "application/pskc+xml"
+          },
+          {
+            "code": "application/pvd+json"
+          },
+          {
+            "code": "application/rdf+xml"
+          },
+          {
+            "code": "application/route-apd+xml"
+          },
+          {
+            "code": "application/route-s-tsid+xml"
+          },
+          {
+            "code": "application/route-usd+xml"
+          },
+          {
+            "code": "application/QSIG"
+          },
+          {
+            "code": "application/raptorfec"
+          },
+          {
+            "code": "application/rdap+json"
+          },
+          {
+            "code": "application/reginfo+xml"
+          },
+          {
+            "code": "application/relax-ng-compact-syntax"
+          },
+          {
+            "code": "application/remote-printing"
+          },
+          {
+            "code": "application/reputon+json"
+          },
+          {
+            "code": "application/resource-lists-diff+xml"
+          },
+          {
+            "code": "application/resource-lists+xml"
+          },
+          {
+            "code": "application/rfc+xml"
+          },
+          {
+            "code": "application/riscos"
+          },
+          {
+            "code": "application/rlmi+xml"
+          },
+          {
+            "code": "application/rls-services+xml"
+          },
+          {
+            "code": "application/rpki-checklist"
+          },
+          {
+            "code": "application/rpki-ghostbusters"
+          },
+          {
+            "code": "application/rpki-manifest"
+          },
+          {
+            "code": "application/rpki-publication"
+          },
+          {
+            "code": "application/rpki-roa"
+          },
+          {
+            "code": "application/rpki-signed-tal"
+          },
+          {
+            "code": "application/rpki-updown"
+          },
+          {
+            "code": "application/rtf"
+          },
+          {
+            "code": "application/rtploopback"
+          },
+          {
+            "code": "application/rtx"
+          },
+          {
+            "code": "application/samlassertion+xml"
+          },
+          {
+            "code": "application/samlmetadata+xml"
+          },
+          {
+            "code": "application/sarif-external-properties+json"
+          },
+          {
+            "code": "application/sarif+json"
+          },
+          {
+            "code": "application/sbe"
+          },
+          {
+            "code": "application/sbml+xml"
+          },
+          {
+            "code": "application/scaip+xml"
+          },
+          {
+            "code": "application/scim+json"
+          },
+          {
+            "code": "application/scvp-cv-request"
+          },
+          {
+            "code": "application/scvp-cv-response"
+          },
+          {
+            "code": "application/scvp-vp-request"
+          },
+          {
+            "code": "application/scvp-vp-response"
+          },
+          {
+            "code": "application/sdp"
+          },
+          {
+            "code": "application/secevent+jwt"
+          },
+          {
+            "code": "application/senml-etch+cbor"
+          },
+          {
+            "code": "application/senml-etch+json"
+          },
+          {
+            "code": "application/senml-exi"
+          },
+          {
+            "code": "application/senml+cbor"
+          },
+          {
+            "code": "application/senml+json"
+          },
+          {
+            "code": "application/senml+xml"
+          },
+          {
+            "code": "application/sensml-exi"
+          },
+          {
+            "code": "application/sensml+cbor"
+          },
+          {
+            "code": "application/sensml+json"
+          },
+          {
+            "code": "application/sensml+xml"
+          },
+          {
+            "code": "application/sep-exi"
+          },
+          {
+            "code": "application/sep+xml"
+          },
+          {
+            "code": "application/session-info"
+          },
+          {
+            "code": "application/set-payment"
+          },
+          {
+            "code": "application/set-payment-initiation"
+          },
+          {
+            "code": "application/set-registration"
+          },
+          {
+            "code": "application/set-registration-initiation"
+          },
+          {
+            "code": "application/SGML"
+          },
+          {
+            "code": "application/sgml-open-catalog"
+          },
+          {
+            "code": "application/shf+xml"
+          },
+          {
+            "code": "application/sieve"
+          },
+          {
+            "code": "application/simple-filter+xml"
+          },
+          {
+            "code": "application/simple-message-summary"
+          },
+          {
+            "code": "application/simpleSymbolContainer"
+          },
+          {
+            "code": "application/sipc"
+          },
+          {
+            "code": "application/slate"
+          },
+          {
+            "code": "application/smil"
+          },
+          {
+            "code": "application/smil+xml"
+          },
+          {
+            "code": "application/smpte336m"
+          },
+          {
+            "code": "application/soap+fastinfoset"
+          },
+          {
+            "code": "application/soap+xml"
+          },
+          {
+            "code": "application/sparql-query"
+          },
+          {
+            "code": "application/spdx+json"
+          },
+          {
+            "code": "application/sparql-results+xml"
+          },
+          {
+            "code": "application/spirits-event+xml"
+          },
+          {
+            "code": "application/sql"
+          },
+          {
+            "code": "application/srgs"
+          },
+          {
+            "code": "application/srgs+xml"
+          },
+          {
+            "code": "application/sru+xml"
+          },
+          {
+            "code": "application/ssml+xml"
+          },
+          {
+            "code": "application/ST2110-41"
+          },
+          {
+            "code": "application/stix+json"
+          },
+          {
+            "code": "application/stratum"
+          },
+          {
+            "code": "application/swid+cbor"
+          },
+          {
+            "code": "application/swid+xml"
+          },
+          {
+            "code": "application/tamp-apex-update"
+          },
+          {
+            "code": "application/tamp-apex-update-confirm"
+          },
+          {
+            "code": "application/tamp-community-update"
+          },
+          {
+            "code": "application/tamp-community-update-confirm"
+          },
+          {
+            "code": "application/tamp-error"
+          },
+          {
+            "code": "application/tamp-sequence-adjust"
+          },
+          {
+            "code": "application/tamp-sequence-adjust-confirm"
+          },
+          {
+            "code": "application/tamp-status-query"
+          },
+          {
+            "code": "application/tamp-status-response"
+          },
+          {
+            "code": "application/tamp-update"
+          },
+          {
+            "code": "application/tamp-update-confirm"
+          },
+          {
+            "code": "application/taxii+json"
+          },
+          {
+            "code": "application/td+json"
+          },
+          {
+            "code": "application/tei+xml"
+          },
+          {
+            "code": "application/TETRA_ISI"
+          },
+          {
+            "code": "application/thraud+xml"
+          },
+          {
+            "code": "application/timestamp-query"
+          },
+          {
+            "code": "application/timestamp-reply"
+          },
+          {
+            "code": "application/timestamped-data"
+          },
+          {
+            "code": "application/tlsrpt+gzip"
+          },
+          {
+            "code": "application/tlsrpt+json"
+          },
+          {
+            "code": "application/tm+json"
+          },
+          {
+            "code": "application/tnauthlist"
+          },
+          {
+            "code": "application/token-introspection+jwt"
+          },
+          {
+            "code": "application/trickle-ice-sdpfrag"
+          },
+          {
+            "code": "application/trig"
+          },
+          {
+            "code": "application/ttml+xml"
+          },
+          {
+            "code": "application/tve-trigger"
+          },
+          {
+            "code": "application/tzif"
+          },
+          {
+            "code": "application/tzif-leap"
+          },
+          {
+            "code": "application/ulpfec"
+          },
+          {
+            "code": "application/urc-grpsheet+xml"
+          },
+          {
+            "code": "application/urc-ressheet+xml"
+          },
+          {
+            "code": "application/urc-targetdesc+xml"
+          },
+          {
+            "code": "application/urc-uisocketdesc+xml"
+          },
+          {
+            "code": "application/vcard+json"
+          },
+          {
+            "code": "application/vcard+xml"
+          },
+          {
+            "code": "application/vemmi"
+          },
+          {
+            "code": "application/vnd.1000minds.decision-model+xml"
+          },
+          {
+            "code": "application/vnd.1ob"
+          },
+          {
+            "code": "application/vnd.3gpp.5gnas"
+          },
+          {
+            "code": "application/vnd.3gpp.5gsa2x"
+          },
+          {
+            "code": "application/vnd.3gpp.5gsa2x-local-service-information"
+          },
+          {
+            "code": "application/vnd.3gpp.access-transfer-events+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.bsf+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.crs+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.current-location-discovery+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.GMOP+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.gtpc"
+          },
+          {
+            "code": "application/vnd.3gpp.interworking-data"
+          },
+          {
+            "code": "application/vnd.3gpp.lpp"
+          },
+          {
+            "code": "application/vnd.3gpp.mc-signalling-ear"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-affiliation-command+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-msgstore-ctrl-request+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-payload"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-regroup+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-service-config+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-signalling"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-ue-config+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcdata-user-profile+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-affiliation-command+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-floor-request+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-location-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-mbms-usage-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-regroup+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-service-config+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-signed+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-ue-config+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-ue-init-config+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcptt-user-profile+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-affiliation-command+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-affiliation-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-location-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-mbms-usage-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-regroup+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-service-config+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-transmission-request+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-ue-config+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mcvideo-user-profile+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.mid-call+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.ngap"
+          },
+          {
+            "code": "application/vnd.3gpp.pfcp"
+          },
+          {
+            "code": "application/vnd.3gpp.pic-bw-large"
+          },
+          {
+            "code": "application/vnd.3gpp.pic-bw-small"
+          },
+          {
+            "code": "application/vnd.3gpp.pic-bw-var"
+          },
+          {
+            "code": "application/vnd.3gpp.pinapp-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp-prose-pc3a+xml"
+          },
+          {
+            "code": "application/vnd.3gpp-prose-pc3ach+xml"
+          },
+          {
+            "code": "application/vnd.3gpp-prose-pc3ch+xml"
+          },
+          {
+            "code": "application/vnd.3gpp-prose-pc8+xml"
+          },
+          {
+            "code": "application/vnd.3gpp-prose+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.s1ap"
+          },
+          {
+            "code": "application/vnd.3gpp.seal-group-doc+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.seal-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.seal-location-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.seal-mbms-usage-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.seal-network-QoS-management-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.seal-ue-config-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.seal-unicast-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.seal-user-profile-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.sms"
+          },
+          {
+            "code": "application/vnd.3gpp.sms+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.srvcc-ext+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.SRVCC-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.state-and-event-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.ussd+xml"
+          },
+          {
+            "code": "application/vnd.3gpp.vae-info+xml"
+          },
+          {
+            "code": "application/vnd.3gpp-v2x-local-service-information"
+          },
+          {
+            "code": "application/vnd.3gpp2.bcmcsinfo+xml"
+          },
+          {
+            "code": "application/vnd.3gpp2.sms"
+          },
+          {
+            "code": "application/vnd.3gpp2.tcap"
+          },
+          {
+            "code": "application/vnd.3gpp.v2x"
+          },
+          {
+            "code": "application/vnd.3lightssoftware.imagescal"
+          },
+          {
+            "code": "application/vnd.3M.Post-it-Notes"
+          },
+          {
+            "code": "application/vnd.accpac.simply.aso"
+          },
+          {
+            "code": "application/vnd.accpac.simply.imp"
+          },
+          {
+            "code": "application/vnd.acm.addressxfer+json"
+          },
+          {
+            "code": "application/vnd.acm.chatbot+json"
+          },
+          {
+            "code": "application/vnd.acucobol"
+          },
+          {
+            "code": "application/vnd.acucorp"
+          },
+          {
+            "code": "application/vnd.adobe.flash.movie"
+          },
+          {
+            "code": "application/vnd.adobe.formscentral.fcdt"
+          },
+          {
+            "code": "application/vnd.adobe.fxp"
+          },
+          {
+            "code": "application/vnd.adobe.partial-upload"
+          },
+          {
+            "code": "application/vnd.adobe.xdp+xml"
+          },
+          {
+            "code": "application/vnd.aether.imp"
+          },
+          {
+            "code": "application/vnd.afpc.afplinedata"
+          },
+          {
+            "code": "application/vnd.afpc.afplinedata-pagedef"
+          },
+          {
+            "code": "application/vnd.afpc.cmoca-cmresource"
+          },
+          {
+            "code": "application/vnd.afpc.foca-charset"
+          },
+          {
+            "code": "application/vnd.afpc.foca-codedfont"
+          },
+          {
+            "code": "application/vnd.afpc.foca-codepage"
+          },
+          {
+            "code": "application/vnd.afpc.modca"
+          },
+          {
+            "code": "application/vnd.afpc.modca-cmtable"
+          },
+          {
+            "code": "application/vnd.afpc.modca-formdef"
+          },
+          {
+            "code": "application/vnd.afpc.modca-mediummap"
+          },
+          {
+            "code": "application/vnd.afpc.modca-objectcontainer"
+          },
+          {
+            "code": "application/vnd.afpc.modca-overlay"
+          },
+          {
+            "code": "application/vnd.afpc.modca-pagesegment"
+          },
+          {
+            "code": "application/vnd.age"
+          },
+          {
+            "code": "application/vnd.ah-barcode"
+          },
+          {
+            "code": "application/vnd.ahead.space"
+          },
+          {
+            "code": "application/vnd.airzip.filesecure.azf"
+          },
+          {
+            "code": "application/vnd.airzip.filesecure.azs"
+          },
+          {
+            "code": "application/vnd.amadeus+json"
+          },
+          {
+            "code": "application/vnd.amazon.mobi8-ebook"
+          },
+          {
+            "code": "application/vnd.americandynamics.acc"
+          },
+          {
+            "code": "application/vnd.amiga.ami"
+          },
+          {
+            "code": "application/vnd.amundsen.maze+xml"
+          },
+          {
+            "code": "application/vnd.android.ota"
+          },
+          {
+            "code": "application/vnd.anki"
+          },
+          {
+            "code": "application/vnd.anser-web-certificate-issue-initiation"
+          },
+          {
+            "code": "application/vnd.antix.game-component"
+          },
+          {
+            "code": "application/vnd.apache.arrow.file"
+          },
+          {
+            "code": "application/vnd.apache.arrow.stream"
+          },
+          {
+            "code": "application/vnd.apache.parquet"
+          },
+          {
+            "code": "application/vnd.apache.thrift.binary"
+          },
+          {
+            "code": "application/vnd.apache.thrift.compact"
+          },
+          {
+            "code": "application/vnd.apache.thrift.json"
+          },
+          {
+            "code": "application/vnd.apexlang"
+          },
+          {
+            "code": "application/vnd.api+json"
+          },
+          {
+            "code": "application/vnd.aplextor.warrp+json"
+          },
+          {
+            "code": "application/vnd.apothekende.reservation+json"
+          },
+          {
+            "code": "application/vnd.apple.installer+xml"
+          },
+          {
+            "code": "application/vnd.apple.keynote"
+          },
+          {
+            "code": "application/vnd.apple.mpegurl"
+          },
+          {
+            "code": "application/vnd.apple.numbers"
+          },
+          {
+            "code": "application/vnd.apple.pages"
+          },
+          {
+            "code": "application/vnd.arastra.swi"
+          },
+          {
+            "code": "application/vnd.aristanetworks.swi"
+          },
+          {
+            "code": "application/vnd.artisan+json"
+          },
+          {
+            "code": "application/vnd.artsquare"
+          },
+          {
+            "code": "application/vnd.astraea-software.iota"
+          },
+          {
+            "code": "application/vnd.audiograph"
+          },
+          {
+            "code": "application/vnd.autopackage"
+          },
+          {
+            "code": "application/vnd.avalon+json"
+          },
+          {
+            "code": "application/vnd.avistar+xml"
+          },
+          {
+            "code": "application/vnd.balsamiq.bmml+xml"
+          },
+          {
+            "code": "application/vnd.banana-accounting"
+          },
+          {
+            "code": "application/vnd.bbf.usp.error"
+          },
+          {
+            "code": "application/vnd.bbf.usp.msg"
+          },
+          {
+            "code": "application/vnd.bbf.usp.msg+json"
+          },
+          {
+            "code": "application/vnd.balsamiq.bmpr"
+          },
+          {
+            "code": "application/vnd.bekitzur-stech+json"
+          },
+          {
+            "code": "application/vnd.belightsoft.lhzd+zip"
+          },
+          {
+            "code": "application/vnd.belightsoft.lhzl+zip"
+          },
+          {
+            "code": "application/vnd.bint.med-content"
+          },
+          {
+            "code": "application/vnd.biopax.rdf+xml"
+          },
+          {
+            "code": "application/vnd.blink-idb-value-wrapper"
+          },
+          {
+            "code": "application/vnd.blueice.multipass"
+          },
+          {
+            "code": "application/vnd.bluetooth.ep.oob"
+          },
+          {
+            "code": "application/vnd.bluetooth.le.oob"
+          },
+          {
+            "code": "application/vnd.bmi"
+          },
+          {
+            "code": "application/vnd.bpf"
+          },
+          {
+            "code": "application/vnd.bpf3"
+          },
+          {
+            "code": "application/vnd.businessobjects"
+          },
+          {
+            "code": "application/vnd.byu.uapi+json"
+          },
+          {
+            "code": "application/vnd.bzip3"
+          },
+          {
+            "code": "application/vnd.c3voc.schedule+xml"
+          },
+          {
+            "code": "application/vnd.cab-jscript"
+          },
+          {
+            "code": "application/vnd.canon-cpdl"
+          },
+          {
+            "code": "application/vnd.canon-lips"
+          },
+          {
+            "code": "application/vnd.capasystems-pg+json"
+          },
+          {
+            "code": "application/vnd.cendio.thinlinc.clientconf"
+          },
+          {
+            "code": "application/vnd.century-systems.tcp_stream"
+          },
+          {
+            "code": "application/vnd.chemdraw+xml"
+          },
+          {
+            "code": "application/vnd.chess-pgn"
+          },
+          {
+            "code": "application/vnd.chipnuts.karaoke-mmd"
+          },
+          {
+            "code": "application/vnd.ciedi"
+          },
+          {
+            "code": "application/vnd.cinderella"
+          },
+          {
+            "code": "application/vnd.cirpack.isdn-ext"
+          },
+          {
+            "code": "application/vnd.citationstyles.style+xml"
+          },
+          {
+            "code": "application/vnd.claymore"
+          },
+          {
+            "code": "application/vnd.cloanto.rp9"
+          },
+          {
+            "code": "application/vnd.clonk.c4group"
+          },
+          {
+            "code": "application/vnd.cluetrust.cartomobile-config"
+          },
+          {
+            "code": "application/vnd.cluetrust.cartomobile-config-pkg"
+          },
+          {
+            "code": "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+          },
+          {
+            "code": "application/vnd.cncf.helm.chart.provenance.v1.prov"
+          },
+          {
+            "code": "application/vnd.cncf.helm.config.v1+json"
+          },
+          {
+            "code": "application/vnd.coffeescript"
+          },
+          {
+            "code": "application/vnd.collabio.xodocuments.document"
+          },
+          {
+            "code": "application/vnd.collabio.xodocuments.document-template"
+          },
+          {
+            "code": "application/vnd.collabio.xodocuments.presentation"
+          },
+          {
+            "code": "application/vnd.collabio.xodocuments.presentation-template"
+          },
+          {
+            "code": "application/vnd.collabio.xodocuments.spreadsheet"
+          },
+          {
+            "code": "application/vnd.collabio.xodocuments.spreadsheet-template"
+          },
+          {
+            "code": "application/vnd.collection.doc+json"
+          },
+          {
+            "code": "application/vnd.collection+json"
+          },
+          {
+            "code": "application/vnd.collection.next+json"
+          },
+          {
+            "code": "application/vnd.comicbook-rar"
+          },
+          {
+            "code": "application/vnd.comicbook+zip"
+          },
+          {
+            "code": "application/vnd.commerce-battelle"
+          },
+          {
+            "code": "application/vnd.commonspace"
+          },
+          {
+            "code": "application/vnd.coreos.ignition+json"
+          },
+          {
+            "code": "application/vnd.cosmocaller"
+          },
+          {
+            "code": "application/vnd.contact.cmsg"
+          },
+          {
+            "code": "application/vnd.crick.clicker"
+          },
+          {
+            "code": "application/vnd.crick.clicker.keyboard"
+          },
+          {
+            "code": "application/vnd.crick.clicker.palette"
+          },
+          {
+            "code": "application/vnd.crick.clicker.template"
+          },
+          {
+            "code": "application/vnd.crick.clicker.wordbank"
+          },
+          {
+            "code": "application/vnd.criticaltools.wbs+xml"
+          },
+          {
+            "code": "application/vnd.cryptii.pipe+json"
+          },
+          {
+            "code": "application/vnd.crypto-shade-file"
+          },
+          {
+            "code": "application/vnd.cryptomator.encrypted"
+          },
+          {
+            "code": "application/vnd.cryptomator.vault"
+          },
+          {
+            "code": "application/vnd.ctc-posml"
+          },
+          {
+            "code": "application/vnd.ctct.ws+xml"
+          },
+          {
+            "code": "application/vnd.cups-pdf"
+          },
+          {
+            "code": "application/vnd.cups-postscript"
+          },
+          {
+            "code": "application/vnd.cups-ppd"
+          },
+          {
+            "code": "application/vnd.cups-raster"
+          },
+          {
+            "code": "application/vnd.cups-raw"
+          },
+          {
+            "code": "application/vnd.curl"
+          },
+          {
+            "code": "application/vnd.cyan.dean.root+xml"
+          },
+          {
+            "code": "application/vnd.cybank"
+          },
+          {
+            "code": "application/vnd.cyclonedx+json"
+          },
+          {
+            "code": "application/vnd.cyclonedx+xml"
+          },
+          {
+            "code": "application/vnd.d2l.coursepackage1p0+zip"
+          },
+          {
+            "code": "application/vnd.d3m-dataset"
+          },
+          {
+            "code": "application/vnd.d3m-problem"
+          },
+          {
+            "code": "application/vnd.dart"
+          },
+          {
+            "code": "application/vnd.data-vision.rdz"
+          },
+          {
+            "code": "application/vnd.datalog"
+          },
+          {
+            "code": "application/vnd.datapackage+json"
+          },
+          {
+            "code": "application/vnd.dataresource+json"
+          },
+          {
+            "code": "application/vnd.dbf"
+          },
+          {
+            "code": "application/vnd.debian.binary-package"
+          },
+          {
+            "code": "application/vnd.dece.data"
+          },
+          {
+            "code": "application/vnd.dece.ttml+xml"
+          },
+          {
+            "code": "application/vnd.dece.unspecified"
+          },
+          {
+            "code": "application/vnd.dece.zip"
+          },
+          {
+            "code": "application/vnd.denovo.fcselayout-link"
+          },
+          {
+            "code": "application/vnd.desmume.movie"
+          },
+          {
+            "code": "application/vnd.dir-bi.plate-dl-nosuffix"
+          },
+          {
+            "code": "application/vnd.dm.delegation+xml"
+          },
+          {
+            "code": "application/vnd.dna"
+          },
+          {
+            "code": "application/vnd.document+json"
+          },
+          {
+            "code": "application/vnd.dolby.mobile.1"
+          },
+          {
+            "code": "application/vnd.dolby.mobile.2"
+          },
+          {
+            "code": "application/vnd.doremir.scorecloud-binary-document"
+          },
+          {
+            "code": "application/vnd.dpgraph"
+          },
+          {
+            "code": "application/vnd.dreamfactory"
+          },
+          {
+            "code": "application/vnd.drive+json"
+          },
+          {
+            "code": "application/vnd.dtg.local"
+          },
+          {
+            "code": "application/vnd.dtg.local.flash"
+          },
+          {
+            "code": "application/vnd.dtg.local.html"
+          },
+          {
+            "code": "application/vnd.dvb.ait"
+          },
+          {
+            "code": "application/vnd.dvb.dvbisl+xml"
+          },
+          {
+            "code": "application/vnd.dvb.dvbj"
+          },
+          {
+            "code": "application/vnd.dvb.esgcontainer"
+          },
+          {
+            "code": "application/vnd.dvb.ipdcdftnotifaccess"
+          },
+          {
+            "code": "application/vnd.dvb.ipdcesgaccess"
+          },
+          {
+            "code": "application/vnd.dvb.ipdcesgaccess2"
+          },
+          {
+            "code": "application/vnd.dvb.ipdcesgpdd"
+          },
+          {
+            "code": "application/vnd.dvb.ipdcroaming"
+          },
+          {
+            "code": "application/vnd.dvb.iptv.alfec-base"
+          },
+          {
+            "code": "application/vnd.dvb.iptv.alfec-enhancement"
+          },
+          {
+            "code": "application/vnd.dvb.notif-aggregate-root+xml"
+          },
+          {
+            "code": "application/vnd.dvb.notif-container+xml"
+          },
+          {
+            "code": "application/vnd.dvb.notif-generic+xml"
+          },
+          {
+            "code": "application/vnd.dvb.notif-ia-msglist+xml"
+          },
+          {
+            "code": "application/vnd.dvb.notif-ia-registration-request+xml"
+          },
+          {
+            "code": "application/vnd.dvb.notif-ia-registration-response+xml"
+          },
+          {
+            "code": "application/vnd.dvb.notif-init+xml"
+          },
+          {
+            "code": "application/vnd.dvb.pfr"
+          },
+          {
+            "code": "application/vnd.dvb.service"
+          },
+          {
+            "code": "application/vnd.dxr"
+          },
+          {
+            "code": "application/vnd.dynageo"
+          },
+          {
+            "code": "application/vnd.dzr"
+          },
+          {
+            "code": "application/vnd.easykaraoke.cdgdownload"
+          },
+          {
+            "code": "application/vnd.ecip.rlp"
+          },
+          {
+            "code": "application/vnd.ecdis-update"
+          },
+          {
+            "code": "application/vnd.eclipse.ditto+json"
+          },
+          {
+            "code": "application/vnd.ecowin.chart"
+          },
+          {
+            "code": "application/vnd.ecowin.filerequest"
+          },
+          {
+            "code": "application/vnd.ecowin.fileupdate"
+          },
+          {
+            "code": "application/vnd.ecowin.series"
+          },
+          {
+            "code": "application/vnd.ecowin.seriesrequest"
+          },
+          {
+            "code": "application/vnd.ecowin.seriesupdate"
+          },
+          {
+            "code": "application/vnd.efi.img"
+          },
+          {
+            "code": "application/vnd.efi.iso"
+          },
+          {
+            "code": "application/vnd.eln+zip"
+          },
+          {
+            "code": "application/vnd.emclient.accessrequest+xml"
+          },
+          {
+            "code": "application/vnd.enliven"
+          },
+          {
+            "code": "application/vnd.enphase.envoy"
+          },
+          {
+            "code": "application/vnd.eprints.data+xml"
+          },
+          {
+            "code": "application/vnd.epson.esf"
+          },
+          {
+            "code": "application/vnd.epson.msf"
+          },
+          {
+            "code": "application/vnd.epson.quickanime"
+          },
+          {
+            "code": "application/vnd.epson.salt"
+          },
+          {
+            "code": "application/vnd.epson.ssf"
+          },
+          {
+            "code": "application/vnd.ericsson.quickcall"
+          },
+          {
+            "code": "application/vnd.erofs"
+          },
+          {
+            "code": "application/vnd.espass-espass+zip"
+          },
+          {
+            "code": "application/vnd.eszigno3+xml"
+          },
+          {
+            "code": "application/vnd.etsi.aoc+xml"
+          },
+          {
+            "code": "application/vnd.etsi.asic-s+zip"
+          },
+          {
+            "code": "application/vnd.etsi.asic-e+zip"
+          },
+          {
+            "code": "application/vnd.etsi.cug+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvcommand+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvdiscovery+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvprofile+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvsad-bc+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvsad-cod+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvsad-npvr+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvservice+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvsync+xml"
+          },
+          {
+            "code": "application/vnd.etsi.iptvueprofile+xml"
+          },
+          {
+            "code": "application/vnd.etsi.mcid+xml"
+          },
+          {
+            "code": "application/vnd.etsi.mheg5"
+          },
+          {
+            "code": "application/vnd.etsi.overload-control-policy-dataset+xml"
+          },
+          {
+            "code": "application/vnd.etsi.pstn+xml"
+          },
+          {
+            "code": "application/vnd.etsi.sci+xml"
+          },
+          {
+            "code": "application/vnd.etsi.simservs+xml"
+          },
+          {
+            "code": "application/vnd.etsi.timestamp-token"
+          },
+          {
+            "code": "application/vnd.etsi.tsl+xml"
+          },
+          {
+            "code": "application/vnd.etsi.tsl.der"
+          },
+          {
+            "code": "application/vnd.eu.kasparian.car+json"
+          },
+          {
+            "code": "application/vnd.eudora.data"
+          },
+          {
+            "code": "application/vnd.evolv.ecig.profile"
+          },
+          {
+            "code": "application/vnd.evolv.ecig.settings"
+          },
+          {
+            "code": "application/vnd.evolv.ecig.theme"
+          },
+          {
+            "code": "application/vnd.exstream-empower+zip"
+          },
+          {
+            "code": "application/vnd.exstream-package"
+          },
+          {
+            "code": "application/vnd.ezpix-album"
+          },
+          {
+            "code": "application/vnd.ezpix-package"
+          },
+          {
+            "code": "application/vnd.f-secure.mobile"
+          },
+          {
+            "code": "application/vnd.fastcopy-disk-image"
+          },
+          {
+            "code": "application/vnd.familysearch.gedcom+zip"
+          },
+          {
+            "code": "application/vnd.fdsn.mseed"
+          },
+          {
+            "code": "application/vnd.fdsn.seed"
+          },
+          {
+            "code": "application/vnd.ffsns"
+          },
+          {
+            "code": "application/vnd.ficlab.flb+zip"
+          },
+          {
+            "code": "application/vnd.filmit.zfc"
+          },
+          {
+            "code": "application/vnd.fints"
+          },
+          {
+            "code": "application/vnd.firemonkeys.cloudcell"
+          },
+          {
+            "code": "application/vnd.FloGraphIt"
+          },
+          {
+            "code": "application/vnd.fluxtime.clip"
+          },
+          {
+            "code": "application/vnd.font-fontforge-sfd"
+          },
+          {
+            "code": "application/vnd.framemaker"
+          },
+          {
+            "code": "application/vnd.freelog.comic"
+          },
+          {
+            "code": "application/vnd.frogans.fnc"
+          },
+          {
+            "code": "application/vnd.frogans.ltf"
+          },
+          {
+            "code": "application/vnd.fsc.weblaunch"
+          },
+          {
+            "code": "application/vnd.fujifilm.fb.docuworks"
+          },
+          {
+            "code": "application/vnd.fujifilm.fb.docuworks.binder"
+          },
+          {
+            "code": "application/vnd.fujifilm.fb.docuworks.container"
+          },
+          {
+            "code": "application/vnd.fujifilm.fb.jfi+xml"
+          },
+          {
+            "code": "application/vnd.fujitsu.oasys"
+          },
+          {
+            "code": "application/vnd.fujitsu.oasys2"
+          },
+          {
+            "code": "application/vnd.fujitsu.oasys3"
+          },
+          {
+            "code": "application/vnd.fujitsu.oasysgp"
+          },
+          {
+            "code": "application/vnd.fujitsu.oasysprs"
+          },
+          {
+            "code": "application/vnd.fujixerox.ART4"
+          },
+          {
+            "code": "application/vnd.fujixerox.ART-EX"
+          },
+          {
+            "code": "application/vnd.fujixerox.ddd"
+          },
+          {
+            "code": "application/vnd.fujixerox.docuworks"
+          },
+          {
+            "code": "application/vnd.fujixerox.docuworks.binder"
+          },
+          {
+            "code": "application/vnd.fujixerox.docuworks.container"
+          },
+          {
+            "code": "application/vnd.fujixerox.HBPL"
+          },
+          {
+            "code": "application/vnd.fut-misnet"
+          },
+          {
+            "code": "application/vnd.futoin+cbor"
+          },
+          {
+            "code": "application/vnd.futoin+json"
+          },
+          {
+            "code": "application/vnd.fuzzysheet"
+          },
+          {
+            "code": "application/vnd.ga4gh.passport+jwt"
+          },
+          {
+            "code": "application/vnd.genomatix.tuxedo"
+          },
+          {
+            "code": "application/vnd.genozip"
+          },
+          {
+            "code": "application/vnd.gentics.grd+json"
+          },
+          {
+            "code": "application/vnd.gentoo.catmetadata+xml"
+          },
+          {
+            "code": "application/vnd.gentoo.ebuild"
+          },
+          {
+            "code": "application/vnd.gentoo.eclass"
+          },
+          {
+            "code": "application/vnd.gentoo.gpkg"
+          },
+          {
+            "code": "application/vnd.gentoo.manifest"
+          },
+          {
+            "code": "application/vnd.gentoo.xpak"
+          },
+          {
+            "code": "application/vnd.gentoo.pkgmetadata+xml"
+          },
+          {
+            "code": "application/vnd.geo+json"
+          },
+          {
+            "code": "application/vnd.geocube+xml"
+          },
+          {
+            "code": "application/vnd.geogebra.file"
+          },
+          {
+            "code": "application/vnd.geogebra.slides"
+          },
+          {
+            "code": "application/vnd.geogebra.tool"
+          },
+          {
+            "code": "application/vnd.geometry-explorer"
+          },
+          {
+            "code": "application/vnd.geonext"
+          },
+          {
+            "code": "application/vnd.geoplan"
+          },
+          {
+            "code": "application/vnd.geospace"
+          },
+          {
+            "code": "application/vnd.gerber"
+          },
+          {
+            "code": "application/vnd.globalplatform.card-content-mgt"
+          },
+          {
+            "code": "application/vnd.globalplatform.card-content-mgt-response"
+          },
+          {
+            "code": "application/vnd.gmx"
+          },
+          {
+            "code": "application/vnd.gnu.taler.exchange+json"
+          },
+          {
+            "code": "application/vnd.gnu.taler.merchant+json"
+          },
+          {
+            "code": "application/vnd.google-earth.kml+xml"
+          },
+          {
+            "code": "application/vnd.google-earth.kmz"
+          },
+          {
+            "code": "application/vnd.gov.sk.e-form+xml"
+          },
+          {
+            "code": "application/vnd.gov.sk.e-form+zip"
+          },
+          {
+            "code": "application/vnd.gov.sk.xmldatacontainer+xml"
+          },
+          {
+            "code": "application/vnd.gpxsee.map+xml"
+          },
+          {
+            "code": "application/vnd.grafeq"
+          },
+          {
+            "code": "application/vnd.gridmp"
+          },
+          {
+            "code": "application/vnd.groove-account"
+          },
+          {
+            "code": "application/vnd.groove-help"
+          },
+          {
+            "code": "application/vnd.groove-identity-message"
+          },
+          {
+            "code": "application/vnd.groove-injector"
+          },
+          {
+            "code": "application/vnd.groove-tool-message"
+          },
+          {
+            "code": "application/vnd.groove-tool-template"
+          },
+          {
+            "code": "application/vnd.groove-vcard"
+          },
+          {
+            "code": "application/vnd.hal+json"
+          },
+          {
+            "code": "application/vnd.hal+xml"
+          },
+          {
+            "code": "application/vnd.HandHeld-Entertainment+xml"
+          },
+          {
+            "code": "application/vnd.hbci"
+          },
+          {
+            "code": "application/vnd.hc+json"
+          },
+          {
+            "code": "application/vnd.hcl-bireports"
+          },
+          {
+            "code": "application/vnd.hdt"
+          },
+          {
+            "code": "application/vnd.heroku+json"
+          },
+          {
+            "code": "application/vnd.hhe.lesson-player"
+          },
+          {
+            "code": "application/vnd.hp-HPGL"
+          },
+          {
+            "code": "application/vnd.hp-hpid"
+          },
+          {
+            "code": "application/vnd.hp-hps"
+          },
+          {
+            "code": "application/vnd.hp-jlyt"
+          },
+          {
+            "code": "application/vnd.hp-PCL"
+          },
+          {
+            "code": "application/vnd.hp-PCLXL"
+          },
+          {
+            "code": "application/vnd.hsl"
+          },
+          {
+            "code": "application/vnd.httphone"
+          },
+          {
+            "code": "application/vnd.hydrostatix.sof-data"
+          },
+          {
+            "code": "application/vnd.hyper-item+json"
+          },
+          {
+            "code": "application/vnd.hyper+json"
+          },
+          {
+            "code": "application/vnd.hyperdrive+json"
+          },
+          {
+            "code": "application/vnd.hzn-3d-crossword"
+          },
+          {
+            "code": "application/vnd.ibm.afplinedata"
+          },
+          {
+            "code": "application/vnd.ibm.electronic-media"
+          },
+          {
+            "code": "application/vnd.ibm.MiniPay"
+          },
+          {
+            "code": "application/vnd.ibm.modcap"
+          },
+          {
+            "code": "application/vnd.ibm.rights-management"
+          },
+          {
+            "code": "application/vnd.ibm.secure-container"
+          },
+          {
+            "code": "application/vnd.iccprofile"
+          },
+          {
+            "code": "application/vnd.ieee.1905"
+          },
+          {
+            "code": "application/vnd.igloader"
+          },
+          {
+            "code": "application/vnd.imagemeter.folder+zip"
+          },
+          {
+            "code": "application/vnd.imagemeter.image+zip"
+          },
+          {
+            "code": "application/vnd.immervision-ivp"
+          },
+          {
+            "code": "application/vnd.immervision-ivu"
+          },
+          {
+            "code": "application/vnd.ims.imsccv1p1"
+          },
+          {
+            "code": "application/vnd.ims.imsccv1p2"
+          },
+          {
+            "code": "application/vnd.ims.imsccv1p3"
+          },
+          {
+            "code": "application/vnd.ims.lis.v2.result+json"
+          },
+          {
+            "code": "application/vnd.ims.lti.v2.toolconsumerprofile+json"
+          },
+          {
+            "code": "application/vnd.ims.lti.v2.toolproxy.id+json"
+          },
+          {
+            "code": "application/vnd.ims.lti.v2.toolproxy+json"
+          },
+          {
+            "code": "application/vnd.ims.lti.v2.toolsettings+json"
+          },
+          {
+            "code": "application/vnd.ims.lti.v2.toolsettings.simple+json"
+          },
+          {
+            "code": "application/vnd.informedcontrol.rms+xml"
+          },
+          {
+            "code": "application/vnd.infotech.project"
+          },
+          {
+            "code": "application/vnd.infotech.project+xml"
+          },
+          {
+            "code": "application/vnd.informix-visionary"
+          },
+          {
+            "code": "application/vnd.innopath.wamp.notification"
+          },
+          {
+            "code": "application/vnd.insors.igm"
+          },
+          {
+            "code": "application/vnd.intercon.formnet"
+          },
+          {
+            "code": "application/vnd.intergeo"
+          },
+          {
+            "code": "application/vnd.intertrust.digibox"
+          },
+          {
+            "code": "application/vnd.intertrust.nncp"
+          },
+          {
+            "code": "application/vnd.intu.qbo"
+          },
+          {
+            "code": "application/vnd.intu.qfx"
+          },
+          {
+            "code": "application/vnd.ipfs.ipns-record"
+          },
+          {
+            "code": "application/vnd.ipld.car"
+          },
+          {
+            "code": "application/vnd.ipld.dag-cbor"
+          },
+          {
+            "code": "application/vnd.ipld.dag-json"
+          },
+          {
+            "code": "application/vnd.ipld.raw"
+          },
+          {
+            "code": "application/vnd.iptc.g2.catalogitem+xml"
+          },
+          {
+            "code": "application/vnd.iptc.g2.conceptitem+xml"
+          },
+          {
+            "code": "application/vnd.iptc.g2.knowledgeitem+xml"
+          },
+          {
+            "code": "application/vnd.iptc.g2.newsitem+xml"
+          },
+          {
+            "code": "application/vnd.iptc.g2.newsmessage+xml"
+          },
+          {
+            "code": "application/vnd.iptc.g2.packageitem+xml"
+          },
+          {
+            "code": "application/vnd.iptc.g2.planningitem+xml"
+          },
+          {
+            "code": "application/vnd.ipunplugged.rcprofile"
+          },
+          {
+            "code": "application/vnd.irepository.package+xml"
+          },
+          {
+            "code": "application/vnd.is-xpr"
+          },
+          {
+            "code": "application/vnd.isac.fcs"
+          },
+          {
+            "code": "application/vnd.jam"
+          },
+          {
+            "code": "application/vnd.iso11783-10+zip"
+          },
+          {
+            "code": "application/vnd.japannet-directory-service"
+          },
+          {
+            "code": "application/vnd.japannet-jpnstore-wakeup"
+          },
+          {
+            "code": "application/vnd.japannet-payment-wakeup"
+          },
+          {
+            "code": "application/vnd.japannet-registration"
+          },
+          {
+            "code": "application/vnd.japannet-registration-wakeup"
+          },
+          {
+            "code": "application/vnd.japannet-setstore-wakeup"
+          },
+          {
+            "code": "application/vnd.japannet-verification"
+          },
+          {
+            "code": "application/vnd.japannet-verification-wakeup"
+          },
+          {
+            "code": "application/vnd.jcp.javame.midlet-rms"
+          },
+          {
+            "code": "application/vnd.jisp"
+          },
+          {
+            "code": "application/vnd.joost.joda-archive"
+          },
+          {
+            "code": "application/vnd.jsk.isdn-ngn"
+          },
+          {
+            "code": "application/vnd.kahootz"
+          },
+          {
+            "code": "application/vnd.kde.karbon"
+          },
+          {
+            "code": "application/vnd.kde.kchart"
+          },
+          {
+            "code": "application/vnd.kde.kformula"
+          },
+          {
+            "code": "application/vnd.kde.kivio"
+          },
+          {
+            "code": "application/vnd.kde.kontour"
+          },
+          {
+            "code": "application/vnd.kde.kpresenter"
+          },
+          {
+            "code": "application/vnd.kde.kspread"
+          },
+          {
+            "code": "application/vnd.kde.kword"
+          },
+          {
+            "code": "application/vnd.kenameaapp"
+          },
+          {
+            "code": "application/vnd.kidspiration"
+          },
+          {
+            "code": "application/vnd.Kinar"
+          },
+          {
+            "code": "application/vnd.koan"
+          },
+          {
+            "code": "application/vnd.kodak-descriptor"
+          },
+          {
+            "code": "application/vnd.las"
+          },
+          {
+            "code": "application/vnd.las.las+json"
+          },
+          {
+            "code": "application/vnd.las.las+xml"
+          },
+          {
+            "code": "application/vnd.laszip"
+          },
+          {
+            "code": "application/vnd.ldev.productlicensing"
+          },
+          {
+            "code": "application/vnd.leap+json"
+          },
+          {
+            "code": "application/vnd.liberty-request+xml"
+          },
+          {
+            "code": "application/vnd.llamagraphics.life-balance.desktop"
+          },
+          {
+            "code": "application/vnd.llamagraphics.life-balance.exchange+xml"
+          },
+          {
+            "code": "application/vnd.logipipe.circuit+zip"
+          },
+          {
+            "code": "application/vnd.loom"
+          },
+          {
+            "code": "application/vnd.lotus-1-2-3"
+          },
+          {
+            "code": "application/vnd.lotus-approach"
+          },
+          {
+            "code": "application/vnd.lotus-freelance"
+          },
+          {
+            "code": "application/vnd.lotus-notes"
+          },
+          {
+            "code": "application/vnd.lotus-organizer"
+          },
+          {
+            "code": "application/vnd.lotus-screencam"
+          },
+          {
+            "code": "application/vnd.lotus-wordpro"
+          },
+          {
+            "code": "application/vnd.macports.portpkg"
+          },
+          {
+            "code": "application/vnd.mapbox-vector-tile"
+          },
+          {
+            "code": "application/vnd.marlin.drm.actiontoken+xml"
+          },
+          {
+            "code": "application/vnd.marlin.drm.conftoken+xml"
+          },
+          {
+            "code": "application/vnd.marlin.drm.license+xml"
+          },
+          {
+            "code": "application/vnd.marlin.drm.mdcf"
+          },
+          {
+            "code": "application/vnd.mason+json"
+          },
+          {
+            "code": "application/vnd.maxar.archive.3tz+zip"
+          },
+          {
+            "code": "application/vnd.maxmind.maxmind-db"
+          },
+          {
+            "code": "application/vnd.mcd"
+          },
+          {
+            "code": "application/vnd.mdl"
+          },
+          {
+            "code": "application/vnd.mdl-mbsdf"
+          },
+          {
+            "code": "application/vnd.medcalcdata"
+          },
+          {
+            "code": "application/vnd.mediastation.cdkey"
+          },
+          {
+            "code": "application/vnd.medicalholodeck.recordxr"
+          },
+          {
+            "code": "application/vnd.meridian-slingshot"
+          },
+          {
+            "code": "application/vnd.mermaid"
+          },
+          {
+            "code": "application/vnd.MFER"
+          },
+          {
+            "code": "application/vnd.mfmp"
+          },
+          {
+            "code": "application/vnd.micro+json"
+          },
+          {
+            "code": "application/vnd.micrografx.flo"
+          },
+          {
+            "code": "application/vnd.micrografx.igx"
+          },
+          {
+            "code": "application/vnd.microsoft.portable-executable"
+          },
+          {
+            "code": "application/vnd.microsoft.windows.thumbnail-cache"
+          },
+          {
+            "code": "application/vnd.miele+json"
+          },
+          {
+            "code": "application/vnd.mif"
+          },
+          {
+            "code": "application/vnd.minisoft-hp3000-save"
+          },
+          {
+            "code": "application/vnd.mitsubishi.misty-guard.trustweb"
+          },
+          {
+            "code": "application/vnd.Mobius.DAF"
+          },
+          {
+            "code": "application/vnd.Mobius.DIS"
+          },
+          {
+            "code": "application/vnd.Mobius.MBK"
+          },
+          {
+            "code": "application/vnd.Mobius.MQY"
+          },
+          {
+            "code": "application/vnd.Mobius.MSL"
+          },
+          {
+            "code": "application/vnd.Mobius.PLC"
+          },
+          {
+            "code": "application/vnd.Mobius.TXF"
+          },
+          {
+            "code": "application/vnd.modl"
+          },
+          {
+            "code": "application/vnd.mophun.application"
+          },
+          {
+            "code": "application/vnd.mophun.certificate"
+          },
+          {
+            "code": "application/vnd.motorola.flexsuite"
+          },
+          {
+            "code": "application/vnd.motorola.flexsuite.adsi"
+          },
+          {
+            "code": "application/vnd.motorola.flexsuite.fis"
+          },
+          {
+            "code": "application/vnd.motorola.flexsuite.gotap"
+          },
+          {
+            "code": "application/vnd.motorola.flexsuite.kmr"
+          },
+          {
+            "code": "application/vnd.motorola.flexsuite.ttc"
+          },
+          {
+            "code": "application/vnd.motorola.flexsuite.wem"
+          },
+          {
+            "code": "application/vnd.motorola.iprm"
+          },
+          {
+            "code": "application/vnd.mozilla.xul+xml"
+          },
+          {
+            "code": "application/vnd.ms-artgalry"
+          },
+          {
+            "code": "application/vnd.ms-asf"
+          },
+          {
+            "code": "application/vnd.ms-cab-compressed"
+          },
+          {
+            "code": "application/vnd.ms-3mfdocument"
+          },
+          {
+            "code": "application/vnd.ms-excel"
+          },
+          {
+            "code": "application/vnd.ms-excel.addin.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-excel.sheet.binary.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-excel.sheet.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-excel.template.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-fontobject"
+          },
+          {
+            "code": "application/vnd.ms-htmlhelp"
+          },
+          {
+            "code": "application/vnd.ms-ims"
+          },
+          {
+            "code": "application/vnd.ms-lrm"
+          },
+          {
+            "code": "application/vnd.ms-office.activeX+xml"
+          },
+          {
+            "code": "application/vnd.ms-officetheme"
+          },
+          {
+            "code": "application/vnd.ms-playready.initiator+xml"
+          },
+          {
+            "code": "application/vnd.ms-powerpoint"
+          },
+          {
+            "code": "application/vnd.ms-powerpoint.addin.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-powerpoint.slide.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-powerpoint.slideshow.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-powerpoint.template.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-PrintDeviceCapabilities+xml"
+          },
+          {
+            "code": "application/vnd.ms-PrintSchemaTicket+xml"
+          },
+          {
+            "code": "application/vnd.ms-project"
+          },
+          {
+            "code": "application/vnd.ms-tnef"
+          },
+          {
+            "code": "application/vnd.ms-windows.devicepairing"
+          },
+          {
+            "code": "application/vnd.ms-windows.nwprinting.oob"
+          },
+          {
+            "code": "application/vnd.ms-windows.printerpairing"
+          },
+          {
+            "code": "application/vnd.ms-windows.wsd.oob"
+          },
+          {
+            "code": "application/vnd.ms-wmdrm.lic-chlg-req"
+          },
+          {
+            "code": "application/vnd.ms-wmdrm.lic-resp"
+          },
+          {
+            "code": "application/vnd.ms-wmdrm.meter-chlg-req"
+          },
+          {
+            "code": "application/vnd.ms-wmdrm.meter-resp"
+          },
+          {
+            "code": "application/vnd.ms-word.document.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-word.template.macroEnabled.12"
+          },
+          {
+            "code": "application/vnd.ms-works"
+          },
+          {
+            "code": "application/vnd.ms-wpl"
+          },
+          {
+            "code": "application/vnd.ms-xpsdocument"
+          },
+          {
+            "code": "application/vnd.msa-disk-image"
+          },
+          {
+            "code": "application/vnd.mseq"
+          },
+          {
+            "code": "application/vnd.msgpack"
+          },
+          {
+            "code": "application/vnd.msign"
+          },
+          {
+            "code": "application/vnd.multiad.creator"
+          },
+          {
+            "code": "application/vnd.multiad.creator.cif"
+          },
+          {
+            "code": "application/vnd.musician"
+          },
+          {
+            "code": "application/vnd.music-niff"
+          },
+          {
+            "code": "application/vnd.muvee.style"
+          },
+          {
+            "code": "application/vnd.mynfc"
+          },
+          {
+            "code": "application/vnd.nacamar.ybrid+json"
+          },
+          {
+            "code": "application/vnd.nato.bindingdataobject+cbor"
+          },
+          {
+            "code": "application/vnd.nato.bindingdataobject+json"
+          },
+          {
+            "code": "application/vnd.nato.bindingdataobject+xml"
+          },
+          {
+            "code": "application/vnd.nato.openxmlformats-package.iepd+zip"
+          },
+          {
+            "code": "application/vnd.ncd.control"
+          },
+          {
+            "code": "application/vnd.ncd.reference"
+          },
+          {
+            "code": "application/vnd.nearst.inv+json"
+          },
+          {
+            "code": "application/vnd.nebumind.line"
+          },
+          {
+            "code": "application/vnd.nervana"
+          },
+          {
+            "code": "application/vnd.netfpx"
+          },
+          {
+            "code": "application/vnd.neurolanguage.nlu"
+          },
+          {
+            "code": "application/vnd.nimn"
+          },
+          {
+            "code": "application/vnd.nintendo.snes.rom"
+          },
+          {
+            "code": "application/vnd.nintendo.nitro.rom"
+          },
+          {
+            "code": "application/vnd.nitf"
+          },
+          {
+            "code": "application/vnd.noblenet-directory"
+          },
+          {
+            "code": "application/vnd.noblenet-sealer"
+          },
+          {
+            "code": "application/vnd.noblenet-web"
+          },
+          {
+            "code": "application/vnd.nokia.catalogs"
+          },
+          {
+            "code": "application/vnd.nokia.conml+wbxml"
+          },
+          {
+            "code": "application/vnd.nokia.conml+xml"
+          },
+          {
+            "code": "application/vnd.nokia.iptv.config+xml"
+          },
+          {
+            "code": "application/vnd.nokia.iSDS-radio-presets"
+          },
+          {
+            "code": "application/vnd.nokia.landmark+wbxml"
+          },
+          {
+            "code": "application/vnd.nokia.landmark+xml"
+          },
+          {
+            "code": "application/vnd.nokia.landmarkcollection+xml"
+          },
+          {
+            "code": "application/vnd.nokia.ncd"
+          },
+          {
+            "code": "application/vnd.nokia.n-gage.ac+xml"
+          },
+          {
+            "code": "application/vnd.nokia.n-gage.data"
+          },
+          {
+            "code": "application/vnd.nokia.n-gage.symbian.install"
+          },
+          {
+            "code": "application/vnd.nokia.pcd+wbxml"
+          },
+          {
+            "code": "application/vnd.nokia.pcd+xml"
+          },
+          {
+            "code": "application/vnd.nokia.radio-preset"
+          },
+          {
+            "code": "application/vnd.nokia.radio-presets"
+          },
+          {
+            "code": "application/vnd.novadigm.EDM"
+          },
+          {
+            "code": "application/vnd.novadigm.EDX"
+          },
+          {
+            "code": "application/vnd.novadigm.EXT"
+          },
+          {
+            "code": "application/vnd.ntt-local.content-share"
+          },
+          {
+            "code": "application/vnd.ntt-local.file-transfer"
+          },
+          {
+            "code": "application/vnd.ntt-local.ogw_remote-access"
+          },
+          {
+            "code": "application/vnd.ntt-local.sip-ta_remote"
+          },
+          {
+            "code": "application/vnd.ntt-local.sip-ta_tcp_stream"
+          },
+          {
+            "code": "application/vnd.oai.workflows"
+          },
+          {
+            "code": "application/vnd.oai.workflows+json"
+          },
+          {
+            "code": "application/vnd.oai.workflows+yaml"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.base"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.chart"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.chart-template"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.database"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.formula"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.formula-template"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.graphics"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.graphics-template"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.image"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.image-template"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.presentation"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.presentation-template"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.spreadsheet"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.spreadsheet-template"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.text"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.text-master"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.text-master-template"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.text-template"
+          },
+          {
+            "code": "application/vnd.oasis.opendocument.text-web"
+          },
+          {
+            "code": "application/vnd.obn"
+          },
+          {
+            "code": "application/vnd.ocf+cbor"
+          },
+          {
+            "code": "application/vnd.oci.image.manifest.v1+json"
+          },
+          {
+            "code": "application/vnd.oftn.l10n+json"
+          },
+          {
+            "code": "application/vnd.oipf.contentaccessdownload+xml"
+          },
+          {
+            "code": "application/vnd.oipf.contentaccessstreaming+xml"
+          },
+          {
+            "code": "application/vnd.oipf.cspg-hexbinary"
+          },
+          {
+            "code": "application/vnd.oipf.dae.svg+xml"
+          },
+          {
+            "code": "application/vnd.oipf.dae.xhtml+xml"
+          },
+          {
+            "code": "application/vnd.oipf.mippvcontrolmessage+xml"
+          },
+          {
+            "code": "application/vnd.oipf.pae.gem"
+          },
+          {
+            "code": "application/vnd.oipf.spdiscovery+xml"
+          },
+          {
+            "code": "application/vnd.oipf.spdlist+xml"
+          },
+          {
+            "code": "application/vnd.oipf.ueprofile+xml"
+          },
+          {
+            "code": "application/vnd.oipf.userprofile+xml"
+          },
+          {
+            "code": "application/vnd.olpc-sugar"
+          },
+          {
+            "code": "application/vnd.oma.bcast.associated-procedure-parameter+xml"
+          },
+          {
+            "code": "application/vnd.oma.bcast.drm-trigger+xml"
+          },
+          {
+            "code": "application/vnd.oma.bcast.imd+xml"
+          },
+          {
+            "code": "application/vnd.oma.bcast.ltkm"
+          },
+          {
+            "code": "application/vnd.oma.bcast.notification+xml"
+          },
+          {
+            "code": "application/vnd.oma.bcast.provisioningtrigger"
+          },
+          {
+            "code": "application/vnd.oma.bcast.sgboot"
+          },
+          {
+            "code": "application/vnd.oma.bcast.sgdd+xml"
+          },
+          {
+            "code": "application/vnd.oma.bcast.sgdu"
+          },
+          {
+            "code": "application/vnd.oma.bcast.simple-symbol-container"
+          },
+          {
+            "code": "application/vnd.oma.bcast.smartcard-trigger+xml"
+          },
+          {
+            "code": "application/vnd.oma.bcast.sprov+xml"
+          },
+          {
+            "code": "application/vnd.oma.bcast.stkm"
+          },
+          {
+            "code": "application/vnd.oma.cab-address-book+xml"
+          },
+          {
+            "code": "application/vnd.oma.cab-feature-handler+xml"
+          },
+          {
+            "code": "application/vnd.oma.cab-pcc+xml"
+          },
+          {
+            "code": "application/vnd.oma.cab-subs-invite+xml"
+          },
+          {
+            "code": "application/vnd.oma.cab-user-prefs+xml"
+          },
+          {
+            "code": "application/vnd.oma.dcd"
+          },
+          {
+            "code": "application/vnd.oma.dcdc"
+          },
+          {
+            "code": "application/vnd.oma.dd2+xml"
+          },
+          {
+            "code": "application/vnd.oma.drm.risd+xml"
+          },
+          {
+            "code": "application/vnd.oma.group-usage-list+xml"
+          },
+          {
+            "code": "application/vnd.oma.lwm2m+cbor"
+          },
+          {
+            "code": "application/vnd.oma.lwm2m+json"
+          },
+          {
+            "code": "application/vnd.oma.lwm2m+tlv"
+          },
+          {
+            "code": "application/vnd.oma.pal+xml"
+          },
+          {
+            "code": "application/vnd.oma.poc.detailed-progress-report+xml"
+          },
+          {
+            "code": "application/vnd.oma.poc.final-report+xml"
+          },
+          {
+            "code": "application/vnd.oma.poc.groups+xml"
+          },
+          {
+            "code": "application/vnd.oma.poc.invocation-descriptor+xml"
+          },
+          {
+            "code": "application/vnd.oma.poc.optimized-progress-report+xml"
+          },
+          {
+            "code": "application/vnd.oma.push"
+          },
+          {
+            "code": "application/vnd.oma.scidm.messages+xml"
+          },
+          {
+            "code": "application/vnd.oma.xcap-directory+xml"
+          },
+          {
+            "code": "application/vnd.omads-email+xml"
+          },
+          {
+            "code": "application/vnd.omads-file+xml"
+          },
+          {
+            "code": "application/vnd.omads-folder+xml"
+          },
+          {
+            "code": "application/vnd.omaloc-supl-init"
+          },
+          {
+            "code": "application/vnd.oma-scws-config"
+          },
+          {
+            "code": "application/vnd.oma-scws-http-request"
+          },
+          {
+            "code": "application/vnd.oma-scws-http-response"
+          },
+          {
+            "code": "application/vnd.onepager"
+          },
+          {
+            "code": "application/vnd.onepagertamp"
+          },
+          {
+            "code": "application/vnd.onepagertamx"
+          },
+          {
+            "code": "application/vnd.onepagertat"
+          },
+          {
+            "code": "application/vnd.onepagertatp"
+          },
+          {
+            "code": "application/vnd.onepagertatx"
+          },
+          {
+            "code": "application/vnd.onvif.metadata"
+          },
+          {
+            "code": "application/vnd.openblox.game-binary"
+          },
+          {
+            "code": "application/vnd.openblox.game+xml"
+          },
+          {
+            "code": "application/vnd.openeye.oeb"
+          },
+          {
+            "code": "application/vnd.openstreetmap.data+xml"
+          },
+          {
+            "code": "application/vnd.opentimestamps.ots"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.custom-properties+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.customXmlProperties+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.drawing+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.drawingml.chart+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.drawingml.chartshapes+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.drawingml.diagramColors+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.drawingml.diagramLayout+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.drawingml.diagramStyle+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.extended-properties+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.comments+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.handoutMaster+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.presProps+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.slide"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.slideshow"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.slideUpdateInfo+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.tableStyles+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.tags+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.template"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.template.main+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.presentationml.viewProps+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.calcChain+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.connections+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.dialogsheet+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.externalLink+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.queryTable+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.revisionHeaders+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.revisionLog+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheetMetadata+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.tableSingleCells+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.template"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.template.main+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.userNames+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.volatileDependencies+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.theme+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.themeOverride+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.vmlDrawing"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.document.glossary+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.template"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.template.main+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-package.core-properties+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml"
+          },
+          {
+            "code": "application/vnd.openxmlformats-package.relationships+xml"
+          },
+          {
+            "code": "application/vnd.oracle.resource+json"
+          },
+          {
+            "code": "application/vnd.orange.indata"
+          },
+          {
+            "code": "application/vnd.osa.netdeploy"
+          },
+          {
+            "code": "application/vnd.osgeo.mapguide.package"
+          },
+          {
+            "code": "application/vnd.osgi.bundle"
+          },
+          {
+            "code": "application/vnd.osgi.dp"
+          },
+          {
+            "code": "application/vnd.osgi.subsystem"
+          },
+          {
+            "code": "application/vnd.otps.ct-kip+xml"
+          },
+          {
+            "code": "application/vnd.oxli.countgraph"
+          },
+          {
+            "code": "application/vnd.pagerduty+json"
+          },
+          {
+            "code": "application/vnd.palm"
+          },
+          {
+            "code": "application/vnd.panoply"
+          },
+          {
+            "code": "application/vnd.paos.xml"
+          },
+          {
+            "code": "application/vnd.patentdive"
+          },
+          {
+            "code": "application/vnd.patientecommsdoc"
+          },
+          {
+            "code": "application/vnd.pawaafile"
+          },
+          {
+            "code": "application/vnd.pcos"
+          },
+          {
+            "code": "application/vnd.pg.format"
+          },
+          {
+            "code": "application/vnd.pg.osasli"
+          },
+          {
+            "code": "application/vnd.piaccess.application-licence"
+          },
+          {
+            "code": "application/vnd.picsel"
+          },
+          {
+            "code": "application/vnd.pmi.widget"
+          },
+          {
+            "code": "application/vnd.poc.group-advertisement+xml"
+          },
+          {
+            "code": "application/vnd.pocketlearn"
+          },
+          {
+            "code": "application/vnd.powerbuilder6"
+          },
+          {
+            "code": "application/vnd.powerbuilder6-s"
+          },
+          {
+            "code": "application/vnd.powerbuilder7"
+          },
+          {
+            "code": "application/vnd.powerbuilder75"
+          },
+          {
+            "code": "application/vnd.powerbuilder75-s"
+          },
+          {
+            "code": "application/vnd.powerbuilder7-s"
+          },
+          {
+            "code": "application/vnd.preminet"
+          },
+          {
+            "code": "application/vnd.previewsystems.box"
+          },
+          {
+            "code": "application/vnd.proteus.magazine"
+          },
+          {
+            "code": "application/vnd.psfs"
+          },
+          {
+            "code": "application/vnd.pt.mundusmundi"
+          },
+          {
+            "code": "application/vnd.publishare-delta-tree"
+          },
+          {
+            "code": "application/vnd.pvi.ptid1"
+          },
+          {
+            "code": "application/vnd.pwg-multiplexed"
+          },
+          {
+            "code": "application/vnd.pwg-xhtml-print+xml"
+          },
+          {
+            "code": "application/vnd.qualcomm.brew-app-res"
+          },
+          {
+            "code": "application/vnd.quarantainenet"
+          },
+          {
+            "code": "application/vnd.Quark.QuarkXPress"
+          },
+          {
+            "code": "application/vnd.quobject-quoxdocument"
+          },
+          {
+            "code": "application/vnd.radisys.moml+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-audit-conf+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-audit-conn+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-audit-dialog+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-audit-stream+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-audit+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-conf+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-dialog-base+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-dialog-fax-detect+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-dialog-fax-sendrecv+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-dialog-group+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-dialog-speech+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-dialog-transform+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml-dialog+xml"
+          },
+          {
+            "code": "application/vnd.radisys.msml+xml"
+          },
+          {
+            "code": "application/vnd.rainstor.data"
+          },
+          {
+            "code": "application/vnd.rapid"
+          },
+          {
+            "code": "application/vnd.rar"
+          },
+          {
+            "code": "application/vnd.realvnc.bed"
+          },
+          {
+            "code": "application/vnd.recordare.musicxml"
+          },
+          {
+            "code": "application/vnd.recordare.musicxml+xml"
+          },
+          {
+            "code": "application/vnd.relpipe"
+          },
+          {
+            "code": "application/vnd.RenLearn.rlprint"
+          },
+          {
+            "code": "application/vnd.resilient.logic"
+          },
+          {
+            "code": "application/vnd.restful+json"
+          },
+          {
+            "code": "application/vnd.rig.cryptonote"
+          },
+          {
+            "code": "application/vnd.route66.link66+xml"
+          },
+          {
+            "code": "application/vnd.rs-274x"
+          },
+          {
+            "code": "application/vnd.ruckus.download"
+          },
+          {
+            "code": "application/vnd.s3sms"
+          },
+          {
+            "code": "application/vnd.sailingtracker.track"
+          },
+          {
+            "code": "application/vnd.sar"
+          },
+          {
+            "code": "application/vnd.sbm.cid"
+          },
+          {
+            "code": "application/vnd.sbm.mid2"
+          },
+          {
+            "code": "application/vnd.scribus"
+          },
+          {
+            "code": "application/vnd.sealed.3df"
+          },
+          {
+            "code": "application/vnd.sealed.csf"
+          },
+          {
+            "code": "application/vnd.sealed.doc"
+          },
+          {
+            "code": "application/vnd.sealed.eml"
+          },
+          {
+            "code": "application/vnd.sealed.mht"
+          },
+          {
+            "code": "application/vnd.sealed.net"
+          },
+          {
+            "code": "application/vnd.sealed.ppt"
+          },
+          {
+            "code": "application/vnd.sealed.tiff"
+          },
+          {
+            "code": "application/vnd.sealed.xls"
+          },
+          {
+            "code": "application/vnd.sealedmedia.softseal.html"
+          },
+          {
+            "code": "application/vnd.sealedmedia.softseal.pdf"
+          },
+          {
+            "code": "application/vnd.seemail"
+          },
+          {
+            "code": "application/vnd.seis+json"
+          },
+          {
+            "code": "application/vnd.sema"
+          },
+          {
+            "code": "application/vnd.semd"
+          },
+          {
+            "code": "application/vnd.semf"
+          },
+          {
+            "code": "application/vnd.shade-save-file"
+          },
+          {
+            "code": "application/vnd.shana.informed.formdata"
+          },
+          {
+            "code": "application/vnd.shana.informed.formtemplate"
+          },
+          {
+            "code": "application/vnd.shana.informed.interchange"
+          },
+          {
+            "code": "application/vnd.shana.informed.package"
+          },
+          {
+            "code": "application/vnd.shootproof+json"
+          },
+          {
+            "code": "application/vnd.shopkick+json"
+          },
+          {
+            "code": "application/vnd.shp"
+          },
+          {
+            "code": "application/vnd.shx"
+          },
+          {
+            "code": "application/vnd.sigrok.session"
+          },
+          {
+            "code": "application/vnd.SimTech-MindMapper"
+          },
+          {
+            "code": "application/vnd.siren+json"
+          },
+          {
+            "code": "application/vnd.smaf"
+          },
+          {
+            "code": "application/vnd.smart.notebook"
+          },
+          {
+            "code": "application/vnd.smart.teacher"
+          },
+          {
+            "code": "application/vnd.smintio.portals.archive"
+          },
+          {
+            "code": "application/vnd.snesdev-page-table"
+          },
+          {
+            "code": "application/vnd.software602.filler.form+xml"
+          },
+          {
+            "code": "application/vnd.software602.filler.form-xml-zip"
+          },
+          {
+            "code": "application/vnd.solent.sdkm+xml"
+          },
+          {
+            "code": "application/vnd.spotfire.dxp"
+          },
+          {
+            "code": "application/vnd.spotfire.sfs"
+          },
+          {
+            "code": "application/vnd.sqlite3"
+          },
+          {
+            "code": "application/vnd.sss-cod"
+          },
+          {
+            "code": "application/vnd.sss-dtf"
+          },
+          {
+            "code": "application/vnd.sss-ntf"
+          },
+          {
+            "code": "application/vnd.stepmania.package"
+          },
+          {
+            "code": "application/vnd.stepmania.stepchart"
+          },
+          {
+            "code": "application/vnd.street-stream"
+          },
+          {
+            "code": "application/vnd.sun.wadl+xml"
+          },
+          {
+            "code": "application/vnd.sus-calendar"
+          },
+          {
+            "code": "application/vnd.svd"
+          },
+          {
+            "code": "application/vnd.swiftview-ics"
+          },
+          {
+            "code": "application/vnd.sybyl.mol2"
+          },
+          {
+            "code": "application/vnd.sycle+xml"
+          },
+          {
+            "code": "application/vnd.syft+json"
+          },
+          {
+            "code": "application/vnd.syncml.dm.notification"
+          },
+          {
+            "code": "application/vnd.syncml.dmddf+xml"
+          },
+          {
+            "code": "application/vnd.syncml.dmtnds+wbxml"
+          },
+          {
+            "code": "application/vnd.syncml.dmtnds+xml"
+          },
+          {
+            "code": "application/vnd.syncml.dmddf+wbxml"
+          },
+          {
+            "code": "application/vnd.syncml.dm+wbxml"
+          },
+          {
+            "code": "application/vnd.syncml.dm+xml"
+          },
+          {
+            "code": "application/vnd.syncml.ds.notification"
+          },
+          {
+            "code": "application/vnd.syncml+xml"
+          },
+          {
+            "code": "application/vnd.tableschema+json"
+          },
+          {
+            "code": "application/vnd.tao.intent-module-archive"
+          },
+          {
+            "code": "application/vnd.tcpdump.pcap"
+          },
+          {
+            "code": "application/vnd.think-cell.ppttc+json"
+          },
+          {
+            "code": "application/vnd.tml"
+          },
+          {
+            "code": "application/vnd.tmd.mediaflex.api+xml"
+          },
+          {
+            "code": "application/vnd.tmobile-livetv"
+          },
+          {
+            "code": "application/vnd.tri.onesource"
+          },
+          {
+            "code": "application/vnd.trid.tpt"
+          },
+          {
+            "code": "application/vnd.triscape.mxs"
+          },
+          {
+            "code": "application/vnd.trueapp"
+          },
+          {
+            "code": "application/vnd.truedoc"
+          },
+          {
+            "code": "application/vnd.ubisoft.webplayer"
+          },
+          {
+            "code": "application/vnd.ufdl"
+          },
+          {
+            "code": "application/vnd.uiq.theme"
+          },
+          {
+            "code": "application/vnd.umajin"
+          },
+          {
+            "code": "application/vnd.unity"
+          },
+          {
+            "code": "application/vnd.uoml+xml"
+          },
+          {
+            "code": "application/vnd.uplanet.alert"
+          },
+          {
+            "code": "application/vnd.uplanet.alert-wbxml"
+          },
+          {
+            "code": "application/vnd.uplanet.bearer-choice"
+          },
+          {
+            "code": "application/vnd.uplanet.bearer-choice-wbxml"
+          },
+          {
+            "code": "application/vnd.uplanet.cacheop"
+          },
+          {
+            "code": "application/vnd.uplanet.cacheop-wbxml"
+          },
+          {
+            "code": "application/vnd.uplanet.channel"
+          },
+          {
+            "code": "application/vnd.uplanet.channel-wbxml"
+          },
+          {
+            "code": "application/vnd.uplanet.list"
+          },
+          {
+            "code": "application/vnd.uplanet.listcmd"
+          },
+          {
+            "code": "application/vnd.uplanet.listcmd-wbxml"
+          },
+          {
+            "code": "application/vnd.uplanet.list-wbxml"
+          },
+          {
+            "code": "application/vnd.uri-map"
+          },
+          {
+            "code": "application/vnd.uplanet.signal"
+          },
+          {
+            "code": "application/vnd.valve.source.material"
+          },
+          {
+            "code": "application/vnd.vcx"
+          },
+          {
+            "code": "application/vnd.vd-study"
+          },
+          {
+            "code": "application/vnd.vectorworks"
+          },
+          {
+            "code": "application/vnd.vel+json"
+          },
+          {
+            "code": "application/vnd.verimatrix.vcas"
+          },
+          {
+            "code": "application/vnd.veritone.aion+json"
+          },
+          {
+            "code": "application/vnd.veryant.thin"
+          },
+          {
+            "code": "application/vnd.ves.encrypted"
+          },
+          {
+            "code": "application/vnd.vidsoft.vidconference"
+          },
+          {
+            "code": "application/vnd.visio"
+          },
+          {
+            "code": "application/vnd.visionary"
+          },
+          {
+            "code": "application/vnd.vividence.scriptfile"
+          },
+          {
+            "code": "application/vnd.vsf"
+          },
+          {
+            "code": "application/vnd.wap.sic"
+          },
+          {
+            "code": "application/vnd.wap.slc"
+          },
+          {
+            "code": "application/vnd.wap.wbxml"
+          },
+          {
+            "code": "application/vnd.wap.wmlc"
+          },
+          {
+            "code": "application/vnd.wap.wmlscriptc"
+          },
+          {
+            "code": "application/vnd.wasmflow.wafl"
+          },
+          {
+            "code": "application/vnd.webturbo"
+          },
+          {
+            "code": "application/vnd.wfa.dpp"
+          },
+          {
+            "code": "application/vnd.wfa.p2p"
+          },
+          {
+            "code": "application/vnd.wfa.wsc"
+          },
+          {
+            "code": "application/vnd.windows.devicepairing"
+          },
+          {
+            "code": "application/vnd.wmc"
+          },
+          {
+            "code": "application/vnd.wmf.bootstrap"
+          },
+          {
+            "code": "application/vnd.wolfram.mathematica"
+          },
+          {
+            "code": "application/vnd.wolfram.mathematica.package"
+          },
+          {
+            "code": "application/vnd.wolfram.player"
+          },
+          {
+            "code": "application/vnd.wordlift"
+          },
+          {
+            "code": "application/vnd.wordperfect"
+          },
+          {
+            "code": "application/vnd.wqd"
+          },
+          {
+            "code": "application/vnd.wrq-hp3000-labelled"
+          },
+          {
+            "code": "application/vnd.wt.stf"
+          },
+          {
+            "code": "application/vnd.wv.csp+xml"
+          },
+          {
+            "code": "application/vnd.wv.csp+wbxml"
+          },
+          {
+            "code": "application/vnd.wv.ssp+xml"
+          },
+          {
+            "code": "application/vnd.xacml+json"
+          },
+          {
+            "code": "application/vnd.xara"
+          },
+          {
+            "code": "application/vnd.xecrets-encrypted"
+          },
+          {
+            "code": "application/vnd.xfdl"
+          },
+          {
+            "code": "application/vnd.xfdl.webform"
+          },
+          {
+            "code": "application/vnd.xmi+xml"
+          },
+          {
+            "code": "application/vnd.xmpie.cpkg"
+          },
+          {
+            "code": "application/vnd.xmpie.dpkg"
+          },
+          {
+            "code": "application/vnd.xmpie.plan"
+          },
+          {
+            "code": "application/vnd.xmpie.ppkg"
+          },
+          {
+            "code": "application/vnd.xmpie.xlim"
+          },
+          {
+            "code": "application/vnd.yamaha.hv-dic"
+          },
+          {
+            "code": "application/vnd.yamaha.hv-script"
+          },
+          {
+            "code": "application/vnd.yamaha.hv-voice"
+          },
+          {
+            "code": "application/vnd.yamaha.openscoreformat.osfpvg+xml"
+          },
+          {
+            "code": "application/vnd.yamaha.openscoreformat"
+          },
+          {
+            "code": "application/vnd.yamaha.remote-setup"
+          },
+          {
+            "code": "application/vnd.yamaha.smaf-audio"
+          },
+          {
+            "code": "application/vnd.yamaha.smaf-phrase"
+          },
+          {
+            "code": "application/vnd.yamaha.through-ngn"
+          },
+          {
+            "code": "application/vnd.yamaha.tunnel-udpencap"
+          },
+          {
+            "code": "application/vnd.yaoweme"
+          },
+          {
+            "code": "application/vnd.yellowriver-custom-menu"
+          },
+          {
+            "code": "application/vnd.youtube.yt"
+          },
+          {
+            "code": "application/vnd.zul"
+          },
+          {
+            "code": "application/vnd.zzazz.deck+xml"
+          },
+          {
+            "code": "application/voicexml+xml"
+          },
+          {
+            "code": "application/voucher-cms+json"
+          },
+          {
+            "code": "application/vq-rtcpxr"
+          },
+          {
+            "code": "application/wasm"
+          },
+          {
+            "code": "application/watcherinfo+xml"
+          },
+          {
+            "code": "application/webpush-options+json"
+          },
+          {
+            "code": "application/whoispp-query"
+          },
+          {
+            "code": "application/whoispp-response"
+          },
+          {
+            "code": "application/widget"
+          },
+          {
+            "code": "application/wita"
+          },
+          {
+            "code": "application/wordperfect5.1"
+          },
+          {
+            "code": "application/wsdl+xml"
+          },
+          {
+            "code": "application/wspolicy+xml"
+          },
+          {
+            "code": "application/x-pki-message"
+          },
+          {
+            "code": "application/x-www-form-urlencoded"
+          },
+          {
+            "code": "application/x-x509-ca-cert"
+          },
+          {
+            "code": "application/x-x509-ca-ra-cert"
+          },
+          {
+            "code": "application/x-x509-next-ca-cert"
+          },
+          {
+            "code": "application/x400-bp"
+          },
+          {
+            "code": "application/xacml+xml"
+          },
+          {
+            "code": "application/xcap-att+xml"
+          },
+          {
+            "code": "application/xcap-caps+xml"
+          },
+          {
+            "code": "application/xcap-diff+xml"
+          },
+          {
+            "code": "application/xcap-el+xml"
+          },
+          {
+            "code": "application/xcap-error+xml"
+          },
+          {
+            "code": "application/xcap-ns+xml"
+          },
+          {
+            "code": "application/xcon-conference-info-diff+xml"
+          },
+          {
+            "code": "application/xcon-conference-info+xml"
+          },
+          {
+            "code": "application/xenc+xml"
+          },
+          {
+            "code": "application/xfdf"
+          },
+          {
+            "code": "application/xhtml+xml"
+          },
+          {
+            "code": "application/xliff+xml"
+          },
+          {
+            "code": "application/xml"
+          },
+          {
+            "code": "application/xml-dtd"
+          },
+          {
+            "code": "application/xml-external-parsed-entity"
+          },
+          {
+            "code": "application/xml-patch+xml"
+          },
+          {
+            "code": "application/xmpp+xml"
+          },
+          {
+            "code": "application/xop+xml"
+          },
+          {
+            "code": "application/xslt+xml"
+          },
+          {
+            "code": "application/xv+xml"
+          },
+          {
+            "code": "application/yaml"
+          },
+          {
+            "code": "application/yang"
+          },
+          {
+            "code": "application/yang-data+cbor"
+          },
+          {
+            "code": "application/yang-data+json"
+          },
+          {
+            "code": "application/yang-data+xml"
+          },
+          {
+            "code": "application/yang-patch+json"
+          },
+          {
+            "code": "application/yang-patch+xml"
+          },
+          {
+            "code": "application/yang-sid+json"
+          },
+          {
+            "code": "application/yin+xml"
+          },
+          {
+            "code": "application/zip"
+          },
+          {
+            "code": "application/zlib"
+          },
+          {
+            "code": "application/zstd"
+          },
+          {
+            "code": "audio/1d-interleaved-parityfec"
+          },
+          {
+            "code": "audio/32kadpcm"
+          },
+          {
+            "code": "audio/3gpp"
+          },
+          {
+            "code": "audio/3gpp2"
+          },
+          {
+            "code": "audio/aac"
+          },
+          {
+            "code": "audio/ac3"
+          },
+          {
+            "code": "audio/AMR"
+          },
+          {
+            "code": "audio/AMR-WB"
+          },
+          {
+            "code": "audio/amr-wb+"
+          },
+          {
+            "code": "audio/aptx"
+          },
+          {
+            "code": "audio/asc"
+          },
+          {
+            "code": "audio/ATRAC-ADVANCED-LOSSLESS"
+          },
+          {
+            "code": "audio/ATRAC-X"
+          },
+          {
+            "code": "audio/ATRAC3"
+          },
+          {
+            "code": "audio/basic"
+          },
+          {
+            "code": "audio/BV16"
+          },
+          {
+            "code": "audio/BV32"
+          },
+          {
+            "code": "audio/clearmode"
+          },
+          {
+            "code": "audio/CN"
+          },
+          {
+            "code": "audio/DAT12"
+          },
+          {
+            "code": "audio/dls"
+          },
+          {
+            "code": "audio/dsr-es201108"
+          },
+          {
+            "code": "audio/dsr-es202050"
+          },
+          {
+            "code": "audio/dsr-es202211"
+          },
+          {
+            "code": "audio/dsr-es202212"
+          },
+          {
+            "code": "audio/DV"
+          },
+          {
+            "code": "audio/DVI4"
+          },
+          {
+            "code": "audio/eac3"
+          },
+          {
+            "code": "audio/encaprtp"
+          },
+          {
+            "code": "audio/EVRC"
+          },
+          {
+            "code": "audio/EVRC-QCP"
+          },
+          {
+            "code": "audio/EVRC0"
+          },
+          {
+            "code": "audio/EVRC1"
+          },
+          {
+            "code": "audio/EVRCB"
+          },
+          {
+            "code": "audio/EVRCB0"
+          },
+          {
+            "code": "audio/EVRCB1"
+          },
+          {
+            "code": "audio/EVRCNW"
+          },
+          {
+            "code": "audio/EVRCNW0"
+          },
+          {
+            "code": "audio/EVRCNW1"
+          },
+          {
+            "code": "audio/EVRCWB"
+          },
+          {
+            "code": "audio/EVRCWB0"
+          },
+          {
+            "code": "audio/EVRCWB1"
+          },
+          {
+            "code": "audio/EVS"
+          },
+          {
+            "code": "audio/example"
+          },
+          {
+            "code": "audio/flac"
+          },
+          {
+            "code": "audio/flexfec"
+          },
+          {
+            "code": "audio/fwdred"
+          },
+          {
+            "code": "audio/G711-0"
+          },
+          {
+            "code": "audio/G719"
+          },
+          {
+            "code": "audio/G7221"
+          },
+          {
+            "code": "audio/G722"
+          },
+          {
+            "code": "audio/G723"
+          },
+          {
+            "code": "audio/G726-16"
+          },
+          {
+            "code": "audio/G726-24"
+          },
+          {
+            "code": "audio/G726-32"
+          },
+          {
+            "code": "audio/G726-40"
+          },
+          {
+            "code": "audio/G728"
+          },
+          {
+            "code": "audio/G729"
+          },
+          {
+            "code": "audio/G7291"
+          },
+          {
+            "code": "audio/G729D"
+          },
+          {
+            "code": "audio/G729E"
+          },
+          {
+            "code": "audio/GSM"
+          },
+          {
+            "code": "audio/GSM-EFR"
+          },
+          {
+            "code": "audio/GSM-HR-08"
+          },
+          {
+            "code": "audio/iLBC"
+          },
+          {
+            "code": "audio/ip-mr_v2.5"
+          },
+          {
+            "code": "audio/L8"
+          },
+          {
+            "code": "audio/L16"
+          },
+          {
+            "code": "audio/L20"
+          },
+          {
+            "code": "audio/L24"
+          },
+          {
+            "code": "audio/LPC"
+          },
+          {
+            "code": "audio/matroska"
+          },
+          {
+            "code": "audio/MELP"
+          },
+          {
+            "code": "audio/MELP600"
+          },
+          {
+            "code": "audio/MELP1200"
+          },
+          {
+            "code": "audio/MELP2400"
+          },
+          {
+            "code": "audio/mhas"
+          },
+          {
+            "code": "audio/midi-clip"
+          },
+          {
+            "code": "audio/mobile-xmf"
+          },
+          {
+            "code": "audio/MPA"
+          },
+          {
+            "code": "audio/mp4"
+          },
+          {
+            "code": "audio/MP4A-LATM"
+          },
+          {
+            "code": "audio/mpa-robust"
+          },
+          {
+            "code": "audio/mpeg"
+          },
+          {
+            "code": "audio/mpeg4-generic"
+          },
+          {
+            "code": "audio/ogg"
+          },
+          {
+            "code": "audio/opus"
+          },
+          {
+            "code": "audio/parityfec"
+          },
+          {
+            "code": "audio/PCMA"
+          },
+          {
+            "code": "audio/PCMA-WB"
+          },
+          {
+            "code": "audio/PCMU"
+          },
+          {
+            "code": "audio/PCMU-WB"
+          },
+          {
+            "code": "audio/prs.sid"
+          },
+          {
+            "code": "audio/QCELP"
+          },
+          {
+            "code": "audio/raptorfec"
+          },
+          {
+            "code": "audio/RED"
+          },
+          {
+            "code": "audio/rtp-enc-aescm128"
+          },
+          {
+            "code": "audio/rtploopback"
+          },
+          {
+            "code": "audio/rtp-midi"
+          },
+          {
+            "code": "audio/rtx"
+          },
+          {
+            "code": "audio/scip"
+          },
+          {
+            "code": "audio/SMV"
+          },
+          {
+            "code": "audio/SMV0"
+          },
+          {
+            "code": "audio/SMV-QCP"
+          },
+          {
+            "code": "audio/sofa"
+          },
+          {
+            "code": "audio/sp-midi"
+          },
+          {
+            "code": "audio/speex"
+          },
+          {
+            "code": "audio/t140c"
+          },
+          {
+            "code": "audio/t38"
+          },
+          {
+            "code": "audio/telephone-event"
+          },
+          {
+            "code": "audio/TETRA_ACELP"
+          },
+          {
+            "code": "audio/TETRA_ACELP_BB"
+          },
+          {
+            "code": "audio/tone"
+          },
+          {
+            "code": "audio/TSVCIS"
+          },
+          {
+            "code": "audio/UEMCLIP"
+          },
+          {
+            "code": "audio/ulpfec"
+          },
+          {
+            "code": "audio/usac"
+          },
+          {
+            "code": "audio/VDVI"
+          },
+          {
+            "code": "audio/VMR-WB"
+          },
+          {
+            "code": "audio/vnd.3gpp.iufp"
+          },
+          {
+            "code": "audio/vnd.4SB"
+          },
+          {
+            "code": "audio/vnd.audiokoz"
+          },
+          {
+            "code": "audio/vnd.CELP"
+          },
+          {
+            "code": "audio/vnd.cisco.nse"
+          },
+          {
+            "code": "audio/vnd.cmles.radio-events"
+          },
+          {
+            "code": "audio/vnd.cns.anp1"
+          },
+          {
+            "code": "audio/vnd.cns.inf1"
+          },
+          {
+            "code": "audio/vnd.dece.audio"
+          },
+          {
+            "code": "audio/vnd.digital-winds"
+          },
+          {
+            "code": "audio/vnd.dlna.adts"
+          },
+          {
+            "code": "audio/vnd.dolby.heaac.1"
+          },
+          {
+            "code": "audio/vnd.dolby.heaac.2"
+          },
+          {
+            "code": "audio/vnd.dolby.mlp"
+          },
+          {
+            "code": "audio/vnd.dolby.mps"
+          },
+          {
+            "code": "audio/vnd.dolby.pl2"
+          },
+          {
+            "code": "audio/vnd.dolby.pl2x"
+          },
+          {
+            "code": "audio/vnd.dolby.pl2z"
+          },
+          {
+            "code": "audio/vnd.dolby.pulse.1"
+          },
+          {
+            "code": "audio/vnd.dra"
+          },
+          {
+            "code": "audio/vnd.dts"
+          },
+          {
+            "code": "audio/vnd.dts.hd"
+          },
+          {
+            "code": "audio/vnd.dts.uhd"
+          },
+          {
+            "code": "audio/vnd.dvb.file"
+          },
+          {
+            "code": "audio/vnd.everad.plj"
+          },
+          {
+            "code": "audio/vnd.hns.audio"
+          },
+          {
+            "code": "audio/vnd.lucent.voice"
+          },
+          {
+            "code": "audio/vnd.ms-playready.media.pya"
+          },
+          {
+            "code": "audio/vnd.nokia.mobile-xmf"
+          },
+          {
+            "code": "audio/vnd.nortel.vbk"
+          },
+          {
+            "code": "audio/vnd.nuera.ecelp4800"
+          },
+          {
+            "code": "audio/vnd.nuera.ecelp7470"
+          },
+          {
+            "code": "audio/vnd.nuera.ecelp9600"
+          },
+          {
+            "code": "audio/vnd.octel.sbc"
+          },
+          {
+            "code": "audio/vnd.presonus.multitrack"
+          },
+          {
+            "code": "audio/vnd.qcelp"
+          },
+          {
+            "code": "audio/vnd.rhetorex.32kadpcm"
+          },
+          {
+            "code": "audio/vnd.rip"
+          },
+          {
+            "code": "audio/vnd.sealedmedia.softseal.mpeg"
+          },
+          {
+            "code": "audio/vnd.vmx.cvsd"
+          },
+          {
+            "code": "audio/vorbis"
+          },
+          {
+            "code": "audio/vorbis-config"
+          },
+          {
+            "code": "font/collection"
+          },
+          {
+            "code": "font/otf"
+          },
+          {
+            "code": "font/sfnt"
+          },
+          {
+            "code": "font/ttf"
+          },
+          {
+            "code": "font/woff"
+          },
+          {
+            "code": "font/woff2"
+          },
+          {
+            "code": "image/aces"
+          },
+          {
+            "code": "image/apng"
+          },
+          {
+            "code": "image/avci"
+          },
+          {
+            "code": "image/avcs"
+          },
+          {
+            "code": "image/avif"
+          },
+          {
+            "code": "image/bmp"
+          },
+          {
+            "code": "image/cgm"
+          },
+          {
+            "code": "image/dicom-rle"
+          },
+          {
+            "code": "image/dpx"
+          },
+          {
+            "code": "image/emf"
+          },
+          {
+            "code": "image/example"
+          },
+          {
+            "code": "image/fits"
+          },
+          {
+            "code": "image/g3fax"
+          },
+          {
+            "code": "image/gif"
+          },
+          {
+            "code": "image/heic"
+          },
+          {
+            "code": "image/heic-sequence"
+          },
+          {
+            "code": "image/heif"
+          },
+          {
+            "code": "image/heif-sequence"
+          },
+          {
+            "code": "image/hej2k"
+          },
+          {
+            "code": "image/hsj2"
+          },
+          {
+            "code": "image/ief"
+          },
+          {
+            "code": "image/j2c"
+          },
+          {
+            "code": "image/jls"
+          },
+          {
+            "code": "image/jp2"
+          },
+          {
+            "code": "image/jpeg"
+          },
+          {
+            "code": "image/jph"
+          },
+          {
+            "code": "image/jphc"
+          },
+          {
+            "code": "image/jpm"
+          },
+          {
+            "code": "image/jpx"
+          },
+          {
+            "code": "image/jxl"
+          },
+          {
+            "code": "image/jxr"
+          },
+          {
+            "code": "image/jxrA"
+          },
+          {
+            "code": "image/jxrS"
+          },
+          {
+            "code": "image/jxs"
+          },
+          {
+            "code": "image/jxsc"
+          },
+          {
+            "code": "image/jxsi"
+          },
+          {
+            "code": "image/jxss"
+          },
+          {
+            "code": "image/ktx"
+          },
+          {
+            "code": "image/ktx2"
+          },
+          {
+            "code": "image/naplps"
+          },
+          {
+            "code": "image/png"
+          },
+          {
+            "code": "image/prs.btif"
+          },
+          {
+            "code": "image/prs.pti"
+          },
+          {
+            "code": "image/pwg-raster"
+          },
+          {
+            "code": "image/svg+xml"
+          },
+          {
+            "code": "image/t38"
+          },
+          {
+            "code": "image/tiff"
+          },
+          {
+            "code": "image/tiff-fx"
+          },
+          {
+            "code": "image/vnd.adobe.photoshop"
+          },
+          {
+            "code": "image/vnd.airzip.accelerator.azv"
+          },
+          {
+            "code": "image/vnd.cns.inf2"
+          },
+          {
+            "code": "image/vnd.dece.graphic"
+          },
+          {
+            "code": "image/vnd.djvu"
+          },
+          {
+            "code": "image/vnd.dwg"
+          },
+          {
+            "code": "image/vnd.dxf"
+          },
+          {
+            "code": "image/vnd.dvb.subtitle"
+          },
+          {
+            "code": "image/vnd.fastbidsheet"
+          },
+          {
+            "code": "image/vnd.fpx"
+          },
+          {
+            "code": "image/vnd.fst"
+          },
+          {
+            "code": "image/vnd.fujixerox.edmics-mmr"
+          },
+          {
+            "code": "image/vnd.fujixerox.edmics-rlc"
+          },
+          {
+            "code": "image/vnd.globalgraphics.pgb"
+          },
+          {
+            "code": "image/vnd.microsoft.icon"
+          },
+          {
+            "code": "image/vnd.mix"
+          },
+          {
+            "code": "image/vnd.ms-modi"
+          },
+          {
+            "code": "image/vnd.mozilla.apng"
+          },
+          {
+            "code": "image/vnd.net-fpx"
+          },
+          {
+            "code": "image/vnd.pco.b16"
+          },
+          {
+            "code": "image/vnd.radiance"
+          },
+          {
+            "code": "image/vnd.sealed.png"
+          },
+          {
+            "code": "image/vnd.sealedmedia.softseal.gif"
+          },
+          {
+            "code": "image/vnd.sealedmedia.softseal.jpg"
+          },
+          {
+            "code": "image/vnd.svf"
+          },
+          {
+            "code": "image/vnd.tencent.tap"
+          },
+          {
+            "code": "image/vnd.valve.source.texture"
+          },
+          {
+            "code": "image/vnd.wap.wbmp"
+          },
+          {
+            "code": "image/vnd.xiff"
+          },
+          {
+            "code": "image/vnd.zbrush.pcx"
+          },
+          {
+            "code": "image/webp"
+          },
+          {
+            "code": "image/wmf"
+          },
+          {
+            "code": "message/bhttp"
+          },
+          {
+            "code": "message/CPIM"
+          },
+          {
+            "code": "message/delivery-status"
+          },
+          {
+            "code": "message/disposition-notification"
+          },
+          {
+            "code": "message/example"
+          },
+          {
+            "code": "message/external-body"
+          },
+          {
+            "code": "message/feedback-report"
+          },
+          {
+            "code": "message/global"
+          },
+          {
+            "code": "message/global-delivery-status"
+          },
+          {
+            "code": "message/global-disposition-notification"
+          },
+          {
+            "code": "message/global-headers"
+          },
+          {
+            "code": "message/http"
+          },
+          {
+            "code": "message/imdn+xml"
+          },
+          {
+            "code": "message/mls"
+          },
+          {
+            "code": "message/news"
+          },
+          {
+            "code": "message/ohttp-req"
+          },
+          {
+            "code": "message/ohttp-res"
+          },
+          {
+            "code": "message/partial"
+          },
+          {
+            "code": "message/rfc822"
+          },
+          {
+            "code": "message/s-http"
+          },
+          {
+            "code": "message/sip"
+          },
+          {
+            "code": "message/sipfrag"
+          },
+          {
+            "code": "message/tracking-status"
+          },
+          {
+            "code": "message/vnd.si.simp"
+          },
+          {
+            "code": "message/vnd.wfa.wsc"
+          },
+          {
+            "code": "model/3mf"
+          },
+          {
+            "code": "model/e57"
+          },
+          {
+            "code": "model/example"
+          },
+          {
+            "code": "model/gltf-binary"
+          },
+          {
+            "code": "model/gltf+json"
+          },
+          {
+            "code": "model/JT"
+          },
+          {
+            "code": "model/iges"
+          },
+          {
+            "code": "model/mesh"
+          },
+          {
+            "code": "model/mtl"
+          },
+          {
+            "code": "model/obj"
+          },
+          {
+            "code": "model/prc"
+          },
+          {
+            "code": "model/step"
+          },
+          {
+            "code": "model/step+xml"
+          },
+          {
+            "code": "model/step+zip"
+          },
+          {
+            "code": "model/step-xml+zip"
+          },
+          {
+            "code": "model/stl"
+          },
+          {
+            "code": "model/u3d"
+          },
+          {
+            "code": "model/vnd.bary"
+          },
+          {
+            "code": "model/vnd.cld"
+          },
+          {
+            "code": "model/vnd.collada+xml"
+          },
+          {
+            "code": "model/vnd.dwf"
+          },
+          {
+            "code": "model/vnd.flatland.3dml"
+          },
+          {
+            "code": "model/vnd.gdl"
+          },
+          {
+            "code": "model/vnd.gs-gdl"
+          },
+          {
+            "code": "model/vnd.gtw"
+          },
+          {
+            "code": "model/vnd.moml+xml"
+          },
+          {
+            "code": "model/vnd.mts"
+          },
+          {
+            "code": "model/vnd.opengex"
+          },
+          {
+            "code": "model/vnd.parasolid.transmit.binary"
+          },
+          {
+            "code": "model/vnd.parasolid.transmit.text"
+          },
+          {
+            "code": "model/vnd.pytha.pyox"
+          },
+          {
+            "code": "model/vnd.rosette.annotated-data-model"
+          },
+          {
+            "code": "model/vnd.sap.vds"
+          },
+          {
+            "code": "model/vnd.usda"
+          },
+          {
+            "code": "model/vnd.usdz+zip"
+          },
+          {
+            "code": "model/vnd.valve.source.compiled-map"
+          },
+          {
+            "code": "model/vnd.vtu"
+          },
+          {
+            "code": "model/vrml"
+          },
+          {
+            "code": "model/x3d-vrml"
+          },
+          {
+            "code": "model/x3d+fastinfoset"
+          },
+          {
+            "code": "model/x3d+xml"
+          },
+          {
+            "code": "multipart/alternative"
+          },
+          {
+            "code": "multipart/appledouble"
+          },
+          {
+            "code": "multipart/byteranges"
+          },
+          {
+            "code": "multipart/digest"
+          },
+          {
+            "code": "multipart/encrypted"
+          },
+          {
+            "code": "multipart/example"
+          },
+          {
+            "code": "multipart/form-data"
+          },
+          {
+            "code": "multipart/header-set"
+          },
+          {
+            "code": "multipart/mixed"
+          },
+          {
+            "code": "multipart/multilingual"
+          },
+          {
+            "code": "multipart/parallel"
+          },
+          {
+            "code": "multipart/related"
+          },
+          {
+            "code": "multipart/report"
+          },
+          {
+            "code": "multipart/signed"
+          },
+          {
+            "code": "multipart/vnd.bint.med-plus"
+          },
+          {
+            "code": "multipart/voice-message"
+          },
+          {
+            "code": "multipart/x-mixed-replace"
+          },
+          {
+            "code": "text/1d-interleaved-parityfec"
+          },
+          {
+            "code": "text/cache-manifest"
+          },
+          {
+            "code": "text/calendar"
+          },
+          {
+            "code": "text/cql"
+          },
+          {
+            "code": "text/cql-expression"
+          },
+          {
+            "code": "text/cql-identifier"
+          },
+          {
+            "code": "text/css"
+          },
+          {
+            "code": "text/csv"
+          },
+          {
+            "code": "text/csv-schema"
+          },
+          {
+            "code": "text/directory"
+          },
+          {
+            "code": "text/dns"
+          },
+          {
+            "code": "text/ecmascript"
+          },
+          {
+            "code": "text/encaprtp"
+          },
+          {
+            "code": "text/enriched"
+          },
+          {
+            "code": "text/example"
+          },
+          {
+            "code": "text/fhirpath"
+          },
+          {
+            "code": "text/flexfec"
+          },
+          {
+            "code": "text/fwdred"
+          },
+          {
+            "code": "text/gff3"
+          },
+          {
+            "code": "text/grammar-ref-list"
+          },
+          {
+            "code": "text/hl7v2"
+          },
+          {
+            "code": "text/html"
+          },
+          {
+            "code": "text/javascript"
+          },
+          {
+            "code": "text/jcr-cnd"
+          },
+          {
+            "code": "text/markdown"
+          },
+          {
+            "code": "text/mizar"
+          },
+          {
+            "code": "text/n3"
+          },
+          {
+            "code": "text/parameters"
+          },
+          {
+            "code": "text/parityfec"
+          },
+          {
+            "code": "text/plain"
+          },
+          {
+            "code": "text/provenance-notation"
+          },
+          {
+            "code": "text/prs.fallenstein.rst"
+          },
+          {
+            "code": "text/prs.lines.tag"
+          },
+          {
+            "code": "text/prs.prop.logic"
+          },
+          {
+            "code": "text/prs.texi"
+          },
+          {
+            "code": "text/raptorfec"
+          },
+          {
+            "code": "text/RED"
+          },
+          {
+            "code": "text/rfc822-headers"
+          },
+          {
+            "code": "text/richtext"
+          },
+          {
+            "code": "text/rtf"
+          },
+          {
+            "code": "text/rtp-enc-aescm128"
+          },
+          {
+            "code": "text/rtploopback"
+          },
+          {
+            "code": "text/rtx"
+          },
+          {
+            "code": "text/SGML"
+          },
+          {
+            "code": "text/shaclc"
+          },
+          {
+            "code": "text/shex"
+          },
+          {
+            "code": "text/spdx"
+          },
+          {
+            "code": "text/strings"
+          },
+          {
+            "code": "text/t140"
+          },
+          {
+            "code": "text/tab-separated-values"
+          },
+          {
+            "code": "text/troff"
+          },
+          {
+            "code": "text/turtle"
+          },
+          {
+            "code": "text/ulpfec"
+          },
+          {
+            "code": "text/uri-list"
+          },
+          {
+            "code": "text/vcard"
+          },
+          {
+            "code": "text/vnd.a"
+          },
+          {
+            "code": "text/vnd.abc"
+          },
+          {
+            "code": "text/vnd.ascii-art"
+          },
+          {
+            "code": "text/vnd.curl"
+          },
+          {
+            "code": "text/vnd.debian.copyright"
+          },
+          {
+            "code": "text/vnd.DMClientScript"
+          },
+          {
+            "code": "text/vnd.dvb.subtitle"
+          },
+          {
+            "code": "text/vnd.esmertec.theme-descriptor"
+          },
+          {
+            "code": "text/vnd.exchangeable"
+          },
+          {
+            "code": "text/vnd.familysearch.gedcom"
+          },
+          {
+            "code": "text/vnd.ficlab.flt"
+          },
+          {
+            "code": "text/vnd.fly"
+          },
+          {
+            "code": "text/vnd.fmi.flexstor"
+          },
+          {
+            "code": "text/vnd.gml"
+          },
+          {
+            "code": "text/vnd.graphviz"
+          },
+          {
+            "code": "text/vnd.hans"
+          },
+          {
+            "code": "text/vnd.hgl"
+          },
+          {
+            "code": "text/vnd.in3d.3dml"
+          },
+          {
+            "code": "text/vnd.in3d.spot"
+          },
+          {
+            "code": "text/vnd.IPTC.NewsML"
+          },
+          {
+            "code": "text/vnd.IPTC.NITF"
+          },
+          {
+            "code": "text/vnd.latex-z"
+          },
+          {
+            "code": "text/vnd.motorola.reflex"
+          },
+          {
+            "code": "text/vnd.ms-mediapackage"
+          },
+          {
+            "code": "text/vnd.net2phone.commcenter.command"
+          },
+          {
+            "code": "text/vnd.radisys.msml-basic-layout"
+          },
+          {
+            "code": "text/vnd.senx.warpscript"
+          },
+          {
+            "code": "text/vnd.si.uricatalogue"
+          },
+          {
+            "code": "text/vnd.sun.j2me.app-descriptor"
+          },
+          {
+            "code": "text/vnd.sosi"
+          },
+          {
+            "code": "text/vnd.trolltech.linguist"
+          },
+          {
+            "code": "text/vnd.wap.si"
+          },
+          {
+            "code": "text/vnd.wap.sl"
+          },
+          {
+            "code": "text/vnd.wap.wml"
+          },
+          {
+            "code": "text/vnd.wap.wmlscript"
+          },
+          {
+            "code": "text/vnd.zoo.kcl"
+          },
+          {
+            "code": "text/vtt"
+          },
+          {
+            "code": "text/wgsl"
+          },
+          {
+            "code": "text/xml"
+          },
+          {
+            "code": "text/xml-external-parsed-entity"
+          },
+          {
+            "code": "video/1d-interleaved-parityfec"
+          },
+          {
+            "code": "video/3gpp"
+          },
+          {
+            "code": "video/3gpp2"
+          },
+          {
+            "code": "video/3gpp-tt"
+          },
+          {
+            "code": "video/AV1"
+          },
+          {
+            "code": "video/BMPEG"
+          },
+          {
+            "code": "video/BT656"
+          },
+          {
+            "code": "video/CelB"
+          },
+          {
+            "code": "video/DV"
+          },
+          {
+            "code": "video/encaprtp"
+          },
+          {
+            "code": "video/evc"
+          },
+          {
+            "code": "video/example"
+          },
+          {
+            "code": "video/FFV1"
+          },
+          {
+            "code": "video/flexfec"
+          },
+          {
+            "code": "video/H261"
+          },
+          {
+            "code": "video/H263"
+          },
+          {
+            "code": "video/H263-1998"
+          },
+          {
+            "code": "video/H263-2000"
+          },
+          {
+            "code": "video/H264"
+          },
+          {
+            "code": "video/H264-RCDO"
+          },
+          {
+            "code": "video/H264-SVC"
+          },
+          {
+            "code": "video/H265"
+          },
+          {
+            "code": "video/H266"
+          },
+          {
+            "code": "video/iso.segment"
+          },
+          {
+            "code": "video/JPEG"
+          },
+          {
+            "code": "video/jpeg2000"
+          },
+          {
+            "code": "video/jxsv"
+          },
+          {
+            "code": "video/matroska"
+          },
+          {
+            "code": "video/matroska-3d"
+          },
+          {
+            "code": "video/mj2"
+          },
+          {
+            "code": "video/MP1S"
+          },
+          {
+            "code": "video/MP2P"
+          },
+          {
+            "code": "video/MP2T"
+          },
+          {
+            "code": "video/mp4"
+          },
+          {
+            "code": "video/MP4V-ES"
+          },
+          {
+            "code": "video/MPV"
+          },
+          {
+            "code": "video/mpeg"
+          },
+          {
+            "code": "video/mpeg4-generic"
+          },
+          {
+            "code": "video/nv"
+          },
+          {
+            "code": "video/ogg"
+          },
+          {
+            "code": "video/parityfec"
+          },
+          {
+            "code": "video/pointer"
+          },
+          {
+            "code": "video/quicktime"
+          },
+          {
+            "code": "video/raptorfec"
+          },
+          {
+            "code": "video/raw"
+          },
+          {
+            "code": "video/rtp-enc-aescm128"
+          },
+          {
+            "code": "video/rtploopback"
+          },
+          {
+            "code": "video/rtx"
+          },
+          {
+            "code": "video/scip"
+          },
+          {
+            "code": "video/smpte291"
+          },
+          {
+            "code": "video/SMPTE292M"
+          },
+          {
+            "code": "video/ulpfec"
+          },
+          {
+            "code": "video/vc1"
+          },
+          {
+            "code": "video/vc2"
+          },
+          {
+            "code": "video/vnd.CCTV"
+          },
+          {
+            "code": "video/vnd.dece.hd"
+          },
+          {
+            "code": "video/vnd.dece.mobile"
+          },
+          {
+            "code": "video/vnd.dece.mp4"
+          },
+          {
+            "code": "video/vnd.dece.pd"
+          },
+          {
+            "code": "video/vnd.dece.sd"
+          },
+          {
+            "code": "video/vnd.dece.video"
+          },
+          {
+            "code": "video/vnd.directv.mpeg"
+          },
+          {
+            "code": "video/vnd.directv.mpeg-tts"
+          },
+          {
+            "code": "video/vnd.dlna.mpeg-tts"
+          },
+          {
+            "code": "video/vnd.dvb.file"
+          },
+          {
+            "code": "video/vnd.fvt"
+          },
+          {
+            "code": "video/vnd.hns.video"
+          },
+          {
+            "code": "video/vnd.iptvforum.1dparityfec-1010"
+          },
+          {
+            "code": "video/vnd.iptvforum.1dparityfec-2005"
+          },
+          {
+            "code": "video/vnd.iptvforum.2dparityfec-1010"
+          },
+          {
+            "code": "video/vnd.iptvforum.2dparityfec-2005"
+          },
+          {
+            "code": "video/vnd.iptvforum.ttsavc"
+          },
+          {
+            "code": "video/vnd.iptvforum.ttsmpeg2"
+          },
+          {
+            "code": "video/vnd.motorola.video"
+          },
+          {
+            "code": "video/vnd.motorola.videop"
+          },
+          {
+            "code": "video/vnd.mpegurl"
+          },
+          {
+            "code": "video/vnd.ms-playready.media.pyv"
+          },
+          {
+            "code": "video/vnd.nokia.interleaved-multimedia"
+          },
+          {
+            "code": "video/vnd.nokia.mp4vr"
+          },
+          {
+            "code": "video/vnd.nokia.videovoip"
+          },
+          {
+            "code": "video/vnd.objectvideo"
+          },
+          {
+            "code": "video/vnd.radgamettools.bink"
+          },
+          {
+            "code": "video/vnd.radgamettools.smacker"
+          },
+          {
+            "code": "video/vnd.sealed.mpeg1"
+          },
+          {
+            "code": "video/vnd.sealed.mpeg4"
+          },
+          {
+            "code": "video/vnd.sealed.swf"
+          },
+          {
+            "code": "video/vnd.sealedmedia.softseal.mov"
+          },
+          {
+            "code": "video/vnd.uvvu.mp4"
+          },
+          {
+            "code": "video/vnd.youtube.yt"
+          },
+          {
+            "code": "video/vnd.vivo"
+          },
+          {
+            "code": "video/VP8"
+          },
+          {
+            "code": "video/VP9"
+          }
+        ]
+      }
+    }
+  ]
+}

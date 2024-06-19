@@ -1,8 +1,7 @@
-import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
-import { getAuthenticatedContext } from '../../../context';
+import { OperationOutcomeError, Operator, badRequest, createReference, splitN } from '@medplum/core';
 import { CodeSystem, CodeSystemConceptProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
 import { SelectQuery, Conjunction, Condition, Column, Union } from '../../sql';
-import { getSystemRepo } from '../../repo';
+import { Repository, getSystemRepo } from '../../repo';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
@@ -11,11 +10,16 @@ export const abstractProperty = 'http://hl7.org/fhir/concept-properties#notSelec
 export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 
 export async function findTerminologyResource<T extends TerminologyResource>(
+  repo: Repository,
   resourceType: T['resourceType'],
   url: string,
   version?: string
-): Promise<T> {
-  const { repo, project } = getAuthenticatedContext();
+): Promise<T | undefined> {
+  const projectIds = repo.getProjectIds();
+  if (url.includes('|')) {
+    [url, version] = splitN(url, '|', 2);
+  }
+
   const filters = [{ code: 'url', operator: Operator.EQUALS, value: url }];
   if (version) {
     filters.push({ code: 'version', operator: Operator.EQUALS, value: version });
@@ -32,7 +36,9 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   });
 
   if (!results.length) {
-    throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
+    return undefined;
+  } else if (!projectIds?.length) {
+    return results[0]; // Return top result for system repo
   } else if (results.length === 1 || !sameTerminologyResourceVersion(results[0], results[1])) {
     return results[0];
   } else {
@@ -41,22 +47,16 @@ export async function findTerminologyResource<T extends TerminologyResource>(
       resourceReferences.push(createReference(resource));
     }
     const resources = (await getSystemRepo().readReferences(resourceReferences)) as (T | Error)[];
-    const projectResource = resources.find((r) => r instanceof Error || r.meta?.project === project.id);
-    if (projectResource instanceof Error) {
-      throw projectResource;
-    } else if (projectResource) {
-      return projectResource;
-    }
-    if (project.link) {
-      for (const linkedProject of project.link) {
-        const linkedResource = resources.find(
-          (r) => !(r instanceof Error) && r.meta?.project === resolveId(linkedProject.project)
-        ) as T | undefined;
-        if (linkedResource) {
-          return linkedResource;
-        }
+
+    for (const projectId of projectIds) {
+      const result = resources.find((r) => r instanceof Error || r.meta?.project === projectId);
+      if (result instanceof Error) {
+        throw result;
+      } else if (result) {
+        return result;
       }
     }
+
     throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   }
 }

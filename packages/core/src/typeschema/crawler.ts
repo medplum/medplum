@@ -73,7 +73,7 @@ export function crawlResource(
 }
 
 export type ResourceCrawlerOptions = {
-  skipMissingProperties?: boolean;
+  crawlValues?: boolean;
   schema?: InternalTypeSchema;
   initialPath?: string;
 };
@@ -83,7 +83,7 @@ class ResourceCrawler {
   private readonly visitor: ResourceVisitor;
   private readonly schema: InternalTypeSchema;
   private readonly initialPath: string;
-  private readonly excludeMissingProperties?: boolean;
+  private readonly crawlValues?: boolean;
 
   constructor(rootResource: Resource, visitor: ResourceVisitor, options?: ResourceCrawlerOptions) {
     this.rootResource = rootResource;
@@ -91,7 +91,7 @@ class ResourceCrawler {
 
     this.schema = options?.schema ?? getDataType(rootResource.resourceType);
     this.initialPath = options?.initialPath ?? rootResource.resourceType;
-    this.excludeMissingProperties = options?.skipMissingProperties;
+    this.crawlValues = options?.crawlValues;
   }
 
   crawl(): void {
@@ -109,7 +109,7 @@ class ResourceCrawler {
       this.visitor.onEnterObject(path, obj, schema);
     }
 
-    if (this.excludeMissingProperties) {
+    if (this.crawlValues) {
       for (const key of Object.keys(obj.value)) {
         this.crawlProperty(obj, key, schema, `${path}.${key}`);
       }
@@ -157,7 +157,7 @@ class AsyncResourceCrawler {
   private readonly visitor: AsyncResourceVisitor;
   private readonly schema: InternalTypeSchema;
   private readonly initialPath: string;
-  private readonly excludeMissingProperties?: boolean;
+  private readonly crawlValues?: boolean;
 
   constructor(rootResource: Resource, visitor: AsyncResourceVisitor, options?: ResourceCrawlerOptions) {
     this.rootResource = rootResource;
@@ -165,7 +165,7 @@ class AsyncResourceCrawler {
 
     this.schema = options?.schema ?? getDataType(rootResource.resourceType);
     this.initialPath = options?.initialPath ?? rootResource.resourceType;
-    this.excludeMissingProperties = options?.skipMissingProperties;
+    this.crawlValues = options?.crawlValues;
   }
 
   async crawl(): Promise<void> {
@@ -187,7 +187,7 @@ class AsyncResourceCrawler {
       await this.visitor.onEnterObject(path, obj, schema);
     }
 
-    if (this.excludeMissingProperties) {
+    if (this.crawlValues) {
       for (const key of Object.keys(obj.value)) {
         await this.crawlProperty(obj, key, schema, `${path}.${key}`);
       }

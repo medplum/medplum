@@ -27,16 +27,18 @@ type CodeSystemValidateCodeParameters = {
  * @returns The FHIR response.
  */
 export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<FhirResponse> {
+  const { repo } = getAuthenticatedContext();
   const params = parseInputParameters<CodeSystemValidateCodeParameters>(operation, req);
 
-  let codeSystem: CodeSystem;
+  let codeSystem: CodeSystem | undefined;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.url) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.url, params.version);
+    codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.url, params.version);
   } else if (params.coding?.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.coding.system, params.version);
-  } else {
+    codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.coding.system, params.version);
+  }
+  if (!codeSystem) {
     return [badRequest('No code system specified')];
   }
 
@@ -61,7 +63,7 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
   return [allOk, buildOutputParameters(operation, output)];
 }
 
-export async function validateCoding(codeSystem: CodeSystem, coding: Coding): Promise<Coding | undefined> {
+export function validateCoding(codeSystem: CodeSystem, coding: Coding): Promise<Coding | undefined> {
   return validateCodings(codeSystem, [coding]).then((results) => results[0]);
 }
 
@@ -74,7 +76,7 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
       continue;
     }
     if (c.code) {
-      codesToQuery.add(c.code);
+      codesToQuery.add(c.code.toString()); // Explicit conversion to primitive string for comparison
       eligible[i] = true;
     }
   }
@@ -93,7 +95,7 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
   }
 
   return codings.map((c, idx) => {
-    const row = eligible[idx] && result?.find((r: any) => r.code === c.code);
+    const row = eligible[idx] && result?.find((r: any) => r.code === c.code?.toString());
     return row ? { id: row.id, system: codeSystem.url, code: c.code, display: row.display } : undefined;
   });
 }

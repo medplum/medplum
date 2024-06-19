@@ -25,13 +25,17 @@ export async function conceptMapTranslateHandler(req: FhirRequest): Promise<Fhir
 }
 
 async function lookupConceptMap(params: ConceptMapTranslateParameters, id?: string): Promise<ConceptMap> {
-  const ctx = getAuthenticatedContext();
+  const { repo } = getAuthenticatedContext();
   if (id) {
-    return ctx.repo.readResource('ConceptMap', id);
+    return repo.readResource('ConceptMap', id);
   } else if (params.url) {
-    return findTerminologyResource<ConceptMap>('ConceptMap', params.url);
+    const map = await findTerminologyResource<ConceptMap>(repo, 'ConceptMap', params.url);
+    if (!map) {
+      throw new OperationOutcomeError(badRequest(`ConceptMap ${params.url} not found`));
+    }
+    return map;
   } else if (params.source) {
-    const result = await ctx.repo.searchOne<ConceptMap>({
+    const result = await repo.searchOne<ConceptMap>({
       resourceType: 'ConceptMap',
       filters: [{ code: 'source', operator: Operator.EQUALS, value: params.source }],
       sortRules: [{ code: 'version', descending: true }],

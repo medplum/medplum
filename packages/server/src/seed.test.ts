@@ -7,21 +7,12 @@ import { seedDatabase } from './seed';
 import { withTestContext } from './test.setup';
 
 describe('Seed', () => {
-  beforeAll(async () => {
+  test('Seeder completed successfully', async () => {
     console.log = jest.fn();
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;
-    return withTestContext(() => initAppServices(config));
-  });
-
-  afterAll(async () => {
-    await shutdownApp();
-  });
-
-  test('Seeder completes successfully', async () => {
-    // First time, seeder should run
-    await seedDatabase();
+    await withTestContext(() => initAppServices(config)); // This runs the seeder!
 
     // Make sure all database migrations have run
     const pool = getDatabasePool();
@@ -39,5 +30,7 @@ describe('Seed', () => {
 
     // Second time, seeder should silently ignore
     await seedDatabase();
+
+    await shutdownApp();
   }, 240000);
 });

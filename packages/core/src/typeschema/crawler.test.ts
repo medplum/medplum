@@ -91,7 +91,7 @@ describe('ResourceCrawler', () => {
           paths.push(path);
         },
       },
-      { skipMissingProperties: true }
+      { crawlValues: true }
     );
 
     expect(paths).toContain('Patient.photo.contentType');

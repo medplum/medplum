@@ -20,15 +20,17 @@ type CodeSystemSubsumesParameters = {
 // http://hl7.org/fhir/R4/codesystem-operation-subsumes.html
 
 export async function codeSystemSubsumesOperation(req: FhirRequest): Promise<FhirResponse> {
+  const { repo } = getAuthenticatedContext();
   const params = parseInputParameters<CodeSystemSubsumesParameters>(operation, req);
 
-  let codeSystem: CodeSystem;
+  let codeSystem: CodeSystem | undefined;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, params.version);
-  } else {
-    return [badRequest('No code system specified')];
+    codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.system, params.version);
+  }
+  if (!codeSystem) {
+    return [badRequest('Code System not found')];
   }
 
   if (!params.codeA || !params.codeB) {

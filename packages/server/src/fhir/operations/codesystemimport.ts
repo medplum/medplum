@@ -63,13 +63,14 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
 
-  let codeSystem: CodeSystem;
+  let codeSystem: CodeSystem | undefined;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
-  } else {
-    return [badRequest('No code system specified')];
+    codeSystem = await findTerminologyResource<CodeSystem>(ctx.repo, 'CodeSystem', params.system);
+  }
+  if (!codeSystem) {
+    return [badRequest('Code System not found')];
   }
 
   try {

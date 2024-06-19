@@ -85,7 +85,7 @@ export const validationRegexes: Record<string, RegExp> = {
  */
 const skippedConstraintKeys: Record<string, boolean> = {
   'ele-1': true,
-  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requires "descendants()")
   'org-1': true, // The organization SHALL at least have a name or an identifier, and possibly more than one (back compat)
   'sdf-19': true, // FHIR Specification models only use FHIR defined types
 };
@@ -123,25 +123,17 @@ class ResourceValidator implements ResourceVisitor {
 
     // Check root constraints
     this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
-
     checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
-
     crawlResource(this.rootResource, this, this.schema);
 
     const issues = this.issues;
-
-    let foundError = false;
     for (const issue of issues) {
       if (issue.severity === 'error') {
-        foundError = true;
+        throw new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: issues,
+        });
       }
-    }
-
-    if (foundError) {
-      throw new OperationOutcomeError({
-        resourceType: 'OperationOutcome',
-        issue: issues,
-      });
     }
 
     return issues;

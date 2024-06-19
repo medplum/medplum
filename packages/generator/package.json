@@ -22,6 +22,7 @@
     "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
     "migrate": "ts-node src/migrate.ts",
     "mockclient": "ts-node src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
+    "terminology": "ts-node src/codesystems.ts",
     "test": "jest"
   },
   "devDependencies": {
@@ -31,7 +32,7 @@
     "@types/json-schema": "7.0.15",
     "@types/pg": "8.11.6",
     "@types/unzipper": "0.10.9",
-    "fast-xml-parser": "4.4.0",
+    "fast-xml-parser": "^4.4.0",
     "fhirpath": "3.13.3",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",

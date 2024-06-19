@@ -49,7 +49,7 @@ describe('Subscription Worker', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeSubscriptionWorker(); // Double close to ensure quite ignore
+    await closeSubscriptionWorker(); // Double close to ensure quiet ignore
   });
 
   beforeEach(async () => {

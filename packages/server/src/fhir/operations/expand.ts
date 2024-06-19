@@ -8,6 +8,7 @@ import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
 import { abstractProperty, addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
+import { Repository } from '../repo';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
 
@@ -29,6 +30,7 @@ type ValueSetExpandParameters = {
 // 4) Optional count for pagination (default is 10, can be 1-1000)
 
 export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
+  const { repo } = getAuthenticatedContext();
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
 
   let url = params.url;
@@ -46,7 +48,10 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
     url = url.substring(0, pipeIndex);
   }
 
-  const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+  const valueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
+  if (!valueSet) {
+    throw new OperationOutcomeError(badRequest(`ValueSet ${url} not found`));
+  }
 
   let offset = 0;
   if (params.offset) {
@@ -70,7 +75,7 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
       },
     } as ValueSet;
   } else {
-    result = await expandValueSet(valueSet, params);
+    result = await expandValueSet(repo, valueSet, params);
   }
 
   return [allOk, buildOutputParameters(operation, result)];
@@ -204,7 +209,11 @@ function filterCodings(codings: Coding[], filter: string | undefined): Coding[] 
   return codings.filter((c) => c.display?.toLowerCase().includes(filter));
 }
 
-export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
+export async function expandValueSet(
+  repo: Repository,
+  valueSet: ValueSet,
+  params: ValueSetExpandParameters
+): Promise<ValueSet> {
   let expandedSet: ValueSetExpansionContains[];
 
   const expansion = valueSet.expansion;
@@ -212,7 +221,7 @@ export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandP
     // Full expansion is already available, use that
     expandedSet = filterCodings(expansion.contains, params.filter);
   } else {
-    expandedSet = await computeExpansion(valueSet, params);
+    expandedSet = await computeExpansion(repo, valueSet, params);
   }
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
@@ -231,6 +240,7 @@ export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandP
 }
 
 async function computeExpansion(
+  repo: Repository,
   valueSet: ValueSet,
   params: ValueSetExpandParameters
 ): Promise<ValueSetExpansionContains[]> {
@@ -249,7 +259,8 @@ async function computeExpansion(
       );
     }
 
-    const codeSystem = codeSystemCache[include.system] ?? (await findTerminologyResource('CodeSystem', include.system));
+    const codeSystem =
+      codeSystemCache[include.system] ?? (await findTerminologyResource(repo, 'CodeSystem', include.system));
     codeSystemCache[include.system] = codeSystem;
     if (include.concept) {
       const filteredCodings = filterCodings(include.concept, filter);

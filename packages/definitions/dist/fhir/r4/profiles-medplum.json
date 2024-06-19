@@ -701,7 +701,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/CodeSystem/client-application-status"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/client-application-status"
             }
           },
           {
@@ -1777,7 +1777,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-runtime-version|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-runtime-version"
             }
           },
           {
@@ -1860,7 +1860,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger"
             }
           },
           {
@@ -1879,7 +1879,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-audit-event-destination|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/bot-audit-event-destination"
             }
           },
           {
@@ -2111,7 +2111,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
+              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types"
             },
             "base" : {
               "path" : "Login.profileType",
@@ -2200,7 +2200,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/login-auth-method|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/login-auth-method"
             }
           },
           {
@@ -2279,7 +2279,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/login-code-challenge-method|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/login-code-challenge-method"
             }
           },
           {
@@ -2606,7 +2606,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/password-change-request-type|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/password-change-request-type"
             }
           },
           {
@@ -3713,7 +3713,7 @@
             },
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/ip-access-rule-action|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/ip-access-rule-action"
             }
           }
         ]
@@ -4242,7 +4242,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-status|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-status"
             }
           },
           {
@@ -4337,7 +4337,7 @@
             "binding" : {
               "strength" : "required",
               "description" : "One of the resource types defined as part of this version of FHIR.",
-              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/resource-types"
             }
           },
           {
@@ -4387,7 +4387,7 @@
             "binding" : {
               "strength" : "required",
               "description" : "One of the resource types defined as part of this version of FHIR.",
-              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/resource-types"
             }
           },
           {
@@ -4437,7 +4437,7 @@
             "binding" : {
               "strength" : "required",
               "description" : "One of the resource types defined as part of this version of FHIR.",
-              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/resource-types"
             }
           },
           {
@@ -4909,7 +4909,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported"
             }
           },
           {
@@ -5163,7 +5163,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-status|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-status"
             }
           },
           {
@@ -5432,7 +5432,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/ValueSet/agent-status|4.0.1"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/agent-status"
             }
           },
           {

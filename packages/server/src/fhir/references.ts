@@ -56,7 +56,7 @@ export async function validateReferences<T extends Resource>(repo: Repository, r
         }
       },
     },
-    { skipMissingProperties: true }
+    { crawlValues: true }
   );
 
   if (issues.length > 0) {
@@ -121,7 +121,7 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
         }
       },
     },
-    { skipMissingProperties: true }
+    { crawlValues: true }
   );
 
   return resource;

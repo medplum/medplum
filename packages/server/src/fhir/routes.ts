@@ -35,7 +35,7 @@ import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
-import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
+import { valueSetValidateOperationHandler } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
@@ -180,10 +180,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/CodeSystem/:id/$subsumes', codeSystemSubsumesOperation);
 
   // ValueSet $validate-code operation
-  router.add('GET', '/ValueSet/$validate-code', valueSetValidateOperation);
-  router.add('POST', '/ValueSet/$validate-code', valueSetValidateOperation);
-  router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
-  router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
+  router.add('GET', '/ValueSet/$validate-code', valueSetValidateOperationHandler);
+  router.add('POST', '/ValueSet/$validate-code', valueSetValidateOperationHandler);
+  router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperationHandler);
+  router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperationHandler);
 
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);

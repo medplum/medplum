@@ -19,17 +19,19 @@ type CodeSystemLookupParameters = {
 };
 
 export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirResponse> {
+  const { repo } = getAuthenticatedContext();
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
 
-  let codeSystem: CodeSystem;
+  let codeSystem: CodeSystem | undefined;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource('CodeSystem', params.system, params.version);
+    codeSystem = await findTerminologyResource(repo, 'CodeSystem', params.system, params.version);
   } else if (params.coding?.system) {
-    codeSystem = await findTerminologyResource('CodeSystem', params.coding.system, params.version);
-  } else {
-    return [badRequest('No code system specified')];
+    codeSystem = await findTerminologyResource(repo, 'CodeSystem', params.coding.system, params.version);
+  }
+  if (!codeSystem) {
+    return [badRequest('Code System not found')];
   }
 
   let coding: Coding;

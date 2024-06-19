@@ -7,16 +7,20 @@ import {
   SearchParameterType,
   SearchRequest,
   TypedValue,
+  TypedValueWithPath,
   allOk,
+  arrayify,
   badRequest,
   canReadResourceType,
   canWriteResourceType,
+  crawlResource,
   created,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
+  getDataType,
   getSearchParameterDetails,
   getSearchParameters,
   getStatus,
@@ -31,6 +35,7 @@ import {
   notFound,
   parseReference,
   parseSearchRequest,
+  parseStructureDefinition,
   preconditionFailed,
   protectedResourceTypes,
   resolveId,
@@ -47,13 +52,17 @@ import {
   Binary,
   Bundle,
   BundleEntry,
+  CodeableConcept,
+  Coding,
   Meta,
   OperationOutcome,
+  OperationOutcomeIssue,
   Reference,
   Resource,
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
@@ -104,6 +113,8 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
+import { findTerminologyResource } from './operations/utils/terminology';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -677,6 +688,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       for (const issue of issues) {
         logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0], issue });
       }
+      await this.validateTerminologyBindings(resource);
 
       const profileUrls = resource.meta?.profile;
       if (profileUrls) {
@@ -712,6 +724,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       }
       const validateStart = process.hrtime.bigint();
       validateResource(resource, { profile });
+      await this.validateTerminologyBindings(resource, profile);
       const validateTime = Number(process.hrtime.bigint() - validateStart);
       logger.debug('Profile loaded', {
         url,
@@ -757,6 +770,91 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       await setProfileCacheEntry(projectIds[0], profile);
     }
     return profile;
+  }
+
+  private async validateTerminologyBindings(resource: Resource, profile?: StructureDefinition): Promise<void> {
+    const schema = profile ? parseStructureDefinition(profile) : getDataType(resource.resourceType);
+
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const repo = this;
+    const issues: OperationOutcomeIssue[] = [];
+    crawlResource(
+      resource,
+      {
+        async visitPropertyAsync(parent, key, path, values, schema) {
+          const element = schema.elements[key];
+          if (element?.binding?.strength !== 'required') {
+            return;
+          }
+
+          for (const value of arrayify(values) as TypedValueWithPath[]) {
+            // const validationParams: ValueSetValidateCodeParameters = { url: element.binding.valueSet };
+            const codings: Coding[] = [];
+            switch (value.type) {
+              case PropertyType.code:
+              case PropertyType.string:
+                // validationParams.code = value.value;
+                codings.push({ code: value.value });
+                break;
+              case PropertyType.Coding:
+                codings.push(value.value);
+                break;
+              case PropertyType.CodeableConcept: {
+                const innerCodings = (value.value as CodeableConcept).coding;
+                if (innerCodings) {
+                  codings.push(...innerCodings);
+                }
+                break;
+              }
+              case 'undefined':
+                continue;
+              default:
+                issues.push({
+                  severity: 'error',
+                  code: 'invalid',
+                  details: { text: 'Invalid property type for terminology binding: ' + value.type },
+                  expression: [path],
+                });
+                continue;
+            }
+
+            const valueSet = await findTerminologyResource<ValueSet>(
+              repo,
+              'ValueSet',
+              element.binding.valueSet as string
+            );
+            if (!valueSet) {
+              return; // Ignore unknown value set
+            }
+
+            const result = await validateCodingInValueSet(repo, valueSet, codings);
+            if (!result) {
+              if (valueSet.url === 'http://hl7.org/fhir/ValueSet/search-comparator') {
+                debugger;
+              }
+              issues.push({
+                severity: 'error',
+                code: 'invalid',
+                details: {
+                  text: `Invalid coding (${codings.map((c) => c.code).join('; ')}) for terminology binding ${element.binding.valueSet}`,
+                },
+                expression: [path],
+              });
+            }
+          }
+
+          for (const issue of issues) {
+            if (issue.severity === 'error') {
+              throw new OperationOutcomeError({
+                resourceType: 'OperationOutcome',
+                issue: issues,
+              });
+            }
+          }
+        },
+      },
+      { schema, crawlValues: true }
+    );
   }
 
   /**
@@ -1964,6 +2062,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     // If in a transaction, then use the transaction client.
     // Otherwise, use the pool client.
     return this.conn ?? getDatabasePool();
+  }
+
+  getProjectIds(): string[] | undefined {
+    return this.context.projects;
   }
 
   /**
