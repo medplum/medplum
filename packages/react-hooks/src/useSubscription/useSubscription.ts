@@ -9,6 +9,15 @@ export type UseSubscriptionOptions = {
   subscriptionProps?: Partial<Subscription>;
 };
 
+/**
+ * Creates an in-memory `Subscription` resource with the given criteria on the Medplum server and calls the given callback when an event notification is triggered by a resource interaction over a WebSocket connection.
+ *
+ * Subscriptions created with this hook are lightweight, share a single WebSocket connection, and are automatically untracked and cleaned up when the containing component is no longer mounted.
+ *
+ * @param criteria - The FHIR search criteria to subscribe to.
+ * @param callback - The callback to call when a notification event `Bundle` for this `Subscription` is received.
+ * @param options - Optional options used to configure the created `Subscription`.
+ */
 export function useSubscription(
   criteria: string,
   callback: (bundle: Bundle) => void,
