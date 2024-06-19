@@ -32,6 +32,7 @@ import {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { TypedEventTarget } from './eventtarget';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -39,7 +40,6 @@ import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
-import { EventTarget } from './eventtarget';
 import {
   CurrentContext,
   FhircastConnection,
@@ -682,6 +682,13 @@ export interface RequestProfileSchemaOptions {
   expandProfile?: boolean;
 }
 
+export type MedplumClientEventMap = {
+  change: { type: 'change' };
+  offline: { type: 'offline' };
+  profileRefreshed: { type: 'profileRefreshed' };
+  storageInitialized: { type: 'storageInitialized' };
+};
+
 /**
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
@@ -739,7 +746,7 @@ export interface RequestProfileSchemaOptions {
  *    <meta name="algolia:pageRank" content="100" />
  *  </head>
  */
-export class MedplumClient extends EventTarget {
+export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly options: MedplumClientOptions;
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
@@ -817,6 +824,7 @@ export class MedplumClient extends EventTarget {
         this.attemptResumeActiveLogin().catch(console.error);
       }
       this.initPromise = Promise.resolve();
+      this.dispatchEvent({ type: 'storageInitialized' });
     } else {
       this.initComplete = false;
       this.initPromise = this.storage.getInitPromise();
@@ -826,6 +834,7 @@ export class MedplumClient extends EventTarget {
             this.attemptResumeActiveLogin().catch(console.error);
           }
           this.initComplete = true;
+          this.dispatchEvent({ type: 'storageInitialized' });
         })
         .catch(console.error);
     }
@@ -2721,6 +2730,7 @@ export class MedplumClient extends EventTarget {
           if (profileChanged) {
             this.dispatchEvent({ type: 'change' });
           }
+          this.dispatchEvent({ type: 'profileRefreshed' });
           resolve(result.profile);
         })
         .catch(reject);

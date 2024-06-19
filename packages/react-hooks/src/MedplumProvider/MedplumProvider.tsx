@@ -27,28 +27,23 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
   });
 
   useEffect(() => {
-    if (!medplum) {
-      return;
-    }
-    if (!medplum.isInitialized) {
-      setState((s) => ({ ...s, loading: true }));
-      medplum
-        .getInitPromise()
-        .then(() => setState((s) => ({ ...s, loading: false })))
-        .catch(console.error);
-    }
-  }, [medplum, medplum.isInitialized]);
-
-  useEffect(() => {
     function eventListener(): void {
       setState({
         ...state,
         profile: medplum.getProfile(),
+        loading: medplum.isLoading(),
       });
     }
 
     medplum.addEventListener('change', eventListener);
-    return () => medplum.removeEventListener('change', eventListener);
+    medplum.addEventListener('storageInitialized', eventListener);
+    medplum.addEventListener('profileRefreshed', eventListener);
+
+    return () => {
+      medplum.removeEventListener('change', eventListener);
+      medplum.removeEventListener('storageInitialized', eventListener);
+      medplum.removeEventListener('profileRefreshed', eventListener);
+    };
   }, [medplum, state]);
 
   const medplumContext = useMemo(
