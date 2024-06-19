@@ -1,11 +1,15 @@
 import { useForm, UseFormReturnType } from '@mantine/form';
 import { GetInputPropsOptions, GetInputPropsReturnType } from '@mantine/form/lib/types';
-import { createReference, evalFhirPathTyped, isResource, ProfileResource } from '@medplum/core';
+import { createReference, evalFhirPathTyped, isResource } from '@medplum/core';
 import {
+  Attachment,
+  Coding,
+  Quantity,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
+  QuestionnaireResponseItemAnswer,
   QuestionnaireResponseItemAnswerValue,
   Reference,
 } from '@medplum/fhirtypes';
@@ -57,7 +61,11 @@ export function useQuestionnaireForm({
       ...(initialResponse ? getValuesFromResponse(initialResponse) : {}),
     },
     validate: (values: QuestionnaireFormValues) => validate(values, questionnaire?.item ?? []),
-    transformValues: (values) => createQuestionnaireResponse(values, questionnaire, source, 'completed'),
+    transformValues: (values: QuestionnaireFormValues) =>
+      createQuestionnaireResponse(values, questionnaire, {
+        source: source && createReference(source),
+        status: 'completed',
+      }),
   });
 
   useEffect(() => {
@@ -123,23 +131,94 @@ const validate = (values: Record<string, any>, items: QuestionnaireItem[]): Reco
   return validationErrors;
 };
 
-function createQuestionnaireResponse(
+export function createQuestionnaireResponse(
   values: Record<string, any>,
   questionnaire: Questionnaire | undefined,
-  source: ProfileResource | undefined,
-  status: QuestionnaireResponse['status'] = 'completed'
+  response?: Partial<QuestionnaireResponse>
 ): QuestionnaireResponse {
+  if (!questionnaire) {
+    throw new Error('Questionnaire is undefined');
+  }
+
+  const responseItems = forEachItem<QuestionnaireResponseItem, Questionnaire>(
+    questionnaire,
+    (item, _ancestors, _rootResource, childrenResults) => {
+      const responseItem: QuestionnaireResponseItem = {
+        linkId: item.linkId,
+        item: childrenResults.length > 0 ? childrenResults : undefined,
+      };
+
+      if (values[item.linkId] !== undefined) {
+        responseItem.answer = [createAnswer(item, values[item.linkId])];
+      }
+
+      return responseItem;
+    },
+    values
+  );
+
   return {
     resourceType: 'QuestionnaireResponse',
-    status,
-    source: source && createReference(source),
-    item:
-      questionnaire &&
-      forEachItem(questionnaire, (item, _ancestors, _root, childAnswers) => ({
-        linkId: item.linkId,
-        answer: item.type === 'group' ? childAnswers : [{ valueString: values[item.linkId] }],
-      })),
+    item: responseItems,
+    status: response?.status ?? 'completed',
+    ...response,
   };
+}
+
+function createAnswer(item: QuestionnaireItem, value: any): QuestionnaireResponseItemAnswer {
+  const answer: QuestionnaireResponseItemAnswer = {};
+
+  switch (item.type) {
+    case 'string':
+    case 'text':
+      answer.valueString = value as string;
+      break;
+    case 'boolean':
+      answer.valueBoolean = value as boolean;
+      break;
+    case 'decimal':
+      answer.valueDecimal = value as number;
+      break;
+    case 'integer':
+      answer.valueInteger = value as number;
+      break;
+    case 'date':
+      answer.valueDate = value as string; // Dates should be in ISO format
+      break;
+    case 'dateTime':
+      answer.valueDateTime = value as string; // DateTimes should be in ISO format
+      break;
+    case 'time':
+      answer.valueTime = value as string;
+      break;
+    case 'url':
+      answer.valueUri = value as string;
+      break;
+    case 'reference':
+      answer.valueReference = value as Reference;
+      break;
+    case 'attachment':
+      answer.valueAttachment = value as Attachment; // Assume value is of type Attachment
+      break;
+    case 'quantity':
+      answer.valueQuantity = value as Quantity; // Assume value is of type Quantity
+      break;
+    case 'display':
+    case 'question':
+    case 'group':
+      break;
+    case 'choice':
+    case 'open-choice':
+      if (item.answerValueSet) {
+        answer.valueCoding = value as Coding;
+      } else {
+        answer.valueString = value as string;
+      }
+
+      break;
+  }
+
+  return answer;
 }
 
 const getInitialValues = (questionnaire: Questionnaire): Record<string, any> => {
