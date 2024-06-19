@@ -7,7 +7,18 @@ ENV NODE_ENV development
 
 workdir /usr/app
 
-RUN git clone https://github.com/medplum/medplum.git .
+#RUN git clone https://github.com/medplum/medplum.git .
+COPY package.json .
+COPY package-lock.json .
+COPY api-extractor.json .
+COPY biome.json .
+COPY tsconfig.json .
+COPY turbo.json .
+COPY tsdoc.json .
+COPY dangerfile.ts .
+COPY packages packages/
+COPY postgres postgres/
+COPY scripts scripts/
 
 RUN npm install
 
