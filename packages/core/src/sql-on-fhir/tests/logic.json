@@ -1,0 +1,122 @@
+{
+  "title": "logic",
+  "description": "TBD",
+  "fhirVersion": ["5.0.0", "4.0.1"],
+  "resources": [
+    {
+      "resourceType": "Patient",
+      "id": "m0",
+      "gender": "male",
+      "deceasedBoolean": false
+    },
+    {
+      "resourceType": "Patient",
+      "id": "f0",
+      "deceasedBoolean": false,
+      "gender": "female"
+    },
+    {
+      "resourceType": "Patient",
+      "id": "m1",
+      "gender": "male",
+      "deceasedBoolean": true
+    },
+    {
+      "resourceType": "Patient",
+      "id": "f1",
+      "gender": "female"
+    }
+  ],
+  "tests": [
+    {
+      "title": "filtering with 'and'",
+      "view": {
+        "resource": "Patient",
+        "where": [
+          {
+            "path": "gender = 'male' and deceased.ofType(boolean) = false"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "m0"
+        }
+      ]
+    },
+    {
+      "title": "filtering with 'or'",
+      "view": {
+        "resource": "Patient",
+        "where": [
+          {
+            "path": "gender = 'male' or deceased.ofType(boolean) = false"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "m0"
+        },
+        {
+          "id": "f0"
+        },
+        {
+          "id": "m1"
+        }
+      ]
+    },
+    {
+      "title": "filtering with 'not'",
+      "view": {
+        "resource": "Patient",
+        "where": [
+          {
+            "path": "(gender = 'male').not()"
+          }
+        ],
+        "select": [
+          {
+            "column": [
+              {
+                "path": "id",
+                "name": "id",
+                "type": "id"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "f0"
+        },
+        {
+          "id": "f1"
+        }
+      ]
+    }
+  ]
+}

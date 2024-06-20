@@ -363,3 +363,9 @@ export interface QuestionnaireResponseItemAnswer {
    */
   item?: QuestionnaireResponseItem[];
 }
+
+/**
+ * The answer (or one of the answers) provided by the respondent to the
+ * question.
+ */
+export type QuestionnaireResponseItemAnswerValue = Attachment | boolean | Coding | number | Quantity | Reference<Resource> | string;

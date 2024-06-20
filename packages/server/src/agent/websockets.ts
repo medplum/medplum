@@ -4,21 +4,24 @@ import {
   AgentTransmitRequest,
   ContentType,
   Hl7Message,
+  MEDPLUM_VERSION,
   getReferenceString,
   normalizeErrorString,
 } from '@medplum/core';
 import { Agent, Bot, Reference } from '@medplum/fhirtypes';
-import { AsyncLocalStorage } from 'async_hooks';
-import { IncomingMessage } from 'http';
 import { Redis } from 'ioredis';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { IncomingMessage } from 'node:http';
 import ws from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { heartbeat } from '../heartbeat';
+import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
-import { getRedis } from '../redis';
+import { getRedis, getRedisSubscriber } from '../redis';
+import { AgentConnectionState, AgentInfo } from './utils';
 
-const STATUS_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
+const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
 /**
  * Handles a new WebSocket connection to the agent service.
@@ -51,11 +54,11 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
             break;
 
           case 'agent:heartbeat:request':
-            sendMessage({ type: 'agent:heartbeat:response' });
+            sendMessage({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION });
             break;
 
           case 'agent:heartbeat:response':
-            await updateStatus('connected');
+            await updateAgentInfo({ status: AgentConnectionState.CONNECTED, version: command.version });
             break;
 
           // @ts-expect-error - Deprecated message type
@@ -65,10 +68,19 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
             break;
 
           case 'agent:transmit:response':
+          case 'agent:reloadconfig:response':
             if (command.callback) {
               const redis = getRedis();
               await redis.publish(command.callback, JSON.stringify(command));
             }
+            break;
+
+          case 'agent:error':
+            if (command.callback) {
+              const redis = getRedis();
+              await redis.publish(command.callback, JSON.stringify(command));
+            }
+            globalLogger.error('[Agent]: Error received from agent', { error: command.body });
             break;
 
           default:
@@ -83,7 +95,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   socket.on(
     'close',
     AsyncLocalStorage.bind(async () => {
-      await updateStatus('disconnected');
+      await updateAgentStatus(AgentConnectionState.DISCONNECTED);
       heartbeat.removeEventListener('heartbeat', heartbeatHandler);
       redisSubscriber?.disconnect();
       redisSubscriber = undefined;
@@ -110,12 +122,18 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
     agentId = command.agentId;
 
-    const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
+    const authState = await getLoginForAccessToken(command.accessToken);
+    if (!authState) {
+      sendError('Invalid access token');
+      return;
+    }
+
+    const { login, project, membership } = authState;
     const repo = await getRepoForLogin(login, membership, project, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
-    redisSubscriber = getRedis().duplicate();
+    redisSubscriber = getRedisSubscriber();
     await redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent
@@ -129,7 +147,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     sendMessage({ type: 'agent:connect:response' });
 
     // Update the agent status in Redis
-    await updateStatus('connected');
+    await updateAgentStatus(AgentConnectionState.CONNECTED);
   }
 
   /**
@@ -158,7 +176,13 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       return;
     }
 
-    const { login, project, membership } = await getLoginForAccessToken(command.accessToken);
+    const authState = await getLoginForAccessToken(command.accessToken);
+    if (!authState) {
+      sendError('Invalid access token');
+      return;
+    }
+
+    const { login, project, membership } = authState;
     const repo = await getRepoForLogin(login, membership, project, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
@@ -204,23 +228,53 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   }
 
   /**
-   * Updates the agent status in Redis.
-   * This is used by the Agent "$status" operation to monitor agent status.
+   * Updates the agent info in Redis.
+   * This is used by the Agent "$status" operation to monitor agent status and other info.
    * See packages/server/src/fhir/operations/agentstatus.ts for more details.
-   * @param status - The new status.
+   * @param info - The latest info received from the Agent.
    */
-  async function updateStatus(status: string): Promise<void> {
+  async function updateAgentInfo(info: AgentInfo): Promise<void> {
     if (!agentId) {
       // Not connected
     }
-    await getRedis().set(
-      `medplum:agent:${agentId}:status`,
+
+    let redis: Redis;
+    try {
+      redis = getRedis();
+    } catch (err) {
+      globalLogger.warn(`[Agent]: Attempted to update agent info after server closed. ${normalizeErrorString(err)}`);
+      return;
+    }
+
+    await redis.set(
+      `medplum:agent:${agentId}:info`,
       JSON.stringify({
-        status,
+        ...info,
         lastUpdated: new Date().toISOString(),
-      }),
+      } satisfies AgentInfo),
       'EX',
-      STATUS_EX_SECONDS
+      INFO_EX_SECONDS
     );
+  }
+
+  async function updateAgentStatus(status: AgentConnectionState): Promise<void> {
+    if (!agentId) {
+      // Not connected
+    }
+
+    let redis: Redis;
+    try {
+      redis = getRedis();
+    } catch (err) {
+      globalLogger.warn(`[Agent]: Attempted to update agent status after server closed. ${normalizeErrorString(err)}`);
+      return;
+    }
+
+    const lastInfo = await redis.get(`medplum:agent:${agentId}:info`);
+    if (!lastInfo) {
+      await updateAgentInfo({ status, version: 'unknown', lastUpdated: new Date().toISOString() });
+      return;
+    }
+    await updateAgentInfo({ ...(JSON.parse(lastInfo) as AgentInfo), status });
   }
 }

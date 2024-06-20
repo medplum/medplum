@@ -38,9 +38,29 @@ describe('Main', () => {
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
+  test('Help command', async () => {
+    try {
+      await main(['node', 'index.js', '--help']);
+    } catch (err: any) {
+      expect(err.message).toBe('process.exit');
+    }
+    expect(console.log).toHaveBeenCalledWith('Expected arguments:');
+    expect(process.exit).toHaveBeenLastCalledWith(0);
+
+    (console.log as jest.Mock).mockClear();
+
+    try {
+      await main(['node', 'index.js', '-h']);
+    } catch (err: any) {
+      expect(err.message).toBe('process.exit');
+    }
+    expect(console.log).toHaveBeenCalledWith('Expected arguments:');
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
   test('Command line arguments success', async () => {
     const app = await main(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
-    app.stop();
+    await app.stop();
     expect(process.exit).not.toHaveBeenCalled();
   });
 
@@ -72,7 +92,7 @@ describe('Main', () => {
       );
     const app = await main(['node', 'index.js']);
     expect(app.logLevel).toEqual(LogLevel.DEBUG);
-    app.stop();
+    await app.stop();
     expect(process.exit).not.toHaveBeenCalled();
   });
 });

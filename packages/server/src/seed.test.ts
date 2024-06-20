@@ -11,6 +11,7 @@ describe('Seed', () => {
     console.log = jest.fn();
 
     const config = await loadTestConfig();
+    config.database.runMigrations = true;
     return withTestContext(() => initAppServices(config));
   });
 
@@ -22,11 +23,14 @@ describe('Seed', () => {
     // First time, seeder should run
     await seedDatabase();
 
+    // Make sure all database migrations have run
+    const pool = getDatabasePool();
+    const result = await pool.query('SELECT "version" FROM "DatabaseMigration"');
+    const version = result.rows[0]?.version ?? -1;
+    expect(version).toBeGreaterThanOrEqual(67);
+
     // Make sure the first project is a super admin
-    const rows = await new SelectQuery('Project')
-      .column('content')
-      .where('name', '=', 'Super Admin')
-      .execute(getDatabasePool());
+    const rows = await new SelectQuery('Project').column('content').where('name', '=', 'Super Admin').execute(pool);
     expect(rows.length).toBe(1);
 
     const project = JSON.parse(rows[0].content) as Project;

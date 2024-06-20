@@ -1,0 +1,239 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/operation-framework.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+import DocCardList from '@theme/DocCardList';
+import { useCurrentSidebarCategory } from '@docusaurus/theme-common';
+
+# FHIR Operation Framework
+
+In addition to the standard API endpoints for creating, reading, and updating resources, FHIR offers a variety of
+RPC-like [Operation APIs](https://www.hl7.org/fhir/operations.html) to expose arbitrary functionality as a FHIR API.
+Each API endpoint is defined by an [`OperationDefinition`](http://hl7.org/fhir/R4/operationdefinition.html) resource,
+which provides information about how to call the API and what to expect in response.
+
+## Operation Definition
+
+For example, consider the [`ValueSet/$validate-code` operation](https://www.hl7.org/fhir/R4/valueset-operation-validate-code.html),
+which is summarized below:
+
+<details open>
+<summary>OperationDefinition JSON</summary>
+
+```js
+{
+  "resourceType": "OperationDefinition",
+  "url": "http://hl7.org/fhir/OperationDefinition/ValueSet-validate-code",
+  "status": "active",
+  "kind": "operation",
+  // Endpoint configuration
+  "code": "validate-code",
+  "resource": ["ValueSet"],
+  "system": false,
+  "type": true,
+  "instance": true,
+  "parameter": [
+    // Input Parameters
+    {
+      "use": "in",
+      "name": "url",
+      "documentation": "Value set canonical URL",
+      "min": 0,
+      "max": "1",
+      "type": "uri"
+    },
+    {
+      "use": "in",
+      "name": "valueSet",
+      "documentation": "The value set is provided directly as part of the request",
+      "min": 0,
+      "max": "1",
+      "type": "ValueSet"
+    },
+    {
+      "use": "in",
+      "name": "code",
+      "documentation": "The code that is to be validated",
+      "min": 0,
+      "max": "1",
+      "type": "code"
+    },
+    {
+      "use": "in",
+      "name": "system",
+      "documentation": "The system for the code that is to be validated",
+      "min": 0,
+      "max": "1",
+      "type": "uri"
+    },
+    {
+      "use": "in",
+      "name": "display",
+      "documentation": "The display associated with the code, if provided",
+      "min": 0,
+      "max": "1",
+      "type": "string"
+    },
+    {
+      "use": "in",
+      "name": "coding",
+      "documentation": "A coding to validate",
+      "min": 0,
+      "max": "1",
+      "type": "Coding"
+    },
+    {
+      "use": "in",
+      "name": "codeableConcept",
+      "documentation": "A full codeableConcept to validate",
+      "min": 0,
+      "max": "1",
+      "type": "CodeableConcept"
+    },
+    // Output Parameters
+    {
+      "use": "out",
+      "name": "result",
+      "documentation": "True if the concept details supplied are valid",
+      "min": 1,
+      "max": "1",
+      "type": "boolean"
+    },
+    {
+      "use": "out",
+      "name": "message",
+      "documentation": "Error details, if result = false; otherwise may contain hints and warnings",
+      "min": 0,
+      "max": "1",
+      "type": "string"
+    },
+    {
+      "use": "out",
+      "name": "display",
+      "documentation": "A valid display for the concept if the system wishes to display this to a user",
+      "min": 0,
+      "max": "1",
+      "type": "string"
+    }
+  ]
+}
+```
+
+</details>
+
+This definition supplies the information needed to correctly call the operation API endpoint:
+
+- All operation requests can be made using the `POST` HTTP method
+- The `validate-code` operation is available as type- and instance-level endpoints for `ValueSet` resources, i.e.
+  - `[baseUrl]/ValueSet/$validate-code`
+  - `[baseUrl]/ValueSet/[id]/$validate-code`
+- Input parameters are passed via a [`Parameters`](/docs/api/fhir/resources/parameters) resource in the request body
+
+## Invoking an Operation
+
+Given the information from the `OperationDefinition`, we can construct a request to the operation API endpoint. For
+each `in` parameter, corresponding entries may appear in the request `Parameters.parameter` array. Value types must
+match the `OperationDefinition`.
+
+**Request**:
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="request">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
+  -X POST \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
+  -d '{"resourceType":"Parameters","parameter":[{"name":"url","valueUri":"http://hl7.org/fhir/ValueSet/condition-severity"},{"name":"coding","valueCoding":{"system":"http://snomed.info/sct","code":"255604002"}}]}'
+```
+
+  </TabItem>
+</Tabs>
+
+**Response**: (200 OK)
+
+```js
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    { "name": "result", "valueBoolean": true },
+    { "name": "display", "valueString": "Mild (qualifier value)" }
+  ]
+}
+```
+
+### Via GET Request
+
+In some cases, it may be simpler to invoke an operation with a GET request and encode the input parameters in the query
+string of the request URL. For example, the following operation requests are equivalent:
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
+  -X POST \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
+  -d '{"resourceType":"Parameters","parameter":[{"name":"url","valueUri":"http://hl7.org/fhir/ValueSet/condition-severity"},{"name":"system","valueUri":"http://snomed.info/sct"},{"name":"code","valueCode":"255604002"}]}'
+
+curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
+  --get \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
+  -d 'url=http://hl7.org/fhir/ValueSet/condition-severity' \
+  -d 'system=http://snomed.info/sct' \
+  -d 'code=255604002'
+```
+
+This is possible when the request is idempotent and contains only simple input parameter types, i.e.
+
+- The `OperationDefinition` must not contain `"affectsState": true`
+- The request may only contain `in` parameters with a simple `type`
+  (one starting with a lower-case letter, like `string` or `positiveInt` — but not `Coding`)
+
+## Reading the Response
+
+For each `out` parameter in the response, the typed value(s) are recorded in the `Parameters.parameter` array. Multiple
+values for a given output parameter will appear as multiple entries in the array, **not** a nested array in the `value[x]`
+field.
+
+:::info Returning Resources
+
+Many operations return a specific resource type, instead of the usual `Parameters` resource. These cases are marked by
+a single, required `return` output parameter with `type` specifying the returned resource type.
+
+:::
+
+### Error Responses
+
+In case of an error, the server will return an HTTP status code in the 4xx-5xx range. The response body will contain
+an `OperationOutcome` resource with details about the error.
+
+For example, if the specified `ValueSet` could not be found by URL:
+
+```js
+{
+    "resourceType": "OperationOutcome",
+    "issue": [
+        {
+            "severity": "error"
+            "code": "invalid",
+            "details": {
+                "text": "ValueSet http://example.com/ValueSet/missing not found"
+            },
+        }
+    ]
+}
+```
+
+## Operation Documentation
+
+Details about the FHIR Operations supported by Medplum server are linked below. For information about other available
+operations, see the [complete list](https://www.hl7.org/fhir/R4/operationslist.html) from the FHIR specification.
+
+<DocCardList items={useCurrentSidebarCategory().items} />

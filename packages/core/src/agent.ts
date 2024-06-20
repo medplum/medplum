@@ -27,6 +27,7 @@ export interface AgentHeartbeatRequest extends BaseAgentRequestMessage {
 
 export interface AgentHeartbeatResponse extends BaseAgentMessage {
   type: 'agent:heartbeat:response';
+  version: string;
 }
 
 export interface AgentTransmitRequest extends BaseAgentRequestMessage {
@@ -42,14 +43,30 @@ export interface AgentTransmitResponse extends BaseAgentMessage {
   channel?: string;
   remote: string;
   contentType: string;
+  statusCode?: number;
   body: string;
 }
 
-export type AgentMessage =
-  | AgentError
+export interface AgentReloadConfigRequest extends BaseAgentMessage {
+  type: 'agent:reloadconfig:request';
+}
+
+export interface AgentReloadConfigResponse extends BaseAgentMessage {
+  type: 'agent:reloadconfig:response';
+  statusCode: number;
+}
+
+export type AgentRequestMessage =
   | AgentConnectRequest
-  | AgentConnectResponse
   | AgentHeartbeatRequest
-  | AgentHeartbeatResponse
   | AgentTransmitRequest
-  | AgentTransmitResponse;
+  | AgentReloadConfigRequest;
+
+export type AgentResponseMessage =
+  | AgentConnectResponse
+  | AgentHeartbeatResponse
+  | AgentTransmitResponse
+  | AgentReloadConfigResponse
+  | AgentError;
+
+export type AgentMessage = AgentRequestMessage | AgentResponseMessage;

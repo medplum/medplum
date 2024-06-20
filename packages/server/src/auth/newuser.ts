@@ -111,7 +111,7 @@ export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>
     lastName,
     email,
     passwordHash,
-    project: projectId ? { reference: `Project/${projectId}` } : undefined,
+    project: projectId && projectId !== 'new' ? { reference: `Project/${projectId}` } : undefined,
   });
   globalLogger.info('User created', { id: result.id, email });
   return result;

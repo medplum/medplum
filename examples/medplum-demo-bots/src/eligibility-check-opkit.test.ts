@@ -75,6 +75,7 @@ test.skip('Success', async () => {
   };
 
   const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
     input,
     contentType,
     secrets: { OPKIT_API_KEY: { name: 'OPKIT_API_KEY', valueString: '1234567890' } },

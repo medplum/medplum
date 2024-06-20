@@ -1,9 +1,12 @@
-import { LogLevel, Logger, ProfileResource, isUUID } from '@medplum/core';
+import { LogLevel, Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
 import { Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
+import { getConfig } from './config';
+import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
+import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { parseTraceparent } from './traceparent';
 
 export class RequestContext {
@@ -14,9 +17,7 @@ export class RequestContext {
   constructor(requestId: string, traceId: string, logger?: Logger) {
     this.requestId = requestId;
     this.traceId = traceId;
-    this.logger =
-      logger ??
-      new Logger(write, { requestId, traceId }, process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO);
+    this.logger = logger ?? new Logger(write, { requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
   }
 
   close(): void {
@@ -44,10 +45,9 @@ export class AuthenticatedRequestContext extends RequestContext {
     project: Project,
     membership: ProjectMembership,
     repo: Repository,
-    logger?: Logger,
     accessToken?: string
   ) {
-    super(ctx.requestId, ctx.traceId, logger);
+    super(ctx.requestId, ctx.traceId, ctx.logger);
 
     this.repo = repo;
     this.project = project;
@@ -63,12 +63,11 @@ export class AuthenticatedRequestContext extends RequestContext {
 
   static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
     return new AuthenticatedRequestContext(
-      new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? ''),
+      new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? '', systemLogger),
       {} as unknown as Login,
       {} as unknown as Project,
       {} as unknown as ProjectMembership,
-      getSystemRepo(),
-      systemLogger
+      getSystemRepo()
     );
   }
 }
@@ -97,7 +96,17 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { requestId, traceId } = requestIds(req);
-  requestContextStore.run(new RequestContext(requestId, traceId), () => next());
+
+  let ctx = new RequestContext(requestId, traceId);
+
+  const authState = await authenticateTokenImpl(req);
+  if (authState) {
+    const { login, membership, project, accessToken } = authState;
+    const repo = await getRepoForLogin(login, membership, project, isExtendedMode(req));
+    ctx = new AuthenticatedRequestContext(ctx, login, project, membership, repo, accessToken);
+  }
+
+  requestContextStore.run(ctx, () => next());
 }
 
 export function closeRequestContext(): void {

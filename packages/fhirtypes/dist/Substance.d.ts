@@ -190,6 +190,11 @@ export interface SubstanceIngredient {
 }
 
 /**
+ * Another substance that is a component of this substance.
+ */
+export type SubstanceIngredientSubstance = CodeableConcept | Reference<Substance>;
+
+/**
  * Substance may be used to describe a kind of substance, or a specific
  * package/container of the substance: an instance.
  */

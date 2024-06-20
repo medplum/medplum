@@ -6,6 +6,7 @@ import {
   Agent,
   Attachment,
   Binary,
+  Bot,
   BulkDataExport,
   Bundle,
   BundleEntry,
@@ -21,12 +22,13 @@ import {
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
-  ProjectSecret,
+  ProjectSetting,
   Reference,
   Resource,
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  Subscription,
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
@@ -73,8 +75,12 @@ import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, load
 import {
   CodeChallengeMethod,
   ProfileResource,
+  QueryTypes,
   arrayBufferToBase64,
+  concatUrls,
   createReference,
+  ensureTrailingSlash,
+  getQueryString,
   getReferenceString,
   getWebSocketUrl,
   isObject,
@@ -83,7 +89,7 @@ import {
   sortStringArray,
 } from './utils';
 
-export const MEDPLUM_VERSION = import.meta.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
@@ -319,18 +325,6 @@ export interface MedplumRequestOptions extends RequestInit {
 export type FetchLike = (url: string, options?: any) => Promise<any>;
 
 /**
- * QueryTypes defines the different ways to specify FHIR search parameters.
- *
- * Can be any valid input to the URLSearchParams() constructor.
- *
- * TypeScript definitions for URLSearchParams do not match runtime behavior.
- * The official spec only accepts string values.
- * Web browsers and Node.js automatically coerce values to strings.
- * See: https://github.com/microsoft/TypeScript/issues/32951
- */
-export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | string | undefined;
-
-/**
  * ResourceArray is an array of resources with a bundle property.
  * The bundle property is a FHIR Bundle containing the search results.
  * This is useful for retrieving bundle metadata such as total, offset, and next link.
@@ -433,9 +427,10 @@ export interface TokenResponse {
 }
 
 export interface BotEvent<T = Resource | Hl7Message | string | Record<string, any>> {
+  readonly bot: Reference<Bot>;
   readonly contentType: string;
   readonly input: T;
-  readonly secrets: Record<string, ProjectSecret>;
+  readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
 }
 
@@ -789,7 +784,7 @@ export class MedplumClient extends EventTarget {
     this.storage = options?.storage ?? new ClientStorage();
     this.createPdfImpl = options?.createPdf;
     this.baseUrl = ensureTrailingSlash(options?.baseUrl ?? DEFAULT_BASE_URL);
-    this.fhirBaseUrl = ensureTrailingSlash(concatUrls(this.baseUrl, options?.fhirUrlPath ?? 'fhir/R4/'));
+    this.fhirBaseUrl = concatUrls(this.baseUrl, options?.fhirUrlPath ?? 'fhir/R4');
     this.authorizeUrl = concatUrls(this.baseUrl, options?.authorizeUrl ?? 'oauth2/authorize');
     this.tokenUrl = concatUrls(this.baseUrl, options?.tokenUrl ?? 'oauth2/token');
     this.logoutUrl = concatUrls(this.baseUrl, options?.logoutUrl ?? 'oauth2/logout');
@@ -912,7 +907,9 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
-    sessionStorage.clear();
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+    }
     this.clearActiveLogin();
   }
 
@@ -957,7 +954,7 @@ export class MedplumClient extends EventTarget {
    * @param resourceType - The resource type to invalidate.
    */
   invalidateSearches<K extends ResourceType>(resourceType: K): void {
-    const url = this.fhirBaseUrl + resourceType;
+    const url = concatUrls(this.fhirBaseUrl, resourceType);
     if (this.requestCache) {
       for (const key of this.requestCache.keys()) {
         if (key.endsWith(url) || key.includes(url + '?')) {
@@ -1345,7 +1342,7 @@ export class MedplumClient extends EventTarget {
    * @returns The well-formed FHIR URL.
    */
   fhirUrl(...path: string[]): URL {
-    return new URL(path.join('/'), this.fhirBaseUrl);
+    return new URL(concatUrls(this.fhirBaseUrl, path.join('/')));
   }
 
   /**
@@ -1359,7 +1356,7 @@ export class MedplumClient extends EventTarget {
   fhirSearchUrl(resourceType: ResourceType, query: QueryTypes): URL {
     const url = this.fhirUrl(resourceType);
     if (query) {
-      url.search = new URLSearchParams(query).toString();
+      url.search = getQueryString(query);
     }
     return url;
   }
@@ -1970,6 +1967,34 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Upsert a resource: update it in place if it exists, otherwise create it.  This is done in a single, transactional
+   * request to guarantee data consistency.
+   * @param resource - The resource to update or create.
+   * @param query - A FHIR search query to uniquely identify the resource if it already exists.
+   * @param options  - Optional fetch options.
+   * @returns The updated/created resource.
+   */
+  async upsertResource<T extends Resource>(
+    resource: T,
+    query: QueryTypes,
+    options?: MedplumRequestOptions
+  ): Promise<T> {
+    // Build conditional update URL, e.g. `PUT /ResourceType?search-param=value`
+    const url = this.fhirSearchUrl(resource.resourceType, query);
+
+    let result = await this.put(url, resource, undefined, options);
+    if (!result) {
+      // On 304 not modified, result will be undefined
+      // Return the user input instead
+      result = resource;
+    }
+    this.cacheResource(result);
+    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
+    this.invalidateSearches(resource.resourceType);
+    return result;
+  }
+
+  /**
    * Creates a FHIR `Attachment` with the provided data content.
    *
    * This is a convenience method for creating a `Binary` resource and then creating an `Attachment` element.
@@ -2465,7 +2490,7 @@ export class MedplumClient extends EventTarget {
    * @returns The FHIR batch/transaction response bundle.
    */
   executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
-    return this.post(this.fhirBaseUrl.slice(0, -1), bundle, undefined, options);
+    return this.post(this.fhirBaseUrl, bundle, undefined, options);
   }
 
   /**
@@ -3086,7 +3111,7 @@ export class MedplumClient extends EventTarget {
 
   private async fetchWithRetry(url: string, options: MedplumRequestOptions): Promise<Response> {
     if (!url.startsWith('http')) {
-      url = new URL(url, this.baseUrl).href;
+      url = concatUrls(this.baseUrl, url);
     }
 
     const maxRetries = 3;
@@ -3165,7 +3190,7 @@ export class MedplumClient extends EventTarget {
     if (entries.length === 1) {
       const entry = entries[0];
       try {
-        entry.resolve(await this.request(entry.method, this.fhirBaseUrl + entry.url, entry.options));
+        entry.resolve(await this.request(entry.method, concatUrls(this.fhirBaseUrl, entry.url), entry.options));
       } catch (err) {
         entry.reject(new OperationOutcomeError(normalizeOperationOutcome(err)));
       }
@@ -3189,7 +3214,7 @@ export class MedplumClient extends EventTarget {
     };
 
     // Execute the batch request
-    const response = (await this.post(this.fhirBaseUrl.slice(0, -1), batch)) as Bundle;
+    const response = (await this.post(this.fhirBaseUrl, batch)) as Bundle;
 
     // Process the response
     for (let i = 0; i < entries.length; i++) {
@@ -3288,7 +3313,7 @@ export class MedplumClient extends EventTarget {
     if (this.refresh()) {
       return this.request(method, url, options);
     }
-    this.clearActiveLogin();
+    this.clear();
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }
@@ -3760,7 +3785,7 @@ export class MedplumClient extends EventTarget {
    */
   getSubscriptionManager(): SubscriptionManager {
     if (!this.subscriptionManager) {
-      this.subscriptionManager = new SubscriptionManager(this, getWebSocketUrl('/ws/subscriptions-r4', this.baseUrl));
+      this.subscriptionManager = new SubscriptionManager(this, getWebSocketUrl(this.baseUrl, '/ws/subscriptions-r4'));
     }
     return this.subscriptionManager;
   }
@@ -3787,10 +3812,11 @@ export class MedplumClient extends EventTarget {
    *
    * @category Subscriptions
    * @param criteria - The criteria to subscribe to.
+   * @param subscriptionProps - Optional properties to add to the created `Subscription` resource.
    * @returns a `SubscriptionEmitter` that emits `Bundle` resources containing changes to resources based on the given criteria.
    */
-  subscribeToCriteria(criteria: string): SubscriptionEmitter {
-    return this.getSubscriptionManager().addCriteria(criteria);
+  subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
+    return this.getSubscriptionManager().addCriteria(criteria, subscriptionProps);
   }
 
   /**
@@ -3801,12 +3827,13 @@ export class MedplumClient extends EventTarget {
    *
    * @category Subscriptions
    * @param criteria - The criteria to unsubscribe from.
+   * @param subscriptionProps - The optional properties that `subscribeToCriteria` was called with.
    */
-  unsubscribeFromCriteria(criteria: string): void {
+  unsubscribeFromCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): void {
     if (!this.subscriptionManager) {
       return;
     }
-    this.subscriptionManager.removeCriteria(criteria);
+    this.subscriptionManager.removeCriteria(criteria, subscriptionProps);
     if (this.subscriptionManager.getCriteriaCount() === 0) {
       this.subscriptionManager.closeWebSocket();
     }
@@ -3861,28 +3888,6 @@ function getWindowOrigin(): string {
     return '';
   }
   return window.location.protocol + '//' + window.location.host + '/';
-}
-
-/**
- * Ensures the given URL has a trailing slash.
- * @param url - The URL to ensure has a trailing slash.
- * @returns The URL with a trailing slash.
- */
-function ensureTrailingSlash(url: string): string {
-  return url.endsWith('/') ? url : url + '/';
-}
-
-/**
- * Concatenates the given base URL and URL.
- *
- * If the URL is absolute, it is returned as-is.
- *
- * @param baseUrl - The base URL.
- * @param url - The URL to concat. Can be relative or absolute.
- * @returns The concatenated URL.
- */
-export function concatUrls(baseUrl: string, url: string): string {
-  return new URL(url, baseUrl).toString();
 }
 
 /**

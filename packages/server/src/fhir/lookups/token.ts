@@ -9,6 +9,7 @@ import {
   PropertyType,
   SortRule,
   splitN,
+  splitSearchOnComma,
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
@@ -194,6 +195,7 @@ function isIndexed(searchParam: SearchParameter, resourceType: string): boolean 
 function shouldCompareTokenValue(operator: FhirOperator): boolean {
   switch (operator) {
     case FhirOperator.MISSING:
+    case FhirOperator.PRESENT:
     case FhirOperator.IN:
     case FhirOperator.NOT_IN:
     case FhirOperator.IDENTIFIER:
@@ -222,6 +224,16 @@ function shouldTokenRowExist(filter: Filter): boolean {
         return false;
       case 'false':
         return true;
+      default:
+        throw new OperationOutcomeError(badRequest("Search filter ':missing' must have a value of 'true' or 'false'"));
+    }
+  } else if (filter.operator === FhirOperator.PRESENT) {
+    // Present = true means that there should be a row
+    switch (filter.value.toLowerCase()) {
+      case 'true':
+        return true;
+      case 'false':
+        return false;
       default:
         throw new OperationOutcomeError(badRequest("Search filter ':missing' must have a value of 'true' or 'false'"));
     }
@@ -402,7 +414,7 @@ function buildSimpleToken(
  */
 function buildWhereExpression(tableName: string, filter: Filter): Expression | undefined {
   const subExpressions = [];
-  for (const option of filter.value.split(',')) {
+  for (const option of splitSearchOnComma(filter.value)) {
     const expression = buildWhereCondition(tableName, filter.operator, option);
     if (expression) {
       subExpressions.push(expression);

@@ -50,3 +50,15 @@ export const PatientProfileAndPatient = (): JSX.Element => {
     </Document>
   );
 };
+
+export const DisabledTargetProfile = (): JSX.Element => (
+  <Document>
+    <ReferenceInput disabled name="foo" targetTypes={['Practitioner', 'Patient']} />
+  </Document>
+);
+
+export const DisabledFreeText = (): JSX.Element => (
+  <Document>
+    <ReferenceInput disabled name="foo" />
+  </Document>
+);

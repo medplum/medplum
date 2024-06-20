@@ -238,6 +238,20 @@ export interface ConceptMap {
 }
 
 /**
+ * Identifier for the source value set that contains the concepts that
+ * are being mapped and provides context for the mappings.
+ */
+export type ConceptMapSource = string;
+
+/**
+ * The target value set provides context for the mappings. Note that the
+ * mapping is made between concepts, not between value sets, but the
+ * value set provides important context about how the concept mapping
+ * choices are made.
+ */
+export type ConceptMapTarget = string;
+
+/**
  * A group of mappings that all have the same source and target system.
  */
 export interface ConceptMapGroup {

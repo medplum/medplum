@@ -1,7 +1,17 @@
-import { Combobox, ComboboxItem, ComboboxProps, Group, Loader, Pill, PillsInput, useCombobox } from '@mantine/core';
+import {
+  Combobox,
+  ComboboxItem,
+  ComboboxProps,
+  Group,
+  Loader,
+  Pill,
+  PillsInput,
+  ScrollAreaAutosize,
+  useCombobox,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { KeyboardEvent, ReactNode, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
@@ -27,6 +37,7 @@ export interface AsyncAutocompleteProps<T>
   readonly placeholder?: string;
   readonly leftSection?: ReactNode;
   readonly maxValues?: number;
+  readonly optionsDropdownMaxHeight?: number;
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
@@ -51,8 +62,10 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     placeholder,
     leftSection,
     maxValues,
+    optionsDropdownMaxHeight = 320,
     ...rest
   } = props;
+  const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
   const defaultItems = toDefaultItems(defaultValue);
   const [search, setSearch] = useState('');
   const [timer, setTimer] = useState<number>();
@@ -117,7 +130,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   }, [combobox, loadOptions, onChange, toOption]);
 
   const handleSearchChange = useCallback(
-    (e: React.SyntheticEvent): void => {
+    (e: SyntheticEvent): void => {
       if ((options && options.length > 0) || creatable) {
         combobox.openDropdown();
       }
@@ -173,17 +186,26 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     [creatable, options, selected, maxValues, onChange, onCreate, toOption]
   );
 
-  const handleValueSelect = (val: string): void => {
-    setSearch('');
-    setOptions([]);
-    combobox.closeDropdown();
-    lastValueRef.current = undefined;
-    if (val === '$create') {
-      addSelected(search);
-    } else {
-      addSelected(val);
+  const handleValueSelect = useMemo(() => {
+    if (disabled) {
+      return undefined;
     }
-  };
+
+    return (val: string): void => {
+      if (disabled) {
+        return;
+      }
+      setSearch('');
+      setOptions([]);
+      combobox.closeDropdown();
+      lastValueRef.current = undefined;
+      if (val === '$create') {
+        addSelected(search);
+      } else {
+        addSelected(val);
+      }
+    };
+  }, [addSelected, combobox, disabled, search]);
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
@@ -226,7 +248,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   // Based on Mantine MultiSelect:
   // https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/MultiSelect/MultiSelect.tsx
-  const clearButton = clearable && selected.length > 0 && (
+  const clearButton = !disabled && clearable && selected.length > 0 && (
     <Combobox.ClearButton
       title="Clear all"
       size={16}
@@ -250,15 +272,16 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           leftSection={leftSection}
           rightSection={abortController ? <Loader size={16} /> : clearButton}
           required={required}
+          disabled={disabled}
         >
           <Pill.Group>
             {selected.map((item) => (
-              <Pill key={item.value} withRemoveButton onRemove={() => handleValueRemove(item)}>
+              <Pill key={item.value} withRemoveButton={!disabled} onRemove={() => handleValueRemove(item)}>
                 {item.label}
               </Pill>
             ))}
 
-            {(maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
+            {!disabled && (maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
               <Combobox.EventsTarget>
                 <PillsInput.Field
                   role="searchbox"
@@ -278,19 +301,21 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
       <Combobox.Dropdown>
         <Combobox.Options>
-          {options.map((item) => (
-            <Combobox.Option value={item.value} key={item.value} active={selected.includes(item)}>
-              <ItemComponent {...item} />
-            </Combobox.Option>
-          ))}
+          <ScrollAreaAutosize type="scroll" mah={optionsDropdownMaxHeight}>
+            {options.map((item) => (
+              <Combobox.Option value={item.value} key={item.value} active={selected.includes(item)}>
+                <ItemComponent {...item} />
+              </Combobox.Option>
+            ))}
 
-          {creatable && search.trim().length > 0 && (
-            <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
-          )}
+            {creatable && search.trim().length > 0 && (
+              <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
+            )}
 
-          {!creatable && search.trim().length > 0 && options.length === 0 && (
-            <Combobox.Empty>Nothing found</Combobox.Empty>
-          )}
+            {!creatable && search.trim().length > 0 && options.length === 0 && (
+              <Combobox.Empty>Nothing found</Combobox.Empty>
+            )}
+          </ScrollAreaAutosize>
         </Combobox.Options>
       </Combobox.Dropdown>
     </Combobox>

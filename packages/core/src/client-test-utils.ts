@@ -4,7 +4,7 @@ import { ContentType } from './contenttype';
 import { generateId } from './crypto';
 import { OperationOutcomeError, badRequest, getStatus, isOperationOutcome } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ProfileResource } from './utils';
+import { ProfileResource, ensureNoLeadingSlash } from './utils';
 
 export function mockFetch(
   status: number,
@@ -65,7 +65,7 @@ export class MockFhirRouter {
   }
 
   makeKey(method: 'GET' | 'POST', path: string): string {
-    return `${method} ${path}`;
+    return `${method} ${ensureNoLeadingSlash(path)}`;
   }
 
   addRoute(method: 'GET' | 'POST', path: string, callback: () => Record<string, any>): void {

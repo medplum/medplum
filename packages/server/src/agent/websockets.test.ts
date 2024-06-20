@@ -1,11 +1,13 @@
-import { allOk, ContentType, getReferenceString, Hl7Message } from '@medplum/core';
+import { allOk, ContentType, getReferenceString, Hl7Message, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import { Agent, Bot, Device } from '@medplum/fhirtypes';
 import express from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
+import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
+import { AgentConnectionState, AgentInfo } from './utils';
 
 const app = express();
 let config: MedplumServerConfig;
@@ -19,6 +21,7 @@ describe('Agent WebSockets', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     config.vmContextBotsEnabled = true;
+    config.heartbeatMilliseconds = 5000;
 
     server = await initApp(app, config);
     accessToken = await initTestAuth({ membership: { admin: true } });
@@ -325,6 +328,7 @@ describe('Agent WebSockets', () => {
           .set('Authorization', 'Bearer ' + accessToken)
           .send({
             waitForResponse: true,
+            waitTimeout: 500,
             destination: getReferenceString(device),
             contentType: ContentType.HL7_V2,
             body:
@@ -407,14 +411,30 @@ describe('Agent WebSockets', () => {
           agentId: agent.id,
         })
       )
-      .expectText('{"type":"agent:connect:response"}')
+      .expectJson({ type: 'agent:connect:response' })
+      .expectJson({ type: 'agent:heartbeat:request' })
       // Send a ping
-      .sendText(JSON.stringify({ type: 'agent:heartbeat:request' }))
-      .expectText('{"type":"agent:heartbeat:response"}')
+      .sendJson({ type: 'agent:heartbeat:request' })
+      .expectJson({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION })
       // Simulate a ping response
-      .sendText(JSON.stringify({ type: 'agent:heartbeat:response' }))
+      .sendJson({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION })
       .close()
       .expectClosed();
+
+    let info: AgentInfo = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
+    for (let i = 0; i < 5; i++) {
+      await sleep(50);
+      const infoStr = (await getRedis().get(`medplum:agent:${agent.id as string}:info`)) as string;
+      info = JSON.parse(infoStr) as AgentInfo;
+      if (info.status === AgentConnectionState.DISCONNECTED) {
+        break;
+      }
+    }
+    expect(info).toMatchObject<AgentInfo>({
+      status: AgentConnectionState.DISCONNECTED,
+      version: MEDPLUM_VERSION,
+      lastUpdated: expect.any(String),
+    });
   });
 
   test('Ping IP', async () => {
@@ -484,5 +504,22 @@ describe('Agent WebSockets', () => {
       .expectText('{"type":"agent:error","body":"Unknown message type: asdfasdf"}')
       .close()
       .expectClosed();
+  });
+
+  test('Received agent:error without callback', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+    await request(server)
+      .ws('/ws/agent')
+      .sendText(
+        JSON.stringify({
+          type: 'agent:error',
+          body: 'Something bad happened',
+        })
+      )
+      .close()
+      .expectClosed();
+    expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('[Agent]: Error received from agent'));
+    console.log = originalConsoleLog;
   });
 });

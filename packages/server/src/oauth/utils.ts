@@ -11,7 +11,6 @@ import {
   ProfileResource,
   resolveId,
   tooManyRequests,
-  unauthorized,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -26,9 +25,9 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { timingSafeEqual } from 'crypto';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
+import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getRequestContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
@@ -413,10 +412,17 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
 
   // Everything checks out, update the login
-  return systemRepo.updateResource<Login>({
+  const updatedLogin: Login = {
     ...login,
     membership: createReference(membership),
-  });
+  };
+
+  if (project.superAdmin) {
+    // Disable refresh tokens for super admins
+    updatedLogin.refreshSecret = undefined;
+  }
+
+  return systemRepo.updateResource<Login>(updatedLogin);
 }
 
 /**
@@ -490,7 +496,11 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
   });
 }
 
-export async function getAuthTokens(login: Login, profile: Reference<ProfileResource>): Promise<TokenResult> {
+export async function getAuthTokens(
+  login: Login,
+  profile: Reference<ProfileResource>,
+  refreshLifetime?: string
+): Promise<TokenResult> {
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
@@ -529,11 +539,14 @@ export async function getAuthTokens(login: Login, profile: Reference<ProfileReso
   });
 
   const refreshToken = login.refreshSecret
-    ? await generateRefreshToken({
-        client_id: clientId,
-        login_id: login.id as string,
-        refresh_secret: login.refreshSecret,
-      })
+    ? await generateRefreshToken(
+        {
+          client_id: clientId,
+          login_id: login.id as string,
+          refresh_secret: login.refreshSecret,
+        },
+        refreshLifetime
+      )
     : undefined;
 
   return {
@@ -792,8 +805,14 @@ export async function verifyMultipleMatchingException(
  * @param accessToken - The access token as provided by the client.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
-export async function getLoginForAccessToken(accessToken: string): Promise<AuthState> {
-  const verifyResult = await verifyJwt(accessToken);
+export async function getLoginForAccessToken(accessToken: string): Promise<AuthState | undefined> {
+  let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
+  try {
+    verifyResult = await verifyJwt(accessToken);
+  } catch (err) {
+    return undefined;
+  }
+
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
 
   const systemRepo = getSystemRepo();
@@ -801,11 +820,11 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
   try {
     login = await systemRepo.readResource<Login>('Login', claims.login_id);
   } catch (err) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   if (!login?.membership || login.revoked) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);

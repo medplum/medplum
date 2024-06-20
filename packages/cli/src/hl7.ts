@@ -1,7 +1,7 @@
 import { formatHl7DateTime, Hl7Message } from '@medplum/core';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { Command } from 'commander';
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { createMedplumCommand } from './util/command';
 
 const send = createMedplumCommand('send')
@@ -11,6 +11,7 @@ const send = createMedplumCommand('send')
   .argument('[body]', 'Optional HL7 message body')
   .option('--generate-example', 'Generate a sample HL7 message')
   .option('--file <file>', 'Read the HL7 message from a file')
+  .option('--encoding <encoding>', 'The encoding to use')
   .action(async (host, port, body, options) => {
     if (options.generateExample) {
       body = generateSampleHl7Message();
@@ -24,7 +25,8 @@ const send = createMedplumCommand('send')
 
     const client = new Hl7Client({
       host,
-      port: parseInt(port, 10),
+      port: Number.parseInt(port, 10),
+      encoding: options.encoding,
     });
 
     try {
@@ -38,7 +40,8 @@ const send = createMedplumCommand('send')
 const listen = createMedplumCommand('listen')
   .description('Starts an HL7 v2 MLLP server')
   .argument('<port>')
-  .action(async (port) => {
+  .option('--encoding <encoding>', 'The encoding to use')
+  .action(async (port, options) => {
     const server = new Hl7Server((connection) => {
       connection.addEventListener('message', ({ message }) => {
         console.log(message.toString().replaceAll('\r', '\n'));
@@ -46,7 +49,7 @@ const listen = createMedplumCommand('listen')
       });
     });
 
-    server.start(parseInt(port, 10));
+    server.start(Number.parseInt(port, 10), options.encoding);
     console.log('Listening on port ' + port);
   });
 

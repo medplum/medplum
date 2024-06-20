@@ -342,6 +342,13 @@ export interface ResearchElementDefinition {
 }
 
 /**
+ * The intended subjects for the ResearchElementDefinition. If this
+ * element is not provided, a Patient subject is assumed, but the subject
+ * of the ResearchElementDefinition can be anything.
+ */
+export type ResearchElementDefinitionSubject = CodeableConcept | Reference<Group>;
+
+/**
  * A characteristic that defines the members of the research element.
  * Multiple characteristics are applied with &quot;and&quot; semantics.
  */
@@ -503,3 +510,21 @@ export interface ResearchElementDefinitionCharacteristic {
    */
   participantEffectiveGroupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
 }
+
+/**
+ * Define members of the research element using Codes (such as condition,
+ * medication, or observation), Expressions ( using an expression
+ * language such as FHIRPath or CQL) or DataRequirements (such as
+ * Diabetes diagnosis onset in the last year).
+ */
+export type ResearchElementDefinitionCharacteristicDefinition = CodeableConcept | DataRequirement | Expression | string;
+
+/**
+ * Indicates what effective period the study covers.
+ */
+export type ResearchElementDefinitionCharacteristicStudyEffective = Duration | Period | string | Timing;
+
+/**
+ * Indicates what effective period the study covers.
+ */
+export type ResearchElementDefinitionCharacteristicParticipantEffective = Duration | Period | string | Timing;

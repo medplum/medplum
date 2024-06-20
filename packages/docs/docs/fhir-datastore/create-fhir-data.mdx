@@ -1,9 +1,12 @@
 ---
 sidebar_position: 1
+toc_max_heading_level: 4
 ---
 
 import ExampleCode from '!!raw-loader!@site/../examples/src/tutorials/api-basics/create-fhir-data.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # Creating FHIR Data
 
@@ -66,6 +69,36 @@ Creating a Patient if one does not exist uses the **conditional create** logic i
 The behavior of the the `Patient.identifier` field is important to note. `Patient.identifier` usually has a reference string or URL that describes which system that identifier came from. [Identifiers](/docs/fhir-basics#naming-data-identifiers) are a concept in FHIR which describe the context in which that identifier is generated, for example, and identifier could be a Social Security Number (SSN) or be created by a health system for their own internal purposes. Here is an example of an identifier scheme for the [Australian Healthcare system](https://namespaces.digitalhealth.gov.au/id/hi/ihi/1.0/).
 
 We recommend that providers put documentation of their identifier system online for interoperability purposes.
+
+#### Performing an Upsert {#upsert}
+
+In some cases, you may want to update the resource in place if it already exists in the system, in addition to creating
+it if it doesn't exist yet. This is accomplished via a combined "update" and "insert" operation: an "upsert".
+
+Provide the current version of the resource and a search query, similar to `createResourceIfNoneExists()`.
+
+- If the search query resolves to a single resource, that resource will be updated.
+- If it does not find a matching resource, one will be created from the given data.
+- If multiple matches are found, an error will be returned. In this case, more
+  specific search criteria are required to unambiguously identify the resource to be updated or created.
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="upsertTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="ts" selectBlocks="upsertCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="ts" selectBlocks="upsertCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 ### Create the ServiceRequest
 

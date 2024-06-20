@@ -184,3 +184,8 @@ export interface MedicinalProductInteractionInteractant {
    */
   itemCodeableConcept?: CodeableConcept;
 }
+
+/**
+ * The specific medication, food or laboratory test that interacts.
+ */
+export type MedicinalProductInteractionInteractantItem = CodeableConcept | Reference<MedicinalProduct | Medication | Substance | ObservationDefinition>;

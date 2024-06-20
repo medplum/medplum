@@ -20,6 +20,7 @@ packages/cdk/dist/
 packages/cli/dist/
 packages/core/dist/
 packages/core/docs/
+packages/core/src/sql-on-fhir/test_report.json
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
@@ -28,6 +29,7 @@ packages/examples/dist/
 packages/fhir-router/dist/
 packages/generator/dist/
 packages/generator/output/
+packages/generator/compare.html
 packages/graphiql/dist/
 packages/graphiql/public/
 packages/health-gorilla/dist/

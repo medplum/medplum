@@ -427,6 +427,17 @@ export interface ClaimResponseAddItem {
 }
 
 /**
+ * The date or dates when the service or product was supplied, performed
+ * or completed.
+ */
+export type ClaimResponseAddItemServiced = Period | string;
+
+/**
+ * Where the product or service was provided.
+ */
+export type ClaimResponseAddItemLocation = Address | CodeableConcept | Reference<Location>;
+
+/**
  * The second-tier service adjudications for payor added services.
  */
 export interface ClaimResponseAddItemDetail {

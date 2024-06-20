@@ -4,10 +4,9 @@ import { MouseEvent, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { killEvent } from '../utils/dom';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface AttachmentInputProps {
-  readonly name: string;
-  readonly defaultValue?: Attachment;
+export interface AttachmentInputProps extends ComplexTypeInputProps<Attachment> {
   readonly arrayElement?: boolean;
   readonly securityContext?: Reference;
   readonly onChange?: (value: Attachment | undefined) => void;
@@ -28,6 +27,7 @@ export function AttachmentInput(props: AttachmentInputProps): JSX.Element {
       <>
         <AttachmentDisplay value={value} maxWidth={200} />
         <Button
+          disabled={props.disabled}
           onClick={(e: MouseEvent) => {
             killEvent(e);
             setValueWrapper(undefined);
@@ -40,7 +40,7 @@ export function AttachmentInput(props: AttachmentInputProps): JSX.Element {
   }
 
   return (
-    <AttachmentButton securityContext={props.securityContext} onUpload={setValueWrapper}>
+    <AttachmentButton disabled={props.disabled} securityContext={props.securityContext} onUpload={setValueWrapper}>
       {(props) => <Button {...props}>Upload...</Button>}
     </AttachmentButton>
   );

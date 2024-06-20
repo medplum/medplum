@@ -14,9 +14,18 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Agent, Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
-import { randomUUID, webcrypto } from 'crypto';
-import { TextEncoder } from 'util';
+import {
+  Agent,
+  Bot,
+  Bundle,
+  CodeableConcept,
+  Patient,
+  ProjectMembership,
+  SearchParameter,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
+import { randomUUID, webcrypto } from 'node:crypto';
+import { TextEncoder } from 'node:util';
 import { MockClient } from './client';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
 import { MockSubscriptionManager } from './subscription-manager';
@@ -642,11 +651,44 @@ describe('MockClient', () => {
   test('Project admin', async () => {
     const medplum = new MockClient();
 
-    const project = await medplum.get('admin/project/123');
-    expect(project).toBeDefined();
+    const { project } = (await medplum.get('admin/projects/123')) as {
+      project: { id: string; name: string; secret: string; site: string };
+    };
+    expect(project).toMatchObject({
+      id: '123',
+      name: 'Project 123',
+    });
 
-    const membership = await medplum.get('admin/project/123/membership/456');
-    expect(membership).toBeDefined();
+    const membership = await medplum.get('admin/projects/123/members/456');
+    console.log(membership);
+    expect(membership).toMatchObject<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      id: '456',
+      user: { reference: 'User/123' },
+      project: { reference: 'Project/123', display: 'Project 123' },
+      profile: { reference: 'Practitioner/123', display: 'Alice Smith' },
+    });
+
+    const createdBot = await medplum.post(
+      'admin/projects/123/bot',
+      { name: 'Test Bot', description: 'This is a test bot' },
+      ContentType.JSON
+    );
+    expect(createdBot).toMatchObject<Bot>({
+      meta: {
+        project: '123',
+      },
+      id: expect.any(String),
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      description: 'This is a test bot',
+      runtimeVersion: 'awslambda',
+      sourceCode: {
+        contentType: ContentType.TYPESCRIPT,
+        title: 'index.ts',
+        url: expect.stringMatching(/^Binary\/*/),
+      },
+    });
   });
 
   test('GraphQL', async () => {

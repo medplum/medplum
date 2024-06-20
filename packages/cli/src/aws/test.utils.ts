@@ -1,4 +1,4 @@
-import readline from 'readline';
+import readline from 'node:readline';
 
 export function mockReadline(...answers: string[]): readline.Interface {
   const result = { write: jest.fn(), question: jest.fn(), close: jest.fn() };

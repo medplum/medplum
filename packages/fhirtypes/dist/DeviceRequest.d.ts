@@ -280,6 +280,19 @@ export interface DeviceRequest {
 }
 
 /**
+ * The details of the device to be used.
+ */
+export type DeviceRequestCode = CodeableConcept | Reference<Device>;
+
+/**
+ * The timing schedule for the use of the device. The Schedule data type
+ * allows many different expressions, for example. &quot;Every 8 hours&quot;;
+ * &quot;Three times a day&quot;; &quot;1/2 an hour before breakfast for 10 days from
+ * 23-Dec 2011:&quot;; &quot;15 Oct 2013, 17 Oct 2013 and 1 Nov 2013&quot;.
+ */
+export type DeviceRequestOccurrence = Period | string | Timing;
+
+/**
  * Specific parameters for the ordered item.  For example, the prism
  * value for lenses.
  */
@@ -345,3 +358,8 @@ export interface DeviceRequestParameter {
    */
   valueBoolean?: boolean;
 }
+
+/**
+ * The value of the device detail.
+ */
+export type DeviceRequestParameterValue = boolean | CodeableConcept | Quantity | Range;

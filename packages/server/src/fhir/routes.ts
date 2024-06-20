@@ -1,5 +1,6 @@
 import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
+import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
@@ -9,13 +10,16 @@ import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
+import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
+import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { dbStatsHandler } from './operations/dbstats';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
 import { executeHandler } from './operations/execute';
@@ -185,6 +189,13 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/$status', agentStatusHandler);
   router.add('GET', '/Agent/:id/$status', agentStatusHandler);
 
+  // Agent $bulk-status operation
+  router.add('GET', '/Agent/$bulk-status', agentBulkStatusHandler);
+
+  // Agent $reload-config operation
+  router.add('GET', '/Agent/$reload-config', agentReloadConfigHandler);
+  router.add('GET', '/Agent/:id/$reload-config', agentReloadConfigHandler);
+
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
@@ -225,7 +236,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Reindex resource
   router.add('POST', '/:resourceType/:id/$reindex', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    const { resourceType, id } = req.params;
+    const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
     await ctx.repo.reindexResource(resourceType, id);
     return [allOk];
   });
@@ -233,10 +244,13 @@ function initInternalFhirRouter(): FhirRouter {
   // Resend subscriptions
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    const { resourceType, id } = req.params;
+    const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
     await ctx.repo.resendSubscriptions(resourceType, id);
     return [allOk];
   });
+
+  // Super admin operations
+  router.add('POST', '/$db-stats', dbStatsHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
@@ -244,13 +258,15 @@ function initInternalFhirRouter(): FhirRouter {
   });
 
   router.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
-    recordHistogramValue('medplum.batch.entries', count, { bundleType });
-    recordHistogramValue('medplum.batch.errors', errors, { bundleType });
-    recordHistogramValue('medplum.batch.size', size, { bundleType });
+    const ctx = getAuthenticatedContext();
+    const projectId = ctx.project.id;
+
+    recordHistogramValue('medplum.batch.entries', count, { bundleType, projectId });
+    recordHistogramValue('medplum.batch.errors', errors, { bundleType, projectId });
+    recordHistogramValue('medplum.batch.size', size, { bundleType, projectId });
 
     if (errors > 0 && bundleType === 'transaction') {
-      const ctx = getAuthenticatedContext();
-      ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: ctx.project.id });
+      ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
     }
   });
 

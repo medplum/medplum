@@ -23,7 +23,7 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
 
   const [state, setState] = useState({
     profile: medplum.getProfile(),
-    loading: !medplum.isInitialized,
+    loading: medplum.isLoading(),
   });
 
   useEffect(() => {

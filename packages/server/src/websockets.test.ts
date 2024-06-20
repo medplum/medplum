@@ -6,7 +6,6 @@ import request from 'superwstest';
 import WebSocket from 'ws';
 import { initApp, shutdownApp } from './app';
 import { MedplumServerConfig, loadTestConfig } from './config';
-import { getRedis } from './redis';
 import { withTestContext } from './test.setup';
 
 describe('WebSockets', () => {
@@ -18,7 +17,6 @@ describe('WebSockets', () => {
     app = express();
     config = await loadTestConfig();
     server = await initApp(app, config);
-    await getRedis().flushdb();
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 511, resolve);

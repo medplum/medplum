@@ -12,6 +12,12 @@ You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you 
 
 Bots are disabled by default for accounts. Contact info@medplum.com if you'd like to learn more.
 
+:::note Bots in Local Development
+
+If you want to run bots locally, you should use a VM Context. For more details see the [VM Context Bots docs](/docs/bots/vm-context-bots).
+
+:::
+
 ## Example uses
 
 Consider some of these Bot use cases:

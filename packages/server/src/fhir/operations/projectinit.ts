@@ -16,6 +16,7 @@ import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import { getSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { getConfig } from '../../config';
 
 const projectInitOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -127,6 +128,7 @@ export async function createProject(
 }> {
   const ctx = getRequestContext();
   const systemRepo = getSystemRepo();
+  const config = getConfig();
 
   ctx.logger.info('Project creation request received', { name: projectName });
   const project = await systemRepo.createResource<Project>({
@@ -134,6 +136,7 @@ export async function createProject(
     name: projectName,
     owner: admin ? createReference(admin) : undefined,
     strictMode: true,
+    features: config.defaultProjectFeatures,
   });
 
   ctx.logger.info('Project created', {

@@ -15,3 +15,9 @@ export class Hl7ErrorEvent extends Event {
     super('error');
   }
 }
+
+export class Hl7CloseEvent extends Event {
+  constructor() {
+    super('close');
+  }
+}

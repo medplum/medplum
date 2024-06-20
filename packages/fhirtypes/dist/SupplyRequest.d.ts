@@ -212,6 +212,18 @@ export interface SupplyRequest {
 }
 
 /**
+ * The item that is requested to be supplied. This is either a link to a
+ * resource representing the details of the item or a code that
+ * identifies the item from a known list.
+ */
+export type SupplyRequestItem = CodeableConcept | Reference<Medication | Substance | Device>;
+
+/**
+ * When the request should be fulfilled.
+ */
+export type SupplyRequestOccurrence = Period | string | Timing;
+
+/**
  * Specific parameters for the ordered item.  For example, the size of
  * the indicated item.
  */
@@ -277,3 +289,8 @@ export interface SupplyRequestParameter {
    */
   valueBoolean?: boolean;
 }
+
+/**
+ * The value of the device detail.
+ */
+export type SupplyRequestParameterValue = boolean | CodeableConcept | Quantity | Range;

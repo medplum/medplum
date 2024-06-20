@@ -1,15 +1,19 @@
-import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import {
   ContentType,
   Hl7Message,
   MedplumClient,
+  OperationOutcomeError,
   Operator,
   allOk,
   badRequest,
   createReference,
-  getIdentifier,
+  getStatus,
+  isOk,
+  isOperationOutcome,
+  isResource,
   normalizeErrorString,
   resolveId,
+  serverError,
 } from '@medplum/core';
 import {
   Agent,
@@ -18,10 +22,12 @@ import {
   Bot,
   Device,
   Login,
+  OperationOutcome,
   Organization,
+  Parameters,
   Project,
   ProjectMembership,
-  ProjectSecret,
+  ProjectSetting,
   Reference,
   Subscription,
 } from '@medplum/fhirtypes';
@@ -30,8 +36,8 @@ import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import vm from 'node:vm';
-import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
+import { runInLambda } from '../../cloud/aws/execute';
 import { getConfig } from '../../config';
 import { buildTracingExtension, getAuthenticatedContext, getLogger } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
@@ -41,7 +47,9 @@ import { MockConsole } from '../../util/console';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
+import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
+import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
@@ -59,6 +67,11 @@ export interface BotExecutionRequest {
   readonly traceId?: string;
 }
 
+export interface BotExecutionContext extends BotExecutionRequest {
+  readonly accessToken: string;
+  readonly secrets: Record<string, ProjectSetting>;
+}
+
 export interface BotExecutionResult {
   readonly success: boolean;
   readonly logResult: string;
@@ -73,12 +86,41 @@ export interface BotExecutionResult {
  * Assumes that input content-type is output content-type.
  */
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
+  if (req.header('Prefer') === 'respond-async') {
+    await sendAsyncResponse(req, res, async () => {
+      const result = await executeOperation(req);
+      if (isOperationOutcome(result) && !isOk(result)) {
+        throw new OperationOutcomeError(result);
+      }
+      return getOutParametersFromResult(result);
+    });
+  } else {
+    const result = await executeOperation(req);
+    if (isOperationOutcome(result)) {
+      sendOutcome(res, result);
+      return;
+    }
+
+    const responseBody = getResponseBodyFromResult(result);
+    const outcome = result.success ? allOk : badRequest(result.logResult);
+
+    if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
+      await sendResponse(req, res, outcome, responseBody);
+      return;
+    }
+
+    // Send the response
+    // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
+    res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
+  }
+});
+
+async function executeOperation(req: Request): Promise<OperationOutcome | BotExecutionResult> {
   const ctx = getAuthenticatedContext();
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
   if (!userBot) {
-    sendOutcome(res, badRequest('Must specify bot ID or identifier.'));
-    return;
+    return badRequest('Must specify bot ID or identifier.');
   }
 
   // Then read the bot as system user to load extended metadata
@@ -106,23 +148,8 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     contentType: req.header('content-type') as string,
   });
 
-  // Send the response
-  // The body parameter can be a Buffer object, a String, an object, Boolean, or an Array.
-  let responseBody = result.returnValue;
-  if (responseBody === undefined) {
-    // If the bot did not return a value, then return an OperationOutcome
-    responseBody = result.success ? allOk : badRequest(result.logResult);
-  } else if (typeof responseBody === 'number') {
-    // If the bot returned a number, then we must convert it to a string
-    // Otherwise, express will interpret it as an HTTP status code
-    responseBody = responseBody.toString();
-  }
-
-  res
-    .status(result.success ? 200 : 400)
-    .type(getResponseContentType(req))
-    .send(responseBody);
-});
+  return result;
+}
 
 /**
  * Returns the Bot for the execute request.
@@ -161,7 +188,7 @@ async function getBotForRequest(req: Request): Promise<Bot | undefined> {
  * @returns The bot execution result.
  */
 export async function executeBot(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot } = request;
+  const { bot, runAs } = request;
   const startTime = request.requestTime ?? new Date().toISOString();
 
   let result: BotExecutionResult;
@@ -172,10 +199,16 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   } else {
     await writeBotInputToStorage(request);
 
+    const context: BotExecutionContext = {
+      ...request,
+      accessToken: await getBotAccessToken(runAs),
+      secrets: await getBotSecrets(bot),
+    };
+
     if (bot.runtimeVersion === 'awslambda') {
-      result = await runInLambda(request);
+      result = await runInLambda(context);
     } else if (bot.runtimeVersion === 'vmcontext') {
-      result = await runInVmContext(request);
+      result = await runInVmContext(context);
     } else {
       result = { success: false, logResult: 'Unsupported bot runtime' };
     }
@@ -193,6 +226,49 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   );
 
   return result;
+}
+
+function getResponseBodyFromResult(result: BotExecutionResult): string | { [key: string]: any } | any[] | boolean {
+  let responseBody = result.returnValue;
+  if (responseBody === undefined) {
+    // If the bot did not return a value, then return an OperationOutcome
+    responseBody = result.success ? allOk : badRequest(result.logResult);
+  } else if (typeof responseBody === 'number') {
+    // If the bot returned a number, then we must convert it to a string
+    // Otherwise, express will interpret it as an HTTP status code
+    responseBody = responseBody.toString();
+  }
+
+  return responseBody;
+}
+
+function getOutParametersFromResult(result: OperationOutcome | BotExecutionResult): Parameters {
+  const responseBody = isOperationOutcome(result) ? result : getResponseBodyFromResult(result);
+  switch (typeof responseBody) {
+    case 'string':
+      return {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'responseBody', valueString: responseBody }],
+      };
+    case 'object':
+      if (isOperationOutcome(responseBody)) {
+        return {
+          resourceType: 'Parameters',
+          parameter: [{ name: 'outcome', resource: responseBody }],
+        };
+      }
+      return {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'responseBody', valueString: JSON.stringify(responseBody) }],
+      };
+    case 'boolean':
+      return {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'responseBody', valueBoolean: responseBody }],
+      };
+    default:
+      throw new OperationOutcomeError(serverError(new Error('Bot returned response.returnVal with an invalid type')));
+  }
 }
 
 /**
@@ -276,116 +352,12 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
 }
 
 /**
- * Executes a Bot in an AWS Lambda.
- * @param request - The bot request.
- * @returns The bot execution result.
- */
-async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input, contentType, traceId } = request;
-  const config = getConfig();
-  const accessToken = await getBotAccessToken(runAs);
-  const secrets = await getBotSecrets(bot);
-
-  const client = new LambdaClient({ region: config.awsRegion });
-  const name = getLambdaFunctionName(bot);
-  const payload = {
-    baseUrl: config.baseUrl,
-    accessToken,
-    input: input instanceof Hl7Message ? input.toString() : input,
-    contentType,
-    secrets,
-    traceId,
-  };
-
-  // Build the command
-  const encoder = new TextEncoder();
-  const command = new InvokeCommand({
-    FunctionName: name,
-    InvocationType: 'RequestResponse',
-    LogType: 'Tail',
-    Payload: encoder.encode(JSON.stringify(payload)),
-  });
-
-  // Execute the command
-  try {
-    const response = await client.send(command);
-    const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
-
-    // The response from AWS Lambda is always JSON, even if the function returns a string
-    // Therefore we always use JSON.parse to get the return value
-    // See: https://stackoverflow.com/a/49951946/2051724
-    const returnValue = responseStr ? JSON.parse(responseStr) : undefined;
-
-    return {
-      success: !response.FunctionError,
-      logResult: parseLambdaLog(response.LogResult as string),
-      returnValue,
-    };
-  } catch (err) {
-    return {
-      success: false,
-      logResult: (err as Error).message,
-    };
-  }
-}
-
-/**
- * Returns the AWS Lambda function name for the given bot.
- * By default, the function name is based on the bot ID.
- * If the bot has a custom function, and the server allows it, then that is used instead.
- * @param bot - The Bot resource.
- * @returns The AWS Lambda function name.
- */
-export function getLambdaFunctionName(bot: Bot): string {
-  if (getConfig().botCustomFunctionsEnabled) {
-    const customFunction = getIdentifier(bot, 'https://medplum.com/bot-external-function-id');
-    if (customFunction) {
-      return customFunction;
-    }
-  }
-
-  // By default, use the bot ID as the Lambda function name
-  return `medplum-bot-lambda-${bot.id}`;
-}
-
-/**
- * Parses the AWS Lambda log result.
- *
- * The raw logs include markup metadata such as timestamps and billing information.
- *
- * We only want to include the actual log contents in the AuditEvent,
- * so we attempt to scrub away all of that extra metadata.
- *
- * See: https://docs.aws.amazon.com/lambda/latest/dg/nodejs-logging.html
- * @param logResult - The raw log result from the AWS lambda event.
- * @returns The parsed log result.
- */
-function parseLambdaLog(logResult: string): string {
-  const logBuffer = Buffer.from(logResult, 'base64');
-  const log = logBuffer.toString('ascii');
-  const lines = log.split('\n');
-  const result = [];
-  for (const line of lines) {
-    if (line.startsWith('START RequestId: ')) {
-      // Ignore start line
-      continue;
-    }
-    if (line.startsWith('END RequestId: ') || line.startsWith('REPORT RequestId: ')) {
-      // Stop at end lines
-      break;
-    }
-    result.push(line);
-  }
-  return result.join('\n').trim();
-}
-
-/**
  * Executes a Bot on the server in a separate Node.js VM.
  * @param request - The bot request.
  * @returns The bot execution result.
  */
-async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input, contentType, traceId } = request;
+async function runInVmContext(request: BotExecutionContext): Promise<BotExecutionResult> {
+  const { bot, input, contentType, traceId } = request;
 
   const config = getConfig();
   if (!config.vmContextBotsEnabled) {
@@ -404,9 +376,6 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
-
-  const accessToken = await getBotAccessToken(runAs);
-  const secrets = await getBotSecrets(bot);
   const botConsole = new MockConsole();
 
   const sandbox = {
@@ -417,11 +386,12 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
     fetch,
     console: botConsole,
     event: {
+      bot: createReference(bot),
       baseUrl: config.baseUrl,
-      accessToken,
+      accessToken: request.accessToken,
       input: input instanceof Hl7Message ? input.toString() : input,
       contentType,
-      secrets,
+      secrets: request.secrets,
       traceId,
     },
   };
@@ -440,7 +410,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
   // End user code
 
   (async () => {
-    const { baseUrl, accessToken, contentType, secrets, traceId } = event;
+    const { bot, baseUrl, accessToken, contentType, secrets, traceId } = event;
     const medplum = new MedplumClient({
       baseUrl,
       fetch: function(url, options = {}) {
@@ -456,7 +426,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { input, contentType, secrets, traceId });
+      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }
@@ -483,7 +453,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
       returnValue,
     };
   } catch (err) {
-    botConsole.log('Error', (err as Error).message);
+    botConsole.log('Error', normalizeErrorString(err));
     return {
       success: false,
       logResult: botConsole.toString(),
@@ -517,7 +487,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
   return accessToken;
 }
 
-async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSecret>> {
+async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSetting>> {
   const systemRepo = getSystemRepo();
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
@@ -557,11 +527,6 @@ async function createAuditEvent(
     return;
   }
 
-  const maxDescLength = 10 * 1024;
-  if (outcomeDesc.length > maxDescLength) {
-    outcomeDesc = outcomeDesc.substring(outcomeDesc.length - maxDescLength);
-  }
-
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
@@ -589,17 +554,25 @@ async function createAuditEvent(
     },
     entity: createAuditEventEntities(bot, request.input, request.subscription, request.agent, request.device),
     outcome,
-    outcomeDesc,
     extension: buildTracingExtension(),
   };
 
+  const config = getConfig();
   const destination = bot.auditEventDestination ?? ['resource'];
   if (destination.includes('resource')) {
     const systemRepo = getSystemRepo();
-    await systemRepo.createResource<AuditEvent>(auditEvent);
+    const maxDescLength = config.maxBotLogLengthForResource ?? 10 * 1024;
+    await systemRepo.createResource<AuditEvent>({
+      ...auditEvent,
+      outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
+    });
   }
   if (destination.includes('log')) {
-    logAuditEvent(auditEvent);
+    const maxDescLength = config.maxBotLogLengthForLogs ?? 10 * 1024;
+    logAuditEvent({
+      ...auditEvent,
+      outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
+    });
   }
 }
 

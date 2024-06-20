@@ -484,6 +484,11 @@ export interface ImplementationGuideDefinitionPage {
 }
 
 /**
+ * The source address for the page.
+ */
+export type ImplementationGuideDefinitionPageName = Reference<Binary> | string;
+
+/**
  * Defines how IG is built by tools.
  */
 export interface ImplementationGuideDefinitionParameter {
@@ -626,6 +631,13 @@ export interface ImplementationGuideDefinitionResource {
    */
   groupingId?: string;
 }
+
+/**
+ * If true or a reference, indicates the resource is an example instance.
+ * If a reference is present, indicates that the example is an example
+ * of the specified profile.
+ */
+export type ImplementationGuideDefinitionResourceExample = boolean | string;
 
 /**
  * A template for building resources.
@@ -991,3 +1003,10 @@ export interface ImplementationGuideManifestResource {
    */
   relativePath?: string;
 }
+
+/**
+ * If true or a reference, indicates the resource is an example instance.
+ * If a reference is present, indicates that the example is an example
+ * of the specified profile.
+ */
+export type ImplementationGuideManifestResourceExample = boolean | string;

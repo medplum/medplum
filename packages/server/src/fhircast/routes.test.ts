@@ -5,26 +5,33 @@ import {
   createFhircastMessagePayload,
   generateId,
 } from '@medplum/core';
-import { randomUUID } from 'crypto';
 import express from 'express';
-import request from 'supertest';
+import { randomUUID } from 'node:crypto';
+import { Server } from 'node:http';
+import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { MedplumServerConfig, loadTestConfig } from '../config';
 import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
-
-const app = express();
-let accessToken: string;
 
 const STU2_BASE_ROUTE = '/fhircast/STU2/';
 const STU3_BASE_ROUTE = '/fhircast/STU3/';
 
 describe('FHIRCast routes', () => {
+  let app: express.Express;
+  let config: MedplumServerConfig;
+  let server: Server;
+  let accessToken: string;
+
   beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
-    await getRedis().flushdb();
-    accessToken = await initTestAuth();
+    app = express();
+    config = await loadTestConfig();
+    config.heartbeatEnabled = false;
+    server = await initApp(app, config);
+    accessToken = await initTestAuth({ membership: { admin: true } });
+    await new Promise<void>((resolve) => {
+      server.listen(0, 'localhost', 511, resolve);
+    });
   });
 
   afterAll(async () => {
@@ -34,7 +41,7 @@ describe('FHIRCast routes', () => {
   test('Get well known', async () => {
     let res;
 
-    res = await request(app).get(`${STU2_BASE_ROUTE}.well-known/fhircast-configuration`);
+    res = await request(server).get(`${STU2_BASE_ROUTE}.well-known/fhircast-configuration`);
 
     expect(res.status).toBe(200);
     expect(res.body.eventsSupported).toBeDefined();
@@ -43,7 +50,7 @@ describe('FHIRCast routes', () => {
     expect(res.body.webhookSupport).toBe(false);
     expect(res.body.fhircastVersion).toBe('STU2');
 
-    res = await request(app).get(`${STU3_BASE_ROUTE}.well-known/fhircast-configuration`);
+    res = await request(server).get(`${STU3_BASE_ROUTE}.well-known/fhircast-configuration`);
 
     expect(res.status).toBe(200);
     expect(res.body.eventsSupported).toBeDefined();
@@ -55,7 +62,7 @@ describe('FHIRCast routes', () => {
 
   test('New subscription success', async () => {
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
-      const res = await request(app)
+      const res = await request(server)
         .post(route)
         .set('Content-Type', ContentType.JSON)
         .set('Authorization', 'Bearer ' + accessToken)
@@ -72,7 +79,7 @@ describe('FHIRCast routes', () => {
 
   test('New subscription no auth', async () => {
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
-      const res = await request(app).post(route).set('Content-Type', ContentType.JSON).send({
+      const res = await request(server).post(route).set('Content-Type', ContentType.JSON).send({
         'hub.channel.type': 'websocket',
         'hub.mode': 'subscribe',
         'hub.topic': 'topic',
@@ -85,7 +92,7 @@ describe('FHIRCast routes', () => {
 
   test('New subscription missing channel type', async () => {
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
-      const res = await request(app)
+      const res = await request(server)
         .post(route)
         .set('Content-Type', ContentType.JSON)
         .set('Authorization', 'Bearer ' + accessToken)
@@ -101,7 +108,7 @@ describe('FHIRCast routes', () => {
 
   test('New subscription invalid channel type', async () => {
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
-      const res = await request(app)
+      const res = await request(server)
         .post(route)
         .set('Content-Type', ContentType.JSON)
         .set('Authorization', 'Bearer ' + accessToken)
@@ -118,7 +125,7 @@ describe('FHIRCast routes', () => {
 
   test('New subscription invalid mode', async () => {
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
-      const res = await request(app)
+      const res = await request(server)
         .post(route)
         .set('Content-Type', ContentType.JSON)
         .set('Authorization', 'Bearer ' + accessToken)
@@ -133,10 +140,56 @@ describe('FHIRCast routes', () => {
     }
   });
 
+  test('Unsubscribe', async () => {
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const subRes = await request(server)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'subscribe',
+          'hub.topic': 'topic',
+          'hub.events': 'Patient-open',
+        });
+      expect(subRes.status).toBe(202);
+      expect(subRes.body['hub.channel.endpoint']).toBeDefined();
+
+      await request(server)
+        .ws('/ws/fhircast/topic')
+        .expectJson((obj) => {
+          // Connection verification message
+          expect(obj['hub.topic']).toBe('topic');
+        })
+        .exec(async () => {
+          const unsubRes = await request(server)
+            .post(route)
+            .set('Content-Type', ContentType.JSON)
+            .set('Authorization', 'Bearer ' + accessToken)
+            .send({
+              'hub.channel.type': 'websocket',
+              'hub.mode': 'unsubscribe',
+              'hub.topic': 'topic',
+              'hub.events': 'Patient-open',
+            });
+          expect(unsubRes.status).toBe(202);
+          expect(unsubRes.body['hub.channel.endpoint']).toBeDefined();
+        })
+        .expectJson({
+          'hub.topic': 'topic',
+          'hub.mode': 'denied',
+          'hub.reason': 'Subscriber unsubscribed from topic',
+          'hub.events': 'Patient-open',
+        })
+        .close()
+        .expectClosed();
+    }
+  });
+
   test('Publish event missing timestamp', async () => {
     const topic = randomUUID();
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
-      const res = await request(app)
+      const res = await request(server)
         .post(route + topic)
         .set('Content-Type', ContentType.JSON)
         .set('Authorization', 'Bearer ' + accessToken)
@@ -150,16 +203,17 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get context', async () => {
+    const topic = randomUUID();
     let res;
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
-    res = await request(app)
-      .get(`${STU2_BASE_ROUTE}my-topic`)
+    res = await request(server)
+      .get(`${STU2_BASE_ROUTE}${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
 
-    res = await request(app)
-      .get(`${STU3_BASE_ROUTE}my-topic`)
+    res = await request(server)
+      .get(`${STU3_BASE_ROUTE}${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ 'context.type': '', context: [] });
@@ -175,20 +229,20 @@ describe('FHIRCast routes', () => {
       },
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ]);
-    const publishRes = await request(app)
+    const publishRes = await request(server)
       .post(`${STU3_BASE_ROUTE}my-topic`)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
     expect(publishRes.status).toBe(201);
 
-    contextRes = await request(app)
+    contextRes = await request(server)
       .get(`${STU2_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(contextRes.status).toBe(200);
     expect(contextRes.body).toEqual(payload.event.context);
 
-    contextRes = await request(app)
+    contextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(contextRes.status).toBe(200);
@@ -217,13 +271,13 @@ describe('FHIRCast routes', () => {
     // Setup the key as if we have already opened this resource
     await getRedis().set('medplum:fhircast:topic:my-topic:latest', JSON.stringify(payload));
 
-    beforeContextRes = await request(app)
+    beforeContextRes = await request(server)
       .get(`${STU2_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(beforeContextRes.status).toBe(200);
     expect(beforeContextRes.body).toEqual(context);
 
-    beforeContextRes = await request(app)
+    beforeContextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(beforeContextRes.status).toBe(200);
@@ -233,20 +287,20 @@ describe('FHIRCast routes', () => {
       context,
     });
 
-    const publishRes = await request(app)
+    const publishRes = await request(server)
       .post(`${STU3_BASE_ROUTE}my-topic`)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(createFhircastMessagePayload('my-topic', 'DiagnosticReport-close', context));
     expect(publishRes.status).toBe(201);
 
-    afterContextRes = await request(app)
+    afterContextRes = await request(server)
       .get(`${STU2_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(afterContextRes.status).toBe(200);
     expect(afterContextRes.body).toEqual([]);
 
-    afterContextRes = await request(app)
+    afterContextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}my-topic`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(afterContextRes.status).toBe(200);
@@ -265,7 +319,7 @@ describe('FHIRCast routes', () => {
 
     const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-open', context);
 
-    const publishRes = await request(app)
+    const publishRes = await request(server)
       .post(`${STU3_BASE_ROUTE}my-topic`)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -293,7 +347,7 @@ describe('FHIRCast routes', () => {
     const versionId = randomUUID();
     const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-update', context, versionId);
 
-    const publishRes = await request(app)
+    const publishRes = await request(server)
       .post(`${STU3_BASE_ROUTE}my-topic`)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)

@@ -4,6 +4,7 @@ import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
 import { getDatabasePool } from './database';
 import { globalLogger } from './logger';
+import { getRedis } from './redis';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -63,6 +64,28 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test('X-Forwarded-For spoofing', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.logLevel = 'info';
+    config.logRequests = true;
+
+    const originalWrite = process.stdout.write;
+    process.stdout.write = jest.fn();
+
+    await initApp(app, config);
+    const res = await request(app).get('/').set('X-Forwarded-For', '1.1.1.1, 2.2.2.2');
+    expect(res.status).toBe(200);
+    expect(process.stdout.write).toHaveBeenCalledTimes(1);
+
+    const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+    const logObj = JSON.parse(logLine);
+    expect(logObj.ip).toBe('2.2.2.2');
+
+    expect(await shutdownApp()).toBeUndefined();
+    process.stdout.write = originalWrite;
+  });
+
   test('Internal Server Error', async () => {
     const app = express();
     app.get('/throw', () => {
@@ -94,5 +117,20 @@ describe('App', () => {
     expect(res.status).toBe(204);
     expect(res.header['access-control-max-age']).toBe('86400');
     expect(res.header['cache-control']).toBe('public, max-age=86400');
+  });
+
+  test('Server rate limit', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 1;
+    config.redis.db = 6; // Use different temp Redis instance for this test only
+    await initApp(app, config);
+
+    const res = await request(app).get('/api/');
+    expect(res.status).toBe(200);
+    const res2 = await request(app).get('/api/');
+    expect(res2.status).toBe(429);
+    await getRedis().flushdb();
+    expect(await shutdownApp()).toBeUndefined();
   });
 });

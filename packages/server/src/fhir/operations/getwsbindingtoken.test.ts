@@ -25,7 +25,7 @@ describe('Get WebSocket binding token', () => {
     withTestContext(async () => {
       // Create Subscription
       const res1 = await request(app)
-        .post(`/fhir/R4/Subscription`)
+        .post('/fhir/R4/Subscription')
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({
@@ -51,7 +51,8 @@ describe('Get WebSocket binding token', () => {
 
       const params = res2.body as Parameters;
       expect(params.resourceType).toEqual('Parameters');
-      expect(params.parameter?.length).toEqual(3);
+      expect(params.parameter?.length).toBeDefined();
+      expect([3, 4]).toContain(params.parameter?.length);
       expect(params.parameter?.[0]).toBeDefined();
       expect(params.parameter?.[0]?.name).toEqual('token');
 
@@ -69,9 +70,15 @@ describe('Get WebSocket binding token', () => {
       expect(params.parameter?.[1]?.name).toEqual('expiration');
       expect(params.parameter?.[1]?.valueDateTime).toBeDefined();
       expect(new Date(params.parameter?.[1]?.valueDateTime as string).getTime()).toBeGreaterThanOrEqual(Date.now());
+
       expect(params.parameter?.[2]).toBeDefined();
-      expect(params.parameter?.[2]?.name).toEqual('websocket-url');
-      expect(params.parameter?.[2]?.valueUrl).toBeDefined();
+      expect(params.parameter?.[2]?.name).toEqual('subscription');
+      expect(params.parameter?.[2]?.valueString).toBeDefined();
+      expect(params.parameter?.[2]?.valueString).toEqual(createdSub.id);
+
+      expect(params.parameter?.[3]).toBeDefined();
+      expect(params.parameter?.[3]?.name).toEqual('websocket-url');
+      expect(params.parameter?.[3]?.valueUrl).toBeDefined();
     }));
 
   test('should return OperationOutcome error if Subscription no longer exists', () =>

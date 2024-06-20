@@ -26,7 +26,7 @@ export function main(): void {
   writeResourceTypeFile();
 
   for (const type of Object.values(getAllDataTypes())) {
-    if (isResourceTypeSchema(type) || type.kind === 'complex-type') {
+    if (isResourceTypeSchema(type) || type.kind === 'complex-type' || type.kind === 'logical') {
       writeInterfaceFile(type);
     }
   }
@@ -136,6 +136,8 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
   b.indentCount--;
   b.append('}');
 
+  writeChoiceOfTypeDefinitions(b, fhirType);
+
   const subTypes = fhirType.innerTypes;
   if (subTypes) {
     subTypes.sort((t1, t2) => t1.name.localeCompare(t2.name));
@@ -143,6 +145,13 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
     for (const subType of subTypes) {
       writeInterface(b, subType);
     }
+  }
+
+  if (typeName === 'Project') {
+    // TODO: Remove this in Medplum v4
+    b.newLine();
+    generateJavadoc(b, '@deprecated Use ProjectSetting instead');
+    b.append('export type ProjectSecret = ProjectSetting;');
   }
 }
 
@@ -158,6 +167,21 @@ function writeInterfaceProperty(
     b.append(
       typeScriptProperty.name + (typeScriptProperty.required ? '' : '?') + ': ' + typeScriptProperty.typeName + ';'
     );
+  }
+}
+
+function writeChoiceOfTypeDefinitions(b: FileBuilder, fhirType: InternalTypeSchema): void {
+  for (const [path, property] of Object.entries(fhirType.elements)) {
+    if (property.type.length > 1) {
+      b.newLine();
+      generateJavadoc(b, property.description);
+      const unionName = fhirType.name + capitalize(path.replaceAll('[x]', ''));
+      const typesArray = getTypeScriptProperties(property, path, fhirType.name);
+      const typesSet = new Set(typesArray.map((t) => t.typeName));
+      const sortedTypesArray = Array.from(typesSet);
+      sortedTypesArray.sort((a, b) => a.localeCompare(b));
+      b.append(`export type ${unionName} = ${sortedTypesArray.join(' | ')};`);
+    }
   }
 }
 

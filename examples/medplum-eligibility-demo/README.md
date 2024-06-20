@@ -41,6 +41,11 @@ Next, install the dependencies
 npm install
 ```
 
+Then, build the bots
+```bash
+npm run build:bot
+```
+
 Then, run the app
 
 ```bash

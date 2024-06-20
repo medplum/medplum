@@ -429,3 +429,16 @@ export interface EvidenceVariableCharacteristic {
    */
   groupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
 }
+
+/**
+ * Define members of the evidence element using Codes (such as condition,
+ * medication, or observation), Expressions ( using an expression
+ * language such as FHIRPath or CQL) or DataRequirements (such as
+ * Diabetes diagnosis onset in the last year).
+ */
+export type EvidenceVariableCharacteristicDefinition = CodeableConcept | DataRequirement | Expression | Reference<Group> | string | TriggerDefinition;
+
+/**
+ * Indicates what effective period the study covers.
+ */
+export type EvidenceVariableCharacteristicParticipantEffective = Duration | Period | string | Timing;

@@ -1,7 +1,7 @@
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { InternalSchemaElement, deepClone, getElementDefinition } from '@medplum/core';
-import { ProjectSecret } from '@medplum/fhirtypes';
+import { ProjectSetting } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import { FormEvent, useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
@@ -11,7 +11,7 @@ export function SecretsPage(): JSX.Element {
   const projectId = getProjectId(medplum);
   const projectDetails = medplum.get(`admin/projects/${projectId}`).read();
   const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
-  const [secrets, setSecrets] = useState<ProjectSecret[] | undefined>();
+  const [secrets, setSecrets] = useState<ProjectSetting[] | undefined>();
 
   useEffect(() => {
     medplum

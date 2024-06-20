@@ -1,11 +1,10 @@
 import { ContentType, encodeBase64, MedplumClient } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
-import { createHmac, createPrivateKey, randomBytes } from 'crypto';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { SignJWT } from 'jose';
-import { basename, extname, resolve } from 'path';
-import internal from 'stream';
-import tar from 'tar';
+import { createHmac, createPrivateKey, randomBytes } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, extname, resolve } from 'node:path';
+import { extract } from 'tar';
 import { FileSystemStorage } from './storage';
 
 export interface MedplumConfig {
@@ -53,19 +52,15 @@ export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfi
     return;
   }
 
-  try {
-    console.log('Saving source code...');
-    const sourceCode = await medplum.createAttachment(code, basename(codePath), getCodeContentType(codePath));
+  console.log('Saving source code...');
+  const sourceCode = await medplum.createAttachment(code, basename(codePath), getCodeContentType(codePath));
 
-    console.log('Updating bot.....');
-    const updateResult = await medplum.updateResource({
-      ...bot,
-      sourceCode,
-    });
-    console.log('Success! New bot version: ' + updateResult.meta?.versionId);
-  } catch (err) {
-    console.log('Update error: ', err);
-  }
+  console.log('Updating bot...');
+  const updateResult = await medplum.updateResource({
+    ...bot,
+    sourceCode,
+  });
+  console.log('Success! New bot version: ' + updateResult.meta?.versionId);
 }
 
 export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
@@ -75,16 +70,12 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
     return;
   }
 
-  try {
-    console.log('Deploying bot...');
-    const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
-      code,
-      filename: basename(codePath),
-    })) as OperationOutcome;
-    console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
-  } catch (err) {
-    console.log('Deploy error: ', err);
-  }
+  console.log('Deploying bot...');
+  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
+    code,
+    filename: basename(codePath),
+  })) as OperationOutcome;
+  console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
 }
 
 export async function createBot(
@@ -96,30 +87,27 @@ export async function createBot(
   runtimeVersion?: string,
   writeConfig?: boolean
 ): Promise<void> {
-  try {
-    const body = {
-      name: botName,
-      description: '',
-      runtimeVersion,
-    };
-    const newBot = await medplum.post('admin/projects/' + projectId + '/bot', body);
-    const bot = await medplum.readResource('Bot', newBot.id);
+  const body = {
+    name: botName,
+    description: '',
+    runtimeVersion,
+  };
+  const newBot = await medplum.post('admin/projects/' + projectId + '/bot', body);
+  const bot = await medplum.readResource('Bot', newBot.id);
 
-    const botConfig = {
-      name: botName,
-      id: newBot.id,
-      source: sourceFile,
-      dist: distFile,
-    };
-    await saveBot(medplum, botConfig as MedplumBotConfig, bot);
-    await deployBot(medplum, botConfig as MedplumBotConfig, bot);
-    console.log(`Success! Bot created: ${bot.id}`);
+  const botConfig = {
+    name: botName,
+    id: newBot.id,
+    source: sourceFile,
+    dist: distFile,
+  };
 
-    if (writeConfig) {
-      addBotToConfig(botConfig);
-    }
-  } catch (err) {
-    console.log('Error while creating new bot: ' + err);
+  await saveBot(medplum, botConfig as MedplumBotConfig, bot);
+  await deployBot(medplum, botConfig as MedplumBotConfig, bot);
+  console.log(`Success! Bot created: ${bot.id}`);
+
+  if (writeConfig) {
+    addBotToConfig(botConfig);
   }
 }
 
@@ -211,14 +199,14 @@ function escapeRegex(str: string): string {
  * @param destinationDir - The destination directory where all files will be extracted.
  * @returns A tar file extractor.
  */
-export function safeTarExtractor(destinationDir: string): internal.Writable {
+export function safeTarExtractor(destinationDir: string): NodeJS.WritableStream {
   const MAX_FILES = 100;
   const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
   let fileCount = 0;
   let totalSize = 0;
 
-  return tar.x({
+  return extract({
     cwd: destinationDir,
     filter: (_path, entry) => {
       fileCount++;
@@ -233,7 +221,9 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
 
       return true;
     },
-  });
+
+    // Temporary cast for tar issue: https://github.com/isaacs/node-tar/issues/409
+  }) as ReturnType<typeof extract> & NodeJS.WritableStream;
 }
 
 export function getUnsupportedExtension(): Extension {

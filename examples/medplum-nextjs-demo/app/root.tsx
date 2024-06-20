@@ -1,6 +1,5 @@
 'use client';
 
-import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
@@ -22,9 +21,5 @@ const medplum = new MedplumClient({
 });
 
 export default function Root(props: { children: ReactNode }): JSX.Element {
-  return (
-    <MantineProvider>
-      <MedplumProvider medplum={medplum}>{props.children}</MedplumProvider>
-    </MantineProvider>
-  );
+  return <MedplumProvider medplum={medplum}>{props.children}</MedplumProvider>;
 }

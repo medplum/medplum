@@ -11964,6 +11964,70 @@
           ]
         },
         {
+          "id": "Project.text",
+          "path": "Project.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Project.contained",
+          "path": "Project.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Project.extension",
+          "path": "Project.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Project.modifierExtension",
+          "path": "Project.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
           "id": "Project.identifier",
           "path": "Project.identifier",
           "min": 0,
@@ -12065,8 +12129,8 @@
           ]
         },
         {
-          "id": "Project.secret",
-          "path": "Project.secret",
+          "id": "Project.setting",
+          "path": "Project.setting",
           "min": 0,
           "max": "*",
           "type": [
@@ -12076,8 +12140,8 @@
           ]
         },
         {
-          "id": "Project.secret.name",
-          "path": "Project.secret.name",
+          "id": "Project.setting.name",
+          "path": "Project.setting.name",
           "min": 1,
           "max": "1",
           "type": [
@@ -12087,8 +12151,8 @@
           ]
         },
         {
-          "id": "Project.secret.value[x]",
-          "path": "Project.secret.value[x]",
+          "id": "Project.setting.value[x]",
+          "path": "Project.setting.value[x]",
           "min": 1,
           "max": "1",
           "type": [
@@ -12105,6 +12169,27 @@
               "code": "integer"
             }
           ]
+        },
+        {
+          "id": "Project.secret",
+          "path": "Project.secret",
+          "min": 0,
+          "max": "*",
+          "contentReference": "#Project.setting"
+        },
+        {
+          "id": "Project.systemSetting",
+          "path": "Project.systemSetting",
+          "min": 0,
+          "max": "*",
+          "contentReference": "#Project.setting"
+        },
+        {
+          "id": "Project.systemSecret",
+          "path": "Project.systemSecret",
+          "min": 0,
+          "max": "*",
+          "contentReference": "#Project.setting"
         },
         {
           "id": "Project.site",
@@ -12283,6 +12368,70 @@
           "type": [
             {
               "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Bot.text",
+          "path": "Bot.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Bot.contained",
+          "path": "Bot.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Bot.extension",
+          "path": "Bot.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Bot.modifierExtension",
+          "path": "Bot.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
             }
           ]
         },

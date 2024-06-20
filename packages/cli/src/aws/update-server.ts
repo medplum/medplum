@@ -1,5 +1,5 @@
 import { MedplumClient, MedplumClientOptions, MedplumInfraConfig } from '@medplum/core';
-import { spawnSync } from 'child_process';
+import { spawnSync } from 'node:child_process';
 import * as semver from 'semver';
 import { createMedplumClient } from '../util/client';
 import { getConfigFileName, readConfig, writeConfig } from '../utils';
@@ -7,7 +7,7 @@ import { getServerVersions, printConfigNotFound } from './utils';
 
 export interface UpdateServerOptions extends MedplumClientOptions {
   file?: string;
-  version?: string;
+  toVersion?: string;
 }
 
 /**
@@ -20,8 +20,8 @@ export async function updateServerCommand(tag: string, options: UpdateServerOpti
   const config = readConfig(tag, options) as MedplumInfraConfig;
   if (!config) {
     console.log(`Configuration file ${getConfigFileName(tag)} not found`);
-    await printConfigNotFound(tag, options);
-    return;
+    printConfigNotFound(tag, options);
+    throw new Error(`Config not found: ${tag}`);
   }
 
   const separatorIndex = config.serverImage.lastIndexOf(':');
@@ -31,7 +31,7 @@ export async function updateServerCommand(tag: string, options: UpdateServerOpti
 
   let updateVersion = await nextUpdateVersion(initialVersion);
   while (updateVersion) {
-    if (options.version && semver.gt(updateVersion, options.version)) {
+    if (options.toVersion && semver.gt(updateVersion, options.toVersion)) {
       console.log(`Skipping update to v${updateVersion}`);
       break;
     }

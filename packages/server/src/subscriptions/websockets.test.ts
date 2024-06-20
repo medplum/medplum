@@ -8,17 +8,15 @@ import {
   Subscription,
   SubscriptionStatus,
 } from '@medplum/fhirtypes';
-import { Job } from 'bullmq';
 import express, { Express } from 'express';
-import { Server } from 'http';
 import { randomUUID } from 'node:crypto';
+import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
-import { execSubscriptionJob, getSubscriptionQueue } from '../workers/subscription';
 
 jest.mock('hibp');
 
@@ -32,11 +30,11 @@ describe('WebSockets Subscriptions', () => {
   let patientSubscription: Subscription;
 
   beforeAll(async () => {
+    console.log = jest.fn();
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
     server = await initApp(app, config);
-    await getRedis().flushdb();
 
     const result = await withTestContext(() =>
       createTestProject({
@@ -103,9 +101,6 @@ describe('WebSockets Subscriptions', () => {
         .sendJson({ type: 'bind-with-token', payload: { token } })
         // Add a new patient for this project
         .exec(async () => {
-          const queue = getSubscriptionQueue() as any;
-          queue.add.mockClear();
-
           // Update the patient
           version2 = await repo.updateResource<Patient>({
             resourceType: 'Patient',
@@ -117,16 +112,6 @@ describe('WebSockets Subscriptions', () => {
             },
           });
           expect(version2).toBeDefined();
-
-          const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-          await execSubscriptionJob(job);
-
-          // Update should also trigger the subscription
-          expect(queue.add).toHaveBeenCalled();
-
-          // Clear the queue
-          queue.add.mockClear();
-
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -182,6 +167,118 @@ describe('WebSockets Subscriptions', () => {
       );
     }));
 
+  test('Subscription removed after unbind-from-token', () =>
+    withTestContext(async () => {
+      const version1 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alicr'], family: 'Smith' }],
+        meta: {
+          lastUpdated: new Date(Date.now() - 1000 * 60).toISOString(),
+        },
+      });
+      expect(version1).toBeDefined();
+      expect(version1.id).toBeDefined();
+
+      // Create subscription to watch patient
+      const patientSubscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'websocket',
+        },
+      });
+      expect(patientSubscription).toBeDefined();
+
+      // Call $get-ws-binding-token
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${patientSubscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res.body).toBeDefined();
+      const body = res.body as Parameters;
+      expect(body.resourceType).toEqual('Parameters');
+      expect(body.parameter?.[0]).toBeDefined();
+      expect(body.parameter?.[0]?.name).toEqual('token');
+      expect(body.parameter?.[0]?.valueString).toBeDefined();
+
+      const token = body.parameter?.[0]?.valueString as string;
+
+      let version2: Patient;
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        // Add a new patient for this project
+        .exec(async () => {
+          // Update the patient
+          version2 = await repo.updateResource<Patient>({
+            resourceType: 'Patient',
+            id: version1.id,
+            name: [{ given: ['Alice'], family: 'Smith' }],
+            active: true,
+            meta: {
+              lastUpdated: new Date().toISOString(),
+            },
+          });
+          expect(version2).toBeDefined();
+          let subActive = false;
+          while (!subActive) {
+            await sleep(0);
+            subActive =
+              (
+                await getRedis().smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${patientSubscription?.id as string}`
+                )
+              )[0] === 1;
+          }
+          expect(subActive).toEqual(true);
+        })
+        .expectJson((msg: Bundle): boolean => {
+          if (!msg.entry?.[1]) {
+            return false;
+          }
+          const patientEntry = msg.entry?.[1] as BundleEntry<Patient>;
+          if (!patientEntry.resource) {
+            return false;
+          }
+          const patient = patientEntry.resource;
+          if (patient.resourceType !== 'Patient') {
+            return false;
+          }
+          if (patient.id !== version2.id) {
+            return false;
+          }
+          return true;
+        })
+        .sendJson({ type: 'unbind-from-token', payload: { token } })
+        .exec(async () => {
+          let subActive = true;
+          while (subActive) {
+            await sleep(0);
+            subActive =
+              (
+                await getRedis().smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${patientSubscription?.id as string}`
+                )
+              )[0] === 1;
+          }
+          expect(subActive).toEqual(false);
+        })
+        // Call unbind again to test that it doesn't break anything
+        .sendJson({ type: 'unbind-from-token', payload: { token } })
+        .exec(async () => {
+          await sleep(150);
+          expect(console.log).toHaveBeenCalledWith(
+            expect.stringContaining('[WS] Failed to retrieve subscription cache entry when unbinding from token')
+          );
+        })
+        .close()
+        .expectClosed();
+    }));
+
   test('Should reject if given an invalid binding token', () =>
     withTestContext(async () => {
       const version1 = await repo.createResource<Patient>({
@@ -218,9 +315,6 @@ describe('WebSockets Subscriptions', () => {
         .sendJson({ type: 'bind-with-token', payload: { token: accessToken } }) // We accidentally reused access token instead of token for sub
         // Add a new patient for this project
         .exec(async () => {
-          const queue = getSubscriptionQueue() as any;
-          queue.add.mockClear();
-
           // Update the patient
           const version2 = await repo.updateResource<Patient>({
             resourceType: 'Patient',
@@ -232,15 +326,6 @@ describe('WebSockets Subscriptions', () => {
             },
           });
           expect(version2).toBeDefined();
-
-          const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-          await execSubscriptionJob(job);
-
-          // Update should also trigger the subscription
-          expect(queue.add).toHaveBeenCalled();
-
-          // Clear the queue
-          queue.add.mockClear();
         })
         .expectJson({
           resourceType: 'OperationOutcome',
@@ -270,7 +355,6 @@ describe('Subscription Heartbeat', () => {
     config = await loadTestConfig();
     config.heartbeatMilliseconds = 25;
     server = await initApp(app, config);
-    await getRedis().flushdb();
 
     const result = await withTestContext(() =>
       createTestProject({

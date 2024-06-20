@@ -157,13 +157,25 @@ For a more comprehensive end-to-end test of HL7 over MLLP, we recommend using [S
 docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest health/simulator -output mllp -mllp_destination <ip_address>:<port> -pathways_per_hour 720
 ```
 
+## Audit Events and Logging
+
+All interactions between a `Bot` and an `Agent`, such as calling `Agent` operations from a `Bot` or calling `Agent` operations that `$execute` a `Bot`, will trigger either the creation of `AuditEvent` resources or the configured logging behavior for the `Bot` (see: [Bot logging configuration](/docs/bots/bots-in-production#configuring-bot-logging)).
+
+:::note
+
+Because a reference to the `Agent` that interacted with the `Bot` is logged in the `AuditEvent` created by the `Bot`, these events will show up in the `Events` tab for both the `Bot` and the `Agent`. 
+
+These are not duplicated `AuditEvent` resources but rather the same resource showing up in both `Event` log views.
+
+:::
+
 ## Preparing for Scale
 
 HL7 Feeds can be extremely high volume, and before you go live with a high-volume feed you may want to modify your Bot to log only set the Bot `AuditEventDestination` to `log`.
 
 ## Running from source
 
-Testing the setup end-to-end on localhost can be done by doing the following steps. This assumes you are [running MØedplum on localhost](/docs/contributing/run-the-stack) as a prerequisite.
+Testing the setup end-to-end on localhost can be done by doing the following steps. This assumes you are [running Medplum on localhost](/docs/contributing/run-the-stack) as a prerequisite.
 
 Navigate to the `medplum/packages/agent`` folder on your drive and run the following command in your terminal
 
@@ -172,6 +184,12 @@ npm run agent <base_url> <client_id> <client_secret> <agent_id>
 ```
 
 Keep the terminal open so that you can see the logs. At this point you can start sending messages to the agent.
+
+## Supported Protocols
+
+- [HL7 v2](https://www.hl7.org): A widely used low-level message protocol for healthcare data exchange.
+- [DICOM](https://www.dicomstandard.org/): A protocol used for storing metadata about medical images. Currently, Medplum supports the C-STORE and C-ECHO operations. Support for other DICOM operations such C-FIND, C-GET, and C-MOVE is coming soon.
+- [ASTM](https://www.astm.org/): Used to transfer data between clinical instruments and computer systems. ASTM support is still in alpha.
 
 ## See also
 

@@ -1,4 +1,4 @@
-import { Operator as FhirOperator, Filter, SortRule } from '@medplum/core';
+import { Operator as FhirOperator, Filter, SortRule, splitSearchOnComma } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import {
@@ -65,7 +65,7 @@ export abstract class LookupTable {
     const columnName = this.getColumnName(filter.code);
 
     const disjunction = new Disjunction([]);
-    for (const option of filter.value.split(',')) {
+    for (const option of splitSearchOnComma(filter.value)) {
       if (filter.operator === FhirOperator.EXACT) {
         disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), '=', option.trim()));
       } else if (filter.operator === FhirOperator.CONTAINS) {

@@ -1,9 +1,11 @@
 import {
   Attachment,
+  Bundle,
   CodeableConcept,
   Coding,
   Device,
   Extension,
+  ExtensionValue,
   Identifier,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
@@ -22,6 +24,23 @@ import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference } from './types';
 
+/**
+ * QueryTypes defines the different ways to specify FHIR search parameters.
+ *
+ * Can be any valid input to the URLSearchParams() constructor.
+ *
+ * TypeScript definitions for URLSearchParams do not match runtime behavior.
+ * The official spec only accepts string values.
+ * Web browsers and Node.js automatically coerce values to strings.
+ * See: https://github.com/microsoft/TypeScript/issues/32951
+ */
+export type QueryTypes =
+  | URLSearchParams
+  | string[][]
+  | Record<string, string | number | boolean | undefined>
+  | string
+  | undefined;
+
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
 /**
@@ -37,7 +56,7 @@ export type ResourceWithCode = Resource & Code;
 
 /**
  * Creates a reference resource.
- * @param resource - The FHIR reesource.
+ * @param resource - The FHIR resource.
  * @returns A reference resource.
  */
 export function createReference<T extends Resource>(resource: T): Reference<T> {
@@ -333,7 +352,11 @@ function buildAllQuestionnaireAnswerItems(
   if (items) {
     for (const item of items) {
       if (item.linkId && item.answer && item.answer.length > 0) {
-        result[item.linkId] = item.answer;
+        if (result[item.linkId]) {
+          result[item.linkId] = [...result[item.linkId], ...item.answer];
+        } else {
+          result[item.linkId] = item.answer;
+        }
       }
       buildAllQuestionnaireAnswerItems(item.item, result);
     }
@@ -400,7 +423,7 @@ export function setIdentifier(resource: Resource & { identifier?: Identifier[] }
  * @param urls - Array of extension URLs.  Each entry represents a nested extension.
  * @returns The extension value if found; undefined otherwise.
  */
-export function getExtensionValue(resource: any, ...urls: string[]): string | undefined {
+export function getExtensionValue(resource: any, ...urls: string[]): ExtensionValue | undefined {
   const extension = getExtension(resource, ...urls);
   if (!extension) {
     return undefined;
@@ -1053,10 +1076,6 @@ export function append<T>(array: T[] | undefined, value: T): T[] {
   return array;
 }
 
-export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
-  return new URL(path, baseUrl).toString().replace('http://', 'ws://').replace('https://', 'wss://');
-}
-
 /**
  * Sorts an array of strings in place using the localeCompare method.
  *
@@ -1067,4 +1086,144 @@ export function getWebSocketUrl(path: string, baseUrl: URL | string): string {
  */
 export function sortStringArray(array: string[]): string[] {
   return array.sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Ensures the given URL has a trailing slash.
+ * @param url - The URL to ensure has a trailing slash.
+ * @returns The URL with a trailing slash.
+ */
+export function ensureTrailingSlash(url: string): string {
+  return url.endsWith('/') ? url : url + '/';
+}
+
+/**
+ * Ensures the given URL has no leading slash.
+ * @param url - The URL to ensure has no leading slash.
+ * @returns The URL string with no slash.
+ */
+export function ensureNoLeadingSlash(url: string): string {
+  return url.startsWith('/') ? url.slice(1) : url;
+}
+
+/**
+ * Concatenates the given base URL and URL.
+ *
+ * If the URL is absolute, it is returned as-is.
+ *
+ * @param baseUrl - The base URL.
+ * @param path - The URL to concat. Can be relative or absolute.
+ * @returns The concatenated URL.
+ */
+export function concatUrls(baseUrl: string | URL, path: string): string {
+  return new URL(ensureNoLeadingSlash(path), ensureTrailingSlash(baseUrl.toString())).toString();
+}
+
+/**
+ * Concatenates a given base URL and path, ensuring the URL has the appropriate `ws://` or `wss://` protocol instead of `http://` or `https://`.
+ *
+ * @param baseUrl - The base URL.
+ * @param path - The URL to concat. Can be relative or absolute.
+ * @returns The concatenated WebSocket URL.
+ */
+export function getWebSocketUrl(baseUrl: URL | string, path: string): string {
+  return concatUrls(baseUrl, path).toString().replace('http://', 'ws://').replace('https://', 'wss://');
+}
+
+/**
+ * Converts the given `query` to a string.
+ *
+ * @param query - The query to convert. The type can be any member of `QueryTypes`.
+ * @returns The query as a string.
+ */
+export function getQueryString(query: QueryTypes): string {
+  if (typeof query === 'object' && !Array.isArray(query) && !(query instanceof URLSearchParams)) {
+    query = Object.fromEntries(Object.entries(query).filter((entry) => entry[1] !== undefined));
+  }
+  // @ts-expect-error Technically `Record<string, string, number, boolean>` is not valid to pass into `URLSearchParams` constructor since `boolean` and `number`
+  // are not considered to be valid values based on the WebIDL definition from WhatWG. The current runtime behavior relies on implementation-specific coercion to string under the hood.
+  // Source: https://url.spec.whatwg.org/#dom-urlsearchparams-urlsearchparams:~:text=6.2.%20URLSearchParams,)%20init%20%3D%20%22%22)%3B
+  return new URLSearchParams(query).toString();
+}
+
+export const VALID_HOSTNAME_REGEX =
+  /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-_]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-_]*[A-Za-z0-9])$/;
+
+/**
+ * Tests whether a given input is a valid hostname.
+ *
+ * __NOTE: Does not validate that the input is a valid domain name, only a valid hostname.__
+ *
+ * @param input - The input to test.
+ * @returns True if `input` is a valid hostname, otherwise returns false.
+ *
+ * ### Valid matches:
+ * - foo
+ * - foo.com
+ * - foo.bar.com
+ * - foo.org
+ * - foo.bar.co.uk
+ * - localhost
+ * - LOCALHOST
+ * - foo-bar-baz
+ * - foo_bar
+ * - foobar123
+ *
+ * ### Invalid matches:
+ * - foo.com/bar
+ * - https://foo.com
+ * - foo_-bar_-
+ * - foo | rm -rf /
+ */
+export function isValidHostname(input: string): boolean {
+  return VALID_HOSTNAME_REGEX.test(input);
+}
+
+/**
+ * Adds the supplied profileUrl to the resource.meta.profile if it is not already
+ * specified
+ * @param resource - A FHIR resource
+ * @param profileUrl - The profile URL to add
+ * @returns The resource
+ */
+export function addProfileToResource<T extends Resource = Resource>(resource: T, profileUrl: string): T {
+  if (!resource?.meta?.profile?.includes(profileUrl)) {
+    resource.meta = resource.meta ?? {};
+    resource.meta.profile = resource.meta.profile ?? [];
+    resource.meta.profile.push(profileUrl);
+  }
+  return resource;
+}
+
+/**
+ * Returns a Map of resources from a bundle, using the specified identifier system as the key.
+ * @param resourceBundle - The bundle of resources.
+ * @param identifierSystem - The identifier system to use for keys.
+ * @returns Map of resources keyed by identifier value for the specified system.
+ */
+export function mapByIdentifier<T extends Resource = Resource>(
+  resourceBundle: Bundle<T>,
+  identifierSystem: string
+): Map<string, T> {
+  const resourceMap = new Map<string, T>(
+    resourceBundle.entry
+      ?.filter((e) => !!e.resource)
+      .map((e) => [getIdentifier(e.resource as Resource, identifierSystem) as string, e.resource as T])
+      .filter(([i]) => i !== undefined) as [string, T][]
+  );
+  return resourceMap;
+}
+
+/**
+ * Removes the supplied profileUrl from the resource.meta.profile if it is present
+ * @param resource - A FHIR resource
+ * @param profileUrl - The profile URL to remove
+ * @returns The resource
+ */
+export function removeProfileFromResource<T extends Resource = Resource>(resource: T, profileUrl: string): T {
+  if (resource?.meta?.profile?.includes(profileUrl)) {
+    const index = resource.meta.profile.indexOf(profileUrl);
+    resource.meta.profile.splice(index, 1);
+  }
+  return resource;
 }

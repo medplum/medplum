@@ -1,5 +1,5 @@
 import { Observation } from '@medplum/fhirtypes';
-import { UCUM } from './constants';
+import { LOINC, UCUM } from './constants';
 import {
   formatAddress,
   formatCodeableConcept,
@@ -423,4 +423,30 @@ test('Format Observation value', () => {
       ],
     } as Observation)
   ).toBe('110 mmHg / 75 mmHg');
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      code: { text: 'Body temperature' },
+      valueQuantity: {
+        value: 36.7,
+        unit: 'C',
+        code: 'Cel',
+        system: UCUM,
+      },
+      component: [
+        {
+          code: { text: 'Body temperature measurement site' },
+          valueCodeableConcept: {
+            coding: [
+              {
+                display: 'Oral',
+                code: 'LA9367-9',
+                system: LOINC,
+              },
+            ],
+          },
+        },
+      ],
+    } as Observation)
+  ).toBe('36.7 C / Oral');
 });

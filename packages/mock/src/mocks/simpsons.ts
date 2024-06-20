@@ -359,6 +359,7 @@ export const HomerObservation1: Observation = {
     display: 'Homer Simpson',
   },
   code: {
+    coding: [{ code: 'test', system: 'http://example.com' }],
     text: 'Test 1',
   },
   valueString: 'test',

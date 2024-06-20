@@ -1,5 +1,5 @@
 import { MedplumClient, parseLogLevel } from '@medplum/core';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
 
 interface Args {
@@ -14,6 +14,13 @@ export async function main(argv: string[]): Promise<App> {
   let args: Args;
   if (argv.length >= 6) {
     args = readCommandLineArgs(argv);
+  } else if (argv.length === 3 && (argv[2] === '-h' || argv[2] === '--help')) {
+    console.log('Expected arguments:');
+    console.log('    baseUrl: The Medplum server base URL.');
+    console.log('    clientId: The OAuth client ID.');
+    console.log('    clientSecret: The OAuth client secret.');
+    console.log('    agentId: The Medplum agent ID.');
+    process.exit(0);
   } else if (existsSync('agent.properties')) {
     args = readPropertiesFile('agent.properties');
   } else {
@@ -44,9 +51,9 @@ export async function main(argv: string[]): Promise<App> {
   const app = new App(medplum, agentId, parseLogLevel(args.logLevel ?? 'INFO'));
   await app.start();
 
-  process.on('SIGINT', () => {
+  process.on('SIGINT', async () => {
     console.log('Gracefully shutting down from SIGINT (Crtl-C)');
-    app.stop();
+    await app.stop();
     process.exit();
   });
 

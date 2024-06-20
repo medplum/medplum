@@ -1,10 +1,9 @@
-import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
-import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { splitN } from '@medplum/core';
 import { KeepJobs } from 'bullmq';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
+import { loadAwsConfig } from './cloud/aws/config';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -24,9 +23,11 @@ export interface MedplumServerConfig {
   signingKeyId: string;
   signingKeyPassphrase: string;
   supportEmail: string;
+  approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
   databaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
+  emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
   bullmq?: MedplumBullmqConfig;
   googleClientId?: string;
@@ -52,6 +53,25 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
+  defaultProjectFeatures?:
+    | (
+        | 'email'
+        | 'bots'
+        | 'cron'
+        | 'google-auth-required'
+        | 'graphql-introspection'
+        | 'terminology'
+        | 'websocket-subscriptions'
+      )[]
+    | undefined;
+  defaultRateLimit?: number;
+  defaultAuthRateLimit?: number;
+
+  /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
+  maxBotLogLengthForResource?: number;
+
+  /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
+  maxBotLogLengthForLogs?: number;
 
   /** Temporary feature flag, to be removed */
   chainedSearchWithReferenceTables?: boolean;
@@ -86,6 +106,7 @@ export interface MedplumDatabaseConfig {
   password?: string;
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
+  runMigrations?: boolean;
 }
 
 export interface MedplumRedisConfig {
@@ -163,10 +184,15 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
-  config.database.port = process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
+  config.database.port = process.env['POSTGRES_PORT'] ? Number.parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
+  config.database.runMigrations = false;
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
+  config.approvedSenderEmails = 'no-reply@example.com';
+  config.emailProvider = 'none';
+  config.logLevel = 'error';
+  config.defaultRateLimit = -1; // Disable rate limiter by default in tests
   return config;
 }
 
@@ -223,69 +249,6 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
 }
 
 /**
- * Loads configuration settings from AWS SSM Parameter Store.
- * @param path - The AWS SSM Parameter Store path prefix.
- * @returns The loaded configuration.
- */
-async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
-  let region = DEFAULT_AWS_REGION;
-  if (path.includes(':')) {
-    [region, path] = splitN(path, ':', 2);
-  }
-
-  const client = new SSMClient({ region });
-  const config: Record<string, any> = {};
-
-  let nextToken: string | undefined;
-  do {
-    const response = await client.send(
-      new GetParametersByPathCommand({
-        Path: path,
-        NextToken: nextToken,
-        WithDecryption: true,
-      })
-    );
-    if (response.Parameters) {
-      for (const param of response.Parameters) {
-        const key = (param.Name as string).replace(path, '');
-        const value = param.Value as string;
-        if (key === 'DatabaseSecrets') {
-          config['database'] = await loadAwsSecrets(region, value);
-        } else if (key === 'RedisSecrets') {
-          config['redis'] = await loadAwsSecrets(region, value);
-        } else if (isIntegerConfig(key)) {
-          config[key] = parseInt(value, 10);
-        } else if (isBooleanConfig(key)) {
-          config[key] = value === 'true';
-        } else {
-          config[key] = value;
-        }
-      }
-    }
-    nextToken = response.NextToken;
-  } while (nextToken);
-
-  return config as MedplumServerConfig;
-}
-
-/**
- * Returns the AWS Database Secret data as a JSON map.
- * @param region - The AWS region.
- * @param secretId - Secret ARN
- * @returns The secret data as a JSON map.
- */
-async function loadAwsSecrets(region: string, secretId: string): Promise<Record<string, any> | undefined> {
-  const client = new SecretsManagerClient({ region });
-  const result = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
-
-  if (!result.SecretString) {
-    return undefined;
-  }
-
-  return JSON.parse(result.SecretString);
-}
-
-/**
  * Adds default values to the config.
  * @param config - The input config as loaded from the config file.
  * @returns The config with default values added.
@@ -306,6 +269,8 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
   config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
+  config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
+  config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
   return config;
 }
 
@@ -316,6 +281,8 @@ function isIntegerConfig(key: string): boolean {
 function isBooleanConfig(key: string): boolean {
   return (
     key === 'botCustomFunctionsEnabled' ||
+    key === 'database.ssl.rejectUnauthorized' ||
+    key === 'database.ssl.require' ||
     key === 'logRequests' ||
     key === 'logAuditEvents' ||
     key === 'registerEnabled' ||
@@ -325,5 +292,5 @@ function isBooleanConfig(key: string): boolean {
 }
 
 function isObjectConfig(key: string): boolean {
-  return key === 'tls';
+  return key === 'tls' || key === 'ssl';
 }

@@ -9,6 +9,18 @@ set -x
 # Set node options
 export NODE_OPTIONS='--max-old-space-size=5120'
 
+# Clear old code coverage data
+rm -rf coverage
+mkdir -p coverage/packages
+mkdir -p coverage/combined
+
+# Seed the database
+# This is a special "test" which runs all of the seed logic, such as setting up structure definitions
+# On a normal developer machine, this is run only rarely when setting up a new database
+# This test must be run first, and cannot be run concurrently with other tests
+SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/server -- --coverage
+cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
+
 # Test
 # Run them separately because code coverage is resource intensive
 
@@ -20,16 +32,12 @@ done
 
 for dir in `ls examples`; do
   if test -f "examples/$dir/package.json" && grep -q "\"test\":" "examples/$dir/package.json"; then
-    npx turbo run test --filter=./packages/$dir
+    npx turbo run test --filter=./examples/$dir
   fi
 done
 
 
 # Combine test coverage
-rm -rf coverage
-mkdir -p coverage/packages
-mkdir -p coverage/combined
-
 PACKAGES=(
   "agent"
   "app"

@@ -31,14 +31,14 @@ interface PolicyStatement {
 export async function updateBucketPoliciesCommand(tag: string, options: UpdateBucketPoliciesOptions): Promise<void> {
   const config = readConfig(tag, options);
   if (!config) {
-    await printConfigNotFound(tag, options);
-    return;
+    printConfigNotFound(tag, options);
+    throw new Error(`Config not found: ${tag}`);
   }
 
   const details = await getStackByTag(tag);
   if (!details) {
     await printStackNotFound(tag);
-    return;
+    throw new Error(`Stack not found: ${tag}`);
   }
 
   await updateBucketPolicy('App', details.appBucket, details.appDistribution, details.appOriginAccessIdentity, options);
@@ -62,26 +62,22 @@ export async function updateBucketPolicy(
   options: UpdateBucketPoliciesOptions
 ): Promise<void> {
   if (!bucketResource?.PhysicalResourceId) {
-    console.log(`${friendlyName} bucket not found`);
-    return;
+    throw new Error(`${friendlyName} bucket not found`);
   }
 
   if (!distributionResource?.PhysicalResourceId) {
-    console.log(`${friendlyName} distribution not found`);
-    return;
+    throw new Error(`${friendlyName} distribution not found`);
   }
 
   if (!oaiResource?.PhysicalResourceId) {
-    console.log(`${friendlyName} OAI not found`);
-    return;
+    throw new Error(`${friendlyName} OAI not found`);
   }
 
   const bucketName = bucketResource.PhysicalResourceId;
   const oaiId = oaiResource.PhysicalResourceId;
   const bucketPolicy = await getPolicy(bucketName);
   if (policyHasStatement(bucketPolicy, bucketName, oaiId)) {
-    console.log(`${friendlyName} bucket already has policy statement`);
-    return;
+    throw new Error(`${friendlyName} bucket already has policy statement`);
   }
 
   addPolicyStatement(bucketPolicy, bucketName, oaiId);

@@ -8,8 +8,8 @@ import {
 import { CloudFrontClient, CreatePublicKeyCommand } from '@aws-sdk/client-cloudfront';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
-import { generateKeyPairSync, randomUUID } from 'crypto';
-import { existsSync } from 'fs';
+import { generateKeyPairSync, randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { getConfigFileName, writeConfig } from '../utils';
 import { ask, checkOk, choose, chooseInt, closeTerminal, header, initTerminal, print, yesOrNo } from './terminal';
 import { getServerVersions, writeParameters } from './utils';

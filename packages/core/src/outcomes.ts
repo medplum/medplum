@@ -8,8 +8,9 @@ const NOT_MODIFIED_ID = 'not-modified';
 const NOT_FOUND_ID = 'not-found';
 const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
-const PRECONDITION_FAILED_ID = 'precondition-failed';
 const FORBIDDEN_ID = 'forbidden';
+const PRECONDITION_FAILED_ID = 'precondition-failed';
+const MULTIPLE_MATCHES_ID = 'multiple-matches';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 const ACCEPTED_ID = 'accepted';
 
@@ -117,9 +118,23 @@ export const preconditionFailed: OperationOutcome = {
   issue: [
     {
       severity: 'error',
-      code: 'lock-error',
+      code: 'processing',
       details: {
         text: 'Precondition Failed',
+      },
+    },
+  ],
+};
+
+export const multipleMatches: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: MULTIPLE_MATCHES_ID,
+  issue: [
+    {
+      severity: 'error',
+      code: 'multiple-matches',
+      details: {
+        text: 'Multiple resources found matching condition',
       },
     },
   ],
@@ -166,7 +181,7 @@ export function badRequest(details: string, expression?: string): OperationOutco
         details: {
           text: details,
         },
-        expression: expression ? [expression] : undefined,
+        ...(expression ? { expression: [expression] } : undefined),
       },
     ],
   };
@@ -266,6 +281,7 @@ export function getStatus(outcome: OperationOutcome): number {
     case GONE_ID:
       return 410;
     case PRECONDITION_FAILED_ID:
+    case MULTIPLE_MATCHES_ID:
       return 412;
     case TOO_MANY_REQUESTS_ID:
       return 429;

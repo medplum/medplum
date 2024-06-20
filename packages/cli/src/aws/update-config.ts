@@ -6,6 +6,7 @@ import { printConfigNotFound, writeParameters } from './utils';
 export interface UpdateConfigOptions {
   file?: string;
   dryrun?: boolean;
+  yes?: boolean;
 }
 
 /**
@@ -19,8 +20,8 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
 
     const infraConfig = readConfig(tag, options) as MedplumInfraConfig;
     if (!infraConfig) {
-      await printConfigNotFound(tag, options);
-      return;
+      printConfigNotFound(tag, options);
+      throw new Error(`Config not found: ${tag}`);
     }
 
     const serverConfig = readServerConfig(tag) ?? {};
@@ -44,7 +45,7 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
       )
     );
 
-    if (await yesOrNo('Do you want to store these values in AWS Parameter Store?')) {
+    if (options.yes || (await yesOrNo('Do you want to store these values in AWS Parameter Store?'))) {
       await writeParameters(
         infraConfig.region,
         `/medplum/${infraConfig.name}/`,

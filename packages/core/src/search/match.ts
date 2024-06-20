@@ -1,8 +1,8 @@
-import { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, Identifier, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPath } from '../fhirpath/parse';
-import { globalSchema } from '../types';
+import { PropertyType, globalSchema } from '../types';
 import { SearchParameterType, getSearchParameterDetails } from './details';
-import { Filter, Operator, SearchRequest } from './search';
+import { Filter, Operator, SearchRequest, splitSearchOnComma } from './search';
 
 /**
  * Determines if the resource matches the search request.
@@ -33,11 +33,13 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
   const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
-  if (filter.operator === Operator.MISSING && searchParam) {
-    const values = evalFhirPath(searchParam.expression as string, resource);
-    return filter.value === 'true' ? !values.length : values.length > 0;
+  if (!searchParam) {
+    return false;
   }
-  switch (searchParam?.type) {
+  if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
+    return matchesMissingOrPresent(resource, filter, searchParam);
+  }
+  switch (searchParam.type) {
     case 'reference':
       return matchesReferenceFilter(resource, filter, searchParam);
     case 'string':
@@ -54,6 +56,15 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
   }
 }
 
+function matchesMissingOrPresent(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
+  const values = evalFhirPath(searchParam.expression as string, resource);
+  const exists = values.length > 0;
+  const desired =
+    (filter.operator === Operator.MISSING && filter.value === 'false') ||
+    (filter.operator === Operator.PRESENT && filter.value === 'true');
+  return desired === exists;
+}
+
 function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
   const values = evalFhirPath(searchParam.expression as string, resource) as (Reference | string)[];
   const negated = isNegated(filter.operator);
@@ -67,7 +78,7 @@ function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam:
   // Normalize the values array into reference strings
   const references = values.map((value) => (typeof value === 'string' ? value : value.reference));
 
-  for (const filterValue of filter.value.split(',')) {
+  for (const filterValue of splitSearchOnComma(filter.value)) {
     let match = references.includes(filterValue);
     if (!match && filter.code === '_compartment') {
       // Backwards compability for compartment search parameter
@@ -107,12 +118,21 @@ function matchesStringFilter(
   searchParam: SearchParameter,
   asToken?: boolean
 ): boolean {
+  const details = getSearchParameterDetails(resource.resourceType, searchParam);
+  const searchParamElementType = details.elementDefinitions?.[0].type?.[0].code;
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
-  const filterValues = filter.value.split(',');
+  const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      const match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
+      let match;
+      if (searchParamElementType === PropertyType.Identifier) {
+        match = matchesTokenIdentifierValue(resourceValue as Identifier, filter.operator, filterValue);
+      } else if (searchParamElementType === PropertyType.CodeableConcept) {
+        match = matchesTokenCodeableConceptValue(resourceValue as Coding, filter.operator, filterValue);
+      } else {
+        match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
+      }
       if (match) {
         return !negated;
       }
@@ -147,9 +167,42 @@ function matchesStringValue(
   return str.toLowerCase().includes(filterValue.toLowerCase());
 }
 
+function matchesTokenIdentifierValue(resourceValue: Identifier, operator: Operator, filterValue: string): boolean {
+  if (filterValue.includes('|')) {
+    const [system, value] = filterValue.split('|');
+    return (
+      resourceValue.system?.toLowerCase() === system.toLowerCase() &&
+      resourceValue.value?.toLowerCase() === value.toLowerCase()
+    );
+  }
+
+  return resourceValue.value?.toLowerCase() === filterValue.toLowerCase();
+}
+
+function matchesTokenCodeableConceptValue(
+  resourceValue: CodeableConcept,
+  operator: Operator,
+  filterValue: string
+): boolean {
+  if (filterValue.includes('|')) {
+    const [system, code] = filterValue.split('|');
+    return (
+      resourceValue.coding?.some(
+        (coding) =>
+          coding.system?.toLowerCase() === system.toLowerCase() && coding.code?.toLowerCase() === code.toLowerCase()
+      ) ?? false
+    );
+  }
+
+  return (
+    resourceValue.text?.toLowerCase() === filterValue.toLowerCase() ||
+    (resourceValue.coding?.some((coding) => coding.code?.toLowerCase() === filterValue.toLowerCase()) ?? false)
+  );
+}
+
 function matchesDateFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
-  const filterValues = filter.value.split(',');
+  const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {

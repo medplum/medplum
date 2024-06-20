@@ -4,8 +4,11 @@ toc_max_heading_level: 4
 sidebar_position: 3
 ---
 
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
 import TabItem from '@theme/TabItem';
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/binary-data.ts';
 
 # Binary Data
 
@@ -148,6 +151,17 @@ This powerful feature grants several benefits:
 - **No Need for Authorization Header:** Presigned URLs inherently carry authorization, meaning no additional headers are required.
 - **Compatibility with Media Tags:** Works seamlessly with HTML tags like `<img>` and `<video>`.
 - **Supports Range Requests:** Perfect for streaming large media files.
+
+Using this feature in the browser can potentially cause CORS issues. If you are displaying the `[Binary](https://www.notion.so/docs/api/fhir/resources/binary)` in `<a>` or `<object>` tags, you can use the URL as is.
+
+However, if you want to allow users to download the [`Binary`](/docs/api/fhir/resources/binary) you will need to use the Medplum provided `download` helper function. This function takes a URL in the `Binary/{id}` format. This string is included in the presigned URL, so you will need to parse it to use the function.
+
+<details>
+  <summary>Example: Download a Binary</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="downloadBinary">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
 
 In essence, Medplum elevates the utility of the FHIR `Binary` resource type. By streamlining the upload and retrieval processes, Medplum provides developers with a straightforward, optimized, and user-friendly means to manage binary files in healthcare applications.
 

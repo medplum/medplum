@@ -11,6 +11,7 @@ import { App } from './App';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
+  cacheTime: 3000,
   // baseUrl: 'http://localhost:8103/', //Uncomment this to run against the server on your localhost; also change `googleClientId` in `./pages/SignInPage.tsx`
 });
 
@@ -40,7 +41,7 @@ root.render(
   <StrictMode>
     <MedplumProvider medplum={medplum} navigate={router.navigate}>
       <MantineProvider theme={theme}>
-        <Notifications />
+        <Notifications position="bottom-right" />
         <RouterProvider router={router} />
       </MantineProvider>
     </MedplumProvider>

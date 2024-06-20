@@ -467,6 +467,24 @@ export interface ActivityDefinition {
 }
 
 /**
+ * A code or group definition that describes the intended subject of the
+ * activity being defined.
+ */
+export type ActivityDefinitionSubject = CodeableConcept | Reference<Group>;
+
+/**
+ * The period, timing or frequency upon which the described activity is
+ * to occur.
+ */
+export type ActivityDefinitionTiming = Age | Duration | Period | Range | string | Timing;
+
+/**
+ * Identifies the food, drug or other product being consumed or supplied
+ * in the activity.
+ */
+export type ActivityDefinitionProduct = CodeableConcept | Reference<Medication | Substance>;
+
+/**
  * Dynamic values that will be evaluated to produce values for elements
  * of the resulting resource. For example, if the dosage of a medication
  * must be computed based on the patient's weight, a dynamic value would

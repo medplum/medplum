@@ -1,6 +1,12 @@
-import { Bundle, Communication, Parameters, SubscriptionStatus } from '@medplum/fhirtypes';
+import { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
-import { RobustWebSocket, SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from '.';
+import {
+  RobustWebSocket,
+  SubscriptionEmitter,
+  SubscriptionEventMap,
+  SubscriptionManager,
+  resourceMatchesSubscriptionCriteria,
+} from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
 import { OperationOutcomeError } from '../outcomes';
@@ -8,6 +14,7 @@ import { createReference, sleep } from '../utils';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
+const SECOND_SUBSCRIPTION_ID = '0474fa07-b98a-4172-b430-5ae234c95222';
 
 const medplum = new MockMedplumClient();
 medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
@@ -359,6 +366,84 @@ describe('SubscriptionManager', () => {
       expect(console.error).toHaveBeenCalledTimes(2);
       console.error = originalError;
     });
+
+    test('should track separate `Subscription` resources for same criteria with different `subscriptionProps`', async () => {
+      const originalWarn = console.warn;
+      console.warn = jest.fn();
+
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      await wsServer.connected;
+
+      medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'token',
+              valueString: 'token-123',
+            },
+            {
+              name: 'expiration',
+              valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            {
+              name: 'websocket-url',
+              valueUrl: 'wss://example.com/ws/subscriptions-r4',
+            },
+          ],
+        } as Parameters;
+      });
+
+      medplum.router.addRoute('GET', `/fhir/R4/Subscription/${SECOND_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'token',
+              valueString: 'token-123',
+            },
+            {
+              name: 'expiration',
+              valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            {
+              name: 'websocket-url',
+              valueUrl: 'wss://example.com/ws/subscriptions-r4',
+            },
+          ],
+        } as Parameters;
+      });
+
+      manager.addCriteria('Communication');
+      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
+      manager.addCriteria('Communication', {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      });
+
+      expect(manager.getCriteriaCount()).toEqual(2);
+
+      manager.removeCriteria('Communication');
+      expect(manager.getCriteriaCount()).toEqual(1);
+
+      manager.removeCriteria('Communication', {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      });
+      expect(manager.getCriteriaCount()).toEqual(0);
+
+      expect(console.warn).toHaveBeenCalledTimes(2);
+      console.warn = originalWarn;
+      medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
+    });
   });
 
   describe('removeCriteria()', () => {
@@ -418,50 +503,54 @@ describe('SubscriptionManager', () => {
       console.warn = originalWarn;
     });
 
-    test('should not clean up a criteria if there are outstanding listeners', (done) => {
+    test('should not clean up a criteria if there are outstanding listeners', async () => {
       let success = false;
       const emitter = manager.addCriteria('Communication');
       expect(emitter).toBeInstanceOf(SubscriptionEmitter);
 
+      let receivedDisconnect = false;
       const handler = (): void => {
         emitter.removeEventListener('disconnect', handler);
         if (!success) {
-          done(new Error('Received `disconnect` when not expected'));
+          receivedDisconnect = true;
         }
       };
       emitter.addEventListener('disconnect', handler);
 
       manager.removeCriteria('Communication');
 
-      sleep(200)
-        .then(() => {
-          emitter.removeEventListener('disconnect', handler);
-          success = true;
-          done();
-        })
-        .catch(console.error);
+      await sleep(500);
+      expect(wsServer).not.toHaveReceivedMessages([{ type: 'unbind-from-token', payload: { token: 'token-123' } }]);
+
+      emitter.removeEventListener('disconnect', handler);
+      success = true;
+
+      if (receivedDisconnect) {
+        throw new Error('Received `disconnect` when not expected');
+      }
     });
 
-    test('should clean up for a criteria if we are the last subscriber', (done) => {
+    test('should clean up for a criteria if we are the last subscriber', async () => {
       let success = false;
+
       const handler = (): void => {
         emitter.removeEventListener('disconnect', handler);
         expect(true).toBeTruthy();
         success = true;
-        done();
       };
       emitter.addEventListener('disconnect', handler);
 
       manager.removeCriteria('Communication');
 
-      sleep(200)
-        .then(() => {
-          emitter.removeEventListener('disconnect', handler);
-          if (!success) {
-            done(new Error('Expected to receive `disconnect` message'));
-          }
-        })
-        .catch(console.error);
+      // Give time for the async tasks to complete before checking for success
+      await sleep(200);
+
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
+
+      emitter.removeEventListener('disconnect', handler);
+      if (!success) {
+        throw new Error('Expected to receive `disconnect` message');
+      }
     });
   });
 
@@ -496,14 +585,38 @@ describe('SubscriptionManager', () => {
     });
 
     test('should return the correct amount of criteria', async () => {
+      const originalWarn = console.warn;
+      console.warn = jest.fn();
+
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
       expect(manager.getCriteriaCount()).toEqual(0);
       manager.addCriteria('Communication');
       expect(manager.getCriteriaCount()).toEqual(1);
+      manager.addCriteria('Communication', {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      });
+      expect(manager.getCriteriaCount()).toEqual(2);
       manager.removeCriteria('Communication');
+      expect(manager.getCriteriaCount()).toEqual(1);
+      manager.removeCriteria('Communication', {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      });
       expect(manager.getCriteriaCount()).toEqual(0);
+
+      expect(console.warn).toHaveBeenCalledTimes(2);
+      console.warn = originalWarn;
     });
   });
 
@@ -747,5 +860,55 @@ describe('SubscriptionManager', () => {
       expect(console.error).toHaveBeenCalledTimes(1);
       console.error = originalError;
     });
+  });
+});
+
+describe('resourceMatchesSubscriptionCriteria', () => {
+  it('should return true for a resource that matches the criteria', async () => {
+    const subscription: Subscription = {
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'test subscription',
+      criteria: 'Communication',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+          valueString: '%previous.status = "in-progress" and %current.status = "completed"',
+        },
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+          valueCode: 'update',
+        },
+      ],
+    };
+
+    const result1 = await resourceMatchesSubscriptionCriteria({
+      resource: {
+        resourceType: 'Communication',
+        status: 'in-progress',
+      },
+      subscription,
+      context: { interaction: 'create' },
+      getPreviousResource: async () => undefined,
+    });
+    expect(result1).toBe(false);
+
+    const result2 = await resourceMatchesSubscriptionCriteria({
+      resource: {
+        resourceType: 'Communication',
+        status: 'completed',
+      },
+      subscription,
+      context: { interaction: 'update' },
+      getPreviousResource: async () => ({
+        resourceType: 'Communication',
+        status: 'in-progress',
+      }),
+    });
+    expect(result2).toBe(true);
   });
 });

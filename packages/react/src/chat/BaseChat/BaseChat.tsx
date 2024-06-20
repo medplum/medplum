@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Paper, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Group, Paper, PaperProps, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ProfileResource, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
@@ -41,7 +41,7 @@ function upsertCommunications(
   setCommunications(newCommunications);
 }
 
-export interface BaseChatProps {
+export interface BaseChatProps extends PaperProps {
   readonly title: string;
   readonly communications: Communication[];
   readonly setCommunications: (communications: Communication[]) => void;
@@ -52,7 +52,16 @@ export interface BaseChatProps {
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
-  const { title, communications, setCommunications, query, sendMessage, onMessageReceived, inputDisabled } = props;
+  const {
+    title,
+    communications,
+    setCommunications,
+    query,
+    sendMessage,
+    onMessageReceived,
+    inputDisabled,
+    ...paperProps
+  } = props;
   const medplum = useMedplum();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -149,7 +158,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   }
 
   return (
-    <Paper className={classes.chatPaper} p={0} radius="md">
+    <Paper className={classes.chatPaper} p={0} radius="md" {...paperProps}>
       <Title order={2} className={classes.chatTitle}>
         {title}
       </Title>

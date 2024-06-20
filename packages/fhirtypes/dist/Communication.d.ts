@@ -307,3 +307,9 @@ export interface CommunicationPayload {
    */
   contentReference?: Reference<Resource>;
 }
+
+/**
+ * A communicated content (or for multi-part communications, one portion
+ * of the communication).
+ */
+export type CommunicationPayloadContent = Attachment | Reference<Resource> | string;

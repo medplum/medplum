@@ -102,6 +102,12 @@ export interface DataRequirement {
 }
 
 /**
+ * The intended subjects of the data requirement. If this element is not
+ * provided, a Patient subject is assumed.
+ */
+export type DataRequirementSubject = CodeableConcept | Reference<Group>;
+
+/**
  * Code filters specify additional constraints on the data, specifying
  * the value set of interest for a particular element of the data. Each
  * code filter defines an additional constraint on the data, i.e. code
@@ -237,6 +243,16 @@ export interface DataRequirementDateFilter {
    */
   valueDuration?: Duration;
 }
+
+/**
+ * The value of the filter. If period is specified, the filter will
+ * return only those data items that fall within the bounds determined by
+ * the Period, inclusive of the period boundaries. If dateTime is
+ * specified, the filter will return only those data items that are equal
+ * to the specified dateTime. If a Duration is specified, the filter will
+ * return only those data items that fall within Duration before now.
+ */
+export type DataRequirementDateFilterValue = Duration | Period | string;
 
 /**
  * Specifies the order of the results to be returned.

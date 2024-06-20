@@ -71,9 +71,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     );
   }
 
-  const isArrayElement = Boolean(props.arrayElement);
-
-  if (property?.max && property.max > 1 && !isArrayElement) {
+  if (property && (property.isArray || property.max > 1) && !props.arrayElement) {
     if (propertyType === PropertyType.Attachment) {
       return (
         <AttachmentArrayDisplay

@@ -31,7 +31,7 @@ import {
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { LOINC, RXNORM, SNOMED, UCUM } from '../constants';
+import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
@@ -408,6 +408,33 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(patient, { profile: patientProfile })).not.toThrow();
   });
 
+  // This test is failing because we do not recursively validate extensions. In this case,
+  // US Core Race requires the `text` extension, so not having it should fail validation.
+  test.failing('Nested extensions are not yet validated', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['New'], family: 'User' }],
+      identifier: [{ system: 'http://names.io', value: 'new-user' }],
+      gender: 'male',
+      extension: [
+        {
+          url: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
+          extension: [
+            {
+              url: 'ombCategory',
+              valueCoding: { system: 'urn:oid:2.16.840.1.113883.6.238', code: '2106-3', display: 'White' },
+            },
+            //{
+            // url: 'text',
+            // valueString: 'This should be required',
+            //},
+          ],
+        },
+      ],
+    };
+    expect(() => validateResource(patient, { profile: patientProfile })).toThrow();
+  });
+
   test('Valid resource with nulls in primitive extension', () => {
     expect(() => {
       validateResource({
@@ -661,6 +688,74 @@ describe('FHIR resource validation', () => {
       },
     };
     expect(() => validateResource(observation, { profile: bodyWeightProfile as StructureDefinition })).not.toThrow();
+  });
+
+  describe('Slice with pattern on $this', () => {
+    const healthConcernsProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__/us-core-condition-problems-health-concerns.json'), 'utf8')
+    ) as StructureDefinition;
+
+    const baseCondition: Condition = {
+      resourceType: 'Condition',
+      code: {
+        coding: [
+          {
+            system: 'http://snomed.info/sct',
+            code: '102263004',
+            display: 'Eggs',
+          },
+        ],
+      },
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'],
+      },
+      subject: {
+        reference: 'Patient/6de16ccc-3ae2-49e0-b2d0-178a6c6de872',
+      },
+    };
+
+    test('Missing Condition.category', () => {
+      const conditionNoCategory = deepClone(baseCondition);
+      conditionNoCategory.category = undefined;
+      expect(() => validateResource(conditionNoCategory, { profile: healthConcernsProfile })).toThrow();
+    });
+
+    // Slicing by ValueSet not supported without async validation. Ideally validating this resource would fail,
+    // but it must pass for now to make it possible to save resources against profiles using ValueSet slicing
+    // like https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-condition-problems-health-concerns.html
+    test.failing('Populated but missing required Condition.category', () => {
+      const conditionWrongCategory = deepClone(baseCondition);
+      conditionWrongCategory.category = [
+        {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/us/core/CodeSystem/us-core-tags',
+              code: 'sdoh',
+              display: 'SDOH',
+            },
+          ],
+          text: 'Social Determinants Of Health',
+        },
+      ];
+      expect(() => validateResource(conditionWrongCategory, { profile: healthConcernsProfile })).toThrow();
+    });
+
+    test('Populated with valid Condition.category', () => {
+      const validCondition: Condition = deepClone(baseCondition);
+      validCondition.category = [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+              code: 'problem-list-item',
+              display: 'Problem List Item',
+            },
+          ],
+          text: 'Problem List Item',
+        },
+      ];
+      expect(() => validateResource(validCondition, { profile: healthConcernsProfile })).not.toThrow();
+    });
   });
 
   test('validateResource', () => {
@@ -1259,6 +1354,19 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(e3, { profile })).toThrow();
   });
 
+  // TODO: Change this check from warning to error
+  // Duplicate entries for choice-of-type property is currently a warning
+  // We need to first log and track this, and notify customers of breaking changes
+  function expectOneWarning(resource: Resource, textContains: string): void {
+    const issues = validateResource(resource);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain(textContains);
+  }
+
+  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Duplicate choice of type property';
+  const PRIMITIVE_EXTENSION_TYPE_MISMATCH = 'Type of primitive extension does not match the type of property';
+
   test('Multiple values for choice of type property', () => {
     const carePlan: CarePlan = {
       resourceType: 'CarePlan',
@@ -1286,13 +1394,91 @@ describe('FHIR resource validation', () => {
       ],
     };
 
-    // TODO: Change this check from warning to error
-    // Duplicate entries for choice-of-type property is currently a warning
-    // We need to first log and track this, and notify customers of breaking changes
-    const issues = validateResource(carePlan);
-    expect(issues).toHaveLength(1);
-    expect(issues[0].severity).toBe('warning');
-    expect(issues[0].details?.text).toContain('Duplicate choice of type property');
+    expectOneWarning(carePlan, DUPLICATE_CHOICE_OF_TYPE_PROPERTY);
+  });
+
+  test('Valid choice of type properties with primitive extensions', () => {
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+      } as Patient)
+    ).toHaveLength(0);
+
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+
+    // check both orders of the properties
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthInteger: {
+          extension: [],
+        },
+      } as Patient)
+    ).toHaveLength(0);
+  });
+
+  test('Invalid choice of type properties with primitive extensions', () => {
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        multipleBirthBoolean: true,
+        multipleBirthInteger: 2,
+      } as Patient,
+      DUPLICATE_CHOICE_OF_TYPE_PROPERTY
+    );
+
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        _multipleBirthInteger: {
+          extension: [],
+        },
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+      } as Patient,
+      DUPLICATE_CHOICE_OF_TYPE_PROPERTY
+    );
+
+    // Primitive extension type mismatch, check both orders of the properties
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        multipleBirthInteger: 2,
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+      } as Patient,
+      PRIMITIVE_EXTENSION_TYPE_MISMATCH
+    );
+    expectOneWarning(
+      {
+        resourceType: 'Patient',
+        _multipleBirthBoolean: {
+          extension: [],
+        },
+        multipleBirthInteger: 2,
+      } as Patient,
+      PRIMITIVE_EXTENSION_TYPE_MISMATCH
+    );
   });
 
   test('Reference type check', () => {

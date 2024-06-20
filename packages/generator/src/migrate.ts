@@ -220,7 +220,6 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
     name: resourceType + '_Token',
     columns: [
       { name: 'resourceId', type: 'UUID NOT NULL' },
-      { name: 'index', type: 'INTEGER' },
       { name: 'code', type: 'TEXT NOT NULL' },
       { name: 'system', type: 'TEXT' },
       { name: 'value', type: 'TEXT' },
@@ -247,6 +246,10 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
 
 function buildSearchColumns(tableDefinition: TableDefinition, resourceType: string): void {
   for (const searchParam of searchParams) {
+    if (searchParam.type === 'composite') {
+      continue;
+    }
+
     if (!searchParam.base?.includes(resourceType as ResourceType)) {
       continue;
     }
@@ -260,7 +263,18 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
     tableDefinition.columns.push({ name: columnName, type: getColumnType(details) });
     tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree' });
   }
+  for (const add of additionalSearchColumns) {
+    if (add.table !== tableDefinition.name) {
+      continue;
+    }
+    tableDefinition.columns.push({ name: add.column, type: add.type });
+    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType as IndexType });
+  }
 }
+
+const additionalSearchColumns = [
+  { table: 'MeasureReport', column: 'period_range', type: 'TSTZRANGE', indexType: 'gist' },
+];
 
 function isLookupTableParam(searchParam: SearchParameter, details: SearchParameterDetails): boolean {
   // Identifier
@@ -401,7 +415,6 @@ function buildValueSetElementTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'ValueSetElement',
     columns: [
-      { name: 'id', type: 'UUID NOT NULL PRIMARY KEY' }, // Deprecated - to be removed
       { name: 'resourceId', type: 'UUID NOT NULL' },
       { name: 'system', type: 'TEXT' },
       { name: 'code', type: 'TEXT' },
@@ -472,6 +485,11 @@ function migrateColumns(b: FileBuilder, startTable: TableDefinition, targetTable
       writeUpdateColumn(b, targetTable, targetColumn);
     }
   }
+  for (const startColumn of startTable.columns) {
+    if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
+      writeDropColumn(b, targetTable, startColumn);
+    }
+  }
 }
 
 function normalizeColumnType(column: ColumnDefinition): string {
@@ -479,6 +497,7 @@ function normalizeColumnType(column: ColumnDefinition): string {
     .replaceAll('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ')
     .replaceAll(' PRIMARY KEY', '')
     .replaceAll(' DEFAULT FALSE', '')
+    .replaceAll(' NOT NULL', '')
     .trim();
 }
 
@@ -491,6 +510,12 @@ function writeAddColumn(b: FileBuilder, tableDefinition: TableDefinition, column
 function writeUpdateColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
   b.appendNoWrap(
     `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${columnDefinition.name}" TYPE ${columnDefinition.type}');`
+  );
+}
+
+function writeDropColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
+  b.appendNoWrap(
+    `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" DROP COLUMN IF EXISTS "${columnDefinition.name}"');`
   );
 }
 

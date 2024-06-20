@@ -25,6 +25,7 @@ import {
   SearchRequest,
   SortRule,
   splitN,
+  splitSearchOnComma,
   subsetResource,
   toPeriod,
   toTypedValue,
@@ -328,7 +329,7 @@ async function getSearchIncludeEntries(
   const includedResources = readResult.filter(isResource);
 
   const canonicalReferences = fhirPathResult
-    .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type))
+    .filter((typedValue) => ([PropertyType.canonical, PropertyType.uri] as string[]).includes(typedValue.type))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
     const canonicalSearches = (searchParam.target || []).map((resourceType) =>
@@ -542,13 +543,14 @@ export function buildSearchExpression(
   const expressions: Expression[] = [];
   if (searchRequest.filters) {
     for (const filter of searchRequest.filters) {
+      let expr: Expression | undefined;
       if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
         const chain = parseChainedParameter(searchRequest.resourceType, filter.code, filter.value);
-        buildChainedSearch(selectQuery, searchRequest.resourceType, chain);
-        continue;
+        expr = buildChainedSearch(selectQuery, searchRequest.resourceType, chain);
+      } else {
+        expr = buildSearchFilterExpression(selectQuery, resourceType, resourceType, filter);
       }
 
-      const expr = buildSearchFilterExpression(selectQuery, resourceType, resourceType, filter);
       if (expr) {
         expressions.push(expr);
       }
@@ -579,6 +581,11 @@ function buildSearchFilterExpression(
 ): Expression {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
+  }
+
+  if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
+    const chain = parseChainedParameter(resourceType, filter.code, filter.value);
+    return buildChainedSearch(selectQuery, resourceType, chain);
   }
 
   const specialParamExpression = trySpecialSearchParameter(selectQuery, resourceType, table, filter);
@@ -627,21 +634,27 @@ function buildNormalSearchFilterExpression(
 ): Expression {
   const details = getSearchParameterDetails(resourceType, param);
   if (filter.operator === Operator.MISSING) {
-    return new Condition(details.columnName, filter.value === 'true' ? '=' : '!=', null);
+    return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '=' : '!=', null);
+  } else if (filter.operator === Operator.PRESENT) {
+    return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '!=' : '=', null);
   } else if (param.type === 'string') {
-    return buildStringSearchFilter(details, filter.operator, filter.value.split(','));
+    return buildStringSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
   } else if (param.type === 'token' || param.type === 'uri') {
-    return buildTokenSearchFilter(table, details, filter.operator, filter.value.split(','));
+    return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
   } else if (param.type === 'reference') {
-    return buildReferenceSearchFilter(details, filter.value.split(','));
+    return buildReferenceSearchFilter(table, details, splitSearchOnComma(filter.value));
   } else if (param.type === 'date') {
     return buildDateSearchFilter(table, details, filter);
   } else if (param.type === 'quantity') {
-    return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
+    return new Condition(
+      new Column(table, details.columnName),
+      fhirOperatorToSqlOperator(filter.operator),
+      filter.value
+    );
   } else {
-    const values = filter.value
-      .split(',')
-      .map((v) => new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), v));
+    const values = splitSearchOnComma(filter.value).map(
+      (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
+    );
     const expr = new Disjunction(values);
     return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
   }
@@ -669,7 +682,7 @@ function trySpecialSearchParameter(
         table,
         { columnName: 'id', type: SearchParameterType.UUID },
         filter.operator,
-        filter.value.split(',')
+        splitSearchOnComma(filter.value)
       );
     case '_lastUpdated':
       return buildDateSearchFilter(table, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
@@ -679,7 +692,7 @@ function trySpecialSearchParameter(
         table,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
         filter.operator,
-        filter.value.split(',')
+        splitSearchOnComma(filter.value)
       );
     case '_filter':
       return buildFilterParameterExpression(selectQuery, resourceType, table, parseFilterParameter(filter.value));
@@ -733,27 +746,38 @@ function buildFilterParameterComparison(
 
 /**
  * Adds a string search filter as "WHERE" clause to the query builder.
+ * @param table - The table in which to search.
  * @param details - The search parameter details.
  * @param operator - The search operator.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
-function buildStringSearchFilter(details: SearchParameterDetails, operator: Operator, values: string[]): Expression {
-  const conditions = values.map((v) => {
-    if (operator === Operator.EXACT) {
-      return new Condition(details.columnName, '=', v);
-    } else if (operator === Operator.CONTAINS) {
-      return new Condition(details.columnName, 'LIKE', `%${v}%`);
-    } else {
-      return new Condition(details.columnName, 'LIKE', `${v}%`);
-    }
-  });
+function buildStringSearchFilter(
+  table: string,
+  details: SearchParameterDetails,
+  operator: Operator,
+  values: string[]
+): Expression {
+  const column = new Column(details.array ? undefined : table, details.columnName);
 
-  const expression = new Disjunction(conditions);
+  const expression = buildStringFilterExpression(column, operator, values);
   if (details.array) {
-    return new ArraySubquery(new Column(undefined, details.columnName), expression);
+    return new ArraySubquery(new Column(table, details.columnName), expression);
   }
   return expression;
+}
+
+function buildStringFilterExpression(column: Column, operator: Operator, values: string[]): Expression {
+  const conditions = values.map((v) => {
+    if (operator === Operator.EXACT) {
+      return new Condition(column, '=', v);
+    } else if (operator === Operator.CONTAINS) {
+      return new Condition(column, 'LIKE', `%${v}%`);
+    } else {
+      return new Condition(column, 'LIKE', `${v}%`);
+    }
+  });
+  return new Disjunction(conditions);
 }
 
 /**
@@ -812,20 +836,22 @@ function buildTokenSearchFilter(
 
 /**
  * Adds a reference search filter as "WHERE" clause to the query builder.
+ * @param table - The table in which to search.
  * @param details - The search parameter details.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
-function buildReferenceSearchFilter(details: SearchParameterDetails, values: string[]): Expression {
+function buildReferenceSearchFilter(table: string, details: SearchParameterDetails, values: string[]): Expression {
+  const column = new Column(table, details.columnName);
   values = values.map((v) =>
     !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
   );
   if (details.array) {
-    return new Condition(details.columnName, 'ARRAY_CONTAINS', values, 'TEXT[]');
+    return new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
   } else if (values.length === 1) {
-    return new Condition(details.columnName, '=', values[0]);
+    return new Condition(column, '=', values[0]);
   }
-  return new Condition(details.columnName, 'IN', values);
+  return new Condition(column, 'IN', values);
 }
 
 /**
@@ -968,15 +994,15 @@ function buildEqualityCondition(
   }
 }
 
-function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, param: ChainedSearchParameter): void {
+function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, param: ChainedSearchParameter): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
 
   if (getConfig().chainedSearchWithReferenceTables) {
-    buildChainedSearchUsingReferenceTable(selectQuery, resourceType, param);
+    return buildChainedSearchUsingReferenceTable(selectQuery, resourceType, param);
   } else {
-    buildChainedSearchUsingReferenceStrings(selectQuery, resourceType, param);
+    return buildChainedSearchUsingReferenceStrings(selectQuery, resourceType, param);
   }
 }
 
@@ -988,12 +1014,13 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
  * @param selectQuery - The select query builder.
  * @param resourceType - The top level resource type.
  * @param param - The chained search parameter.
+ * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
-): void {
+): Expression {
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
@@ -1012,7 +1039,7 @@ function buildChainedSearchUsingReferenceTable(
     }
 
     const referenceTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.innerJoin(
+    selectQuery.leftJoin(
       referenceTableName,
       referenceTableAlias,
       new Conjunction([
@@ -1022,25 +1049,20 @@ function buildChainedSearchUsingReferenceTable(
     );
 
     const nextTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.innerJoin(
+    selectQuery.leftJoin(
       link.resourceType,
       nextTableAlias,
       new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
     );
 
-    if (link.filter) {
-      const endCondition = buildSearchFilterExpression(
-        selectQuery,
-        link.resourceType as ResourceType,
-        nextTableAlias,
-        link.filter
-      );
-      selectQuery.whereExpr(endCondition);
-    }
-
     currentTable = nextTableAlias;
     currentResourceType = link.resourceType;
+
+    if (link.filter) {
+      return buildSearchFilterExpression(selectQuery, link.resourceType as ResourceType, nextTableAlias, link.filter);
+    }
   }
+  throw new OperationOutcomeError(badRequest('Unterminated chained search'));
 }
 
 /**
@@ -1052,32 +1074,28 @@ function buildChainedSearchUsingReferenceTable(
  * @param selectQuery - The select query builder.
  * @param resourceType - The top level resource type.
  * @param param - The chained search parameter.
+ * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceStrings(
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
-): void {
+): Expression {
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
     const nextTable = selectQuery.getNextJoinAlias();
     const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-    selectQuery.innerJoin(link.resourceType, nextTable, joinCondition);
-
-    if (link.filter) {
-      const endCondition = buildSearchFilterExpression(
-        selectQuery,
-        link.resourceType as ResourceType,
-        nextTable,
-        link.filter
-      );
-      selectQuery.whereExpr(endCondition);
-    }
+    selectQuery.leftJoin(link.resourceType, nextTable, joinCondition);
 
     currentTable = nextTable;
     currentResourceType = link.resourceType;
+
+    if (link.filter) {
+      return buildSearchFilterExpression(selectQuery, link.resourceType as ResourceType, nextTable, link.filter);
+    }
   }
+  throw new OperationOutcomeError(badRequest('Unterminated chained search'));
 }
 
 function buildSearchLinkCondition(

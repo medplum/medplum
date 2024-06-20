@@ -1,12 +1,18 @@
 import { Button, Group, Stack, Switch, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import {
+  addProfileToResource,
+  deepClone,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  removeProfileFromResource,
+} from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, SupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
-import React, { useCallback, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { addProfileToResource, cleanResource, removeProfileFromResource } from './utils';
 import { ProfileTabs } from './ProfileTabs';
+import { cleanResource } from './utils';
 
 export function ProfilesPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -57,7 +63,7 @@ type ProfileDetailProps = {
   readonly onResourceUpdated: (newResource: Resource) => void;
 };
 
-const ProfileDetail: React.FC<ProfileDetailProps> = ({ profile, resource, onResourceUpdated }) => {
+const ProfileDetail: FC<ProfileDetailProps> = ({ profile, resource, onResourceUpdated }) => {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const [active, setActive] = useState(() => resource.meta?.profile?.includes(profile.url));

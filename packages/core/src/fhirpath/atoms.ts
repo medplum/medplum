@@ -32,7 +32,7 @@ export class FhirPathAtom implements Atom {
         return this.child.eval(context, []);
       }
     } catch (error) {
-      throw new Error(`FhirPathError on "${this.original}": ${error}`);
+      throw new Error(`FhirPathError on "${this.original}": ${error}`, { cause: error });
     }
   }
 
@@ -59,6 +59,9 @@ export class LiteralAtom implements Atom {
 export class SymbolAtom implements Atom {
   constructor(public readonly name: string) {}
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    if (this.name === '$this') {
+      return input;
+    }
     const variableValue = this.getVariable(context);
     if (variableValue) {
       return [variableValue];

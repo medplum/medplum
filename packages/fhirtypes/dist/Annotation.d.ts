@@ -52,3 +52,8 @@ export interface Annotation {
    */
   text: string;
 }
+
+/**
+ * The individual responsible for making the annotation.
+ */
+export type AnnotationAuthor = Reference<Practitioner | Patient | RelatedPerson | Organization> | string;

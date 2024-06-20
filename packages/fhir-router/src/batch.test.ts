@@ -575,6 +575,7 @@ describe('Batch', () => {
       type: 'batch',
       entry: [
         {
+          // Entry 1: Simple patch (success)
           request: {
             method: 'PATCH',
             url: 'Patient/' + patient.id,
@@ -585,14 +586,42 @@ describe('Batch', () => {
             data: Buffer.from(JSON.stringify([{ op: 'add', path: '/active', value: true }]), 'utf8').toString('base64'),
           },
         },
+        {
+          // Entry 2: Empty body (error)
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+          },
+          resource: {
+            resourceType: 'Binary',
+            contentType: ContentType.JSON_PATCH,
+            data: Buffer.from('null', 'utf8').toString('base64'),
+          },
+        },
+        {
+          // Entry 3: Non-array body (error)
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+          },
+          resource: {
+            resourceType: 'Binary',
+            contentType: ContentType.JSON_PATCH,
+            data: Buffer.from(JSON.stringify({ foo: 'bar' }), 'utf8').toString('base64'),
+          },
+        },
       ],
     });
     expect(bundle).toBeDefined();
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
+    expect(results.length).toEqual(3);
     expect(results[0].response?.status).toEqual('200');
+    expect(results[1].response?.status).toEqual('400');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Empty patch body');
+    expect(results[2].response?.status).toEqual('400');
+    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
   });
 
   test('JSONPath error messages', async () => {

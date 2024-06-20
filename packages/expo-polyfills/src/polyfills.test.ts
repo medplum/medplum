@@ -1,23 +1,20 @@
 import { Platform } from 'react-native';
 import { cleanupMedplumWebAPIs, polyfillMedplumWebAPIs } from '.';
 
-const originalWindow = window;
-
-beforeEach(() => {
-  Object.defineProperty(globalThis, 'window', {
-    value: { ...originalWindow },
-  });
-});
-
-afterAll(() => {
-  Object.defineProperty(globalThis, 'window', {
-    value: originalWindow,
-  });
-});
-
 describe('Medplum polyfills', () => {
+  const originalWindow = window;
+
   beforeEach(() => {
     cleanupMedplumWebAPIs();
+    Object.defineProperty(globalThis, 'window', {
+      value: { ...originalWindow },
+    });
+  });
+
+  afterAll(() => {
+    Object.defineProperty(globalThis, 'window', {
+      value: originalWindow,
+    });
   });
 
   if (Platform.OS !== 'web') {
@@ -45,6 +42,21 @@ describe('Medplum polyfills', () => {
         expect(() => polyfillMedplumWebAPIs()).not.toThrow();
         // There was specifically trouble with this object when calling polyfill multiple times before
         expect(window.crypto.subtle).toBeDefined();
+      });
+
+      test('Event should be constructable after polyfills', () => {
+        // @ts-expect-error Testing polyfill
+        globalThis.Event = undefined;
+        expect(() => new Event('foo')).toThrow();
+        polyfillMedplumWebAPIs();
+
+        const event1 = new Event('foo');
+        expect(event1).toBeInstanceOf(Event);
+        expect(event1.type).toEqual('foo');
+
+        const event2 = new Event('foo', { bubbles: true, cancelable: true, composed: true });
+        expect(event2).toBeInstanceOf(Event);
+        expect(event2.type).toEqual('foo');
       });
     });
 

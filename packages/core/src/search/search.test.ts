@@ -10,6 +10,7 @@ import {
   parseSearchRequest,
   parseSearchUrl,
   parseXFhirQuery,
+  splitSearchOnComma,
 } from './search';
 
 describe('Search Utils', () => {
@@ -377,6 +378,21 @@ describe('Search Utils', () => {
     ).toEqual('?_include=Patient:organization');
   });
 
+  test('Format _include:iterate', () => {
+    expect(
+      formatSearchQuery({
+        resourceType: 'Patient',
+        include: [
+          {
+            resourceType: 'Patient',
+            searchParam: 'organization',
+            modifier: 'iterate',
+          },
+        ],
+      })
+    ).toEqual('?_include:iterate=Patient:organization');
+  });
+
   test.each<[string, SearchRequest]>([
     [
       'Patient?name:contains=Just',
@@ -423,5 +439,19 @@ describe('Search Utils', () => {
     };
     const actual = parseXFhirQuery(query, { '%patient': { type: 'Patient', value: patient } });
     expect(actual).toEqual(expected);
+  });
+
+  test('Split search value on comma', () => {
+    expect(splitSearchOnComma('')).toEqual(['']);
+    expect(splitSearchOnComma('x')).toEqual(['x']);
+    expect(splitSearchOnComma('x,y')).toEqual(['x', 'y']);
+    expect(splitSearchOnComma('x,y,z')).toEqual(['x', 'y', 'z']);
+    expect(splitSearchOnComma('x,')).toEqual(['x', '']);
+    expect(splitSearchOnComma(',y')).toEqual(['', 'y']);
+    expect(splitSearchOnComma('x,,y')).toEqual(['x', '', 'y']);
+    expect(splitSearchOnComma('x\\,y')).toEqual(['x,y']);
+    expect(splitSearchOnComma('x\\,')).toEqual(['x,']);
+    expect(splitSearchOnComma('\\,y')).toEqual([',y']);
+    expect(splitSearchOnComma('x\\,,y')).toEqual(['x,', 'y']);
   });
 });

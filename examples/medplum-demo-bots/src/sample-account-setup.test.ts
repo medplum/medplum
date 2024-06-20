@@ -1,5 +1,6 @@
 import {
   BotEvent,
+  ContentType,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -26,7 +27,12 @@ describe('Sample Account Setup', async () => {
       name: [{ given: ['John'], family: 'Doe' }],
     });
 
-    const event: BotEvent = { contentType: 'application/fhir+json', input: patient, secrets: {} };
+    const event: BotEvent = {
+      bot: { reference: 'Bot/123' },
+      contentType: ContentType.FHIR_JSON,
+      input: patient,
+      secrets: {},
+    };
     await handler(medplum, event);
 
     const check = await medplum.readResource('Patient', patient.id as string);

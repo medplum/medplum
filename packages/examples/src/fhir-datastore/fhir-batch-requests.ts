@@ -126,70 +126,6 @@ const batchCreate: Bundle =
   };
 // end-block batchCreate
 
-const upsert: Bundle =
-  // start-block upsert
-  {
-    resourceType: 'Bundle',
-    type: 'batch',
-    entry: [
-      // Create the patient if it doesn't exist
-      {
-        request: {
-          method: 'POST',
-          url: 'Patient',
-          ifNoneExist: 'identifier=http://example-hospital.org/mrns|234543',
-        },
-        // highlight-next-line
-        fullUrl: 'urn:uuid:ffcda8f9-e517-412f-afde-5488cd176f68',
-        resource: {
-          resourceType: 'Patient',
-          identifier: [
-            {
-              system: 'http://example-hospital.org/mrns',
-              value: '234543',
-            },
-          ],
-          name: [
-            {
-              family: 'Simpson',
-              given: ['Homer', 'Jay'],
-            },
-          ],
-          gender: 'male',
-          birthDate: '1956-05-12',
-        },
-      },
-      // Update the patient in-place
-      {
-        request: {
-          method: 'PUT',
-          // highlight-next-line
-          url: 'urn:uuid:ffcda8f9-e517-412f-afde-5488cd176f68',
-        },
-        resource: {
-          resourceType: 'Patient',
-          // highlight-next-line
-          id: 'urn:uuid:ffcda8f9-e517-412f-afde-5488cd176f68',
-          identifier: [
-            {
-              system: 'http://example-hospital.org/mrns',
-              value: '234543',
-            },
-          ],
-          name: [
-            {
-              family: 'Simpson',
-              given: ['Homer', 'Jay'],
-            },
-          ],
-          gender: 'male',
-          birthDate: '1956-05-12',
-        },
-      },
-    ],
-  };
-// end-block upsert
-
 const history: Bundle =
   // start-block historyEndpoint
   {
@@ -222,7 +158,7 @@ const internalReference: Bundle =
   // start-block internalReference
   {
     resourceType: 'Bundle',
-    type: 'batch',
+    type: 'transaction',
     entry: [
       {
         // highlight-next-line
@@ -280,7 +216,7 @@ const conditional: Bundle =
   // start-block conditionalCreate
   {
     resourceType: 'Bundle',
-    type: 'batch',
+    type: 'transaction',
     entry: [
       {
         fullUrl: 'urn:uuid:4aac5fb6-c2ff-4851-b3cf-d66d63a82a17',
@@ -298,7 +234,7 @@ const conditional: Bundle =
           method: 'POST',
           url: 'Organization',
           // highlight-next-line
-          ifNoneExist: 'identifer=https://example-org.com/organizations|example-organization',
+          ifNoneExist: 'identifier=https://example-org.com/organizations|example-organization',
         },
       },
       {
@@ -385,4 +321,4 @@ patientsToCreate.push(
 await Promise.all(patientsToCreate);
 // end-block autobatchingCorrect
 
-console.log(batchCreate, upsert, history, internalReference, conditional);
+console.log(batchCreate, history, internalReference, conditional);

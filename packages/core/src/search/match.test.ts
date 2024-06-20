@@ -358,6 +358,161 @@ describe('Search matching', () => {
         )
       ).toBe(false);
     });
+
+    test('Identifier filter value', () => {
+      const identifier = '1234567890';
+      const identifierSubstring = identifier.substring(0, 4);
+      const resource: Patient = {
+        resourceType: 'Patient',
+        identifier: [
+          {
+            system: 'http://example.com',
+            value: identifier,
+          },
+          {
+            system: 'http://test.com',
+            value: identifier,
+          },
+          {
+            system: 'http://test.com',
+            value: 'foo',
+          },
+        ],
+      };
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com|' + identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://test.com|' + identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://test.com|foo' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [
+            { code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com|' + identifierSubstring },
+          ],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'bar' }],
+        })
+      ).toBe(false);
+    });
+
+    test('CodeableConcept filter value', () => {
+      const identifier = '12345-6';
+      const identifierSubstring = identifier.substring(0, 4);
+      const resource: Observation = {
+        resourceType: 'Observation',
+        status: 'final',
+        code: {
+          coding: [
+            {
+              system: 'http://example.com',
+              code: identifier,
+            },
+            {
+              system: 'http://test.com',
+              code: identifier,
+            },
+            {
+              system: 'http://test.com',
+              code: 'foo',
+            },
+          ],
+          text: 'test',
+        },
+      };
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://example.com|' + identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://test.com|' + identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: identifier }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://test.com|foo' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.TEXT, value: 'test' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://example.com|' + identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'bar' }],
+        })
+      ).toBe(false);
+    });
   });
 
   describe('Date', () => {
@@ -619,5 +774,26 @@ describe('Search matching', () => {
       filters: [{ code: 'organization', operator: Operator.MISSING, value: 'false' }],
     };
     expect(matchesSearchRequest(resource, search2)).toBe(true);
+  });
+
+  test('Present', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'true' }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(false);
+
+    resource.managingOrganization = {
+      reference: 'Organization/FooMedical',
+    };
+    const search2: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'false' }],
+    };
+    expect(matchesSearchRequest(resource, search2)).toBe(false);
   });
 });

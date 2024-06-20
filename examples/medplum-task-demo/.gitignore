@@ -13,6 +13,7 @@ dist-ssr
 *.local
 package-lock.json
 .env
+data/example/example-bots.json
 
 # Editor directories and files
 .vscode/*

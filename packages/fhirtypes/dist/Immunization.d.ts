@@ -268,6 +268,11 @@ export interface Immunization {
 }
 
 /**
+ * Date vaccine administered or was to be administered.
+ */
+export type ImmunizationOccurrence = string;
+
+/**
  * Educational material presented to the patient (or guardian) at the
  * time of vaccine administration.
  */
@@ -461,6 +466,16 @@ export interface ImmunizationProtocolApplied {
    */
   seriesDosesString?: string;
 }
+
+/**
+ * Nominal position in a series.
+ */
+export type ImmunizationProtocolAppliedDoseNumber = number | string;
+
+/**
+ * The recommended number of doses to achieve immunity.
+ */
+export type ImmunizationProtocolAppliedSeriesDoses = number | string;
 
 /**
  * Categorical data indicating that an adverse event is associated in

@@ -329,6 +329,12 @@ export interface PlanDefinition {
 }
 
 /**
+ * A code or group definition that describes the intended subject of the
+ * plan definition.
+ */
+export type PlanDefinitionSubject = CodeableConcept | Reference<Group>;
+
+/**
  * An action or group of actions to be taken as part of the plan.
  */
 export interface PlanDefinitionAction {
@@ -567,6 +573,24 @@ export interface PlanDefinitionAction {
 }
 
 /**
+ * A code or group definition that describes the intended subject of the
+ * action and its children, if any.
+ */
+export type PlanDefinitionActionSubject = CodeableConcept | Reference<Group>;
+
+/**
+ * An optional value describing when the action should be performed.
+ */
+export type PlanDefinitionActionTiming = Age | Duration | Period | Range | string | Timing;
+
+/**
+ * A reference to an ActivityDefinition that describes the action to be
+ * taken in detail, or a PlanDefinition that describes a series of
+ * actions to be taken.
+ */
+export type PlanDefinitionActionDefinition = string;
+
+/**
  * An expression that describes applicability criteria or start/stop
  * conditions for the action.
  */
@@ -800,6 +824,12 @@ export interface PlanDefinitionActionRelatedAction {
 }
 
 /**
+ * A duration or range of durations to apply to the relationship. For
+ * example, 30-60 minutes before.
+ */
+export type PlanDefinitionActionRelatedActionOffset = Duration | Range;
+
+/**
  * Goals that describe what the activities within the plan are intended
  * to achieve. For example, weight loss, restoring an activity of daily
  * living, obtaining herd immunity via immunization, meeting a process
@@ -967,3 +997,13 @@ export interface PlanDefinitionGoalTarget {
    */
   due?: Duration;
 }
+
+/**
+ * The target value of the measure to be achieved to signify fulfillment
+ * of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both
+ * values of the range can be specified. When a low value is missing, it
+ * indicates that the goal is achieved at any value at or below the high
+ * value. Similarly, if the high value is missing, it indicates that the
+ * goal is achieved at any value at or above the low value.
+ */
+export type PlanDefinitionGoalTargetDetail = CodeableConcept | Quantity | Range;

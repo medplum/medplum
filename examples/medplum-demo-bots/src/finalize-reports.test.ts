@@ -75,7 +75,12 @@ describe('Finalize Report', async () => {
     // start-block invoke-bot
     // Invoke the Bot
     const contentType = 'application/fhir+json';
-    await handler(medplum, { input: report, contentType, secrets: {} });
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: report,
+      contentType,
+      secrets: {},
+    });
     // end-block invoke-bot
 
     // start-block query-results
@@ -139,7 +144,12 @@ describe('Finalize Report', async () => {
     // start-block test-idempotent
     // Invoke the Bot for the first time
     const contentType = 'application/fhir+json';
-    await handler(medplum, { input: report, contentType, secrets: {} });
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: report,
+      contentType,
+      secrets: {},
+    });
 
     // Read back the report
     const updatedReport = await medplum.readResource('DiagnosticReport', report.id as string);
@@ -150,7 +160,12 @@ describe('Finalize Report', async () => {
     const patchResourceSpy = vi.spyOn(medplum, 'patchResource');
 
     // Invoke the bot a second time
-    await handler(medplum, { input: updatedReport, contentType, secrets: {} });
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: updatedReport,
+      contentType,
+      secrets: {},
+    });
 
     // Ensure that no modification methods were called
     expect(updateResourceSpy).not.toHaveBeenCalled();

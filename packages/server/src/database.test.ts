@@ -90,7 +90,7 @@ describe('Database config', () => {
     } satisfies MedplumDatabaseSslConfig;
     databaseConfig.ssl = sslConfig;
 
-    await initDatabase(configCopy, false);
+    await initDatabase(configCopy);
     expect(poolSpy).toHaveBeenCalledTimes(1);
     expect(poolSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -115,7 +115,7 @@ describe('Database config', () => {
 
     const databaseConfig = configCopy.database as MedplumDatabaseConfig;
 
-    await initDatabase(configCopy, false);
+    await initDatabase(configCopy);
     expect(poolSpy).toHaveBeenCalledTimes(1);
     expect(poolSpy).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -384,3 +384,8 @@ export interface SubstanceReferenceInformationTarget {
    */
   source?: Reference<DocumentReference>[];
 }
+
+/**
+ * Todo.
+ */
+export type SubstanceReferenceInformationTargetAmount = Quantity | Range | string;

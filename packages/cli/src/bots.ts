@@ -49,14 +49,35 @@ botCreateCommand
 
 export async function botWrapper(medplum: MedplumClient, botName: string, deploy = false): Promise<void> {
   const botConfigs = readBotConfigs(botName);
+  const errors = [] as Error[];
+  const errored = [] as string[];
+  let saved = 0;
+  let deployed = 0;
+
   for (const botConfig of botConfigs) {
-    const bot = await medplum.readResource('Bot', botConfig.id);
-    await saveBot(medplum, botConfig, bot);
-    if (deploy) {
-      await deployBot(medplum, botConfig, bot);
+    try {
+      const bot = await medplum.readResource('Bot', botConfig.id);
+      await saveBot(medplum, botConfig, bot);
+      saved++;
+      if (deploy) {
+        await deployBot(medplum, botConfig, bot);
+        deployed++;
+      }
+    } catch (err: unknown) {
+      errors.push(err as Error);
+      errored.push(`${botConfig.name} [${botConfig.id}]`);
     }
   }
-  console.log(`Number of bots deployed: ${botConfigs.length}`);
+
+  console.log(`Number of bots saved: ${saved}`);
+  console.log(`Number of bots deployed: ${deployed}`);
+  console.log(`Number of errors: ${errors.length}`);
+
+  if (errors.length) {
+    throw new Error(`${errors.length} bot(s) had failures. Bots with failures:\n\n    ${errored.join('\n    ')}`, {
+      cause: errors,
+    });
+  }
 }
 
 // Deprecate bot commands

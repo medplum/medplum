@@ -103,34 +103,15 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 
 ## Performing Upserts
 
-You can combine conditional creates and internal references to perform an "upsert" operation to either create a resource or update it in place.
-
-The example below first uses a `POST` request to conditionally create create a patient, and then performs a `PUT` with the _same patient data_ to perform an in-place update.
-
-If the patient doesn't exist:
-
-- `POST` creates the `Patient`
-- `PUT` updates the `Patient` with the exact same data (no-op)
-
-If the patient does exist:
-
-- `POST` doesn't create a new `Patient` (no-op)
-- `PUT` updates the `Patient`
-
-<details>
-  <summary>Example: Create a patient and update it in the same batch request</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="upsert">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
+Previously, performing an "upsert" (i.e. either creating or updating a resource based on whether it already exists)
+required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/create-fhir-data#upsert)
+to provide strong transactional guarantees around the operation in a single, simple `PUT` request.
 
 ## Medplum Autobatching
 
-The Medplum Client provides the option to automatically batch HTTP requests using the `autoBatchTime` parameter. This field allows you to set a timer that delays executing any HTTP requests. During this delay, if any additional HTTP requests come through, Medplum will add them to a `Bundle` behind the scenes and then execute them as a batch request.
+The Medplum Client provides the option to automatically batch FHIR `read` and `search` requests using the `autoBatchTime` parameter. This field allows you to set a time window during which to batch up any `GET` requests. After this window expires, the `MedplumClient` will add them to a `Bundle` behind the scenes and then execute them as a batch request.
 
-Autobatching works by creating a queue of `Promises` issued within the `autoBatchTime` window and then creating a bundle out of these requests.
-
-To allow the queue to be created, you must make sure that the main thread continues to run, so you should not use `await` after each request. Using `await` will pause the main thread each time a request is made, so a queue cannot be created.
+Autobatching works by creating a queue of `Promises` issued within the `autoBatchTime` window and then creating a bundle out of these requests. To allow the queue to be created, you must make sure that the main thread continues to run, so you should not use `await` after each request. Using `await` will pause the main thread each time a request is made, so a queue cannot be created.
 
 Instead you should create the queue of `Promise` requests and then use `Promise.all()` to resolve all of them at once.
 

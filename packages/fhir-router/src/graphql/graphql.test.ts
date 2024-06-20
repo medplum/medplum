@@ -1105,6 +1105,49 @@ describe('GraphQL', () => {
     expect(retrievePatient.name?.[0].given).toEqual(['Bob']);
   });
 
+  test('Create wrong resourceType error', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientCreate(res: { resourceType: "ServiceRequest" }) { id }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res).toMatchObject([
+      {
+        resourceType: 'OperationOutcome',
+        id: 'ok',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: { text: 'All OK' },
+          },
+        ],
+      },
+      {
+        errors: [
+          {
+            message: 'Invalid resourceType',
+            locations: [{ line: 3, column: 9 }],
+            path: ['PatientCreate'],
+          },
+        ],
+        data: {
+          PatientCreate: null,
+        },
+      },
+    ]);
+  });
+
   test('Updating Patient Record', async () => {
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
@@ -1186,6 +1229,110 @@ describe('GraphQL', () => {
     expect(res[0]?.issue?.[0]?.details?.text).toEqual(
       'Field "PatientUpdate" argument "res" of type "PatientCreate!" is required, but it was not provided.'
     );
+  });
+
+  test('Update wrong resourceType error', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientUpdate(
+          id: "${patient.id}"
+          res: {
+            resourceType: "ServiceRequest"
+            id: "${patient.id}"
+          }
+        ) {
+          id
+        }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res).toMatchObject([
+      {
+        resourceType: 'OperationOutcome',
+        id: 'ok',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: { text: 'All OK' },
+          },
+        ],
+      },
+      {
+        errors: [
+          {
+            message: 'Invalid resourceType',
+            locations: [{ line: 3, column: 9 }],
+            path: ['PatientUpdate'],
+          },
+        ],
+        data: {
+          PatientUpdate: null,
+        },
+      },
+    ]);
+  });
+
+  test('Update wrong ID error', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientUpdate(
+          id: "${patient.id}"
+          res: {
+            resourceType: "Patient"
+            id: "${randomUUID()}"
+          }
+        ) {
+          id
+        }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res).toMatchObject([
+      {
+        resourceType: 'OperationOutcome',
+        id: 'ok',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: { text: 'All OK' },
+          },
+        ],
+      },
+      {
+        errors: [
+          {
+            message: 'Invalid ID',
+            locations: [{ line: 3, column: 9 }],
+            path: ['PatientUpdate'],
+          },
+        ],
+        data: {
+          PatientUpdate: null,
+        },
+      },
+    ]);
   });
 
   test('Delete Patient Record', async () => {

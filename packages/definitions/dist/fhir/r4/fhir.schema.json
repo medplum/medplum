@@ -165,7 +165,10 @@
       "SmartAppLaunch": "#/definitions/SmartAppLaunch",
       "DomainConfiguration": "#/definitions/DomainConfiguration",
       "AsyncJob": "#/definitions/AsyncJob",
-      "Agent": "#/definitions/Agent"
+      "Agent": "#/definitions/Agent",
+      "IdentityProvider": "#/definitions/IdentityProvider",
+      "UserSecurityRequest": "#/definitions/UserSecurityRequest",
+      "ViewDefinition": "#/definitions/ViewDefinition"
     }
   },
   "oneOf": [
@@ -651,6 +654,15 @@
     },
     {
       "$ref": "#/definitions/Agent"
+    },
+    {
+      "$ref": "#/definitions/IdentityProvider"
+    },
+    {
+      "$ref": "#/definitions/UserSecurityRequest"
+    },
+    {
+      "$ref": "#/definitions/ViewDefinition"
     }
   ],
   "definitions": {
@@ -1138,6 +1150,15 @@
         },
         {
           "$ref": "#/definitions/Agent"
+        },
+        {
+          "$ref": "#/definitions/IdentityProvider"
+        },
+        {
+          "$ref": "#/definitions/UserSecurityRequest"
+        },
+        {
+          "$ref": "#/definitions/ViewDefinition"
         }
       ]
     },
@@ -59245,7 +59266,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59258,6 +59279,38 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "identifier": {
+          "description": "An identifier for this project.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
         },
         "name": {
           "description": "A name associated with the Project.",
@@ -59272,7 +59325,7 @@
           "$ref": "#/definitions/boolean"
         },
         "strictMode": {
-          "description": "Whether this project uses strict FHIR validation.",
+          "description": "Whether this project uses strict FHIR validation.  This setting has been deprecated, and can only be set by a super admin.",
           "$ref": "#/definitions/boolean"
         },
         "checkReferencesOnWrite": {
@@ -59286,7 +59339,15 @@
         "features": {
           "description": "A list of optional features that are enabled for the project.",
           "items": {
-            "enum": ["bots", "cron", "email", "google-auth-required", "graphql-introspection"]
+            "enum": [
+              "bots",
+              "cron",
+              "email",
+              "google-auth-required",
+              "graphql-introspection",
+              "terminology",
+              "websocket-subscriptions"
+            ]
           },
           "type": "array"
         },
@@ -59294,17 +59355,45 @@
           "description": "The default access policy for patients using open registration.",
           "$ref": "#/definitions/Reference"
         },
-        "secret": {
-          "description": "Secure environment variable that can be used to store secrets for bots.",
+        "setting": {
+          "description": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior.",
           "items": {
-            "$ref": "#/definitions/Project_Secret"
+            "$ref": "#/definitions/ProjectSetting"
+          },
+          "type": "array"
+        },
+        "secret": {
+          "description": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only visible to project administrators.",
+          "items": {
+            "$ref": "#/definitions/ProjectSetting"
+          },
+          "type": "array"
+        },
+        "systemSetting": {
+          "description": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only modifiable by system administrators.",
+          "items": {
+            "$ref": "#/definitions/ProjectSetting"
+          },
+          "type": "array"
+        },
+        "systemSecret": {
+          "description": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior, only visible to system administrators.",
+          "items": {
+            "$ref": "#/definitions/ProjectSetting"
           },
           "type": "array"
         },
         "site": {
           "description": "Web application or web site that is associated with the project.",
           "items": {
-            "$ref": "#/definitions/Project_Site"
+            "$ref": "#/definitions/ProjectSite"
+          },
+          "type": "array"
+        },
+        "link": {
+          "description": "Linked Projects whose contents are made available to this one",
+          "items": {
+            "$ref": "#/definitions/ProjectLink"
           },
           "type": "array"
         }
@@ -59382,7 +59471,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59395,6 +59484,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "project": {
           "description": "Project where the memberships are available.",
@@ -59412,8 +59526,12 @@
           "description": "Reference to the resource that represents the user profile within the project.",
           "$ref": "#/definitions/Reference"
         },
+        "userName": {
+          "description": "SCIM userName. A service provider\u0027s unique identifier for the user, typically used by the user to directly authenticate to the service provider. Often displayed to the user as their unique identifier within the system (as opposed to \"id\" or \"externalId\", which are generally opaque and not user-friendly identifiers).  Each User MUST include a non-empty userName value.  This identifier MUST be unique across the service provider\u0027s entire set of Users.  This attribute is REQUIRED and is case insensitive.",
+          "$ref": "#/definitions/string"
+        },
         "externalId": {
-          "description": "A String that is an identifier for the resource as defined by the provisioning client.  The \"externalId\" may simplify identification of a resource between the provisioning client and the service provider by allowing the client to use a filter to locate the resource with an identifier from the provisioning domain, obviating the need to store a local mapping between the provisioning domain\u0027s identifier of the resource and the identifier used by the service provider.  Each resource MAY include a non-empty \"externalId\" value.  The value of the \"externalId\" attribute is always issued by the provisioning client and MUST NOT be specified by the service provider.  The service provider MUST always interpret the externalId as scoped to the provisioning domain.",
+          "description": "SCIM externalId. A String that is an identifier for the resource as defined by the provisioning client.  The \"externalId\" may simplify identification of a resource between the provisioning client and the service provider by allowing the client to use a filter to locate the resource with an identifier from the provisioning domain, obviating the need to store a local mapping between the provisioning domain\u0027s identifier of the resource and the identifier used by the service provider.  Each resource MAY include a non-empty \"externalId\" value.  The value of the \"externalId\" attribute is always issued by the provisioning client and MUST NOT be specified by the service provider.  The service provider MUST always interpret the externalId as scoped to the provisioning domain.",
           "$ref": "#/definitions/string"
         },
         "accessPolicy": {
@@ -59423,7 +59541,7 @@
         "access": {
           "description": "Extended access configuration using parameterized access policies.",
           "items": {
-            "$ref": "#/definitions/ProjectMembership_Access"
+            "$ref": "#/definitions/ProjectMembershipAccess"
           },
           "type": "array"
         },
@@ -59448,7 +59566,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59461,6 +59579,35 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "status": {
+          "description": "The client application status. The status is active by default. The status can be set to error to indicate that the client application is not working properly. The status can be set to off to indicate that the client application is no longer in use.",
+          "enum": ["active", "off", "error"]
         },
         "name": {
           "description": "A name associated with the ClientApplication.",
@@ -59493,6 +59640,10 @@
         "identityProvider": {
           "description": "Optional external Identity Provider (IdP) for the client application.",
           "$ref": "#/definitions/IdentityProvider"
+        },
+        "refreshTokenLifetime": {
+          "description": "Optional configuration to set the refresh token duration",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,
@@ -59507,7 +59658,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59521,6 +59672,38 @@
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
         },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "identifier": {
+          "description": "An identifier for this user.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
+        },
         "firstName": {
           "description": "The first name or given name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
           "$ref": "#/definitions/string"
@@ -59530,7 +59713,7 @@
           "$ref": "#/definitions/string"
         },
         "externalId": {
-          "description": "DEPRECATED Replaced by ProjectMembership.externalId.",
+          "description": "@deprecated Replaced by ProjectMembership.externalId.",
           "$ref": "#/definitions/string"
         },
         "email": {
@@ -59542,7 +59725,7 @@
           "$ref": "#/definitions/boolean"
         },
         "admin": {
-          "description": "DEPRECATED",
+          "description": "@deprecated",
           "$ref": "#/definitions/boolean"
         },
         "passwordHash": {
@@ -59574,7 +59757,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59587,6 +59770,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "client": {
           "description": "The client requesting the code.",
@@ -59657,11 +59865,11 @@
           "$ref": "#/definitions/boolean"
         },
         "admin": {
-          "description": "DEPRECATED",
+          "description": "@deprecated",
           "$ref": "#/definitions/boolean"
         },
         "superAdmin": {
-          "description": "Whether this login has super administrator privileges.",
+          "description": "@deprecated",
           "$ref": "#/definitions/boolean"
         },
         "launch": {
@@ -59681,7 +59889,7 @@
       "required": ["resourceType", "user", "authMethod", "authTime"]
     },
     "PasswordChangeRequest": {
-      "description": "Password change request for the \u0027forgot password\u0027 flow.",
+      "description": "@deprecated Password change request for the \u0027forgot password\u0027 flow. Use UserSecurityCheck instead.",
       "properties": {
         "resourceType": {
           "description": "This is a PasswordChangeRequest resource",
@@ -59689,7 +59897,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59702,6 +59910,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "type": {
           "description": "The type of password change request (invite or reset).",
@@ -59736,7 +59969,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59749,6 +59982,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "active": {
           "description": "Whether this key is in active use.",
@@ -59833,7 +60091,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59846,6 +60104,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "identifier": {
           "description": "An identifier for this bot.",
@@ -59909,7 +60192,7 @@
           "$ref": "#/definitions/Attachment"
         },
         "code": {
-          "description": "DEPRECATED Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
+          "description": "@deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode instead.",
           "$ref": "#/definitions/string"
         }
       },
@@ -59925,7 +60208,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -59939,6 +60222,31 @@
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
         },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
         "name": {
           "description": "A name associated with the AccessPolicy.",
           "$ref": "#/definitions/string"
@@ -59950,14 +60258,14 @@
         "resource": {
           "description": "Access details for a resource type.",
           "items": {
-            "$ref": "#/definitions/AccessPolicy_Resource"
+            "$ref": "#/definitions/AccessPolicyResource"
           },
           "type": "array"
         },
         "ipAccessRule": {
           "description": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
           "items": {
-            "$ref": "#/definitions/AccessPolicy_IpAccessRule"
+            "$ref": "#/definitions/AccessPolicyIpAccessRule"
           },
           "type": "array"
         }
@@ -60018,7 +60326,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -60032,6 +60340,31 @@
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
         },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
         "name": {
           "description": "A name associated with the UserConfiguration.",
           "$ref": "#/definitions/string"
@@ -60039,21 +60372,21 @@
         "menu": {
           "description": "Optional menu of shortcuts to URLs.",
           "items": {
-            "$ref": "#/definitions/UserConfiguration_Menu"
+            "$ref": "#/definitions/UserConfigurationMenu"
           },
           "type": "array"
         },
         "search": {
           "description": "Shortcut links to URLs.",
           "items": {
-            "$ref": "#/definitions/UserConfiguration_Search"
+            "$ref": "#/definitions/UserConfigurationSearch"
           },
           "type": "array"
         },
         "option": {
           "description": "User options that control the display of the application.",
           "items": {
-            "$ref": "#/definitions/UserConfiguration_Option"
+            "$ref": "#/definitions/UserConfigurationOption"
           },
           "type": "array"
         }
@@ -60151,6 +60484,10 @@
           "description": "Remote URL for the external Identity Provider token endpoint.",
           "$ref": "#/definitions/string"
         },
+        "tokenAuthMethod": {
+          "description": "Client Authentication method used by Clients to authenticate to the Authorization Server when using the Token Endpoint. If no method is registered, the default method is client_secret_basic.",
+          "enum": ["client_secret_basic", "client_secret_post"]
+        },
         "userInfoUrl": {
           "description": "Remote URL for the external Identity Provider userinfo endpoint.",
           "$ref": "#/definitions/string"
@@ -60162,6 +60499,10 @@
         "clientSecret": {
           "description": "External Identity Provider client secret.",
           "$ref": "#/definitions/string"
+        },
+        "usePkce": {
+          "description": "Optional flag to use PKCE in the token request.",
+          "$ref": "#/definitions/boolean"
         },
         "useSubject": {
           "description": "Optional flag to use the subject field instead of the email field.",
@@ -60217,7 +60558,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -60230,6 +60571,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "status": {
           "description": "The status of the request.",
@@ -60254,21 +60620,21 @@
         "output": {
           "description": "An array of file items with one entry for each generated file. If no resources are returned from the kick-off request, the server SHOULD return an empty array.",
           "items": {
-            "$ref": "#/definitions/BulkDataExport_Output"
+            "$ref": "#/definitions/BulkDataExportOutput"
           },
           "type": "array"
         },
         "deleted": {
           "description": "An array of deleted file items following the same structure as the output array.",
           "items": {
-            "$ref": "#/definitions/BulkDataExport_Deleted"
+            "$ref": "#/definitions/BulkDataExportDeleted"
           },
           "type": "array"
         },
         "error": {
           "description": "Array of message file items following the same structure as the output array.",
           "items": {
-            "$ref": "#/definitions/BulkDataExport_Error"
+            "$ref": "#/definitions/BulkDataExportError"
           },
           "type": "array"
         }
@@ -60330,7 +60696,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -60343,6 +60709,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "patient": {
           "description": "Optional patient indicating that the app was launched in the patient context.",
@@ -60365,7 +60756,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -60378,6 +60769,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "domain": {
           "description": "Globally unique domain name for this configuration.",
@@ -60419,7 +60835,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -60432,6 +60848,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "status": {
           "description": "The status of the request.",
@@ -60448,6 +60889,10 @@
         "request": {
           "description": "The full URL of the original kick-off request. In the case of a POST request, this URL will not include the request parameters.",
           "$ref": "#/definitions/uri"
+        },
+        "output": {
+          "description": "Outputs resulting from the async job.",
+          "$ref": "#/definitions/Parameters"
         }
       },
       "additionalProperties": false,
@@ -60462,7 +60907,7 @@
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
-          "$ref": "#/definitions/id"
+          "$ref": "#/definitions/string"
         },
         "meta": {
           "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
@@ -60475,6 +60920,31 @@
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
         },
         "identifier": {
           "description": "An identifier for this agent.",
@@ -60498,20 +60968,20 @@
         "setting": {
           "description": "The settings for the agent.",
           "items": {
-            "$ref": "#/definitions/Agent_Setting"
+            "$ref": "#/definitions/AgentSetting"
           },
           "type": "array"
         },
         "channel": {
           "description": "Details where to send notifications when resources are received that meet the criteria.",
           "items": {
-            "$ref": "#/definitions/Agent_Channel"
+            "$ref": "#/definitions/AgentChannel"
           },
           "type": "array"
         }
       },
       "additionalProperties": false,
-      "required": ["resourceType", "name", "status", "channel"]
+      "required": ["resourceType", "name", "status"]
     },
     "Agent_Channel": {
       "description": "Details where to send notifications when resources are received that meet the criteria.",
@@ -60572,6 +61042,343 @@
         }
       },
       "additionalProperties": false
+    },
+    "UserSecurityRequest": {
+      "description": "User security request for the \u0027forgot password\u0027 flow, email verification, etc.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a UserSecurityRequest resource",
+          "const": "UserSecurityRequest"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/string"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "type": {
+          "description": "The type of user security request.",
+          "enum": ["invite", "verify-email", "reset"]
+        },
+        "user": {
+          "description": "The user performing the security request.",
+          "$ref": "#/definitions/Reference"
+        },
+        "secret": {
+          "description": "Secret string used to verify the identity of the user.",
+          "$ref": "#/definitions/string"
+        },
+        "used": {
+          "description": "Whether this request has been used, and is therefore no longer valid.",
+          "$ref": "#/definitions/boolean"
+        },
+        "redirectUri": {
+          "description": "Redirect URI used when redirecting a client back to the client application.",
+          "$ref": "#/definitions/uri"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["resourceType", "user", "secret"]
+    },
+    "ViewDefinition": {
+      "description": "View definitions represent a tabular projection of a FHIR resource, where the columns and inclusion \ncriteria are defined by FHIRPath expressions. ",
+      "properties": {
+        "url": {
+          "description": "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "$ref": "#/definitions/uri"
+        },
+        "identifier": {
+          "description": "Additional identifier for the view definition",
+          "$ref": "#/definitions/Identifier"
+        },
+        "name": {
+          "description": "Name of the view definition, must be in a database-friendly format.",
+          "$ref": "#/definitions/string"
+        },
+        "title": {
+          "description": "A optional human-readable description of the view.",
+          "$ref": "#/definitions/string"
+        },
+        "meta": {
+          "description": "Metadata about the view definition",
+          "$ref": "#/definitions/Meta"
+        },
+        "status": {
+          "description": "draft | active | retired | unknown",
+          "enum": ["draft", "active", "retired", "unknown"]
+        },
+        "experimental": {
+          "description": "For testing purposes, not real usage",
+          "$ref": "#/definitions/boolean"
+        },
+        "publisher": {
+          "description": "Name of the publisher/steward (organization or individual)",
+          "$ref": "#/definitions/string"
+        },
+        "contact": {
+          "description": "Contact details for the publisher",
+          "items": {
+            "$ref": "#/definitions/ContactDetail"
+          },
+          "type": "array"
+        },
+        "description": {
+          "description": "Natural language description of the view definition",
+          "$ref": "#/definitions/markdown"
+        },
+        "useContext": {
+          "description": "The context that the content is intended to support",
+          "items": {
+            "$ref": "#/definitions/UsageContext"
+          },
+          "type": "array"
+        },
+        "copyright": {
+          "description": "Use and/or publishing restrictions",
+          "$ref": "#/definitions/markdown"
+        },
+        "resource": {
+          "description": "The FHIR resource that the view is based upon, e.g. \u0027Patient\u0027 or \u0027Observation\u0027.",
+          "enum": [
+            "Account",
+            "ActivityDefinition",
+            "AdverseEvent",
+            "AllergyIntolerance",
+            "Appointment",
+            "AppointmentResponse",
+            "AuditEvent",
+            "Basic",
+            "Binary",
+            "BiologicallyDerivedProduct",
+            "BodyStructure",
+            "Bundle",
+            "CapabilityStatement",
+            "CarePlan",
+            "CareTeam",
+            "CatalogEntry",
+            "ChargeItem",
+            "ChargeItemDefinition",
+            "Claim",
+            "ClaimResponse",
+            "ClinicalImpression",
+            "CodeSystem",
+            "Communication",
+            "CommunicationRequest",
+            "CompartmentDefinition",
+            "Composition",
+            "ConceptMap",
+            "Condition",
+            "Consent",
+            "Contract",
+            "Coverage",
+            "CoverageEligibilityRequest",
+            "CoverageEligibilityResponse",
+            "DetectedIssue",
+            "Device",
+            "DeviceDefinition",
+            "DeviceMetric",
+            "DeviceRequest",
+            "DeviceUseStatement",
+            "DiagnosticReport",
+            "DocumentManifest",
+            "DocumentReference",
+            "DomainResource",
+            "EffectEvidenceSynthesis",
+            "Encounter",
+            "Endpoint",
+            "EnrollmentRequest",
+            "EnrollmentResponse",
+            "EpisodeOfCare",
+            "EventDefinition",
+            "Evidence",
+            "EvidenceVariable",
+            "ExampleScenario",
+            "ExplanationOfBenefit",
+            "FamilyMemberHistory",
+            "Flag",
+            "Goal",
+            "GraphDefinition",
+            "Group",
+            "GuidanceResponse",
+            "HealthcareService",
+            "ImagingStudy",
+            "Immunization",
+            "ImmunizationEvaluation",
+            "ImmunizationRecommendation",
+            "ImplementationGuide",
+            "InsurancePlan",
+            "Invoice",
+            "Library",
+            "Linkage",
+            "List",
+            "Location",
+            "Measure",
+            "MeasureReport",
+            "Media",
+            "Medication",
+            "MedicationAdministration",
+            "MedicationDispense",
+            "MedicationKnowledge",
+            "MedicationRequest",
+            "MedicationStatement",
+            "MedicinalProduct",
+            "MedicinalProductAuthorization",
+            "MedicinalProductContraindication",
+            "MedicinalProductIndication",
+            "MedicinalProductIngredient",
+            "MedicinalProductInteraction",
+            "MedicinalProductManufactured",
+            "MedicinalProductPackaged",
+            "MedicinalProductPharmaceutical",
+            "MedicinalProductUndesirableEffect",
+            "MessageDefinition",
+            "MessageHeader",
+            "MolecularSequence",
+            "NamingSystem",
+            "NutritionOrder",
+            "Observation",
+            "ObservationDefinition",
+            "OperationDefinition",
+            "OperationOutcome",
+            "Organization",
+            "OrganizationAffiliation",
+            "Parameters",
+            "Patient",
+            "PaymentNotice",
+            "PaymentReconciliation",
+            "Person",
+            "PlanDefinition",
+            "Practitioner",
+            "PractitionerRole",
+            "Procedure",
+            "Provenance",
+            "Questionnaire",
+            "QuestionnaireResponse",
+            "RelatedPerson",
+            "RequestGroup",
+            "ResearchDefinition",
+            "ResearchElementDefinition",
+            "ResearchStudy",
+            "ResearchSubject",
+            "Resource",
+            "RiskAssessment",
+            "RiskEvidenceSynthesis",
+            "Schedule",
+            "SearchParameter",
+            "ServiceRequest",
+            "Slot",
+            "Specimen",
+            "SpecimenDefinition",
+            "StructureDefinition",
+            "StructureMap",
+            "Subscription",
+            "Substance",
+            "SubstanceNucleicAcid",
+            "SubstancePolymer",
+            "SubstanceProtein",
+            "SubstanceReferenceInformation",
+            "SubstanceSourceMaterial",
+            "SubstanceSpecification",
+            "SupplyDelivery",
+            "SupplyRequest",
+            "Task",
+            "TerminologyCapabilities",
+            "TestReport",
+            "TestScript",
+            "ValueSet",
+            "VerificationResult",
+            "VisionPrescription"
+          ]
+        },
+        "fhirVersion": {
+          "description": "The FHIR version(s) for the FHIR resource. The value of this element is the\nformal version of the specification, without the revision number, e.g.\n[publication].[major].[minor].",
+          "items": {
+            "enum": [
+              "0.01",
+              "0.05",
+              "0.06",
+              "0.11",
+              "0.0.80",
+              "0.0.81",
+              "0.0.82",
+              "0.4.0",
+              "0.5.0",
+              "1.0.0",
+              "1.0.1",
+              "1.0.2",
+              "1.1.0",
+              "1.4.0",
+              "1.6.0",
+              "1.8.0",
+              "3.0.0",
+              "3.0.1",
+              "3.3.0",
+              "3.5.0",
+              "4.0.0",
+              "4.0.1"
+            ]
+          },
+          "type": "array"
+        },
+        "constant": {
+          "description": "A constant is a value that is injected into a FHIRPath expression through the use of a FHIRPath\nexternal constant with the same name.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionConstant"
+          },
+          "type": "array"
+        },
+        "select": {
+          "description": "The select structure defines the columns to be used in the resulting view. These are expressed\nin the `column` structure below, or in nested `select`s for nested resources.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionSelect"
+          },
+          "type": "array"
+        },
+        "where": {
+          "description": "A series of zero or more FHIRPath constraints to filter resources for the view. Every constraint\nmust evaluate to true for the resource to be included in the view.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionWhere"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["status", "resource", "select"]
     }
   }
 }

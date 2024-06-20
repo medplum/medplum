@@ -528,3 +528,8 @@ export interface MedicinalProductSpecialDesignation {
    */
   species?: CodeableConcept;
 }
+
+/**
+ * Condition for which the medicinal use applies.
+ */
+export type MedicinalProductSpecialDesignationIndication = CodeableConcept | Reference<MedicinalProductIndication>;

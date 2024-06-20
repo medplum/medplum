@@ -33,7 +33,7 @@ export class BackEnd extends Construct {
   rdsCluster?: rds.DatabaseCluster;
   rdsProxy?: rds.DatabaseProxy;
   redisSubnetGroup: elasticache.CfnSubnetGroup;
-  redisSecurityGroup: ec2.SecurityGroup;
+  redisSecurityGroup: ec2.ISecurityGroup;
   redisPassword: secretsmanager.ISecret;
   redisCluster: elasticache.CfnReplicationGroup;
   redisSecrets: secretsmanager.ISecret;
@@ -61,6 +61,8 @@ export class BackEnd extends Construct {
     super(scope, 'BackEnd');
 
     const name = config.name;
+    const accountNumber = config.accountNumber;
+    const region = config.region;
 
     // VPC
     if (config.vpcId) {
@@ -163,11 +165,19 @@ export class BackEnd extends Construct {
       subnetIds: this.vpc.privateSubnets.map((subnet) => subnet.subnetId),
     });
 
-    this.redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
-      vpc: this.vpc,
-      description: 'Redis Security Group',
-      allowAllOutbound: false,
-    });
+    if (config.cacheSecurityGroupId) {
+      this.redisSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+        this,
+        'RedisSecurityGroup',
+        config.cacheSecurityGroupId
+      );
+    } else {
+      this.redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
+        vpc: this.vpc,
+        description: 'Redis Security Group',
+        allowAllOutbound: false,
+      });
+    }
 
     this.redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
       generateSecretString: {
@@ -226,7 +236,7 @@ export class BackEnd extends Construct {
             'logs:DescribeLogGroups',
             'logs:PutRetentionPolicy',
           ],
-          resources: ['arn:aws:logs:*'],
+          resources: [`arn:aws:logs:${region}:${accountNumber}:log-group:/ecs/medplum/${name}/*`],
         }),
 
         // Secrets Manager: Read only access to secrets
@@ -240,7 +250,7 @@ export class BackEnd extends Construct {
             'secretsmanager:ListSecrets',
             'secretsmanager:ListSecretVersionIds',
           ],
-          resources: ['arn:aws:secretsmanager:*'],
+          resources: [`arn:aws:secretsmanager:${region}:${accountNumber}:secret:*`],
         }),
 
         // Parameter Store: Read only access
@@ -248,7 +258,7 @@ export class BackEnd extends Construct {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['ssm:GetParametersByPath', 'ssm:GetParameters', 'ssm:GetParameter', 'ssm:DescribeParameters'],
-          resources: ['arn:aws:ssm:*'],
+          resources: [`arn:aws:ssm:${region}:${accountNumber}:parameter/medplum/${name}/*`],
         }),
 
         // SES: Send emails
@@ -256,15 +266,23 @@ export class BackEnd extends Construct {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-          resources: ['arn:aws:ses:*'],
+          resources: [`arn:aws:ses:${region}:${accountNumber}:identity/*`],
         }),
 
-        // S3: Read and write access to buckets
+        // S3: List storage bucket
         // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['s3:ListBucket', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],
-          resources: ['arn:aws:s3:::*'],
+          actions: ['s3:ListBucket'],
+          resources: [`arn:aws:s3:::${config.storageBucketName}`],
+        }),
+
+        // S3: Read, write, and delete access to storage bucket
+        // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+          resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
         }),
 
         // IAM: Pass role to innvoke lambda functions
@@ -285,11 +303,23 @@ export class BackEnd extends Construct {
             'lambda:GetFunctionConfiguration',
             'lambda:UpdateFunctionCode',
             'lambda:UpdateFunctionConfiguration',
-            'lambda:ListLayerVersions',
-            'lambda:GetLayerVersion',
             'lambda:InvokeFunction',
           ],
-          resources: ['arn:aws:lambda:*'],
+          resources: [`arn:aws:lambda:${region}:${accountNumber}:function:medplum-bot-lambda-*`],
+        }),
+
+        // Lambda layers: List layer versions
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:ListLayerVersions'],
+          resources: [`arn:aws:lambda:${region}:${accountNumber}:layer:medplum-bot-layer`],
+        }),
+
+        // Lambda layers: Get layer version
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:GetLayerVersion'],
+          resources: [`arn:aws:lambda:${region}:${accountNumber}:layer:medplum-bot-layer:*`],
         }),
 
         // XRay: Write to segment store
@@ -338,7 +368,7 @@ export class BackEnd extends Construct {
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
       image: this.getContainerImage(config, config.serverImage),
-      command: [config.region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${config.region}:/medplum/${name}/`],
+      command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
       logging: this.logDriver,
       environment: config.environment,
     });
@@ -417,11 +447,21 @@ export class BackEnd extends Construct {
       targets: [this.fargateService],
     });
 
+    let loadBalancerSecurityGroup: ec2.ISecurityGroup | undefined = undefined;
+    if (config.loadBalancerSecurityGroupId) {
+      loadBalancerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+        this,
+        'LoadBalancerSecurityGroup',
+        config.loadBalancerSecurityGroupId
+      );
+    }
+
     // Load Balancer
     this.loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
       vpc: this.vpc,
       internetFacing: config.apiInternetFacing !== false, // default true
       http2Enabled: true,
+      securityGroup: loadBalancerSecurityGroup,
     });
 
     if (config.loadBalancerLoggingBucket) {

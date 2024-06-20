@@ -8,7 +8,7 @@ import { getConfig } from './config';
 import { RequestContext, requestContextStore } from './context';
 import { handleFhircastConnection } from './fhircast/websocket';
 import { globalLogger } from './logger';
-import { getRedis } from './redis';
+import { getRedis, getRedisSubscriber } from './redis';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
@@ -104,7 +104,7 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-  const redisSubscriber = getRedis().duplicate();
+  const redisSubscriber = getRedisSubscriber();
   const channel = randomUUID();
 
   await redisSubscriber.subscribe(channel);

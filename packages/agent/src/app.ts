@@ -1,27 +1,42 @@
 import {
   AgentError,
   AgentMessage,
+  AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
   ContentType,
   Hl7Message,
   LogLevel,
   Logger,
+  MEDPLUM_VERSION,
   MedplumClient,
+  isValidHostname,
   normalizeErrorString,
 } from '@medplum/core';
-import { Endpoint, Reference } from '@medplum/fhirtypes';
+import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { exec as _exec } from 'node:child_process';
+import { ExecException, ExecOptions, exec } from 'node:child_process';
 import { isIPv4, isIPv6 } from 'node:net';
-import { promisify } from 'node:util';
-import { platform } from 'os';
+import { platform } from 'node:os';
 import WebSocket from 'ws';
-import { Channel } from './channel';
+import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 
-const exec = promisify(_exec);
+async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    exec(command, options, (ex: ExecException | null, stdout: string, stderr: string) => {
+      if (ex) {
+        const err = ex as Error;
+        reject(err);
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+  });
+}
+
+export const DEFAULT_PING_TIMEOUT = 3600;
 
 export class App {
   static instance: App;
@@ -29,13 +44,16 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
-  healthcheckPeriod = 10 * 1000;
-  private healthcheckTimer?: NodeJS.Timeout;
+  readonly hl7Clients = new Map<string, Hl7Client>();
+  heartbeatPeriod = 10 * 1000;
+  private heartbeatTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
   private webSocket?: WebSocket;
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
+  private keepAlive = false;
+  private config: Agent | undefined;
 
   constructor(
     readonly medplum: MedplumClient,
@@ -51,7 +69,7 @@ export class App {
 
     this.startWebSocket();
 
-    await this.startListeners();
+    await this.reloadConfig();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -66,11 +84,11 @@ export class App {
 
   private startWebSocket(): void {
     this.connectWebSocket();
-    this.healthcheckTimer = setInterval(() => this.healthcheck(), this.healthcheckPeriod);
+    this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatPeriod);
   }
 
-  private async healthcheck(): Promise<void> {
-    if (!this.webSocket && !this.reconnectTimer) {
+  private async heartbeat(): Promise<void> {
+    if (!(this.webSocket || this.reconnectTimer)) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket();
       return;
@@ -97,7 +115,9 @@ export class App {
 
     this.webSocket.addEventListener('error', (err) => {
       if (!this.shutdown) {
-        this.log.error(normalizeErrorString(err.error));
+        // This event is only fired when WebSocket closes due to some kind of error
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
+        this.log.error(`WebSocket closed due to an error: ${normalizeErrorString(err)}`);
       }
     });
 
@@ -132,7 +152,7 @@ export class App {
             this.startWebSocketWorker();
             break;
           case 'agent:heartbeat:request':
-            await this.sendToWebSocket({ type: 'agent:heartbeat:response' });
+            await this.sendToWebSocket({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION });
             break;
           case 'agent:heartbeat:response':
             // Do nothing
@@ -140,15 +160,38 @@ export class App {
           // @ts-expect-error - Deprecated message type
           case 'transmit':
           case 'agent:transmit:response':
-            this.addToHl7Queue(command);
+            if (this.config?.status !== 'active') {
+              this.sendAgentDisabledError(command);
+            } else {
+              this.addToHl7Queue(command);
+            }
             break;
           // @ts-expect-error - Deprecated message type
           case 'push':
           case 'agent:transmit:request':
-            if (command.contentType === ContentType.PING) {
-              await this.tryPingIp(command);
+            if (this.config?.status !== 'active') {
+              this.sendAgentDisabledError(command);
+            } else if (command.contentType === ContentType.PING) {
+              await this.tryPingHost(command);
             } else {
               this.pushMessage(command);
+            }
+            break;
+          case 'agent:reloadconfig:request':
+            try {
+              this.log.info('Reloading config...');
+              await this.reloadConfig();
+              await this.sendToWebSocket({
+                type: 'agent:reloadconfig:response',
+                statusCode: 200,
+                callback: command.callback,
+              } satisfies AgentReloadConfigResponse);
+            } catch (err: unknown) {
+              await this.sendToWebSocket({
+                type: 'agent:error',
+                body: normalizeErrorString(err),
+                callback: command.callback,
+              });
             }
             break;
           case 'agent:error':
@@ -158,42 +201,169 @@ export class App {
             this.log.error(`Unknown message type: ${command.type}`);
         }
       } catch (err) {
-        this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+        this.log.error(`WebSocket error on incoming message: ${normalizeErrorString(err)}`);
       }
     });
   }
 
-  private async startListeners(): Promise<void> {
+  private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
+    const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
-    for (const definition of agent.channel ?? []) {
-      const endpoint = await this.medplum.readReference(definition.endpoint as Reference<Endpoint>);
-      let channel: Channel | undefined = undefined;
+    if (!keepAlive && this.hl7Clients.size !== 0) {
+      for (const client of this.hl7Clients.values()) {
+        client.close();
+      }
+    }
+
+    this.config = agent;
+    this.keepAlive = keepAlive ?? false;
+
+    await this.hydrateListeners();
+  }
+
+  /**
+   * This method should only be called by {@link App.reloadConfig}
+   */
+  private async hydrateListeners(): Promise<void> {
+    const config = this.config as Agent;
+
+    const pendingRemoval = new Set(this.channels.keys());
+    let channels = config.channel ?? [];
+
+    if (config.status === 'off') {
+      channels = [];
+      this.log.warn(
+        "Agent status is currently 'off'. All channels are disconnected until status is set back to 'active'"
+      );
+    }
+
+    const endpointPromises = [] as Promise<Endpoint>[];
+    for (const definition of channels) {
+      endpointPromises.push(this.medplum.readReference(definition.endpoint as Reference<Endpoint>));
+    }
+
+    const endpoints = await Promise.all(endpointPromises);
+    this.validateAgentEndpoints(channels, endpoints);
+
+    const filteredChannels = [] as AgentChannel[];
+    const filteredEndpoints = [] as Endpoint[];
+
+    for (let i = 0; i < channels.length; i++) {
+      const definition = channels[i];
+      const endpoint = endpoints[i];
+
+      // If the endpoint for this channel is turned off, we're going to skip over this channel
+      // Which means it will be marked for removal in this step
+      if (endpoint.status === 'off') {
+        this.log.warn(
+          `[${getChannelTypeShortName(endpoint)}:${definition.name}] Channel currently has status of 'off'. Channel will not reconnect until status is set to 'active'`
+        );
+      } else {
+        // Push the definition and endpoint into our filtered arrays
+        filteredChannels.push(definition);
+        filteredEndpoints.push(endpoint);
+        // Remove all channels from pendingRemoval list that are present in the new definition (unless the endpoint is 'off')
+        // We will remove the channels that are left over -- channels that are not part of the new config
+        pendingRemoval.delete(definition.name);
+      }
+    }
+
+    // Now iterate leftover channels and stop any that were not present in config when reloaded
+    for (const leftover of pendingRemoval.keys()) {
+      const channel = this.channels.get(leftover) as Channel;
+      await channel.stop();
+
+      pendingRemoval.delete(leftover);
+      this.channels.delete(leftover);
+    }
+
+    // Iterate the channels specified in the config
+    // Either start them or reload their config if already present
+    for (let i = 0; i < filteredChannels.length; i++) {
+      const definition = filteredChannels[i];
+      const endpoint = filteredEndpoints[i];
 
       if (!endpoint.address) {
         this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
-      } else if (endpoint.address.startsWith('dicom')) {
-        channel = new AgentDicomChannel(this, definition, endpoint);
-      } else if (endpoint.address.startsWith('mllp')) {
-        channel = new AgentHl7Channel(this, definition, endpoint);
-      } else {
-        this.log.error(`Unsupported endpoint type: ${endpoint.address}`);
       }
 
-      if (channel) {
-        channel.start();
-        this.channels.set(definition.name as string, channel);
+      try {
+        await this.startOrReloadChannel(definition, endpoint);
+      } catch (err) {
+        this.log.error(normalizeErrorString(err));
       }
     }
   }
 
-  stop(): void {
+  /**
+   * Validates whether all endpoints are valid. Also ensures that there are no conflicting ports between any endpoints in the group.
+   *
+   * Will throw if not valid.
+   *
+   * @param channels - All the channels defined for the agent.
+   * @param endpoints - All the endpoints corresponding to the agent channels that should be validated.
+   */
+  private validateAgentEndpoints(channels: AgentChannel[], endpoints: Endpoint[]): void {
+    const seenPorts = new Set<string>();
+    const portToChannelMap = new Map<string, [string, string]>();
+    for (let i = 0; i < channels.length; i++) {
+      const channel = channels[i];
+      const endpoint = endpoints[i];
+
+      if (endpoint.address === '') {
+        throw new Error(`Invalid empty endpoint address for channel '${channel.name}'`);
+      }
+
+      let parsedEndpoint: URL;
+      try {
+        parsedEndpoint = new URL(endpoint.address);
+      } catch (err: unknown) {
+        throw new Error(
+          `Error while validating endpoint address for channel '${channel.name}': ${normalizeErrorString(err)}`
+        );
+      }
+      if (seenPorts.has(parsedEndpoint.port)) {
+        const [conflictingChannel, conflictingAddress] = portToChannelMap.get(parsedEndpoint.port) as [string, string];
+        throw new Error(
+          `Invalid agent config. Both '${conflictingChannel}' (${conflictingAddress}) and '${channel.name}' (${endpoint.address}) declare use of port ${parsedEndpoint.port}`
+        );
+      }
+      seenPorts.add(parsedEndpoint.port);
+      portToChannelMap.set(parsedEndpoint.port, [channel.name, endpoint.address]);
+    }
+  }
+
+  private async startOrReloadChannel(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
+    let channel: Channel | undefined = this.channels.get(definition.name);
+
+    if (channel) {
+      await channel.reloadConfig(definition, endpoint);
+      return;
+    }
+
+    switch (getChannelType(endpoint)) {
+      case ChannelType.DICOM:
+        channel = new AgentDicomChannel(this, definition, endpoint);
+        break;
+      case ChannelType.HL7_V2:
+        channel = new AgentHl7Channel(this, definition, endpoint);
+        break;
+      default:
+        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+    }
+
+    channel.start();
+    this.channels.set(definition.name, channel);
+  }
+
+  async stop(): Promise<void> {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
 
-    if (this.healthcheckTimer) {
-      clearInterval(this.healthcheckTimer);
-      this.healthcheckTimer = undefined;
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = undefined;
     }
 
     if (this.reconnectTimer) {
@@ -201,12 +371,22 @@ export class App {
       this.reconnectTimer = undefined;
     }
 
-    this.channels.forEach((channel) => channel.stop());
-
     if (this.webSocket) {
       this.webSocket.close();
       this.webSocket = undefined;
     }
+
+    if (this.hl7Clients.size !== 0) {
+      for (const client of this.hl7Clients.values()) {
+        client.close();
+      }
+    }
+
+    const channelStopPromises = [];
+    for (const channel of this.channels.values()) {
+      channelStopPromises.push(channel.stop());
+    }
+    await Promise.all(channelStopPromises);
 
     this.log.info('Medplum service stopped successfully');
   }
@@ -243,7 +423,7 @@ export class App {
           try {
             await this.sendToWebSocket(msg);
           } catch (err) {
-            this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+            this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
             this.webSocketQueue.unshift(msg);
             throw err;
           }
@@ -265,27 +445,51 @@ export class App {
     }
   }
 
-  private async tryPingIp(message: AgentTransmitRequest): Promise<void> {
+  // This covers Windows, Linux, and Mac
+  private getPingCommand(host: string, count = 1): string {
+    return platform() === 'win32' ? `ping /n ${count} ${host}` : `ping -c ${count} ${host}`;
+  }
+
+  private async tryPingHost(message: AgentTransmitRequest): Promise<void> {
     try {
-      if (message.body && message.body !== 'PING') {
-        const warnMsg = 'Message body present but unused. Body should be empty for a ping request.';
+      if (message.body && !message.body.startsWith('PING')) {
+        const warnMsg =
+          'Message body present but unused. Body for a ping request should be empty or a message formatted as `PING[ count]`.';
         this.log.warn(warnMsg);
       }
-      if (!isIPv4(message.remote)) {
-        let errMsg = `Attempted to ping invalid IP: ${message.remote}`;
-        if (isIPv6(message.remote)) {
-          errMsg = `Attempted to ping an IPv6 address: ${message.remote}\n\nIPv6 is currently unsupported.`;
-        }
+
+      if (isIPv6(message.remote)) {
+        const errMsg = `Attempted to ping an IPv6 address: ${message.remote}\n\nIPv6 is currently unsupported.`;
         this.log.error(errMsg);
         throw new Error(errMsg);
       }
-      // This covers Windows, Linux, and Mac
-      const { stderr, stdout } = await exec(
-        platform() === 'win32' ? `ping ${message.remote}` : `ping -c 4 ${message.remote}`
-      );
-      if (stderr) {
-        throw new Error(`Received on stderr:\n\n${stderr}`);
+
+      if (!(isIPv4(message.remote) || isValidHostname(message.remote))) {
+        const errMsg = `Attempted to ping an invalid host.\n\n"${message.remote}" is not a valid IPv4 address or a resolvable hostname.`;
+        this.log.error(errMsg);
+        throw new Error(errMsg);
       }
+
+      const pingCountAsStr = message.body.startsWith('PING') ? message.body.split(' ')?.[1] ?? '' : '';
+      let pingCount: number | undefined = undefined;
+
+      if (pingCountAsStr !== '') {
+        pingCount = Number.parseInt(pingCountAsStr, 10);
+        if (Number.isNaN(pingCount)) {
+          throw new Error(
+            `Unable to ping ${message.remote} "${pingCountAsStr}" times. "${pingCountAsStr}" is not a number.`
+          );
+        }
+      }
+
+      const { stdout, stderr } = await execAsync(this.getPingCommand(message.remote, pingCount), {
+        timeout: DEFAULT_PING_TIMEOUT,
+      });
+
+      if (stderr) {
+        throw new Error(`Received on stderr:\n\n${stderr.trim()}`);
+      }
+
       const result = stdout.trim();
       this.log.info(`Ping result for ${message.remote}:\n\n${result}`);
       this.addToWebSocketQueue({
@@ -294,14 +498,20 @@ export class App {
         contentType: ContentType.PING,
         remote: message.remote,
         callback: message.callback,
+        statusCode: 200,
         body: result,
       } satisfies AgentTransmitResponse);
     } catch (err) {
-      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_IP_GIVEN'}: ${normalizeErrorString(err)}`);
+      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_HOST_GIVEN'}: ${normalizeErrorString(err)}`);
       this.addToWebSocketQueue({
-        type: 'agent:error',
-        body: (err as Error).message,
-      } satisfies AgentError);
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        contentType: ContentType.TEXT,
+        remote: message.remote,
+        callback: message.callback,
+        statusCode: 400,
+        body: normalizeErrorString(err),
+      } satisfies AgentTransmitResponse);
     }
   }
 
@@ -318,6 +528,16 @@ export class App {
     this.webSocket.send(JSON.stringify(message));
   }
 
+  private sendAgentDisabledError(command: AgentTransmitRequest | AgentTransmitResponse): void {
+    const errMsg = 'Agent.status is currently set to off';
+    this.log.error(errMsg);
+    this.addToWebSocketQueue({
+      type: 'agent:error',
+      callback: command.callback,
+      body: errMsg,
+    } satisfies AgentError);
+  }
+
   private pushMessage(message: AgentTransmitRequest): void {
     if (!message.remote) {
       this.log.error('Missing remote address');
@@ -325,10 +545,37 @@ export class App {
     }
 
     const address = new URL(message.remote);
-    const client = new Hl7Client({
-      host: address.hostname,
-      port: parseInt(address.port, 10),
-    });
+
+    let client: Hl7Client;
+
+    if (this.hl7Clients.has(message.remote)) {
+      client = this.hl7Clients.get(message.remote) as Hl7Client;
+    } else {
+      const encoding = address.searchParams.get('encoding') ?? undefined;
+      const keepAlive = this.keepAlive;
+      client = new Hl7Client({
+        host: address.hostname,
+        port: Number.parseInt(address.port, 10),
+        encoding,
+        keepAlive,
+      });
+      this.log.info(`Client created for remote '${message.remote}'`, { keepAlive, encoding });
+
+      if (client.keepAlive) {
+        this.hl7Clients.set(message.remote, client);
+        client.addEventListener('close', () => {
+          this.hl7Clients.delete(message.remote);
+          this.log.info(`Persistent connection to remote '${message.remote}' closed`);
+        });
+        client.addEventListener('error', () => {
+          this.hl7Clients.delete(message.remote);
+          this.log.info(
+            `Persistent connection to remote '${message.remote}' encountered an error... Closing connection...`
+          );
+          client.close();
+        });
+      }
+    }
 
     client
       .sendAndWait(Hl7Message.parse(message.body))
@@ -340,14 +587,31 @@ export class App {
           remote: message.remote,
           callback: message.callback,
           contentType: ContentType.HL7_V2,
+          statusCode: 200,
           body: response.toString(),
-        });
+        } satisfies AgentTransmitResponse);
       })
       .catch((err) => {
         this.log.error(`HL7 error: ${normalizeErrorString(err)}`);
+        this.addToWebSocketQueue({
+          type: 'agent:transmit:response',
+          channel: message.channel,
+          remote: message.remote,
+          callback: message.callback,
+          contentType: ContentType.TEXT,
+          statusCode: 400,
+          body: normalizeErrorString(err),
+        } satisfies AgentTransmitResponse);
+
+        if (client.keepAlive) {
+          this.hl7Clients.delete(message.remote);
+          client.close();
+        }
       })
       .finally(() => {
-        client.close();
+        if (!client.keepAlive) {
+          client.close();
+        }
       });
   }
 }

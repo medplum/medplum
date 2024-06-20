@@ -1,10 +1,10 @@
 import { Paper } from '@mantine/core';
 import { DEFAULT_SEARCH_COUNT, formatSearchQuery, parseSearchRequest, SearchRequest } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
+import { useResourceType } from '../resource/useResourceType';
 import { prependPatientPath } from './PatientPage.utils';
 
 export function PatientSearchPage(): JSX.Element {
@@ -14,13 +14,15 @@ export function PatientSearchPage(): JSX.Element {
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
 
+  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..') });
+
   useEffect(() => {
     if (!patient) {
       return;
     }
 
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
-    const populatedSearch = addSearchValues(patient, parsedSearch);
+    const populatedSearch = addDefaultSearchValues(parsedSearch);
 
     if (
       location.pathname === `/Patient/${patient.id}/${populatedSearch.resourceType}` &&
@@ -54,19 +56,13 @@ export function PatientSearchPage(): JSX.Element {
   );
 }
 
-function addSearchValues(patient: Patient, search: SearchRequest): SearchRequest {
-  const resourceType = search.resourceType;
+function addDefaultSearchValues(search: SearchRequest): SearchRequest {
   const fields = search.fields ?? ['_id', '_lastUpdated'];
-  const filters = search.filters ?? [];
-  const sortRules = search.sortRules;
   const offset = search.offset ?? 0;
   const count = search.count ?? DEFAULT_SEARCH_COUNT;
   return {
     ...search,
-    resourceType,
     fields,
-    filters,
-    sortRules,
     offset,
     count,
   };

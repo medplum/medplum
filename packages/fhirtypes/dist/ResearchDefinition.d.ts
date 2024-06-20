@@ -339,3 +339,10 @@ export interface ResearchDefinition {
    */
   outcome?: Reference<ResearchElementDefinition>;
 }
+
+/**
+ * The intended subjects for the ResearchDefinition. If this element is
+ * not provided, a Patient subject is assumed, but the subject of the
+ * ResearchDefinition can be anything.
+ */
+export type ResearchDefinitionSubject = CodeableConcept | Reference<Group>;

@@ -10,7 +10,6 @@ import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import request from 'supertest';
-
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -26,6 +25,7 @@ describe('Admin Invite', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.emailProvider = 'awsses';
     await withTestContext(() => initApp(app, config));
   });
 

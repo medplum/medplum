@@ -237,6 +237,12 @@ export interface AllergyIntolerance {
 }
 
 /**
+ * Estimated or actual date,  date-time, or age when allergy or
+ * intolerance was identified.
+ */
+export type AllergyIntoleranceOnset = Age | Period | Range | string;
+
+/**
  * Details about each adverse reaction event linked to exposure to the
  * identified substance.
  */

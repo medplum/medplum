@@ -1,13 +1,13 @@
 {
   "name": "medplum-nextauth-demo",
-  "version": "3.1.0",
+  "version": "3.1.8",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "next dev",
+    "lint": "next lint",
+    "start": "next start"
   },
   "prettier": {
     "printWidth": 120,
@@ -20,23 +20,23 @@
     ]
   },
   "dependencies": {
-    "@mantine/core": "7.7.1",
-    "@mantine/hooks": "7.7.1",
-    "@mantine/notifications": "7.7.1",
-    "@medplum/core": "3.1.0",
-    "@medplum/eslint-config": "3.1.0",
-    "next": "14.1.4",
+    "@mantine/core": "7.10.2",
+    "@mantine/hooks": "7.10.2",
+    "@mantine/notifications": "7.10.2",
+    "@medplum/core": "3.1.8",
+    "@medplum/eslint-config": "3.1.8",
+    "next": "14.2.4",
     "next-auth": "4.24.7",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "3.1.0",
-    "@types/node": "20.12.2",
-    "@types/react": "18.2.73",
-    "@types/react-dom": "18.2.23",
+    "@medplum/fhirtypes": "3.1.8",
+    "@types/node": "20.14.2",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
     "eslint": "8.57.0",
-    "eslint-config-next": "14.1.4",
-    "typescript": "5.4.3"
+    "eslint-config-next": "14.2.4",
+    "typescript": "5.4.5"
   }
 }

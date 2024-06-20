@@ -1,8 +1,9 @@
 import { Group, TextInput } from '@mantine/core';
 import { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
-import { useRef, useState } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 export type ContactDetailInputProps = ComplexTypeInputProps<ContactDetail>;
 
@@ -11,6 +12,12 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
 
   const ref = useRef<ContactDetail>();
   ref.current = contactPoint;
+
+  const { getExtendedProps } = useContext(ElementsContext);
+  const [nameProps, telecomProps] = useMemo(
+    () => ['name', 'telecom'].map((field) => getExtendedProps(props.path + '.' + field)),
+    [getExtendedProps, props.path]
+  );
 
   function setContactDetailWrapper(newValue: ContactDetail): void {
     setContactDetail(newValue);
@@ -38,6 +45,7 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
   return (
     <Group gap="xs" grow wrap="nowrap">
       <TextInput
+        disabled={props.disabled || nameProps?.readonly}
         data-testid={props.name + '-name'}
         name={props.name + '-name'}
         placeholder="Name"
@@ -46,6 +54,7 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
         onChange={(e) => setName(e.currentTarget.value)}
       />
       <ContactPointInput
+        disabled={props.disabled || telecomProps?.readonly}
         name={props.name + '-telecom'}
         path={props.path + '.telecom'}
         defaultValue={contactPoint?.telecom?.[0]}

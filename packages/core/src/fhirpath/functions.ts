@@ -171,8 +171,23 @@ export const functions: Record<string, FhirPathFunction> = {
    * is empty ({ }), the result is false.
    *
    * See: http://hl7.org/fhirpath/#subsetofother-collection-boolean
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param other - The atom representing the collection of elements.
+   * @returns True if all items in the input collection are members of the other collection.
    */
-  subsetOf: stub,
+  subsetOf: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+    if (input.length === 0) {
+      return booleanToTypedValue(true);
+    }
+
+    const otherArray = other.eval(context, getRootInput(context));
+    if (otherArray.length === 0) {
+      return booleanToTypedValue(false);
+    }
+
+    return booleanToTypedValue(input.every((e) => otherArray.some((o) => o.value === e.value)));
+  },
 
   /**
    * Returns true if all items in the collection passed as the other argument are members of
@@ -184,8 +199,23 @@ export const functions: Record<string, FhirPathFunction> = {
    * is empty ({ }), the result is false.
    *
    * See: http://hl7.org/fhirpath/#supersetofother-collection-boolean
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param other - The atom representing the collection of elements.
+   * @returns True if all items in the other collection are members of the input collection.
    */
-  supersetOf: stub,
+  supersetOf: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+    const otherArray = other.eval(context, getRootInput(context));
+    if (otherArray.length === 0) {
+      return booleanToTypedValue(true);
+    }
+
+    if (input.length === 0) {
+      return booleanToTypedValue(false);
+    }
+
+    return booleanToTypedValue(otherArray.every((e) => input.some((o) => o.value === e.value)));
+  },
 
   /**
    * Returns the integer count of the number of items in the input collection.
@@ -262,7 +292,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   where: (context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.filter((e) => toJsBoolean(criteria.eval({ parent: context, variables: { $this: e } }, [e])));
+    return input.filter((e) => toJsBoolean(criteria.eval(context, [e])));
   },
 
   /**
@@ -438,7 +468,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!result.some((e) => e.value === value.value) && otherArray.some((e) => e.value === value.value)) {
@@ -464,7 +494,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!otherArray.some((e) => e.value === value.value)) {
@@ -497,7 +527,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     return removeDuplicates([...input, ...otherArray]);
   },
 
@@ -518,7 +548,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval(context, input);
+    const otherArray = other.eval(context, getRootInput(context));
     return [...input, ...otherArray];
   },
 
@@ -1298,6 +1328,41 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /*
+   * Additional string functions
+   * See: https://build.fhir.org/ig/HL7/FHIRPath/#additional-string-functions
+   * STU Note: the contents of this section are Standard for Trial Use (STU)
+   */
+
+  encode: stub,
+  decode: stub,
+  escape: stub,
+  unescape: stub,
+  trim: stub,
+  split: stub,
+
+  /**
+   * The join function takes a collection of strings and joins them into a single string, optionally using the given separator.
+   *
+   * If the input is empty, the result is empty.
+   *
+   * If no separator is specified, the strings are directly concatenated.
+   *
+   * See: https://build.fhir.org/ig/HL7/FHIRPath/#joinseparator-string--string
+   *
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param separatorAtom - Optional separator atom.
+   * @returns The joined string.
+   */
+  join: (context: AtomContext, input: TypedValue[], separatorAtom: Atom): TypedValue[] => {
+    const separator = separatorAtom?.eval(context, getRootInput(context))[0]?.value ?? '';
+    if (typeof separator !== 'string') {
+      throw new Error('Separator must be a string.');
+    }
+    return [{ type: PropertyType.string, value: input.map((i) => i.value?.toString() ?? '').join(separator) }];
+  },
+
+  /*
    * 5.7. Math
    */
 
@@ -1786,4 +1851,12 @@ function validateInput(input: TypedValue[], count: number): TypedValue[] {
     }
   }
   return input;
+}
+
+function getRootInput(context: AtomContext): [TypedValue] {
+  let last = context;
+  while (last.parent?.variables.$this) {
+    last = last.parent;
+  }
+  return [last.variables.$this];
 }

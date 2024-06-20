@@ -304,7 +304,7 @@ It is important to spread the original `ProjectMembership` to ensure that you ar
 
 ## Invite via API
 
-Inviting users can be done programmatically using the [`/invite` endpoint](/docs/api/project-admin/invite).
+Inviting users can be done programmatically using the [`/invite` endpoint](/docs/api/project-admin/invite). Like inviting via the [Medplum App](https://app.medplum.com), this can only be done by [project admins](/docs/access/admin#project-admin).
 
 Prepare JSON payload:
 

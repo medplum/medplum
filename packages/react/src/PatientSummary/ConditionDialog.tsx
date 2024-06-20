@@ -1,9 +1,10 @@
 import { Button, Group, Stack } from '@mantine/core';
-import { createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { Form } from '../Form/Form';
 
 export interface ConditionDialogProps {
@@ -20,15 +21,31 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      onSubmit({
-        ...condition,
-        resourceType: 'Condition',
-        subject: createReference(patient),
-        encounter: encounter ? createReference(encounter) : undefined,
-        code,
-        clinicalStatus,
-        onsetDateTime: formData.onsetDateTime ? formData.onsetDateTime : undefined,
-      });
+      const updatedCondition: Condition = addProfileToResource(
+        {
+          ...condition,
+          resourceType: 'Condition',
+          category: [
+            {
+              coding: [
+                {
+                  system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/condition-category',
+                  code: 'problem-list-item',
+                  display: 'Problem List Item',
+                },
+              ],
+              text: 'Problem List Item',
+            },
+          ],
+          subject: createReference(patient),
+          encounter: encounter && createReference(encounter),
+          code,
+          clinicalStatus,
+          onsetDateTime: formData.onsetDateTime ? convertLocalToIso(formData.onsetDateTime) : undefined,
+        },
+        HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'
+      );
+      onSubmit(updatedCondition);
     },
     [patient, encounter, condition, code, clinicalStatus, onSubmit]
   );
@@ -41,7 +58,7 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
           label="Problem"
           path="Condition.code"
           data-autofocus={true}
-          binding="http://hl7.org/fhir/ValueSet/condition-code"
+          binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
           defaultValue={condition?.code}
           onChange={(code) => setCode(code)}
           outcome={undefined}
@@ -50,7 +67,7 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
           name="clinicalStatus"
           label="Status"
           path="Condition.clinicalStatus"
-          binding="http://hl7.org/fhir/ValueSet/Condition-clinical"
+          binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
           defaultValue={condition?.clinicalStatus}
           onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
           outcome={undefined}

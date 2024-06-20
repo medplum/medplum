@@ -16,7 +16,7 @@ export const locks = {
   migration: 1,
 };
 
-export async function initDatabase(serverConfig: MedplumServerConfig, runMigrations = true): Promise<void> {
+export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
   const config = serverConfig.database;
 
   const poolConfig = {
@@ -26,6 +26,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
     user: config.username,
     password: config.password,
     ssl: config.ssl,
+    max: 50,
   };
 
   if (serverConfig.databaseProxyEndpoint) {
@@ -44,19 +45,23 @@ export async function initDatabase(serverConfig: MedplumServerConfig, runMigrati
     client.query(`SET statement_timeout TO ${config.queryTimeout ?? 60000}`).catch((err) => {
       globalLogger.warn('Failed to set query timeout', err);
     });
+    client.query(`SET default_transaction_isolation TO 'REPEATABLE READ'`).catch((err) => {
+      globalLogger.warn('Failed to set default transaction isolation', err);
+    });
   });
 
   let client: PoolClient | undefined;
-  try {
-    client = await pool.connect();
-    await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
-    if (runMigrations) {
+  // Run migrations by default
+  if (config.runMigrations !== false) {
+    try {
+      client = await pool.connect();
+      await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
       await migrate(client);
-    }
-  } finally {
-    if (client) {
-      await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
-      client.release();
+    } finally {
+      if (client) {
+        await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
+        client.release();
+      }
     }
   }
 }
