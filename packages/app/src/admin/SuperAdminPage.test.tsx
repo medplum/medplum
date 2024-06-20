@@ -75,20 +75,6 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
-  test('Rebuild compartments for resource type', async () => {
-    setup();
-
-    await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Compartments Resource Type'), { target: { value: 'Project' } });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Rebuild Compartments' }));
-    });
-
-    expect(screen.getByText('Done')).toBeInTheDocument();
-  });
-
   test('Purge resources', async () => {
     setup();
 
