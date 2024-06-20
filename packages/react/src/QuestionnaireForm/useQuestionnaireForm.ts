@@ -140,9 +140,9 @@ export function createQuestionnaireResponse(
     throw new Error('Questionnaire is undefined');
   }
 
-  const responseItems = forEachItem<QuestionnaireResponseItem, Questionnaire>(
+  const responseItems = forEachItem<QuestionnaireResponseItem, QuestionnaireItem>(
     questionnaire,
-    (item, _ancestors, _rootResource, childrenResults) => {
+    (item, { childrenResults }) => {
       const responseItem: QuestionnaireResponseItem = {
         linkId: item.linkId,
         item: childrenResults.length > 0 ? childrenResults : undefined,
@@ -252,41 +252,44 @@ function getValuesFromResponse(
   return values;
 }
 
-type QuestionnaireItemType<R> = R extends Questionnaire ? QuestionnaireItem : QuestionnaireResponseItem;
-type QuestionnaireItemsType<R> = R extends Questionnaire ? QuestionnaireItem[] : QuestionnaireResponseItem[];
+type ItemType = QuestionnaireItem | QuestionnaireResponseItem;
+type ExtractQuestionnaireType<I> = Extract<Questionnaire | QuestionnaireResponse, { item?: I[] }>;
 
-type QuestionnaireIteratorCallback<T, R extends Questionnaire | QuestionnaireResponse> = (
-  currentItem: QuestionnaireItemType<R>,
-  ancestors: QuestionnaireItemType<R>[],
-  rootResource: R,
-  childrenResults: T[],
-  currentValues?: Record<string, QuestionnaireResponseItemAnswerValue>
+export interface QuestionnaireFormItemData<R extends ItemType, T> {
+  ancestors: R[];
+  rootResource: ExtractQuestionnaireType<R>;
+  childrenResults: T[];
+  currentValues?: Record<string, QuestionnaireResponseItemAnswerValue>;
+}
+
+export type ForEachItemCallback<T, R extends QuestionnaireItem | QuestionnaireResponseItem> = (
+  item: R,
+  itemData: QuestionnaireFormItemData<R, T>
 ) => T;
 
-export function forEachItem<T, R extends Questionnaire | QuestionnaireResponse>(
-  resource: R,
-  callback: QuestionnaireIteratorCallback<T, R>,
-  currentValues?: Readonly<Record<string, QuestionnaireResponseItemAnswerValue>>,
-  items?: QuestionnaireItemsType<R>,
-  ancestors: QuestionnaireItemType<R>[] = []
+export function forEachItem<T, R extends ItemType>(
+  resource: ExtractQuestionnaireType<R>,
+  callback: ForEachItemCallback<T, R>,
+  currentValues?: Readonly<Record<string, QuestionnaireResponseItemAnswerValue>>
 ): T[] {
-  const results: T[] = [];
+  return resource.item?.map((item) => forEachItemImpl(item, resource, callback, currentValues)) ?? [];
+}
 
-  const rootItems = (isResource(resource) ? resource.item : items) ?? [];
-
-  for (const item of rootItems) {
-    const childrenResults: T[] = [];
-    if (item.item) {
-      childrenResults.push(
-        ...forEachItem(resource, callback, currentValues, item.item as QuestionnaireItemsType<R>, [
-          item as QuestionnaireItemType<R>,
-          ...ancestors,
-        ])
-      );
-    }
-    const result = callback(item as QuestionnaireItemType<R>, ancestors, resource, childrenResults, currentValues);
-    results.push(result);
+function forEachItemImpl<T, R extends ItemType>(
+  item: R,
+  resource: ExtractQuestionnaireType<R>,
+  callback: ForEachItemCallback<T, R>,
+  currentValues?: Readonly<Record<string, QuestionnaireResponseItemAnswerValue>>,
+  ancestors: R[] = []
+): T {
+  const childrenResults: T[] = [];
+  for (const child of item.item ?? []) {
+    childrenResults.push(forEachItemImpl(child as R, resource, callback, currentValues, [item, ...ancestors]));
   }
-
-  return results;
+  return callback(item, {
+    ancestors,
+    rootResource: resource,
+    childrenResults,
+    currentValues,
+  });
 }
