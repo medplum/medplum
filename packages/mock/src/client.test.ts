@@ -2,6 +2,7 @@ import {
   ClientStorage,
   ContentType,
   LoginState,
+  MemoryStorage,
   MockAsyncClientStorage,
   NewPatientRequest,
   NewProjectRequest,
@@ -12,8 +13,10 @@ import {
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  sleep,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import {
   Agent,
   Bot,
@@ -26,7 +29,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'node:crypto';
 import { TextEncoder } from 'node:util';
-import { MockClient } from './client';
+import { MockClient, MockFetchClient } from './client';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
 import { MockSubscriptionManager } from './subscription-manager';
 
@@ -266,6 +269,64 @@ describe('MockClient', () => {
     const client = new MockClient({ debug: true });
     await client.get('not-found');
     expect(console.log).toHaveBeenCalled();
+  });
+
+  test('mockFetchOverride -- Missing one of router, repo, or client throws', () => {
+    const router = new FhirRouter();
+    const repo = new MemoryRepository();
+    const client = new MockFetchClient(router, repo, 'https://example.com/');
+    expect(
+      () =>
+        new MockClient({
+          // @ts-expect-error Missing router
+          mockFetchOverride: { repo, client },
+        })
+    ).toThrow('mockFetchOverride must specify all fields: client, repo, router');
+    expect(
+      () =>
+        new MockClient({
+          // @ts-expect-error Missing repo
+          mockFetchOverride: { repo, client },
+        })
+    ).toThrow('mockFetchOverride must specify all fields: client, repo, router');
+    expect(
+      () =>
+        new MockClient({
+          // @ts-expect-error Missing client
+          mockFetchOverride: { router, repo },
+        })
+    ).toThrow('mockFetchOverride must specify all fields: client, repo, router');
+  });
+
+  test('mockFetchOverride -- Can spy on passed-in fetch', async () => {
+    const baseUrl = 'https://example.com/';
+
+    const router = new FhirRouter();
+    const repo = new MemoryRepository();
+    const client = new MockFetchClient(router, repo, baseUrl);
+    const fetchClientSpy = jest.spyOn(client, 'mockFetch');
+
+    const storage = new ClientStorage(new MemoryStorage());
+    storage.setObject('activeLogin', {
+      accessToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
+
+    const mockClient = new MockClient({
+      storage,
+      mockFetchOverride: { router, repo, client },
+    });
+
+    await sleep(0);
+    expect(mockClient).toBeDefined();
+    expect(fetchClientSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
   });
 
   test('Search', async () => {
