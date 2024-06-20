@@ -1,7 +1,7 @@
-import { Reference } from '@medplum/fhirtypes';
+import { Reference, Resource } from '@medplum/fhirtypes';
 import { Atom, AtomContext } from '../fhirlexer/parse';
 import { PropertyType, TypedValue, isResource } from '../types';
-import { calculateAge, isEmpty } from '../utils';
+import { calculateAge, getExtension, isEmpty, resolveId } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import { booleanToTypedValue, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean, toTypedValue } from './utils';
@@ -1790,6 +1790,81 @@ export const functions: Record<string, FhirPathFunction> = {
       type: PropertyType.boolean,
       value: value.value?.resourceType === expectedResourceType,
     }));
+  },
+
+  /*
+   * SQL-on-FHIR utilities
+   */
+
+  /**
+   * Returns an opaque value to be used as the primary key for the row associated with the resource.
+   *
+   * In many cases the value may just be the resource id, but exceptions are described below.
+   * This function is used in tandem with getReferenceKey(), which returns an equal value from references that point to this resource.
+   *
+   * The returned KeyType is implementation dependent, but must be a FHIR primitive type that can be used for efficient joins in the
+   * system’s underlying data storage. Integers, strings, UUIDs, and other primitive types are appropriate.
+   *
+   * See: https://build.fhir.org/ig/FHIR/sql-on-fhir-v2/StructureDefinition-ViewDefinition.html#getresourcekey--keytype
+   *
+   * @param _context - The evaluation context.
+   * @param input - The input collection.
+   * @returns The resource key.
+   */
+  getResourceKey: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
+    const resource = input[0].value as Resource;
+    if (!resource?.id) {
+      return [];
+    }
+    return [{ type: PropertyType.id, value: resource.id }];
+  },
+
+  /**
+   * Returns an opaque value that represents the database key of the row being referenced.
+   *
+   * The value returned must be equal to the getResourceKey() value returned on the resource itself.
+   *
+   * Users may pass an optional resource type (e.g., Patient or Observation) to indicate the expected type that the reference should point to.
+   * The getReferenceKey() will return an empty collection (effectively null since FHIRPath always returns collections) if the reference is not of the expected type.
+   * For example, Observation.subject.getReferenceKey(Patient) would return a row key if the subject is a Patient, or the empty collection (i.e., {}) if it is not.
+   *
+   * The returned KeyType is implementation dependent, but must be a FHIR primitive type that can be used for efficient joins in the systems underlying data storage.
+   * Integers, strings, UUIDs, and other primitive types are appropriate.
+   *
+   * See: https://build.fhir.org/ig/FHIR/sql-on-fhir-v2/StructureDefinition-ViewDefinition.html#getreferencekeyresource-type-specifier--keytype
+   *
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param typeAtom - Optional expected resource type.
+   * @returns The reference key.
+   */
+  getReferenceKey: (context: AtomContext, input: TypedValue[], typeAtom: Atom): TypedValue[] => {
+    const reference = input[0].value as Reference;
+    if (!reference?.reference) {
+      return [];
+    }
+
+    let typeName = '';
+    if (typeAtom instanceof SymbolAtom) {
+      typeName = typeAtom.name;
+    }
+    if (typeName && !reference.reference.startsWith(typeName + '/')) {
+      return [];
+    }
+
+    return [{ type: PropertyType.id, value: resolveId(reference) }];
+  },
+
+  extension: (context: AtomContext, input: TypedValue[], urlAtom: Atom): TypedValue[] => {
+    const url = urlAtom.eval(context, input)[0].value as string;
+    const resource = input?.[0]?.value;
+    if (resource) {
+      const extension = getExtension(resource, url);
+      if (extension) {
+        return [{ type: PropertyType.Extension, value: extension }];
+      }
+    }
+    return [];
   },
 };
 

@@ -689,4 +689,10 @@ describe('FHIRPath parser', () => {
     const tb2 = toTypedValue(b2);
     expect(evalFhirPathTyped(expr, [tb2], { '%resource': tb2 })).toEqual([toTypedValue(true)]);
   });
+
+  test('At symbols', () => {
+    // Example of "incorrect" fhirpath expression from sql-on-fhir test suite
+    const expr = '@@';
+    expect(() => parseFhirPath(expr)).toThrow('Invalid DateTime literal');
+  });
 });
