@@ -1,4 +1,4 @@
-import { Button, Stack, Title } from '@mantine/core';
+import { Button, Stack, Title, TitleOrder } from '@mantine/core';
 import { Encounter, Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { ReactNode, useCallback } from 'react';
 import { FormSection } from '../FormSection/FormSection';
@@ -32,13 +32,25 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         return <p>{item.text}</p>;
       }
 
-      console.debug('Ancestors', ancestors.length, item.linkId);
+      let currentNode: ReactNode = undefined;
 
-      return (
-        <Stack key={item.linkId}>
+      if (item.type === 'group') {
+        currentNode = (
+          <Title order={(3 + ancestors.length) as TitleOrder} mb="md" key={item.linkId}>
+            {item.text}
+          </Title>
+        );
+      } else {
+        currentNode = (
           <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text} withAsterisk={item.required}>
             <QuestionnaireFormItem item={item} />
           </FormSection>
+        );
+      }
+
+      return (
+        <Stack key={item.linkId}>
+          {currentNode}
           <Stack style={{ paddingLeft: `calc(${ancestors.length + 1} * 1rem)` }}>{childrenResults}</Stack>
         </Stack>
       );
