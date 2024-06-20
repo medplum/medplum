@@ -1,7 +1,14 @@
-import { Button, Stack } from '@mantine/core';
-import { Encounter, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { Button, Stack, Title } from '@mantine/core';
+import { Encounter, Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { ReactNode, useCallback } from 'react';
+import { FormSection } from '../FormSection/FormSection';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
-import { QuestionnaireFormContext, useQuestionnaireForm } from './useQuestionnaireForm';
+import {
+  QuestionnaireFormContext,
+  QuestionnaireFormItemData,
+  forEachItem,
+  useQuestionnaireForm,
+} from './useQuestionnaireForm';
 
 export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -14,9 +21,36 @@ export interface QuestionnaireFormProps {
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
   const form = useQuestionnaireForm(props);
-  if (!form.questionnaire || !form.schemaLoaded) {
+  const questionnaire = form.questionnaire;
+
+  const renderItem = useCallback(
+    (
+      item: QuestionnaireItem,
+      { childrenResults, ancestors }: QuestionnaireFormItemData<QuestionnaireItem, ReactNode>
+    ): ReactNode => {
+      if (item.type === 'display') {
+        return <p>{item.text}</p>;
+      }
+
+      console.debug('Ancestors', ancestors.length, item.linkId);
+
+      return (
+        <Stack key={item.linkId}>
+          <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text} withAsterisk={item.required}>
+            <QuestionnaireFormItem item={item} />
+          </FormSection>
+          <Stack style={{ paddingLeft: `calc(${ancestors.length + 1} * 1rem)` }}>{childrenResults}</Stack>
+        </Stack>
+      );
+    },
+    []
+  );
+
+  if (!questionnaire || !form.schemaLoaded) {
     return null;
   }
+
+  const title = questionnaire.title;
 
   return (
     <QuestionnaireFormContext.Provider value={form}>
@@ -25,11 +59,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
           console.dir(response, { depth: null });
         })}
       >
-        <Stack>
-          {form.questionnaire.item?.map((item, index) => (
-            <QuestionnaireFormItem key={item.linkId + '.' + index} item={item} />
-          ))}
-        </Stack>
+        {title && <Title>{title}</Title>}
+        {forEachItem(questionnaire, renderItem, form.values)}
+
         <Button type="submit">{props.submitButtonText ?? 'Submit'}</Button>
       </form>
     </QuestionnaireFormContext.Provider>
