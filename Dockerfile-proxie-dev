@@ -27,4 +27,4 @@ RUN npm run build -- --filter=@medplum/server
 #RUN sed -i "45 i      ssl: { rejectUnauthorized: false }," packages/server/dist/database.js
 
 EXPOSE 5000 8103
-ENTRYPOINT [ "node", "packages/server/dist/index.js", "aws:us-east-2:/medplum/dev/" ]
+ENTRYPOINT [ "node", "packages/server/dist/index.js", "aws:us-east-2:/medplum/development/" ]
