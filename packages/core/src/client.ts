@@ -682,9 +682,13 @@ export interface RequestProfileSchemaOptions {
   expandProfile?: boolean;
 }
 
+/**
+ * This map enumerates all the lifecycle events that `MedplumClient` emits and what the shape of the `Event` is.
+ */
 export type MedplumClientEventMap = {
   change: { type: 'change' };
   offline: { type: 'offline' };
+  profileRefreshing: { type: 'profileRefreshing' };
   profileRefreshed: { type: 'profileRefreshed' };
   storageInitialized: { type: 'storageInitialized' };
 };
@@ -2722,6 +2726,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return Promise.resolve(undefined);
     }
     this.profilePromise = new Promise((resolve, reject) => {
+      this.dispatchEvent({ type: 'profileRefreshing' });
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;

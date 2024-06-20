@@ -28,23 +28,25 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
 
   useEffect(() => {
     function eventListener(): void {
-      setState({
-        ...state,
+      setState((s) => ({
+        ...s,
         profile: medplum.getProfile(),
         loading: medplum.isLoading(),
-      });
+      }));
     }
 
     medplum.addEventListener('change', eventListener);
     medplum.addEventListener('storageInitialized', eventListener);
+    medplum.addEventListener('profileRefreshing', eventListener);
     medplum.addEventListener('profileRefreshed', eventListener);
 
     return () => {
       medplum.removeEventListener('change', eventListener);
       medplum.removeEventListener('storageInitialized', eventListener);
+      medplum.removeEventListener('profileRefreshing', eventListener);
       medplum.removeEventListener('profileRefreshed', eventListener);
     };
-  }, [medplum, state]);
+  }, [medplum]);
 
   const medplumContext = useMemo(
     () => ({

@@ -99,6 +99,8 @@ describe('MedplumProvider', () => {
       act(() => {
         storage = new MockAsyncClientStorage();
         storage.setObject('activeLogin', {
+          // This access token contains a field `login_id` which is necessary to pass the validation required in `isMedplumAccessToken`
+          // to get into the state of `MedplumClient.medplumServer === true`
           accessToken:
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
           refreshToken: '456',
@@ -201,6 +203,7 @@ describe('MedplumProvider', () => {
           reference: 'Project/123',
         },
       });
+
       let medplum!: MockClient;
       const router = new FhirRouter();
       const repo = new MemoryRepository();
@@ -232,6 +235,94 @@ describe('MedplumProvider', () => {
       expect(mockFetchSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
 
       mockFetchSpy.mockRestore();
+    });
+
+    test('Refreshing profile re-triggers loading', async () => {
+      const baseUrl = 'https://example.com/';
+      const storage = new ClientStorage(new MemoryStorage());
+      storage.setObject('activeLogin', {
+        accessToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
+        refreshToken: '456',
+        profile: {
+          reference: 'Practitioner/123',
+        },
+        project: {
+          reference: 'Project/123',
+        },
+      });
+
+      let medplum!: MockClient;
+      const router = new FhirRouter();
+      const repo = new MemoryRepository();
+      const client = new MockFetchClient(router, repo, baseUrl);
+      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
+      let dispatchEventSpy!: jest.SpyInstance;
+
+      act(() => {
+        medplum = new MockClient({
+          storage,
+          mockFetchOverride: { router, repo, client },
+        });
+        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+      });
+
+      expect(medplum.isLoading()).toEqual(true);
+
+      act(() => {
+        render(
+          <MedplumProvider medplum={medplum}>
+            <MyComponent />
+          </MedplumProvider>
+        );
+      });
+
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(medplum.isLoading()).toEqual(true);
+
+      expect(await screen.findByText('Loaded!')).toBeInTheDocument();
+      expect(medplum.isLoading()).toEqual(false);
+      expect(mockFetchSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
+      expect(dispatchEventSpy).toHaveBeenCalledWith({ type: 'profileRefreshed' });
+
+      mockFetchSpy.mockClear();
+      dispatchEventSpy.mockClear();
+
+      let loginPromise!: Promise<void>;
+
+      act(() => {
+        // We clear the active login so that we can test what happens when we call `getProfileAsync()`
+        // Which we want to call `refreshProfile()`
+        // Which is only possible if `sessionDetails` is not defined
+        medplum.clearActiveLogin();
+        medplum.setAccessToken(
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0'
+        );
+        // This is what is testing that we go back to a loading state when profile is being refreshed
+        loginPromise = medplum.setActiveLogin({
+          accessToken:
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
+          refreshToken: '456',
+          profile: {
+            reference: 'Practitioner/123',
+          },
+          project: {
+            reference: 'Project/123',
+          },
+        });
+      });
+
+      expect(medplum.isLoading()).toEqual(true);
+      expect(await screen.findByText('Loading...')).toBeInTheDocument();
+      expect(dispatchEventSpy).toHaveBeenCalledWith({ type: 'profileRefreshing' });
+
+      expect(await screen.findByText('Loaded!')).toBeInTheDocument();
+      expect(medplum.isLoading()).toEqual(false);
+      expect(dispatchEventSpy).toHaveBeenCalledWith({ type: 'profileRefreshed' });
+
+      await loginPromise;
+
+      expect(mockFetchSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
     });
   });
 });
