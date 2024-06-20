@@ -135,7 +135,6 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@mantine/form": "^7.10.1",
-    "react-hook-form": "^7.52.0"
+    "@mantine/form": "^7.10.1"
   }
 }
