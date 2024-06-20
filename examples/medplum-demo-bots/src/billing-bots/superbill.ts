@@ -11,8 +11,8 @@ import {
 import {
   ChargeItemDefinition,
   Coding,
+  DocumentReference,
   Encounter,
-  Media,
   Organization,
   Patient,
   Practitioner,
@@ -23,7 +23,10 @@ import {
 type DocDefinition = CreatePdfOptions['docDefinition'];
 type Content = DocDefinition['content'];
 
-export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>) {
+export async function handler(
+  medplum: MedplumClient,
+  event: BotEvent<QuestionnaireResponse>
+): Promise<DocumentReference> {
   const response = event.input;
   const answers = getQuestionnaireAnswers(response);
 
@@ -49,7 +52,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const codes: Coding[] = [];
   codes.push(encounter.class);
   if (encounter.serviceType?.coding) {
-    codes.push(...encounter.serviceType?.coding);
+    codes.push(...encounter.serviceType.coding);
   }
   const chargeDefinitions = await getChargeDefinition(codes, medplum);
 
@@ -77,14 +80,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   };
 
   const binary = await medplum.createPdf(pdfData);
-  const media: Media = await medplum.createResource({
-    resourceType: 'Media',
-    status: 'completed',
-    content: {
-      contentType: 'application/pdf',
-      url: 'Binary/' + binary.id,
-      title: 'superbill.pdf',
-    },
+  const media: DocumentReference = await medplum.createResource({
+    resourceType: 'DocumentReference',
+    status: 'current',
+    content: [
+      {
+        attachment: {
+          contentType: 'application/pdf',
+          url: 'Binary/' + binary.id,
+          title: 'superbill.pdf',
+        },
+      },
+    ],
   });
 
   return media;

@@ -226,3 +226,5 @@ const dd = {
     },
   },
 };
+
+console.log(dd);

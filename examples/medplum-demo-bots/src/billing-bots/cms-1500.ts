@@ -19,7 +19,7 @@ import {
   RelatedPerson,
 } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<Claim>) {
+export async function handler(medplum: MedplumClient, event: BotEvent<Claim>): Promise<string> {
   const claim = event.input;
   const coverage = await medplum.readReference(claim.insurance[0].coverage);
   const patient = await medplum.readReference(claim.patient);
@@ -71,13 +71,14 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Claim>) {
   const { billingLocation, billingPhoneNumber, providerNpi } = getProviderInfo(provider);
 
   const cms1500Lines = [
+    'Field Number,Field Name,Description,',
     '1,Insurance Program Name,Indicates type of health insurance coverage applicable to the claim,' + insuranceType,
     "1a,Insured's ID Number,Identification number of the insured person," + insuredIdNumber,
     "2,Patient's Name,Full name of the patient," + patientName,
     "3,Patient's Birth Date,Date of birth of patient," + patientDob,
     "3,Patient's Sex,Gender of the patient," + patientSex,
     "4,Insured's Name,Full name of the insured person," + insuredName,
-    "5,Patient's Address,Address of the patient" + patientAddress,
+    "5,Patient's Address,Address of the patient," + patientAddress,
     '6,Patient Relationship to Insured,Relationship of the patient to the insured,' + relation,
     "7,Insured's Address,Address of the insured person," + insuredAddress,
     '8,Reserved for NUCC Use,Reserved for NUCC use',
@@ -121,7 +122,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Claim>) {
     '24B,Place of Service,Place of service,' + placeOfService,
     '24C,EMG,EMG indicator,' + emergency,
     '24D,Procedures, Services, or Supplies,Procedure codes,' + procedureCode,
-    '24D,Procedures, Services, or Supplies,Modifiers' + modifiers,
+    '24D,Procedures, Services, or Supplies,Modifiers,' + modifiers,
     '24E,Diagnosis Pointer, Diagnosis pointer,' + diagnosisPointer,
     '24F,Charges,Charges for service,' + charges,
     '24G,Days or Units,Number of days or units,' + daysOrUnits,
@@ -153,9 +154,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Claim>) {
   }
 
   console.log(cms1500Text);
+  return cms1500Text;
 }
 
-function getPatientInfo(patient: Patient): Record<string, string> {
+export function getPatientInfo(patient: Patient): Record<string, string> {
   const patientName = patient.name?.[0] ? formatHumanName(patient.name?.[0]) : '';
   const patientDob = formatDate(patient.birthDate);
   const patientSex = patient.gender ?? '';
@@ -228,7 +230,7 @@ function getClaimInfo(claim: Claim): Record<string, string | boolean> {
   } else {
     claimInfo.dateOfService = formatDate(item.servicedDate);
     claimInfo.placeOfService = item.locationAddress ? formatAddress(item.locationAddress) : '';
-    claimInfo.emergency = item.category?.coding?.[0].code === 'EMG' ?? false;
+    claimInfo.emergency = item.category?.coding?.[0].code === 'EMG';
     claimInfo.procedureCode = formatCodeableConcept(item.productOrService);
     claimInfo.modifiers = formatCodeableConcept(item.modifier?.[0]);
     claimInfo.diagnosisPointer = item.diagnosisSequence?.[0] + '';
@@ -242,16 +244,23 @@ function getClaimInfo(claim: Claim): Record<string, string | boolean> {
   );
   claimInfo.employmentImpactedStart = employmentImpacted?.timingPeriod?.start ?? '';
   claimInfo.employmentimpactedEnd = employmentImpacted?.timingPeriod?.end ?? '';
-  claimInfo.patientAccountNumber = formatCodeableConcept(
-    claim.supportingInfo?.find((info) => info.category === 'info' && info.code === 'patientaccount')?.code
-  );
-  claimInfo.patientPaid = formatCodeableConcept(
-    claim.supportingInfo?.find((info) => info.category === 'info' && info.code === 'patientpaid')?.code
+  claimInfo.patientAccountNumber =
+    claim.supportingInfo?.find(
+      (info) =>
+        info.category?.coding?.find((code) => code.code === 'info') &&
+        info.code?.coding?.find((code) => code.code === 'patientaccount')
+    )?.valueString ?? '';
+  claimInfo.patientPaid = formatQuantity(
+    claim.supportingInfo?.find(
+      (info) =>
+        info.category?.coding?.find((code) => code.code === 'info') &&
+        info.code?.coding?.find((code) => code.code === 'patientpaid')
+    )?.valueQuantity
   );
   claimInfo.totalCharge = formatMoney(claim.total);
-  claimInfo.dateOfCurrentIllness = claim.supportingInfo?.[0].timingDate
-    ? formatDate(claim.supportingInfo[0].timingDate)
-    : '';
+  claimInfo.dateOfCurrentIllness = formatDate(
+    claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'onset')?.timingDate
+  );
   claimInfo.otherClaim = claim.related?.[0].claim?.display ?? '';
 
   const hospitalization = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'hospitalized');
@@ -306,7 +315,7 @@ function getOtherInfo(
   return otherInfo;
 }
 
-function getReferralInfo(
+export function getReferralInfo(
   referrer?: Practitioner | Organization | Device | Patient | RelatedPerson | PractitionerRole
 ): Record<string, string> {
   const referralInfo: Record<string, string> = {};
@@ -332,7 +341,7 @@ function getReferralInfo(
   return referralInfo;
 }
 
-function getInsurerInfo(insurer: Organization | Patient | RelatedPerson): Record<string, string> {
+export function getInsurerInfo(insurer: Organization | Patient | RelatedPerson): Record<string, string> {
   const insurerInfo: Record<string, string> = {};
   if (insurer.resourceType === 'Patient' || insurer.resourceType === 'RelatedPerson') {
     insurerInfo.serviceNPI = '';
@@ -353,7 +362,7 @@ function getInsurerInfo(insurer: Organization | Patient | RelatedPerson): Record
   return insurerInfo;
 }
 
-function getProviderInfo(provider: Practitioner | Organization | PractitionerRole): Record<string, string> {
+export function getProviderInfo(provider: Practitioner | Organization | PractitionerRole): Record<string, string> {
   const providerInfo: Record<string, string> = {};
   if (provider.resourceType === 'PractitionerRole') {
     return {
@@ -366,7 +375,7 @@ function getProviderInfo(provider: Practitioner | Organization | PractitionerRol
   providerInfo.billingLocation = provider?.address?.[0] ? formatAddress(provider.address?.[0]) : '';
   const phoneNumber = provider.telecom?.find((comm) => comm.system === 'phone');
   providerInfo.billingPhoneNumber = phoneNumber?.value ?? '';
-  providerInfo.providerNpi = provider.identifier?.find((id) => id.value === 'NPI')?.value ?? '';
+  providerInfo.providerNpi = provider.identifier?.find((id) => id.id === 'NPI')?.value ?? '';
 
   return providerInfo;
 }

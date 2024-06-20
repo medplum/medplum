@@ -4,7 +4,7 @@ import { Bundle, ChargeItemDefinition, Encounter, QuestionnaireResponse, SearchP
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
 import { getServiceDisplayString, getServiceFee, handler } from './superbill';
-import { testData } from './test-data';
+import { testData } from './superbill-test-data';
 
 const medplum = new MockClient();
 
@@ -17,8 +17,8 @@ describe('Superbill tests', () => {
     }
   });
 
-  beforeEach(() => {
-    medplum.executeBatch(chargeItemDefinitions);
+  beforeEach(async () => {
+    await medplum.executeBatch(chargeItemDefinitions);
   });
 
   test('Show answers', async () => {
