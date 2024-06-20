@@ -17,7 +17,7 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
       - docker push 339712821437.dkr.ecr.us-west-2.amazonaws.com/proxie_medplum_api
-      - printf '[{"name":"proxie-prod-medplum-api-container", "imageUri":"339712821437.dkr.ecr.us-west-2.amazonaws.com/proxie_medplum_api:latest"}]' > imagedefinitions.json
+      - printf '[{"name":"proxie-production-medplum-api-container", "imageUri":"339712821437.dkr.ecr.us-west-2.amazonaws.com/proxie_medplum_api:latest"}]' > imagedefinitions.json
 
 artifacts:
     files: imagedefinitions.json
