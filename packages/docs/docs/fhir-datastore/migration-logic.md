@@ -4,6 +4,313 @@ toc_max_heading_level: 3
 sidebar_position: 3
 ---
 
+# Migrating Data to Medplum
+
+While there is some engineering work required to migrate non-FHIR data into Medplum, there are well-known best-practices to manage this process. This guide outlines the process of migrating data from an existing system into Medplum.
+
+It covers:
+
+- [The recommended order of data elements to migrate](#migration-order)
+- [Strategies for ensuring robust pipelines](#pipelines)
+- Best practices for implementing the migration process in your organization
+
+## 1. Recommended Order of Data Migration {#migration-order}
+
+When migrating data to Medplum, it's crucial to maintain the integrity and relationships between different data types. FHIR splits data across multiple [Resources]() that contain [References]() to each other.
+
+To simplify the migration process, Medplum recommends migrating data elements roughly in order of the FHIR dependency graph. Here's the recommended order for migrating data:
+
+
+
+| Order | Data Element                        | FHIR Resource                            | Notes                                                                          |
+| ----- | ----------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------ |
+| 1     | Provider Demographics & Credentials | Practitioner, PractitionerRole           | Migrate clinician information to link them to migrated clinical events         |
+| 2     | Shared Organizations                | Organization                             | Used in multi-practice settings to represent each practice                     |
+| 3     | Patient Demographics                | Patient                                  | Foundational patient record that will be referenced by all other clinical data |
+| 4     | Problem List, Medication List       | Condition, MedicationRequest             | Provides clinicians current medical "snapshot" of the patient's health         |
+| 5     | Encounter History, Vitals, Labs     | Encounter, Observation, DiagnosticReport | Provides clinicians with longitudinal health of the patient                    |
+
+This order ensures that foundational data (Patient records) are in place before migrating related clinical data.
+
+
+## 2. Using Conditional Update (Upsert) and Conditional References
+
+To ensure that your migration process is idempotent (can be run multiple times without creating duplicate data), use Conditional Update and Conditional References. A key strategy is to use identifiers from your existing system as primary keys in Medplum.
+
+### Conditional Update (Upsert)
+
+#### Key Points:
+- Add an identifier that serves as the primary key from your existing system.
+- Use this identifier as the search string to make the addition idempotent.
+- This approach ensures that each resource is uniquely identifiable and can be updated without creating duplicates.
+
+Here's an example using the `If-None-Exist` header in your FHIR API requests to perform a conditional update:
+
+```
+PUT /Patient
+If-None-Exist: identifier=http://old-system.com/patient|12345
+
+{
+  "resourceType": "Patient",
+  "identifier": [
+    {
+      "system": "http://old-system.com/patient",
+      "value": "12345"
+    }
+  ],
+  // ... other patient data
+}
+```
+
+In this example, `http://old-system.com/patient` is the identifier system for your old system, and `12345` is the patient's ID in that system.
+
+### Conditional References
+
+When creating resources that reference other resources, use the same identifier for conditional references:
+
+```json
+{
+  "resourceType": "Condition",
+  "subject": {
+    "reference": "Patient?identifier=http://old-system.com/patient|12345"
+  },
+  // ... other condition data
+}
+```
+
+This ensures that the reference will be resolved correctly, even if the Patient's internal Medplum ID changes.
+
+### Example Using Medplum SDK
+
+Here's an example of how to perform an upsert operation using the Medplum SDK in TypeScript:
+
+```typescript
+import { MedplumClient } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
+
+const medplum = new MedplumClient();
+
+async function upsertPatient(oldSystemId: string, patientData: Partial<Patient>): Promise<Patient> {
+  const identifier = {
+    system: 'http://old-system.com/patient',
+    value: oldSystemId
+  };
+
+  // Prepare the patient resource
+  const patient: Patient = {
+    resourceType: 'Patient',
+    identifier: [identifier],
+    ...patientData
+  };
+
+  try {
+    // Attempt to create the patient, or update if it already exists
+    const result = await medplum.createResource(patient, {
+      ifNoneExist: `identifier=${identifier.system}|${identifier.value}`
+    });
+
+    console.log(`Patient upserted successfully. ID: ${result.id}`);
+    return result;
+  } catch (error) {
+    console.error('Error upserting patient:', error);
+    throw error;
+  }
+}
+
+// Usage
+const oldSystemPatientId = '12345';
+const patientData = {
+  name: [{ given: ['John'], family: 'Doe' }],
+  birthDate: '1970-01-01'
+};
+
+upsertPatient(oldSystemPatientId, patientData)
+  .then((patient) => console.log('Upserted patient:', patient))
+  .catch((error) => console.error('Upsert failed:', error));
+```
+
+In this example:
+
+1. We define an `upsertPatient` function that takes the old system's patient ID and the patient data.
+2. We create an identifier using the old system's ID.
+3. We use the Medplum SDK's `createResource` method with the `ifNoneExist` option to perform the upsert operation.
+4. If a patient with the given identifier already exists, it will be updated; otherwise, a new patient will be created.
+
+This approach ensures that your migration process is idempotent and can be safely run multiple times without creating duplicate records. The same principle can be applied to other resource types, adjusting the resource type and identifier system as needed.
+
+[Remaining sections of the guide continue unchanged]
+
+## 3. Using Batches vs. Transactions in Your Migration Pipeline
+
+FHIR supports both batch and transaction operations for processing multiple resources at once:
+
+### Batches
+
+- Use batches when you want to process multiple independent operations.
+- Batches allow partial success: if one operation fails, others can still succeed.
+- Suitable for bulk data imports where operations don't depend on each other.
+
+Example batch request:
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      },
+      "resource": {
+        // Patient resource
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      },
+      "resource": {
+        // Observation resource
+      }
+    }
+  ]
+}
+```
+
+### Transactions
+
+- Use transactions when you need atomic operations (all-or-nothing).
+- If any operation in a transaction fails, the entire transaction is rolled back.
+- Suitable for migrating interdependent data where consistency is crucial.
+
+Example transaction request:
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      },
+      "resource": {
+        // Patient resource
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      },
+      "resource": {
+        // Condition resource referencing the Patient
+      }
+    }
+  ]
+}
+```
+
+Choose between batches and transactions based on your data consistency requirements and the interdependence of your resources.
+
+## 4. Recommended Migration Operation Sequence
+
+To ensure a smooth transition from your legacy system to Medplum, follow this recommended sequence:
+
+1. **Write-only / Dual write**
+
+   - Modify your existing services to write data to both Medplum and your legacy store.
+   - This ensures that new data is captured in Medplum without disrupting existing operations.
+
+2. **Read from Medplum**
+
+   - Update your user interface to read data from Medplum.
+   - This allows you to verify data consistency and start benefiting from Medplum's capabilities.
+
+3. **Front-End write to Medplum**
+
+   - Update your user interface to write directly to Medplum.
+   - At this point, your application should be primarily interacting with Medplum for both reads and writes.
+
+4. **Backfill**
+
+   - Migrate existing data from your legacy system to Medplum.
+   - Use the strategies outlined in sections 1-3 to ensure data integrity during this process.
+
+5. **Deprecate old store**
+   - Once you've verified that all data has been successfully migrated and your application is fully operational with Medplum, you can deprecate the old data store.
+
+## 5. Using Bots, Queues, or Other Pipeline Tools
+
+Depending on the volume and complexity of your data migration, you may want to consider using additional tools:
+
+### Bots
+
+Medplum supports the use of Bots, which are serverless functions that can automate various tasks. Bots can be useful for:
+
+- Transforming data from your legacy format to FHIR resources.
+- Implementing complex business logic during the migration process.
+- Handling data validation and error correction.
+
+### Queues
+
+For large-scale migrations, implementing a queue system can help manage the flow of data and prevent overwhelming the API:
+
+- Use a message queue (e.g., RabbitMQ, Apache Kafka) to buffer migration tasks.
+- Implement worker processes that consume from the queue and perform the actual data migration.
+
+### Other Pipeline Tools
+
+Consider using ETL (Extract, Transform, Load) tools or data pipeline frameworks if your migration involves complex data transformations or integrations with multiple systems.
+
+## 6. Handling Change vs. Creation Events
+
+When migrating data, it's important to distinguish between creating new resources and updating existing ones:
+
+### Creation Events
+
+- Use POST requests for creating new resources.
+- Implement logic to check if a resource already exists before creating it (using conditional create operations).
+
+### Change Events
+
+- Use PUT or PATCH requests for updating existing resources.
+- Implement versioning to track changes over time.
+- Consider using FHIR's history functionality to maintain a record of changes.
+
+Example of handling both types of events:
+
+```python
+def migrate_patient(patient_data):
+    # Check if patient exists
+    existing_patient = fhir_client.search(
+        'Patient',
+        identifier=patient_data['identifier']
+    ).first()
+
+    if existing_patient:
+        # Update existing patient
+        updated_patient = fhir_client.update(
+            'Patient',
+            existing_patient['id'],
+            patient_data
+        )
+        print(f"Updated Patient: {updated_patient['id']}")
+    else:
+        # Create new patient
+        new_patient = fhir_client.create('Patient', patient_data)
+        print(f"Created Patient: {new_patient['id']}")
+```
+
+By implementing these strategies, you can ensure a smooth and reliable migration of your data from a 3rd party system to Medplum.
+
+## Conclusion
+
+Migrating to a FHIR-compliant system like Medplum offers numerous benefits in terms of interoperability and standardization. By following this guide, you can ensure a systematic and efficient migration process that maintains data integrity and minimizes disruption to your existing operations. Remember to thoroughly test each step of the migration process and have a rollback plan in place before making any irreversible changes to your data infrastructure.
+
 # Migration Logic
 
 Virtually all system migrations require some degree of migration logic: the "transformers" that convert one representation of a patient to a new one. Smaller and more simple systems might have 10-20 data types to convert. Larger and more complex systems can easily have 100+ data types.
@@ -33,6 +340,7 @@ When considering which option is best for you, we must consider some system char
   - What time delay / data freshness is acceptable?
 
 ## Migration Patterns
+
 ### Existing system sends FHIR
 
 ![Existing system sends FHIR](./migration-existing-system-sends-fhir.png)
@@ -100,10 +408,10 @@ Example tools: [NextGen Mirth Connect](https://www.nextgen.com/products-and-serv
 
 Example platforms + services: [Redox](https://www.redoxengine.com/), [Health Gorilla](https://www.healthgorilla.com/), [Mulesoft](https://www.mulesoft.com/)
 
-
 ## Tools
 
 ### Idempotency
+
 A common requirement when building Medplum migration pipelines idempotency. You should be able to run your pipeline multiple times without creating duplicate resources.
 
 To achieve idempotency, you can use FHIR [upsert requests](/docs/fhir-datastore/create-fhir-data#upsert) (aka "Conditional Updates") to perform create-or-update operations with a single FHIR request.
