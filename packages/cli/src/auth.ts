@@ -9,15 +9,14 @@ import { exec } from 'node:child_process';
 import { createServer } from 'node:http';
 import { platform } from 'node:os';
 import { createMedplumClient } from './util/client';
-import { createMedplumCommand } from './util/command';
-import { jwtAssertionLogin, jwtBearerLogin, Profile, saveProfile } from './utils';
+import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, Profile, saveProfile } from './utils';
 
 const clientId = MEDPLUM_CLI_CLIENT_ID;
 const redirectUri = 'http://localhost:9615';
 
-export const login = createMedplumCommand('login');
-export const whoami = createMedplumCommand('whoami');
-export const token = createMedplumCommand('token');
+export const login = new MedplumCommand('login');
+export const whoami = new MedplumCommand('whoami');
+export const token = new MedplumCommand('token');
 
 login.action(async (options) => {
   const profileName = options.profile ?? 'default';
@@ -118,13 +117,18 @@ async function openBrowser(url: string): Promise<void> {
     default:
       throw new Error('Unsupported platform: ' + os);
   }
-  exec(cmd, (error, _, stderr) => {
-    if (error) {
-      throw error;
-    }
-    if (stderr) {
-      throw new Error('Could not open browser: ' + stderr);
-    }
+  return new Promise((resolve, reject) => {
+    exec(cmd, (error, _, stderr) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      if (stderr) {
+        reject(new Error('Could not open browser: ' + stderr));
+        return;
+      }
+      resolve();
+    });
   });
 }
 

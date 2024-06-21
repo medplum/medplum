@@ -1,4 +1,4 @@
-import { color, processDescription } from './command';
+import { color, processDescription } from './color';
 
 describe('CLI Color Utilities', () => {
   // Tests for color object
