@@ -28,6 +28,12 @@ node -e "require('fs').copyFileSync(process.execPath, 'dist/medplum-agent-$MEDPL
 # Remove signature from binary
 signtool remove -s dist/medplum-agent-$MEDPLUM_VERSION-win64.exe
 
+# NOTE: If the above step fails, you likely need to install Windows 10 SDK
+#
+# References:
+# https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/
+# https://stackoverflow.com/a/52963704
+
 # Inject blob into binary
 npx postject dist/medplum-agent-$MEDPLUM_VERSION-win64.exe NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 
 
