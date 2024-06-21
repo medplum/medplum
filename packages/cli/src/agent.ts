@@ -166,12 +166,6 @@ export type StatusRow = {
   statusLastUpdated: string;
 };
 
-export type StatusEntry = {
-  status: string;
-  version: string;
-  lastUpdated: string | undefined;
-};
-
 export type AgentBulkOpResponse<T extends Parameters | OperationOutcome = Parameters | OperationOutcome> = {
   agent: Agent;
   result: T;
