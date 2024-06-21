@@ -84,8 +84,7 @@ async function createResource(req: FhirRequest, repo: FhirRepository): Promise<F
 
 // Read resource by ID
 async function readResourceById(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const { resourceType, id, bla } = req.params;
-  console.log(bla);
+  const { resourceType, id } = req.params;
   const resource = await repo.readResource(resourceType, id);
   return [allOk, resource];
 }
