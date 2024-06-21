@@ -95,7 +95,6 @@ async function uploadQuestionnaires(medplum: MedplumClient): Promise<void> {
 }
 
 async function uploadCoreData(medplum: MedplumClient): Promise<void> {
-  debugger;
   const batch = coreData as Bundle;
 
   const result = await medplum.executeBatch(batch);
