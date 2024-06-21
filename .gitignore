@@ -16,6 +16,7 @@ prettier-fmt1.err
 # Output
 dist/
 packages/core/docs/
+packages/core/src/sql-on-fhir/test_report.json
 !packages/definitions/dist/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map

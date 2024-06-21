@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
-import packageJson from './package.json' assert { type: 'json' };
+import packageJson from './package.json' with { type: 'json' };
 
 if (!existsSync('.env')) {
   copyFileSync('.env.defaults', '.env');

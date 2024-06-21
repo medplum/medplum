@@ -223,7 +223,7 @@ function applyProjectAdminAccessPolicy(
       resourceType: 'Project',
       criteria: `Project?_id=${resolveId(membership.project)}`,
       readonlyFields: ['superAdmin', 'features', 'link', 'systemSetting'],
-      hiddenFields: ['systemSecret'],
+      hiddenFields: ['systemSecret', 'strictMode'],
     });
 
     accessPolicy.resource.push({

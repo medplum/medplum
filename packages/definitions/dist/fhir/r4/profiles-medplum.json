@@ -224,7 +224,7 @@
             "id" : "Project.strictMode",
             "path" : "Project.strictMode",
             "short" : "Whether this project uses strict FHIR validation.",
-            "definition" : "Whether this project uses strict FHIR validation.",
+            "definition" : "Whether this project uses strict FHIR validation.  This setting has been deprecated, and can only be set by a super admin.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -820,6 +820,27 @@
             }],
             "base": {
               "path" : "ClientApplication.identityProvider",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.refreshTokenLifetime",
+            "path" : "ClientApplication.refreshTokenLifetime",
+            "definition" : "Optional configuration to set the refresh token duration",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "clapp-1",
+              "severity" : "error",
+              "human" : "Token lifetime must be a valid string representing time duration (eg. 2w, 1h)",
+              "expression" : "$this.matches('^[0-9]+[smhdwy]$')"
+            }],
+            "base": {
+              "path" : "ClientApplication.refreshTokenLifetime",
               "min" : 0,
               "max" : "1"
             }
@@ -5550,6 +5571,1792 @@
             }
           }
         ]
+      }
+    }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "ViewDefinition",
+      "url" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition",
+      "version" : "0.0.1-pre",
+      "name" : "ViewDefinition",
+      "title" : "View Definition",
+      "status" : "draft",
+      "date" : "2024-06-11T00:39:12+00:00",
+      "publisher" : "HL7",
+      "contact" : [{
+        "name" : "HL7",
+        "telecom" : [{
+          "system" : "url",
+          "value" : "http://example.org/example-publisher"
+        }]
+      }],
+      "description" : "View definitions represent a tabular projection of a FHIR resource, where the columns and inclusion \ncriteria are defined by FHIRPath expressions. ",
+      "jurisdiction" : [{
+        "coding" : [{
+          "system" : "http://unstats.un.org/unsd/methods/m49/m49.htm",
+          "code" : "001",
+          "display" : "World"
+        }]
+      }],
+      "fhirVersion" : "5.0.0",
+      "mapping" : [{
+        "identity" : "rim",
+        "uri" : "http://hl7.org/v3",
+        "name" : "RIM Mapping"
+      }],
+      "kind" : "logical",
+      "abstract" : false,
+      "type" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/Base",
+      "derivation" : "specialization",
+      "snapshot" : {
+        "element" : [{
+          "id" : "ViewDefinition",
+          "path" : "ViewDefinition",
+          "short" : "View Definition",
+          "definition" : "View definitions represent a tabular projection of a FHIR resource, where the columns and inclusion \ncriteria are defined by FHIRPath expressions. ",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Base",
+            "min" : 0,
+            "max" : "*"
+          },
+          "isModifier" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.url",
+          "path" : "ViewDefinition.url",
+          "short" : "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "definition" : "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.url",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.identifier",
+          "path" : "ViewDefinition.identifier",
+          "short" : "Additional identifier for the view definition",
+          "definition" : "Additional identifier for the view definition",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.identifier",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "Identifier"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.name",
+          "path" : "ViewDefinition.name",
+          "short" : "Name of view definition (computer and database friendly)",
+          "definition" : "Name of the view definition, must be in a database-friendly format.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.name",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.title",
+          "path" : "ViewDefinition.title",
+          "short" : "Name for this view definition (human friendly)",
+          "definition" : "A optional human-readable description of the view.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.title",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.meta",
+          "path" : "ViewDefinition.meta",
+          "short" : "Metadata about the view definition",
+          "definition" : "Metadata about the view definition",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.meta",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "Meta"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.status",
+          "path" : "ViewDefinition.status",
+          "short" : "draft | active | retired | unknown",
+          "definition" : "draft | active | retired | unknown",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.status",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/publication-status"
+          }
+        },
+        {
+          "id" : "ViewDefinition.experimental",
+          "path" : "ViewDefinition.experimental",
+          "short" : "For testing purposes, not real usage",
+          "definition" : "For testing purposes, not real usage",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.experimental",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "boolean"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.publisher",
+          "path" : "ViewDefinition.publisher",
+          "short" : "Name of the publisher/steward (organization or individual)",
+          "definition" : "Name of the publisher/steward (organization or individual)",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.publisher",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.contact",
+          "path" : "ViewDefinition.contact",
+          "short" : "Contact details for the publisher",
+          "definition" : "Contact details for the publisher",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.contact",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "ContactDetail"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.description",
+          "path" : "ViewDefinition.description",
+          "short" : "Natural language description of the view definition",
+          "definition" : "Natural language description of the view definition",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.description",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.useContext",
+          "path" : "ViewDefinition.useContext",
+          "short" : "The context that the content is intended to support",
+          "definition" : "The context that the content is intended to support",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.useContext",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "UsageContext"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.copyright",
+          "path" : "ViewDefinition.copyright",
+          "short" : "Use and/or publishing restrictions",
+          "definition" : "Use and/or publishing restrictions",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.copyright",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.resource",
+          "path" : "ViewDefinition.resource",
+          "short" : "FHIR resource for the ViewDefinition",
+          "definition" : "The FHIR resource that the view is based upon, e.g. 'Patient' or 'Observation'.",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.resource",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types"
+          }
+        },
+        {
+          "id" : "ViewDefinition.fhirVersion",
+          "path" : "ViewDefinition.fhirVersion",
+          "short" : "FHIR version(s) of the resource for the ViewDefinition",
+          "definition" : "The FHIR version(s) for the FHIR resource. The value of this element is the\nformal version of the specification, without the revision number, e.g.\n[publication].[major].[minor].",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.fhirVersion",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/FHIR-version"
+          }
+        },
+        {
+          "id" : "ViewDefinition.constant",
+          "path" : "ViewDefinition.constant",
+          "short" : "Constant that can be used in FHIRPath expressions",
+          "definition" : "A constant is a value that is injected into a FHIRPath expression through the use of a FHIRPath\nexternal constant with the same name.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.constant",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.id",
+          "path" : "ViewDefinition.constant.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.extension",
+          "path" : "ViewDefinition.constant.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.modifierExtension",
+          "path" : "ViewDefinition.constant.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.name",
+          "path" : "ViewDefinition.constant.name",
+          "short" : "Name of constant (referred to in FHIRPath as %[name])",
+          "definition" : "Name of constant (referred to in FHIRPath as %[name])",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.constant.name",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.value[x]",
+          "path" : "ViewDefinition.constant.value[x]",
+          "short" : "Value of constant",
+          "definition" : "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.constant.value[x]",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "base64Binary"
+          },
+          {
+            "code" : "boolean"
+          },
+          {
+            "code" : "canonical"
+          },
+          {
+            "code" : "code"
+          },
+          {
+            "code" : "date"
+          },
+          {
+            "code" : "dateTime"
+          },
+          {
+            "code" : "decimal"
+          },
+          {
+            "code" : "id"
+          },
+          {
+            "code" : "instant"
+          },
+          {
+            "code" : "integer"
+          },
+          {
+            "code" : "integer64"
+          },
+          {
+            "code" : "oid"
+          },
+          {
+            "code" : "string"
+          },
+          {
+            "code" : "positiveInt"
+          },
+          {
+            "code" : "time"
+          },
+          {
+            "code" : "unsignedInt"
+          },
+          {
+            "code" : "uri"
+          },
+          {
+            "code" : "url"
+          },
+          {
+            "code" : "uuid"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select",
+          "path" : "ViewDefinition.select",
+          "short" : "A collection of columns and nested selects to include in the view.",
+          "definition" : "The select structure defines the columns to be used in the resulting view. These are expressed\nin the `column` structure below, or in nested `select`s for nested resources.",
+          "min" : 1,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select",
+            "min" : 1,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "sql-expressions",
+            "severity" : "error",
+            "human" : "Can only have at most one of `forEach` or `forEachOrNull`.",
+            "expression" : "(forEach | forEachOrNull).count() <= 1",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          },
+          {
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.id",
+          "path" : "ViewDefinition.select.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.extension",
+          "path" : "ViewDefinition.select.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.modifierExtension",
+          "path" : "ViewDefinition.select.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column",
+          "path" : "ViewDefinition.select.column",
+          "short" : "A column to be produced in the resulting table.",
+          "definition" : "A column to be produced in the resulting table. The column is relative to the select structure\nthat contains it.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select.column",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.id",
+          "path" : "ViewDefinition.select.column.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.extension",
+          "path" : "ViewDefinition.select.column.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.modifierExtension",
+          "path" : "ViewDefinition.select.column.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.path",
+          "path" : "ViewDefinition.select.column.path",
+          "short" : "FHIRPath expression that creates a column and defines its content",
+          "definition" : "A FHIRPath expression that evaluates to the value that will be output in the column for each \nresource. The input context is the collection of resources of the type specified in the resource \nelement. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.path",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.name",
+          "path" : "ViewDefinition.select.column.name",
+          "short" : "Column name produced in the output",
+          "definition" : "Name of the column produced in the output, must be in a database-friendly format. The column \nnames in the output must not have any duplicates.",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.name",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.description",
+          "path" : "ViewDefinition.select.column.description",
+          "short" : "Description of the column",
+          "definition" : "A human-readable description of the column.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.description",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.collection",
+          "path" : "ViewDefinition.select.column.collection",
+          "short" : "Indicates whether the column may have multiple values.",
+          "definition" : "Indicates whether the column may have multiple values. Defaults to `false` if unset.\n\nViewDefinitions must have this set to `true` if multiple values may be returned. Implementations SHALL\nreport an error if multiple values are produced when that is not the case.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.collection",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "boolean"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.type",
+          "path" : "ViewDefinition.select.column.type",
+          "short" : "A FHIR StructureDefinition URI for the column's type.",
+          "definition" : "A FHIR StructureDefinition URI for the column's type. Relative URIs are implicitly given\nthe 'http://hl7.org/fhir/StructureDefinition/' prefix. The URI may also use FHIR element ID notation to indicate\na backbone element within a structure. For instance, `Observation.referenceRange` may be specified to indicate\nthe returned type is that backbone element.\n\nThis field *must* be provided if a ViewDefinition returns a non-primitive type. Implementations should report an error\nif the returned type does not match the type set here, or if a non-primitive type is returned but this field is unset.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.type",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag",
+          "path" : "ViewDefinition.select.column.tag",
+          "short" : "Additional metadata describing the column",
+          "definition" : "Tags can be used to attach additional metadata to columns, such as implementation-specific \ndirectives or database-specific type hints.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select.column.tag",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.id",
+          "path" : "ViewDefinition.select.column.tag.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.extension",
+          "path" : "ViewDefinition.select.column.tag.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.modifierExtension",
+          "path" : "ViewDefinition.select.column.tag.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.name",
+          "path" : "ViewDefinition.select.column.tag.name",
+          "short" : "Name of tag",
+          "definition" : "A name that identifies the meaning of the tag. A namespace should be used to scope the tag to \na particular context. For example, 'ansi/type' could be used to indicate the type that should \nbe used to represent the value within an ANSI SQL database.",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.tag.name",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.value",
+          "path" : "ViewDefinition.select.column.tag.value",
+          "short" : "Value of tag",
+          "definition" : "Value of tag",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.column.tag.value",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.select",
+          "path" : "ViewDefinition.select.select",
+          "short" : "Nested select relative to a parent expression.",
+          "definition" : "Nested select relative to a parent expression. If the parent `select` has a `forEach` or `forEachOrNull`, this child select will apply for each item in that expression.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select.select",
+            "min" : 0,
+            "max" : "*"
+          },
+          "contentReference" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition#ViewDefinition.select"
+        },
+        {
+          "id" : "ViewDefinition.select.forEach",
+          "path" : "ViewDefinition.select.forEach",
+          "short" : "A FHIRPath expression to retrieve the parent element(s) used in the containing select. The default is effectively `$this`.",
+          "definition" : "A FHIRPath expression to retrieve the parent element(s) used in the containing select, relative to the root resource or parent `select`,\nif applicable. `forEach` will produce a row for each element selected in the expression. For example, using forEach on `address` in Patient will\ngenerate a new row for each address, with columns defined in the corresponding `column` structure.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.forEach",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.forEachOrNull",
+          "path" : "ViewDefinition.select.forEachOrNull",
+          "short" : "Same as forEach, but will produce a row with null values if the collection is empty.",
+          "definition" : "Same as forEach, but produces a single row with null values in the nested expression if the collection is empty. For example,\nwith a Patient resource, a `forEachOrNull` on address will produce a row for each patient even if there are no addresses; it will\nsimply set the address columns to `null`.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.select.forEachOrNull",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.unionAll",
+          "path" : "ViewDefinition.select.unionAll",
+          "short" : "Creates a union of all rows in the given selection structures.",
+          "definition" : "A `unionAll` combines the results of multiple selection structures. Each structure under the `unionAll` must produce the same column names\nand types. The results from each nested selection will then have their own row.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.select.unionAll",
+            "min" : 0,
+            "max" : "*"
+          },
+          "contentReference" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition#ViewDefinition.select"
+        },
+        {
+          "id" : "ViewDefinition.where",
+          "path" : "ViewDefinition.where",
+          "short" : "A series of zero or more FHIRPath constraints to filter resources for the view.",
+          "definition" : "A series of zero or more FHIRPath constraints to filter resources for the view. Every constraint\nmust evaluate to true for the resource to be included in the view.",
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "ViewDefinition.where",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.id",
+          "path" : "ViewDefinition.where.id",
+          "representation" : ["xmlAttr"],
+          "short" : "Unique id for inter-element referencing",
+          "definition" : "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Element.id",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+              "valueUrl" : "id"
+            }],
+            "code" : "http://hl7.org/fhirpath/System.String"
+          }],
+          "condition" : ["ele-1"],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.extension",
+          "path" : "ViewDefinition.where.extension",
+          "slicing" : {
+            "discriminator" : [{
+              "type" : "value",
+              "path" : "url"
+            }],
+            "description" : "Extensions are always sliced by (at least) url",
+            "rules" : "open"
+          },
+          "short" : "Additional content defined by implementations",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "alias" : ["extensions",
+          "user content"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "Element.extension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : false,
+          "isSummary" : false,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "n/a"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.modifierExtension",
+          "path" : "ViewDefinition.where.modifierExtension",
+          "short" : "Extensions that cannot be ignored even if unrecognized",
+          "definition" : "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "comment" : "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+          "requirements" : "Modifier extensions allow for extensions that *cannot* be safely ignored to be clearly distinguished from the vast majority of extensions which can be safely ignored.  This promotes interoperability by eliminating the need for implementers to prohibit the presence of extensions. For further information, see the [definition of modifier extensions](http://hl7.org/fhir/R5/extensibility.html#modifierExtension).",
+          "alias" : ["extensions",
+          "user content",
+          "modifiers"],
+          "min" : 0,
+          "max" : "*",
+          "base" : {
+            "path" : "BackboneElement.modifierExtension",
+            "min" : 0,
+            "max" : "*"
+          },
+          "type" : [{
+            "code" : "Extension"
+          }],
+          "constraint" : [{
+            "key" : "ele-1",
+            "severity" : "error",
+            "human" : "All FHIR elements must have a @value or children",
+            "expression" : "hasValue() or (children().count() > id.count())",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Element"
+          },
+          {
+            "key" : "ext-1",
+            "severity" : "error",
+            "human" : "Must have either extensions or value[x], not both",
+            "expression" : "extension.exists() != value.exists()",
+            "source" : "http://hl7.org/fhir/StructureDefinition/Extension"
+          }],
+          "isModifier" : true,
+          "isModifierReason" : "Modifier extensions are expected to modify the meaning or interpretation of the element that contains them",
+          "isSummary" : true,
+          "mapping" : [{
+            "identity" : "rim",
+            "map" : "N/A"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.path",
+          "path" : "ViewDefinition.where.path",
+          "short" : "A FHIRPath expression defining a filter condition",
+          "definition" : "A FHIRPath expression that defines a filter that must evaluate to true for a resource to be\nincluded in the output. The input context is the collection of resources of the type specified in\nthe resource element. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "min" : 1,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.where.path",
+            "min" : 1,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.description",
+          "path" : "ViewDefinition.where.description",
+          "short" : "A human-readable description of the above where constraint.",
+          "definition" : "A human-readable description of the above where constraint.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "ViewDefinition.where.description",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "string"
+          }]
+        }]
+      },
+      "differential" : {
+        "element" : [{
+          "id" : "ViewDefinition",
+          "path" : "ViewDefinition",
+          "short" : "View Definition",
+          "definition" : "View definitions represent a tabular projection of a FHIR resource, where the columns and inclusion \ncriteria are defined by FHIRPath expressions. "
+        },
+        {
+          "id" : "ViewDefinition.url",
+          "path" : "ViewDefinition.url",
+          "short" : "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "definition" : "Canonical identifier for this view definition, represented as a URI (globally unique)",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.identifier",
+          "path" : "ViewDefinition.identifier",
+          "short" : "Additional identifier for the view definition",
+          "definition" : "Additional identifier for the view definition",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "Identifier"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.name",
+          "path" : "ViewDefinition.name",
+          "short" : "Name of view definition (computer and database friendly)",
+          "definition" : "Name of the view definition, must be in a database-friendly format.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.title",
+          "path" : "ViewDefinition.title",
+          "short" : "Name for this view definition (human friendly)",
+          "definition" : "A optional human-readable description of the view.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.meta",
+          "path" : "ViewDefinition.meta",
+          "short" : "Metadata about the view definition",
+          "definition" : "Metadata about the view definition",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "Meta"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.status",
+          "path" : "ViewDefinition.status",
+          "short" : "draft | active | retired | unknown",
+          "definition" : "draft | active | retired | unknown",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/publication-status"
+          }
+        },
+        {
+          "id" : "ViewDefinition.experimental",
+          "path" : "ViewDefinition.experimental",
+          "short" : "For testing purposes, not real usage",
+          "definition" : "For testing purposes, not real usage",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "boolean"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.publisher",
+          "path" : "ViewDefinition.publisher",
+          "short" : "Name of the publisher/steward (organization or individual)",
+          "definition" : "Name of the publisher/steward (organization or individual)",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.contact",
+          "path" : "ViewDefinition.contact",
+          "short" : "Contact details for the publisher",
+          "definition" : "Contact details for the publisher",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "ContactDetail"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.description",
+          "path" : "ViewDefinition.description",
+          "short" : "Natural language description of the view definition",
+          "definition" : "Natural language description of the view definition",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.useContext",
+          "path" : "ViewDefinition.useContext",
+          "short" : "The context that the content is intended to support",
+          "definition" : "The context that the content is intended to support",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "UsageContext"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.copyright",
+          "path" : "ViewDefinition.copyright",
+          "short" : "Use and/or publishing restrictions",
+          "definition" : "Use and/or publishing restrictions",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.resource",
+          "path" : "ViewDefinition.resource",
+          "short" : "FHIR resource for the ViewDefinition",
+          "definition" : "The FHIR resource that the view is based upon, e.g. 'Patient' or 'Observation'.",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types"
+          }
+        },
+        {
+          "id" : "ViewDefinition.fhirVersion",
+          "path" : "ViewDefinition.fhirVersion",
+          "short" : "FHIR version(s) of the resource for the ViewDefinition",
+          "definition" : "The FHIR version(s) for the FHIR resource. The value of this element is the\nformal version of the specification, without the revision number, e.g.\n[publication].[major].[minor].",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "code"
+          }],
+          "binding" : {
+            "strength" : "required",
+            "valueSet" : "http://hl7.org/fhir/ValueSet/FHIR-version"
+          }
+        },
+        {
+          "id" : "ViewDefinition.constant",
+          "path" : "ViewDefinition.constant",
+          "short" : "Constant that can be used in FHIRPath expressions",
+          "definition" : "A constant is a value that is injected into a FHIRPath expression through the use of a FHIRPath\nexternal constant with the same name.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.name",
+          "path" : "ViewDefinition.constant.name",
+          "short" : "Name of constant (referred to in FHIRPath as %[name])",
+          "definition" : "Name of constant (referred to in FHIRPath as %[name])",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.constant.value[x]",
+          "path" : "ViewDefinition.constant.value[x]",
+          "short" : "Value of constant",
+          "definition" : "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "base64Binary"
+          },
+          {
+            "code" : "boolean"
+          },
+          {
+            "code" : "canonical"
+          },
+          {
+            "code" : "code"
+          },
+          {
+            "code" : "date"
+          },
+          {
+            "code" : "dateTime"
+          },
+          {
+            "code" : "decimal"
+          },
+          {
+            "code" : "id"
+          },
+          {
+            "code" : "instant"
+          },
+          {
+            "code" : "integer"
+          },
+          {
+            "code" : "integer64"
+          },
+          {
+            "code" : "oid"
+          },
+          {
+            "code" : "string"
+          },
+          {
+            "code" : "positiveInt"
+          },
+          {
+            "code" : "time"
+          },
+          {
+            "code" : "unsignedInt"
+          },
+          {
+            "code" : "uri"
+          },
+          {
+            "code" : "url"
+          },
+          {
+            "code" : "uuid"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select",
+          "path" : "ViewDefinition.select",
+          "short" : "A collection of columns and nested selects to include in the view.",
+          "definition" : "The select structure defines the columns to be used in the resulting view. These are expressed\nin the `column` structure below, or in nested `select`s for nested resources.",
+          "min" : 1,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }],
+          "constraint" : [{
+            "key" : "sql-expressions",
+            "severity" : "error",
+            "human" : "Can only have at most one of `forEach` or `forEachOrNull`.",
+            "expression" : "(forEach | forEachOrNull).count() <= 1",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column",
+          "path" : "ViewDefinition.select.column",
+          "short" : "A column to be produced in the resulting table.",
+          "definition" : "A column to be produced in the resulting table. The column is relative to the select structure\nthat contains it.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.path",
+          "path" : "ViewDefinition.select.column.path",
+          "short" : "FHIRPath expression that creates a column and defines its content",
+          "definition" : "A FHIRPath expression that evaluates to the value that will be output in the column for each \nresource. The input context is the collection of resources of the type specified in the resource \nelement. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.name",
+          "path" : "ViewDefinition.select.column.name",
+          "short" : "Column name produced in the output",
+          "definition" : "Name of the column produced in the output, must be in a database-friendly format. The column \nnames in the output must not have any duplicates.",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }],
+          "constraint" : [{
+            "key" : "sql-name",
+            "severity" : "error",
+            "human" : "Name is limited to letters, numbers, or underscores and cannot start with an\nunderscore -- i.e. with a regular expression of: ^[A-Za-z][A-Za-z0-9_]*$ \n\n\nThis makes it usable as table names in a wide variety of databases.",
+            "expression" : "empty() or matches('^[A-Za-z][A-Za-z0-9_]*$')",
+            "source" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.description",
+          "path" : "ViewDefinition.select.column.description",
+          "short" : "Description of the column",
+          "definition" : "A human-readable description of the column.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "markdown"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.collection",
+          "path" : "ViewDefinition.select.column.collection",
+          "short" : "Indicates whether the column may have multiple values.",
+          "definition" : "Indicates whether the column may have multiple values. Defaults to `false` if unset.\n\nViewDefinitions must have this set to `true` if multiple values may be returned. Implementations SHALL\nreport an error if multiple values are produced when that is not the case.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "boolean"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.type",
+          "path" : "ViewDefinition.select.column.type",
+          "short" : "A FHIR StructureDefinition URI for the column's type.",
+          "definition" : "A FHIR StructureDefinition URI for the column's type. Relative URIs are implicitly given\nthe 'http://hl7.org/fhir/StructureDefinition/' prefix. The URI may also use FHIR element ID notation to indicate\na backbone element within a structure. For instance, `Observation.referenceRange` may be specified to indicate\nthe returned type is that backbone element.\n\nThis field *must* be provided if a ViewDefinition returns a non-primitive type. Implementations should report an error\nif the returned type does not match the type set here, or if a non-primitive type is returned but this field is unset.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "uri"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag",
+          "path" : "ViewDefinition.select.column.tag",
+          "short" : "Additional metadata describing the column",
+          "definition" : "Tags can be used to attach additional metadata to columns, such as implementation-specific \ndirectives or database-specific type hints.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.name",
+          "path" : "ViewDefinition.select.column.tag.name",
+          "short" : "Name of tag",
+          "definition" : "A name that identifies the meaning of the tag. A namespace should be used to scope the tag to \na particular context. For example, 'ansi/type' could be used to indicate the type that should \nbe used to represent the value within an ANSI SQL database.",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.column.tag.value",
+          "path" : "ViewDefinition.select.column.tag.value",
+          "short" : "Value of tag",
+          "definition" : "Value of tag",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.select",
+          "path" : "ViewDefinition.select.select",
+          "short" : "Nested select relative to a parent expression.",
+          "definition" : "Nested select relative to a parent expression. If the parent `select` has a `forEach` or `forEachOrNull`, this child select will apply for each item in that expression. ",
+          "min" : 0,
+          "max" : "*",
+          "contentReference" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition#ViewDefinition.select"
+        },
+        {
+          "id" : "ViewDefinition.select.forEach",
+          "path" : "ViewDefinition.select.forEach",
+          "short" : "A FHIRPath expression to retrieve the parent element(s) used in the containing select. The default is effectively `$this`.",
+          "definition" : "A FHIRPath expression to retrieve the parent element(s) used in the containing select, relative to the root resource or parent `select`,\nif applicable. `forEach` will produce a row for each element selected in the expression. For example, using forEach on `address` in Patient will\ngenerate a new row for each address, with columns defined in the corresponding `column` structure.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.forEachOrNull",
+          "path" : "ViewDefinition.select.forEachOrNull",
+          "short" : "Same as forEach, but will produce a row with null values if the collection is empty.",
+          "definition" : "Same as forEach, but produces a single row with null values in the nested expression if the collection is empty. For example,\nwith a Patient resource, a `forEachOrNull` on address will produce a row for each patient even if there are no addresses; it will\nsimply set the address columns to `null`.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.select.unionAll",
+          "path" : "ViewDefinition.select.unionAll",
+          "short" : "Creates a union of all rows in the given selection structures.",
+          "definition" : "A `unionAll` combines the results of multiple selection structures. Each structure under the `unionAll` must produce the same column names\nand types. The results from each nested selection will then have their own row.",
+          "min" : 0,
+          "max" : "*",
+          "contentReference" : "http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition#ViewDefinition.select"
+        },
+        {
+          "id" : "ViewDefinition.where",
+          "path" : "ViewDefinition.where",
+          "short" : "A series of zero or more FHIRPath constraints to filter resources for the view.",
+          "definition" : "A series of zero or more FHIRPath constraints to filter resources for the view. Every constraint\nmust evaluate to true for the resource to be included in the view.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "BackboneElement"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.path",
+          "path" : "ViewDefinition.where.path",
+          "short" : "A FHIRPath expression defining a filter condition",
+          "definition" : "A FHIRPath expression that defines a filter that must evaluate to true for a resource to be\nincluded in the output. The input context is the collection of resources of the type specified in\nthe resource element. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "min" : 1,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        },
+        {
+          "id" : "ViewDefinition.where.description",
+          "path" : "ViewDefinition.where.description",
+          "short" : "A human-readable description of the above where constraint.",
+          "definition" : "A human-readable description of the above where constraint.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "string"
+          }]
+        }]
       }
     }
   }]

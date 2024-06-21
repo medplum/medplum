@@ -18,16 +18,18 @@ export class Hl7Server {
 
   async stop(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      if (this.server) {
-        this.server.close((err) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve();
-        });
-        this.server = undefined;
+      if (!this.server) {
+        reject(new Error('Stop was called but there is no server running'));
+        return;
       }
+      this.server.close((err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+      this.server = undefined;
     });
   }
 }

@@ -329,7 +329,7 @@ async function getSearchIncludeEntries(
   const includedResources = readResult.filter(isResource);
 
   const canonicalReferences = fhirPathResult
-    .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type))
+    .filter((typedValue) => ([PropertyType.canonical, PropertyType.uri] as string[]).includes(typedValue.type))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
     const canonicalSearches = (searchParam.target || []).map((resourceType) =>
@@ -543,13 +543,14 @@ export function buildSearchExpression(
   const expressions: Expression[] = [];
   if (searchRequest.filters) {
     for (const filter of searchRequest.filters) {
+      let expr: Expression | undefined;
       if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
         const chain = parseChainedParameter(searchRequest.resourceType, filter.code, filter.value);
-        buildChainedSearch(selectQuery, searchRequest.resourceType, chain);
-        continue;
+        expr = buildChainedSearch(selectQuery, searchRequest.resourceType, chain);
+      } else {
+        expr = buildSearchFilterExpression(selectQuery, resourceType, resourceType, filter);
       }
 
-      const expr = buildSearchFilterExpression(selectQuery, resourceType, resourceType, filter);
       if (expr) {
         expressions.push(expr);
       }
@@ -580,6 +581,11 @@ function buildSearchFilterExpression(
 ): Expression {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
+  }
+
+  if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
+    const chain = parseChainedParameter(resourceType, filter.code, filter.value);
+    return buildChainedSearch(selectQuery, resourceType, chain);
   }
 
   const specialParamExpression = trySpecialSearchParameter(selectQuery, resourceType, table, filter);
@@ -988,15 +994,15 @@ function buildEqualityCondition(
   }
 }
 
-function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, param: ChainedSearchParameter): void {
+function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, param: ChainedSearchParameter): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
 
   if (getConfig().chainedSearchWithReferenceTables) {
-    buildChainedSearchUsingReferenceTable(selectQuery, resourceType, param);
+    return buildChainedSearchUsingReferenceTable(selectQuery, resourceType, param);
   } else {
-    buildChainedSearchUsingReferenceStrings(selectQuery, resourceType, param);
+    return buildChainedSearchUsingReferenceStrings(selectQuery, resourceType, param);
   }
 }
 
@@ -1008,12 +1014,13 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
  * @param selectQuery - The select query builder.
  * @param resourceType - The top level resource type.
  * @param param - The chained search parameter.
+ * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
-): void {
+): Expression {
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
@@ -1032,7 +1039,7 @@ function buildChainedSearchUsingReferenceTable(
     }
 
     const referenceTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.innerJoin(
+    selectQuery.leftJoin(
       referenceTableName,
       referenceTableAlias,
       new Conjunction([
@@ -1042,25 +1049,20 @@ function buildChainedSearchUsingReferenceTable(
     );
 
     const nextTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.innerJoin(
+    selectQuery.leftJoin(
       link.resourceType,
       nextTableAlias,
       new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
     );
 
-    if (link.filter) {
-      const endCondition = buildSearchFilterExpression(
-        selectQuery,
-        link.resourceType as ResourceType,
-        nextTableAlias,
-        link.filter
-      );
-      selectQuery.whereExpr(endCondition);
-    }
-
     currentTable = nextTableAlias;
     currentResourceType = link.resourceType;
+
+    if (link.filter) {
+      return buildSearchFilterExpression(selectQuery, link.resourceType as ResourceType, nextTableAlias, link.filter);
+    }
   }
+  throw new OperationOutcomeError(badRequest('Unterminated chained search'));
 }
 
 /**
@@ -1072,32 +1074,28 @@ function buildChainedSearchUsingReferenceTable(
  * @param selectQuery - The select query builder.
  * @param resourceType - The top level resource type.
  * @param param - The chained search parameter.
+ * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceStrings(
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
-): void {
+): Expression {
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
     const nextTable = selectQuery.getNextJoinAlias();
     const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-    selectQuery.innerJoin(link.resourceType, nextTable, joinCondition);
-
-    if (link.filter) {
-      const endCondition = buildSearchFilterExpression(
-        selectQuery,
-        link.resourceType as ResourceType,
-        nextTable,
-        link.filter
-      );
-      selectQuery.whereExpr(endCondition);
-    }
+    selectQuery.leftJoin(link.resourceType, nextTable, joinCondition);
 
     currentTable = nextTable;
     currentResourceType = link.resourceType;
+
+    if (link.filter) {
+      return buildSearchFilterExpression(selectQuery, link.resourceType as ResourceType, nextTable, link.filter);
+    }
   }
+  throw new OperationOutcomeError(badRequest('Unterminated chained search'));
 }
 
 function buildSearchLinkCondition(

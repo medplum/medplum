@@ -32,7 +32,7 @@ done
 
 for dir in `ls examples`; do
   if test -f "examples/$dir/package.json" && grep -q "\"test\":" "examples/$dir/package.json"; then
-    npx turbo run test --filter=./packages/$dir
+    npx turbo run test --filter=./examples/$dir
   fi
 done
 

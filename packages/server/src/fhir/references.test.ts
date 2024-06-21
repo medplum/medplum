@@ -1,11 +1,12 @@
 import { createReference, normalizeErrorString } from '@medplum/core';
-import { Login, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { Login, Patient, Project, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
+import { getSystemRepo } from './repo';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -51,10 +52,6 @@ describe('Reference checks', () => {
         // Strong reference to patient
         // This will be enforced
         subject: createReference(patient),
-
-        // Conditional references
-        // These are ignored (for now)
-        basedOn: [{ reference: 'ServiceRequest?identifier=123' }, { display: 'Display only' }],
 
         // Expected not to choke on keys without values
         replaces: undefined,
@@ -119,5 +116,38 @@ describe('Reference checks', () => {
           link: [{ type: 'seealso', other: createReference(patient2) }],
         })
       ).rejects.toBeDefined();
+    }));
+
+  test('Project reference validation', () =>
+    withTestContext(async () => {
+      const { membership, project: project1 } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const { membership: _membership2, project: project2 } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      project1.checkReferencesOnWrite = true;
+      project1.link = [{ project: createReference(project2) }];
+      const systemRepo = getSystemRepo();
+      await systemRepo.updateResource(project1);
+
+      const repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project1, true);
+      let project = await repo.readResource<Project>('Project', project1.id as string);
+
+      // Checking the name change is ancillary; mostly confirming that the update
+      // doesn't throw due to reference validation failure
+      expect(project.name).not.toEqual('new name');
+      project.name = 'new name';
+      project = await repo.updateResource(project);
+      expect(project.name).toEqual('new name');
     }));
 });

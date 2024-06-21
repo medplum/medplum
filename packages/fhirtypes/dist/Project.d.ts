@@ -116,7 +116,8 @@ export interface Project {
   superAdmin?: boolean;
 
   /**
-   * Whether this project uses strict FHIR validation.
+   * Whether this project uses strict FHIR validation.  This setting has
+   * been deprecated, and can only be set by a super admin.
    */
   strictMode?: boolean;
 

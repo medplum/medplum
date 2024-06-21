@@ -4,7 +4,7 @@
 import { execSync } from 'child_process';
 import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';
-import packageJson from './package.json' assert { type: 'json' };
+import packageJson from './package.json' with { type: 'json' };
 
 let gitHash;
 try {
