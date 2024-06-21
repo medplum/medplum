@@ -48,7 +48,7 @@ describe('Main', () => {
     const upgradeMainSpy = jest.spyOn(upgraderFile, 'upgraderMain');
 
     await expect(main(['node', 'main.ts', '--upgrade'])).rejects.toThrow(
-      'Auto-upgrading is not currently supported for Linux'
+      'Unsupported platform: linux. Agent upgrader currently only supports Windows'
     );
     expect(agentMainSpy).not.toHaveBeenCalled();
     expect(upgradeMainSpy).toHaveBeenCalledWith(['node', 'main.ts', '--upgrade']);

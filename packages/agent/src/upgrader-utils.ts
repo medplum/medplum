@@ -6,7 +6,6 @@ import { Readable } from 'node:stream';
 import streamWeb from 'node:stream/web';
 
 export type ReleaseManifest = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
-export type SupportedOs = 'windows' | 'linux';
 
 export const UPGRADE_MANIFEST_PATH = resolve(__dirname, 'upgrade.json');
 export const UPGRADER_LOG_PATH = resolve(
@@ -20,17 +19,6 @@ const releaseManifests = new Map<string, ReleaseManifest>();
 
 export function clearReleaseCache(): void {
   releaseManifests.clear();
-}
-
-export function getOsString(): SupportedOs {
-  switch (platform()) {
-    case 'win32':
-      return 'windows';
-    case 'linux':
-      return 'linux';
-    default:
-      throw new Error(`Unsupported platform: ${platform()}`);
-  }
 }
 
 export function isValidSemver(version: string): boolean {
@@ -80,7 +68,7 @@ export async function downloadRelease(version: string, path: string): Promise<vo
   const release = await fetchVersionManifest(version);
 
   // Get download url
-  const downloadUrl = parseDownloadUrl(release, getOsString());
+  const downloadUrl = parseDownloadUrl(release, platform());
 
   // Write file to RELEASE_INSTALLER_FOLDER
   const { body } = await fetch(downloadUrl);
@@ -127,17 +115,17 @@ export async function fetchVersionManifest(version?: string): Promise<ReleaseMan
   return manifest;
 }
 
-export function parseDownloadUrl(release: ReleaseManifest, os: SupportedOs): string {
+export function parseDownloadUrl(release: ReleaseManifest, os: ReturnType<typeof platform>): string {
   let endingToMatch: string;
   switch (os) {
-    case 'windows':
+    case 'win32':
       endingToMatch = '.exe';
       break;
     case 'linux':
       endingToMatch = 'linux';
       break;
     default:
-      throw new Error('Invalid OS');
+      throw new Error(`Unsupported platform: ${os}`);
   }
   for (const asset of release.assets) {
     if (asset.name.endsWith(endingToMatch)) {
@@ -149,13 +137,15 @@ export function parseDownloadUrl(release: ReleaseManifest, os: SupportedOs): str
 
 export function getReleaseBinPath(version: string): string {
   let binaryName: string;
-  switch (getOsString()) {
-    case 'windows':
+  switch (platform()) {
+    case 'win32':
       binaryName = `medplum-agent-installer-${version}.exe`;
       break;
     case 'linux':
       binaryName = `medplum-agent-${version}-linux`;
       break;
+    default:
+      throw new Error(`Unsupported platform: ${platform()}`);
   }
   return resolve(RELEASES_PATH, binaryName);
 }

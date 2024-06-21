@@ -31,7 +31,6 @@ import {
   UPGRADE_MANIFEST_PATH,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
-  getOsString,
 } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -578,7 +577,7 @@ export class App {
   }
 
   private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
-    if (getOsString() !== 'windows') {
+    if (platform() !== 'win32') {
       const errMsg = 'Auto-upgrading is currently only supported on Windows';
       this.log.error(errMsg);
       await this.sendToWebSocket({

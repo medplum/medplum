@@ -1,6 +1,6 @@
 import child_process from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
+import os, { platform } from 'node:os';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { upgraderMain } from './upgrader';
@@ -20,16 +20,10 @@ jest.mock('node:process', () => {
 
 describe('Upgrader', () => {
   describe('Unsupported platforms', () => {
-    test('Mac -- should error', async () => {
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => 'darwin');
-      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).rejects.toThrow(/Unsupported platform*/);
-      platformSpy.mockRestore();
-    });
-
-    test('Linux -- should error', async () => {
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => 'linux');
+    test.each(['darwin', 'linux'])('platform() === %s -- should error', async (_platform) => {
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform as ReturnType<typeof platform>);
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).rejects.toThrow(
-        'Auto-upgrading is not currently supported for Linux'
+        `Unsupported platform: ${_platform}. Agent upgrader currently only supports Windows`
       );
       platformSpy.mockRestore();
     });

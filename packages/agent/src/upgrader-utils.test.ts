@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import os from 'node:os';
+import os, { platform } from 'node:os';
 import { resolve } from 'node:path';
 import {
   GITHUB_RELEASES_URL,
@@ -10,7 +10,6 @@ import {
   downloadRelease,
   fetchLatestVersionString,
   fetchVersionManifest,
-  getOsString,
   getReleaseBinPath,
   isValidSemver,
   parseDownloadUrl,
@@ -29,19 +28,6 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
 
   afterEach(() => {
     platformSpy.mockRestore();
-  });
-
-  test('getOsString', () => {
-    switch (_platform) {
-      case 'win32':
-        expect(getOsString()).toEqual('windows');
-        break;
-      case 'linux':
-        expect(getOsString()).toEqual('linux');
-        break;
-      default:
-        expect(() => getOsString()).toThrow(/Unsupported platform*/);
-    }
   });
 
   test('isValidSemver', () => {
@@ -308,14 +294,13 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
         },
         {
           name: 'medplum-agent-installer-3.1.6-windows.exe',
-          browser_download_url: 'https://example.com/windows',
+          browser_download_url: 'https://example.com/win32',
         },
       ],
     } satisfies ReleaseManifest;
-    expect(parseDownloadUrl(manifest, 'windows')).toEqual('https://example.com/windows');
+    expect(parseDownloadUrl(manifest, 'win32')).toEqual('https://example.com/win32');
     expect(parseDownloadUrl(manifest, 'linux')).toEqual('https://example.com/linux');
-    // @ts-expect-error Can only pass SupportedOs
-    expect(() => parseDownloadUrl(manifest, 'darwin')).toThrow('Invalid OS');
+    expect(() => parseDownloadUrl(manifest, 'darwin')).toThrow('Unsupported platform: darwin');
   });
 
   test('getReleaseBinPath', () => {
@@ -335,7 +320,7 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
 describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (_platform) => {
   let platformSpy: jest.SpyInstance;
 
-  beforeEach(() => {
+  beforeAll(() => {
     // @ts-expect-error Platform type is not exported
     platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform);
   });
@@ -369,7 +354,7 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
           },
           {
             name: 'medplum-agent-installer-3.1.6-windows.exe',
-            browser_download_url: 'https://example.com/windows',
+            browser_download_url: 'https://example.com/win32',
           },
         ],
       } satisfies ReleaseManifest;
@@ -434,7 +419,8 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
 
       await downloadRelease('3.1.6', resolve(__dirname, 'tmp', 'test-release-binary'));
       expect(fetchSpy).toHaveBeenNthCalledWith(1, `${GITHUB_RELEASES_URL}/tags/v3.1.6`);
-      expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${getOsString()}`);
+      console.log(platform());
+      expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${_platform}`);
       expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toEqual(
         'Hello, Medplum!'
       );

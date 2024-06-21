@@ -12,7 +12,7 @@ export function mockFetchForUpgrader(version?: string): jest.SpyInstance {
       },
       {
         name: `medplum-agent-installer-${version ?? '3.1.6'}-windows.exe`,
-        browser_download_url: 'https://example.com/windows',
+        browser_download_url: 'https://example.com/win32',
       },
     ],
   } satisfies ReleaseManifest;

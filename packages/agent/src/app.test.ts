@@ -1196,7 +1196,7 @@ describe('App', () => {
       const state = {
         mySocket: undefined as Client | undefined,
         gotAgentUpgradeResponse: false,
-        agentError: null as AgentError | null,
+        agentError: undefined as AgentError | undefined,
       };
 
       function mockConnectionHandler(socket: Client): void {
@@ -1285,7 +1285,7 @@ describe('App', () => {
       const state = {
         mySocket: undefined as Client | undefined,
         gotAgentUpgradeResponse: false,
-        agentError: null as AgentError | null,
+        agentError: undefined as AgentError | undefined,
         disconnectCalled: false,
       };
 
@@ -1420,8 +1420,8 @@ describe('App', () => {
 
       const state = {
         mySocket: undefined as Client | undefined,
-        agentUpgradeResponse: null as AgentUpgradeResponse | null,
-        agentError: null as AgentError | null,
+        agentUpgradeResponse: undefined as AgentUpgradeResponse | undefined,
+        agentError: undefined as AgentError | undefined,
         disconnectCalled: false,
       };
 
@@ -1538,7 +1538,7 @@ describe('App', () => {
       );
       expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
 
-      expect(state.agentError).toEqual(null);
+      expect(state.agentError).toBeUndefined();
 
       await app.stop();
       await new Promise<void>((resolve) => {
@@ -1558,7 +1558,7 @@ describe('App', () => {
       const state = {
         mySocket: undefined as Client | undefined,
         gotAgentUpgradeResponse: false,
-        agentError: null as AgentError | null,
+        agentError: undefined as AgentError | undefined,
       };
 
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
@@ -1652,7 +1652,7 @@ describe('App', () => {
       const state = {
         mySocket: undefined as Client | undefined,
         gotAgentUpgradeResponse: false,
-        agentError: null as AgentError | null,
+        agentError: undefined as AgentError | undefined,
       };
 
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
@@ -1751,7 +1751,7 @@ describe('App', () => {
       const state = {
         mySocket: undefined as Client | undefined,
         gotAgentUpgradeResponse: false,
-        agentError: null as AgentError | null,
+        agentError: undefined as AgentError | undefined,
       };
 
       writeFileSync(
@@ -1844,7 +1844,7 @@ describe('App', () => {
       const state = {
         mySocket: undefined as Client | undefined,
         gotAgentUpgradeResponse: false,
-        agentError: null as AgentError | null,
+        agentError: undefined as AgentError | undefined,
       };
 
       writeFileSync(

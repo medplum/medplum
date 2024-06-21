@@ -1,18 +1,14 @@
 import { Logger, normalizeErrorString } from '@medplum/core';
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { platform } from 'node:os';
 import process from 'node:process';
-import {
-  downloadRelease,
-  fetchLatestVersionString,
-  getOsString,
-  getReleaseBinPath,
-  isValidSemver,
-} from './upgrader-utils';
+import { downloadRelease, fetchLatestVersionString, getReleaseBinPath, isValidSemver } from './upgrader-utils';
 
 export async function upgraderMain(argv: string[]): Promise<void> {
-  if (getOsString() === 'linux') {
-    throw new Error('Auto-upgrading is not currently supported for Linux');
+  // TODO: Add support for Linux
+  if (platform() !== 'win32') {
+    throw new Error(`Unsupported platform: ${platform()}. Agent upgrader currently only supports Windows`);
   }
 
   // NOTE: Windows past this point, for now
