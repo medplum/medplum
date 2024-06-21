@@ -1,5 +1,5 @@
 import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
-import { Command, CommanderError } from 'commander';
+import { CommanderError, Option } from 'commander';
 import dotenv from 'dotenv';
 import { agent } from './agent';
 import { login, token, whoami } from './auth';
@@ -10,51 +10,82 @@ import { hl7 } from './hl7';
 import { profile } from './profiles';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
+import { MedplumCommand, addSubcommand } from './utils';
 
 export async function main(argv: string[]): Promise<void> {
-  const index = new Command('medplum').description('Command to access Medplum CLI');
+  const index = new MedplumCommand('medplum')
+    .description('Command to access Medplum CLI')
+    .option('--client-id <clientId>', 'FHIR server client id')
+    .option('--client-secret <clientSecret>', 'FHIR server client secret')
+    .option('--base-url <baseUrl>', 'FHIR server base URL, must be absolute')
+    .option('--token-url <tokenUrl>', 'FHIR server token URL, absolute or relative to base URL')
+    .option('--authorize-url <authorizeUrl>', 'FHIR server authorize URL, absolute or relative to base URL')
+    .option('--fhir-url, --fhir-url-path <fhirUrlPath>', 'FHIR server URL, absolute or relative to base URL')
+    .option('--scope <scope>', 'JWT scope')
+    .option('--access-token <accessToken>', 'Access token for token exchange authentication')
+    .option('--callback-url <callbackUrl>', 'Callback URL for authorization code flow')
+    .option('--subject <subject>', 'Subject for JWT authentication')
+    .option('--audience <audience>', 'Audience for JWT authentication')
+    .option('--issuer <issuer>', 'Issuer for JWT authentication')
+    .option('--private-key-path <privateKeyPath>', 'Private key path for JWT assertion')
+    .option('-p, --profile <profile>', 'Profile name')
+    .option('-v --verbose', 'Verbose output')
+    .addOption(
+      new Option('--auth-type <authType>', 'Type of authentication').choices([
+        'basic',
+        'client-credentials',
+        'authorization-code',
+        'jwt-bearer',
+        'token-exchange',
+        'jwt-assertion',
+      ])
+    )
+    .on('verbose', () => {
+      process.env.VERBOSE = '1';
+    });
 
+  // Configure CLI
   index.exitOverride();
-
   index.version(MEDPLUM_VERSION);
+  index.configureHelp({ showGlobalOptions: true });
 
   // Auth commands
-  index.addCommand(login);
-  index.addCommand(whoami);
-  index.addCommand(token);
+  addSubcommand(index, login);
+  addSubcommand(index, whoami);
+  addSubcommand(index, token);
 
   // REST commands
-  index.addCommand(get);
-  index.addCommand(post);
-  index.addCommand(patch);
-  index.addCommand(put);
-  index.addCommand(deleteObject);
+  addSubcommand(index, get);
+  addSubcommand(index, post);
+  addSubcommand(index, patch);
+  addSubcommand(index, put);
+  addSubcommand(index, deleteObject);
 
   // Project
-  index.addCommand(project);
+  addSubcommand(index, project);
 
   // Bulk Commands
-  index.addCommand(bulk);
+  addSubcommand(index, bulk);
 
   // Bot Commands
-  index.addCommand(bot);
+  addSubcommand(index, bot);
 
   // Agent Commands
-  index.addCommand(agent);
+  addSubcommand(index, agent);
 
   // Deprecated Bot Commands
-  index.addCommand(saveBotDeprecate);
-  index.addCommand(deployBotDeprecate);
-  index.addCommand(createBotDeprecate);
+  addSubcommand(index, saveBotDeprecate);
+  addSubcommand(index, deployBotDeprecate);
+  addSubcommand(index, createBotDeprecate);
 
   // Profile Commands
-  index.addCommand(profile);
+  addSubcommand(index, profile);
 
   // AWS commands
-  index.addCommand(buildAwsCommand());
+  addSubcommand(index, buildAwsCommand());
 
   // HL7 commands
-  index.addCommand(hl7);
+  addSubcommand(index, hl7);
 
   try {
     await index.parseAsync(argv);
@@ -64,16 +95,18 @@ export async function main(argv: string[]): Promise<void> {
 }
 
 export function handleError(err: Error | CommanderError): void {
-  writeErrorToStderr(err);
-  const cause = err.cause;
-  if (Array.isArray(cause)) {
-    for (const err of cause as Error[]) {
-      writeErrorToStderr(err);
-    }
-  }
   let exitCode = 1;
   if (err instanceof CommanderError) {
     exitCode = err.exitCode;
+  }
+  if (exitCode !== 0) {
+    writeErrorToStderr(err);
+    const cause = err.cause;
+    if (process.env.VERBOSE && Array.isArray(cause)) {
+      for (const err of cause as Error[]) {
+        writeErrorToStderr(err);
+      }
+    }
   }
   process.exit(exitCode);
 }
@@ -81,8 +114,9 @@ export function handleError(err: Error | CommanderError): void {
 function writeErrorToStderr(err: unknown): void {
   if (err instanceof CommanderError) {
     process.stderr.write(`${normalizeErrorString(err)}\n`);
+  } else {
+    process.stderr.write(`Error: ${normalizeErrorString(err)}\n`);
   }
-  process.stderr.write(`Error: ${normalizeErrorString(err)}\n`);
 }
 
 export async function run(): Promise<void> {
