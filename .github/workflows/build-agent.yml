@@ -46,7 +46,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const fs = require('node:fs');
+            const fs = require('node:fs/promises');
 
             /**
             * Searches the installed Windows SDKs for the most recent signtool.exe version
