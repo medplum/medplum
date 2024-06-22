@@ -26,7 +26,14 @@ node --experimental-sea-config sea-config.json
 node -e "require('fs').copyFileSync(process.execPath, 'dist/medplum-agent-$MEDPLUM_VERSION-win64.exe')" 
 
 # Remove signature from binary
-signtool remove -s dist/medplum-agent-$MEDPLUM_VERSION-win64.exe
+
+# If no defined signtool path, try to find it in PATH
+if [[ -z "${SIGNTOOL_PATH}" ]]; then
+  signtool remove -s dist/medplum-agent-$MEDPLUM_VERSION-win64.exe
+else 
+  # Otherwise use the defined path from the env var
+  $SIGNTOOL_PATH remove -s dist/medplum-agent-$MEDPLUM_VERSION-win64.exe
+fi
 
 # NOTE: If the above step fails, you likely need to install Windows 10 SDK
 #
