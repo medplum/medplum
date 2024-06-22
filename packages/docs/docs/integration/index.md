@@ -70,3 +70,8 @@ Complex integrations are built by composing [bots](/docs/bots/), [subscriptions]
 - [Audit and Logging Features](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) show several security and observability integrations.
 - [Bot Pull Requests](https://github.com/medplum/medplum/issues?q=label%3Abots) can be good reference material for how integrations work.
 - [Auth Pull Requests](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) can also be good reference material for integration planning and learning.
+
+## Related
+
+- [Epic Server to Server](https://youtu.be/E8VD9rgadG0) demo on Youtube
+- [HL7 Handling using Bots](https://youtu.be/q0SXeb_8H2Q) on Youtube
