@@ -1,6 +1,6 @@
 {
   "name": "medplum-nextjs-demo",
-  "version": "3.1.9",
+  "version": "3.1.10",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
     "@mantine/core": "7.10.2",
     "@mantine/hooks": "7.10.2",
     "@mantine/notifications": "7.10.2",
-    "@medplum/core": "3.1.9",
-    "@medplum/react": "3.1.9",
+    "@medplum/core": "3.1.10",
+    "@medplum/react": "3.1.10",
     "@next/bundle-analyzer": "14.2.4",
     "next": "14.2.4",
     "react": "18.2.0",
@@ -22,7 +22,7 @@
     "rfc6902": "5.1.1"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "3.1.9",
+    "@medplum/fhirtypes": "3.1.10",
     "@types/node": "20.14.2",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
