@@ -1,36 +1,25 @@
 ---
-id: migration-logic
 toc_max_heading_level: 3
 sidebar_position: 3
 ---
 
+
 # Migrating Data to Medplum
 
-While there is some engineering work required to migrate non-FHIR data into Medplum, there are well-known best-practices to manage this process. This guide outlines the process of migrating data from an existing system into Medplum.
+Consider the following common scenario:
+
+- You have an existing digital healthcare platform running active operations
+- You decided to adopt a standards based architecture, such as Medplum
+- You want to migrate operations without service interruption or degradation
+
+While there is some engineering work required to migrate non-FHIR data into Medplum, there are well-known best-practices to manage this process. This series of guides outlines the process of migrating data from an existing platform into Medplum.
 
 It covers:
-
+- Planning your migration
 - [The recommended order of data elements to migrate](#migration-order)
 - [Strategies for ensuring robust pipelines](#pipelines)
-- Best practices for implementing the migration process in your organization
+- Best practices for phased adoption of Medplum
 
-## 1. Recommended Order of Data Migration {#migration-order}
-
-When migrating data to Medplum, it's crucial to maintain the integrity and relationships between different data types. FHIR splits data across multiple [Resources]() that contain [References]() to each other.
-
-To simplify the migration process, Medplum recommends migrating data elements roughly in order of the FHIR dependency graph. Here's the recommended order for migrating data:
-
-
-
-| Order | Data Element                        | FHIR Resource                            | Notes                                                                          |
-| ----- | ----------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------ |
-| 1     | Provider Demographics & Credentials | Practitioner, PractitionerRole           | Migrate clinician information to link them to migrated clinical events         |
-| 2     | Shared Organizations                | Organization                             | Used in multi-practice settings to represent each practice                     |
-| 3     | Patient Demographics                | Patient                                  | Foundational patient record that will be referenced by all other clinical data |
-| 4     | Problem List, Medication List       | Condition, MedicationRequest             | Provides clinicians current medical "snapshot" of the patient's health         |
-| 5     | Encounter History, Vitals, Labs     | Encounter, Observation, DiagnosticReport | Provides clinicians with longitudinal health of the patient                    |
-
-This order ensures that foundational data (Patient records) are in place before migrating related clinical data.
 
 
 ## 2. Using Conditional Update (Upsert) and Conditional References
