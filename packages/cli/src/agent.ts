@@ -1,89 +1,22 @@
-import { ContentType, isUUID } from '@medplum/core';
-import { Agent, Bundle, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { ContentType, MedplumClient, isUUID } from '@medplum/core';
+import { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { createMedplumClient } from './util/client';
-import { MedplumCommand, addSubcommand } from './utils';
+import { MedplumCommand, addSubcommand, withMergedOptions } from './utils';
 
 type ValidIdsOrCriteria = { type: 'ids'; ids: string[] } | { type: 'criteria'; criteria: string };
 
 const agentStatusCommand = new MedplumCommand('status').aliases(['info', 'list', 'ls']);
 const agentPingCommand = new MedplumCommand('ping');
-// const agentPushCommand = new Command('push');
-// const agentReloadConfigCommand = new Command('reload-config');
-// const agentUpgradeCommand = new Command('upgrade');
+const agentPushCommand = new MedplumCommand('push');
+// const agentReloadConfigCommand = new MedplumCommand('reload-config');
+// const agentUpgradeCommand = new MedplumCommand('upgrade');
 
 export const agent = new MedplumCommand('agent');
 addSubcommand(agent, agentStatusCommand);
 addSubcommand(agent, agentPingCommand);
-// addSubcommand(agent, agentStatusCommand);
-// addSubcommand(agent, agentPushCommand);
+addSubcommand(agent, agentPushCommand);
 // addSubcommand(agent, agentReloadConfigCommand);
 // addSubcommand(agent, agentUpgradeCommand);
-
-// .addCommand(agentPushCommand)
-// .addCommand(agentStatusCommand);
-// .addCommand(agentReloadConfigCommand)
-// .addCommand(agentUpgradeCommand);
-
-// agentPushCommand
-//   .description('Push a message to the agent')
-//   .argument('<botName>')
-//   .option('--wait-for-response', 'Tells the server to wait for agent response before finalizing operation response')
-//   .action(async (botName, options) => {
-//     const medplum = await createMedplumClient(options);
-//     await medplum.pushToAgent();
-//   });
-
-agentPingCommand
-  .description('Ping a host from a specified agent')
-  .argument('<ipOrDomain>', 'The IPv4 address or domain name to ping')
-  .argument('[agentId]', 'The ID of the agent to ping from')
-  .option('--count <count>', 'An optional amount of pings to issue before returning results', '1')
-  .option(
-    '--criteria <criteria>',
-    'An optional FHIR search criteria to resolve the agent to ping from. Mutually exclusive with [agentId] arg'
-  )
-  .action(async (ipOrDomain, agentId, options) => {
-    if (!(agentId || options.criteria)) {
-      throw new Error('The `ping` command requires either an [agentId] or a --criteria <criteria> flag');
-    }
-    if (agentId && options.criteria) {
-      throw new Error(
-        'Ambiguous arguments and options combination; [agentId] arg and --criteria <criteria> flag are mutually exclusive'
-      );
-    }
-    const count = Number.parseInt(options.count, 10);
-    if (Number.isNaN(count)) {
-      throw new Error('--count <count> must be an integer if specified');
-    }
-
-    const medplum = await createMedplumClient(options);
-    let usedId: string;
-    if (agentId) {
-      usedId = agentId;
-    } else {
-      assertValidAgentCriteria(options.criteria);
-      const result = await medplum.search('Agent', `${options.criteria.split('?')[1]}&_count=2`);
-      if (!result) {
-        throw new Error('Could not find an agent matching the provided criteria');
-      }
-      usedId = result.id as string;
-    }
-
-    let pingResult: string;
-    try {
-      pingResult = (await medplum.pushToAgent(
-        { reference: `Agent/${usedId}` },
-        ipOrDomain,
-        `PING ${count}`,
-        ContentType.PING,
-        true
-      )) as string;
-    } catch (_err) {
-      throw new Error('Unexpected response from agent while pinging');
-    }
-
-    console.log(pingResult);
-  });
 
 agentStatusCommand
   .description('Get the status of a specified agent')
@@ -143,7 +76,10 @@ agentStatusCommand
 
     const rows = [] as StatusRow[];
     for (const response of successfulResponses) {
-      const statusEntry = parseParameterValues(response.result, ['status', 'version', 'lastUpdated'], ['lastUpdated']);
+      const statusEntry = parseParameterValues(response.result, {
+        required: ['status', 'version'],
+        optional: ['lastUpdated'],
+      });
       const row = {
         id: response.agent.id as string,
         name: response.agent.name,
@@ -154,7 +90,75 @@ agentStatusCommand
       } satisfies StatusRow;
       rows.push(row);
     }
+
     console.table(rows);
+  });
+
+agentPingCommand
+  .description('Ping a host from a specified agent')
+  .argument('<ipOrDomain>', 'The IPv4 address or domain name to ping')
+  .argument('[agentId]', 'The ID of the agent to ping from')
+  .option('--count <count>', 'An optional amount of pings to issue before returning results', '1')
+  .option(
+    '--criteria <criteria>',
+    'An optional FHIR search criteria to resolve the agent to ping from. Mutually exclusive with [agentId] arg'
+  )
+  .action(
+    withMergedOptions(agentPingCommand, async (ipOrDomain, agentId, options) => {
+      const medplum = await createMedplumClient(options);
+      const agentRef = await resolveAgentReference(medplum, agentId, options);
+
+      const count = Number.parseInt(options.count, 10);
+      if (Number.isNaN(count)) {
+        throw new Error('--count <count> must be an integer if specified');
+      }
+
+      let pingResult: string;
+      try {
+        pingResult = (await medplum.pushToAgent(
+          agentRef,
+          ipOrDomain,
+          `PING ${count}`,
+          ContentType.PING,
+          true
+        )) as string;
+      } catch (err) {
+        throw new Error('Unexpected response from agent while pinging', { cause: err });
+      }
+
+      console.log(pingResult);
+    })
+  );
+
+agentPushCommand
+  .description('Push a message to a target device via a specified agent')
+  .argument('<deviceId>', 'The ID of the device to push the message to')
+  .argument('<message>', 'The message to send to the destination device')
+  .argument('[agentId]', 'The ID of the agent to tell to send the message to the device')
+  .option('--content-type <contentType>', 'Tells the server what the content type of message is', ContentType.HL7_V2)
+  .option('--no-wait', 'Tells the server not to wait for a response from the destination device')
+  .option(
+    '--criteria <criteria>',
+    'An optional FHIR search criteria to resolve the agent to ping from. Mutually exclusive with [agentId] arg'
+  )
+  .action(async (deviceId, message, agentId, options) => {
+    const medplum = await createMedplumClient(options);
+    const agentRef = await resolveAgentReference(medplum, agentId, options);
+
+    let pushResult: string;
+    try {
+      pushResult = (await medplum.pushToAgent(
+        agentRef,
+        { reference: `Device/${deviceId}` },
+        message,
+        options.contentType,
+        !options.noWait
+      )) as string;
+    } catch (err) {
+      throw new Error('Unexpected response from agent while pushing message to agent', { cause: err });
+    }
+
+    console.log(pushResult);
   });
 
 export type StatusRow = {
@@ -165,6 +169,35 @@ export type StatusRow = {
   version: string;
   statusLastUpdated: string;
 };
+
+export async function resolveAgentReference(
+  medplum: MedplumClient,
+  agentId: string | undefined,
+  options: Record<string, string>
+): Promise<Reference<Agent>> {
+  if (!(agentId || options.criteria)) {
+    throw new Error('The `ping` command requires either an [agentId] or a --criteria <criteria> flag');
+  }
+  if (agentId && options.criteria) {
+    throw new Error(
+      'Ambiguous arguments and options combination; [agentId] arg and --criteria <criteria> flag are mutually exclusive'
+    );
+  }
+
+  let usedId: string;
+  if (agentId) {
+    usedId = agentId;
+  } else {
+    assertValidAgentCriteria(options.criteria);
+    const result = await medplum.search('Agent', `${options.criteria.split('?')[1]}&_count=2`);
+    if (!result) {
+      throw new Error('Could not find an agent matching the provided criteria');
+    }
+    usedId = result.id as string;
+  }
+
+  return { reference: `Agent/${usedId}` };
+}
 
 export type AgentBulkOpResponse<T extends Parameters | OperationOutcome = Parameters | OperationOutcome> = {
   agent: Agent;
@@ -200,46 +233,76 @@ export function parseAgentBulkOpParameters(params: Parameters): AgentBulkOpRespo
   return { agent, result };
 }
 
-export type ParsedParametersMap<T extends string[], O extends T[number][] = []> = Record<
-  Extract<T[number], O[number]>,
-  string | undefined
-> &
-  Record<Exclude<T[number], Extract<T[number], O[number]>>, string>;
+export type ParsedParametersMap<R extends string[], O extends string[]> = Record<R[number], string> &
+  Record<O[number], string | undefined>;
 
-export function parseParameterValues<const T extends string[], const O extends T[number][] = []>(
+export type ParamNames<R extends string[], O extends string[] = []> = {
+  required: R;
+  optional?: O;
+};
+
+export function parseParameterValues<const R extends string[], const O extends string[] = []>(
   params: Parameters,
-  paramNames: T,
-  optionalParamNames?: O
-): ParsedParametersMap<T, O> {
-  const map = {} as ParsedParametersMap<T, O>;
-  // eslint-disable-next-line @typescript-eslint/prefer-for-of
-  for (let i = 0; i < paramNames.length; i++) {
-    const paramsParam = params.parameter?.find((p) => p.name === paramNames[i]);
+  paramNames: ParamNames<R, O>
+): ParsedParametersMap<R, O> {
+  const map = {} as ParsedParametersMap<R, O>;
+  const requiredParams = paramNames.required;
+  const optionalParams = paramNames.optional;
+
+  for (const paramName of requiredParams) {
+    const paramsParam = params.parameter?.find((p) => p.name === paramName);
     if (!paramsParam) {
-      if (optionalParamNames?.includes(paramNames[i])) {
-        continue;
-      }
-      throw new Error(`Failed to find parameter '${paramNames[i]}'`);
+      throw new Error(`Failed to find parameter '${paramName}'`);
     }
     let valueProp: string | undefined;
     for (const prop in paramsParam) {
       // This technically could lead to parsing invalid values (ie. valueAbc123) but for now we can pretend this always works
       if (prop.startsWith('value')) {
         if (valueProp) {
-          throw new Error(`Found multiple values for parameter '${paramNames[i]}'`);
+          throw new Error(`Found multiple values for parameter '${paramName}'`);
         }
         valueProp = prop;
       }
     }
     if (!valueProp) {
-      throw new Error(`Failed to find a value for parameter '${paramNames[i]}'`);
+      throw new Error(`Failed to find a value for parameter '${paramName}'`);
     }
 
-    // @ts-expect-error Not technically able to index ParametersParameter by "string"
-    map[paramNames[i]] = paramsParam[valueProp] as string;
+    // @ts-expect-error ParsedParameterMap expects key to be T[number], which it is, but unable to be inferred in for-of loop
+    map[paramName] = paramsParam[valueProp] as string;
+  }
+
+  if (optionalParams?.length) {
+    for (const paramName of optionalParams) {
+      const paramsParam = params.parameter?.find((p) => p.name === paramName);
+      if (!paramsParam) {
+        continue;
+      }
+      const value = extractValueFromParametersParameter(paramName, paramsParam);
+      // @ts-expect-error ParsedParameterMap expects key to be T[number], which it is, but unable to be inferred in for-of loop
+      map[paramName] = value;
+    }
   }
 
   return map;
+}
+
+export function extractValueFromParametersParameter(paramName: string, paramsParam: ParametersParameter): string {
+  let valueProp: string | undefined;
+  for (const prop in paramsParam) {
+    // This technically could lead to parsing invalid values (ie. valueAbc123) but for now we can pretend this always works
+    if (prop.startsWith('value')) {
+      if (valueProp) {
+        throw new Error(`Found multiple values for parameter '${paramName}'`);
+      }
+      valueProp = prop;
+    }
+  }
+  if (!valueProp) {
+    throw new Error(`Failed to find a value for parameter '${paramName}'`);
+  }
+  // @ts-expect-error valueProp is any string but it should only be choice-of-type `value[x]`
+  return paramsParam[valueProp] as string;
 }
 
 export function parseEitherIdsOrCriteria(agentIds: string[], options: { criteria: string }): ValidIdsOrCriteria {
