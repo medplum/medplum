@@ -46,6 +46,8 @@ jobs:
         with:
           result-encoding: string
           script: |
+            const fs = require('node:fs');
+
             /**
             * Searches the installed Windows SDKs for the most recent signtool.exe version
             * Taken from https://github.com/dlemstra/code-sign-action
@@ -81,10 +83,7 @@ jobs:
                 console.log(fileName);
             }
 
-            getSigntoolLocation().catch((err) => {
-              console.error(err);
-              process.exit(1);
-            });
+            await getSigntoolLocation();
 
       - name: Build Agent installer
         shell: bash
