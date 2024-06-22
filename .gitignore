@@ -14,30 +14,17 @@ prettier-fmt.err
 prettier-fmt1.err
 
 # Output
-packages/agent/dist/
-packages/app/dist/
-packages/cdk/dist/
-packages/cli/dist/
-packages/core/dist/
+dist/
 packages/core/docs/
 packages/core/src/sql-on-fhir/test_report.json
+!packages/definitions/dist/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
 packages/definitions/dist/**/*.d.ts.map
-packages/examples/dist/
-packages/fhir-router/dist/
-packages/generator/dist/
 packages/generator/output/
 packages/generator/compare.html
-packages/graphiql/dist/
 packages/graphiql/public/
-packages/health-gorilla/dist/
-packages/hl7/dist/
-packages/mock/dist/
-packages/react/dist/
-packages/react-hooks/dist/
-packages/server/dist/
 
 # Storybook output
 storybook-static/
@@ -74,3 +61,5 @@ medplum-server.tar.gz
 
 # Agent artifacts
 packages/agent/*agent-*-linux*
+packages/agent/sea-prep.blob
+packages/agent/src/upgrader-logs-*.txt

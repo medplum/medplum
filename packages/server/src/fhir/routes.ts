@@ -14,6 +14,7 @@ import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
+import { agentUpgradeHandler } from './operations/agentupgrade';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -195,6 +196,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Agent $reload-config operation
   router.add('GET', '/Agent/$reload-config', agentReloadConfigHandler);
   router.add('GET', '/Agent/:id/$reload-config', agentReloadConfigHandler);
+
+  // Agent $upgrade operation
+  router.add('GET', '/Agent/$upgrade', agentUpgradeHandler);
+  router.add('GET', '/Agent/:id/$upgrade', agentUpgradeHandler);
 
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);

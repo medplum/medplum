@@ -150,7 +150,8 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
     return [badRequest('Login missing user')];
   }
 
-  const subscriptionId = req.params.id;
+  const { id: subscriptionId } = req.params;
+
   try {
     await repo.readResource<Subscription>('Subscription', subscriptionId);
   } catch (err: unknown) {

@@ -306,7 +306,7 @@ function parseCardinality(cardinality: string | undefined): number {
   if (cardinality === '*') {
     return Number.POSITIVE_INFINITY;
   }
-  return parseInt(cardinality, 10);
+  return Number.parseInt(cardinality, 10);
 }
 
 function addToCache(resource: Resource, cache: Record<string, Resource>): void {
