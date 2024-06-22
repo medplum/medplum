@@ -55,7 +55,7 @@ find packages -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medp
 npm version "$NEW_VERSION" --workspaces
 
 # Generate release notes
-RELEASE_NOTES=$(echo -e "## What's Changed\n" && git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'%s' --reverse && echo -e "\n\n**Full Changelog**: https://github.com/medplum/medplum/compare/v$CURR_VERSION...v$NEW_VERSION")
+RELEASE_NOTES=$(echo -e "## What's Changed\n" && git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'* %s' --reverse && echo -e "\n\n**Full Changelog**: https://github.com/medplum/medplum/compare/v$CURR_VERSION...v$NEW_VERSION")
 
 # Add changes to the staging area
 git add -u .
