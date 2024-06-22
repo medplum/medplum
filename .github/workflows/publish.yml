@@ -131,10 +131,58 @@ jobs:
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
+      - name: Find signtool
+        uses: actions/github-script@v6
+        id: find-signtool
+        with:
+          result-encoding: string
+          script: |
+            const fs = require('node:fs/promises');
+
+            /**
+            * Searches the installed Windows SDKs for the most recent signtool.exe version
+            * Taken from https://github.com/dlemstra/code-sign-action
+            * @returns Path to most recent signtool.exe (x86 version)
+            */
+            async function getSigntoolLocation() {
+                const windowsKitsFolder = 'C:/Program Files (x86)/Windows Kits/10/bin/';
+                const folders = await fs.readdir(windowsKitsFolder);
+                let fileName = '';
+                let maxVersion = 0;
+                for (const folder of folders) {
+                    if (!folder.endsWith('.0')) {
+                        continue;
+                    }
+                    const folderVersion = parseInt(folder.replace(/\./g,''));
+                    if (folderVersion > maxVersion) {
+                        const signtoolFilename = `${windowsKitsFolder}${folder}/x64/signtool.exe`;
+                        try {
+                            const stat = await fs.stat(signtoolFilename);
+                            if (stat.isFile()) {
+                                fileName = signtoolFilename;
+                                maxVersion = folderVersion;
+                            }
+                        } catch {
+                            console.warn('Skipping %s due to error.', signtoolFilename);
+                        }
+                    }
+                }
+                if(fileName == '') {
+                    throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
+                }
+                
+                console.log(fileName);
+                return fileName;
+            }
+
+            const path = await getSigntoolLocation();
+            return path.replace(' ', '\ ');
+
       - name: Build Agent installer
         shell: bash
         run: ./scripts/build-agent-installer-win64.sh
         env:
+          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
           SM_HOST: ${{ secrets.SM_HOST }}
           SM_API_KEY: ${{ secrets.SM_API_KEY }}
           SM_CLIENT_CERT_FILE_BASE64: ${{ secrets.SM_CLIENT_CERT_FILE_BASE64 }}
