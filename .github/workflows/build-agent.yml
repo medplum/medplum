@@ -81,9 +81,10 @@ jobs:
                 }
                 
                 console.log(fileName);
+                return fileName;
             }
 
-            await getSigntoolLocation();
+            return await getSigntoolLocation();
 
       - name: Build Agent installer
         shell: bash
