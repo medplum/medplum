@@ -5,6 +5,7 @@ import { SignJWT } from 'jose';
 import { createHmac, createPrivateKey, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, extname, resolve } from 'node:path';
+import { isPromise } from 'node:util/types';
 import { extract } from 'tar';
 import { FileSystemStorage } from './storage';
 
@@ -307,40 +308,37 @@ export async function jwtAssertionLogin(medplum: MedplumClient, profile: Profile
   await medplum.startJwtAssertionLogin(jwt);
 }
 
-export function addSubcommand(command: MedplumCommand, subcommand: MedplumCommand): void {
+export function addSubcommand(command: Command, subcommand: Command): void {
   subcommand.configureHelp({ showGlobalOptions: true });
   command.addCommand(subcommand);
 }
 
-/**
- * This class extends command so we can override the default options to automatically merge with the global options
- * Which is not a feature of `Commander.js`
- */
 export class MedplumCommand extends Command {
-  _actionHandler: ((args: any[]) => void) | null = null;
-
-  /**
-   * This is a slightly divergent implementation of the `action` method from the Commander.js `Command` class
-   *
-   * See: https://github.com/tj/commander.js/blob/970ecae402b253de691e6a9066fea22f38fe7431/lib/command.js#L530
-   *
-   * @param fn - The fn to call when this command is being executed.
-   * @returns this
-   */
-  action(fn: (...args: any[]) => void): this {
-    const listener = (args: any[]): void => {
-      // The .action callback takes an extra parameter which is the command or options.
-      const expectedArgsCount = this.registeredArguments.length;
-      const actionArgs = args.slice(0, expectedArgsCount);
-      // This is the line that is actually different between our implementation and the upstream implementation
-      // This doesn't include the merged globals:
-      // Theirs: actionArgs[expectedArgsCount] = this.opts();
-      actionArgs[expectedArgsCount] = this.optsWithGlobals();
-
-      fn.apply(this, actionArgs);
-    };
-
-    this._actionHandler = listener;
+  action(fn: (...args: any[]) => void | Promise<void>): this {
+    const wrappedFn = withMergedOptions(this, fn);
+    // @ts-expect-error Access to hidden member
+    super._actionHandler = wrappedFn;
     return this;
   }
+}
+
+export function withMergedOptions(
+  command: Command,
+  fn: ((...args: any[]) => Promise<void>) | ((...args: any[]) => void)
+): (args: any[]) => Promise<void> {
+  // The .action callback takes an extra parameter which is the command or options.
+  return async (args: any[]): Promise<void> => {
+    console.log(args.length);
+    const expectedArgsCount = command.registeredArguments.length;
+    const actionArgs = args.slice(0, expectedArgsCount);
+    actionArgs[expectedArgsCount] = command.optsWithGlobals();
+    return new Promise((resolve, reject) => {
+      const result = fn(...actionArgs);
+      if (isPromise(result)) {
+        result.then(resolve).catch(reject);
+      } else {
+        resolve();
+      }
+    });
+  };
 }
