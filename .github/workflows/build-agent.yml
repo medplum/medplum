@@ -84,7 +84,8 @@ jobs:
                 return fileName;
             }
 
-            return await getSigntoolLocation().replace(' ', '\ ');
+            const path = await getSigntoolLocation();
+            return path.replace(' ', '\ ');
 
       - name: Build Agent installer
         shell: bash
