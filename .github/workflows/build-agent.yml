@@ -85,14 +85,14 @@ jobs:
             }
 
             const path = await getSigntoolLocation();
-            return path.replace('C:/', '/mnt/c/').replace(' ', '\ ');
+            return path.replace(' ', '\ ');
 
       - name: Build Agent installer
         shell: bash
         run: ./scripts/build-agent-installer-win64.sh
         env:
-          SKIP_SIGNING: 1
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
+          SKIP_SIGNING: 1
 
       - name: Set Medplum version
         shell: bash
