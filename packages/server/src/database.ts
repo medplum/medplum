@@ -1,7 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import { MedplumServerConfig } from './config';
 import { globalLogger } from './logger';
-import * as migrations from './migrations/schema';
+import { migrate } from './migrations/migrations';
 
 let pool: Pool | undefined;
 
@@ -56,7 +56,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
     try {
       client = await pool.connect();
       await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
-      await migrate(client);
+      await migrate(client, config.runMigrations === 'full');
     } finally {
       if (client) {
         await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
@@ -70,31 +70,5 @@ export async function closeDatabase(): Promise<void> {
   if (pool) {
     await pool.end();
     pool = undefined;
-  }
-}
-
-async function migrate(client: PoolClient): Promise<void> {
-  await client.query(`CREATE TABLE IF NOT EXISTS "DatabaseMigration" (
-    "id" INTEGER NOT NULL PRIMARY KEY,
-    "version" INTEGER NOT NULL,
-    "dataVersion" INTEGER NOT NULL
-  )`);
-
-  const result = await client.query('SELECT "version" FROM "DatabaseMigration"');
-  const version = result.rows[0]?.version ?? -1;
-
-  if (version < 0) {
-    await client.query('INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, 0)');
-  }
-
-  const migrationKeys = Object.keys(migrations);
-  for (let i = version + 1; i <= migrationKeys.length; i++) {
-    const migration = (migrations as Record<string, migrations.Migration>)['v' + i];
-    if (migration) {
-      const start = Date.now();
-      await migration.run(client);
-      globalLogger.info('Database schema migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
-      await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
-    }
   }
 }

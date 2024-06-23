@@ -40,6 +40,7 @@
     "@cyclonedx/cyclonedx-npm": "1.19.0",
     "@microsoft/api-documenter": "7.25.3",
     "@microsoft/api-extractor": "7.47.0",
+    "@testcontainers/postgresql": "10.8.2",
     "@types/jest": "29.5.12",
     "@types/node": "20.14.2",
     "babel-jest": "29.7.0",

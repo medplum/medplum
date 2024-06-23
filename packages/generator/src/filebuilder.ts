@@ -52,6 +52,10 @@ export class FileBuilder {
   toString(): string {
     return this.b.join('').replaceAll('\n\n\n', '\n\n');
   }
+
+  getLineCount(): number {
+    return this.b.length;
+  }
 }
 
 /**
