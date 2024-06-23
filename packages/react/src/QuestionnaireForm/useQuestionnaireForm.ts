@@ -4,6 +4,7 @@ import { createReference, evalFhirPathTyped, isResource } from '@medplum/core';
 import {
   Attachment,
   Coding,
+  Encounter,
   Quantity,
   Questionnaire,
   QuestionnaireItem,
@@ -25,11 +26,13 @@ type QuestionnaireFormValues = Record<string, AnswerType>;
 interface UseQuestionnaireFormInput {
   questionnaire: Questionnaire | Reference<Questionnaire>;
   initialResponse?: QuestionnaireResponse;
+  readonly subject?: Reference;
+  readonly encounter?: Reference<Encounter>;
 }
 
 type QuestionnaireFormValuesTransformer = (values: QuestionnaireFormValues) => QuestionnaireResponse;
 
-interface UseQuestionnaireFormReturn
+export interface UseQuestionnaireFormReturn
   extends Omit<UseFormReturnType<QuestionnaireFormValues, QuestionnaireFormValuesTransformer>, 'getInputProps'> {
   schemaLoaded: boolean;
   questionnaire: Questionnaire | undefined;
@@ -38,6 +41,8 @@ interface UseQuestionnaireFormReturn
   addRepeatedAnswer: (linkId: string) => void;
   removeRepeatedAnswer: (linkId: string, index: number) => void;
   reorderRepeatableItem: (linkId: string, from: number, to: number) => void;
+  readonly subject?: Reference;
+  readonly encounter?: Reference<Encounter>;
 }
 
 export function useQuestionnaireForm({
@@ -140,6 +145,8 @@ export function useQuestionnaireForm({
     addRepeatedAnswer,
     removeRepeatedAnswer,
     reorderRepeatableItem,
+    subject: props.subject,
+    encounter: props.encounter,
   };
 }
 

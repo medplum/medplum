@@ -1,5 +1,5 @@
 import { Checkbox, Group, Stack, Textarea, TextInput, Title, TitleOrder } from '@mantine/core';
-import { QuestionnaireItem, QuestionnaireResponseItemAnswerValue } from '@medplum/fhirtypes';
+import { Quantity, QuestionnaireItem, QuestionnaireResponseItemAnswerValue, Reference } from '@medplum/fhirtypes';
 import { ChangeEvent, Fragment, PropsWithChildren, useContext } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { ArrayAddButton } from '../../buttons/ArrayAddButton';
@@ -7,9 +7,15 @@ import { ArrayRemoveButton } from '../../buttons/ArrayRemoveButton';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { FormSection } from '../../FormSection/FormSection';
-import { QuestionnaireItemType } from '../../utils/questionnaire';
+import { QuantityInput } from '../../QuantityInput/QuantityInput';
+import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
+import {
+  getQuestionnaireItemReferenceFilter,
+  getQuestionnaireItemReferenceTargetTypes,
+  QuestionnaireItemType,
+} from '../../utils/questionnaire';
 import { QuestionnaireItemState } from '../forEachItem';
-import { GetQuestionnaireItemInputReturnType, QuestionnaireFormContext } from '../useQuestionnaireForm';
+import { QuestionnaireFormContext, UseQuestionnaireFormReturn } from '../useQuestionnaireForm';
 
 export interface QuestionnaireFormItemProps {
   readonly item: QuestionnaireItem;
@@ -61,13 +67,7 @@ export function QuestionnaireFormItem(props: PropsWithChildren<QuestionnaireForm
       <ItemWrapper>
         {[...Array(repeatCount)].map((_, index) => (
           <AnswerWrapper key={`${linkId}-${index}`}>
-            {getInputForItem(
-              item,
-              formContext.getInputProps(item, {
-                type: type === QuestionnaireItemType.boolean ? 'checkbox' : 'input',
-                index,
-              })
-            )}
+            {getInputForItem(item, formContext)}
             {/* Add a '-' button if the item is repeatable */}
             {isRepeatable && !item.readOnly && (
               <ArrayRemoveButton
@@ -96,7 +96,7 @@ export function QuestionnaireFormItem(props: PropsWithChildren<QuestionnaireForm
 
 function getInputForItem(
   item: QuestionnaireItem,
-  inputProps: GetQuestionnaireItemInputReturnType,
+  context: UseQuestionnaireFormReturn,
   index?: number
 ): JSX.Element | null {
   let id = item.linkId ?? '';
@@ -104,6 +104,11 @@ function getInputForItem(
     id += `-${index}`;
   }
   id += '-input';
+
+  const inputProps = context.getInputProps(item, {
+    type: item.type === QuestionnaireItemType.boolean ? 'checkbox' : 'input',
+    index,
+  });
 
   switch (item.type) {
     case QuestionnaireItemType.boolean:
@@ -166,28 +171,20 @@ function getInputForItem(
           />
         </Group>
       );
-    // case QuestionnaireItemType.reference:
-    //   return (
-    //     <ReferenceInput
-    //       name={name}
-    //       required={item.required}
-    //       targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
-    //       searchCriteria={getQuestionnaireItemReferenceFilter(item, context.subject, context.encounter)}
-    //       defaultValue={defaultValue?.value}
-    //       onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
-    //     />
-    //   );
-    // case QuestionnaireItemType.quantity:
-    //   return (
-    //     <QuantityInput
-    //       path=""
-    //       name={name}
-    //       required={item.required}
-    //       defaultValue={defaultValue?.value}
-    //       onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
-    //       disableWheel
-    //     />
-    //   );
+    case QuestionnaireItemType.reference:
+      inputProps.onChange = (newValue: Reference) => inputProps.onChange({ target: { value: newValue } });
+      return (
+        <ReferenceInput
+          name={id}
+          required={item.required}
+          targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
+          searchCriteria={getQuestionnaireItemReferenceFilter(item, context.subject, context.encounter)}
+          {...inputProps}
+        />
+      );
+    case QuestionnaireItemType.quantity:
+      inputProps.onChange = (newValue: Quantity) => inputProps.onChange({ target: { value: newValue } });
+      return <QuantityInput path="" name={id} required={item.required} {...inputProps} disableWheel />;
     // case QuestionnaireItemType.choice:
     // case QuestionnaireItemType.openChoice:
     //   if (isDropDownChoice(item) && !item.answerValueSet) {
@@ -212,6 +209,7 @@ function getInputForItem(
     //     );
     //   }
     default:
+      console.warn('Unsupported Questionnaire item type: ' + item.type);
       return null;
   }
 }
