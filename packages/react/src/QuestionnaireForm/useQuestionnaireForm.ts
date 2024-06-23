@@ -15,13 +15,20 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import React, { createContext, useCallback, useEffect, useState } from 'react';
+import { forEachItem } from './forEachItem';
 
-export type GetQuestionnaireItemInputPropsFunction = (
-  item: QuestionnaireItem,
-  options?: GetInputPropsOptions
-) => GetInputPropsReturnType;
+// Form values
+type QuestionnaireFormValues = Record<
+  string,
+  QuestionnaireResponseItemAnswerValue | QuestionnaireResponseItemAnswerValue[]
+>;
 
-type QuestionnaireFormValues = Record<string, QuestionnaireResponseItemAnswerValue>;
+// Hooks Input / Return
+interface UseQuestionnaireFormInput {
+  questionnaire: Questionnaire | Reference<Questionnaire>;
+  initialResponse?: QuestionnaireResponse;
+}
+
 type QuestionnaireFormValuesTransformer = (values: QuestionnaireFormValues) => QuestionnaireResponse;
 
 interface UseQuestionnaireFormReturn
@@ -32,11 +39,6 @@ interface UseQuestionnaireFormReturn
   setValuesFromResponse: (response: QuestionnaireResponse) => void;
 }
 
-interface UseQuestionnaireFormInput {
-  questionnaire: Questionnaire | Reference<Questionnaire>;
-  initialResponse?: QuestionnaireResponse;
-}
-
 export function useQuestionnaireForm({
   initialResponse,
   ...props
@@ -45,6 +47,7 @@ export function useQuestionnaireForm({
   const source = medplum.getProfile();
   const [schemaLoaded, setSchemaLoaded] = useState(false);
   const questionnaire = useResource(props.questionnaire);
+
   // const [activePage, setActivePage] = useState(0);
 
   useEffect(() => {
@@ -100,7 +103,13 @@ export function useQuestionnaireForm({
   };
 }
 
-export const QuestionnaireFormContext = createContext<UseQuestionnaireFormReturn | null>(null);
+// Get Input Props
+export type GetQuestionnaireItemInputPropsFunction = (
+  item: QuestionnaireItem,
+  options?: GetInputPropsOptions
+) => GetQuestionnaireItemInputPropsReturnType;
+
+interface GetQuestionnaireItemInputPropsReturnType extends GetInputPropsReturnType {}
 
 type Validator = (value: any, values: QuestionnaireFormValues) => React.ReactNode;
 function getItemValidator(item: QuestionnaireItem): Validator {
@@ -252,44 +261,4 @@ function getValuesFromResponse(
   return values;
 }
 
-type ItemType = QuestionnaireItem | QuestionnaireResponseItem;
-type ExtractQuestionnaireType<I> = Extract<Questionnaire | QuestionnaireResponse, { item?: I[] }>;
-
-export interface QuestionnaireFormItemData<R extends ItemType, T> {
-  ancestors: R[];
-  rootResource: ExtractQuestionnaireType<R>;
-  childrenResults: T[];
-  currentValues?: Record<string, QuestionnaireResponseItemAnswerValue>;
-}
-
-export type ForEachItemCallback<T, R extends QuestionnaireItem | QuestionnaireResponseItem> = (
-  item: R,
-  itemData: QuestionnaireFormItemData<R, T>
-) => T;
-
-export function forEachItem<T, R extends ItemType>(
-  resource: ExtractQuestionnaireType<R>,
-  callback: ForEachItemCallback<T, R>,
-  currentValues?: Readonly<Record<string, QuestionnaireResponseItemAnswerValue>>
-): T[] {
-  return resource.item?.map((item) => forEachItemImpl(item, resource, callback, currentValues)) ?? [];
-}
-
-function forEachItemImpl<T, R extends ItemType>(
-  item: R,
-  resource: ExtractQuestionnaireType<R>,
-  callback: ForEachItemCallback<T, R>,
-  currentValues?: Readonly<Record<string, QuestionnaireResponseItemAnswerValue>>,
-  ancestors: R[] = []
-): T {
-  const childrenResults: T[] = [];
-  for (const child of item.item ?? []) {
-    childrenResults.push(forEachItemImpl(child as R, resource, callback, currentValues, [item, ...ancestors]));
-  }
-  return callback(item, {
-    ancestors,
-    rootResource: resource,
-    childrenResults,
-    currentValues,
-  });
-}
+export const QuestionnaireFormContext = createContext<UseQuestionnaireFormReturn | null>(null);

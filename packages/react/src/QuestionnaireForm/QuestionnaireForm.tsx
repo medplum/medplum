@@ -3,12 +3,8 @@ import { Encounter, Questionnaire, QuestionnaireItem, QuestionnaireResponse, Ref
 import { ReactNode, useCallback } from 'react';
 import { FormSection } from '../FormSection/FormSection';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
-import {
-  QuestionnaireFormContext,
-  QuestionnaireFormItemData,
-  forEachItem,
-  useQuestionnaireForm,
-} from './useQuestionnaireForm';
+import { QuestionnaireFormItemData, forEachItem } from './forEachItem';
+import { QuestionnaireFormContext, useQuestionnaireForm } from './useQuestionnaireForm';
 
 export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
