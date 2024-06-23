@@ -1,9 +1,8 @@
-import { Button, Stack, Title, TitleOrder } from '@mantine/core';
+import { Button, Group, Stack, Title } from '@mantine/core';
 import { Encounter, Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
-import { ReactNode, useCallback } from 'react';
-import { FormSection } from '../FormSection/FormSection';
+import { ReactNode } from 'react';
 import { QuestionnaireFormItem } from './QuestionnaireFormItem/QuestionnaireFormItem';
-import { QuestionnaireFormItemData, forEachItem } from './forEachItem';
+import { QuestionnaireItemState, forEachItem } from './forEachItem';
 import { QuestionnaireFormContext, useQuestionnaireForm } from './useQuestionnaireForm';
 
 export interface QuestionnaireFormProps {
@@ -19,59 +18,40 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const form = useQuestionnaireForm(props);
   const questionnaire = form.questionnaire;
 
-  const renderItem = useCallback(
-    (
-      item: QuestionnaireItem,
-      { childrenResults, ancestors }: QuestionnaireFormItemData<QuestionnaireItem, ReactNode>
-    ): ReactNode => {
-      if (item.type === 'display') {
-        return <p>{item.text}</p>;
-      }
-
-      let currentNode: ReactNode = undefined;
-
-      if (item.type === 'group') {
-        currentNode = (
-          <Title order={(3 + ancestors.length) as TitleOrder} mb="md" key={item.linkId}>
-            {item.text}
-          </Title>
-        );
-      } else {
-        currentNode = (
-          <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text} withAsterisk={item.required}>
-            <QuestionnaireFormItem item={item} />
-          </FormSection>
-        );
-      }
-
-      return (
-        <Stack key={item.linkId}>
-          {currentNode}
-          <Stack style={{ paddingLeft: `calc(${ancestors.length + 1} * 1rem)` }}>{childrenResults}</Stack>
-        </Stack>
-      );
-    },
-    []
-  );
-
   if (!questionnaire || !form.schemaLoaded) {
     return null;
   }
 
   const title = questionnaire.title;
 
+  const elements = forEachItem(questionnaire, renderItem, form.values);
+  console.debug(elements);
+
   return (
     <QuestionnaireFormContext.Provider value={form}>
       <form
         onSubmit={form.onSubmit((response) => {
-          console.dir(response, { depth: null });
+          props.onSubmit(response);
         })}
       >
         {title && <Title>{title}</Title>}
-        {forEachItem(questionnaire, renderItem, form.values)}
-
-        <Button type="submit">{props.submitButtonText ?? 'Submit'}</Button>
+        <Stack>{elements}</Stack>
+        <Group justify="flex-end" mt="xl" gap="xs">
+          <Button type="submit">{props.submitButtonText ?? 'Submit'}</Button>
+        </Group>
       </form>
     </QuestionnaireFormContext.Provider>
   );
 }
+
+const renderItem = (
+  item: QuestionnaireItem,
+  state: QuestionnaireItemState<QuestionnaireItem>,
+  children: ReactNode[]
+): ReactNode => {
+  return (
+    <QuestionnaireFormItem key={item.linkId} item={item} itemState={state}>
+      {children}
+    </QuestionnaireFormItem>
+  );
+};

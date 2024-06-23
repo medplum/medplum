@@ -18,10 +18,8 @@ import React, { createContext, useCallback, useEffect, useState } from 'react';
 import { forEachItem } from './forEachItem';
 
 // Form values
-type QuestionnaireFormValues = Record<
-  string,
-  QuestionnaireResponseItemAnswerValue | QuestionnaireResponseItemAnswerValue[]
->;
+type AnswerType = QuestionnaireResponseItemAnswerValue | QuestionnaireResponseItemAnswerValue[];
+type QuestionnaireFormValues = Record<string, AnswerType>;
 
 // Hooks Input / Return
 interface UseQuestionnaireFormInput {
@@ -37,6 +35,9 @@ interface UseQuestionnaireFormReturn
   questionnaire: Questionnaire | undefined;
   getInputProps: GetQuestionnaireItemInputPropsFunction;
   setValuesFromResponse: (response: QuestionnaireResponse) => void;
+  addRepeatedAnswer: (linkId: string) => void;
+  removeRepeatedAnswer: (linkId: string, index: number) => void;
+  reorderRepeatableItem: (linkId: string, from: number, to: number) => void;
 }
 
 export function useQuestionnaireForm({
@@ -50,6 +51,7 @@ export function useQuestionnaireForm({
 
   // const [activePage, setActivePage] = useState(0);
 
+  // Load QuestionnaireSchema
   useEffect(() => {
     medplum
       .requestSchema('Questionnaire')
@@ -58,6 +60,7 @@ export function useQuestionnaireForm({
       .catch(console.log);
   }, [medplum]);
 
+  // Initialize Form hook
   const form = useForm<QuestionnaireFormValues, QuestionnaireFormValuesTransformer>({
     mode: 'controlled',
     initialValues: {
@@ -71,6 +74,7 @@ export function useQuestionnaireForm({
       }),
   });
 
+  // Set initial values
   useEffect(() => {
     if (questionnaire) {
       const initialValues = {
@@ -81,6 +85,7 @@ export function useQuestionnaireForm({
     }
   }, [questionnaire, form, initialResponse]);
 
+  // Set Values from QuestionnaireResponse
   const setValuesFromResponse = useCallback(
     (response: QuestionnaireResponse) => {
       const values = getValuesFromResponse(response.item);
@@ -89,10 +94,42 @@ export function useQuestionnaireForm({
     [form]
   );
 
-  function getInputProps(item: QuestionnaireItem, options?: GetInputPropsOptions): GetInputPropsReturnType {
-    const fieldName = item.linkId;
-    return form.getInputProps(fieldName, options);
+  // Get Input Props
+  function getInputProps(
+    item: QuestionnaireItem,
+    options?: GetQuestionnaireItemInputPropsOptions
+  ): GetQuestionnaireItemInputReturnType {
+    let fieldName = item.linkId;
+    if (item.repeats) {
+      if (options?.index === undefined) {
+        throw new Error('Missing index for repeated field in getInputProps');
+      }
+      fieldName += `.${options.index}`;
+    }
+    return { ...form.getInputProps(fieldName, options), key: form.key(fieldName) };
   }
+
+  // Handle repeatable questions
+  const addRepeatedAnswer = useCallback(
+    (linkId: string) => {
+      form.insertListItem(linkId, undefined);
+    },
+    [form]
+  );
+
+  const removeRepeatedAnswer = useCallback(
+    (linkId: string, index: number) => {
+      form.removeListItem(linkId, index);
+    },
+    [form]
+  );
+
+  const reorderRepeatableItem = useCallback(
+    (linkId: string, from: number, to: number) => {
+      form.reorderListItem(linkId, { from, to });
+    },
+    [form]
+  );
 
   return {
     ...form,
@@ -100,16 +137,25 @@ export function useQuestionnaireForm({
     schemaLoaded,
     getInputProps,
     setValuesFromResponse,
+    addRepeatedAnswer,
+    removeRepeatedAnswer,
+    reorderRepeatableItem,
   };
 }
 
 // Get Input Props
+export interface GetQuestionnaireItemInputReturnType extends GetInputPropsReturnType {
+  key?: string;
+}
+
+export interface GetQuestionnaireItemInputPropsOptions extends GetInputPropsOptions {
+  index?: number;
+}
+
 export type GetQuestionnaireItemInputPropsFunction = (
   item: QuestionnaireItem,
-  options?: GetInputPropsOptions
-) => GetQuestionnaireItemInputPropsReturnType;
-
-interface GetQuestionnaireItemInputPropsReturnType extends GetInputPropsReturnType {}
+  options?: GetQuestionnaireItemInputPropsOptions
+) => GetQuestionnaireItemInputReturnType;
 
 type Validator = (value: any, values: QuestionnaireFormValues) => React.ReactNode;
 function getItemValidator(item: QuestionnaireItem): Validator {
@@ -151,14 +197,19 @@ export function createQuestionnaireResponse(
 
   const responseItems = forEachItem<QuestionnaireResponseItem, QuestionnaireItem>(
     questionnaire,
-    (item, { childrenResults }) => {
+    (item, _state, childrenResults) => {
       const responseItem: QuestionnaireResponseItem = {
         linkId: item.linkId,
         item: childrenResults.length > 0 ? childrenResults : undefined,
       };
 
       if (values[item.linkId] !== undefined) {
-        responseItem.answer = [createAnswer(item, values[item.linkId])];
+        const currentValue = values[item.linkId];
+        if (Array.isArray(currentValue)) {
+          responseItem.answer = currentValue.map((val) => createAnswer(item, val));
+        } else {
+          responseItem.answer = [createAnswer(item, values[item.linkId])];
+        }
       }
 
       return responseItem;
@@ -230,16 +281,19 @@ function createAnswer(item: QuestionnaireItem, value: any): QuestionnaireRespons
   return answer;
 }
 
-const getInitialValues = (questionnaire: Questionnaire): Record<string, any> => {
-  const initialValues: Record<string, any> = {};
+const getInitialValues = (questionnaire: Questionnaire): QuestionnaireFormValues => {
+  const initialValues: QuestionnaireFormValues = {};
 
-  forEachItem(questionnaire, (currentItem) => {
+  forEachItem(questionnaire, (currentItem): void => {
     if (currentItem.type !== 'group' && currentItem.type !== 'display') {
-      initialValues[currentItem.linkId] = evalFhirPathTyped('initial.value', [
-        { type: 'QuestionnaireItem', value: currentItem },
-      ]);
+      const initialItemValue = evalFhirPathTyped('initial.value', [{ type: 'QuestionnaireItem', value: currentItem }]);
+      if (!currentItem.repeats) {
+        initialValues[currentItem.linkId] = initialItemValue.at(0)?.value || null;
+      }
+      {
+        initialValues[currentItem.linkId] = initialItemValue.map((e) => e.value);
+      }
     }
-    return null;
   });
 
   return initialValues;
@@ -247,8 +301,8 @@ const getInitialValues = (questionnaire: Questionnaire): Record<string, any> => 
 
 function getValuesFromResponse(
   responses: QuestionnaireResponse | QuestionnaireResponseItem[] | undefined
-): Record<string, any> {
-  const values: Record<string, string> = {};
+): QuestionnaireFormValues {
+  const values: QuestionnaireFormValues = {};
   const items = isResource(responses) ? responses.item : responses;
   items?.forEach((item) => {
     if (item.answer) {

@@ -1,47 +1,24 @@
-import { Checkbox, Group, Textarea, TextInput } from '@mantine/core';
-import { QuestionnaireItem } from '@medplum/fhirtypes';
-import { ChangeEvent, useContext } from 'react';
+import { Checkbox, Group, Stack, Textarea, TextInput, Title, TitleOrder } from '@mantine/core';
+import { QuestionnaireItem, QuestionnaireResponseItemAnswerValue } from '@medplum/fhirtypes';
+import { ChangeEvent, Fragment, PropsWithChildren, useContext } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
+import { ArrayAddButton } from '../../buttons/ArrayAddButton';
+import { ArrayRemoveButton } from '../../buttons/ArrayRemoveButton';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
+import { FormSection } from '../../FormSection/FormSection';
 import { QuestionnaireItemType } from '../../utils/questionnaire';
-import { QuestionnaireFormContext } from '../useQuestionnaireForm';
+import { QuestionnaireItemState } from '../forEachItem';
+import { GetQuestionnaireItemInputReturnType, QuestionnaireFormContext } from '../useQuestionnaireForm';
 
 export interface QuestionnaireFormItemProps {
   readonly item: QuestionnaireItem;
-  // readonly index: number;
-  // readonly response: QuestionnaireResponseItem;
-  // readonly onChange: (newResponseItem: QuestionnaireResponseItem) => void;
+  readonly itemState: QuestionnaireItemState<QuestionnaireItem>;
 }
 
-export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
+export function QuestionnaireFormItem(props: PropsWithChildren<QuestionnaireFormItemProps>): JSX.Element | null {
   const formContext = useContext(QuestionnaireFormContext);
-  const item = props.item;
-
-  // function onChangeAnswer(
-  //   newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]
-  // ): void {
-  //   let updatedAnswers: QuestionnaireResponseItemAnswer[];
-  //   if (Array.isArray(newResponseAnswer)) {
-  //     // It's a multi-select case, so use the array directly.
-  //     updatedAnswers = newResponseAnswer;
-  //   } else if (props.index >= (props.response?.answer?.length ?? 0)) {
-  //     // if adding a new answer
-  //     updatedAnswers = (props.response?.answer ?? []).concat([newResponseAnswer]);
-  //   } else {
-  //     // if updating an existing answer
-  //     const newAnswers = (props.response?.answer ?? []).map((a, idx) =>
-  //       idx === props.index ? newResponseAnswer : a
-  //     ) as QuestionnaireResponseItemAnswer[];
-  //     updatedAnswers = newAnswers ?? [];
-  //   }
-  //   props.onChange({
-  //     id: response?.id,
-  //     linkId: response?.linkId,
-  //     text: item.text,
-  //     answer: updatedAnswers,
-  //   });
-  // }
+  const { item, children } = props;
 
   if (!formContext) {
     return null;
@@ -52,41 +29,99 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     return null;
   }
 
-  const name = item.linkId;
-  if (!name) {
+  const linkId = item.linkId;
+  if (!linkId) {
     return null;
   }
 
-  // const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
-  // const defaultValue =
-  //   getCurrentAnswer(response, props.index) ??
-  //   getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value');
+  if (item.type === QuestionnaireItemType.display) {
+    return <p key={linkId}>{item.text}</p>;
+  }
 
-  const inputProps = formContext.getInputProps(item, {
-    type: type === QuestionnaireItemType.boolean ? 'checkbox' : 'input',
-  });
+  if (item.type === QuestionnaireItemType.group) {
+    return (
+      <div>
+        <Title order={3 as TitleOrder} mb="md" key={item.linkId}>
+          {item.text}
+        </Title>
+        <Stack>{children}</Stack>
+      </div>
+    );
+  }
 
-  console.debug(item.linkId, inputProps);
+  const values = formContext.values[linkId];
+  const isRepeatable = item.repeats === true;
 
-  switch (type) {
-    case QuestionnaireItemType.display:
-      return <p key={props.item.linkId}>{item.text}</p>;
+  const repeatCount = isRepeatable ? (values as QuestionnaireResponseItemAnswerValue[]).length : 1;
+  const ItemWrapper = isRepeatable ? Stack : Fragment;
+  const AnswerWrapper = isRepeatable ? Group : Fragment;
+
+  return (
+    <FormSection title={item.text} htmlFor={linkId} withAsterisk={item.required}>
+      <ItemWrapper>
+        {[...Array(repeatCount)].map((_, index) => (
+          <AnswerWrapper key={`${linkId}-${index}`}>
+            {getInputForItem(
+              item,
+              formContext.getInputProps(item, {
+                type: type === QuestionnaireItemType.boolean ? 'checkbox' : 'input',
+                index,
+              })
+            )}
+            {/* Add a '-' button if the item is repeatable */}
+            {isRepeatable && !item.readOnly && (
+              <ArrayRemoveButton
+                propertyDisplayName={item.text || ''}
+                testId={`remove-${linkId}-${index}`}
+                onClick={() => formContext.removeRepeatedAnswer(linkId, index)}
+              />
+            )}
+          </AnswerWrapper>
+        ))}
+        {/* Add a '+' button if the question is repeatable */}
+        {isRepeatable && !item.readOnly && (
+          <Group wrap="nowrap" justify="flex-start">
+            <ArrayAddButton
+              propertyDisplayName={item.text || ''}
+              onClick={() => formContext.addRepeatedAnswer(linkId)}
+              testId={`add-${linkId}`}
+            />
+          </Group>
+        )}
+        {children && <Stack>{children}</Stack>}
+      </ItemWrapper>
+    </FormSection>
+  );
+}
+
+function getInputForItem(
+  item: QuestionnaireItem,
+  inputProps: GetQuestionnaireItemInputReturnType,
+  index?: number
+): JSX.Element | null {
+  let id = item.linkId ?? '';
+  if (item.repeats) {
+    id += `-${index}`;
+  }
+  id += '-input';
+
+  switch (item.type) {
     case QuestionnaireItemType.boolean:
       return (
-        <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
-          <Checkbox id={props.item.linkId} name={props.item.linkId} {...inputProps} />
+        <CheckboxFormSection key={id} title={item.text} htmlFor={item.linkId}>
+          <Checkbox id={id} name={item.linkId} {...inputProps} />
         </CheckboxFormSection>
       );
     case QuestionnaireItemType.decimal:
-      return <TextInput type="number" step="any" id={name} name={name} {...inputProps} />;
+      return <TextInput type="number" step="any" id={id} name={id} {...inputProps} />;
     case QuestionnaireItemType.integer:
-      return <TextInput type="number" step={1} id={name} name={name} {...inputProps} />;
+      return <TextInput type="number" step={1} id={id} name={id} {...inputProps} />;
     case QuestionnaireItemType.date:
-      return <TextInput type="date" id={name} name={name} {...inputProps} />;
+      return <TextInput type="date" id={id} name={id} {...inputProps} />;
     case QuestionnaireItemType.dateTime:
       return (
         <DateTimeInput
-          name={name}
+          name={id}
           {...{
             ...inputProps,
             onChange: (value: string) => {
@@ -96,15 +131,15 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         />
       );
     case QuestionnaireItemType.time:
-      return <TextInput type="time" id={name} name={name} {...inputProps} />;
+      return <TextInput type="time" id={id} name={id} {...inputProps} />;
     case QuestionnaireItemType.string:
     case QuestionnaireItemType.url:
-      return <TextInput id={name} name={name} {...inputProps} />;
+      return <TextInput id={id} name={id} {...inputProps} />;
     case QuestionnaireItemType.text:
       return (
         <Textarea
-          id={name}
-          name={name}
+          id={id}
+          name={id}
           {...{
             ...inputProps,
             onChange: (event) =>
@@ -117,7 +152,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <Group py={4}>
           <AttachmentInput
             path=""
-            name={name}
+            name={id}
             {...{
               ...inputProps,
               onChange: (newValue) => {
@@ -180,7 +215,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return null;
   }
 }
-
 // interface QuestionnaireChoiceInputProps {
 //   readonly name: string;
 //   readonly item: QuestionnaireItem;
