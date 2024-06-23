@@ -39,7 +39,7 @@ import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
-import { EventTarget } from './eventtarget';
+import { TypedEventTarget } from './eventtarget';
 import {
   CurrentContext,
   FhircastConnection,
@@ -683,6 +683,17 @@ export interface RequestProfileSchemaOptions {
 }
 
 /**
+ * This map enumerates all the lifecycle events that `MedplumClient` emits and what the shape of the `Event` is.
+ */
+export type MedplumClientEventMap = {
+  change: { type: 'change' };
+  offline: { type: 'offline' };
+  profileRefreshing: { type: 'profileRefreshing' };
+  profileRefreshed: { type: 'profileRefreshed' };
+  storageInitialized: { type: 'storageInitialized' };
+};
+
+/**
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
  * The client can be used in the browser, in a Node.js application, or in a Medplum Bot.
@@ -739,7 +750,7 @@ export interface RequestProfileSchemaOptions {
  *    <meta name="algolia:pageRank" content="100" />
  *  </head>
  */
-export class MedplumClient extends EventTarget {
+export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly options: MedplumClientOptions;
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
@@ -817,6 +828,7 @@ export class MedplumClient extends EventTarget {
         this.attemptResumeActiveLogin().catch(console.error);
       }
       this.initPromise = Promise.resolve();
+      this.dispatchEvent({ type: 'storageInitialized' });
     } else {
       this.initComplete = false;
       this.initPromise = this.storage.getInitPromise();
@@ -826,6 +838,7 @@ export class MedplumClient extends EventTarget {
             this.attemptResumeActiveLogin().catch(console.error);
           }
           this.initComplete = true;
+          this.dispatchEvent({ type: 'storageInitialized' });
         })
         .catch(console.error);
     }
@@ -2713,6 +2726,7 @@ export class MedplumClient extends EventTarget {
       return Promise.resolve(undefined);
     }
     this.profilePromise = new Promise((resolve, reject) => {
+      this.dispatchEvent({ type: 'profileRefreshing' });
       this.get('auth/me')
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
@@ -2721,6 +2735,7 @@ export class MedplumClient extends EventTarget {
           if (profileChanged) {
             this.dispatchEvent({ type: 'change' });
           }
+          this.dispatchEvent({ type: 'profileRefreshed' });
           resolve(result.profile);
         })
         .catch(reject);

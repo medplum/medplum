@@ -2,7 +2,6 @@ import {
   BinarySource,
   ContentType,
   CreateBinaryOptions,
-  IClientStorage,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -93,8 +92,20 @@ export interface MockClientOptions extends MedplumClientOptions {
    * MedplumContext.profile returning undefined as if no one were logged in.
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
-  readonly storage?: IClientStorage;
+  /**
+   * Override the `MockFetchClient` used by this `MockClient`.
+   */
+  readonly mockFetchOverride?: MockFetchOverrideOptions;
 }
+
+/**
+ * Override must contain all of `router`, `repo`, and `client`.
+ */
+export type MockFetchOverrideOptions = {
+  client: MockFetchClient;
+  router: FhirRouter;
+  repo: MemoryRepository;
+};
 
 export class MockClient extends MedplumClient {
   readonly router: FhirRouter;
@@ -107,11 +118,30 @@ export class MockClient extends MedplumClient {
   subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
-    const router = new FhirRouter();
-    const repo = new MemoryRepository();
-
     const baseUrl = clientOptions?.baseUrl ?? 'https://example.com/';
-    const client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
+
+    let router: FhirRouter;
+    let repo: MemoryRepository;
+    let client: MockFetchClient;
+
+    if (clientOptions?.mockFetchOverride) {
+      if (
+        !(
+          clientOptions.mockFetchOverride?.router &&
+          clientOptions.mockFetchOverride?.repo &&
+          clientOptions.mockFetchOverride?.client
+        )
+      ) {
+        throw new Error('mockFetchOverride must specify all fields: client, repo, router');
+      }
+      router = clientOptions.mockFetchOverride.router;
+      repo = clientOptions.mockFetchOverride.repo;
+      client = clientOptions.mockFetchOverride.client;
+    } else {
+      router = new FhirRouter();
+      repo = new MemoryRepository();
+      client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
+    }
 
     super({
       baseUrl,
