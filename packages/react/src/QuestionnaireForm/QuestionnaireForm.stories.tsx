@@ -44,6 +44,12 @@ export function PatientIntakeForm(): JSX.Element {
         text: 'Address',
         type: 'string',
       },
+      {
+        linkId: 'diagnosis',
+        text: 'Diagnosis',
+        type: 'string',
+        repeats: true,
+      },
     ],
   };
 
@@ -76,7 +82,7 @@ export function PatientIntakeForm(): JSX.Element {
   // }, [setValuesFromResponse]);
 
   const onSubmit = (response: QuestionnaireResponse): void => {
-    console.log('Questionnaire Response:', response);
+    console.debug('Questionnaire Response:', response);
   };
 
   return <QuestionnaireForm onSubmit={onSubmit} questionnaire={questionnaire} initialResponse={initialResponse} />;

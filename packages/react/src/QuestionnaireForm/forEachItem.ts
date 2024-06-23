@@ -8,41 +8,51 @@ import {
 
 type ItemType = QuestionnaireItem | QuestionnaireResponseItem;
 type ExtractQuestionnaireType<I> = Extract<Questionnaire | QuestionnaireResponse, { item?: I[] }>;
+type Answers = Record<string, QuestionnaireResponseItemAnswerValue | QuestionnaireResponseItemAnswerValue[]>;
 
-export interface QuestionnaireFormItemData<R extends ItemType, T> {
+export interface QuestionnaireItemState<R extends ItemType> {
   ancestors: R[];
   rootResource: ExtractQuestionnaireType<R>;
-  childrenResults: T[];
-  currentValues?: Record<string, QuestionnaireResponseItemAnswerValue>;
+  currentValues?: Readonly<Answers>;
+  enabled: boolean;
+  readonly: boolean;
 }
 export type ForEachItemCallback<T, R extends QuestionnaireItem | QuestionnaireResponseItem> = (
   item: R,
-  itemData: QuestionnaireFormItemData<R, T>
+  itemState: QuestionnaireItemState<R>,
+  childResults: T[]
 ) => T;
 
 export function forEachItem<T, R extends ItemType>(
   resource: ExtractQuestionnaireType<R>,
   callback: ForEachItemCallback<T, R>,
-  currentValues?: Readonly<Record<string, QuestionnaireResponseItemAnswerValue>>
+  currentValues?: Readonly<Answers>
 ): T[] {
-  return resource.item?.map((item) => forEachItemImpl(item, resource, callback, currentValues)) ?? [];
+  return (
+    resource.item?.map((item) =>
+      forEachItemImpl(item, resource, callback, {
+        currentValues,
+        ancestors: [],
+        enabled: true,
+        readonly: false,
+        rootResource: resource,
+      })
+    ) ?? []
+  );
 }
 
 function forEachItemImpl<T, R extends ItemType>(
   item: R,
   resource: ExtractQuestionnaireType<R>,
   callback: ForEachItemCallback<T, R>,
-  currentValues?: Readonly<Record<string, QuestionnaireResponseItemAnswerValue>>,
-  ancestors: R[] = []
+  state: Readonly<QuestionnaireItemState<R>>
 ): T {
   const childrenResults: T[] = [];
   for (const child of item.item ?? []) {
-    childrenResults.push(forEachItemImpl(child as R, resource, callback, currentValues, [item, ...ancestors]));
+    childrenResults.push(
+      forEachItemImpl(child as R, resource, callback, { ...state, ancestors: [item, ...state.ancestors] })
+    );
   }
-  return callback(item, {
-    ancestors,
-    rootResource: resource,
-    childrenResults,
-    currentValues,
-  });
+
+  return callback(item, state, childrenResults);
 }
