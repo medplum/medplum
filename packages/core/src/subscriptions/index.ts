@@ -1,6 +1,6 @@
 import { Bundle, Parameters, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
-import { TypedEventTarget } from '../eventtarget';
+import { EventTarget, TypedEvent } from '../eventtarget';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toTypedValue } from '../fhirpath/utils';
 import { Logger } from '../logger';
@@ -26,7 +26,7 @@ export type RobustWebSocketEventMap = {
   close: CloseEvent;
 };
 
-export interface IRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> {
+export interface IRobustWebSocket extends EventTarget<RobustWebSocketEventMap> {
   readyState: number;
   close(): void;
   send(message: string): void;
@@ -36,7 +36,7 @@ export interface IRobustWebSocketCtor {
   new (url: string): IRobustWebSocket;
 }
 
-export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
+export class RobustWebSocket extends EventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
   private ws: WebSocket;
   private messageBuffer: string[];
   bufferedAmount = -Infinity;
@@ -55,19 +55,19 @@ export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> i
           ws.send(msg);
         }
       }
-      this.dispatchEvent(new Event('open'));
+      this.dispatchEvent(new Event('open') as TypedEvent<'open'>);
     });
 
     ws.addEventListener('error', (event) => {
-      this.dispatchEvent(event);
+      this.dispatchEvent(event as TypedEvent<'error'>);
     });
 
     ws.addEventListener('message', (event) => {
-      this.dispatchEvent(event);
+      this.dispatchEvent(event as MessageEvent & { type: 'message' });
     });
 
     ws.addEventListener('close', (event) => {
-      this.dispatchEvent(event);
+      this.dispatchEvent(event as CloseEvent & { type: 'close' });
     });
 
     this.ws = ws;
@@ -90,7 +90,9 @@ export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> i
     try {
       this.ws.send(message);
     } catch (err: unknown) {
-      this.dispatchEvent(new ErrorEvent('error', { error: err as Error, message: (err as Error).message }));
+      this.dispatchEvent(
+        new ErrorEvent('error', { error: err as Error, message: (err as Error).message }) as TypedEvent<'error'>
+      );
       this.messageBuffer.push(message);
     }
   }
@@ -111,7 +113,7 @@ export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> i
  * - `close` - The WebSocket has been closed.
  * - `heartbeat` - A `heartbeat` message has been received.
  */
-export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> {
+export class SubscriptionEmitter extends EventTarget<SubscriptionEventMap> {
   private criteria: Set<string>;
   constructor(...criteria: string[]) {
     super();

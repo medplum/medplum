@@ -1,11 +1,11 @@
-import { TypedEventTarget } from '@medplum/core';
+import { EventTarget } from '@medplum/core';
 import { MedplumServerConfig } from './config';
 
 export type HeartbeatEventMap = {
   heartbeat: { type: 'heartbeat' };
 };
 
-export const heartbeat = new TypedEventTarget<HeartbeatEventMap>();
+export const heartbeat = new EventTarget<HeartbeatEventMap>();
 
 export const DEFAULT_HEARTBEAT_MS = 10 * 1000;
 
