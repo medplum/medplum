@@ -1,15 +1,15 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, generateId, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Practitioner, ValueSet } from '@medplum/fhirtypes';
+import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import exampleBotData from '../../data/core/example-bots.json';
-import encounterTypes from '../../data/core/encounter-types.json';
-import exampleData from '../../data/example/example-patient-data.json';
 import questionnaireBundle from '../../data/core/encounter-note-questionnaires.json';
+import coreData from '../../data/core/encounter-types.json';
+import exampleBotData from '../../data/core/example-bots.json';
+import exampleData from '../../data/example/example-patient-data.json';
 
 type UploadFunction =
   | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
@@ -95,18 +95,7 @@ async function uploadQuestionnaires(medplum: MedplumClient): Promise<void> {
 }
 
 async function uploadCoreData(medplum: MedplumClient): Promise<void> {
-  const encounterTypeValueSet = encounterTypes as ValueSet;
-  const batch: Bundle = {
-    resourceType: 'Bundle',
-    type: 'transaction',
-    entry: [
-      {
-        fullUrl: generateId(),
-        request: { method: 'POST', url: 'ValueSet' },
-        resource: encounterTypeValueSet,
-      },
-    ],
-  };
+  const batch = coreData as Bundle;
 
   const result = await medplum.executeBatch(batch);
 
