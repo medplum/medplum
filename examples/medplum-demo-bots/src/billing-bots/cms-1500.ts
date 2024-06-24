@@ -6,12 +6,14 @@ import {
   formatHumanName,
   formatMoney,
   formatQuantity,
+  getReferenceString,
   MedplumClient,
 } from '@medplum/core';
 import {
   Claim,
   Coverage,
   Device,
+  DocumentReference,
   Organization,
   Patient,
   Practitioner,
@@ -19,7 +21,7 @@ import {
   RelatedPerson,
 } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<Claim>): Promise<string> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Claim>): Promise<DocumentReference> {
   const claim = event.input;
   const coverage = await medplum.readReference(claim.insurance[0].coverage);
   const patient = await medplum.readReference(claim.patient);
@@ -153,8 +155,21 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Claim>): P
     cms1500Text += line + '\n';
   }
 
+  const text = await medplum.createAttachment({ data: cms1500Text, contentType: 'text' });
+  const cms1500: DocumentReference = {
+    resourceType: 'DocumentReference',
+    status: 'current',
+    content: [
+      {
+        attachment: text,
+      },
+    ],
+    context: {
+      related: [{ reference: getReferenceString(claim) }],
+    },
+  };
   console.log(cms1500Text);
-  return cms1500Text;
+  return cms1500;
 }
 
 export function getPatientInfo(patient: Patient): Record<string, string> {

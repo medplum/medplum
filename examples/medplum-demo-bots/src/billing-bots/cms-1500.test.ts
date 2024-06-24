@@ -16,7 +16,7 @@ describe('CMS 1500 tests', async () => {
     }
   });
 
-  test('Fullly answered CMS1500', async () => {
+  test('Fully answered CMS1500', async () => {
     const result = await medplum.executeBatch(fullAnswer);
     console.log(result);
     const claim = (await medplum.searchOne('Claim', {
@@ -31,7 +31,7 @@ describe('CMS 1500 tests', async () => {
     });
 
     expect(response).toBeDefined();
-    expectTypeOf(response).toBeString();
+    expect(response.resourceType).toBe('DocumentReference');
   });
 
   test('Get patient info', async () => {
