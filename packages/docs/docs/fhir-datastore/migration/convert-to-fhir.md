@@ -1,3 +1,9 @@
+---
+id: convert-to-fhir
+toc_max_heading_level: 3
+sidebar_position: 3
+---
+
 # Converting Data to FHIR
 
 When migrating data from a 3rd party system to Medplum, a crucial step is converting your existing data into FHIR-compliant resources. This section will guide you through the process of reshaping your data elements, adding identifiers, dealing with codeable concepts, and linking data using conditional references.

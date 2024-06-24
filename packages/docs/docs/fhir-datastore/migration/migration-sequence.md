@@ -1,3 +1,9 @@
+---
+id: migration-sequence
+toc_max_heading_level: 3
+sidebar_position: 2
+---
+
 # Sequencing Your Migration
 
 [resources]: /docs/fhir-basics#storing-data-resources
