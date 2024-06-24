@@ -68,6 +68,15 @@ describe('Search matching', () => {
     ).toBe(false);
   });
 
+  test('Token filter', () => {
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'ProjectMembership', profile: { reference: 'Practitioner/abc123' }, project: { }, user: {} },
+        { resourceType: 'ProjectMembership', filters: [{ code: 'profile-type', operator: Operator.EQUALS, value: 'Practitioner' }] }
+      )
+    ).toBe(true);
+  });
+
   test('Boolean filter', () => {
     expect(
       matchesSearchRequest(
