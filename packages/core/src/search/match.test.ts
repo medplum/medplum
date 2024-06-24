@@ -71,8 +71,11 @@ describe('Search matching', () => {
   test('Token filter', () => {
     expect(
       matchesSearchRequest(
-        { resourceType: 'ProjectMembership', profile: { reference: 'Practitioner/abc123' }, project: { }, user: {} },
-        { resourceType: 'ProjectMembership', filters: [{ code: 'profile-type', operator: Operator.EQUALS, value: 'Practitioner' }] }
+        { resourceType: 'ProjectMembership', profile: { reference: 'Practitioner/abc123' }, project: {}, user: {} },
+        {
+          resourceType: 'ProjectMembership',
+          filters: [{ code: 'profile-type', operator: Operator.EQUALS, value: 'Practitioner' }],
+        }
       )
     ).toBe(true);
   });
