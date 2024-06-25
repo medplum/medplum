@@ -6,7 +6,6 @@ import {
   formatCoding,
   getElementDefinition,
   getTypedPropertyValue,
-  stringify,
   TypedValue,
 } from '@medplum/core';
 import {
@@ -341,11 +340,8 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
 }
 
 function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, response } = props;
+  const { name, item, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
-  const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
-    | TypedValue
-    | undefined;
 
   const options: [string, TypedValue][] = [];
   let defaultValue = undefined;
@@ -362,7 +358,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
         continue;
       }
 
-      if (initialValue && stringify(optionValue) === stringify(initialValue)) {
+      if (option.initialSelected) {
         defaultValue = optionName;
       }
       options.push([optionName, optionValue]);
@@ -396,6 +392,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
               property={valueElementDefinition}
               propertyType={optionValue.type}
               value={optionValue.value}
+              link={false}
             />
           }
         />
