@@ -10,17 +10,10 @@ import {
   useMedplum,
   useMedplumNavigate,
 } from '@medplum/react';
-import {
-  IconBrain,
-  IconEdit,
-  IconListDetails,
-  IconPin,
-  IconPinnedOff,
-  IconTextRecognition,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTextRecognition, IconTrash } from '@tabler/icons-react';
 import { ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
+import { isAwsTextractEnabled } from '../config';
 
 export function TimelinePage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -66,13 +59,6 @@ export function TimelinePage(): JSX.Element | null {
       .catch(console.error);
   }
 
-  function onAwsComprehend(resource: Resource, reloadTimeline: () => void): void {
-    medplum
-      .post(medplum.fhirUrl(resource.resourceType, resource.id as string, '$aws-comprehend'), {})
-      .then(reloadTimeline)
-      .catch(console.error);
-  }
-
   function getMenu(context: ResourceTimelineMenuItemContext): ReactNode {
     const { primaryResource, currentResource, reloadTimeline } = context;
 
@@ -88,7 +74,9 @@ export function TimelinePage(): JSX.Element | null {
     const canEdit = !isHistoryResource;
     const canDelete = !isHistoryResource;
 
-    const showAwsAi = currentResource.resourceType === 'DocumentReference' || currentResource.resourceType === 'Media';
+    const showAwsAi =
+      isAwsTextractEnabled() &&
+      (currentResource.resourceType === 'DocumentReference' || currentResource.resourceType === 'Media');
 
     return (
       <Menu.Dropdown>
@@ -141,20 +129,13 @@ export function TimelinePage(): JSX.Element | null {
         {showAwsAi && (
           <>
             <Menu.Divider />
-            <Menu.Label>AI</Menu.Label>
+            <Menu.Label>AWS AI</Menu.Label>
             <Menu.Item
               leftSection={<IconTextRecognition size={14} />}
               onClick={() => onAwsTextract(currentResource, reloadTimeline)}
               aria-label={`AWS Textract ${getReferenceString(currentResource)}`}
             >
               AWS Textract
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<IconBrain size={14} />}
-              onClick={() => onAwsComprehend(currentResource, reloadTimeline)}
-              aria-label={`AWS Comprehend ${getReferenceString(currentResource)}`}
-            >
-              AWS Comprehend
             </Menu.Item>
           </>
         )}
