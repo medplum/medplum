@@ -320,6 +320,10 @@ export interface MedplumRequestOptions extends RequestInit {
    * Default value is 1000 (1 second).
    */
   pollStatusPeriod?: number;
+  /**
+   * Optional max number of retries that should be made in the case of a failed request. Default is `2`.
+   */
+  maxRetries?: number;
 }
 
 export type FetchLike = (url: string, options?: any) => Promise<any>;
@@ -1349,7 +1353,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Builds a FHIR URL from a collection of URL path components.
-   * For example, `buildUrl('/Patient', '123')` returns `fhir/R4/Patient/123`.
+   * For example, `fhirUrl('Patient', '123')` returns `fhir/R4/Patient/123`.
    * @category HTTP
    * @param path - The path component of the URL.
    * @returns The well-formed FHIR URL.
@@ -3129,27 +3133,42 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       url = concatUrls(this.baseUrl, url);
     }
 
-    const maxRetries = 3;
+    // Previously default for maxRetries was 3, but we will interpret maxRetries literally and not count first attempt
+    // Default of 2 matches old behavior with the new semantics
+    const maxRetries = options?.maxRetries ?? 2;
     const retryDelay = 200;
-    let response: Response | undefined = undefined;
-    for (let retry = 0; retry < maxRetries; retry++) {
+
+    // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
+    for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
       try {
         if (this.options.verbose) {
           this.logRequest(url, options);
         }
-        response = (await this.fetch(url, options)) as Response;
+        const response = (await this.fetch(url, options)) as Response;
         if (this.options.verbose) {
           this.logResponse(response);
         }
-        if (response.status < 500) {
+        // Handle non-500 response and max retries exceeded
+        // We return immediately for non-500 or 500 that has exceeded max retries
+        if (response.status < 500 || attemptNum === maxRetries) {
           return response;
         }
-      } catch (err: any) {
-        this.retryCatch(retry, maxRetries, err);
+      } catch (err) {
+        // This is for the 1st retry to avoid multiple notifications
+        if ((err as Error).message === 'Failed to fetch' && attemptNum === 0) {
+          this.dispatchEvent({ type: 'offline' });
+        }
+
+        // If we got an abort error or exceeded retries, then throw immediately
+        if ((err as Error).name === 'AbortError' || attemptNum === maxRetries) {
+          throw err;
+        }
       }
+
       await sleep(retryDelay);
     }
-    return response as Response;
+
+    throw new Error('Unreachable');
   }
 
   private logRequest(url: string, options: MedplumRequestOptions): void {
@@ -3779,16 +3798,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       });
     } catch (err) {
       // Silently ignore if this environment does not support storage events
-    }
-  }
-
-  private retryCatch(retryNumber: number, maxRetries: number, err: Error): void {
-    // This is for the 1st retry to avoid multiple notifications
-    if (err.message === 'Failed to fetch' && retryNumber === 1) {
-      this.dispatchEvent({ type: 'offline' });
-    }
-    if (retryNumber >= maxRetries - 1) {
-      throw err;
     }
   }
 

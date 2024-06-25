@@ -1,4 +1,12 @@
-import { Bot, Bundle, Identifier, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  Bot,
+  Bundle,
+  Identifier,
+  OperationOutcome,
+  Patient,
+  SearchParameter,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -15,10 +23,19 @@ import {
 } from './client';
 import { createFakeJwt, mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
-import { OperationOutcomeError, accepted, allOk, forbidden, notFound, unauthorized } from './outcomes';
+import {
+  OperationOutcomeError,
+  accepted,
+  allOk,
+  badRequest,
+  forbidden,
+  notFound,
+  serverError,
+  unauthorized,
+} from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, createReference } from './utils';
+import { ProfileResource, createReference, sleep } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -1990,6 +2007,101 @@ describe('Client', () => {
     } catch (err) {
       expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
     }
+  });
+
+  describe('maxRetries', () => {
+    test('should try 3 times by default', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch });
+
+      await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
+        'Internal server error (Error: Something is broken)'
+      );
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
+
+    test('should only try once when maxRetries = 0', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch });
+
+      await expect(client.get(client.fhirUrl('Patient', '123'), { maxRetries: 0 })).rejects.toThrow(
+        'Internal server error (Error: Something is broken)'
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test.each([400, 401, 404])('%d status code is not retried', async (statusCode) => {
+      const fetch = mockFetch(statusCode, (): OperationOutcome => {
+        switch (statusCode) {
+          case 400:
+            return badRequest('The request is not good');
+          case 401:
+            return unauthorized;
+          case 404:
+            return notFound;
+          default:
+            throw new Error('Invalid status code');
+        }
+      });
+      const client = new MedplumClient({ fetch });
+
+      switch (statusCode) {
+        case 400:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('The request is not good');
+          break;
+        case 401:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Unauthenticated');
+          break;
+        case 404:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Not found');
+          break;
+        default:
+          throw new Error('Invalid status code');
+      }
+
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('should not retry after request is aborted', async () => {
+      const fetch = jest.fn().mockImplementation((async (_url: string, options?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          if (!options?.signal) {
+            throw new Error('options.signal required for this test');
+          }
+
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout'));
+          }, 3000);
+
+          options.signal.addEventListener('abort', () => {
+            clearTimeout(timeout);
+            const abortError = new Error('Request aborted');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          });
+        });
+      }) satisfies FetchLike);
+      const client = new MedplumClient({ fetch });
+
+      const controller = new AbortController();
+
+      const getPromise = client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal });
+      await sleep(0);
+      controller.abort();
+      await expect(getPromise).rejects.toThrow('Request aborted');
+
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('should retry on fetch errors', async () => {
+      const fetch = jest.fn().mockImplementation(async (_url: string, _options?: RequestInit) => {
+        throw new Error('Some kind of fetch error occurred');
+      });
+      const client = new MedplumClient({ fetch });
+
+      await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Some kind of fetch error occurred');
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('Paginated Search ', () => {
