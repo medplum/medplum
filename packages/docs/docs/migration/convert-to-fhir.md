@@ -8,6 +8,7 @@ import ExampleCode from '!!raw-loader!@site/../examples/src/migration/convert-to
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Converting Data to FHIR
+
 [patient]: /docs/api/fhir/resources/patient
 [codeableconcept]: /docs/fhir-basics#standardizing-data-codeable-concepts
 [condition]: /docs/api/fhir/resources/condition
@@ -32,14 +33,14 @@ Source System (Patient table):
 | P001 | John       | Doe       | 1980-05-15 | M      |
 ```
 
-FHIR [`Patient`](patient) Resource:
+FHIR [`Patient`][patient] Resource:
 <MedplumCodeBlock language="ts" selectBlocks="patient-example">
   {ExampleCode}
 </MedplumCodeBlock>
 
 ## Using FHIR Identifiers to link to the Source System
 
-To maintain traceability and link back to your source system, it's crucial to add the primary keys from your source system as [identifiers](docs/fhir-basics#naming-data-identifiers) in Medplum.
+To maintain traceability and link back to your source system, it's crucial to add the primary keys from your source system as [identifiers](/docs/fhir-basics#naming-data-identifiers) in Medplum.
 
 Adding source system identifiers helps in:
 - Tracking the origin of each resource
@@ -54,7 +55,7 @@ Adding source system identifiers helps in:
 
 ## Dealing with CodeableConcepts
 
-As mentioned in [FHIR Basics](codeableconcept), annotating your data with standardized codes is a crucial for interoperability with the rest of the healthcare ecosystem, and when converting your data to FHIR, you'll find that many of your target elements have the type [CodeableConcept](codeableconcept).
+As mentioned in [FHIR Basics][codeableconcept], annotating your data with standardized codes is a crucial for interoperability with the rest of the healthcare ecosystem, and when converting your data to FHIR, you'll find that many of your target elements have the type [CodeableConcept][codeableconcept].
 
 It's great if your source data is already annotated with standard codes. Even if this isn't the case, you can:
 
@@ -104,9 +105,9 @@ In this example:
 
 When implementing this in your migration pipeline:
 
-* Map your local codes to FHIR [`Condition`](condition) resources, using the `patient_condition_id` as an identifier.
+* Map your local codes to FHIR [`Condition`][condition] resources, using the `patient_condition_id` as an identifier.
 * Create a separate, offline process to map your local condition codes to standard codes (like ICD-10).
-* Update the [`Condition`](condition) resources with the standard codes, either during the initial migration if the mapping is available, or as a separate step later.
+* Update the [`Condition`][condition] resources with the standard codes, either during the initial migration if the mapping is available, or as a separate step later.
 
 The use of the `patient_condition_id` as an identifier provides a clear link back to the original data, which can be valuable for auditing, troubleshooting, or further data reconciliation.
 
@@ -121,14 +122,14 @@ During migration, it's often challenging to know the [unique `id`](/docs/fhir-ba
 Conditional references solve these issues by allowing you to reference resources based on their identifying information from the source system, rather than relying on Medplum-generated IDs.
 
 #### Example
-Let's amend the previous example to use a conditional reference to link our [`Condition`](condition) to the [`Patient`](patient).
+Let's amend the previous example to use a conditional reference to link our [`Condition`][condition] to the [`Patient`][patient].
 
 <MedplumCodeBlock language="ts" selectBlocks="conditional-reference-example">
   {ExampleCode}
 </MedplumCodeBlock>
 
 
-With this modification, we no longer have to look up the [`Patient's`](patient) `id` value in Medplum before writing the [`Condition`](condition). The server will automatically resolve the query string `identifier=http://your-source-system.com/patients|P001` into concrete patient id during the write.
+With this modification, we no longer have to look up the [`Patient's`][patient] `id` value in Medplum before writing the [`Condition`][condition]. The server will automatically resolve the query string `identifier=http://your-source-system.com/patients|P001` into concrete patient id during the write.
 
 ## An End-to-End Example
 

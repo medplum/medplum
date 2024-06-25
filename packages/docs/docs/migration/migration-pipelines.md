@@ -61,13 +61,13 @@ Batch requests are a great option to improve throughput when performing multiple
 
 #### Example: Writing Multiple Patient Resources
 
-Here's an example of using a batch to create multiple [`Patient`](patient) resources:
+Here's an example of using a batch to create multiple [`Patient`][patient] resources:
 
 <MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
     {ExampleCode}
 </MedplumCodeBlock>
 
-This batch operation creates (or updates) two [`Patient`](patient) resources in a single API call, using conditional updates for each entry to avoid data duplication.
+This batch operation creates (or updates) two [`Patient`][patient] resources in a single API call, using conditional updates for each entry to avoid data duplication.
 
 ## Using Transactions for Data Integrity
 
@@ -75,7 +75,7 @@ This batch operation creates (or updates) two [`Patient`](patient) resources in 
 
 #### Example: Encounter with Clinical Impression
 
-Here's an example of using a transaction to create an [`Encounter`](encounter) and associated [`ClinicalImpression`](clinicalimpression) (i.e. clinical notes) together. We use a transaction because the failure of one operation should invalidate the entire transaction.
+Here's an example of using a transaction to create an [`Encounter`][encounter] and associated [`ClinicalImpression`][clinicalimpression] (i.e. clinical notes) together. We use a transaction because the failure of one operation should invalidate the entire transaction.
 
 <MedplumCodeBlock language="ts" selectBlocks="encounter-and-impression-transaction">
     {ExampleCode}
@@ -127,7 +127,7 @@ Let's demonstrate a complete data pipeline that incorporates all the concepts we
 ```
 
 ### Step 1: Create Patients
-Use a batch request to upload [`Patients`](patient) independently, using the primary key from the source system as the identifier.
+Use a batch request to upload [`Patients`][patient] independently, using the primary key from the source system as the identifier.
 
 <MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
     {ExampleCode}
@@ -135,7 +135,7 @@ Use a batch request to upload [`Patients`](patient) independently, using the pri
 
 ### Step 2: Create Conditions
 
-Use a batch request to upload [`Conditions`](condition) independently, using conditional references to link to the existing patients.
+Use a batch request to upload [`Conditions`][condition] independently, using conditional references to link to the existing patients.
 
 <MedplumCodeBlock language="ts" selectBlocks="create-conditions-batch">
     {ExampleCode}
@@ -144,7 +144,7 @@ Use a batch request to upload [`Conditions`](condition) independently, using con
 
 ### Step 3: Create Encounters and ClinicalImpressions
 
-Here, we use a batch request, where each entry is a two-operation transaction to create the [`Encounter`](encounter`) and dependent [`ClinicalImpression`](clinicalimpression) (i.e. note).
+Here, we use a batch request, where each entry is a two-operation transaction to create the [`Encounter`][encounter] and dependent [`ClinicalImpression`][clinicalimpression] (i.e. note).
 
 <MedplumCodeBlock language="ts" selectBlocks="create-encounters-and-impressions-batch-transaction">
     {ExampleCode}
@@ -153,10 +153,10 @@ Here, we use a batch request, where each entry is a two-operation transaction to
 
 This example demonstrates:
 
-1. Using separate batch requests for different resource types ([`Patients`](patient) and [`Conditions`](condition)).
+1. Using separate batch requests for different resource types ([`Patients`][patient] and [`Conditions`][condition]).
 2. Employing conditional updates for idempotency.
-3. Using conditional references to link [`Conditions`](condition) to [`Patients`](patient).
-4. Creating a batch of transactions to ensure [`Encounters`](encounter) and [`ClinicalImpressions`](clinicalimpression) are created together.
+3. Using conditional references to link [`Conditions`][condition] to [`Patients`][patient].
+4. Creating a batch of transactions to ensure [`Encounters`][encounter] and [`ClinicalImpressions`][clinicalimpression] are created together.
 5. Using `urn:uuid` references within transactions to link newly created resources.
 6. Maintaining relationships between resources across different requests using conditional references.
 

@@ -13,9 +13,9 @@ Consider the following common scenario:
 While there is some engineering work required to migrate non-FHIR data into Medplum, there are well-known best-practices to manage this process. This series of guides outlines the process of migrating data from an existing platform into Medplum.
 
 It covers:
-- [Planning your migration](./migration-planning)
-- [Sequencing your migration](./migration-sequence)
-- [Converting your data to FHIR](./convert-to-fhir)
-- [Building data pipelines](./migration-pipelines)
+- [Planning your migration](/docs/migration/migration-planning)
+- [Sequencing your migration](/docs/migration/migration-sequence)
+- [Converting your data to FHIR](/docs/migration/convert-to-fhir)
+- [Building data pipelines](/docs/migration/migration-pipelines)
 
 Our first guide will cover **Planning your Migration**

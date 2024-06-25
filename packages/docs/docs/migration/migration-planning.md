@@ -20,7 +20,7 @@ The key to success for any data migration is planning. It is critical to know th
 ## Adoption Strategies
 
 ### Phased Adoption
-The opposite of Big Bang is Parallel Adoption, when an organization runs both the existing system and the new system together. **For moderately complex deployments, this is our recommended approach.** You can read more about implementing this phased adoption approach [here](./adoption-stategy).
+The opposite of Big Bang is Parallel Adoption, when an organization runs both the existing system and the new system together. **For moderately complex deployments, this is our recommended approach.** You can read more about implementing this phased adoption approach [here](/docs/migration/adoption-strategy).
 
 Similar to Parallel Adoption, Phased Adoption runs both systems in parallel, but includes a predetermined sequence of small "bite sized" cutovers. Usually this is done business unit by business unit or team-by-team.
 
