@@ -4,6 +4,9 @@ toc_max_heading_level: 3
 sidebar_position: 3
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/migration/convert-to-fhir.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Converting Data to FHIR
 [patient]: /docs/api/fhir/resources/patient
 [codeableconcept]: /docs/fhir-basics#standardizing-data-codeable-concepts
@@ -29,20 +32,10 @@ Source System (Patient table):
 | P001 | John       | Doe       | 1980-05-15 | M      |
 ```
 
-FHIR ['Patient'](patient) Resource:
-```js
-{
-  "resourceType": "Patient",
-  "name": [
-    {
-      "given": ["John"],
-      "family": "Doe"
-    }
-  ],
-  "birthDate": "1980-05-15",
-  "gender": "male"
-}
-```
+FHIR [`Patient`](patient) Resource:
+<MedplumCodeBlock language="ts" selectBlocks="patient-example">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Using FHIR Identifiers to link to the Source System
 
@@ -55,18 +48,9 @@ Adding source system identifiers helps in:
 
 #### Example
 
-```js
-{
-  "resourceType": "Patient",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patientId",
-      "value": "P001"
-    }
-  ],
-  // ... other patient data
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="patient-with-identifier">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Dealing with CodeableConcepts
 
@@ -102,62 +86,15 @@ Now, let's convert this data to a FHIR Condition resource:
 
 Initially, with just the local code:
 
-```js
-{
-  "resourceType": "Condition",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patient_conditions",
-      "value": "PC001"
-    }
-  ],
-  "subject": {
-    "reference": "Patient/????"
-  },
-  "code": {
-    "coding": [
-      {
-        "system": "http://your-source-system.com/conditions",
-        "code": "HT001",
-        "display": "Hypertension"
-      }
-    ],
-    "text": "Hypertension"
-  }
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="condition-example">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 Later, enriched with a standard ICD-10 code:
 
-```js
-{
-  "resourceType": "Condition",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patient_conditions",
-      "value": "PC001"
-    }
-  ],
-  "subject": {
-    "reference": "Patient/????"
-  },
-  "code": {
-    "coding": [
-      {
-        "system": "http://your-source-system.com/conditions",
-        "code": "HT001",
-        "display": "Hypertension"
-      },
-      {
-        "system": "http://hl7.org/fhir/sid/icd-10",
-        "code": "I10",
-        "display": "Essential (primary) hypertension"
-      }
-    ],
-    "text": "Hypertension"
-  }
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="enriched-condition-example">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 In this example:
 
@@ -179,33 +116,19 @@ This approach allows you to migrate your data quickly while still maintaining th
 
 When migrating data to FHIR, it's crucial to maintain relationships between resources. Conditional references are particularly helpful in this process.
 
-During migration, it's often challenging to know the [unique `id`](/docs/fhir-basics#storing-data-resources) that Medplum will assign to a resource once it's created.
+During migration, it's often challenging to know the [unique `id`](/docs/fhir-basics#storing-data-resources) that Medplum will assign to a resource once it's created. You may have noticed the reference to `Patient/????` in the previous example.
 
 Conditional references solve these issues by allowing you to reference resources based on their identifying information from the source system, rather than relying on Medplum-generated IDs.
 
 #### Example
 Let's amend the previous example to use a conditional reference to link our [`Condition`](condition) to the [`Patient`](patient).
 
-```js
-{
-  "resourceType": "Condition",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patient_conditions",
-      "value": "PC001"
-    }
-  ],
-  // highlight-start
-  "subject": {
-    "reference": "Patient?identifier=http://your-source-system.com/patients|P001"
-  },
-  // highlight-end
-  // ...
-}
-```
-With this modification, we no longer have to look up the [`Patient's`](patient) `id` value in Medplum before writing the [`Condition`](condition). The server will automatically resolve the query string `identifier=http://your-source-system.com/patients|P001` into concrete patient id during the write.
+<MedplumCodeBlock language="ts" selectBlocks="conditional-reference-example">
+  {ExampleCode}
+</MedplumCodeBlock>
 
-You can read more about conditional references [here].
+
+With this modification, we no longer have to look up the [`Patient's`](patient) `id` value in Medplum before writing the [`Condition`](condition). The server will automatically resolve the query string `identifier=http://your-source-system.com/patients|P001` into concrete patient id during the write.
 
 ## An End-to-End Example
 
@@ -247,147 +170,40 @@ Now, let's look at how this data would be represented as FHIR resources:
 ##### Patient Resources
 
 For John Doe (`P001`):
-```js
-{
-  "resourceType": "Patient",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patients",
-      "value": "P001"
-    }
-  ],
-  "name": [
-    {
-      "given": ["John"],
-      "family": "Doe"
-    }
-  ],
-  "birthDate": "1980-07-15",
-  "gender": "male"
-}
-```
+
+<MedplumCodeBlock language="ts" selectBlocks="john-doe-patient">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 For Jane Smith (`P002`):
-```js
-{
-  "resourceType": "Patient",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patients",
-      "value": "P002"
-    }
-  ],
-  "name": [
-    {
-      "given": ["Jane"],
-      "family": "Smith"
-    }
-  ],
-  "birthDate": "1992-11-30",
-  "gender": "female"
-}
-```
+
+<MedplumCodeBlock language="ts" selectBlocks="jane-smith-patient">
+  {ExampleCode}
+</MedplumCodeBlock>
+
 
 ##### Condition Resources:
 
 For John Doe's Hypertension (`PC001`):
-```js
-{
-  "resourceType": "Condition",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patient_conditions",
-      "value": "PC001"
-    }
-  ],
-  "subject": {
-    "reference": "Patient?identifier=http://your-source-system.com/patients|P001"
-  },
-  "code": {
-    "coding": [
-      {
-        "system": "http://your-source-system.com/conditions",
-        "code": "HT001",
-        "display": "Hypertension"
-      },
-      // Can be added post-migration
-      {
-        "system": "http://hl7.org/fhir/sid/icd-10",
-        "code": "I10",
-        "display": "Essential (primary) hypertension"
-      }
-    ],
-    "text": "Hypertension"
-  },
-  "onsetDateTime": "2022-03-15"
-}
-```
+
+<MedplumCodeBlock language="ts" selectBlocks="john-doe-hypertension">
+  {ExampleCode}
+</MedplumCodeBlock>
+
 
 For John Doe's Diabetes (`PC002`):
-```js
-{
-  "resourceType": "Condition",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patient_conditions",
-      "value": "PC002"
-    }
-  ],
-  "subject": {
-    "reference": "Patient?identifier=http://your-source-system.com/patients|P001"
-  },
-  "code": {
-    "coding": [
-      {
-        "system": "http://your-source-system.com/conditions",
-        "code": "DM002",
-        "display": "Diabetes"
-      },
-      // Can be added post-migration
-      {
-        "system": "http://hl7.org/fhir/sid/icd-10",
-        "code": "E11",
-        "display": "Type 2 diabetes mellitus"
-      }
-    ],
-    "text": "Diabetes"
-  },
-  "onsetDateTime": "2023-01-10"
-}
-```
+
+<MedplumCodeBlock language="ts" selectBlocks="john-doe-diabetes">
+  {ExampleCode}
+</MedplumCodeBlock>
+
 
 For Jane Smith's Hypertension (`PC003`):
-```js
-{
-  "resourceType": "Condition",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patient_conditions",
-      "value": "PC003"
-    }
-  ],
-  "subject": {
-    "reference": "Patient?identifier=http://your-source-system.com/patients|P002"
-  },
-  "code": {
-    "coding": [
-      {
-        "system": "http://your-source-system.com/conditions",
-        "code": "HT001",
-        "display": "Hypertension"
-      },
-      // Can be added post-migration
-      {
-        "system": "http://hl7.org/fhir/sid/icd-10",
-        "code": "I10",
-        "display": "Essential (primary) hypertension"
-      }
-    ],
-    "text": "Hypertension"
-  },
-  "onsetDateTime": "2023-02-22"
-}
-```
+
+<MedplumCodeBlock language="ts" selectBlocks="jane-smith-hypertension">
+  {ExampleCode}
+</MedplumCodeBlock>
+
 
 This example demonstrates:
 
@@ -397,6 +213,7 @@ This example demonstrates:
 - **Using conditional references**: The Condition resources reference the Patient using a conditional reference based on the patient's source system identifier.
 - **Maintaining relationships between resources**: The link between patients and their conditions is preserved in the FHIR resources.
 
+## Conclusion
 
 By following this pattern, you can extend the migration process to handle more complex data structures and relationships while maintaining the integrity and traceability of your source data.
 
