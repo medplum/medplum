@@ -3,6 +3,13 @@ toc_max_heading_level: 3
 sidebar_position: 4
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/migration/migration-pipelines.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+
 # Building Migration Pipelines
 
 When migrating data to Medplum, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migration data *into* Medplum.
@@ -18,27 +25,24 @@ Conditional updates are essential to create idempotent migration pipelines. This
 
 To perform a conditional update, use a `PUT` operation with a search query in the URL:
 
-```
-PUT /Patient?identifier=http://your-source-system.com/patientId|P001
 
-{
-  "resourceType": "Patient",
-  "identifier": [
-    {
-      "system": "http://your-source-system.com/patientId",
-      "value": "P001"
-    }
-  ],
-  "name": [
-    {
-      "given": ["John"],
-      "family": "Doe"
-    }
-  ],
-  "birthDate": "1980-07-15",
-  "gender": "male"
-}
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="medplum-sdk-upsert">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="curl-upsert">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="medplum-cli-upsert">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 The semantics of this operation are:
 * If 0 resources are found matching the search query, a new resource is created.
@@ -59,61 +63,9 @@ Batch requests are a great option to improve throughput when performing multiple
 
 Here's an example of using a batch to create multiple [`Patient`](patient) resources:
 
-```js
-{
-  "resourceType": "Bundle",
-  "type": "batch",
-  "entry": [
-    {
-      "request": {
-        "method": "PUT",
-        "url": "Patient?identifier=http://your-source-system.com/patientId|P001"
-      },
-      "resource": {
-        "resourceType": "Patient",
-        "identifier": [
-          {
-            "system": "http://your-source-system.com/patientId",
-            "value": "P001"
-          }
-        ],
-        "name": [
-          {
-            "given": ["John"],
-            "family": "Doe"
-          }
-        ],
-        "birthDate": "1980-07-15",
-        "gender": "male"
-      }
-    },
-    {
-      "request": {
-        "method": "PUT",
-        "url": "Patient?identifier=http://your-source-system.com/patientId|P002"
-      },
-      "resource": {
-        "resourceType": "Patient",
-        "identifier": [
-          {
-            "system": "http://your-source-system.com/patientId",
-            "value": "P002"
-          }
-        ],
-        "name": [
-          {
-            "given": ["Jane"],
-            "family": "Smith"
-          }
-        ],
-        "birthDate": "1992-11-30",
-        "gender": "female"
-      }
-    }
-    //...
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
+    {ExampleCode}
+</MedplumCodeBlock>
 
 This batch operation creates (or updates) two [`Patient`](patient) resources in a single API call, using conditional updates for each entry to avoid data duplication.
 
@@ -125,62 +77,9 @@ This batch operation creates (or updates) two [`Patient`](patient) resources in 
 
 Here's an example of using a transaction to create an [`Encounter`](encounter) and associated [`ClinicalImpression`](clinicalimpression) (i.e. clinical notes) together. We use a transaction because the failure of one operation should invalidate the entire transaction.
 
-```js
-{
-  "resourceType": "Bundle",
-  "type": "transaction",
-  "entry": [
-    {
-      "fullUrl": "urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f1",
-      "request": {
-        "method": "PUT",
-        "url": "Encounter?identifier=http://your-source-system.com/encounterId|E001"
-      },
-      "resource": {
-        "resourceType": "Encounter",
-        "identifier": [
-          {
-            "system": "http://your-source-system.com/encounterId",
-            "value": "E001"
-          }
-        ],
-        "status": "finished",
-        "class": {
-          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-          "code": "AMB",
-          "display": "ambulatory"
-        },
-        "subject": {
-          "reference": "Patient?identifier=http://your-source-system.com/patientId|P001"
-        },
-        "period": {
-          "start": "2023-06-15T09:00:00Z",
-          "end": "2023-06-15T09:30:00Z"
-        }
-      }
-    },
-    {
-      "fullUrl": "urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b",
-      "request": {
-        "method": "PUT",
-        "url": "ClinicalImpression?encounter=Encounter?identifier=http://your-source-system.com/encounterId|E001"
-      },
-      "resource": {
-        "resourceType": "ClinicalImpression",
-        "status": "completed",
-        "subject": {
-          "reference": "Patient?identifier=http://your-source-system.com/patientId|P001"
-        },
-        "encounter": {
-          "reference": "urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f1"
-        },
-        "effectiveDateTime": "2023-06-15T09:30:00Z",
-        "summary": "Patient presented with mild flu-like symptoms. Recommended rest and fluids."
-      }
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="encounter-and-impression-transaction">
+    {ExampleCode}
+</MedplumCodeBlock>
 
 In this transaction, both the Encounter and ClinicalImpression are created together. If either fails, the entire transaction is rolled back.
 
@@ -230,337 +129,27 @@ Let's demonstrate a complete data pipeline that incorporates all the concepts we
 ### Step 1: Create Patients
 Use a batch request to upload [`Patients`](patient) independently, using the primary key from the source system as the identifier.
 
-```js
-{
-  "resourceType": "Bundle",
-  "type": "batch",
-  "entry": [
-    {
-      "request": {
-        "method": "PUT",
-        "url": "Patient?identifier=http://your-source-system.com/patientId|P001"
-      },
-      "resource": {
-        "resourceType": "Patient",
-        "identifier": [
-          {
-            "system": "http://your-source-system.com/patientId",
-            "value": "P001"
-          }
-        ],
-        "name": [
-          {
-            "given": ["John"],
-            "family": "Doe"
-          }
-        ],
-        "birthDate": "1980-07-15",
-        "gender": "male"
-      }
-    },
-    {
-      "request": {
-        "method": "PUT",
-        "url": "Patient?identifier=http://your-source-system.com/patientId|P002"
-      },
-      "resource": {
-        "resourceType": "Patient",
-        "identifier": [
-          {
-            "system": "http://your-source-system.com/patientId",
-            "value": "P002"
-          }
-        ],
-        "name": [
-          {
-            "given": ["Jane"],
-            "family": "Smith"
-          }
-        ],
-        "birthDate": "1992-11-30",
-        "gender": "female"
-      }
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
+    {ExampleCode}
+</MedplumCodeBlock>
 
 ### Step 2: Create Conditions
 
 Use a batch request to upload [`Conditions`](condition) independently, using conditional references to link to the existing patients.
 
-```js
-{
-  "resourceType": "Bundle",
-  "type": "batch",
-  "entry": [
-    // First condition for Patient P001
-    {
-      "request": {
-        "method": "PUT",
-        "url": "Condition?identifier=http://your-source-system.com/patientConditionId|PC001"
-      },
-      "resource": {
-        "resourceType": "Condition",
-        "identifier": [
-          {
-            "system": "http://your-source-system.com/patientConditionId",
-            "value": "PC001"
-          }
-        ],
-        "subject": {
-          "reference": "Patient?identifier=http://your-source-system.com/patientId|P001"
-        },
-        "code": {
-          "coding": [
-            {
-              "system": "http://your-source-system.com/conditionId",
-              "code": "HT001",
-              "display": "Hypertension"
-            },
-            {
-              "system": "http://hl7.org/fhir/sid/icd-10",
-              "code": "I10",
-              "display": "Essential (primary) hypertension"
-            }
-          ],
-          "text": "Hypertension"
-        },
-        "onsetDateTime": "2022-03-15"
-      }
-    },
-    // Second condition for Patient P001
-    {
-      "request": {
-        "method": "PUT",
-        "url": "Condition?identifier=http://your-source-system.com/patientConditionId|PC002"
-      },
-      "resource": {
-        "resourceType": "Condition",
-        "identifier": [
-          {
-            "system": "http://your-source-system.com/patientConditionId",
-            "value": "PC002"
-          }
-        ],
-        "subject": {
-          "reference": "Patient?identifier=http://your-source-system.com/patientId|P001"
-        },
-        "code": {
-          "coding": [
-            {
-              "system": "http://your-source-system.com/conditionId",
-              "code": "DM002",
-              "display": "Diabetes"
-            },
-            {
-              "system": "http://hl7.org/fhir/sid/icd-10",
-              "code": "E11",
-              "display": "Type 2 diabetes mellitus"
-            }
-          ],
-          "text": "Diabetes"
-        },
-        "onsetDateTime": "2023-01-10"
-      }
-    },
-    // First condition for Patient P002
-    {
-      "request": {
-        "method": "PUT",
-        "url": "Condition?identifier=http://your-source-system.com/patientConditionId|PC003"
-      },
-      "resource": {
-        "resourceType": "Condition",
-        "identifier": [
-          {
-            "system": "http://your-source-system.com/patientConditionId",
-            "value": "PC003"
-          }
-        ],
-        "subject": {
-          "reference": "Patient?identifier=http://your-source-system.com/patientId|P002"
-        },
-        "code": {
-          "coding": [
-            {
-              "system": "http://your-source-system.com/conditionId",
-              "code": "HT001",
-              "display": "Hypertension"
-            },
-            {
-              "system": "http://hl7.org/fhir/sid/icd-10",
-              "code": "I10",
-              "display": "Essential (primary) hypertension"
-            }
-          ],
-          "text": "Hypertension"
-        },
-        "onsetDateTime": "2023-02-22"
-      }
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="create-conditions-batch">
+    {ExampleCode}
+</MedplumCodeBlock>
+
 
 ### Step 3: Create Encounters and ClinicalImpressions
 
 Here, we use a batch request, where each entry is a two-operation transaction to create the [`Encounter`](encounter`) and dependent [`ClinicalImpression`](clinicalimpression) (i.e. note).
 
-```js
-{
-  "resourceType": "Bundle",
-  // The overall request is a batch request
-  // highlight-next-line
-  "type": "batch",
-  "entry": [
-    {
-      "request": {
-        "method": "POST",
-        "url": "/"
-      },
-      // Each entry is a in the batch is a transaction
-      "resource": {
-        "resourceType": "Bundle",
-        // highlight-next-line
-        "type": "transaction",
-        "entry": [
-          {
-            "fullUrl": "urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b",
-            "request": {
-              "method": "PUT",
-              "url": "Encounter?identifier=http://your-source-system.com/encounterId|E001"
-            },
-            "resource": {
-              "resourceType": "Encounter",
-              "identifier": [
-                {
-                  "system": "http://your-source-system.com/encounterId",
-                  "value": "E001"
-                }
-              ],
-              "status": "finished",
-              "class": {
-                "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-                "code": "AMB",
-                "display": "ambulatory"
-              },
-              "subject": {
-                "reference": "Patient?identifier=http://your-source-system.com/patientId|P001"
-              },
-              "period": {
-                "start": "2023-06-15T00:00:00Z"
-              },
-              "type": [
-                {
-                  "coding": [
-                    {
-                      "system": "http://your-source-system.com/encounterTypeId",
-                      "code": "checkup",
-                      "display": "Check-up"
-                    }
-                  ]
-                }
-              ]
-            }
-          },
-          {
-            "fullUrl": "urn:uuid:afb1dbb9-3801-4411-9a0b-75672742b0d4",
-            "request": {
-              "method": "POST",
-              "url": "ClinicalImpression"
-            },
-            "resource": {
-              "resourceType": "ClinicalImpression",
-              "status": "completed",
-              "subject": {
-                "reference": "Patient?identifier=http://your-source-system.com/patientId|P001"
-              },
-              "encounter": {
-                "reference": "urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b"
-              },
-              "effectiveDateTime": "2023-06-15T00:00:00Z",
-              "summary": "Routine check-up. Patient's hypertension is well-controlled. Diabetes management plan reviewed."
-            }
-          }
-        ]
-      }
-    },
-    // Each entry is a in the batch is a transaction
-    {
-      "request": {
-        "method": "POST",
-        "url": "/"
-      },
-      "resource": {
-        "resourceType": "Bundle",
-        // highlight-next-line
-        "type": "transaction",
-        "entry": [
-          {
-            "fullUrl": "urn:uuid:309daee6-3512-4c38-9b96-a5243716dec1",
-            "request": {
-              "method": "PUT",
-              "url": "Encounter?identifier=http://your-source-system.com/encounterId|E002"
-            },
-            "resource": {
-              "resourceType": "Encounter",
-              "identifier": [
-                {
-                  "system": "http://your-source-system.com/encounterId",
-                  "value": "E002"
-                }
-              ],
-              "status": "finished",
-              "class": {
-                "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-                "code": "EMER",
-                "display": "emergency"
-              },
-              "subject": {
-                "reference": "Patient?identifier=http://your-source-system.com/patientId|P002"
-              },
-              "period": {
-                "start": "2023-06-16T00:00:00Z"
-              },
-              "type": [
-                {
-                  "coding": [
-                    {
-                      "system": "http://your-source-system.com/encounterTypeId",
-                      "code": "emergency",
-                      "display": "Emergency"
-                    }
-                  ]
-                }
-              ]
-            }
-          },
-          {
-            "fullUrl": "urn:uuid:d9491f52-15a1-4ae6-9ee1-b0a91421fe17",
-            "request": {
-              "method": "POST",
-              "url": "ClinicalImpression"
-            },
-            "resource": {
-              "resourceType": "ClinicalImpression",
-              "status": "completed",
-              "subject": {
-                "reference": "Patient?identifier=http://your-source-system.com/patientId|P002"
-              },
-              "encounter": {
-                "reference": "urn:uuid:309daee6-3512-4c38-9b96-a5243716dec1"
-              },
-              "effectiveDateTime": "2023-06-16T00:00:00Z",
-              "summary": "Emergency visit due to severe headache. Patient's hypertension may need adjustment. Further tests ordered."
-            }
-          }
-        ]
-      }
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="create-encounters-and-impressions-batch-transaction">
+    {ExampleCode}
+</MedplumCodeBlock>
+
 
 This example demonstrates:
 
