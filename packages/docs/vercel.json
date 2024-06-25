@@ -68,6 +68,18 @@
     {
       "source": "/docs/sdk/classes/MedplumClient",
       "destination": "/docs/sdk/core.medplumclient"
+    },
+    {
+      "source": "/docs/sdk/classes/MedplumClient",
+      "destination": "/docs/sdk/core.medplumclient"
+    },
+    {
+      "source": "/docs/fhir-datastore/migration-logic",
+      "destination": "/docs/migration"
+    },
+    {
+      "source": "/docs/fhir-datastore/adoption-strategy",
+      "destination": "/docs/migration"
     }
   ]
 }
