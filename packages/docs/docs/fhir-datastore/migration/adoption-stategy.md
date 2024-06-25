@@ -94,7 +94,7 @@ sequenceDiagram
 ```
 
 ### Rationale
-- This is the first user-facing change and can be used for data verification and user acceptance testing (UAT).
+- This is the first user-facing change and can be used for data verification and user acceptance testing.
 - Allows you to start benefiting from Medplum's capabilities while still maintaining write operations through your existing system.
 
 ### Best Practices

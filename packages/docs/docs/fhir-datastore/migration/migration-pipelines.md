@@ -123,7 +123,7 @@ This batch operation creates (or updates) two [`Patient`](patient) resources in 
 
 #### Example: Encounter with Clinical Impression
 
-Here's an example of using a transaction to create an [`Encounter`] and associated [`ClinicalImpression`] (i.e. clinical notes) together. We use a transaction because the failure of one operation should invalidate the entire transaction.
+Here's an example of using a transaction to create an [`Encounter`](encounter) and associated [`ClinicalImpression`](clinicalimpression) (i.e. clinical notes) together. We use a transaction because the failure of one operation should invalidate the entire transaction.
 
 ```js
 {
@@ -131,7 +131,7 @@ Here's an example of using a transaction to create an [`Encounter`] and associat
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:encounter-123",
+      "fullUrl": "urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f1",
       "request": {
         "method": "PUT",
         "url": "Encounter?identifier=http://your-source-system.com/encounterId|E001"
@@ -160,7 +160,7 @@ Here's an example of using a transaction to create an [`Encounter`] and associat
       }
     },
     {
-      "fullUrl": "urn:uuid:clinicalimpression-456",
+      "fullUrl": "urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b",
       "request": {
         "method": "PUT",
         "url": "ClinicalImpression?encounter=Encounter?identifier=http://your-source-system.com/encounterId|E001"
@@ -172,7 +172,7 @@ Here's an example of using a transaction to create an [`Encounter`] and associat
           "reference": "Patient?identifier=http://your-source-system.com/patientId|P001"
         },
         "encounter": {
-          "reference": "urn:uuid:encounter-123"
+          "reference": "urn:uuid:ddc3e8de-da12-42ad-831e-f659ef5af8f1"
         },
         "effectiveDateTime": "2023-06-15T09:30:00Z",
         "summary": "Patient presented with mild flu-like symptoms. Recommended rest and fluids."
@@ -426,7 +426,7 @@ Here, we use a batch request, where each entry is a two-operation transaction to
         "type": "transaction",
         "entry": [
           {
-            "fullUrl": "urn:uuid:encounter-e001",
+            "fullUrl": "urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b",
             "request": {
               "method": "PUT",
               "url": "Encounter?identifier=http://your-source-system.com/encounterId|E001"
@@ -465,7 +465,7 @@ Here, we use a batch request, where each entry is a two-operation transaction to
             }
           },
           {
-            "fullUrl": "urn:uuid:clinicalimpression-e001",
+            "fullUrl": "urn:uuid:afb1dbb9-3801-4411-9a0b-75672742b0d4",
             "request": {
               "method": "POST",
               "url": "ClinicalImpression"
@@ -477,7 +477,7 @@ Here, we use a batch request, where each entry is a two-operation transaction to
                 "reference": "Patient?identifier=http://your-source-system.com/patientId|P001"
               },
               "encounter": {
-                "reference": "urn:uuid:encounter-e001"
+                "reference": "urn:uuid:fd801e1f-0788-4920-9609-33ed84c7b39b"
               },
               "effectiveDateTime": "2023-06-15T00:00:00Z",
               "summary": "Routine check-up. Patient's hypertension is well-controlled. Diabetes management plan reviewed."
@@ -498,7 +498,7 @@ Here, we use a batch request, where each entry is a two-operation transaction to
         "type": "transaction",
         "entry": [
           {
-            "fullUrl": "urn:uuid:encounter-e002",
+            "fullUrl": "urn:uuid:309daee6-3512-4c38-9b96-a5243716dec1",
             "request": {
               "method": "PUT",
               "url": "Encounter?identifier=http://your-source-system.com/encounterId|E002"
@@ -537,7 +537,7 @@ Here, we use a batch request, where each entry is a two-operation transaction to
             }
           },
           {
-            "fullUrl": "urn:uuid:clinicalimpression-e002",
+            "fullUrl": "urn:uuid:d9491f52-15a1-4ae6-9ee1-b0a91421fe17",
             "request": {
               "method": "POST",
               "url": "ClinicalImpression"
@@ -549,7 +549,7 @@ Here, we use a batch request, where each entry is a two-operation transaction to
                 "reference": "Patient?identifier=http://your-source-system.com/patientId|P002"
               },
               "encounter": {
-                "reference": "urn:uuid:encounter-e002"
+                "reference": "urn:uuid:309daee6-3512-4c38-9b96-a5243716dec1"
               },
               "effectiveDateTime": "2023-06-16T00:00:00Z",
               "summary": "Emergency visit due to severe headache. Patient's hypertension may need adjustment. Further tests ordered."

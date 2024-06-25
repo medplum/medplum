@@ -5,6 +5,10 @@ sidebar_position: 3
 ---
 
 # Converting Data to FHIR
+[patient]: /docs/api/fhir/resources/patient
+[codeableconcept]: /docs/fhir-basics#standardizing-data-codeable-concepts
+[condition]: /docs/api/fhir/resources/condition
+
 
 When migrating data from a 3rd party system to Medplum, a crucial step is converting your existing data into FHIR-compliant resources. This section will guide you through the process of reshaping your data elements, adding identifiers, dealing with codeable concepts, and linking data using conditional references.
 
@@ -25,7 +29,7 @@ Source System (Patient table):
 | P001 | John       | Doe       | 1980-05-15 | M      |
 ```
 
-FHIR Patient Resource:
+FHIR ['Patient'](patient) Resource:
 ```js
 {
   "resourceType": "Patient",
@@ -64,14 +68,13 @@ Adding source system identifiers helps in:
 }
 ```
 
-
 ## Dealing with CodeableConcepts
 
-As mentioned in [FHIR Basics], annotating your data with standardized codes is a crucial for interoperability with the rest of the healthcare ecosystem, and when converting your data to FHIR, you'll find that many of your target elements have the type [CodeableConcept].
+As mentioned in [FHIR Basics](codeableconcept), annotating your data with standardized codes is a crucial for interoperability with the rest of the healthcare ecosystem, and when converting your data to FHIR, you'll find that many of your target elements have the type [CodeableConcept](codeableconcept).
 
 It's great if your source data is already annotated with standard codes. Even if this isn't the case, you can:
 
-1. Add a [local code] representing your internal coding scheme
+1. Add a [local code](/docs/terminology/local-codes) representing your internal coding scheme
 2. Enrich your data with standard codes in a separate process
 
 #### Example
@@ -168,18 +171,15 @@ When implementing this in your migration pipeline:
 * Create a separate, offline process to map your local condition codes to standard codes (like ICD-10).
 * Update the [`Condition`](condition) resources with the standard codes, either during the initial migration if the mapping is available, or as a separate step later.
 
-This approach allows you to migrate your data quickly while still maintaining the ability to add standardized coding later, improving the overall quality and interoperability of your data over time.
-
 The use of the `patient_condition_id` as an identifier provides a clear link back to the original data, which can be valuable for auditing, troubleshooting, or further data reconciliation.
 
-[condition]: /docs/api/fhir/resources/condition
-[patient]: /docs/api/fhir/resources/patient
+This approach allows you to migrate your data quickly while still maintaining the ability to add standardized coding later, improving the overall quality and interoperability of your data over time.
 
 ## Linking Data Using Conditional References
 
 When migrating data to FHIR, it's crucial to maintain relationships between resources. Conditional references are particularly helpful in this process.
 
-During migration, it's often challenging to know the [unique `id`] that Medplum will assign to a resource once it's created.
+During migration, it's often challenging to know the [unique `id`](/docs/fhir-basics#storing-data-resources) that Medplum will assign to a resource once it's created.
 
 Conditional references solve these issues by allowing you to reference resources based on their identifying information from the source system, rather than relying on Medplum-generated IDs.
 
@@ -207,7 +207,7 @@ With this modification, we no longer have to look up the [`Patient's`](patient) 
 
 You can read more about conditional references [here].
 
-### An End-to-End Example
+## An End-to-End Example
 
 Let's look at a complete example that demonstrates converting tabular data into FHIR resources, including patients and conditions, using local codes, standard codes, and conditional references.
 
@@ -357,7 +357,7 @@ For John Doe's Diabetes (`PC002`):
 ```
 
 For Jane Smith's Hypertension (`PC003`):
-```json
+```js
 {
   "resourceType": "Condition",
   "identifier": [
@@ -399,3 +399,5 @@ This example demonstrates:
 
 
 By following this pattern, you can extend the migration process to handle more complex data structures and relationships while maintaining the integrity and traceability of your source data.
+
+Next, we'll talk about how to **integrate this conversion code into data migration pipelines.**
