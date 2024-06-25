@@ -134,10 +134,6 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'fhir-datastore/understanding-uscdi-dataclasses' },
         {
           type: 'html',
-          value: '<strong class="menu__link">Migration</strong>',
-        },
-        {
-          type: 'html',
           value: '<strong class="menu__link">Data Modeling</strong>',
         },
         {

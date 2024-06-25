@@ -1,17 +1,16 @@
 ---
-id: migration-pipelines
 toc_max_heading_level: 3
 sidebar_position: 4
 ---
+
+# Building Migration Pipelines
+
+When migrating data to Medplum, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migration data *into* Medplum.
 
 [patient]: /docs/api/fhir/resources/patient
 [condition]: /docs/api/fhir/resources/condition
 [encounter]: /docs/api/fhir/resources/encounter
 [clinicalimpression]: /docs/api/fhir/resources/clinicalimpression
-
-# Building Migration Pipelines
-
-When migrating data to Medplum, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migration data *into* Medplum.
 
 ## Using Conditional Updates for Idempotency
 
@@ -185,7 +184,7 @@ Here's an example of using a transaction to create an [`Encounter`] and associat
 
 In this transaction, both the Encounter and ClinicalImpression are created together. If either fails, the entire transaction is rolled back.
 
-## 3.4 Combining Batches and Transactions
+## Combining Batches and Transactions
 
 For large-scale migrations, you can combine batches and transactions to balance performance and data integrity. Create batches of smaller transactions to avoid the performance hit of very large transactions while still maintaining atomicity for related resources.
 
@@ -575,4 +574,5 @@ This example demonstrates:
 This approach allows for efficient bulk operations while ensuring data integrity for related resources. It also demonstrates how to handle different types of relationships and references in a complex data migration scenario.
 
 
-**In the next guide, we'll talk about best practices for adopting Medplum in end user workflows.**
+
+In the next guide, we'll talk about **best practices for adopting Medplum in end user workflows.**

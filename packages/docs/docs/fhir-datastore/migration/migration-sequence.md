@@ -10,7 +10,6 @@ sidebar_position: 2
 [references]: /docs/fhir-basics#linking-data-references
 
 
-
 When migrating data to Medplum, it's crucial to maintain the integrity and relationships between different data types. FHIR splits data across multiple [Resources](resources) that contain [References](references) to each other.
 
 To simplify the migration process, Medplum recommends migrating data elements roughly in order of the FHIR dependency graph. Here's the recommended order for migrating data:
@@ -28,4 +27,4 @@ To simplify the migration process, Medplum recommends migrating data elements ro
 This order ensures that foundational data (Patient records) are in place before migrating related clinical data. It also attempts to deliver immediate clinical value by providing a patient snapshot, while backfilling longitudinal health data over time.
 
 
-**In the next guide, we'll discuss how to convert your existing data to FHIR.**
+In the next guide, we'll discuss how to **convert your existing data to FHIR.**
