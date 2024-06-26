@@ -13,6 +13,7 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { ReindexJobData, getReindexQueue } from '../workers/reindex';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -296,6 +297,9 @@ describe('Super Admin routes', () => {
   });
 
   test('Reindex with respond-async', async () => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
     const res = await request(app)
       .post('/admin/super/reindex')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -307,58 +311,35 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['PaymentNotice'],
+      })
+    );
   });
 
-  test('Rebuild compartments access denied', async () => {
+  test('Reindex with multiple resource types', async () => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
     const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
-      });
-
-    expect(res.status).toBe(403);
-  });
-
-  test('Rebuild compartments require async', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
-      });
-
-    expect(res.status).toEqual(400);
-    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
-  });
-
-  test('Rebuild compartments invalid resource type', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'XYZ',
-      });
-
-    expect(res.status).toBe(400);
-  });
-
-  test('Rebuild compartments with respond-async', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
+      .post('/admin/super/reindex')
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .set('Prefer', 'respond-async')
       .type('json')
       .send({
-        resourceType: 'PaymentNotice',
+        resourceType: 'PaymentNotice, MedicinalProductManufactured,BiologicallyDerivedProduct',
       });
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['PaymentNotice', 'MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
+      })
+    );
   });
 
   test('Set password access denied', async () => {
