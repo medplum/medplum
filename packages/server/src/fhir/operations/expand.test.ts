@@ -724,6 +724,22 @@ describe('Updated implementation', () => {
     expect(abstractCode).toBeDefined();
   });
 
+  test('Recursive subsumption with filter', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&filter=adopt&count=200`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    const expandedCodes = expansion.contains?.map((coding) => coding.code);
+    expect(expandedCodes).toHaveLength(6);
+    expect(expandedCodes).toEqual(
+      expect.arrayContaining(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT'])
+    );
+  });
+
   test('Filter out abstract codes', async () => {
     const res = await request(app)
       .get(
