@@ -335,6 +335,26 @@ export class BackEnd extends Construct {
           ],
           resources: ['*'],
         }),
+
+        // Textract and Comprehend Medical: Analyze medical text
+        // https://docs.aws.amazon.com/comprehend/latest/dg/security_iam_id-based-policy-examples.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'comprehend:DetectEntities',
+            'comprehend:DetectKeyPhrases',
+            'comprehend:DetectDominantLanguage',
+            'comprehend:DetectSentiment',
+            'comprehend:DetectTargetedSentiment',
+            'comprehend:DetectSyntax',
+            'comprehendmedical:DetectEntitiesV2',
+            'textract:DetectDocumentText',
+            'textract:AnalyzeDocument',
+            'textract:StartDocumentTextDetection',
+            'textract:GetDocumentTextDetection',
+          ],
+          resources: ['*'],
+        }),
       ],
     });
 
