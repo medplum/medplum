@@ -1,58 +1,71 @@
-import {
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  QuestionnaireResponseItemAnswerValue,
-} from '@medplum/fhirtypes';
+import { isResource } from '@medplum/core';
+import { Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem } from '@medplum/fhirtypes';
 
 type ItemType = QuestionnaireItem | QuestionnaireResponseItem;
 type ExtractQuestionnaireType<I> = Extract<Questionnaire | QuestionnaireResponse, { item?: I[] }>;
-type Answers = Record<string, QuestionnaireResponseItemAnswerValue | QuestionnaireResponseItemAnswerValue[]>;
 
 export interface QuestionnaireItemState<R extends ItemType> {
   ancestors: R[];
-  rootResource: ExtractQuestionnaireType<R>;
-  currentValues?: Readonly<Answers>;
-  enabled: boolean;
-  readonly: boolean;
+  resource?: ExtractQuestionnaireType<R>;
 }
-export type ForEachItemCallback<T, R extends QuestionnaireItem | QuestionnaireResponseItem> = (
+export type ForEachItemCallback<T, R extends ItemType> = (
   item: R,
-  itemState: QuestionnaireItemState<R>,
-  childResults: T[]
+  subItemResults: Record<string, T> | undefined,
+  state: QuestionnaireItemState<R>
 ) => T;
 
 export function forEachItem<T, R extends ItemType>(
   resource: ExtractQuestionnaireType<R>,
+  callback: ForEachItemCallback<T, R>
+): T[];
+
+export function forEachItem<R extends ItemType, T>(
+  item: R,
   callback: ForEachItemCallback<T, R>,
-  currentValues?: Readonly<Answers>
-): T[] {
-  return (
-    resource.item?.map((item) =>
+  resource?: ExtractQuestionnaireType<R>
+): T;
+
+export function forEachItem<T, R extends ItemType>(
+  root: ExtractQuestionnaireType<R> | R,
+  callback: ForEachItemCallback<T, R>,
+  resource?: ExtractQuestionnaireType<R>
+): T | T[] {
+  let items: R[] = [];
+  if (isResource(root)) {
+    resource = root;
+    items = (root as ExtractQuestionnaireType<R>).item ?? [];
+  } else {
+    items = [root];
+  }
+  const result =
+    items.map((item) =>
       forEachItemImpl(item, resource, callback, {
-        currentValues,
         ancestors: [],
-        enabled: true,
-        readonly: false,
-        rootResource: resource,
+        resource: resource,
       })
-    ) ?? []
-  );
+    ) ?? [];
+
+  if (!isResource(root)) {
+    return result?.[0];
+  }
+  return result;
 }
 
 function forEachItemImpl<T, R extends ItemType>(
   item: R,
-  resource: ExtractQuestionnaireType<R>,
+  resource: ExtractQuestionnaireType<R> | undefined,
   callback: ForEachItemCallback<T, R>,
   state: Readonly<QuestionnaireItemState<R>>
 ): T {
-  const childrenResults: T[] = [];
-  for (const child of item.item ?? []) {
-    childrenResults.push(
-      forEachItemImpl(child as R, resource, callback, { ...state, ancestors: [item, ...state.ancestors] })
-    );
+  const childResults: Record<string, T> | undefined = item.item ? {} : undefined;
+  if (childResults) {
+    for (const child of item.item ?? []) {
+      childResults[child.linkId] = forEachItemImpl(child as R, resource, callback, {
+        ...state,
+        ancestors: [item, ...state.ancestors],
+      });
+    }
   }
 
-  return callback(item, state, childrenResults);
+  return callback(item, childResults, { ...state });
 }
