@@ -10,9 +10,10 @@ import {
   useMedplum,
   useMedplumNavigate,
 } from '@medplum/react';
-import { IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTextRecognition, IconTrash } from '@tabler/icons-react';
 import { ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
+import { isAwsTextractEnabled } from '../config';
 
 export function TimelinePage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -51,6 +52,13 @@ export function TimelinePage(): JSX.Element | null {
     navigate(`/${version.resourceType}/${version.id}/_history/${version.meta?.versionId}`);
   }
 
+  function onAwsTextract(resource: Resource, reloadTimeline: () => void): void {
+    medplum
+      .post(medplum.fhirUrl(resource.resourceType, resource.id as string, '$aws-textract'), {})
+      .then(reloadTimeline)
+      .catch(console.error);
+  }
+
   function getMenu(context: ResourceTimelineMenuItemContext): ReactNode {
     const { primaryResource, currentResource, reloadTimeline } = context;
 
@@ -65,6 +73,10 @@ export function TimelinePage(): JSX.Element | null {
 
     const canEdit = !isHistoryResource;
     const canDelete = !isHistoryResource;
+
+    const showAwsAi =
+      isAwsTextractEnabled() &&
+      (currentResource.resourceType === 'DocumentReference' || currentResource.resourceType === 'Media');
 
     return (
       <Menu.Dropdown>
@@ -113,6 +125,19 @@ export function TimelinePage(): JSX.Element | null {
           >
             Edit
           </Menu.Item>
+        )}
+        {showAwsAi && (
+          <>
+            <Menu.Divider />
+            <Menu.Label>AWS AI</Menu.Label>
+            <Menu.Item
+              leftSection={<IconTextRecognition size={14} />}
+              onClick={() => onAwsTextract(currentResource, reloadTimeline)}
+              aria-label={`AWS Textract ${getReferenceString(currentResource)}`}
+            >
+              AWS Textract
+            </Menu.Item>
+          </>
         )}
         {canDelete && (
           <>

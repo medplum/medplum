@@ -3,6 +3,7 @@ import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
+import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
@@ -230,6 +231,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // StructureDefinition $expand-profile operation
   router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
+
+  // AWS operations
+  router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {

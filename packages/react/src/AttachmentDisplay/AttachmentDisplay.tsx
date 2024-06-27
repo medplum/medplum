@@ -25,8 +25,10 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           <source type={contentType} src={url} />
         </video>
       )}
-      {contentType === 'application/pdf' && (
-        <div data-testid="attachment-pdf" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
+      {(contentType?.startsWith('text/') ||
+        contentType === 'application/json' ||
+        contentType === 'application/pdf') && (
+        <div data-testid="attachment-iframe" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
           <iframe
             width="100%"
             height="400"
