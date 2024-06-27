@@ -7,7 +7,6 @@ import { getRedis } from './redis';
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
   setGauge('medplum.db.idleConnections', getDatabasePool().idleCount);
   setGauge('medplum.db.queriesAwaitingClient', getDatabasePool().waitingCount);
-  setGauge('medplum.db.queriesAwaitingClient', getDatabasePool().waitingCount);
 
   let startTime = Date.now();
   const postgresOk = await testPostgres();
