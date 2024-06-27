@@ -11,12 +11,12 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   let startTime = Date.now();
   const postgresOk = await testPostgres();
   const dbRoundtripMs = Date.now() - startTime;
-  setGauge('medplum.db.roundtripMs', dbRoundtripMs);
+  setGauge('medplum.db.healthcheckRTT', dbRoundtripMs / 1000);
 
   startTime = Date.now();
   const redisOk = await testRedis();
   const redisRoundtripMs = Date.now() - startTime;
-  setGauge('medplum.redis.roundtripMs', redisRoundtripMs);
+  setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000);
 
   res.json({
     ok: true,
