@@ -1,4 +1,5 @@
 import opentelemetry, { Attributes, Counter, Histogram, Meter } from '@opentelemetry/api';
+import { Gauge } from '@opentelemetry/sdk-metrics/build/src/types';
 
 // This file includes OpenTelemetry helpers.
 // Note that this file is related but separate from the OpenTelemetry initialization code in instrumentation.ts.
@@ -8,6 +9,7 @@ import opentelemetry, { Attributes, Counter, Histogram, Meter } from '@opentelem
 let meter: Meter | undefined = undefined;
 const counters = new Map<string, Counter>();
 const histograms = new Map<string, Histogram>();
+const gauges = new Map<string, Gauge>();
 
 function getMeter(): Meter {
   if (!meter) {
@@ -21,6 +23,15 @@ function getCounter(name: string): Counter {
   if (!result) {
     result = getMeter().createCounter(name);
     counters.set(name, result);
+  }
+  return result;
+}
+
+function getGauge(name: string): Gauge {
+  let result = gauges.get(name);
+  if (!result) {
+    result = getMeter().createGauge(name);
+    gauges.set(name, result);
   }
   return result;
 }
@@ -47,6 +58,14 @@ export function recordHistogramValue(name: string, value: number, attributes: At
     return false;
   }
   getHistogram(name).record(value, attributes);
+  return true;
+}
+
+export function setGauge(name: string, value: number, attributes?: Attributes): boolean {
+  if (!isOtelMetricsEnabled()) {
+    return false;
+  }
+  getGauge(name).record(value, attributes);
   return true;
 }
 
