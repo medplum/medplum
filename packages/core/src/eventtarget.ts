@@ -2,29 +2,51 @@
  * Based on: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget
  */
 
-export interface Event {
-  readonly type: string;
+export interface Event<T extends string = string> {
+  readonly type: T;
   readonly defaultPrevented?: boolean;
 }
 
-export type EventListener = (e: Event) => void;
+export type TypedEvent<T extends string> = globalThis.Event & {
+  type: T;
+};
 
-export class EventTarget {
-  private readonly listeners: Record<string, EventListener[]>;
+export type EventMap<T> = { [K in keyof T]: K extends string ? Event<K> | T[K] : never } | NoEventMap;
+export type NoEventMap = [never];
+export type Key<K, T> = T extends NoEventMap ? string : K | keyof T;
+export type TargetEvent<K, T> = T extends NoEventMap ? Event : K extends keyof T & string ? T[K] & Event<K> : never;
+export type EventListener<K, T> = T extends NoEventMap
+  ? (event: Event) => void
+  : K extends keyof T & string
+    ? T[K] extends Event
+      ? (event: T[K]) => void
+      : never
+    : never;
+export type ListenersMap<T> = Record<Key<keyof T, T>, EventListener<keyof T, T>[]>;
+
+export interface IEventTarget<TEvents extends EventMap<TEvents> = NoEventMap> {
+  addEventListener<TEventType>(type: Key<TEventType, TEvents>, listener: EventListener<TEventType, TEvents>): void;
+  removeEventListener<TEventType>(type: Key<TEventType, TEvents>, listener: EventListener<TEventType, TEvents>): void;
+  dispatchEvent<TEventType>(event: TargetEvent<TEventType, TEvents>): boolean;
+  removeAllListeners(): void;
+}
+
+export class EventTarget<TEvents extends EventMap<TEvents> = NoEventMap> implements IEventTarget<TEvents> {
+  private listeners: ListenersMap<TEvents>;
 
   constructor() {
-    this.listeners = {};
+    this.listeners = {} as ListenersMap<TEvents>;
   }
 
-  addEventListener(type: string, callback: EventListener): void {
-    if (!this.listeners[type]) {
-      this.listeners[type] = [];
+  addEventListener<TEventType>(type: Key<TEventType, TEvents>, listener: EventListener<TEventType, TEvents>): void {
+    if (!this.listeners[type as keyof ListenersMap<TEvents>]) {
+      this.listeners[type as keyof ListenersMap<TEvents>] = [] as EventListener<keyof TEvents, TEvents>[];
     }
-    this.listeners[type].push(callback);
+    this.listeners[type as keyof ListenersMap<TEvents>].push(listener as EventListener<keyof TEvents, TEvents>);
   }
 
-  removeEventListener(type: string, callback: EventListener): void {
-    const array = this.listeners[type];
+  removeEventListener<TEventType>(type: Key<TEventType, TEvents>, callback: EventListener<TEventType, TEvents>): void {
+    const array = this.listeners[type as keyof ListenersMap<TEvents>];
     if (!array) {
       return;
     }
@@ -36,10 +58,11 @@ export class EventTarget {
     }
   }
 
-  dispatchEvent(event: Event): boolean {
-    const array = this.listeners[event.type];
+  dispatchEvent<TEventType>(event: TargetEvent<TEventType, TEvents>): boolean {
+    const array = this.listeners[event.type as keyof ListenersMap<TEvents>];
     if (array) {
       for (const listener of array) {
+        // @ts-expect-error This works but TS doesn't like it
         listener.call(this, event);
       }
     }
@@ -47,33 +70,6 @@ export class EventTarget {
   }
 
   removeAllListeners(): void {
-    // @ts-expect-error Normally listeners is read-only. In this case we are dumping all listeners
-    this.listeners = {};
-  }
-}
-
-export class TypedEventTarget<TEvents extends Record<string, Event>> {
-  private emitter = new EventTarget();
-
-  dispatchEvent<TEventType extends keyof TEvents & string>(event: TEvents[TEventType]): void {
-    this.emitter.dispatchEvent(event);
-  }
-
-  addEventListener<TEventType extends keyof TEvents & string>(
-    type: TEventType,
-    handler: (event: TEvents[TEventType]) => void
-  ): void {
-    this.emitter.addEventListener(type, handler as any);
-  }
-
-  removeEventListener<TEventType extends keyof TEvents & string>(
-    type: TEventType,
-    handler: (event: TEvents[TEventType]) => void
-  ): void {
-    this.emitter.removeEventListener(type, handler as any);
-  }
-
-  removeAllListeners(): void {
-    this.emitter.removeAllListeners();
+    this.listeners = {} as ListenersMap<TEvents>;
   }
 }

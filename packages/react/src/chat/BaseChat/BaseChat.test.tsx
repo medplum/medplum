@@ -1,4 +1,4 @@
-import { ProfileResource, TypedEventTarget, createReference, getReferenceString } from '@medplum/core';
+import { EventTarget, ProfileResource, createReference, getReferenceString } from '@medplum/core';
 import { Bundle, Communication } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 // @ts-expect-error _subscriptionController is not exported from module normally
@@ -16,8 +16,8 @@ type SubscriptionControllerEvents = {
 
 jest.mock('@medplum/react-hooks', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { TypedEventTarget } = require('@medplum/core');
-  const _subscriptionController = new TypedEventTarget() as TypedEventTarget<SubscriptionControllerEvents>;
+  const { EventTarget } = require('@medplum/core');
+  const _subscriptionController = new EventTarget() as EventTarget<SubscriptionControllerEvents>;
   const original = jest.requireActual('@medplum/react-hooks');
   return {
     ...original,
@@ -96,7 +96,7 @@ describe('BaseChat', () => {
   });
 
   afterEach(() => {
-    (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).removeAllListeners();
+    (_subscriptionController as EventTarget<SubscriptionControllerEvents>).removeAllListeners();
   });
 
   function TestComponent(props: TestComponentProps): JSX.Element | null {
@@ -134,7 +134,7 @@ describe('BaseChat', () => {
 
     const bundle = await createCommunicationSubBundle(defaultMedplum);
     act(() => {
-      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+      (_subscriptionController as EventTarget<SubscriptionControllerEvents>).dispatchEvent({
         type: 'subscription',
         criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
         bundle,
@@ -168,7 +168,7 @@ describe('BaseChat', () => {
 
     const bundle = await createCommunicationSubBundle(medplum);
     act(() => {
-      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+      (_subscriptionController as EventTarget<SubscriptionControllerEvents>).dispatchEvent({
         type: 'subscription',
         criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
         bundle,
@@ -217,7 +217,7 @@ describe('BaseChat', () => {
 
     const bundle = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
     act(() => {
-      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+      (_subscriptionController as EventTarget<SubscriptionControllerEvents>).dispatchEvent({
         type: 'subscription',
         criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
         bundle,
@@ -244,7 +244,7 @@ describe('BaseChat', () => {
 
     const bundle = await createCommunicationSubBundle(defaultMedplum, outgoingMessage);
     act(() => {
-      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
+      (_subscriptionController as EventTarget<SubscriptionControllerEvents>).dispatchEvent({
         type: 'subscription',
         criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
         bundle,
