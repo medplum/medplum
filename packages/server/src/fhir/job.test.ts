@@ -1,9 +1,10 @@
+import { AsyncJob } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { Repository } from './repo';
 
@@ -46,16 +47,24 @@ describe('Job status', () => {
 
   test('completed', () =>
     withTestContext(async () => {
-      await asyncJobManager.init('http://example.com');
+      const job = await asyncJobManager.init('http://example.com');
       const callback = jest.fn();
 
-      await asyncJobManager.start(async () => {
+      await asyncJobManager.run(async () => {
         callback();
       });
 
       expect(callback).toHaveBeenCalled();
 
-      await waitForAsyncJob(asyncJobManager.getContentLocation('http://example.com/'), app, accessToken);
+      const resCompleted = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(resCompleted.status).toBe(200);
+      expect(resCompleted.body).toMatchObject<Partial<AsyncJob>>({
+        resourceType: 'AsyncJob',
+        status: 'completed',
+      });
     }));
 
   test('cancel', () =>

@@ -41,6 +41,10 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
+  function rebuildCompartments(formData: Record<string, string>): void {
+    startAsyncJob(medplum, 'Rebuilding Compartments', 'admin/super/compartments', formData);
+  }
+
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
@@ -117,6 +121,20 @@ export function SuperAdminPage(): JSX.Element {
             <TextInput name="resourceType" placeholder="Reindex Resource Type" />
           </FormSection>
           <Button type="submit">Reindex</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Rebuild Compartments</Title>
+      <p>
+        When Medplum changes how resource compartments are derived, the system may require a rebuild for old resources
+        to take effect.
+      </p>
+      <Form onSubmit={rebuildCompartments}>
+        <Stack>
+          <FormSection title="Resource Type">
+            <TextInput name="resourceType" placeholder="Compartments Resource Type" />
+          </FormSection>
+          <Button type="submit">Rebuild Compartments</Button>
         </Stack>
       </Form>
       <Divider my="lg" />
