@@ -1,4 +1,4 @@
-import { incrementCounter, recordHistogramValue } from '../otel/otel';
+import { incrementCounter, recordHistogramValue, setGauge } from '../otel/otel';
 
 describe('OpenTelemetry', () => {
   const OLD_ENV = process.env;
@@ -29,5 +29,14 @@ describe('OpenTelemetry', () => {
   test('Record histogram value, enabled', async () => {
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
     expect(recordHistogramValue('test', 1, {})).toBe(true);
+  });
+
+  test('Set gauge, disabled', async () => {
+    expect(setGauge('test', 1)).toBe(false);
+  });
+
+  test('Set gauge, enabled', async () => {
+    process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
+    expect(setGauge('test', 1)).toBe(true);
   });
 });
