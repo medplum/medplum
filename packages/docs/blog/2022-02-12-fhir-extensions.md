@@ -16,7 +16,7 @@ When working with customers to set up their apps and workflow we commonly get th
 
 FHIR Extensions are a relatively simple way to track extra fields associated with a FHIR objects, and Medplum supports versioning and API access for the extensions, just like we do for all FHIR objects.
 
-Here is the [FHIR Extentions official guide](https://www.hl7.org/fhir/extensibility.html).
+Here is the [FHIR Extensions official guide](https://www.hl7.org/fhir/extensibility.html).
 
 ## Design your Extension
 

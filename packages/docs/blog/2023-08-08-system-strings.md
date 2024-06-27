@@ -182,7 +182,7 @@ For `Identifiers`, the strategy is simple: **each system string should correspon
 
 ### CodeableConcepts
 
-When it comes to `CodeableConcepts`, it gets a bit more complex. **Whenever possible, you should use standardized code systems** to avoid reinventing the wheel and promote good data hygeine. The FHIR community has defined standard `system` strings for these code systems.
+When it comes to `CodeableConcepts`, it gets a bit more complex. **Whenever possible, you should use standardized code systems** to avoid reinventing the wheel and promote good data hygiene. The FHIR community has defined standard `system` strings for these code systems.
 
 Some commonly used code systems:
 

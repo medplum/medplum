@@ -37,7 +37,7 @@ The Patient Chart has 3 distinct panels
       - CarePlan
 
 3. SOAP Note
-  The right most panel documents an enounter with the patient through a questionnaire. Filling out and submitting the questionnaire automatically creates a task, with the response as the focus to be reviewed.
+  The right most panel documents an encounter with the patient through a questionnaire. Filling out and submitting the questionnaire automatically creates a task, with the response as the focus to be reviewed.
 
 ### Getting Started
 

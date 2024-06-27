@@ -33,7 +33,7 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
   globalLogger.info('Sending email', { to: options.to, subject: options.subject });
 
   if (config.smtp) {
-    await sendEmailViaSmpt(config.smtp, options);
+    await sendEmailViaSmtp(config.smtp, options);
   } else if (config.emailProvider === 'awsses') {
     await sendEmailViaSes(options);
   }
@@ -87,7 +87,7 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
  * @param smtpConfig - The SMTP configuration.
  * @param options - The nodemailer options.
  */
-async function sendEmailViaSmpt(smtpConfig: MedplumSmtpConfig, options: Mail.Options): Promise<void> {
+async function sendEmailViaSmtp(smtpConfig: MedplumSmtpConfig, options: Mail.Options): Promise<void> {
   const transport = createTransport({
     host: smtpConfig.host,
     port: smtpConfig.port,
