@@ -6,20 +6,20 @@ import { setGauge } from './otel/otel';
 import { getRedis } from './redis';
 
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
-  const instanceId = getInstanceId();
+  const hostname = getInstanceId();
 
-  setGauge('medplum.db.idleConnections', getDatabasePool().idleCount, { instanceId });
-  setGauge('medplum.db.queriesAwaitingClient', getDatabasePool().waitingCount, { instanceId });
+  setGauge('medplum.db.idleConnections', getDatabasePool().idleCount, { hostname });
+  setGauge('medplum.db.queriesAwaitingClient', getDatabasePool().waitingCount, { hostname });
 
   let startTime = Date.now();
   const postgresOk = await testPostgres();
   const dbRoundtripMs = Date.now() - startTime;
-  setGauge('medplum.db.healthcheckRTT', dbRoundtripMs / 1000, { instanceId });
+  setGauge('medplum.db.healthcheckRTT', dbRoundtripMs / 1000, { hostname });
 
   startTime = Date.now();
   const redisOk = await testRedis();
   const redisRoundtripMs = Date.now() - startTime;
-  setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000, { instanceId });
+  setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000, { hostname });
 
   res.json({
     ok: true,
