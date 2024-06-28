@@ -1,12 +1,12 @@
-import { ContentType, allOk, badRequest, sleep } from '@medplum/core';
+import { ContentType, allOk, badRequest } from '@medplum/core';
 import { AsyncJob, Bot, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import request, { Response } from 'supertest';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
-import { initTestAuth, withTestContext } from '../../test.setup';
+import { initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getBinaryStorage } from '../storage';
 
 describe('Execute', () => {
@@ -442,27 +442,8 @@ exports.handler = async function (medplum, event) {
         .send('input');
       expect(res.status).toBe(202);
 
-      let res2: Response | undefined = undefined;
-
-      let shouldThrow = false;
-      const asyncJobTimeout = setTimeout(() => {
-        shouldThrow = true;
-      }, 5000);
-
-      while (!((res2?.body as AsyncJob)?.status === 'completed')) {
-        if (shouldThrow) {
-          throw new Error('Timed out while waiting for async job to complete');
-        }
-        await sleep(10);
-        res2 = await request(app)
-          .get(new URL(res.headers['content-location']).pathname)
-          .set('Authorization', 'Bearer ' + accessToken);
-      }
-      clearTimeout(asyncJobTimeout);
-
-      const responseBody = (res2 as Response).body as AsyncJob;
-
-      expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+      expect(job).toMatchObject<Partial<AsyncJob>>({
         resourceType: 'AsyncJob',
         status: 'completed',
         request: expect.stringContaining('$execute'),
@@ -487,27 +468,8 @@ exports.handler = async function (medplum, event) {
         .send({ hello: 'medplum' });
       expect(res.status).toBe(202);
 
-      let res2: Response | undefined = undefined;
-
-      let shouldThrow = false;
-      const asyncJobTimeout = setTimeout(() => {
-        shouldThrow = true;
-      }, 5000);
-
-      while (!((res2?.body as AsyncJob)?.status === 'completed')) {
-        if (shouldThrow) {
-          throw new Error('Timed out while waiting for async job to complete');
-        }
-        await sleep(10);
-        res2 = await request(app)
-          .get(new URL(res.headers['content-location']).pathname)
-          .set('Authorization', 'Bearer ' + accessToken);
-      }
-      clearTimeout(asyncJobTimeout);
-
-      const responseBody = (res2 as Response).body as AsyncJob;
-
-      expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+      expect(job).toMatchObject<Partial<AsyncJob>>({
         resourceType: 'AsyncJob',
         status: 'completed',
         request: expect.stringContaining('$execute'),
@@ -532,27 +494,8 @@ exports.handler = async function (medplum, event) {
         .send('input: true');
       expect(res.status).toBe(202);
 
-      let res2: Response | undefined = undefined;
-
-      let shouldThrow = false;
-      const asyncJobTimeout = setTimeout(() => {
-        shouldThrow = true;
-      }, 5000);
-
-      while (!((res2?.body as AsyncJob)?.status === 'completed')) {
-        if (shouldThrow) {
-          throw new Error('Timed out while waiting for async job to complete');
-        }
-        await sleep(10);
-        res2 = await request(app)
-          .get(new URL(res.headers['content-location']).pathname)
-          .set('Authorization', 'Bearer ' + accessToken);
-      }
-      clearTimeout(asyncJobTimeout);
-
-      const responseBody = (res2 as Response).body as AsyncJob;
-
-      expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+      expect(job).toMatchObject<Partial<AsyncJob>>({
         resourceType: 'AsyncJob',
         status: 'completed',
         request: expect.stringContaining('$execute'),
@@ -577,27 +520,8 @@ exports.handler = async function (medplum, event) {
         .send('input');
       expect(res.status).toBe(202);
 
-      let res2: Response | undefined = undefined;
-
-      let shouldThrow = false;
-      const asyncJobTimeout = setTimeout(() => {
-        shouldThrow = true;
-      }, 5000);
-
-      while (!((res2?.body as AsyncJob)?.status === 'error' || (res2?.body as AsyncJob)?.status === 'completed')) {
-        if (shouldThrow) {
-          throw new Error('Timed out while waiting for async job to complete');
-        }
-        await sleep(10);
-        res2 = await request(app)
-          .get(new URL(res.headers['content-location']).pathname)
-          .set('Authorization', 'Bearer ' + accessToken);
-      }
-      clearTimeout(asyncJobTimeout);
-
-      const responseBody = (res2 as Response).body as AsyncJob;
-
-      expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+      expect(job).toMatchObject<Partial<AsyncJob>>({
         resourceType: 'AsyncJob',
         status: 'error',
         request: expect.stringContaining('$execute'),

@@ -1,7 +1,7 @@
 import express from 'express';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config';
-import { withTestContext } from '../../../test.setup';
+import { initTestAuth, waitForAsyncJob, withTestContext } from '../../../test.setup';
 import { getSystemRepo } from '../../repo';
 import { AsyncJobExecutor } from './asyncjobexecutor';
 
@@ -9,9 +9,13 @@ describe('AsyncJobExecutor', () => {
   const app = express();
   const systemRepo = getSystemRepo();
 
+  let accessToken: string;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+
+    accessToken = await initTestAuth();
   });
 
   afterAll(async () => {
@@ -40,6 +44,8 @@ describe('AsyncJobExecutor', () => {
 
       expect(resource.status).toBe('accepted');
       expect(callback).toHaveBeenCalled();
+
+      await waitForAsyncJob(exec.getContentLocation('http://example.com/'), app, accessToken);
     }));
 
   test('start with error', () =>
@@ -49,7 +55,7 @@ describe('AsyncJobExecutor', () => {
       const callback = jest.fn();
 
       try {
-        await exec.start(async () => {
+        exec.start(async () => {
           callback();
         });
       } catch (err) {
