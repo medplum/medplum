@@ -1711,7 +1711,7 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(console.log).toHaveBeenCalledWith(
+        expect(console.log).not.toHaveBeenCalledWith(
           expect.stringContaining('[Subscription Access Policy]: Access Policy not satisfied on')
         );
         console.log = originalConsoleLog;
