@@ -1,7 +1,9 @@
 import { randomUUID } from 'crypto';
+import os from 'node:os';
 import { globalLogger } from '../../logger';
 
 let instanceId: string | undefined = undefined;
+const hostname = os.hostname();
 
 export async function fetchInstanceId(): Promise<string> {
   if (!instanceId) {
@@ -25,8 +27,5 @@ export async function fetchInstanceId(): Promise<string> {
 }
 
 export function getInstanceId(): string {
-  if (!instanceId) {
-    throw new Error('Tried to get instanceId before instanceId was fetched');
-  }
-  return instanceId;
+  return hostname;
 }
