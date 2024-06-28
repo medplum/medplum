@@ -25,7 +25,7 @@ export function useResource<T extends Resource>(
         setResource(r);
       }
     },
-    [resource, setResource]
+    [resource]
   );
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export function useResource<T extends Resource>(
     }
 
     return (() => (subscribed = false)) as () => void;
-  }, [medplum, resource, value, setResourceIfChanged, setOutcome]);
+  }, [medplum, value, setResourceIfChanged, setOutcome]);
 
   return resource;
 }
