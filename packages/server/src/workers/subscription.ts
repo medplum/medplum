@@ -158,7 +158,7 @@ async function satisfiesAccessPolicy(
     if (membership) {
       const accessPolicy = await buildAccessPolicy(membership);
       satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
-      if (!satisfied) {
+      if (!satisfied && subscription.channel.type !== 'websocket') {
         const resourceReference = getReferenceString(resource);
         const subReference = getReferenceString(subscription);
         const projectReference = getReferenceString(project);
