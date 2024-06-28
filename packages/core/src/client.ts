@@ -695,6 +695,7 @@ export type MedplumClientEventMap = {
   profileRefreshing: { type: 'profileRefreshing' };
   profileRefreshed: { type: 'profileRefreshed' };
   storageInitialized: { type: 'storageInitialized' };
+  storageInitFailed: { type: 'storageInitFailed'; payload: { error: Error } };
 };
 
 /**
@@ -844,7 +845,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           this.initComplete = true;
           this.dispatchEvent({ type: 'storageInitialized' });
         })
-        .catch(console.error);
+        .catch((err: Error) => {
+          console.error(err);
+          this.initComplete = true;
+          this.dispatchEvent({ type: 'storageInitFailed', payload: { error: err } });
+        });
     }
 
     this.setupStorageListener();
@@ -3651,21 +3656,21 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     event: EventName,
     context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
     versionId?: never
-  ): Promise<void>;
+  ): Promise<Record<string, any>>;
 
   async fhircastPublish<RequiredVersionEvent extends FhircastEventVersionRequired>(
     topic: string,
     event: RequiredVersionEvent,
     context: FhircastEventContext<RequiredVersionEvent> | FhircastEventContext<RequiredVersionEvent>[],
     versionId: string
-  ): Promise<void>;
+  ): Promise<Record<string, any>>;
 
   async fhircastPublish<EventName extends FhircastEventVersionRequired | FhircastEventVersionOptional>(
     topic: string,
     event: EventName,
     context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
     versionId?: string | undefined
-  ): Promise<void> {
+  ): Promise<Record<string, any>> {
     if (isContextVersionRequired(event)) {
       return this.post(
         `/fhircast/STU3/${topic}`,

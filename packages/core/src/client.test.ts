@@ -17,6 +17,7 @@ import {
   FetchLike,
   InviteRequest,
   MedplumClient,
+  MedplumClientEventMap,
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
@@ -3025,7 +3026,39 @@ describe('Passed in async-backed `ClientStorage`', () => {
   test('MedplumClient should resolve initialized when sync storage used', async () => {
     const fetch = mockFetch(200, { success: true });
     const medplum = new MedplumClient({ fetch });
-    await expect(medplum.getInitPromise()).resolves;
+    await expect(medplum.getInitPromise()).resolves.toBeUndefined();
+  });
+
+  test('MedplumClient emits `storageInitFailed` when storage.getInitPromise throws', async () => {
+    const fetch = mockFetch(200, { success: true });
+    class TestStorage extends MockAsyncClientStorage {
+      reject!: (err: Error) => void;
+      promise: Promise<void>;
+      constructor() {
+        super();
+        this.promise = new Promise((_resolve, reject) => {
+          this.reject = reject;
+        });
+      }
+      getInitPromise(): Promise<void> {
+        return this.promise;
+      }
+      rejectInitPromise(): void {
+        this.reject(new Error('Storage init failed!'));
+      }
+    }
+
+    const storage = new TestStorage();
+    const medplum = new MedplumClient({ fetch, storage });
+    const dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+
+    storage.rejectInitPromise();
+
+    await expect(medplum.getInitPromise()).rejects.toThrow('Storage init failed!');
+    expect(dispatchEventSpy).toHaveBeenCalledWith<[MedplumClientEventMap['storageInitFailed']]>({
+      type: 'storageInitFailed',
+      payload: { error: new Error('Storage init failed!') },
+    });
   });
 });
 
