@@ -85,7 +85,8 @@ import {
 } from './mocks/workflow';
 import { MockSubscriptionManager } from './subscription-manager';
 
-export interface MockClientOptions extends MedplumClientOptions {
+export interface MockClientOptions
+  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
@@ -147,6 +148,7 @@ export class MockClient extends MedplumClient {
       baseUrl,
       clientId: clientOptions?.clientId,
       storage: clientOptions?.storage,
+      cacheTime: clientOptions?.cacheTime,
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
