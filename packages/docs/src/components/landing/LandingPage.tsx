@@ -42,7 +42,7 @@ export function LandingPage(): JSX.Element {
             <CardContainer>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedCircle value={150} suffix="k" />
+                  <AnimatedCircle value={200} suffix="k" />
                 </div>
                 <h3>Dev hours saved annually</h3>
                 <p>
@@ -62,7 +62,7 @@ export function LandingPage(): JSX.Element {
               </Card>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedCircle value={78} />
+                  <AnimatedCircle value={90} />
                 </div>
                 <h3>Elite healthcare dev contributors</h3>
                 <p>
