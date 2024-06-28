@@ -40,7 +40,7 @@ export async function main(argv: string[]): Promise<void> {
         'jwt-assertion',
       ])
     )
-    .on('verbose', () => {
+    .on('option:verbose', () => {
       process.env.VERBOSE = '1';
     });
 
@@ -100,18 +100,22 @@ export function handleError(err: Error | CommanderError): void {
     exitCode = err.exitCode;
   }
   if (exitCode !== 0) {
-    writeErrorToStderr(err);
+    writeErrorToStderr(err, !!process.env.VERBOSE);
     const cause = err.cause;
     if (process.env.VERBOSE && Array.isArray(cause)) {
       for (const err of cause as Error[]) {
-        writeErrorToStderr(err);
+        writeErrorToStderr(err, true);
       }
     }
   }
   process.exit(exitCode);
 }
 
-function writeErrorToStderr(err: unknown): void {
+function writeErrorToStderr(err: unknown, verbose = false): void {
+  if (verbose) {
+    console.error(err);
+    return;
+  }
   if (err instanceof CommanderError) {
     process.stderr.write(`${normalizeErrorString(err)}\n`);
   } else {
