@@ -2,6 +2,7 @@ import { parseLogLevel } from '@medplum/core';
 import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
+import { fetchInstanceId } from './cloud/aws/metadata';
 import { loadConfig } from './config';
 import { globalLogger } from './logger';
 
@@ -24,6 +25,8 @@ export async function main(configName: string): Promise<void> {
   });
 
   globalLogger.info('Starting Medplum Server...', { configName });
+
+  await fetchInstanceId();
 
   const config = await loadConfig(configName);
   if (config.logLevel) {
