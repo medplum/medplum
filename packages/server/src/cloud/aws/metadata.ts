@@ -8,16 +8,17 @@ export async function fetchInstanceId(): Promise<string> {
     const metadataEndpoint = process.env.ECS_CONTAINER_METADATA_URI_V4;
     if (!metadataEndpoint) {
       globalLogger.warn('ECS_CONTAINER_METADATA_URI_V4 env var not defined. Using random UUID for instance ID...');
-      return randomUUID();
+      instanceId = randomUUID();
+    } else {
+      let response: Response;
+      try {
+        response = await fetch(metadataEndpoint);
+      } catch (err) {
+        throw new Error('Failed to fetch instance ID from metadata service', { cause: err });
+      }
+      const metadata = (await response.json()) as { DockerId: string };
+      instanceId = metadata.DockerId;
     }
-    let response: Response;
-    try {
-      response = await fetch(metadataEndpoint);
-    } catch (err) {
-      throw new Error('Failed to fetch instance ID from metadata service', { cause: err });
-    }
-    const metadata = (await response.json()) as { DockerId: string };
-    instanceId = metadata.DockerId;
   }
 
   return instanceId;
