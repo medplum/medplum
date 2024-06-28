@@ -46,6 +46,7 @@ import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 
 let server: http.Server | undefined = undefined;
+let instanceId: string;
 
 /**
  * Sets standard headers for all requests.
