@@ -695,6 +695,7 @@ export type MedplumClientEventMap = {
   profileRefreshing: { type: 'profileRefreshing' };
   profileRefreshed: { type: 'profileRefreshed' };
   storageInitialized: { type: 'storageInitialized' };
+  storageInitFailed: { type: 'storageInitFailed'; payload: { error: Error } };
 };
 
 /**
@@ -844,7 +845,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           this.initComplete = true;
           this.dispatchEvent({ type: 'storageInitialized' });
         })
-        .catch(console.error);
+        .catch((err: Error) => {
+          console.error(err);
+          this.initComplete = true;
+          this.dispatchEvent({ type: 'storageInitFailed', payload: { error: err } });
+        });
     }
 
     this.setupStorageListener();
