@@ -872,7 +872,7 @@ describe('MockAsyncClientStorage', () => {
     expect(clientStorage.isInitialized).toEqual(false);
     const initPromise = clientStorage.getInitPromise();
     clientStorage.setInitialized();
-    await expect(initPromise).resolves;
+    await expect(initPromise).resolves.toBeUndefined();
     expect(clientStorage.isInitialized).toEqual(true);
   });
 
