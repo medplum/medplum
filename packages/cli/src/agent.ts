@@ -1,7 +1,8 @@
-import { ContentType, MedplumClient, isUUID } from '@medplum/core';
+import { ContentType, IssueSeverity, MedplumClient, isUUID } from '@medplum/core';
 import { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
+import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
-import { MedplumCommand, addSubcommand, withMergedOptions } from './utils';
+import { MedplumCommand, addSubcommand } from './utils';
 
 type ValidIdsOrCriteria = { type: 'ids'; ids: string[] } | { type: 'criteria'; criteria: string };
 
@@ -25,6 +26,12 @@ agentStatusCommand
     '--criteria <criteria>',
     'An optional FHIR search criteria to resolve the agent to get the status of. Mutually exclusive with [agentIds...] arg'
   )
+  .addOption(
+    new Option('--output <format>', 'An optional output format, defaults to table')
+      .choices(['table', 'json'])
+      .default('table')
+  )
+  .option('--output <format>', 'An optional output format, defaults to table')
   .action(async (agentIds, options) => {
     const normalized = parseEitherIdsOrCriteria(agentIds, options);
     const medplum = await createMedplumClient(options);
@@ -38,8 +45,12 @@ agentStatusCommand
       result = await medplum.get(url, {
         cache: 'reload',
       });
-    } catch (_err) {
-      throw new Error('Failed to get status from agent');
+    } catch (err) {
+      throw new Error('Failed to get status from agent', { cause: err });
+    }
+
+    if (options.output === 'json') {
+      console.log(result);
     }
 
     const successfulResponses = [] as AgentBulkOpResponse<Parameters>[];
@@ -74,7 +85,7 @@ agentStatusCommand
         throw new Error(`Invalid result received for '$bulk-status' operation: ${JSON.stringify(result)}`);
     }
 
-    const rows = [] as StatusRow[];
+    const statusRows = [] as StatusRow[];
     for (const response of successfulResponses) {
       const statusEntry = parseParameterValues(response.result, {
         required: ['status', 'version'],
@@ -88,54 +99,73 @@ agentStatusCommand
         connectionStatus: statusEntry.status,
         statusLastUpdated: statusEntry.lastUpdated ?? 'N/A',
       } satisfies StatusRow;
-      rows.push(row);
+      statusRows.push(row);
     }
 
-    console.table(rows);
+    const failedRows = [] as FailedRow[];
+    for (const response of failedResponses) {
+      const outcome = response.result;
+      const issue = outcome.issue?.[0];
+      const row = {
+        id: response.agent.id as string,
+        name: response.agent.name,
+        severity: issue.severity,
+        code: issue.code,
+        details: issue.details?.text ?? 'No details to show',
+      } satisfies FailedRow;
+      failedRows.push(row);
+    }
+
+    console.log(`${statusRows.length} successful responses`);
+    console.table(statusRows);
+    console.log();
+
+    console.log(`${failedRows.length} failed responses`);
+    console.table(failedRows);
   });
 
 agentPingCommand
   .description('Ping a host from a specified agent')
   .argument('<ipOrDomain>', 'The IPv4 address or domain name to ping')
-  .argument('[agentId]', 'The ID of the agent to ping from')
+  .argument(
+    '[agentId]',
+    'Conditionally optional ID of the agent to ping from. Mutually exclusive with --criteria <criteria> option'
+  )
   .option('--count <count>', 'An optional amount of pings to issue before returning results', '1')
   .option(
     '--criteria <criteria>',
     'An optional FHIR search criteria to resolve the agent to ping from. Mutually exclusive with [agentId] arg'
   )
-  .action(
-    withMergedOptions(agentPingCommand, async (ipOrDomain, agentId, options) => {
-      const medplum = await createMedplumClient(options);
-      const agentRef = await resolveAgentReference(medplum, agentId, options);
+  .action(async (ipOrDomain, agentId, options) => {
+    const medplum = await createMedplumClient(options);
+    const agentRef = await resolveAgentReference(medplum, agentId, options);
 
-      const count = Number.parseInt(options.count, 10);
-      if (Number.isNaN(count)) {
-        throw new Error('--count <count> must be an integer if specified');
-      }
+    const count = Number.parseInt(options.count, 10);
+    if (Number.isNaN(count)) {
+      throw new Error('--count <count> must be an integer if specified');
+    }
 
-      let pingResult: string;
-      try {
-        pingResult = (await medplum.pushToAgent(
-          agentRef,
-          ipOrDomain,
-          `PING ${count}`,
-          ContentType.PING,
-          true
-        )) as string;
-      } catch (err) {
-        throw new Error('Unexpected response from agent while pinging', { cause: err });
-      }
+    let pingResult: string;
+    try {
+      pingResult = (await medplum.pushToAgent(agentRef, ipOrDomain, `PING ${count}`, ContentType.PING, true, {
+        maxRetries: 0,
+      })) as string;
+    } catch (err) {
+      throw new Error('Unexpected response from agent while pinging', { cause: err });
+    }
 
-      console.log(pingResult);
-    })
-  );
+    console.info(pingResult);
+  });
 
 agentPushCommand
   .description('Push a message to a target device via a specified agent')
   .argument('<deviceId>', 'The ID of the device to push the message to')
   .argument('<message>', 'The message to send to the destination device')
-  .argument('[agentId]', 'The ID of the agent to tell to send the message to the device')
-  .option('--content-type <contentType>', 'Tells the server what the content type of message is', ContentType.HL7_V2)
+  .argument(
+    '[agentId]',
+    'Conditionally optional ID of the agent to send the message from. Mutually exclusive with --criteria <criteria> option'
+  )
+  .option('--content-type <contentType>', 'The content type of the message', ContentType.HL7_V2)
   .option('--no-wait', 'Tells the server not to wait for a response from the destination device')
   .option(
     '--criteria <criteria>',
@@ -152,13 +182,14 @@ agentPushCommand
         { reference: `Device/${deviceId}` },
         message,
         options.contentType,
-        !options.noWait
+        !options.noWait,
+        { maxRetries: 0 }
       )) as string;
     } catch (err) {
       throw new Error('Unexpected response from agent while pushing message to agent', { cause: err });
     }
 
-    console.log(pushResult);
+    console.info(pushResult);
   });
 
 export type StatusRow = {
@@ -168,6 +199,14 @@ export type StatusRow = {
   connectionStatus: string;
   version: string;
   statusLastUpdated: string;
+};
+
+export type FailedRow = {
+  id: string;
+  name: string;
+  severity: IssueSeverity;
+  code: string;
+  details: string;
 };
 
 export async function resolveAgentReference(
@@ -190,10 +229,15 @@ export async function resolveAgentReference(
   } else {
     assertValidAgentCriteria(options.criteria);
     const result = await medplum.search('Agent', `${options.criteria.split('?')[1]}&_count=2`);
-    if (!result) {
+    if (!result?.entry?.length) {
       throw new Error('Could not find an agent matching the provided criteria');
     }
-    usedId = result.id as string;
+    if (result.entry.length !== 1) {
+      throw new Error(
+        'Found more than one agent matching this criteria. This operation requires the criteria to resolve to exactly one agent'
+      );
+    }
+    usedId = result.entry[0].resource?.id as string;
   }
 
   return { reference: `Agent/${usedId}` };
@@ -341,13 +385,10 @@ function assertValidAgentCriteria(criteria: string): void {
   if (resourceType !== 'Agent') {
     throw new Error(invalidCriteriaMsg);
   }
-  if (!queryStr) {
-    throw new Error(invalidCriteriaMsg);
-  }
   try {
     // eslint-disable-next-line no-new
     new URLSearchParams(queryStr);
-  } catch (_err) {
-    throw new Error(invalidCriteriaMsg);
+  } catch (err) {
+    throw new Error(invalidCriteriaMsg, { cause: err });
   }
 }

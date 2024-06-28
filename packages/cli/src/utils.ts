@@ -328,7 +328,6 @@ export function withMergedOptions(
 ): (args: any[]) => Promise<void> {
   // The .action callback takes an extra parameter which is the command or options.
   return async (args: any[]): Promise<void> => {
-    console.log(args.length);
     const expectedArgsCount = command.registeredArguments.length;
     const actionArgs = args.slice(0, expectedArgsCount);
     actionArgs[expectedArgsCount] = command.optsWithGlobals();
