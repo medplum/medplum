@@ -119,7 +119,7 @@ function matchesStringFilter(
   asToken?: boolean
 ): boolean {
   const details = getSearchParameterDetails(resource.resourceType, searchParam);
-  const searchParamElementType = details.elementDefinitions?.[0].type?.[0].code;
+  const searchParamElementType = details.elementDefinitions?.[0]?.type?.[0]?.code;
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
   const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);

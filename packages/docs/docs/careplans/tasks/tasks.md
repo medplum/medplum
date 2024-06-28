@@ -214,5 +214,6 @@ While task hierarchy functionality is powerful, it can be complex to maintain an
 
 - The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
 - [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
+- [Medplum Task Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube
 - [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
 - [Charting Data Model](/docs/charting#encounter-charting)

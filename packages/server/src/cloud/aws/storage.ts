@@ -12,7 +12,7 @@ import { BinarySource, BinaryStorage, checkFileMetadata } from '../../fhir/stora
  */
 export class S3Storage implements BinaryStorage {
   private readonly client: S3Client;
-  private readonly bucket: string;
+  readonly bucket: string;
 
   constructor(bucket: string) {
     this.client = new S3Client({ region: getConfig().awsRegion });
@@ -127,7 +127,7 @@ export class S3Storage implements BinaryStorage {
     });
   }
 
-  private getKey(binary: Binary): string {
+  getKey(binary: Binary): string {
     return 'binary/' + binary.id + '/' + binary.meta?.versionId;
   }
 }

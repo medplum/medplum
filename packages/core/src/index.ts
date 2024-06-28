@@ -35,6 +35,7 @@ export * from './search/details';
 export * from './search/match';
 export * from './search/search';
 export * from './sftp';
+export * from './sql-on-fhir/eval';
 export * from './storage';
 export * from './subscriptions';
 export * from './types';

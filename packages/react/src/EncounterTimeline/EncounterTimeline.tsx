@@ -1,15 +1,17 @@
 import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Encounter, Reference, ResourceType } from '@medplum/fhirtypes';
-import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
+import { ResourceTimeline, ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
 
-export interface EncounterTimelineProps {
+export interface EncounterTimelineProps extends Pick<ResourceTimelineProps<Encounter>, 'getMenu'> {
   readonly encounter: Encounter | Reference<Encounter>;
 }
 
 export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
+  const { encounter, ...rest } = props;
+
   return (
     <ResourceTimeline
-      value={props.encounter}
+      value={encounter}
       loadTimelineResources={async (medplum: MedplumClient, _resourceType: ResourceType, id: string) => {
         return Promise.allSettled([
           medplum.readHistory('Encounter', id),
@@ -35,6 +37,7 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
         issued: new Date().toISOString(),
         content,
       })}
+      {...rest}
     />
   );
 }

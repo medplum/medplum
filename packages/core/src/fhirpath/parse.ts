@@ -260,11 +260,10 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
 export function evalFhirPathTyped(
   expression: string,
   input: TypedValue[],
-  variables?: Record<string, TypedValue>
+  variables: Record<string, TypedValue> = {}
 ): TypedValue[] {
-  const variableInput = variables ?? {};
   const ast = parseFhirPath(expression);
-  return ast.eval({ variables: variableInput }, input).map((v) => ({
+  return ast.eval({ variables }, input).map((v) => ({
     type: v.type,
     value: v.value?.valueOf(),
   }));

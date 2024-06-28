@@ -40,7 +40,7 @@ export function PlanDefinitionApplyForm(props: PlanDefinitionApplyFormProps): JS
             parameter: [
               {
                 name: 'subject',
-                valueReference: subject,
+                valueString: subject?.reference,
               },
             ],
           })

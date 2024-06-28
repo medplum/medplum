@@ -596,8 +596,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     await this.handleBinaryUpdate(existing, result);
-    await this.handleMaybeCacheOnly(result, create);
-    await setCacheEntry(result);
+    await this.handleStorage(result, create);
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
@@ -646,7 +645,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resource.data = undefined;
   }
 
-  private async handleMaybeCacheOnly(result: Resource, create: boolean): Promise<void> {
+  private async handleStorage(result: Resource, create: boolean): Promise<void> {
     if (!this.isCacheOnly(result)) {
       await this.writeToDatabase(result, create);
     } else if (result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
@@ -658,6 +657,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
       await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${result.id}`);
     }
+    // Add this resource to cache
+    await setCacheEntry(result);
   }
 
   /**

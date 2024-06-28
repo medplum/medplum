@@ -63,5 +63,6 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
           MEDPLUM_INTROSPECTION_URL: ${{ secrets.MEDPLUM_INTROSPECTION_URL }}
+          MEDPLUM_AWS_TEXTRACT_ENABLED: 'true'
           RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -6,10 +6,10 @@ Most users will want the full Medplum React Component Library, `@medplum/react`.
 
 ## Key Features
 
-- `useMedplum` - handles shared global instance of `MedplumClient`
+- [`useMedplum`](#usemedplum) - handles shared global instance of `MedplumClient`
 - `useResource` - reads a resource by ID or reference with intelligent caching
 - `useSearch` - performs a FHIR search with intelligent state management
-- `useSubscription` - subscribes to a FHIR search criteria and calls a given callback upon receiving a relevant notification
+- [`useSubscription`](#usesubscription) - subscribes to a FHIR search criteria and calls a given callback upon receiving a relevant notification
 
 ## Installation
 
@@ -86,9 +86,9 @@ function MyComponent(): JSX.Element {
 
 ## `useSubscription`
 
-`useSubscription` creates an in-memory `Subscription` resource with the given criteria on the Medplum server and calls the given callback when an event notification is triggered by a resource interaction.
+`useSubscription` creates an in-memory `Subscription` resource with the given criteria on the Medplum server and calls the given callback when an event notification is triggered by a resource interaction over a WebSocket connection.
 
-Subscriptions created with this hook are lightweight and are automatically untracked and cleaned up when the containing component is no longer mounted.
+Subscriptions created with this hook are lightweight, share a single WebSocket connection, and are automatically untracked and cleaned up when the containing component is no longer mounted.
 
 ```tsx
 function MyComponent(): JSX.Element {
@@ -120,6 +120,17 @@ type UseSubscriptionOptions = {
 Here's how you would subscribe to only `create` interactions for a criteria:
 
 ```tsx
+const createOnlyOptions = {
+  subscriptionProps: {
+    extension: [
+      {
+        url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+        valueCode: 'create',
+      },
+    ],
+  }
+};
+
 function MyComponent(): JSX.Element {
   const [createCount, setCreateCount] = useState(0);
 
@@ -129,29 +140,38 @@ function MyComponent(): JSX.Element {
       console.log('Received a new message from Practitioner/abc-123!');
       setCreateCount(s => s + 1);
     },
-    { 
-      subscriptionProps: {
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
-            valueCode: 'create',
-          },
-        ],
-      }
-    }
+    createOnlyOptions,
   );
 
-  return (
-    <>
-      <div>Create notifications received: {createCount}</div>
-    </>
-  );
+  return <div>Create notifications received: {createCount}</div>;
 }
 ```
 
 Subscriptions with the same criteria are tracked separately if they have differing `subscriptionProps`. This means you can create one `Subscription` to listen for `create` interactions and another for `update` interactions and they will not interfere with each other.
 
 ```tsx
+const createOnlyOptions = {
+  subscriptionProps: {
+    extension: [
+      {
+        url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+        valueCode: 'create',
+      },
+    ],
+  }
+};
+
+const updateOnlyOptions = {
+  subscriptionProps: {
+    extension: [
+      {
+        url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+        valueCode: 'update',
+      },
+    ],
+  }
+};
+
 function MyComponent(): JSX.Element {
   const [createCount, setCreateCount] = useState(0);
   const [updateCount, setUpdateCount] = useState(0);
@@ -162,16 +182,7 @@ function MyComponent(): JSX.Element {
       console.log('Received a new message from Practitioner/abc-123!');
       setCreateCount(s => s + 1);
     },
-    { 
-      subscriptionProps: {
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
-            valueCode: 'create',
-          },
-        ],
-      }
-    }
+    createOnlyOptions,
   );
 
   useSubscription(
@@ -180,16 +191,7 @@ function MyComponent(): JSX.Element {
       console.log('Received an update to message from Practitioner/abc-123!');
       setUpdateCount(s => s + 1);
     },
-    { 
-      subscriptionProps: {
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
-            valueCode: 'update',
-          },
-        ],
-      }
-    }
+    updateOnlyOptions,
   );
 
   return (

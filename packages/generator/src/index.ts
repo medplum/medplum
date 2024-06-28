@@ -326,6 +326,7 @@ function getTypeScriptTypeForProperty(
     case 'dateTime':
     case 'instant':
     case 'time':
+    case 'integer64':
       baseType = 'string';
       break;
 

@@ -66,11 +66,12 @@ export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
 # Move into packages/agent
 pushd packages/agent
 
-# Build the agent
-npm run build
+pushd ../..
 
 # Build the executable
-npx pkg ./dist/cjs/index.cjs --targets node18-win-x64 --output "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe" --options no-warnings
+./scripts/build-agent-sea-win64.sh
+
+popd
 
 if [ ! SKIP_SIGNING ]; then
   # Download JSign

@@ -163,5 +163,7 @@ The `item` field is also an array on the `insurance` element of a [`CoverageElig
 
 ## See Also
 
+- [Eligibility Check Sample](https://github.com/medplum/medplum/tree/main/examples/medplum-eligibility-demo) code from Medplum
+- [Eligibility/Benefits Check](https://youtu.be/K3q8DkdWs6I) explainer video on Youtube
 - [Candid Health Eligibility Check Guide](https://docs.joincandidhealth.com/api-reference/eligibility)
 - [Change Healthcare Bare Minimum Check](https://developers.changehealthcare.com/eligibilityandclaims/docs/use-bare-minimum-eligibility-requests)

@@ -22,9 +22,8 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
-  const query = req.query as Record<string, string | undefined>;
-  const since = query._since;
-  const types = query._type?.split(',');
+  const since = req.query._since;
+  const types = req.query._type?.split(',');
 
   // First read the group as the user to verify access
   const group = await ctx.repo.readResource<Group>('Group', id);

@@ -39,9 +39,8 @@ export async function patientExportHandler(req: FhirRequest): Promise<FhirRespon
 async function startExport(req: FhirRequest, exportType: string): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const query = req.query as Record<string, string | undefined>;
-  const since = query._since;
-  const types = query._type?.split(',');
+  const since = req.query._since;
+  const types = req.query._type?.split(',');
 
   const exporter = new BulkExporter(ctx.repo, since);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));

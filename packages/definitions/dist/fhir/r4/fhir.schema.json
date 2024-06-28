@@ -59325,7 +59325,7 @@
           "$ref": "#/definitions/boolean"
         },
         "strictMode": {
-          "description": "Whether this project uses strict FHIR validation.",
+          "description": "Whether this project uses strict FHIR validation.  This setting has been deprecated, and can only be set by a super admin.",
           "$ref": "#/definitions/boolean"
         },
         "checkReferencesOnWrite": {
@@ -59340,6 +59340,8 @@
           "description": "A list of optional features that are enabled for the project.",
           "items": {
             "enum": [
+              "aws-comprehend",
+              "aws-textract",
               "bots",
               "cron",
               "email",

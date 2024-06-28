@@ -116,7 +116,8 @@ export interface Project {
   superAdmin?: boolean;
 
   /**
-   * Whether this project uses strict FHIR validation.
+   * Whether this project uses strict FHIR validation.  This setting has
+   * been deprecated, and can only be set by a super admin.
    */
   strictMode?: boolean;
 
@@ -134,7 +135,8 @@ export interface Project {
   /**
    * A list of optional features that are enabled for the project.
    */
-  features?: ('bots' | 'cron' | 'email' | 'google-auth-required' | 'graphql-introspection' | 'terminology' | 'websocket-subscriptions')[];
+  features?: ('aws-comprehend' | 'aws-textract' | 'bots' | 'cron' | 'email' | 'google-auth-required' |
+      'graphql-introspection' | 'terminology' | 'websocket-subscriptions')[];
 
   /**
    * The default access policy for patients using open registration.

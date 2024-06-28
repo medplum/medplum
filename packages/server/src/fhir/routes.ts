@@ -3,6 +3,7 @@ import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
+import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
@@ -14,6 +15,7 @@ import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
+import { agentUpgradeHandler } from './operations/agentupgrade';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -196,6 +198,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/$reload-config', agentReloadConfigHandler);
   router.add('GET', '/Agent/:id/$reload-config', agentReloadConfigHandler);
 
+  // Agent $upgrade operation
+  router.add('GET', '/Agent/$upgrade', agentUpgradeHandler);
+  router.add('GET', '/Agent/:id/$upgrade', agentUpgradeHandler);
+
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
@@ -225,6 +231,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // StructureDefinition $expand-profile operation
   router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
+
+  // AWS operations
+  router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {

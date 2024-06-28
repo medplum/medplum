@@ -14,8 +14,12 @@ pushd packages/agent
 # Build the agent
 npm run build
 
+pushd ../..
+
 # Build the executable
-npx pkg ./dist/cjs/index.cjs --targets node18-linux --output "medplum-agent-$MEDPLUM_VERSION-linux" --options no-warnings
+./scripts/build-agent-sea-linux.sh
+
+popd
 
 # Generate the installer checksum
 sha256sum "medplum-agent-$MEDPLUM_VERSION-linux" > "medplum-agent-$MEDPLUM_VERSION-linux.sha256"

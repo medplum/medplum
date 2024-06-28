@@ -17,7 +17,7 @@
       "request": { "method": "PUT", "url": "Patient?name=bart" },
       "resource": {
         "resourceType": "Patient",
-        "identifer": [
+        "identifier": [
           {
             "system": "http://example.com/mrn",
             "value": "22222"
@@ -44,7 +44,7 @@
       "resource": {
         "resourceType": "Organization",
         "active": true,
-        "identifer": [
+        "identifier": [
           {
             "system": "http://example.com/insurance-orgs",
             "value": "blue-cross"
@@ -69,7 +69,7 @@
       "request": { "method": "PUT", "url": "Coverage?identifier=homer-simpson" },
       "resource": {
         "resourceType": "Coverage",
-        "identifer": [
+        "identifier": [
           {
             "system": "http://example.com/coverages",
             "value": "homer-simpson"
@@ -100,7 +100,7 @@
       "request": { "method": "PUT", "url": "Coverage?identifier=bart-simpson" },
       "resource": {
         "resourceType": "Coverage",
-        "identifer": [
+        "identifier": [
           {
             "system": "http://example.com/coverages",
             "value": "bart-simpson"
@@ -131,7 +131,7 @@
       "request": { "method": "PUT", "url": "Coverage?identifier=marge-simpson" },
       "resource": {
         "resourceType": "Coverage",
-        "identifer": [
+        "identifier": [
           {
             "system": "http://example.com/coverages",
             "value": "marge-simpson"
@@ -174,7 +174,7 @@
       "request": { "method": "PUT", "url": "Coverage?identifier=john-smith" },
       "resource": {
         "resourceType": "Coverage",
-        "identifer": [
+        "identifier": [
           {
             "system": "http://example.com/coverages",
             "value": "john-smith"
