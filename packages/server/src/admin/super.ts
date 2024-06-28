@@ -1,5 +1,4 @@
 import {
-  accepted,
   allOk,
   badRequest,
   forbidden,
@@ -13,7 +12,7 @@ import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
 import { getDatabasePool } from '../database';
-import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
+import { sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import * as dataMigrations from '../migrations/data';
@@ -23,9 +22,6 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { ResourceType } from '@medplum/fhirtypes';
-import { addReindexJob } from '../workers/reindex';
-import { getConfig } from '../config';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -78,20 +74,32 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    const resourceTypes = (req.body.resourceType as string).split(',').map((t) => t.trim());
-    for (const resourceType of resourceTypes) {
-      validateResourceType(resourceType);
-    }
-    const systemRepo = getSystemRepo();
+    const resourceType = req.body.resourceType;
+    validateResourceType(resourceType);
 
-    const exec = new AsyncJobExecutor(systemRepo);
-    await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
-    await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob);
+    await sendAsyncResponse(req, res, async () => {
+      const systemRepo = getSystemRepo();
+      await systemRepo.reindexResourceType(resourceType);
     });
+  })
+);
 
-    const { baseUrl } = getConfig();
-    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+// POST to /admin/super/compartments
+// to rebuild compartments for a resource type.
+// Run this after major changes to how compartments are constructed.
+superAdminRouter.post(
+  '/compartments',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    requireAsync(req);
+
+    const resourceType = req.body.resourceType;
+    validateResourceType(resourceType);
+
+    await sendAsyncResponse(req, res, async () => {
+      const systemRepo = getSystemRepo();
+      await systemRepo.rebuildCompartmentsForResourceType(resourceType);
+    });
   })
 );
 
