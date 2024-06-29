@@ -236,7 +236,7 @@ export class BackEnd extends Construct {
             'logs:DescribeLogGroups',
             'logs:PutRetentionPolicy',
           ],
-          resources: [`arn:aws:logs:${region}:${accountNumber}:log-group:/ecs/medplum/${name}/*`],
+          resources: [`arn:aws:logs:${region}:${accountNumber}:log-group:*`],
         }),
 
         // Secrets Manager: Read only access to secrets
