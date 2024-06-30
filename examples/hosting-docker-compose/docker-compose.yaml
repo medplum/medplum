@@ -1,0 +1,181 @@
+#version: "3.9"
+
+# https://github.com/medplum/medplum/blob/main/docker-compose.yml
+# This is the docker-compose file to run Medplum's required background serivces
+# It can be used to quickly run 2 services:
+#   1) The Postgres database
+#   2) The Redis cache
+# You can start all services by running "docker-compose up"
+
+services:
+  proxy:
+    image: traefik:v2.11.2
+    container_name: proxy
+    hostname: proxy
+    command:
+      #- "--api.insecure=true"
+      #- "--api"
+      #- "--api.dashboard=true"
+      #- --log.level=DEBUG
+      - "--providers.docker=true"
+      - "--providers.docker.swarmMode=false"
+      - --providers.docker.endpoint=unix:///var/run/docker.sock # Use Docker Socket Proxy instead for improved security
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik_net"
+      - "--entrypoints.web.address=:80"
+      #- --accesslog.filepath=/logs/access.log
+      - "--entrypoints.websecure.address=:443"
+      #- --entrypoints.https.http.tls.options=tls-opts@file
+      - --providers.file.directory=/rules
+      - --providers.file.watch=true # Only works on top level files in the rules folder
+      #- "--providers.file.filename=/etc/traefik/dynamic_conf.toml"
+      #- "--providers.file.filename=/rules/dynamic_conf.toml"
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entryPoints.web.http.redirections.entrypoint.scheme=https
+      # https://github.com/bluepuma77/traefik-best-practice/blob/main/docker-traefik-dashboard-letsencrypt/docker-compose.yml
+    ports:
+      - "80:80"
+      - "443:443"
+      #- "8080:8080" # Traefik dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./services/proxy/certs:/certs"
+      - ./services/proxy/rules:/rules
+      #- ./z_state/proxy/logs:/logs
+    #labels:
+      # Dashboard
+      # not enabled, not exposed, no security risk
+      #- "traefik.enable=true"
+      #- "traefik.http.routers.traefik.rule=Host(`traefik.${ROOT_DOMAIN}`)"
+      #- "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      #- "traefik.http.routers.traefik.entrypoints=web"
+      #- "traefik.http.routers.traefik.service=api@internal"
+
+      # Basic Auth for dashboard
+      #- "traefik.http.routers.traefik.middlewares=auth_traefik_dashboard"
+      #- "traefik.http.middlewares.auth_traefik_dashboard.basicauth.users=${APP_USER}:${APP_PASSWORD}"
+      # HTTP-to-HTTPS Redirect
+      #- "traefik.http.routers.http-catchall.entrypoints=http"
+      #- "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
+      #- "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      #- "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      
+    # restart: always
+    networks:
+      - traefik_net
+
+    profiles:
+      - proxy
+      - infrabase
+
+  # whoami:
+  #   # A container that exposes an API to show its IP address
+  #   image: traefik/whoami
+  #   labels:
+  #     - "traefik.enable=true"
+  #     # only works on localhost - whoami DNS sub entry is not set 
+  #     - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+  #     #- "traefik.http.routers.staticfiles.rule=Host(`whoami.${ROOT_DOMAIN}`)"
+  #     - "traefik.http.routers.whoami.middlewares=auth_traefik_dashboard"
+  #     -   "traefik.http.middlewares.auth_traefik_dashboard.basicauth.users=${APP_USER}:${APP_PASSWORD}"
+  #     # - "traefik.http.middlewares.auth_traefik_dashboard.basicauth.users=${APP_USER}:$$apr1$$zIo2lozg$$AN0OEI1XclvWrAA19SVMk."
+  #   networks:
+  #     - traefik_net
+  #   profiles:
+  #     - proxy
+
+  #############################
+  
+  medplum:
+    image: medplum/medplum-server:${MEDPLUM_VERSION}
+    #ports:
+    #  - 3000:3000
+    #  - 8103:8103
+    #environment:
+    #  - AUTH_PASSWORD=${AUTH_PASSWORD}
+    volumes:
+      - ./medplum.config.json:/usr/src/medplum/packages/server/medplum.config.json
+    networks:
+      - medplum
+      - traefik_net
+    #depends_on:
+    #  - medplumpostgres
+    #  - medplumredis
+    profiles:
+      - medplum-server
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.medplumapi.rule=Host(`api.${ROOT_DOMAIN}`)"
+      - "traefik.http.routers.medplumapi.entrypoints=websecure"
+      - "traefik.http.routers.medplumapi.tls=true"
+      #- "traefik.http.routers.medplumapi.entrypoints=web"
+      - "traefik.http.routers.medplumapi.service=medplumapi"
+      - "traefik.http.services.medplumapi.loadbalancer.server.port=8103"
+    #   - "traefik.http.routers.medplumapi.middlewares=chain-no-auth@file"
+  medplum-frontend:
+    image: semanticx.azurecr.io/prototype-digital-intake-form-v1-medplum-app:latest
+    build:
+      context: ./services/medplum-app
+      dockerfile: Dockerfile
+      target: frontend
+      #target: builder
+      args:
+        MEDPLUM_VERSION: ${MEDPLUM_VERSION}
+        MEDPLUM_BASE_URL: ${MEDPLUM_FRONTEND_BASE_URL}
+        MEDPLUM_CLIENT_ID: ${MEDPLUM_FRONTEND_CLIENT_ID}
+        GOOGLE_CLIENT_ID: ${GOOGLE_FRONTEND_CLIENT_ID}
+        RECAPTCHA_SITE_KEY: ${RECAPTCHA_FRONTEND_SITE_KEY}
+        MEDPLUM_REGISTER_ENABLED: ${MEDPLUM_FRONTEND_REGISTER_ENABLED}
+    #ports:
+    #  - 8080:80
+    # environment:
+      
+    networks:
+      #- medplum
+      - traefik_net
+    #depends_on:
+    #  - medplum
+    profiles:
+      - medplum-app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.medplumapp.rule=Host(`app.${ROOT_DOMAIN}`)"
+      - "traefik.http.routers.medplumapp.entrypoints=websecure"
+      - "traefik.http.routers.medplumapp.tls=true"
+      #- "traefik.http.routers.medplumapp.entrypoints=web"
+      - "traefik.http.routers.medplumapp.service=medplumapp"
+      - "traefik.http.services.medplumapp.loadbalancer.server.port=80"
+    #   - "traefik.http.routers.medplumapp.middlewares=chain-no-auth@file"
+  medplumpostgres:
+    image: postgres:16.2-alpine3.19
+    #restart: always
+    environment:
+      - POSTGRES_USER=${MEDPLUM_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${MEDPLUM_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${MEDPLUM_POSTGRES_DATABASE}
+    volumes:
+      #- ./postgres/postgres.conf:/usr/local/etc/postgres/postgres.conf
+      #- ./postgres/:/docker-entrypoint-initdb.d/
+      - ./z_state/medplum_postgres:/var/lib/postgresql/data
+    #command: postgres -c config_file=/usr/local/etc/postgres/postgres.conf
+    ports:
+      - '5432:5432'
+    networks:
+      - medplum
+    profiles:
+      - medplum-services
+  medplumredis:
+    image: redis:7.2.4-alpine3.19
+    #restart: always
+    command: redis-server --requirepass ${MEDPLUM_REDIS_PASSWORD}
+    ports:
+      - '6379:6379'
+    networks:
+      - medplum
+    profiles:
+      - medplum-services
+
+networks:
+  medplum:
+  traefik_net:
+    name: traefik_net
