@@ -1,4 +1,5 @@
 import { MantineProvider, createTheme } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { MedplumClient } from '@medplum/core';
@@ -40,6 +41,7 @@ root.render(
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
         <MantineProvider theme={theme}>
+          <Notifications />
           <App />
         </MantineProvider>
       </MedplumProvider>
