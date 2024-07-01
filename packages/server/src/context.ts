@@ -6,7 +6,7 @@ import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
-import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { parseTraceparent } from './traceparent';
 
 export class RequestContext {
@@ -32,29 +32,28 @@ export class RequestContext {
 const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
 
 export class AuthenticatedRequestContext extends RequestContext {
-  readonly repo: Repository;
-  readonly project: Project;
-  readonly membership: ProjectMembership;
-  readonly login: Login;
-  readonly profile: Reference<ProfileResource>;
-  readonly accessToken?: string;
-
   constructor(
     ctx: RequestContext,
-    login: Login,
-    project: Project,
-    membership: ProjectMembership,
-    repo: Repository,
-    accessToken?: string
+    readonly authState: AuthState,
+    readonly repo: Repository
   ) {
     super(ctx.requestId, ctx.traceId, ctx.logger);
+  }
 
-    this.repo = repo;
-    this.project = project;
-    this.membership = membership;
-    this.login = login;
-    this.profile = membership.profile as Reference<ProfileResource>;
-    this.accessToken = accessToken;
+  get project(): Project {
+    return this.authState.project;
+  }
+
+  get membership(): ProjectMembership {
+    return this.authState.membership;
+  }
+
+  get login(): Login {
+    return this.authState.login;
+  }
+
+  get profile(): Reference<ProfileResource> {
+    return this.authState.membership.profile as Reference<ProfileResource>;
   }
 
   close(): void {
@@ -64,9 +63,7 @@ export class AuthenticatedRequestContext extends RequestContext {
   static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
     return new AuthenticatedRequestContext(
       new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? '', systemLogger),
-      {} as unknown as Login,
-      {} as unknown as Project,
-      {} as unknown as ProjectMembership,
+      {} as unknown as AuthState,
       getSystemRepo()
     );
   }
@@ -101,9 +98,8 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
 
   const authState = await authenticateTokenImpl(req);
   if (authState) {
-    const { login, membership, project, accessToken } = authState;
-    const repo = await getRepoForLogin(login, membership, project, isExtendedMode(req));
-    ctx = new AuthenticatedRequestContext(ctx, login, project, membership, repo, accessToken);
+    const repo = await getRepoForLogin(authState, isExtendedMode(req));
+    ctx = new AuthenticatedRequestContext(ctx, authState, repo);
   }
 
   requestContextStore.run(ctx, () => next());

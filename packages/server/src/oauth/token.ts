@@ -142,8 +142,10 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     userAgent: req.get('User-Agent'),
   });
 
+  // TODO: build full AuthState object, including on-behalf-of
+
   try {
-    const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
+    const accessPolicy = await getAccessPolicyForLogin({ project, login, membership });
     await checkIpAccessRules(login, accessPolicy);
   } catch (err) {
     sendTokenError(res, 'invalid_request', normalizeErrorString(err));

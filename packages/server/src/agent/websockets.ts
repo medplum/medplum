@@ -129,8 +129,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       return;
     }
 
-    const { login, project, membership } = authState;
-    const repo = await getRepoForLogin(login, membership, project, true);
+    const repo = await getRepoForLogin(authState, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
@@ -183,8 +182,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       return;
     }
 
-    const { login, project, membership } = authState;
-    const repo = await getRepoForLogin(login, membership, project, true);
+    const repo = await getRepoForLogin(authState, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {
@@ -204,7 +202,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     const result = await executeBot({
       agent,
       bot,
-      runAs: membership,
+      runAs: authState.membership,
       contentType: command.contentType,
       input,
       remoteAddress,

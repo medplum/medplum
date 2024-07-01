@@ -2180,6 +2180,13 @@
           }
         ]
       },
+      "onBehalfOf": {
+        "type": [
+          {
+            "code": "Reference"
+          }
+        ]
+      },
       "account": {
         "type": [
           {

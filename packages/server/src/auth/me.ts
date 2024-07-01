@@ -23,11 +23,12 @@ interface UserSecurity {
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
   const systemRepo = getSystemRepo();
-
-  const { login, project, membership, profile: profileRef } = getAuthenticatedContext();
+  const { authState } = getAuthenticatedContext();
+  const { project, membership } = authState;
+  const profileRef = membership.profile as Reference<ProfileResource>;
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(systemRepo, project, membership);
-  const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
+  const accessPolicy = await getAccessPolicyForLogin(authState);
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {

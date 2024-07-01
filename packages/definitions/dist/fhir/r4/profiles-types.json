@@ -21953,11 +21953,26 @@
           "path" : "Meta.author",
           "short" : "The individual, device or organization who initiated the last change.",
           "definition" : "The individual, device or organization who initiated the last change.",
-          "comment" : "The individual, device or organization who initiated the last change.",
           "min" : 0,
           "max" : "1",
           "base" : {
             "path" : "Meta.author",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "Reference"
+          }]
+        },
+        {
+          "id" : "Meta.onBehalfOf",
+          "path" : "Meta.onBehalfOf",
+          "short" : "Optional individual, device, or organization for whom the change was made.",
+          "definition" : "Optional individual, device, or organization for whom the change was made.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Meta.onBehalfOf",
             "min" : 0,
             "max" : "1"
           },
