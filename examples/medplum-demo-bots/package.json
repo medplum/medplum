@@ -46,7 +46,7 @@
     "pdfmake": "0.2.10",
     "rimraf": "5.0.7",
     "ssh2-sftp-client": "10.0.3",
-    "stripe": "15.12.0",
+    "stripe": "16.1.0",
     "typescript": "5.5.2",
     "vitest": "1.6.0"
   }
