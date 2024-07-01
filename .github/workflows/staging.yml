@@ -72,3 +72,5 @@ jobs:
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
           ECS_CLUSTER: ${{ secrets.STAGING_ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.STAGING_ECS_SERVICE }}
+      - name: Deploy bot layer
+        run: ./scripts/deploy-bot-layer.sh
