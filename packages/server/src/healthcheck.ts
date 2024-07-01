@@ -1,13 +1,13 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { Request, Response } from 'express';
-import { getInstanceId } from './cloud/aws/metadata';
+import os from 'node:os';
 import { getDatabasePool } from './database';
 import { setGauge } from './otel/otel';
 import { getRedis } from './redis';
 
-export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
-  const hostname = getInstanceId();
+const hostname = os.hostname();
 
+export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
   setGauge('medplum.db.idleConnections', getDatabasePool().idleCount, { hostname });
   setGauge('medplum.db.queriesAwaitingClient', getDatabasePool().waitingCount, { hostname });
 

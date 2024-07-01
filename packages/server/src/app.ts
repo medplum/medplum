@@ -10,7 +10,6 @@ import { join } from 'path';
 import { adminRouter } from './admin/routes';
 import { asyncWrap } from './async';
 import { authRouter } from './auth/routes';
-import { fetchInstanceId } from './cloud/aws/metadata';
 import { getConfig, MedplumServerConfig } from './config';
 import {
   attachRequestContext,
@@ -131,7 +130,6 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
-  await fetchInstanceId();
   await initAppServices(config);
   server = http.createServer(app);
   initWebSockets(server);
