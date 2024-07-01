@@ -10,7 +10,7 @@ import {
   createStructureIssue,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue, isReference } from '../types';
+import { PropertyType, TypedValue, isReference, isResource } from '../types';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 import { ResourceVisitor, TypedValueWithPath, crawlResource, getNestedProperty } from './crawler';
 import {
@@ -41,6 +41,7 @@ export const fhirTypeToJsType = {
   id: 'string',
   instant: 'string',
   integer: 'number',
+  integer64: 'string',
   markdown: 'string',
   oid: 'string',
   positiveInt: 'number',
@@ -95,38 +96,43 @@ export interface ValidatorOptions {
 }
 
 export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
-  return new ResourceValidator(resource.resourceType, resource, options).validate();
+  if (!resource.resourceType) {
+    throw new OperationOutcomeError(validationError('Missing resource type'));
+  }
+  return new ResourceValidator(toTypedValue(resource), options).validate();
+}
+
+export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOptions): OperationOutcomeIssue[] {
+  return new ResourceValidator(typedValue, options).validate();
 }
 
 class ResourceValidator implements ResourceVisitor {
   private issues: OperationOutcomeIssue[];
-  private rootResource: Resource;
+  private root: TypedValue;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 
-  constructor(resourceType: string, rootResource: Resource, options?: ValidatorOptions) {
+  constructor(typedValue: TypedValue, options?: ValidatorOptions) {
     this.issues = [];
-    this.rootResource = rootResource;
-    this.currentResource = [rootResource];
+    this.root = typedValue;
+    this.currentResource = [];
+    if (isResource(typedValue.value)) {
+      this.currentResource.push(typedValue.value);
+    }
     if (!options?.profile) {
-      this.schema = getDataType(resourceType);
+      this.schema = getDataType(typedValue.type);
     } else {
       this.schema = parseStructureDefinition(options.profile);
     }
   }
 
   validate(): OperationOutcomeIssue[] {
-    const resourceType = this.rootResource.resourceType;
-    if (!resourceType) {
-      throw new OperationOutcomeError(validationError('Missing resource type'));
-    }
-
     // Check root constraints
-    this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
+    this.constraintsCheck(this.root, this.schema, this.root.type);
 
-    checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
+    checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.root.type, this.issues);
 
-    crawlResource(this.rootResource, this, this.schema);
+    crawlResource(this.root.value as Resource, this, this.schema, this.root.type);
 
     const issues = this.issues;
 
@@ -417,13 +423,21 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
+    const variables: Record<string, TypedValue> = {
+      '%context': value,
+      '%ucum': toTypedValue(UCUM),
+    };
+
+    if (this.currentResource.length > 0) {
+      variables['%resource'] = toTypedValue(this.currentResource[this.currentResource.length - 1]);
+    }
+
+    if (isResource(this.root.value)) {
+      variables['%rootResource'] = this.root;
+    }
+
     try {
-      const evalValues = evalFhirPathTyped(constraint.expression, [value], {
-        '%context': value,
-        '%resource': toTypedValue(this.currentResource[this.currentResource.length - 1]),
-        '%rootResource': toTypedValue(this.rootResource),
-        '%ucum': toTypedValue(UCUM),
-      });
+      const evalValues = evalFhirPathTyped(constraint.expression, [value], variables);
 
       return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {
