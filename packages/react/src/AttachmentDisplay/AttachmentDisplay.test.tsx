@@ -72,7 +72,19 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.pdf',
       },
     });
-    expect(await screen.findByTestId('attachment-pdf')).toBeInTheDocument();
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  test('Renders plain text', async () => {
+    await setup({ value: { contentType: 'text/plain', url: 'https://example.com/test.txt' } });
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  test('Renders JSON', async () => {
+    await setup({ value: { contentType: 'application/json', url: 'https://example.com/test.json' } });
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 

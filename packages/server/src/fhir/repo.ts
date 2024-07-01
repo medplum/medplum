@@ -536,7 +536,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     let updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
     });
-    updated = await replaceConditionalReferences(updated, this);
+    updated = await replaceConditionalReferences(this, updated);
 
     const resultMeta = {
       ...updated.meta,
@@ -556,12 +556,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     resultMeta.compartment = this.getCompartments(result);
 
-    const fullResource = { ...result, meta: { ...resultMeta } };
-    await this.preCommit(async () => {
-      if (this.context.checkReferencesOnWrite) {
-        await validateReferences(fullResource, this);
-      }
-    });
+    if (this.context.checkReferencesOnWrite) {
+      await this.preCommit(async () => {
+        await validateReferences(this, result);
+      });
+    }
 
     if (this.isNotModified(existing, result)) {
       this.removeHiddenFields(existing);
@@ -573,11 +572,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.handleMaybeCacheOnly(result, create);
+    await this.handleStorage(result, create);
     await this.postCommit(async () => {
-      await this.handleBinaryUpdate(existing, fullResource);
-      await this.setCacheEntry(fullResource);
-      await addBackgroundJobs(fullResource, { interaction: create ? 'create' : 'update' });
+      await this.handleBinaryUpdate(existing, result);
+      await this.setCacheEntry(result);
+      await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     });
     this.removeHiddenFields(result);
     return result;
@@ -626,7 +625,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resource.data = undefined;
   }
 
-  private async handleMaybeCacheOnly(result: Resource, create: boolean): Promise<void> {
+  private async handleStorage(result: Resource, create: boolean): Promise<void> {
     if (!this.isCacheOnly(result)) {
       await this.writeToDatabase(result, create);
     } else if (result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
@@ -638,6 +637,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
       await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${result.id}`);
     }
+    // Add this resource to cache
+    await this.setCacheEntry(result);
   }
 
   /**

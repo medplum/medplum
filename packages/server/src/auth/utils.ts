@@ -6,20 +6,10 @@ import {
   ProfileResource,
   resolveId,
 } from '@medplum/core';
-import {
-  Attachment,
-  ContactPoint,
-  Login,
-  OperationOutcome,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import { ContactPoint, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
-import { createHash } from 'node:crypto';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
@@ -37,10 +27,8 @@ export async function createProfile(
   const logger = getLogger();
   logger.info('Creating profile', { resourceType, firstName, lastName });
   let telecom: ContactPoint[] | undefined = undefined;
-  let photo: Attachment[] | undefined = undefined;
   if (email) {
     telecom = [{ system: 'email', use: 'work', value: email }];
-    photo = [{ url: getGravatar(email), contentType: 'image/png', title: 'profile.png' }];
   }
 
   const systemRepo = getSystemRepo();
@@ -56,7 +44,6 @@ export async function createProfile(
       },
     ],
     telecom,
-    photo,
   } as ProfileResource);
   logger.info('Created profile', { id: result.id });
   return result;
@@ -231,7 +218,7 @@ export function bcryptHashPassword(password: string): Promise<string> {
 }
 
 export function validateRecaptcha(projectValidation?: (p: Project) => OperationOutcome | undefined): Handler {
-  return async function (req: Request, res: Response, next: NextFunction): Promise<void> {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const recaptchaSiteKey = req.body.recaptchaSiteKey;
     const config = getConfig();
     let secretKey: string | undefined = config.recaptchaSecretKey;
@@ -271,14 +258,4 @@ export function validateRecaptcha(projectValidation?: (p: Project) => OperationO
     }
     next();
   };
-}
-
-/**
- * Returns the Gravatar URL for the given email address.
- * @param email - The email address.
- * @returns The Gravatar URL.
- */
-function getGravatar(email: string): string {
-  const hash = createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
-  return `https://gravatar.com/avatar/${hash}?s=256&r=pg&d=retro`;
 }

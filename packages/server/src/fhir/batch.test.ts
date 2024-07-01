@@ -671,7 +671,6 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(tx);
 
-    console.log(res.body.issue);
     expect(res.status).toEqual(200);
     const ccreateResult = res.body.entry[0].response as BundleEntryResponse;
     expect(ccreateResult.status).toEqual('201');
@@ -720,6 +719,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
+    console.log(res.body.issue);
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toEqual('Bundle');
   });

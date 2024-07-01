@@ -76,8 +76,7 @@ export class AgentHl7ChannelConnection {
 
   private async handler(event: Hl7MessageEvent): Promise<void> {
     try {
-      this.channel.log.info('Received:');
-      this.channel.log.info(event.message.toString().replaceAll('\r', '\n'));
+      this.channel.log.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
         accessToken: 'placeholder',

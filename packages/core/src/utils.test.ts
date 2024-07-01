@@ -1,4 +1,5 @@
 import {
+  Bundle,
   Attachment,
   CodeableConcept,
   DeviceDeviceName,
@@ -48,6 +49,7 @@ import {
   isUUID,
   isValidHostname,
   lazy,
+  mapByIdentifier,
   parseReference,
   preciseEquals,
   preciseGreaterThan,
@@ -1437,5 +1439,56 @@ describe('addProfileToResource', () => {
     addProfileToResource(patient, profileUrl);
     expect(patient.meta?.profile?.length ?? -1).toEqual(2);
     expect(patient.meta?.profile).toEqual(expect.arrayContaining([profileUrl, existingProfileUrl]));
+  });
+});
+
+describe('mapByIdentifier', () => {
+  test('returns Map with expected size and key/value pairs', () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '1',
+            identifier: [{ system: 'http://example.com', value: '123' }],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '2',
+            identifier: [{ system: 'http://example.com', value: '456' }],
+          },
+        },
+      ],
+    };
+
+    const map = mapByIdentifier(bundle, 'http://example.com');
+
+    expect(map.size).toBe(2);
+    expect(map.get('123')).toEqual(bundle.entry?.[0].resource);
+    expect(map.get('456')).toEqual(bundle.entry?.[1].resource);
+  });
+
+  test('returns empty Map when no matching identifier system', () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '1',
+            identifier: [{ system: 'http://different.com', value: '123' }],
+          },
+        },
+      ],
+    };
+
+    const map = mapByIdentifier(bundle, 'http://example.com');
+
+    expect(map.size).toBe(0);
   });
 });

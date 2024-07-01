@@ -4,6 +4,8 @@ import {
   AgentReloadConfigResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
+  AgentUpgradeRequest,
+  AgentUpgradeResponse,
   ContentType,
   Hl7Message,
   LogLevel,
@@ -15,13 +17,21 @@ import {
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { ExecException, ExecOptions, exec } from 'node:child_process';
+import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:child_process';
+import { existsSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
+import process from 'node:process';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import {
+  UPGRADER_LOG_PATH,
+  UPGRADE_MANIFEST_PATH,
+  checkIfValidMedplumVersion,
+  fetchLatestVersionString,
+} from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -44,6 +54,7 @@ export class App {
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
+  readonly hl7Clients = new Map<string, Hl7Client>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
@@ -51,6 +62,7 @@ export class App {
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
+  private keepAlive = false;
   private config: Agent | undefined;
 
   constructor(
@@ -65,13 +77,16 @@ export class App {
   async start(): Promise<void> {
     this.log.info('Medplum service starting...');
 
-    this.startWebSocket();
+    await this.startWebSocket();
 
-    await this.hydrateListeners();
+    // We do this after starting WebSockets so that we can send a message if we finished upgrading
+    await this.maybeFinalizeUpgrade();
+
+    await this.reloadConfig();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
-        this.connectWebSocket();
+        this.connectWebSocket().catch(this.log.error);
       } else {
         this.startWebSocketWorker();
       }
@@ -80,15 +95,49 @@ export class App {
     this.log.info('Medplum service started successfully');
   }
 
-  private startWebSocket(): void {
-    this.connectWebSocket();
+  private async maybeFinalizeUpgrade(): Promise<void> {
+    if (existsSync(UPGRADE_MANIFEST_PATH)) {
+      const upgradeFile = readFileSync(UPGRADE_MANIFEST_PATH, { encoding: 'utf-8' });
+      const upgradeDetails = JSON.parse(upgradeFile) as {
+        previousVersion: string;
+        targetVersion: string;
+        callback: string | null;
+      };
+
+      // If we are on the right version, send success response to Medplum
+      if (upgradeDetails.targetVersion === MEDPLUM_VERSION.split('-')[0]) {
+        // Send message
+        await this.sendToWebSocket({
+          type: 'agent:upgrade:response',
+          statusCode: 200,
+          callback: upgradeDetails.callback ?? undefined,
+        } satisfies AgentUpgradeResponse);
+        this.log.info(`Successfully upgraded to version ${upgradeDetails.targetVersion}`);
+      } else {
+        // Otherwise if we are on the wrong version, send error
+        const errMsg = `Failed to upgrade to version ${upgradeDetails.targetVersion}. Agent still running with version ${MEDPLUM_VERSION}`;
+        await this.sendToWebSocket({
+          type: 'agent:error',
+          body: errMsg,
+          callback: upgradeDetails.callback ?? undefined,
+        } satisfies AgentError);
+        this.log.error(errMsg);
+      }
+
+      // Delete manifest
+      rmSync(UPGRADE_MANIFEST_PATH);
+    }
+  }
+
+  private async startWebSocket(): Promise<void> {
+    await this.connectWebSocket();
     this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatPeriod);
   }
 
   private async heartbeat(): Promise<void> {
     if (!(this.webSocket || this.reconnectTimer)) {
       this.log.warn('WebSocket not connected');
-      this.connectWebSocket();
+      this.connectWebSocket().catch(this.log.error);
       return;
     }
 
@@ -97,7 +146,7 @@ export class App {
     }
   }
 
-  private connectWebSocket(): void {
+  private async connectWebSocket(): Promise<void> {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = undefined;
@@ -178,7 +227,7 @@ export class App {
           case 'agent:reloadconfig:request':
             try {
               this.log.info('Reloading config...');
-              await this.hydrateListeners();
+              await this.reloadConfig();
               await this.sendToWebSocket({
                 type: 'agent:reloadconfig:response',
                 statusCode: 200,
@@ -192,6 +241,9 @@ export class App {
               });
             }
             break;
+          case 'agent:upgrade:request':
+            await this.tryUpgradeAgent(command);
+            break;
           case 'agent:error':
             this.log.error(command.body);
             break;
@@ -199,18 +251,48 @@ export class App {
             this.log.error(`Unknown message type: ${command.type}`);
         }
       } catch (err) {
-        this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+        this.log.error(`WebSocket error on incoming message: ${normalizeErrorString(err)}`);
       }
+    });
+
+    return new Promise<void>((resolve, reject) => {
+      const connectTimeout = setTimeout(
+        () => reject(new Error('Timeout when attempting to connect to server WebSocket')),
+        10000
+      );
+      this.webSocket?.addEventListener('open', () => {
+        clearTimeout(connectTimeout);
+        resolve();
+      });
     });
   }
 
-  private async hydrateListeners(): Promise<void> {
+  private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId);
-    this.config = agent;
-    const pendingRemoval = new Set(this.channels.keys());
-    let channels = agent.channel ?? [];
+    const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
-    if (agent.status === 'off') {
+    if (!keepAlive && this.hl7Clients.size !== 0) {
+      for (const client of this.hl7Clients.values()) {
+        client.close();
+      }
+    }
+
+    this.config = agent;
+    this.keepAlive = keepAlive ?? false;
+
+    await this.hydrateListeners();
+  }
+
+  /**
+   * This method should only be called by {@link App.reloadConfig}
+   */
+  private async hydrateListeners(): Promise<void> {
+    const config = this.config as Agent;
+
+    const pendingRemoval = new Set(this.channels.keys());
+    let channels = config.channel ?? [];
+
+    if (config.status === 'off') {
       channels = [];
       this.log.warn(
         "Agent status is currently 'off'. All channels are disconnected until status is set back to 'active'"
@@ -355,6 +437,12 @@ export class App {
       this.webSocket = undefined;
     }
 
+    if (this.hl7Clients.size !== 0) {
+      for (const client of this.hl7Clients.values()) {
+        client.close();
+      }
+    }
+
     const channelStopPromises = [];
     for (const channel of this.channels.values()) {
       channelStopPromises.push(channel.stop());
@@ -396,7 +484,7 @@ export class App {
           try {
             await this.sendToWebSocket(msg);
           } catch (err) {
-            this.log.error(`WebSocket error: ${normalizeErrorString(err)}`);
+            this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
             this.webSocketQueue.unshift(msg);
             throw err;
           }
@@ -488,6 +576,102 @@ export class App {
     }
   }
 
+  private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
+    if (platform() !== 'win32') {
+      const errMsg = 'Auto-upgrading is currently only supported on Windows';
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
+    let child: ChildProcess;
+
+    // If there is an explicit version, check if it's valid
+    if (message.version && !(await checkIfValidMedplumVersion(message.version))) {
+      const versionTag = message.version ? `v${message.version}` : 'latest';
+      const errMsg = `Error during upgrading to version '${versionTag}'. '${message.version}' is not a valid version`;
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
+    try {
+      const command = __filename;
+      const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
+      child = spawn(command, ['--upgrade'], { detached: true, stdio: ['ignore', logFile, logFile, 'ipc'] });
+      // We unref the child process so that this process can close before the child has closed (since we want the child to be able to close the parent process)
+      child.unref();
+
+      await new Promise<void>((resolve, reject) => {
+        const childTimeout = setTimeout(
+          () => reject(new Error('Timed out while waiting for message from child')),
+          5000
+        );
+        child.on('message', (msg: { type: string }) => {
+          clearTimeout(childTimeout);
+          if (msg.type === 'STARTED') {
+            resolve();
+          } else {
+            reject(new Error(`Received unexpected message type ${msg.type} when expected type STARTED`));
+          }
+        });
+      });
+
+      child.on('error', (err) => {
+        this.log.error(normalizeErrorString(err));
+      });
+    } catch (err) {
+      const versionTag = message.version ? `v${message.version}` : 'latest';
+      const errMsg = `Error during upgrading to version '${versionTag}': ${normalizeErrorString(err)}`;
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
+    try {
+      // Stop the agent to prepare for service being restarted
+      await this.stop();
+      this.log.info('Successfully stopped agent network services');
+
+      // Write a manifest file
+      const targetVersion = message.version ?? (await fetchLatestVersionString());
+
+      this.log.info('Writing upgrade manifest...', { previousVersion: MEDPLUM_VERSION, targetVersion });
+      writeFileSync(
+        UPGRADE_MANIFEST_PATH,
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion,
+          callback: message.callback ?? null,
+        }),
+        { encoding: 'utf8', flag: 'w+' }
+      );
+
+      this.log.info('Closing IPC...');
+      child.disconnect();
+    } catch (err: unknown) {
+      this.log.error(
+        `Error while stopping agent or messaging child process as part of upgrade: ${normalizeErrorString(err)}`
+      );
+      // Attempt to exit process...
+      // If we already wrote a manifest, then when service restarts
+      // We SHOULD send an error back to the server on the callback
+      process.exit(1);
+    }
+  }
+
   private async sendToWebSocket(message: AgentMessage): Promise<void> {
     if (!this.webSocket) {
       throw new Error('WebSocket not connected');
@@ -518,11 +702,37 @@ export class App {
     }
 
     const address = new URL(message.remote);
-    const client = new Hl7Client({
-      host: address.hostname,
-      port: Number.parseInt(address.port, 10),
-      encoding: address.searchParams.get('encoding') ?? undefined,
-    });
+
+    let client: Hl7Client;
+
+    if (this.hl7Clients.has(message.remote)) {
+      client = this.hl7Clients.get(message.remote) as Hl7Client;
+    } else {
+      const encoding = address.searchParams.get('encoding') ?? undefined;
+      const keepAlive = this.keepAlive;
+      client = new Hl7Client({
+        host: address.hostname,
+        port: Number.parseInt(address.port, 10),
+        encoding,
+        keepAlive,
+      });
+      this.log.info(`Client created for remote '${message.remote}'`, { keepAlive, encoding });
+
+      if (client.keepAlive) {
+        this.hl7Clients.set(message.remote, client);
+        client.addEventListener('close', () => {
+          this.hl7Clients.delete(message.remote);
+          this.log.info(`Persistent connection to remote '${message.remote}' closed`);
+        });
+        client.addEventListener('error', () => {
+          this.hl7Clients.delete(message.remote);
+          this.log.info(
+            `Persistent connection to remote '${message.remote}' encountered an error... Closing connection...`
+          );
+          client.close();
+        });
+      }
+    }
 
     client
       .sendAndWait(Hl7Message.parse(message.body))
@@ -549,9 +759,16 @@ export class App {
           statusCode: 400,
           body: normalizeErrorString(err),
         } satisfies AgentTransmitResponse);
+
+        if (client.keepAlive) {
+          this.hl7Clients.delete(message.remote);
+          client.close();
+        }
       })
       .finally(() => {
-        client.close();
+        if (!client.keepAlive) {
+          client.close();
+        }
       });
   }
 }

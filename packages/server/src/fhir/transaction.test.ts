@@ -497,41 +497,4 @@ describe('FHIR Repo Transactions', () => {
       const resource = await repo.readResource(existing.resourceType, existing.id as string);
       expect(results.map((r) => r.status)).toContain('rejected');
     }));
-
-  test('Unrelated inserts with pending concurrent create transaction', () =>
-    withTestContext(async () => {
-      const otherRepo = (await createTestProject({ withRepo: true })).repo;
-      const identifier = randomUUID();
-      const search = parseSearchRequest('Patient?identifier=http://example.com/mrn|' + identifier);
-      const resource: Patient = {
-        resourceType: 'Patient',
-        identifier: [{ system: 'http://example.com/mrn', value: identifier }],
-      };
-
-      const tx1 = repo.withTransaction(
-        async () => {
-          const existing = await repo.searchResources(search);
-          if (!existing.length) {
-            await repo.createResource(resource);
-          }
-          await sleep(500);
-        },
-        { serializable: true }
-      );
-
-      await sleep(250);
-
-      const tx2 = otherRepo.withTransaction(
-        async () => {
-          const existing = await otherRepo.searchResources(search);
-          if (!existing.length) {
-            await otherRepo.createResource(resource);
-          }
-        },
-        { serializable: true }
-      );
-
-      const results = await Promise.allSettled([tx1, tx2]);
-      expect(results.map((r) => r.status)).not.toContain('rejected');
-    }));
 });

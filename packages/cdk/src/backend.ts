@@ -236,7 +236,7 @@ export class BackEnd extends Construct {
             'logs:DescribeLogGroups',
             'logs:PutRetentionPolicy',
           ],
-          resources: [`arn:aws:logs:${region}:${accountNumber}:log-group:/ecs/medplum/${name}/*`],
+          resources: [`arn:aws:logs:${region}:${accountNumber}:log-group:*`],
         }),
 
         // Secrets Manager: Read only access to secrets
@@ -332,6 +332,26 @@ export class BackEnd extends Construct {
             'xray:GetSamplingRules',
             'xray:GetSamplingTargets',
             'xray:GetSamplingStatisticSummaries',
+          ],
+          resources: ['*'],
+        }),
+
+        // Textract and Comprehend Medical: Analyze medical text
+        // https://docs.aws.amazon.com/comprehend/latest/dg/security_iam_id-based-policy-examples.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'comprehend:DetectEntities',
+            'comprehend:DetectKeyPhrases',
+            'comprehend:DetectDominantLanguage',
+            'comprehend:DetectSentiment',
+            'comprehend:DetectTargetedSentiment',
+            'comprehend:DetectSyntax',
+            'comprehendmedical:DetectEntitiesV2',
+            'textract:DetectDocumentText',
+            'textract:AnalyzeDocument',
+            'textract:StartDocumentTextDetection',
+            'textract:GetDocumentTextDetection',
           ],
           resources: ['*'],
         }),

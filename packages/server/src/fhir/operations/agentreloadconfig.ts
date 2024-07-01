@@ -19,9 +19,6 @@ export const operation: OperationDefinition = {
 
 /**
  * Handles HTTP requests for the Agent $reload-config operation.
- * First reads the agent and makes sure it is valid and the user has access to it.
- * Then tries to get the agent status from Redis.
- * Returns the agent  details as a Parameters resource.
  *
  * Endpoints:
  *   [fhir base]/Agent/$reload-config

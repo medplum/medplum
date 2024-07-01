@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react-hooks",
-  "version": "3.1.7",
+  "version": "3.1.11",
   "description": "Medplum React Hooks Library",
   "keywords": [
     "medplum",
@@ -57,15 +57,15 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "3.1.7",
-    "@medplum/definitions": "3.1.7",
-    "@medplum/fhirtypes": "3.1.7",
-    "@medplum/mock": "3.1.7",
-    "@testing-library/dom": "10.1.0",
-    "@testing-library/jest-dom": "6.4.5",
-    "@testing-library/react": "15.0.7",
+    "@medplum/core": "3.1.11",
+    "@medplum/definitions": "3.1.11",
+    "@medplum/fhirtypes": "3.1.11",
+    "@medplum/mock": "3.1.11",
+    "@testing-library/dom": "10.2.0",
+    "@testing-library/jest-dom": "6.4.6",
+    "@testing-library/react": "16.0.0",
     "@types/jest": "29.5.12",
-    "@types/node": "20.14.0",
+    "@types/node": "20.14.9",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "jest": "29.7.0",
@@ -74,10 +74,10 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rimraf": "5.0.7",
-    "typescript": "5.4.5"
+    "typescript": "5.5.2"
   },
   "peerDependencies": {
-    "@medplum/core": "3.1.7",
+    "@medplum/core": "3.1.11",
     "react": "^17.0.2 || ^18.0.0",
     "react-dom": "^17.0.2 || ^18.0.0"
   },

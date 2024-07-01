@@ -119,7 +119,7 @@ jobs:
         id: fmt
         run: |
           rm -f .failed
-          NODE_OPTIONS='--max-old-space-size=8192' npm run lint 2> eslint.err > eslint1.err || echo 'failed' > .failed 
+          npm run lint 2> eslint.err > eslint1.err || echo 'failed' > .failed 
 
           if [ -s .failed ]; then
             delimiter="$(openssl rand -hex 8)"
@@ -177,7 +177,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432/tcp
+          - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
         options: >-
@@ -224,7 +224,7 @@ jobs:
         run: ./scripts/test.sh
         env:
           POSTGRES_HOST: localhost
-          POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
+          POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Upload code coverage
         if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}

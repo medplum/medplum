@@ -2087,7 +2087,7 @@ describe('AccessPolicy', () => {
         await repo2.createResource({ resourceType: 'Patient', generalPractitioner: [createReference(practitioner)] });
         throw new Error('Should have failed reference check');
       } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Invalid reference (Not found) (Patient.generalPractitioner)');
+        expect(normalizeErrorString(err)).toEqual('Invalid reference (Not found) (Patient.generalPractitioner[0])');
       }
     }));
 

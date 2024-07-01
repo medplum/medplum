@@ -1,7 +1,9 @@
-import { LogLevel } from '@medplum/core';
-import fs from 'fs';
+import { randomUUID } from 'node:crypto';
+import os from 'node:os';
+import * as agentMainFile from './agent-main';
 import { App } from './app';
 import { main } from './main';
+import * as upgraderFile from './upgrader';
 
 describe('Main', () => {
   beforeEach(() => {
@@ -27,72 +29,32 @@ describe('Main', () => {
     jest.restoreAllMocks();
   });
 
-  test('Missing arguments', async () => {
-    try {
-      await main(['node', 'index.js']);
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('process.exit');
-    }
-    expect(console.log).toHaveBeenCalledWith('Missing arguments');
-    expect(process.exit).toHaveBeenCalledWith(1);
+  test('Calling main without --upgrade', async () => {
+    const agentMainSpy = jest.spyOn(agentMainFile, 'agentMain');
+    const upgradeMainSpy = jest.spyOn(upgraderFile, 'upgraderMain');
+
+    // Invalid number of args
+    await expect(main(['node', 'main.ts', 'https://example.com/', randomUUID()])).rejects.toThrow('process.exit');
+    expect(upgradeMainSpy).not.toHaveBeenCalled();
+    expect(agentMainSpy).toHaveBeenCalledWith(['node', 'main.ts', 'https://example.com/', expect.any(String)]);
+
+    agentMainSpy.mockRestore();
+    upgradeMainSpy.mockRestore();
   });
 
-  test('Help command', async () => {
-    try {
-      await main(['node', 'index.js', '--help']);
-    } catch (err: any) {
-      expect(err.message).toBe('process.exit');
-    }
-    expect(console.log).toHaveBeenCalledWith('Expected arguments:');
-    expect(process.exit).toHaveBeenLastCalledWith(0);
+  test('Calling main with --upgrade', async () => {
+    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => 'linux');
+    const agentMainSpy = jest.spyOn(agentMainFile, 'agentMain');
+    const upgradeMainSpy = jest.spyOn(upgraderFile, 'upgraderMain');
 
-    (console.log as jest.Mock).mockClear();
+    await expect(main(['node', 'main.ts', '--upgrade'])).rejects.toThrow(
+      'Unsupported platform: linux. Agent upgrader currently only supports Windows'
+    );
+    expect(agentMainSpy).not.toHaveBeenCalled();
+    expect(upgradeMainSpy).toHaveBeenCalledWith(['node', 'main.ts', '--upgrade']);
 
-    try {
-      await main(['node', 'index.js', '-h']);
-    } catch (err: any) {
-      expect(err.message).toBe('process.exit');
-    }
-    expect(console.log).toHaveBeenCalledWith('Expected arguments:');
-    expect(process.exit).toHaveBeenCalledWith(0);
-  });
-
-  test('Command line arguments success', async () => {
-    const app = await main(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
-    await app.stop();
-    expect(process.exit).not.toHaveBeenCalled();
-  });
-
-  test('Empty properties file', async () => {
-    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest.spyOn(fs, 'readFileSync').mockReturnValue('');
-    try {
-      await main([]);
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('process.exit');
-    }
-    expect(console.log).toHaveBeenCalledWith('Missing arguments');
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
-
-  test('Properties file success', async () => {
-    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest
-      .spyOn(fs, 'readFileSync')
-      .mockReturnValue(
-        [
-          'baseUrl=http://example.com',
-          'clientId=clientId',
-          'clientSecret=clientSecret',
-          'agentId=agentId',
-          'logLevel=DEBUG',
-        ].join('\n')
-      );
-    const app = await main(['node', 'index.js']);
-    expect(app.logLevel).toEqual(LogLevel.DEBUG);
-    await app.stop();
-    expect(process.exit).not.toHaveBeenCalled();
+    platformSpy.mockRestore();
+    agentMainSpy.mockRestore();
+    upgradeMainSpy.mockRestore();
   });
 });

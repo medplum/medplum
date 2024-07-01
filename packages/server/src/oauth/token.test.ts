@@ -7,10 +7,10 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import { generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
@@ -19,7 +19,7 @@ import { setPassword } from '../auth/setpassword';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
-import { generateSecret } from './keys';
+import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './token';
 
 jest.mock('jose', () => {
@@ -32,7 +32,8 @@ jest.mock('jose', () => {
       const payload = core.parseJWTPayload(credential);
       if (payload.invalid) {
         throw new Error('Verification failed');
-      } else if (payload.multipleMatching) {
+      }
+      if (payload.multipleMatching) {
         count = payload.successVerified ? count + 1 : 0;
         let error: MockJoseMultipleMatchingError;
         if (count <= 1) {
@@ -1131,6 +1132,76 @@ describe('OAuth2 Token', () => {
     });
     expect(res5.status).toBe(400);
     expect(res5.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
+  });
+
+  test('refreshTokenLifetime -- Valid duration', async () => {
+    // Create a new client application with external auth
+    const validLifetimeClient = await createClient(systemRepo, {
+      project,
+      name: 'refreshTokenLifetime - Valid Client',
+      refreshTokenLifetime: '60s',
+    });
+
+    expect(validLifetimeClient?.id).toBeDefined();
+    expect(validLifetimeClient?.secret).toBeDefined();
+
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        clientId: validLifetimeClient.id as string,
+        email,
+        password,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+        scope: 'openid offline',
+      });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        client_id: validLifetimeClient.id as string,
+        code: res.body.code,
+        code_verifier: 'xyz',
+        scope: 'openid offline',
+      });
+
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+
+    const claims = (await verifyJwt(res2.body.refresh_token)).payload;
+    expect(claims.exp).toEqual((claims.iat as number) + 60);
+  });
+
+  test('refreshTokenLifetime -- Invalid duration', async () => {
+    // Create a new client application with external auth
+    await expect(
+      createClient(systemRepo, {
+        project,
+        name: 'refreshTokenLifetime - Invalid Client',
+        refreshTokenLifetime: 'medplum',
+      })
+    ).rejects.toThrow(
+      /Constraint clapp-1 not met: Token lifetime must be a valid string representing time duration (eg. 2w, 1h)*/
+    );
+
+    await expect(
+      createClient(systemRepo, {
+        project,
+        name: 'refreshTokenLifetime - Invalid Client',
+        refreshTokenLifetime: '300',
+      })
+    ).rejects.toThrow(
+      /Constraint clapp-1 not met: Token lifetime must be a valid string representing time duration (eg. 2w, 1h)*/
+    );
   });
 
   test('Patient in token response', async () => {

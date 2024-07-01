@@ -28,6 +28,7 @@ import {
   Resource,
   SearchParameter,
   StructureDefinition,
+  Subscription,
   UserConfiguration,
 } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -84,14 +85,28 @@ import {
 } from './mocks/workflow';
 import { MockSubscriptionManager } from './subscription-manager';
 
-export interface MockClientOptions extends MedplumClientOptions {
+export interface MockClientOptions
+  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
    * MedplumContext.profile returning undefined as if no one were logged in.
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
+  /**
+   * Override the `MockFetchClient` used by this `MockClient`.
+   */
+  readonly mockFetchOverride?: MockFetchOverrideOptions;
 }
+
+/**
+ * Override must contain all of `router`, `repo`, and `client`.
+ */
+export type MockFetchOverrideOptions = {
+  client: MockFetchClient;
+  router: FhirRouter;
+  repo: MemoryRepository;
+};
 
 export class MockClient extends MedplumClient {
   readonly router: FhirRouter;
@@ -104,16 +119,36 @@ export class MockClient extends MedplumClient {
   subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
-    const router = new FhirRouter();
-    const repo = new MemoryRepository();
-
     const baseUrl = clientOptions?.baseUrl ?? 'https://example.com/';
-    const client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
+
+    let router: FhirRouter;
+    let repo: MemoryRepository;
+    let client: MockFetchClient;
+
+    if (clientOptions?.mockFetchOverride) {
+      if (
+        !(
+          clientOptions.mockFetchOverride?.router &&
+          clientOptions.mockFetchOverride?.repo &&
+          clientOptions.mockFetchOverride?.client
+        )
+      ) {
+        throw new Error('mockFetchOverride must specify all fields: client, repo, router');
+      }
+      router = clientOptions.mockFetchOverride.router;
+      repo = clientOptions.mockFetchOverride.repo;
+      client = clientOptions.mockFetchOverride.client;
+    } else {
+      router = new FhirRouter();
+      repo = new MemoryRepository();
+      client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
+    }
 
     super({
       baseUrl,
       clientId: clientOptions?.clientId,
       storage: clientOptions?.storage,
+      cacheTime: clientOptions?.cacheTime,
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
@@ -262,12 +297,12 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
     return this.subManager;
   }
 
-  subscribeToCriteria(criteria: string): SubscriptionEmitter {
-    return this.getSubscriptionManager().addCriteria(criteria);
+  subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
+    return this.getSubscriptionManager().addCriteria(criteria, subscriptionProps);
   }
 
-  unsubscribeFromCriteria(criteria: string): void {
-    this.getSubscriptionManager().removeCriteria(criteria);
+  unsubscribeFromCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): void {
+    this.getSubscriptionManager().removeCriteria(criteria, subscriptionProps);
   }
 
   getMasterSubscriptionEmitter(): SubscriptionEmitter {

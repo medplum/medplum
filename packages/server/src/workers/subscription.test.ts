@@ -1711,7 +1711,7 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(console.log).toHaveBeenCalledWith(
+        expect(console.log).not.toHaveBeenCalledWith(
           expect.stringContaining('[Subscription Access Policy]: Access Policy not satisfied on')
         );
         console.log = originalConsoleLog;
@@ -1832,6 +1832,64 @@ describe('Subscription Worker', () => {
         );
         console.log = originalConsoleLog;
         globalLogger.level = LogLevel.NONE;
+      }));
+
+    test('WebSocket Subscription -- Supported Interaction Extension', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          withClient: true,
+          withRepo: true,
+          project: {
+            name: 'WebSocket Subs Project',
+            features: ['websocket-subscriptions'],
+          },
+        });
+
+        const subscription = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'websocket',
+          },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+              valueCode: 'create',
+            },
+          ],
+        });
+
+        expect(subscription).toBeDefined();
+        expect(subscription.id).toBeDefined();
+
+        const nextArgsPromise = waitForNextSubNotification<Patient>();
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        const notificationArgs = await nextArgsPromise;
+        expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
+          patient,
+          subscription.id as string,
+          { includeResource: true },
+        ]);
+
+        // Update the patient
+        // This shouldn't trigger a notification
+
+        const assertPromise = assertNoWsNotifications();
+
+        const updatedPatient = await wsSubRepo.updateResource<Patient>({
+          ...patient,
+          active: true,
+        });
+        expect(updatedPatient).toBeDefined();
+
+        await assertPromise;
       }));
   });
 });

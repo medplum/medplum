@@ -70,6 +70,9 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
       },
     } as ValueSet;
   } else {
+    if (params.filter && !params.count) {
+      params.count = 10; // Default to small page size for typeahead queries
+    }
     result = await expandValueSet(valueSet, params);
   }
 
@@ -289,9 +292,7 @@ async function includeInExpansion(
     .where('system', '=', codeSystem.id)
     .limit((count ?? MAX_EXPANSION_SIZE) + 1)
     .offset(offset ?? 0);
-  if (filter) {
-    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
-  }
+
   if (include.filter?.length) {
     for (const condition of include.filter) {
       switch (condition.op) {
@@ -309,6 +310,9 @@ async function includeInExpansion(
           return; // Unknown filter type, don't make DB query with incorrect filters
       }
     }
+  }
+  if (filter) {
+    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
   }
 
   if (params.excludeNotForUI) {
@@ -356,6 +360,10 @@ function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: 
     recursiveTable,
     new Condition(new Column(propertyTable, 'target'), '=', new Column(recursiveTable, 'id'))
   );
+
+  // Move limit and offset to outer query
+  const limit = query.limit_;
+  query.limit(0);
   const offset = query.offset_;
   query.offset(0);
 
@@ -363,7 +371,7 @@ function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: 
     .column('code')
     .column('display')
     .withRecursive('cte_descendants', new Union(base, query))
-    .limit(query.limit_)
+    .limit(limit)
     .offset(offset);
 }
 

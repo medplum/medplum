@@ -1,37 +1,79 @@
 import {
   badRequest,
+  crawlResource,
   createReference,
   createStructureIssue,
-  getTypedPropertyValueWithPath,
   normalizeErrorString,
   OperationOutcomeError,
   parseSearchRequest,
   PropertyType,
-  toTypedValue,
   TypedValue,
-  TypedValueWithPath,
 } from '@medplum/core';
 import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Repository, setTypedPropertyValue } from './repo';
+import { Repository, getSystemRepo } from './repo';
 
-type ScanFn = (tv: TypedValue, path: string) => Promise<TypedValue | undefined>;
+/**
+ * Exceptional, system-level references that should use systemRepo for validation
+ *
+ * Project.owner:
+ * `User` reference which typically does not have meta.compartment specified
+ * and is not technically in the project and thus would not be visible through
+ * the non-system repo.
+ *
+ * Project.link.project:
+ * The synthetic Project policy from `applyProjectAdminAccessPolicy` applies
+ * a criteria that requires Project.id matches the admin's ProjectMembership.project
+ * reference which will always fail for linked projects.
+ */
+const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project'];
 
-export async function validateReferences<T extends Resource>(resource: T, repo: Repository): Promise<void> {
+async function validateReference(
+  repo: Repository,
+  reference: Reference,
+  issues: OperationOutcomeIssue[],
+  path: string
+): Promise<void> {
+  if (reference.reference?.split?.('/')?.length !== 2) {
+    return;
+  }
+
+  try {
+    const validatingRepo = SYSTEM_REFERENCE_PATHS.includes(path) ? getSystemRepo() : repo;
+    await validatingRepo.readReference(reference);
+  } catch (err) {
+    issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
+  }
+}
+
+function isCheckableReference(propertyValue: TypedValue | TypedValue[], parent: TypedValue): boolean {
+  const valueType = Array.isArray(propertyValue) ? propertyValue[0].type : propertyValue.type;
+  return valueType === PropertyType.Reference && parent.type !== PropertyType.Meta;
+}
+
+export async function validateReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
   const issues: OperationOutcomeIssue[] = [];
-  await new FhirResourceScanner(resource).forEach(PropertyType.Reference, async (value, path) => {
-    const reference = value.value as Reference;
-    if (reference.reference?.split?.('/')?.length !== 2) {
-      return undefined;
-    }
+  await crawlResource(
+    resource,
+    {
+      async visitPropertyAsync(parent, _key, path, propertyValue, _schema) {
+        if (!isCheckableReference(propertyValue, parent)) {
+          return;
+        }
 
-    try {
-      await repo.readReference(reference);
-    } catch (err) {
-      issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
-    }
-    return undefined;
-  });
+        if (Array.isArray(propertyValue)) {
+          for (let i = 0; i < propertyValue.length; i++) {
+            const reference = propertyValue[i].value as Reference;
+            await validateReference(repo, reference, issues, path + '[' + i + ']');
+          }
+        } else {
+          const reference = propertyValue.value as Reference;
+          await validateReference(repo, reference, issues, path);
+        }
+      },
+    },
+    { skipMissingProperties: true }
+  );
 
   if (issues.length > 0) {
     throw new OperationOutcomeError({
@@ -42,85 +84,61 @@ export async function validateReferences<T extends Resource>(resource: T, repo: 
   }
 }
 
-export async function replaceConditionalReferences<T extends Resource>(resource: T, repo: Repository): Promise<T> {
-  const scanner = new FhirResourceScanner(resource);
-  await scanner.forEach(PropertyType.Reference, async (value, path) => {
-    const reference = value.value as Reference;
-    if (!reference.reference?.includes?.('?')) {
-      return undefined;
-    }
+async function resolveReplacementReference(
+  repo: Repository,
+  reference: Reference,
+  path: string
+): Promise<Reference | undefined> {
+  if (!reference.reference?.includes?.('?')) {
+    return undefined;
+  }
 
-    const matches = await repo.searchResources(parseSearchRequest(reference.reference));
-    if (matches.length !== 1) {
-      throw new OperationOutcomeError(badRequest(`Conditional reference matched ${matches.length} resources`, path));
-    }
+  const searchCriteria = parseSearchRequest(reference.reference);
+  searchCriteria.sortRules = undefined;
+  searchCriteria.count = 2;
+  const matches = await repo.searchResources(searchCriteria);
+  if (matches.length !== 1) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Conditional reference '${reference.reference}' ${matches.length ? 'matched multiple' : 'did not match any'} resources`,
+        path
+      )
+    );
+  }
 
-    const resolvedReference = createReference(matches[0]);
-    return { type: PropertyType.Reference, value: resolvedReference };
-  });
-
-  return resource;
+  return createReference(matches[0]);
 }
 
-export class FhirResourceScanner {
-  private readonly root: TypedValue;
+export async function replaceConditionalReferences<T extends Resource>(repo: Repository, resource: T): Promise<T> {
+  await crawlResource(
+    resource,
+    {
+      async visitPropertyAsync(parent, key, path, propertyValue, _schema) {
+        if (!isCheckableReference(propertyValue, parent)) {
+          return;
+        }
 
-  constructor(root: Resource) {
-    this.root = toTypedValue(root);
-  }
+        if (Array.isArray(propertyValue)) {
+          for (let i = 0; i < propertyValue.length; i++) {
+            const reference = propertyValue[i].value as Reference;
+            const replacement = await resolveReplacementReference(repo, reference, path + '[' + i + ']');
 
-  async forEach(targetType: keyof typeof PropertyType, fn: ScanFn): Promise<void> {
-    const resourceType = this.root.value.resourceType;
-    await this.scanObject(resourceType, this.root, targetType, fn);
-  }
+            if (replacement) {
+              parent.value[key][i] = replacement;
+            }
+          }
+        } else {
+          const reference = propertyValue.value as Reference;
+          const replacement = await resolveReplacementReference(repo, reference, path);
 
-  private async scanObject(
-    path: string,
-    typedValue: TypedValue,
-    targetType: keyof typeof PropertyType,
-    fn: ScanFn
-  ): Promise<void> {
-    const object = typedValue.value as Record<string, unknown>;
-    for (const key of Object.keys(object)) {
-      await this.checkProperty(path, key, typedValue, targetType, fn);
-    }
-  }
+          if (replacement) {
+            parent.value[key] = replacement;
+          }
+        }
+      },
+    },
+    { skipMissingProperties: true }
+  );
 
-  private async checkProperty(
-    basePath: string,
-    propertyName: string,
-    typedValue: TypedValue,
-    targetType: keyof typeof PropertyType,
-    fn: ScanFn
-  ): Promise<void> {
-    const path = basePath + '.' + propertyName;
-    const value = getTypedPropertyValueWithPath(typedValue, propertyName);
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        await this.checkPropertyValue(path, item, targetType, fn);
-      }
-    } else if (value) {
-      await this.checkPropertyValue(path, value, targetType, fn);
-    }
-  }
-
-  private async checkPropertyValue(
-    path: string,
-    typedValue: TypedValueWithPath,
-    targetType: keyof typeof PropertyType,
-    fn: ScanFn
-  ): Promise<void> {
-    if (typedValue.type === PropertyType.Meta) {
-      return;
-    }
-    if (typedValue.type === PropertyType.Reference) {
-      const replacement = await fn(typedValue, path);
-      if (replacement) {
-        setTypedPropertyValue(this.root, typedValue.path, replacement);
-      }
-    }
-    if (typeof typedValue.value === 'object') {
-      await this.scanObject(path, typedValue, targetType, fn);
-    }
-  }
+  return resource;
 }

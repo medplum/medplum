@@ -14,8 +14,6 @@ import { Client, Server } from 'mock-socket';
 import child_process, { ChildProcess } from 'node:child_process';
 import { App } from './app';
 
-jest.mock('node-windows');
-
 const medplum = new MockClient();
 
 describe('Agent Net Utils', () => {
