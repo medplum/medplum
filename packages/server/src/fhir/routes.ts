@@ -40,6 +40,7 @@ import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { sendResponse } from './response';
+import { getServiceBaseUrlBundle } from './servicebaseurl';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -283,11 +284,9 @@ function initInternalFhirRouter(): FhirRouter {
 }
 
 // Default route
-protectedRoutes.use(
+publicRoutes.use(
   '*',
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-
     const request: FhirRequest = {
       method: req.method as HttpMethod,
       pathname: req.originalUrl.replace('/fhir/R4', '').split('?').shift() as string,
@@ -297,14 +296,25 @@ protectedRoutes.use(
       headers: req.headers,
     };
 
-    const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
-    if (result.length === 1) {
-      if (!isOk(result[0])) {
-        throw new OperationOutcomeError(result[0]);
-      }
-      sendOutcome(res, result[0]);
-    } else {
-      await sendResponse(req, res, result[0], result[1]);
+    if (request.method === 'GET' && request.pathname === '' && !request.query['_type']) {
+      // Handle unauthenticated special case of GET /fhir/R4 with no _type parameter
+      await sendResponse(req, res, allOk, getServiceBaseUrlBundle());
+      return;
     }
+
+    // Otherwise, authenticate the request and process it
+    authenticateRequest(req, res, async (_err) => {
+      const ctx = getAuthenticatedContext();
+
+      const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
+      if (result.length === 1) {
+        if (!isOk(result[0])) {
+          throw new OperationOutcomeError(result[0]);
+        }
+        sendOutcome(res, result[0]);
+      } else {
+        await sendResponse(req, res, result[0], result[1]);
+      }
+    });
   })
 );

@@ -2,7 +2,7 @@ import { ContentType, concatUrls, getStatus, isCreated } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
-import { getAuthenticatedContext } from '../context';
+import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { getBinaryStorage } from './storage';
 
@@ -53,8 +53,13 @@ export async function sendResponse(
 
   res.set('Content-Type', ContentType.FHIR_JSON);
 
-  const ctx = getAuthenticatedContext();
-  const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
+  const ctx = getRequestContext();
+  let result: Resource;
+  if (ctx instanceof AuthenticatedRequestContext) {
+    result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
+  } else {
+    result = body;
+  }
 
   if (req.query._pretty === 'true') {
     res.send(JSON.stringify(result, undefined, 2));
