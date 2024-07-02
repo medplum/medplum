@@ -1,6 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import {
   Account,
+  Address,
   Appointment,
   AppointmentParticipant,
   Binary,
@@ -36,7 +37,7 @@ import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle } from './types';
-import { validateResource } from './validation';
+import { validateResource, validateTypedValue } from './validation';
 
 describe('FHIR resource validation', () => {
   let typesBundle: Bundle;
@@ -1514,6 +1515,25 @@ describe('FHIR resource validation', () => {
       },
     };
     expect(() => validateResource(consent)).not.toThrow();
+  });
+
+  test('Validate BackboneElement', () => {
+    const address: Address = {
+      use: 'home',
+      type: 'both',
+      text: '123 Main St',
+      line: ['123 Main St'],
+      city: 'Springfield',
+      district: 'Springfield',
+      state: 'IL',
+      postalCode: '62704',
+      country: 'USA',
+    };
+    expect(() => validateTypedValue({ type: 'Address', value: address })).not.toThrow();
+
+    expect(() => validateTypedValue({ type: 'Address', value: { foo: 'bar' } })).toThrow(
+      'Invalid additional property "foo" (Address.foo)'
+    );
   });
 });
 
