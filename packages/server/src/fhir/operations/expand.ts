@@ -319,7 +319,8 @@ async function includeInExpansion(
     query = addAbstractFilter(query, codeSystem);
   }
 
-  const results = await query.execute(ctx.repo.getDatabaseClient());
+  const results = await query.execute(await ctx.repo.getDatabaseClient());
+  ctx.repo.setQuerying(false);
   const system = codeSystem.url;
   for (const { code, display } of results) {
     expansion.push({ system, code, display });

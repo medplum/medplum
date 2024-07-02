@@ -69,6 +69,7 @@ export async function isSubsumed(baseCode: string, ancestorCode: string, codeSys
     .where(new Column('Coding', 'code'), '=', baseCode);
 
   const query = findAncestor(base, codeSystem, ancestorCode);
-  const results = await query.execute(ctx.repo.getDatabaseClient());
+  const results = await query.execute(await ctx.repo.getDatabaseClient());
+  ctx.repo.setQuerying(false);
   return results.length > 0;
 }

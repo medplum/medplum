@@ -138,6 +138,7 @@ async function satisfies(
       return false; // Unknown filter type, don't make DB query with incorrect filters
   }
 
-  const results = await query.execute(ctx.repo.getDatabaseClient());
+  const results = await query.execute(await ctx.repo.getDatabaseClient());
+  ctx.repo.setQuerying(false);
   return results.length > 0;
 }

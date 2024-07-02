@@ -162,7 +162,8 @@ async function getSearchEntries<T extends Resource>(
   builder.limit(count + 1); // Request one extra to test if there are more results
   builder.offset(searchRequest.offset || 0);
 
-  const rows = await builder.execute(repo.getDatabaseClient());
+  const rows = await builder.execute(await repo.getDatabaseClient());
+  repo.setQuerying(false);
   const rowCount = rows.length;
   const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
@@ -482,7 +483,8 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
     builder.raw('COUNT("id")::int AS "count"');
   }
 
-  const rows = await builder.execute(repo.getDatabaseClient());
+  const rows = await builder.execute(await repo.getDatabaseClient());
+  repo.setQuerying(false);
   return rows[0].count as number;
 }
 
@@ -505,7 +507,8 @@ async function getEstimateCount(
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
-  const rows = await builder.execute(repo.getDatabaseClient());
+  const rows = await builder.execute(await repo.getDatabaseClient());
+  repo.setQuerying(false);
   let result = 0;
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];

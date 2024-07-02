@@ -6,6 +6,7 @@ import {
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
+  TypedEventTarget,
   TypedValue,
   allOk,
   badRequest,
@@ -208,6 +209,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private conn?: PoolClient;
   private transactionDepth = 0;
   private closed = false;
+  private querying = false;
+  private queryingChangeEmitter: TypedEventTarget<{ queryingChange: { type: 'queryingChange'; value: boolean } }>;
 
   constructor(context: RepositoryContext) {
     super();
@@ -216,10 +219,16 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
+    this.queryingChangeEmitter = new TypedEventTarget();
   }
 
   clone(): Repository {
     return new Repository(this.context);
+  }
+
+  setQuerying(querying: boolean): void {
+    this.querying = querying;
+    this.queryingChangeEmitter.dispatchEvent({ type: 'queryingChange', value: querying });
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -293,7 +302,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     this.addSecurityFilters(builder, resourceType);
 
-    const rows = await builder.execute(this.getDatabaseClient());
+    const rows = await builder.execute(await this.getDatabaseClient());
+    this.setQuerying(false);
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
@@ -406,7 +416,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
         .limit(100)
-        .execute(this.getDatabaseClient());
+        .execute(await this.getDatabaseClient());
+      this.setQuerying(false);
 
       const entries: BundleEntry<T>[] = [];
 
@@ -471,7 +482,8 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .column('content')
         .where('id', '=', id)
         .where('versionId', '=', vid)
-        .execute(this.getDatabaseClient());
+        .execute(await this.getDatabaseClient());
+      this.setQuerying(false);
 
       if (rows.length === 0) {
         throw new OperationOutcomeError(notFound);
@@ -989,8 +1001,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       for (const id of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
       }
-      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
-      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
+      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(await this.getDatabaseClient());
+      this.setQuerying(false);
+      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(await this.getDatabaseClient());
+      this.setQuerying(false);
       await deleteCacheEntries(resourceType, ids);
     });
   }
@@ -1870,11 +1884,31 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * Otherwise, returns the pool (Pool).
    * @returns The database client.
    */
-  getDatabaseClient(): Pool | PoolClient {
+  async getDatabaseClient(): Promise<Pool | PoolClient> {
     this.assertNotClosed();
     // If in a transaction, then use the transaction client.
     // Otherwise, use the pool client.
-    return this.conn ?? getDatabasePool();
+
+    if (this.conn) {
+      return Promise.resolve(this.conn);
+    }
+
+    if (!this.querying) {
+      this.querying = true;
+      return Promise.resolve(getDatabasePool());
+    }
+
+    return new Promise<Pool>((resolve) => {
+      const pool = getDatabasePool();
+      const listener = (): void => {
+        if (!this.querying) {
+          this.querying = true;
+          resolve(pool);
+          this.queryingChangeEmitter.removeEventListener('queryingChange', listener);
+        }
+      };
+      this.queryingChangeEmitter.addEventListener('queryingChange', listener);
+    });
   }
 
   /**
