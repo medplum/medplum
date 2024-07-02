@@ -20,6 +20,7 @@ import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { Subscription } from './Subscription';
 
 /**
  * A record of an event made for purposes of maintaining a security log.
@@ -530,7 +531,7 @@ export interface AuditEventSource {
   /**
    * Identifier of the source where the event was detected.
    */
-  observer: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson | Bot | ClientApplication>;
+  observer: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson | Subscription | Bot | ClientApplication>;
 
   /**
    * Code specifying the type of source where event originated.
