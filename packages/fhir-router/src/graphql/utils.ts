@@ -1,4 +1,5 @@
 import {
+  DEFAULT_SEARCH_COUNT,
   Filter,
   getReferenceString,
   getSearchParameters,
@@ -115,6 +116,7 @@ export async function resolveBySearch(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'List'.length) as ResourceType;
   const searchRequest = parseSearchArgs(resourceType, source, args);
+  searchRequest.count = Math.min(searchRequest.count ?? DEFAULT_SEARCH_COUNT, 100);
   const bundle = await ctx.repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
