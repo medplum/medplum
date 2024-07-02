@@ -2,7 +2,7 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { getDatabasePool } from '../../database';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery, Union } from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
@@ -96,7 +96,7 @@ async function queryValueSetElements(
     throw new OperationOutcomeError(badRequest('No systems found'));
   }
 
-  const client = getDatabasePool();
+  const client = getDatabasePool(DatabaseMode.READER);
   const query = new SelectQuery('ValueSetElement')
     .distinctOn('system')
     .distinctOn('code')
@@ -319,7 +319,7 @@ async function includeInExpansion(
     query = addAbstractFilter(query, codeSystem);
   }
 
-  const results = await query.execute(ctx.repo.getDatabaseClient());
+  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
   const system = codeSystem.url;
   for (const { code, display } of results) {
     expansion.push({ system, code, display });

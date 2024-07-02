@@ -32,7 +32,7 @@ import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
@@ -802,7 +802,7 @@ describe('FHIR Repo', () => {
         subject: createReference(patient),
       });
 
-      const result = await getDatabasePool().query(
+      const result = await getDatabasePool(DatabaseMode.READER).query(
         'SELECT "code", "system", "value" FROM "Observation_Token" WHERE "resourceId"=$1',
         [obs1.id]
       );

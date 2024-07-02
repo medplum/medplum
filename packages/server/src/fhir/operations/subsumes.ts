@@ -2,6 +2,7 @@ import { allOk, badRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
 import { Column, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -69,6 +70,6 @@ export async function isSubsumed(baseCode: string, ancestorCode: string, codeSys
     .where(new Column('Coding', 'code'), '=', baseCode);
 
   const query = findAncestor(base, codeSystem, ancestorCode);
-  const results = await query.execute(ctx.repo.getDatabaseClient());
+  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
   return results.length > 0;
 }
