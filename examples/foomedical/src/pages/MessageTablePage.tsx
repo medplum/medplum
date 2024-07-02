@@ -6,10 +6,10 @@ import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loading } from '../components/Loading';
-import classes from './ChatsPage.module.css';
+import classes from './MessageTablePage.module.css';
 import { IconCircleOff } from '@tabler/icons-react';
 
-export function Chats(): JSX.Element {
+export function MessageTable(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Patient;
   const navigate = useNavigate();
