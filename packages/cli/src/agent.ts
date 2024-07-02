@@ -1,23 +1,60 @@
-import { ContentType, IssueSeverity, MedplumClient, isUUID } from '@medplum/core';
+import { ContentType, IssueSeverity, MedplumClient, MedplumClientOptions, isOk, isUUID } from '@medplum/core';
 import { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
 import { MedplumCommand, addSubcommand } from './utils';
 
-type ValidIdsOrCriteria = { type: 'ids'; ids: string[] } | { type: 'criteria'; criteria: string };
+export type ValidIdsOrCriteria = { type: 'ids'; ids: string[] } | { type: 'criteria'; criteria: string };
+
+export type ParsedParametersMap<R extends string[], O extends string[]> = Record<R[number], string> &
+  Record<O[number], string | undefined>;
+
+export type ParamNames<R extends string[], O extends string[] = []> = {
+  required: R;
+  optional?: O;
+};
+
+export type AgentBulkOpResponse<T extends Parameters | OperationOutcome = Parameters | OperationOutcome> = {
+  agent: Agent;
+  result: T;
+};
+
+export type CallAgentBulkOperationArgs<T extends Record<string, string>, R extends Parameters | OperationOutcome> = {
+  operation: string;
+  agentIds: string[];
+  options: MedplumClientOptions & { criteria: string; output?: 'json' };
+  parseSuccessfulResponse: (response: AgentBulkOpResponse<R>) => T;
+};
+
+export type FailedRow = {
+  id: string;
+  name: string;
+  severity: IssueSeverity;
+  code: string;
+  details: string;
+};
+
+export type StatusRow = {
+  id: string;
+  name: string;
+  enabledStatus: string;
+  connectionStatus: string;
+  version: string;
+  statusLastUpdated: string;
+};
 
 const agentStatusCommand = new MedplumCommand('status').aliases(['info', 'list', 'ls']);
 const agentPingCommand = new MedplumCommand('ping');
 const agentPushCommand = new MedplumCommand('push');
-// const agentReloadConfigCommand = new MedplumCommand('reload-config');
-// const agentUpgradeCommand = new MedplumCommand('upgrade');
+const agentReloadConfigCommand = new MedplumCommand('reload-config');
+const agentUpgradeCommand = new MedplumCommand('upgrade');
 
 export const agent = new MedplumCommand('agent');
 addSubcommand(agent, agentStatusCommand);
 addSubcommand(agent, agentPingCommand);
 addSubcommand(agent, agentPushCommand);
-// addSubcommand(agent, agentReloadConfigCommand);
-// addSubcommand(agent, agentUpgradeCommand);
+addSubcommand(agent, agentReloadConfigCommand);
+addSubcommand(agent, agentUpgradeCommand);
 
 agentStatusCommand
   .description('Get the status of a specified agent')
@@ -31,97 +68,27 @@ agentStatusCommand
       .choices(['table', 'json'])
       .default('table')
   )
-  .option('--output <format>', 'An optional output format, defaults to table')
   .action(async (agentIds, options) => {
-    const normalized = parseEitherIdsOrCriteria(agentIds, options);
-    const medplum = await createMedplumClient(options);
-    const usedCriteria = normalized.type === 'criteria' ? normalized.criteria : `Agent?_id=${normalized.ids.join(',')}`;
-    const searchParams = new URLSearchParams(usedCriteria.split('?')[1]);
+    await callAgentBulkOperation({
+      operation: '$bulk-status',
+      agentIds,
+      options,
+      parseSuccessfulResponse: (response: AgentBulkOpResponse<Parameters>) => {
+        const statusEntry = parseParameterValues(response.result, {
+          required: ['status', 'version'],
+          optional: ['lastUpdated'],
+        });
 
-    let result: Bundle<Parameters> | Parameters | OperationOutcome;
-    try {
-      const url = medplum.fhirUrl('Agent', '$bulk-status');
-      url.search = searchParams.toString();
-      result = await medplum.get(url, {
-        cache: 'reload',
-      });
-    } catch (err) {
-      throw new Error('Failed to get status from agent', { cause: err });
-    }
-
-    if (options.output === 'json') {
-      console.log(result);
-    }
-
-    const successfulResponses = [] as AgentBulkOpResponse<Parameters>[];
-    const failedResponses = [] as AgentBulkOpResponse<OperationOutcome>[];
-
-    switch (result.resourceType) {
-      case 'Bundle': {
-        const responses = parseAgentBulkOpBundle(result);
-        for (const response of responses) {
-          if (response.result.resourceType === 'Parameters') {
-            successfulResponses.push(response as AgentBulkOpResponse<Parameters>);
-          } else {
-            failedResponses.push(response as AgentBulkOpResponse<OperationOutcome>);
-          }
-        }
-        break;
-      }
-      case 'Parameters':
-      case 'OperationOutcome': {
-        const agent = await medplum.searchOne('Agent', searchParams, { cache: 'reload' });
-        if (!agent) {
-          throw new Error('Agent not found');
-        }
-        if (result.resourceType === 'Parameters') {
-          successfulResponses.push({ agent, result });
-        } else {
-          failedResponses.push({ agent, result });
-        }
-        break;
-      }
-      default:
-        throw new Error(`Invalid result received for '$bulk-status' operation: ${JSON.stringify(result)}`);
-    }
-
-    const statusRows = [] as StatusRow[];
-    for (const response of successfulResponses) {
-      const statusEntry = parseParameterValues(response.result, {
-        required: ['status', 'version'],
-        optional: ['lastUpdated'],
-      });
-      const row = {
-        id: response.agent.id as string,
-        name: response.agent.name,
-        enabledStatus: response.agent.status,
-        version: statusEntry.version,
-        connectionStatus: statusEntry.status,
-        statusLastUpdated: statusEntry.lastUpdated ?? 'N/A',
-      } satisfies StatusRow;
-      statusRows.push(row);
-    }
-
-    const failedRows = [] as FailedRow[];
-    for (const response of failedResponses) {
-      const outcome = response.result;
-      const issue = outcome.issue?.[0];
-      const row = {
-        id: response.agent.id as string,
-        name: response.agent.name,
-        severity: issue.severity,
-        code: issue.code,
-        details: issue.details?.text ?? 'No details to show',
-      } satisfies FailedRow;
-      failedRows.push(row);
-    }
-
-    console.log(`${statusRows.length} successful responses`);
-    console.table(statusRows);
-    console.log();
-
-    console.log(`${failedRows.length} failed responses`);
-    console.table(failedRows);
+        return {
+          id: response.agent.id as string,
+          name: response.agent.name,
+          enabledStatus: response.agent.status,
+          version: statusEntry.version,
+          connectionStatus: statusEntry.status,
+          statusLastUpdated: statusEntry.lastUpdated ?? 'N/A',
+        } satisfies StatusRow;
+      },
+    });
   });
 
 agentPingCommand
@@ -192,22 +159,158 @@ agentPushCommand
     console.info(pushResult);
   });
 
-export type StatusRow = {
-  id: string;
-  name: string;
-  enabledStatus: string;
-  connectionStatus: string;
-  version: string;
-  statusLastUpdated: string;
-};
+agentReloadConfigCommand
+  .description('Reload the config for the specified agent(s)')
+  .argument(
+    '[agentIds...]',
+    'The ID(s) of the agent(s) for which the config should be reloaded. Mutually exclusive with --criteria <criteria> flag'
+  )
+  .option(
+    '--criteria <criteria>',
+    'An optional FHIR search criteria to resolve the agent(s) for which to notify to reload their config. Mutually exclusive with [agentIds...] arg'
+  )
+  .addOption(
+    new Option('--output <format>', 'An optional output format, defaults to table')
+      .choices(['table', 'json'])
+      .default('table')
+  )
+  .action(async (agentIds, options) => {
+    await callAgentBulkOperation({
+      operation: '$reload-config',
+      agentIds,
+      options,
+      parseSuccessfulResponse: (response: AgentBulkOpResponse<OperationOutcome>) => {
+        return {
+          id: response.agent.id as string,
+          name: response.agent.name,
+        };
+      },
+    });
+  });
 
-export type FailedRow = {
-  id: string;
-  name: string;
-  severity: IssueSeverity;
-  code: string;
-  details: string;
-};
+agentUpgradeCommand
+  .description('Upgrade the version for the specified agent(s)')
+  .argument(
+    '[agentIds...]',
+    'The ID(s) of the agent(s) that should be upgraded. Mutually exclusive with --criteria <criteria> flag'
+  )
+  .option(
+    '--criteria <criteria>',
+    'An optional FHIR search criteria to resolve the agent(s) to upgrade. Mutually exclusive with [agentIds...] arg'
+  )
+  .option(
+    '--version <version>',
+    'An optional version to upgrade to. Defaults to the latest version if flag not included'
+  )
+  .addOption(
+    new Option('--output <format>', 'An optional output format, defaults to table')
+      .choices(['table', 'json'])
+      .default('table')
+  )
+  .action(async (agentIds, options) => {
+    await callAgentBulkOperation({
+      operation: '$upgrade',
+      agentIds,
+      options,
+      parseSuccessfulResponse: (response: AgentBulkOpResponse<OperationOutcome>) => {
+        return {
+          id: response.agent.id as string,
+          name: response.agent.name,
+          version: options.version ?? 'latest',
+        };
+      },
+    });
+  });
+
+export async function callAgentBulkOperation<
+  T extends Record<string, string>,
+  R extends Parameters | OperationOutcome,
+>({ operation, agentIds, options, parseSuccessfulResponse }: CallAgentBulkOperationArgs<T, R>): Promise<void> {
+  const normalized = parseEitherIdsOrCriteria(agentIds, options);
+  const medplum = await createMedplumClient(options);
+  const usedCriteria = normalized.type === 'criteria' ? normalized.criteria : `Agent?_id=${normalized.ids.join(',')}`;
+  const searchParams = new URLSearchParams(usedCriteria.split('?')[1]);
+
+  let result: Bundle<Parameters> | Parameters | OperationOutcome;
+  try {
+    const url = medplum.fhirUrl('Agent', operation);
+    url.search = searchParams.toString();
+    result = await medplum.get(url, {
+      cache: 'reload',
+    });
+  } catch (err) {
+    throw new Error(`Operation '${operation}' failed`, { cause: err });
+  }
+
+  if (options.output === 'json') {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  const successfulResponses = [] as AgentBulkOpResponse<R>[];
+  const failedResponses = [] as AgentBulkOpResponse<OperationOutcome>[];
+
+  switch (result.resourceType) {
+    case 'Bundle': {
+      const responses = parseAgentBulkOpBundle(result);
+      for (const response of responses) {
+        if (response.result.resourceType === 'Parameters' || isOk(response.result)) {
+          successfulResponses.push(response as AgentBulkOpResponse<R>);
+        } else {
+          failedResponses.push(response as AgentBulkOpResponse<OperationOutcome>);
+        }
+      }
+      break;
+    }
+    case 'Parameters':
+    case 'OperationOutcome': {
+      const agent = await medplum.searchOne('Agent', searchParams, { cache: 'reload' });
+      if (!agent) {
+        throw new Error('Agent not found');
+      }
+      if (result.resourceType === 'Parameters') {
+        successfulResponses.push({ agent, result } as AgentBulkOpResponse<R>);
+      } else {
+        failedResponses.push({ agent, result });
+      }
+      break;
+    }
+    default:
+      throw new Error(`Invalid result received for '${operation}' operation: ${JSON.stringify(result)}`);
+  }
+
+  const successfulRows = [] as T[];
+  for (const response of successfulResponses) {
+    const row = parseSuccessfulResponse(response);
+    successfulRows.push(row);
+  }
+
+  const failedRows = [] as FailedRow[];
+  for (const response of failedResponses) {
+    const outcome = response.result;
+    const issue = outcome.issue?.[0];
+    const row = {
+      id: response.agent.id as string,
+      name: response.agent.name,
+      severity: issue.severity,
+      code: issue.code,
+      details: issue.details?.text ?? 'No details to show',
+    } satisfies FailedRow;
+    failedRows.push(row);
+  }
+
+  console.log();
+  console.log(`${successfulRows.length} successful response(s):`);
+  console.log();
+  console.table(successfulRows.length ? successfulRows : 'No successful responses received');
+  console.log();
+
+  if (failedRows.length) {
+    console.log(`${failedRows.length} failed response(s):`);
+    console.log();
+    console.table(failedRows);
+  }
+}
 
 export async function resolveAgentReference(
   medplum: MedplumClient,
@@ -243,11 +346,6 @@ export async function resolveAgentReference(
   return { reference: `Agent/${usedId}` };
 }
 
-export type AgentBulkOpResponse<T extends Parameters | OperationOutcome = Parameters | OperationOutcome> = {
-  agent: Agent;
-  result: T;
-};
-
 export function parseAgentBulkOpBundle(bundle: Bundle<Parameters>): AgentBulkOpResponse[] {
   const responses = [];
   for (const entry of bundle.entry ?? []) {
@@ -276,14 +374,6 @@ export function parseAgentBulkOpParameters(params: Parameters): AgentBulkOpRespo
   }
   return { agent, result };
 }
-
-export type ParsedParametersMap<R extends string[], O extends string[]> = Record<R[number], string> &
-  Record<O[number], string | undefined>;
-
-export type ParamNames<R extends string[], O extends string[] = []> = {
-  required: R;
-  optional?: O;
-};
 
 export function parseParameterValues<const R extends string[], const O extends string[] = []>(
   params: Parameters,
