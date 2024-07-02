@@ -6,6 +6,7 @@ import { Address, HumanName, Patient } from '@medplum/fhirtypes';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState } from 'react';
 import { InfoSection } from '../../components/InfoSection';
+import { cleanResource } from '../../components/utils';
 
 export function Profile(): JSX.Element | null {
   const medplum = useMedplum();
@@ -29,7 +30,7 @@ export function Profile(): JSX.Element | null {
       address: [address],
     };
     const updatedProfile = await medplum
-      .updateResource(newProfile)
+      .updateResource(cleanResource(newProfile))
       .then((profile) => {
         showNotification({
           icon: <IconCircleCheck />,
@@ -49,7 +50,7 @@ export function Profile(): JSX.Element | null {
         });
       });
     if (updatedProfile) {
-      setProfile(updatedProfile);
+      setProfile(updatedProfile as Patient);
     }
     setLoading(false);
   }
