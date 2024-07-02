@@ -143,6 +143,7 @@ export interface MedplumInfraConfig {
       [key: string]: string;
     };
   }[];
+  containerInsights?: boolean;
   cloudTrailAlarms?: {
     logGroupName: string;
     logGroupCreate?: boolean;
