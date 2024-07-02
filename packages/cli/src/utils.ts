@@ -1,9 +1,11 @@
 import { ContentType, encodeBase64, MedplumClient } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
+import { Command } from 'commander';
 import { SignJWT } from 'jose';
 import { createHmac, createPrivateKey, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, extname, resolve } from 'node:path';
+import { isPromise } from 'node:util/types';
 import { extract } from 'tar';
 import { FileSystemStorage } from './storage';
 
@@ -304,4 +306,38 @@ export async function jwtAssertionLogin(medplum: MedplumClient, profile: Profile
     .setExpirationTime('5m')
     .sign(privateKey);
   await medplum.startJwtAssertionLogin(jwt);
+}
+
+export function addSubcommand(command: Command, subcommand: Command): void {
+  subcommand.configureHelp({ showGlobalOptions: true });
+  command.addCommand(subcommand);
+}
+
+export class MedplumCommand extends Command {
+  action(fn: (...args: any[]) => void | Promise<void>): this {
+    const wrappedFn = withMergedOptions(this, fn);
+    // @ts-expect-error Access to hidden member
+    super._actionHandler = wrappedFn;
+    return this;
+  }
+}
+
+export function withMergedOptions(
+  command: Command,
+  fn: ((...args: any[]) => Promise<void>) | ((...args: any[]) => void)
+): (args: any[]) => Promise<void> {
+  // The .action callback takes an extra parameter which is the command or options.
+  return async (args: any[]): Promise<void> => {
+    const expectedArgsCount = command.registeredArguments.length;
+    const actionArgs = args.slice(0, expectedArgsCount);
+    actionArgs[expectedArgsCount] = command.optsWithGlobals();
+    return new Promise((resolve, reject) => {
+      const result = fn(...actionArgs);
+      if (isPromise(result)) {
+        result.then(resolve).catch(reject);
+      } else {
+        resolve();
+      }
+    });
+  };
 }

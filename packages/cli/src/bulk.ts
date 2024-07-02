@@ -1,17 +1,15 @@
 import { MedplumClient } from '@medplum/core';
 import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
-import { Command } from 'commander';
 import { createReadStream, writeFile } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { createMedplumClient } from './util/client';
-import { createMedplumCommand } from './util/command';
-import { getUnsupportedExtension, prettyPrint } from './utils';
+import { MedplumCommand, getUnsupportedExtension, prettyPrint } from './utils';
 
-const bulkExportCommand = createMedplumCommand('export');
-const bulkImportCommand = createMedplumCommand('import');
+const bulkExportCommand = new MedplumCommand('export');
+const bulkImportCommand = new MedplumCommand('import');
 
-export const bulk = new Command('bulk').addCommand(bulkExportCommand).addCommand(bulkImportCommand);
+export const bulk = new MedplumCommand('bulk').addCommand(bulkExportCommand).addCommand(bulkImportCommand);
 
 bulkExportCommand
   .option(
@@ -62,7 +60,7 @@ bulkImportCommand
     const path = resolve(targetDirectory ?? process.cwd(), fileName);
     const medplum = await createMedplumClient(options);
 
-    await importFile(path, parseInt(numResourcesPerRequest, 10), medplum, addExtensionsForMissingValues);
+    await importFile(path, Number.parseInt(numResourcesPerRequest, 10), medplum, addExtensionsForMissingValues);
   });
 
 async function importFile(
