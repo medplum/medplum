@@ -1,11 +1,13 @@
 import { Divider, Stack, Table, Title } from '@mantine/core';
-import { formatGivenName, formatFamilyName } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { formatGivenName, formatFamilyName, normalizeErrorString } from '@medplum/core';
 import { Patient, Practitioner, HumanName } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loading } from '../components/Loading';
 import classes from './ChatsPage.module.css';
+import { IconCircleOff } from '@tabler/icons-react';
 
 export function Chats(): JSX.Element {
   const medplum = useMedplum();
@@ -29,7 +31,14 @@ export function Chats(): JSX.Element {
       `
       )
       .then((value) => setPractitioners(value.data.PractitionerList as Practitioner[]))
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
   }, [medplum, profile]);
 
   if (!practitioners) {

@@ -2,9 +2,11 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Alert } from '@mantine/core';
 import { Communication, HumanName, Patient, Practitioner } from '@medplum/fhirtypes';
-import { createReference, formatGivenName, getReferenceString } from '@medplum/core';
+import { createReference, formatGivenName, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { BaseChat, Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { Loading } from '../components/Loading';
+import { showNotification } from '@mantine/notifications';
+import { IconCircleOff } from '@tabler/icons-react';
 
 export function Messages(): JSX.Element {
   const medplum = useMedplum();
@@ -31,7 +33,14 @@ export function Messages(): JSX.Element {
       `
       )
       .then((value) => setPractitioner(value.data.Practitioner as Practitioner))
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
   }, [medplum, profile, practitionerId]);
 
   const sendMessage = useCallback(
@@ -56,7 +65,14 @@ export function Messages(): JSX.Element {
           sent: new Date().toISOString(),
           payload: [{ contentString: content }],
         })
-        .catch(console.error);
+        .catch((err) => {
+          showNotification({
+            color: 'red',
+            icon: <IconCircleOff />,
+            title: 'Error',
+            message: normalizeErrorString(err),
+          });
+        });
     },
     [medplum, profileRef, practitioner]
   );
