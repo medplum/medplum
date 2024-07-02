@@ -37,7 +37,6 @@ export function Profile(): JSX.Element | null {
           title: 'Success',
           message: 'Profile edited',
         });
-        medplum.getProfile();
         window.scrollTo(0, 0);
         return profile;
       })
