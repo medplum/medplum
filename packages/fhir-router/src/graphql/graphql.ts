@@ -16,6 +16,7 @@ import {
   DocumentNode,
   execute,
   ExecutionResult,
+  FieldNode,
   GraphQLError,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
@@ -27,12 +28,15 @@ import {
   GraphQLObjectType,
   GraphQLOutputType,
   GraphQLResolveInfo,
+  GraphQLScalarType,
   GraphQLSchema,
   GraphQLString,
   parse,
   specifiedRules,
+  TypeInfo,
   validate,
   ValidationContext,
+  visit,
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
 import { FhirRepository } from '../repo';
@@ -111,6 +115,11 @@ export async function graphqlHandler(
     return [forbidden];
   }
 
+  const queryCost = estimateQueryCost(document, schema);
+  if (queryCost > 100) {
+    return [badRequest('Query too complex')];
+  }
+
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
 
   let result: any = introspection && introspectionResults.get(query);
@@ -138,6 +147,50 @@ export async function graphqlHandler(
  */
 function isIntrospectionQuery(query: string): boolean {
   return query.includes('query IntrospectionQuery') || query.includes('__schema');
+}
+
+function estimateQueryCost(document: DocumentNode, schema: GraphQLSchema): number {
+  let cost = 0;
+
+  const typeInfo = new TypeInfo(schema);
+  let depth = -1;
+
+  visit(document, {
+    enter(node) {
+      typeInfo.enter(node);
+    },
+    leave(node) {
+      typeInfo.leave(node);
+    },
+    Field: {
+      enter(node, _key, _parent, _path, _ancestors): any {
+        depth++;
+        typeInfo.enter(node);
+        if (isSearchField(node, typeInfo)) {
+          console.log('Found search field', node.name.value, 'at depth', depth);
+          console.log(typeInfo.getType());
+          cost += 1;
+        } else {
+          const fieldType = typeInfo.getType();
+          if (!(fieldType instanceof GraphQLScalarType)) {
+            console.log(node.name.value, _ancestors);
+          }
+        }
+        return undefined;
+      },
+      leave(node) {
+        typeInfo.leave(node);
+        depth--;
+      },
+    },
+  });
+
+  return cost;
+}
+
+function isSearchField(node: FieldNode, typeInfo: TypeInfo): boolean {
+  const fieldType = typeInfo.getType();
+  return Boolean(node.arguments?.length && fieldType instanceof GraphQLList);
 }
 
 export function getRootSchema(): GraphQLSchema {
