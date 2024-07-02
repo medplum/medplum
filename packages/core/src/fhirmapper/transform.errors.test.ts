@@ -77,8 +77,8 @@ describe('FHIR Mapper transform - errors', () => {
       }
     `;
 
-    const input = [toTypedValue({ a: 'abc' })];
-    const expected = [toTypedValue({})];
+    const input = [{ type: 'TLeft', value: { a: 'abc' } }];
+    const expected = [{ type: 'TRight', value: {} }];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
     expect(actual).toEqual(expected);
   });
