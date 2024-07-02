@@ -1,45 +1,14 @@
 import { Divider, Stack, Table, Title } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import { formatGivenName, formatFamilyName, normalizeErrorString } from '@medplum/core';
-import { Patient, Practitioner, HumanName } from '@medplum/fhirtypes';
-import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { formatGivenName, formatFamilyName } from '@medplum/core';
+import { HumanName } from '@medplum/fhirtypes';
+import { Document, useSearchResources } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
 import { Loading } from '../components/Loading';
 import classes from './MessageTablePage.module.css';
-import { IconCircleOff } from '@tabler/icons-react';
 
 export function MessageTable(): JSX.Element {
-  const medplum = useMedplum();
-  const profile = useMedplumProfile() as Patient;
+  const [practitioners] = useSearchResources('Practitioner');
   const navigate = useNavigate();
-  const [practitioners, setPractitioners] = useState<Practitioner[]>();
-
-  useEffect(() => {
-    medplum
-      .graphql(
-        `
-        {
-          PractitionerList {
-            id
-            name {
-              given
-              family
-            }
-          }
-        }
-      `
-      )
-      .then((value) => setPractitioners(value.data.PractitionerList as Practitioner[]))
-      .catch((err) => {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
-      });
-  }, [medplum, profile]);
 
   if (!practitioners) {
     return <Loading />;
