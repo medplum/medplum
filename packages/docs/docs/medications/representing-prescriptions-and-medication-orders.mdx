@@ -129,15 +129,15 @@ For more details on the `MedicationKnowledge` resource and how to model medicati
 
 The instructions to the pharmacy on how the order should be dispensed should be included on the `MedicationRequest.dispenseRequest` field.
 
-| Element                  | Description                                                                                                                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `initialFill`            | The duration or quantity of the first dispense of the medication.                                                                                                                                      |
-| `quantity`               | The amount of the medication that is to be dispensed for one fill after the initial fill.                                                                                                              |
-| `dispenseInterval`       | The minimum amount of time between refills of the medication.                                                                                                                                          |
-| `validityPeriod`         | The period over which the prescription or order remains valid.                                                                                                                                         |
+| Element                  | Description                                                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initialFill`            | The duration or quantity of the first dispense of the medication.                                                                                                                                        |
+| `quantity`               | The amount of the medication that is to be dispensed for one fill after the initial fill.                                                                                                                |
+| `dispenseInterval`       | The minimum amount of time between refills of the medication.                                                                                                                                            |
+| `validityPeriod`         | The period over which the prescription or order remains valid.                                                                                                                                           |
 | `numberOfRepeatsAllowed` | The number of times that the order may be refilled. Note that this does not include the initial dispense. If the value here is 3, the order can be refilled 3 times in addition to the initial dispense. |
-| `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                |
-| `performer`              | The organization (i.e. Pharmacy) that should dispense the medication.                                                                                                                                  |
+| `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                  |
+| `performer`              | The organization (i.e. Pharmacy) that should dispense the medication.                                                                                                                                    |
 
 <details>
   <summary>Example: Dispense Instructions</summary>
@@ -145,6 +145,10 @@ The instructions to the pharmacy on how the order should be dispensed should be 
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+:::note Preferred Pharmacies
+There is currently no community consensus on how to store a patient's preferred pharmacy in FHIR, but Mepdlum's guidance is to add this information to a [`CareTeam`](/docs/api/fhir/resources/careteam) resource associated with the [`Patient`](/docs/api/fhir/resources/patient).
+:::
 
 ## Representing Patient Instructions
 
@@ -161,7 +165,7 @@ The instructions for how the patient should take the medication should be includ
 | `patientInstruction`       | Readable instructions that the patient is able to understand.                                          |
 | `additionalInstruction`    | Any additional directions to the patient for taking the medicine (e.g. with a meal, or before eating). |
 | `maxDosePerAdministration` | The limit to the amount of medication that should be taken in a single administration.                 |
-| `maxDosePerPeriod`         | The limit to the amount of medication that should be administered over a given period.                   |
+| `maxDosePerPeriod`         | The limit to the amount of medication that should be administered over a given period.                 |
 | `maxDosePerLifetime`       | The limit to the amount of medication that should be taken by a patient in their lifetime.             |
 | `sequence`                 | The specific step in which this dosage should be taken. It should start at 1 and increment from there. |
 
