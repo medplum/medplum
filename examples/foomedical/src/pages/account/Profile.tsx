@@ -1,21 +1,20 @@
-import { Box, Button, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
+import { Box, Button, InputLabel, LoadingOverlay, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { Form, ResourceAvatar, useMedplum } from '@medplum/react';
-import { formatAddress, formatFamilyName, formatGivenName, formatHumanName, normalizeErrorString } from '@medplum/core';
-import { HumanName, Patient } from '@medplum/fhirtypes';
+import { AddressInput, Form, ResourceAvatar, useMedplum } from '@medplum/react';
+import { formatFamilyName, formatGivenName, formatHumanName, normalizeErrorString } from '@medplum/core';
+import { Address, HumanName, Patient } from '@medplum/fhirtypes';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState } from 'react';
 import { InfoSection } from '../../components/InfoSection';
 
 export function Profile(): JSX.Element | null {
   const medplum = useMedplum();
-
   const [profile, setProfile] = useState<Patient>(medplum.getProfile() as Patient);
   const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState<Address>(profile.address?.[0] || {});
 
-  async function updateProfile(formData: Record<string, string>): Promise<void> {
+  async function handleProfileEdit(formData: Record<string, string>): Promise<void> {
     setLoading(true);
-
     const newProfile: Patient = {
       ...profile,
       name: [
@@ -27,9 +26,8 @@ export function Profile(): JSX.Element | null {
       ],
       birthDate: formData.birthDate,
       gender: formData.gender as Patient['gender'],
-      address: [{ text: formData.address }],
+      address: [address],
     };
-
     const updatedProfile = await medplum
       .updateResource(newProfile)
       .then((profile) => {
@@ -50,22 +48,21 @@ export function Profile(): JSX.Element | null {
           message: normalizeErrorString(err),
         });
       });
-
     if (updatedProfile) {
       setProfile(updatedProfile);
     }
-
     setLoading(false);
   }
 
   return (
-    <Box p="xl">
-      <Form onSubmit={updateProfile}>
+    <Box p="xl" pos="relative">
+      <LoadingOverlay visible={loading} />
+      <Form onSubmit={handleProfileEdit}>
         <Stack align="center">
           <ResourceAvatar size={200} radius={100} value={profile} />
           <Title order={2}>{formatHumanName(profile.name?.[0] as HumanName)}</Title>
           <InfoSection title="Personal Information">
-            <Box p="xl" w={500}>
+            <Box p="xl">
               <Stack>
                 <TextInput
                   label="First Name"
@@ -84,11 +81,14 @@ export function Profile(): JSX.Element | null {
                   data={['', 'female', 'male', 'other', 'unknown']}
                 />
                 <TextInput label="Birth Date" name="birthDate" type="date" defaultValue={profile.birthDate} />
+                <Button type="submit" mr="auto">
+                  Save
+                </Button>
               </Stack>
             </Box>
           </InfoSection>
           <InfoSection title="Contact Information">
-            <Box p="xl" w={500}>
+            <Box p="xl">
               <Stack>
                 <TextInput
                   label="Email"
@@ -96,19 +96,21 @@ export function Profile(): JSX.Element | null {
                   defaultValue={profile.telecom?.find((t) => t.system === 'email')?.value}
                   disabled
                 />
-                <TextInput
-                  label="Address"
-                  name="address"
-                  defaultValue={formatAddress(profile.address?.[0] || {}) || profile.address?.[0]?.text}
-                />
+                <Stack gap={0}>
+                  <InputLabel htmlFor="address">Address</InputLabel>
+                  <AddressInput
+                    name="address"
+                    path="Patient.address"
+                    defaultValue={address}
+                    onChange={(address) => setAddress(address)}
+                  />
+                </Stack>
+                <Button type="submit" mr="auto">
+                  Save
+                </Button>
               </Stack>
             </Box>
           </InfoSection>
-          <Box ml="auto">
-            <Button type="submit" loading={loading}>
-              Save
-            </Button>
-          </Box>
         </Stack>
       </Form>
     </Box>
