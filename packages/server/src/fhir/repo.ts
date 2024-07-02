@@ -62,7 +62,7 @@ import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger, getRequestContext } from '../context';
-import { getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -293,7 +293,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     this.addSecurityFilters(builder, resourceType);
 
-    const rows = await builder.execute(this.getDatabaseClient());
+    const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
@@ -406,7 +406,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
         .limit(100)
-        .execute(this.getDatabaseClient());
+        .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       const entries: BundleEntry<T>[] = [];
 
@@ -471,7 +471,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .column('content')
         .where('id', '=', id)
         .where('versionId', '=', vid)
-        .execute(this.getDatabaseClient());
+        .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       if (rows.length === 0) {
         throw new OperationOutcomeError(notFound);
@@ -989,8 +989,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       for (const id of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
       }
-      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
-      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
+      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient(DatabaseMode.WRITER));
+      await new DeleteQuery(resourceType + '_History')
+        .where('id', 'IN', ids)
+        .execute(this.getDatabaseClient(DatabaseMode.WRITER));
       await deleteCacheEntries(resourceType, ids);
     });
   }
@@ -1868,24 +1870,26 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * The return value can either be a pool client or a pool.
    * If in a transaction, then returns the transaction client (PoolClient).
    * Otherwise, returns the pool (Pool).
+   * @param mode - The database mode.
    * @returns The database client.
    */
-  getDatabaseClient(): Pool | PoolClient {
+  getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
     this.assertNotClosed();
     // If in a transaction, then use the transaction client.
     // Otherwise, use the pool client.
-    return this.conn ?? getDatabasePool();
+    return this.conn ?? getDatabasePool(mode);
   }
 
   /**
    * Returns a proper database connection.
    * Unlike getDatabaseClient(), this method always returns a PoolClient.
+   * @param mode - The database mode.
    * @returns Database connection.
    */
-  private async getConnection(): Promise<PoolClient> {
+  private async getConnection(mode: DatabaseMode): Promise<PoolClient> {
     this.assertNotClosed();
     if (!this.conn) {
-      this.conn = await getDatabasePool().connect();
+      this.conn = await getDatabasePool(mode).connect();
     }
     return this.conn;
   }
@@ -1947,7 +1951,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
-    const conn = await this.getConnection();
+    const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
     } else {
@@ -1958,7 +1962,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   private async commitTransaction(): Promise<void> {
     this.assertInTransaction();
-    const conn = await this.getConnection();
+    const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('COMMIT');
       this.releaseConnection();
@@ -1969,7 +1973,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   private async rollbackTransaction(error: Error): Promise<void> {
     this.assertInTransaction();
-    const conn = await this.getConnection();
+    const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
       this.releaseConnection(error);

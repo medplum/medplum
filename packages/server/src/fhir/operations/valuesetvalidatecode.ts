@@ -9,6 +9,7 @@ import {
   ValueSetComposeIncludeFilter,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
 import { Column, SelectQuery } from '../sql';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
@@ -138,6 +139,6 @@ async function satisfies(
       return false; // Unknown filter type, don't make DB query with incorrect filters
   }
 
-  const results = await query.execute(ctx.repo.getDatabaseClient());
+  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
   return results.length > 0;
 }

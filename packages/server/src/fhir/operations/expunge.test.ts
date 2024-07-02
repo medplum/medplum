@@ -5,7 +5,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { getDatabasePool } from '../../database';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { getRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
@@ -188,7 +188,10 @@ async function existsInCache(resourceType: string, id: string | undefined): Prom
 }
 
 async function existsInDatabase(tableName: string, id: string | undefined): Promise<boolean> {
-  const rows = await new SelectQuery(tableName).column('id').where('id', '=', id).execute(getDatabasePool());
+  const rows = await new SelectQuery(tableName)
+    .column('id')
+    .where('id', '=', id)
+    .execute(getDatabasePool(DatabaseMode.READER));
   return rows.length > 0;
 }
 
@@ -196,6 +199,6 @@ async function existsInLookupTable(tableName: string, id: string | undefined): P
   const rows = await new SelectQuery(tableName)
     .column('resourceId')
     .where('resourceId', '=', id)
-    .execute(getDatabasePool());
+    .execute(getDatabasePool(DatabaseMode.READER));
   return rows.length > 0;
 }
