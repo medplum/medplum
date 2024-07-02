@@ -93,7 +93,7 @@ async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
       {
         id: 'id-4',
         linkId: 'g2',
-        type: 'group',
+        type: 'display',
         text: 'For guidance on which labs to order visit: https://www.uptodate.com/contents/search?search=lab%20orders',
       },
       {
