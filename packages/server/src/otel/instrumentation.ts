@@ -70,7 +70,9 @@ export function initOpenTelemetry(): void {
     new IORedisInstrumentation(),
 
     new ExpressInstrumentation(),
-    new GraphQLInstrumentation(),
+    new GraphQLInstrumentation({
+      ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
+    }),
     new DataloaderInstrumentation(),
 
     new AwsInstrumentation(),
