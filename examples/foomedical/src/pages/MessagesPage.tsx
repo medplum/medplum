@@ -1,122 +1,84 @@
-import { Button, Divider, Group, Stack, Text, Textarea, Title } from '@mantine/core';
-import { createReference, formatDateTime, getReferenceString } from '@medplum/core';
-import { Communication, Patient, Practitioner } from '@medplum/fhirtypes';
-import { Document, Form, ResourceAvatar, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { Alert } from '@mantine/core';
+import { Communication, HumanName, Patient, Practitioner } from '@medplum/fhirtypes';
+import { createReference, formatGivenName, getReferenceString } from '@medplum/core';
+import { BaseChat, Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { Loading } from '../components/Loading';
 
 export function Messages(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Patient;
-  const [messages, setMessages] = useState<Communication[]>();
+  const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
+  const [practitioner, setPractitioner] = useState<Practitioner>();
+  const [communications, setCommunications] = useState<Communication[]>([]);
+  const { practitionerId } = useParams();
 
   useEffect(() => {
     medplum
       .graphql(
         `
         {
-          CommunicationList(subject: "${getReferenceString(profile)}") {
+          Practitioner(id: "${practitionerId}") {
             resourceType
             id
-            meta {
-              lastUpdated
-            }
-            payload {
-              contentString
-              contentAttachment {
-                url
-                contentType
-              }
-            }
-            sender {
-              reference
-              resource {
-                ... on Patient {
-                  resourceType
-                  id
-                  name {
-                    given
-                    family
-                  }
-                  photo {
-                    contentType
-                    url
-                  }
-                }
-                ... on Practitioner {
-                  resourceType
-                  id
-                  name {
-                    given
-                    family
-                  }
-                  photo {
-                    contentType
-                    url
-                  }
-                }
-              }
+            name {
+              given
+              family
             }
           }
-      }
-        `
+        }
+      `
       )
-      .then((value) => setMessages(value.data.CommunicationList as Communication[]))
+      .then((value) => setPractitioner(value.data.Practitioner as Practitioner))
       .catch((err) => console.error(err));
-  }, [medplum, profile]);
+  }, [medplum, profile, practitionerId]);
 
-  if (!messages) {
+  const sendMessage = useCallback(
+    (content: string): void => {
+      if (!practitioner) {
+        return;
+      }
+
+      if (!profileRef) {
+        return;
+      }
+
+      const practitionerRef = createReference(practitioner);
+
+      medplum
+        .createResource<Communication>({
+          resourceType: 'Communication',
+          status: 'in-progress',
+          sender: profileRef,
+          subject: profileRef,
+          recipient: [practitionerRef],
+          sent: new Date().toISOString(),
+          payload: [{ contentString: content }],
+        })
+        .catch(console.error);
+    },
+    [medplum, profileRef, practitioner]
+  );
+
+  if (!profileRef) {
+    return <Alert color="red">Error: Provider profile not found</Alert>;
+  }
+
+  if (!practitioner) {
     return <Loading />;
   }
 
   return (
     <Document width={800}>
-      <Title>Messages</Title>
-      <Divider my="xl" />
-      <Stack gap="xl">
-        {messages.map((resource) => (
-          <div key={resource.id}>
-            <Group align="top">
-              <ResourceAvatar size="lg" radius="xl" value={resource.sender?.resource as Practitioner} />
-              <div>
-                <Text size="sm" fw={500}>
-                  <ResourceName value={resource.sender?.resource as Patient | Practitioner} />
-                </Text>
-                <Text size="xs" color="dimmed">
-                  {formatDateTime(resource?.meta?.lastUpdated)}
-                </Text>
-                <Text size="md" my="sm">
-                  {resource.payload?.[0].contentString}
-                </Text>
-              </div>
-            </Group>
-          </div>
-        ))}
-        <div style={{ margin: '0 -20px -20px -20px', padding: 20, background: '#f8f8f8' }}>
-          <Form
-            onSubmit={(formData: Record<string, string>) => {
-              medplum
-                .createResource({
-                  resourceType: 'Communication',
-                  status: 'completed',
-                  subject: createReference(profile),
-                  sender: createReference(profile),
-                  payload: [{ contentString: formData.contentString }],
-                })
-                .then((result) => setMessages([...messages, result]))
-                .catch(console.log);
-            }}
-          >
-            <Group align="top">
-              <ResourceAvatar size="lg" radius="xl" value={profile} />
-              <Textarea name="contentString" style={{ flex: 1 }} placeholder="Add note" autosize />
-            </Group>
-            <Group justify="flex-end" mt="md">
-              <Button type="submit">Send</Button>
-            </Group>
-          </Form>
-        </div>
-      </Stack>
+      <BaseChat
+        title={`Chat with ${formatGivenName(practitioner.name?.[0] as HumanName)}`}
+        query={`sender=${getReferenceString(profile)},Practitioner/${practitionerId}&recipient=${getReferenceString(profile)},Practitioner/${practitionerId}`}
+        communications={communications}
+        setCommunications={(c) => setCommunications(c)}
+        sendMessage={sendMessage}
+        h={600}
+      />
     </Document>
   );
 }
