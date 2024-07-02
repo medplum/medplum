@@ -71,6 +71,7 @@ export interface MedplumSourceInfraConfig {
       [key: string]: ValueOrExternalSecret<string>;
     };
   }[];
+  containerInsights?: ValueOrExternalSecret<boolean>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
     logGroupCreate?: ValueOrExternalSecret<boolean>;
