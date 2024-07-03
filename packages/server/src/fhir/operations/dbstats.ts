@@ -21,7 +21,7 @@ const operation: OperationDefinition = {
 export async function dbStatsHandler(_req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const client = getDatabasePool(DatabaseMode.READER);
+  const client = getDatabasePool(DatabaseMode.WRITER);
   const sql = `
       SELECT * FROM (
         SELECT table_schema, table_name, pg_relation_size('"'||table_schema||'"."'||table_name||'"') AS table_size
