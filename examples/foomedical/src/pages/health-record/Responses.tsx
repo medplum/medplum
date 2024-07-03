@@ -1,19 +1,20 @@
 import { Box, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
-import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile, useSearchResources } from '@medplum/react';
+import { Patient } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconChevronRight } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { InfoButton } from '../../components/InfoButton';
 import { InfoSection } from '../../components/InfoSection';
-import { Loading } from '../../components/Loading';
 
-export function QuestionnaireResponses(): JSX.Element {
+export function Responses(): JSX.Element {
   const medplum = useMedplum();
   const theme = useMantineTheme();
   const navigate = useNavigate();
   const profile = useMedplumProfile() as Patient;
-  const responses = medplum.searchResources('QuestionnaireResponse', `source=${getReferenceString(profile)}`).read();
+  const responses = medplum
+    .searchResources('QuestionnaireResponse', `source=${getReferenceString(profile)}&_sort=-authored`)
+    .read();
 
   return (
     <Box p="xl">

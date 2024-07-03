@@ -28,7 +28,7 @@ export function QuestionnairePage(): JSX.Element {
             title: 'Success',
             message: 'Answers recorded',
           });
-          navigate('/health-record/');
+          navigate('/health-record/questionnaire-responses/');
           window.scrollTo(0, 0);
         })
         .catch((err) => {
