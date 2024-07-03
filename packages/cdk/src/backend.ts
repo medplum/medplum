@@ -220,6 +220,7 @@ export class BackEnd extends Construct {
     // ECS Cluster
     this.ecsCluster = new ecs.Cluster(this, 'Cluster', {
       vpc: this.vpc,
+      containerInsights: config.containerInsights,
     });
 
     // Task Policies
