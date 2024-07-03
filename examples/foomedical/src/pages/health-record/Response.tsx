@@ -16,7 +16,7 @@ export function Response(): JSX.Element {
       <Paper>
         <Stack>
           {items.map((item) => (
-            <ItemDisplay item={item} order={4} />
+            <ItemDisplay key={item.id} item={item} order={4} />
           ))}
         </Stack>
       </Paper>
@@ -35,14 +35,14 @@ function ItemDisplay({ item, order }: ItemDisplayProps): JSX.Element {
   const nestedAnswers = item.item;
 
   return (
-    <Stack key={item.id}>
+    <Stack>
       <Title order={order}>{title}</Title>
       <Stack key={item.linkId}>
         {answer && answer.length > 0 ? (
-          <AnswerDisplay answer={answer[0]} />
+          <AnswerDisplay key={answer[0].id} answer={answer[0]} />
         ) : (
           nestedAnswers?.map((nestedAnswer) => (
-            <ItemDisplay item={nestedAnswer} order={Math.min(order + 1, 6) as TitleOrder} />
+            <ItemDisplay key={nestedAnswer.id} item={nestedAnswer} order={Math.min(order + 1, 6) as TitleOrder} />
           ))
         )}
       </Stack>
@@ -73,7 +73,9 @@ function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
       return <RangeDisplay value={value} />;
     case 'valueDateTime':
       return <p>{formatDate(value)}</p>;
+    case 'valueBoolean':
+      return <p>{value ? 'True' : 'False'}</p>;
     default:
-      return <p>{value}</p>;
+      return <p>{value.toString()}</p>;
   }
 }
