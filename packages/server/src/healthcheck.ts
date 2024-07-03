@@ -1,6 +1,7 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { Request, Response } from 'express';
 import os from 'node:os';
+import v8 from 'node:v8';
 import { getDatabasePool } from './database';
 import { setGauge } from './otel/otel';
 import { getRedis } from './redis';
@@ -20,6 +21,19 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   const redisOk = await testRedis();
   const redisRoundtripMs = Date.now() - startTime;
   setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000, { hostname });
+
+  const heapStats = v8.getHeapStatistics();
+  setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size);
+
+  const heapSpaceStats = v8.getHeapSpaceStatistics();
+  setGauge(
+    'medplum.node.oldSpaceUsedSize',
+    heapSpaceStats.find((entry) => entry.space_name === 'old_space')?.space_used_size ?? -1
+  );
+  setGauge(
+    'medplum.node.newSpaceUsedSize',
+    heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1
+  );
 
   res.json({
     ok: true,
