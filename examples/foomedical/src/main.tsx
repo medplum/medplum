@@ -1,5 +1,6 @@
 import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
@@ -8,7 +9,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
-import { Notifications } from '@mantine/notifications';
 
 const medplum = new MedplumClient({
   // To run FooMedical locally, you can set the baseURL in this constructor
