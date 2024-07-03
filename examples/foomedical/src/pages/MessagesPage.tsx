@@ -52,6 +52,26 @@ export function Messages(): JSX.Element {
     [medplum, profileRef, practitioner]
   );
 
+  const handleMessageReceived = useCallback(
+    (message: Communication): void => {
+      medplum
+        .updateResource<Communication>({
+          ...message,
+          status: 'completed',
+          received: new Date().toISOString(),
+        })
+        .catch((err) => {
+          showNotification({
+            color: 'red',
+            icon: <IconCircleOff />,
+            title: 'Error',
+            message: normalizeErrorString(err),
+          });
+        });
+    },
+    [medplum]
+  );
+
   if (!profileRef) {
     return <Alert color="red">Error: Provider profile not found</Alert>;
   }
@@ -66,8 +86,9 @@ export function Messages(): JSX.Element {
         title={`Chat with ${formatGivenName(practitioner.name?.[0] as HumanName)}`}
         query={`sender=${getReferenceString(profile)},Practitioner/${practitionerId}&recipient=${getReferenceString(profile)},Practitioner/${practitionerId}`}
         communications={communications}
-        setCommunications={(c) => setCommunications(c)}
+        setCommunications={setCommunications}
         sendMessage={sendMessage}
+        onMessageReceived={handleMessageReceived}
         h={600}
       />
     </Document>
