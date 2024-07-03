@@ -188,11 +188,15 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.dbname = 'medplum_test';
   config.database.runMigrations = false;
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
-  config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+
+  if (process.env['REDIS_PASSWORD_DISABLED_IN_TESTS']) {
+    delete config.redis.password;
+  }
+
   return config;
 }
 
