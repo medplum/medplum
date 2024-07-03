@@ -28,9 +28,9 @@ import {
   GraphQLObjectType,
   GraphQLOutputType,
   GraphQLResolveInfo,
-  GraphQLScalarType,
   GraphQLSchema,
   GraphQLString,
+  GraphQLUnionType,
   parse,
   specifiedRules,
   TypeInfo,
@@ -116,6 +116,7 @@ export async function graphqlHandler(
   }
 
   const queryCost = estimateQueryCost(document, schema);
+  console.log('QUERY COMPLEXITY:', queryCost);
   if (queryCost > 100) {
     return [badRequest('Query too complex')];
   }
@@ -169,12 +170,9 @@ function estimateQueryCost(document: DocumentNode, schema: GraphQLSchema): numbe
         if (isSearchField(node, typeInfo)) {
           console.log('Found search field', node.name.value, 'at depth', depth);
           console.log(typeInfo.getType());
-          cost += 1;
-        } else {
-          const fieldType = typeInfo.getType();
-          if (!(fieldType instanceof GraphQLScalarType)) {
-            console.log(node.name.value, _ancestors);
-          }
+          cost += Math.ceil(Math.pow(8, 1.5 * depth));
+        } else if (isLinkedResource(node, typeInfo)) {
+          cost += depth;
         }
         return undefined;
       },
@@ -191,6 +189,11 @@ function estimateQueryCost(document: DocumentNode, schema: GraphQLSchema): numbe
 function isSearchField(node: FieldNode, typeInfo: TypeInfo): boolean {
   const fieldType = typeInfo.getType();
   return Boolean(node.arguments?.length && fieldType instanceof GraphQLList);
+}
+
+function isLinkedResource(node: FieldNode, typeInfo: TypeInfo): boolean {
+  const fieldType = typeInfo.getType();
+  return fieldType instanceof GraphQLUnionType && fieldType.name === 'ResourceList';
 }
 
 export function getRootSchema(): GraphQLSchema {
