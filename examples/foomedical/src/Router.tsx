@@ -18,6 +18,7 @@ import { Vaccines } from './pages/health-record/Vaccines';
 import { Vitals } from './pages/health-record/Vitals';
 import { HomePage } from './pages/HomePage';
 import { Messages } from './pages/MessagesPage';
+import { QuestionnairePage } from './pages/QuestionnairePage';
 import { ObservationPage } from './pages/ObservationPage';
 import { SignOutPage } from './pages/SignOutPage';
 
@@ -26,6 +27,7 @@ export function Router(): JSX.Element {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="messages/*" element={<Messages />} />
+      <Route path="Questionnaire/:questionnaireId" element={<QuestionnairePage />} />
       <Route path="health-record/*" element={<HealthRecord />}>
         <Route index element={<Navigate replace to="/health-record/lab-results" />} />
         <Route path="lab-results/*" element={<LabResults />} />
