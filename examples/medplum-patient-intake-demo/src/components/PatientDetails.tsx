@@ -5,7 +5,6 @@ import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { cleanResource } from '../utils';
 
 interface PatientDetailsProps {
   patient: Patient;
@@ -33,7 +32,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
   function handlePatientEdit(resource: Resource): void {
     medplum
       // Update the resource then re-render the page and go to the details tab
-      .updateResource(cleanResource(resource))
+      .updateResource(resource)
       .then((patient) => {
         props.onChange(patient as Patient);
         showNotification({
