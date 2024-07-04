@@ -35,7 +35,7 @@ import {
   ValidationContext,
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
-import { FhirRepository } from '../repo';
+import { FhirRepository, RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import {
@@ -111,6 +111,10 @@ export async function graphqlHandler(
     return [forbidden];
   }
 
+  if (includesMutations(query)) {
+    repo.setMode(RepositoryMode.WRITER);
+  }
+
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
 
   let result: any = introspection && introspectionResults.get(query);
@@ -138,6 +142,15 @@ export async function graphqlHandler(
  */
 function isIntrospectionQuery(query: string): boolean {
   return query.includes('query IntrospectionQuery') || query.includes('__schema');
+}
+
+/**
+ * Returns true if the query includes mutations.
+ * @param query - The GraphQL query.
+ * @returns True if the query includes mutations.
+ */
+function includesMutations(query: string): boolean {
+  return query.includes('mutation');
 }
 
 export function getRootSchema(): GraphQLSchema {

@@ -1,5 +1,5 @@
 import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
+import { FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -296,6 +296,13 @@ protectedRoutes.use(
       body: req.body,
       headers: req.headers,
     };
+
+    if (request.pathname.includes('$graphql')) {
+      // If this is a GraphQL request, mark the repository as eligible for "reader" mode.
+      // Inside the GraphQL handler, the repository will be set to "writer" mode if needed.
+      // At the time of this writing, the GraphQL handler is the only place where we consider "reader" mode.
+      ctx.repo.setMode(RepositoryMode.READER);
+    }
 
     const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
     if (result.length === 1) {

@@ -252,6 +252,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       receivedAt: start,
       status: res.statusCode,
       ua: req.get('User-Agent'),
+      mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
     });
   });
 
