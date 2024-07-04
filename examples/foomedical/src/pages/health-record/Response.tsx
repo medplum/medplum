@@ -30,9 +30,7 @@ interface ItemDisplayProps {
 }
 
 function ItemDisplay({ item, order }: ItemDisplayProps): JSX.Element {
-  const title = item.text;
-  const answer = item.answer;
-  const nestedAnswers = item.item;
+  const { text: title, answer, item: nestedAnswers } = item;
 
   return (
     <Stack>
