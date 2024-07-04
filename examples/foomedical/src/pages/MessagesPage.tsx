@@ -54,6 +54,10 @@ export function Messages(): JSX.Element {
 
   const handleMessageReceived = useCallback(
     (message: Communication): void => {
+      if (message.received) {
+        return;
+      }
+
       medplum
         .updateResource<Communication>({
           ...message,
