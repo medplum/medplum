@@ -18,7 +18,7 @@ Medplum is ONC Certified. Below are certification resources and documentation.
 | Pricing                        | [Offering Grid](/pricing)                                                      |
 | Registration Process           | [Instructions](/docs/tutorials/register)                                       |
 
-This Health IT Module is 2015 Edition compliant and has been certified by an ONC-ACB in accordance with the applicable certification criteria adopted by the Secretary of Health and Human Services. This certification does not represent an endorsement by the U.S. Department of Health and Human Services.
+This Health IT Module is compliant with the ONC Certification Criteria for Health IT and has been certified by an ONC-ACB in accordance with the applicable certification criteria adopted by the Secretary of Health and Human Services. This certification does not represent an endorsement by the U.S. Department of Health and Human Services.
 
 ## Standards Version Advancement Process Notices {#svap}
 
@@ -37,6 +37,7 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
 | [d1](/docs/auth)                                    | Authentication, Access Control, Authorization        |
 | [d9](/security#application-security)                | Trusted connection                                   |
+| d3                                                 | Audit reports              |
 | d10                                                 | Auditing actions on Health Information               |
 | d12                                                 | Encrypt Authentication Credentials                   |
 | d13                                                 | Multi-factor Authentication                          |
@@ -50,7 +51,7 @@ The following criteria are required for CHPL listing: d12, d13, [g4](/docs/compl
 
 | Resource Name            | Description                                          | Access                                                                                                                                                        |
 | ------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compliance Certificate   | Medplum Compliance Certificate                       | [Request Access](https://drive.google.com/file/d/1iBSdSORi-H6DZuYIBYuUlGofc9ouvJEC/view?usp=drive_link)                                                       |
+| Compliance Certificate   | Medplum Compliance Certificate                       | [Request Access](https://drive.google.com/file/d/1V8zXs7pgwoA_ktyjJb00vLxaNVoa7W2J/view?usp=sharing)                                                       |
 | Checklist                | Checklist for certification                          | [Request Access](https://docs.google.com/spreadsheets/d/1c4-Rd6_tveid-qrkPDZmD1FaA-fRQSI-/edit?usp=sharing&ouid=115651930576812038339&rtpof=true&sd=true)     |
 | Decision Guide           | Decision framework for which certification to pursue | [Request Access](https://chpl.healthit.gov/#/search)                                                                                                          |
 | ONC 2015E Cures Base EHR | Requirements for a basic EHR per Cures Act           | [HealthIT.gov](https://www.healthit.gov/topic/certification-ehrs/2015-edition-test-method/2015-edition-cures-update-base-electronic-health-record-definition) |
