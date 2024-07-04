@@ -23,16 +23,18 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000, { hostname });
 
   const heapStats = v8.getHeapStatistics();
-  setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size);
+  setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, { hostname });
 
   const heapSpaceStats = v8.getHeapSpaceStatistics();
   setGauge(
     'medplum.node.oldSpaceUsedSize',
-    heapSpaceStats.find((entry) => entry.space_name === 'old_space')?.space_used_size ?? -1
+    heapSpaceStats.find((entry) => entry.space_name === 'old_space')?.space_used_size ?? -1,
+    { hostname }
   );
   setGauge(
     'medplum.node.newSpaceUsedSize',
-    heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1
+    heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1,
+    { hostname }
   );
 
   res.json({
