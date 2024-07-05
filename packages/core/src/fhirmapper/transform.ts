@@ -142,7 +142,7 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
   }
 
   for (const targetDefinition of targetDefinitions) {
-    const output = input[inputIndex++] ?? toTypedValue({});
+    const output = input[inputIndex++] ?? { type: targetDefinition.type ?? 'BackboneElement', value: {} };
     safeAssign(variables, targetDefinition.name as string, output);
     outputs.push(output);
   }
@@ -194,8 +194,10 @@ function evalRuleSourceAt(
 ): void {
   const source = rule.source[index];
   for (const sourceValue of evalSource(ctx, source)) {
+    setVariable(ctx, '_', sourceValue);
+
     if (source.variable) {
-      setVariable(ctx, source.variable as string, sourceValue);
+      setVariable(ctx, source.variable, sourceValue);
     }
 
     if (index < rule.source.length - 1) {
@@ -218,6 +220,9 @@ function evalRuleSourceAt(
  * @internal
  */
 function evalRuleAfterSources(ctx: TransformContext, rule: StructureMapGroupRule): void {
+  if (tryEvalShorthandRule(ctx, rule)) {
+    return;
+  }
   if (rule.target) {
     for (const target of rule.target) {
       evalTarget(ctx, target);
@@ -233,6 +238,97 @@ function evalRuleAfterSources(ctx: TransformContext, rule: StructureMapGroupRule
       evalDependent(ctx, dependent);
     }
   }
+}
+
+/**
+ * Tries to evaluate a shorthand rule.
+ * @param ctx - The transform context.
+ * @param rule - The FHIR Mapping rule definition.
+ * @returns True if the rule is a shorthand rule, false otherwise.
+ */
+function tryEvalShorthandRule(ctx: TransformContext, rule: StructureMapGroupRule): boolean {
+  // First, check if this is actually a shorthand rule
+  // Shorthand rule has exactly one target, no transform, no rule, and no dependent
+  if (!rule.target || rule.target.length !== 1 || rule.target[0].transform || rule.rule || rule.dependent) {
+    return false;
+  }
+
+  // Determine the source value
+  let sourceValue = getVariable(ctx, '_');
+  if (Array.isArray(sourceValue)) {
+    sourceValue = sourceValue[0];
+  }
+  if (!sourceValue) {
+    return false;
+  }
+
+  // Ok, this is a shorthand rule.
+  // Next, try to find a "types" group that matches the input and output types
+  const group = tryFindTypesGroup(ctx, rule);
+  if (!group) {
+    // No group found, fallback to simple copy transform
+    // This is commonly used for primitive types such as "string" and "code"
+    evalTarget(ctx, { ...rule.target[0], transform: 'copy', parameter: [{ valueId: '_' }] });
+    return true;
+  }
+
+  const target = rule.target[0];
+  const targetContext = getVariable(ctx, target.context as string) as TypedValue;
+  const originalValue = targetContext.value[target.element as string];
+  const isArray = isArrayProperty(targetContext, target.element as string) || Array.isArray(originalValue);
+  const newContext: TransformContext = { root: ctx.root, parent: ctx, variables: {} };
+  const targetValue = evalGroup(newContext, group, [sourceValue]);
+  setTargetValue(ctx, target, targetContext, targetValue, isArray, originalValue);
+  return true;
+}
+
+/**
+ * Tries to find a "types" group that matches the input and output types.
+ * This is used to determine the transform for a shorthand rule.
+ * @param ctx - The transform context.
+ * @param _rule - The FHIR Mapping rule definition.
+ * @returns The matching group, if found; otherwise, undefined.
+ */
+function tryFindTypesGroup(ctx: TransformContext, _rule: StructureMapGroupRule): StructureMapGroup | undefined {
+  let sourceValue = getVariable(ctx, '_');
+  if (Array.isArray(sourceValue)) {
+    sourceValue = sourceValue[0];
+  }
+  if (!sourceValue) {
+    return undefined;
+  }
+
+  let sourceType = sourceValue.type;
+  if (sourceType.includes('/')) {
+    // Source type can be a URL, so we need to extract the last part
+    sourceType = sourceType.split('/').pop() as string;
+  }
+
+  let currentContext: TransformContext | undefined = ctx;
+  while (currentContext) {
+    if (currentContext.variables) {
+      for (const value of Object.values(currentContext.variables)) {
+        const array = arrayify(value);
+        for (const entry of array) {
+          if (entry.type === 'StructureMapGroup') {
+            const group = entry.value as StructureMapGroup;
+            if (
+              (group.typeMode === 'types' || group.typeMode === 'type-and-types') &&
+              group.input.length === 2 &&
+              group.input[0].mode === 'source' &&
+              group.input[0].type === sourceType &&
+              group.input[1].mode === 'target'
+            ) {
+              return group;
+            }
+          }
+        }
+      }
+    }
+    currentContext = currentContext.parent;
+  }
+
+  return undefined;
 }
 
 /**
@@ -337,7 +433,7 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
     throw new Error('Target not found: ' + target.context);
   }
 
-  let originalValue = targetContext.value[target.element as string];
+  const originalValue = targetContext.value[target.element as string];
   let targetValue: TypedValue[];
 
   // Determine if the target property is an array field or not
@@ -380,6 +476,28 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
     }
   }
 
+  setTargetValue(ctx, target, targetContext, targetValue, isArray, originalValue);
+}
+
+/**
+ * Sets a target value.
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @param targetContext - The target context.
+ * @param targetValue - The target value.
+ * @param isArray - True if the target property is an array field.
+ * @param originalValue - The original value of the target property.
+ * @internal
+ */
+function setTargetValue(
+  ctx: TransformContext,
+  target: StructureMapGroupRuleTarget,
+  targetContext: TypedValue,
+  targetValue: TypedValue[],
+  isArray: boolean,
+  originalValue: any
+): void {
   if (targetValue.length === 0) {
     return;
   }
