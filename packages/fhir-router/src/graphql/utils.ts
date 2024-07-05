@@ -166,26 +166,29 @@ export async function resolveBySearch(
     return bundle.entry?.map((e) => e.resource as Resource);
   }
   const hash = sortedStringify(searchRequest);
-  console.log(hash, hash in ctx.searchDataLoaders);
-  const dl = (ctx.searchDataLoaders[hash] ??= new DataLoader<Filter, Resource[]>(async (filters) => {
-    console.log(`IN THE DL w/ ${filters.length} values`);
-
-    const combinedFilter: Filter = { ...filters[0] };
-    combinedFilter.operator = Operator.IN;
-    combinedFilter.value = filters.map((f) => `${f.value}`).join(',');
-    addFilter(searchRequest, combinedFilter);
-    console.log('COMBINED:\n', JSON.stringify(searchRequest, null, 2));
-    const bundle = await ctx.repo.search(searchRequest);
-    console.log('BUNDLE:\n', JSON.stringify(bundle, null, 2));
-
-    return Promise.all(
-      filters.map((_f) => {
-        return [];
-      })
-    );
-  }));
-  // const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
+  const dl = (ctx.searchDataLoaders[hash] ??= buildResolveBySearchDataLoader(ctx.repo, searchRequest));
   return (await dl.load(referenceFilter)) as any;
+}
+
+function buildResolveBySearchDataLoader(
+  repo: FhirRepository,
+  searchRequest: SearchRequest
+): DataLoader<Filter, Resource[]> {
+  return new DataLoader<Filter, Resource[]>(async (filters) => {
+    console.log(`DataLoader w/ ${filters.length} values`);
+
+    const results = await repo.searchByReference(
+      searchRequest,
+      filters[0].code,
+      filters.map((f) => f.value)
+    );
+    const sortedResults = [];
+    for (const filter of filters) {
+      sortedResults.push(results[filter.value] ?? []);
+    }
+
+    return sortedResults;
+  });
 }
 
 export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
