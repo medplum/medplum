@@ -1,17 +1,10 @@
-import { createReference, normalizeErrorString } from '@medplum/core';
-import { Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import {
-  Document,
-  QuestionnaireBuilder,
-  QuestionnaireForm,
-  useMedplum,
-  useMedplumProfile,
-  useResource,
-} from '@medplum/react';
+import { normalizeErrorString } from '@medplum/core';
+import { Questionnaire } from '@medplum/fhirtypes';
+import { Document, QuestionnaireBuilder, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { useCallback } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { Loading } from '../components/Loading';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 export function QuestionnaireCustomizationPage(): JSX.Element {
