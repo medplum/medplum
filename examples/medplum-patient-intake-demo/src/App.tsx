@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconHealthRecognition, IconUser } from '@tabler/icons-react';
+import { IconDatabaseImport, IconHealthRecognition, IconQuestionMark, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
@@ -27,7 +27,11 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'Upload Data',
-          links: [{ icon: <IconHealthRecognition />, label: 'Upload Example Patient Data', href: '/upload/example' }],
+          links: [
+            { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
+            { icon: <IconQuestionMark />, label: 'Upload Questionnaires', href: '/upload/questionnaire' },
+            { icon: <IconHealthRecognition />, label: 'Upload Example Patient Data', href: '/upload/example' },
+          ],
         },
       ]}
     >
