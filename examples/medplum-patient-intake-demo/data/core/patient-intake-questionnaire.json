@@ -1,0 +1,165 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:f508b2b8-b796-4931-ac92-de3817d71fc1",
+      "request": { "method": "PUT", "url": "Questionnaire?name=patient-intake" },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "status": "active",
+        "title": "Patient Intake Questionnaire",
+        "name": "patient-intake",
+        "subjectType": ["Patient"],
+        "item": [
+          {
+            "linkId": "patient-demographics",
+            "text": "Patient Demographics",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "legal-name",
+                "text": "Legal Name",
+                "type": "group",
+                "item": [
+                  {
+                    "linkId": "first-name",
+                    "text": "First Name",
+                    "type": "string"
+                  },
+                  {
+                    "linkId": "middle-name",
+                    "text": "Middle Name",
+                    "type": "string"
+                  },
+                  {
+                    "linkId": "last-name",
+                    "text": "Last Name",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "linkId": "dob",
+                "text": "Date of Birth",
+                "type": "date"
+              },
+              {
+                "linkId": "race",
+                "text": "Race",
+                "type": "choice",
+                "answerValueSet": "http://terminology.hl7.org/ValueSet/v3-Race"
+              },
+              {
+                "linkId": "ethnicity",
+                "text": "Ethnicity",
+                "type": "choice",
+                "answerValueSet": "http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
+              },
+              {
+                "linkId": "gender-identity",
+                "text": "Gender Identity",
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/ValueSet/administrative-gender"
+              },
+              {
+                "linkId": "sexual-orientation",
+                "text": "Sexual Orientation",
+                "type": "choice",
+                "answerValueSet": "https://example.com/sexual-orientation"
+              }
+            ]
+          },
+          {
+            "linkId": "coverage-information",
+            "text": "Coverage Information",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "insurance-provider",
+                "text": "Insurance Provider",
+                "type": "string"
+              },
+              {
+                "linkId": "subscriber-id",
+                "text": "Subscriber ID",
+                "type": "string"
+              },
+              {
+                "linkId": "relationship-to-subscriber",
+                "text": "Relationship to Subscriber",
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype"
+              }
+            ]
+          },
+          {
+            "linkId": "social-determinants-of-health",
+            "text": "Social Determinants of Health",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "housing-status",
+                "text": "Housing Status",
+                "type": "choice",
+                "answerValueSet": "http://terminology.hl7.org/ValueSet/v3-LivingArrangement"
+              },
+              {
+                "linkId": "education-level",
+                "text": "Education Level",
+                "type": "choice",
+                "answerValueSet": "http://terminology.hl7.org/ValueSet/v3-EducationLevel"
+              },
+              {
+                "linkId": "veteran-status",
+                "text": "Veteran Status",
+                "type": "boolean"
+              }
+            ]
+          },
+          {
+            "linkId": "languages-spoken",
+            "text": "Languages Spoken",
+            "type": "choice",
+            "answerValueSet": "http://hl7.org/fhir/ValueSet/languages",
+            "repeats": true
+          },
+          {
+            "linkId": "preferred-language",
+            "text": "Preferred Language",
+            "type": "choice",
+            "answerValueSet": "http://hl7.org/fhir/ValueSet/languages"
+          },
+          {
+            "linkId": "consent-sections",
+            "text": "Consent Sections",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "consent-for-treatment",
+                "text": "Consent for Treatment",
+                "type": "boolean"
+              },
+              {
+                "linkId": "agreement-to-pay-for-treatment",
+                "text": "Agreement to Pay for Treatment",
+                "type": "boolean"
+              },
+              {
+                "linkId": "notice-of-privacy-practices",
+                "text": "Notice of Privacy Practices",
+                "type": "boolean"
+              },
+              {
+                "linkId": "acknowledgement-for-advance-directives",
+                "text": "Acknowledgement for Advance Directives",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
