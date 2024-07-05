@@ -6,9 +6,8 @@ import { Document, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import coreData from '../../data/core/sexual-orientation-valueset.json';
+import coreData from '../../data/core/patient-intake-questionnaire.json';
 import exampleData from '../../data/example/example-patient-data.json';
-import questionnaireData from '../../data/core/patient-intake-questionnaire.json';
 
 type UploadFunction = (medplum: MedplumClient, data: Bundle) => Promise<void>;
 
@@ -31,10 +30,6 @@ export function UploadDataPage(): JSX.Element {
         break;
       case 'example':
         data = exampleData as Bundle;
-        uploadFunction = uploadData;
-        break;
-      case 'questionnaire':
-        data = questionnaireData as Bundle;
         uploadFunction = uploadData;
         break;
       default:
