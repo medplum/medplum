@@ -9,6 +9,7 @@ import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
 import { IntakeFormPage } from './pages/IntakeFormPage';
+import { QuestionnaireCustomizationPage } from './pages/QuestionnaireCustomizationPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -24,7 +25,10 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'Charts',
-          links: [{ icon: <IconUser />, label: 'Patients', href: '/Patient' }],
+          links: [
+            { icon: <IconUser />, label: 'Patients', href: '/Patient' },
+            { icon: <IconUser />, label: 'Customize intake form', href: '/customize-form' },
+          ],
         },
         {
           title: 'Upload Data',
@@ -42,6 +46,7 @@ export function App(): JSX.Element | null {
             <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/upload/:dataType" element={<UploadDataPage />} />
+            <Route path="/customize-form" element={<QuestionnaireCustomizationPage />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
