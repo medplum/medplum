@@ -8,6 +8,7 @@ import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
+import { IntakeFormPage } from './pages/IntakeFormPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -40,6 +41,7 @@ export function App(): JSX.Element | null {
             <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/Patient/:id/*" element={<PatientPage />} />
+            <Route path="/Patient/:patientId/intake" element={<IntakeFormPage />} />
             <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/upload/:dataType" element={<UploadDataPage />} />
