@@ -3679,6 +3679,39 @@ describe('FHIR Search', () => {
           expect(bundleContains(bundle5, resource)).toBeTruthy();
         }));
     });
+
+    test('Reference search patterns', async () =>
+      withTestContext(async () => {
+        const uuid = randomUUID();
+        const patient1 = await repo.createResource<Patient>({ resourceType: 'Patient', identifier: [{ value: uuid }] });
+        const patient2 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: uuid }],
+          link: [{ type: 'refer', other: createReference(patient1) }],
+        });
+
+        const refStr = getReferenceString(patient1);
+
+        const basicEqualsResult = await repo.search(parseSearchRequest(`Patient?identifier=${uuid}&link=${refStr}`));
+        expect(basicEqualsResult.entry).toHaveLength(1);
+        expect(basicEqualsResult.entry?.[0]?.resource?.id).toEqual(patient2.id);
+
+        const notEqualsResult = await repo.search(parseSearchRequest(`Patient?identifier=${uuid}&link:not=${refStr}`));
+        expect(notEqualsResult.entry).toHaveLength(1);
+        expect(notEqualsResult.entry?.[0]?.resource?.id).toEqual(patient1.id);
+
+        const filterEqualsResult = await repo.search(
+          parseSearchRequest(`Patient?_filter=identifier eq ${uuid} and link re ${refStr}`)
+        );
+        expect(filterEqualsResult.entry).toHaveLength(1);
+        expect(filterEqualsResult.entry?.[0]?.resource?.id).toEqual(patient2.id);
+
+        const filterNotEqualsResult = await repo.search(
+          parseSearchRequest(`Patient?_filter=identifier eq ${uuid} and link ne ${refStr}`)
+        );
+        expect(filterNotEqualsResult.entry).toHaveLength(1);
+        expect(filterNotEqualsResult.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      }));
   });
 
   describe('systemRepo', () => {
