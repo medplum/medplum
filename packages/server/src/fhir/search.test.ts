@@ -3701,13 +3701,13 @@ describe('FHIR Search', () => {
         expect(notEqualsResult.entry?.[0]?.resource?.id).toEqual(patient1.id);
 
         const filterEqualsResult = await repo.search(
-          parseSearchRequest(`Patient?_filter=identifier eq ${uuid} and link re ${refStr}`)
+          parseSearchRequest(`Patient?_filter=identifier eq "${uuid}" and link re "${refStr}"`)
         );
         expect(filterEqualsResult.entry).toHaveLength(1);
         expect(filterEqualsResult.entry?.[0]?.resource?.id).toEqual(patient2.id);
 
         const filterNotEqualsResult = await repo.search(
-          parseSearchRequest(`Patient?_filter=identifier eq ${uuid} and link ne ${refStr}`)
+          parseSearchRequest(`Patient?_filter=identifier eq "${uuid}" and link ne "${refStr}"`)
         );
         expect(filterNotEqualsResult.entry).toHaveLength(1);
         expect(filterNotEqualsResult.entry?.[0]?.resource?.id).toEqual(patient1.id);
