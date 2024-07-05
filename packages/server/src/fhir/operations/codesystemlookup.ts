@@ -2,7 +2,7 @@ import { OperationOutcomeError, TypedValue, allOk, append, badRequest, notFound 
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { getDatabasePool } from '../../database';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { Column, Condition, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -85,7 +85,7 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
     .where(new Column(codeSystemTable, 'id'), '=', codeSystem.id)
     .where(new Column('Coding', 'code'), '=', coding.code);
 
-  const db = getDatabasePool();
+  const db = getDatabasePool(DatabaseMode.READER);
   const result = await lookup.execute(db);
   const resolved = result?.[0];
   if (!resolved) {

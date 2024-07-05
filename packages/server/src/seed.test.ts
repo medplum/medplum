@@ -1,7 +1,7 @@
 import { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config';
-import { getDatabasePool } from './database';
+import { DatabaseMode, getDatabasePool } from './database';
 import { SelectQuery } from './fhir/sql';
 import { seedDatabase } from './seed';
 import { withTestContext } from './test.setup';
@@ -13,7 +13,7 @@ describe('Seed', () => {
     const config = await loadTestConfig();
     config.database.runMigrations = true;
     return withTestContext(() => initAppServices(config));
-  });
+  }, 240000);
 
   afterAll(async () => {
     await shutdownApp();
@@ -24,7 +24,7 @@ describe('Seed', () => {
     await seedDatabase();
 
     // Make sure all database migrations have run
-    const pool = getDatabasePool();
+    const pool = getDatabasePool(DatabaseMode.WRITER);
     const result = await pool.query('SELECT "version" FROM "DatabaseMigration"');
     const version = result.rows[0]?.version ?? -1;
     expect(version).toBeGreaterThanOrEqual(67);

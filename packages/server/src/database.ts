@@ -1,14 +1,25 @@
 import { Pool, PoolClient } from 'pg';
-import { MedplumServerConfig } from './config';
+import { MedplumDatabaseConfig, MedplumServerConfig } from './config';
 import { globalLogger } from './logger';
 import * as migrations from './migrations/schema';
 
-let pool: Pool | undefined;
+export enum DatabaseMode {
+  READER = 'reader',
+  WRITER = 'writer',
+}
 
-export function getDatabasePool(): Pool {
+let pool: Pool | undefined;
+let readonlyPool: Pool | undefined;
+
+export function getDatabasePool(mode: DatabaseMode): Pool {
   if (!pool) {
     throw new Error('Database not setup');
   }
+
+  if (mode === DatabaseMode.READER && readonlyPool) {
+    return readonlyPool;
+  }
+
   return pool;
 }
 
@@ -17,8 +28,18 @@ export const locks = {
 };
 
 export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
-  const config = serverConfig.database;
+  pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint);
 
+  if (serverConfig.database.runMigrations !== false) {
+    await runMigrations(pool);
+  }
+
+  if (serverConfig.readonlyDatabase) {
+    readonlyPool = await initPool(serverConfig.readonlyDatabase, serverConfig.readonlyDatabaseProxyEndpoint);
+  }
+}
+
+async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | undefined): Promise<Pool> {
   const poolConfig = {
     host: config.host,
     port: config.port,
@@ -26,16 +47,16 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-    max: 50,
+    max: 100,
   };
 
-  if (serverConfig.databaseProxyEndpoint) {
-    poolConfig.host = serverConfig.databaseProxyEndpoint;
+  if (proxyEndpoint) {
+    poolConfig.host = proxyEndpoint;
     poolConfig.ssl = poolConfig.ssl ?? {};
     poolConfig.ssl.require = true;
   }
 
-  pool = new Pool(poolConfig);
+  const pool = new Pool(poolConfig);
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);
@@ -50,26 +71,32 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
     });
   });
 
-  let client: PoolClient | undefined;
-  // Run migrations by default
-  if (config.runMigrations !== false) {
-    try {
-      client = await pool.connect();
-      await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
-      await migrate(client);
-    } finally {
-      if (client) {
-        await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
-        client.release();
-      }
-    }
-  }
+  return pool;
 }
 
 export async function closeDatabase(): Promise<void> {
   if (pool) {
     await pool.end();
     pool = undefined;
+  }
+
+  if (readonlyPool) {
+    await readonlyPool.end();
+    readonlyPool = undefined;
+  }
+}
+
+async function runMigrations(pool: Pool): Promise<void> {
+  let client: PoolClient | undefined;
+  try {
+    client = await pool.connect();
+    await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
+    await migrate(client);
+  } finally {
+    if (client) {
+      await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
+      client.release();
+    }
   }
 }
 
