@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconHealthRecognition, IconUser } from '@tabler/icons-react';
+import { IconFilePencil, IconHealthRecognition, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
@@ -25,10 +25,11 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'Charts',
-          links: [
-            { icon: <IconUser />, label: 'Patients', href: '/Patient' },
-            { icon: <IconUser />, label: 'Customize intake form', href: '/customize-form' },
-          ],
+          links: [{ icon: <IconUser />, label: 'Patients', href: '/Patient' }],
+        },
+        {
+          title: 'Management',
+          links: [{ icon: <IconFilePencil />, label: 'Customize intake form', href: '/customize-form' }],
         },
         {
           title: 'Upload Data',
