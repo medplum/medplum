@@ -1,5 +1,13 @@
 import { Client } from 'pg';
-import { Column, Condition, Negation, SelectQuery, SqlBuilder, periodToRangeString } from './sql';
+import {
+  Column,
+  Condition,
+  Negation,
+  SelectPerReferenceQuery,
+  SelectQuery,
+  SqlBuilder,
+  periodToRangeString,
+} from './sql';
 
 describe('SqlBuilder', () => {
   beforeEach(() => {
@@ -143,6 +151,43 @@ describe('SqlBuilder', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable').column('id').where('name', 'NOT_LIKE', 'x').buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") NOT LIKE $1');
+  });
+
+  describe('Select per reference', () => {
+    test('Basic', () => {
+      const sql = new SqlBuilder();
+      new SelectPerReferenceQuery('Observation', new Column('Observation', 'subject'), [
+        'Patient/4c93dfd3-878f-4dbc-8c30-46d146105bc3',
+        'Patient/afc5f9a2-529a-4ae4-a3f4-263de813a3a0',
+        'Patient/fc6ac399-4e16-4454-897c-7dba5a04120b',
+      ])
+        .column('id')
+        .column('content')
+        .where('deleted', '=', false)
+        .limit(3)
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "results"."id", "results"."content", "references"."reference" FROM (SELECT DISTINCT "subject" AS "reference" FROM "Observation" WHERE ("Observation"."subject" IN ($1,$2,$3) AND "Observation"."deleted" = $4)) AS "references" JOIN LATERAL (SELECT "ranked"."id", "ranked"."content" FROM (SELECT "Observation"."id", "Observation"."content", ROW_NUMBER() OVER () AS rn FROM "Observation" WHERE ("Observation"."subject" = "references"."reference" AND "Observation"."deleted" = $5)) AS "ranked" WHERE "ranked"."rn" <= $6) AS "results" ON true'
+      );
+    });
+
+    test('with sort', () => {
+      const sql = new SqlBuilder();
+      new SelectPerReferenceQuery('Observation', new Column('Observation', 'subject'), [
+        'Patient/4c93dfd3-878f-4dbc-8c30-46d146105bc3',
+        'Patient/afc5f9a2-529a-4ae4-a3f4-263de813a3a0',
+        'Patient/fc6ac399-4e16-4454-897c-7dba5a04120b',
+      ])
+        .column('id')
+        .column('content')
+        .where('deleted', '=', false)
+        .orderBy('lastUpdated', true)
+        .limit(3)
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "results"."id", "results"."content", "references"."reference" FROM (SELECT DISTINCT "subject" AS "reference" FROM "Observation" WHERE ("Observation"."subject" IN ($1,$2,$3) AND "Observation"."deleted" = $4)) AS "references" JOIN LATERAL (SELECT "ranked"."id", "ranked"."content" FROM (SELECT "Observation"."id", "Observation"."content", ROW_NUMBER() OVER ( ORDER BY "Observation"."lastUpdated" DESC) AS rn FROM "Observation" WHERE ("Observation"."subject" = "references"."reference" AND "Observation"."deleted" = $5)) AS "ranked" WHERE "ranked"."rn" <= $6) AS "results" ON true'
+      );
+    });
   });
 
   test('Select missing columns', () => {

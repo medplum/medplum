@@ -58,6 +58,7 @@ import {
   Expression,
   Negation,
   periodToRangeString,
+  SelectPerReferenceQuery,
   SelectQuery,
   Operator as SQL,
   SqlBuilder,
@@ -114,6 +115,55 @@ export async function searchImpl<T extends Resource>(
     total,
     link: getSearchLinks(searchRequest, hasMore),
   };
+}
+
+export async function searchByReferenceImpl<T extends Resource>(
+  repo: Repository,
+  searchRequest: SearchRequest<T>,
+  referenceField: string,
+  references: string[]
+): Promise<Record<string, T[]>> {
+  validateSearchResourceTypes(repo, searchRequest);
+
+  if (searchRequest.count === undefined) {
+    searchRequest.count = DEFAULT_SEARCH_COUNT;
+  } else if (searchRequest.count > maxSearchResults) {
+    searchRequest.count = maxSearchResults;
+  }
+
+  const resourceType = searchRequest.resourceType;
+  const builder = new SelectPerReferenceQuery(
+    searchRequest.resourceType,
+    new Column(resourceType, referenceField),
+    references
+  );
+  builder
+    .column({ tableName: resourceType, columnName: 'id' })
+    .column({ tableName: resourceType, columnName: 'content' });
+  repo.addDeletedFilter(builder as unknown as SelectQuery);
+  repo.addSecurityFilters(builder as unknown as SelectQuery, resourceType);
+  addSearchFilters(builder as unknown as SelectQuery, resourceType, searchRequest);
+
+  addSortRules(builder as unknown as SelectQuery, searchRequest);
+
+  builder.limit(searchRequest.count);
+  if ((searchRequest.offset ?? 0) > 0) {
+    throw new Error('Cannot use offset with searchByReference');
+  }
+
+  type Row = { id: string; content: string; reference: string };
+  const rows: Row[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+
+  // fill in with empty arrays for references that have no results
+  const results: Record<string, T[]> = {};
+  for (const ref of references) {
+    results[ref] ??= [];
+  }
+  for (const row of rows) {
+    results[row.reference].push(JSON.parse(row.content));
+  }
+
+  return results;
 }
 
 /**
