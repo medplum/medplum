@@ -13,11 +13,14 @@ import { LabResults } from './pages/health-record/LabResults';
 import { Measurement } from './pages/health-record/Measurement';
 import { Medication } from './pages/health-record/Medication';
 import { Medications } from './pages/health-record/Medications';
+import { Responses } from './pages/health-record/Responses';
+import { Response } from './pages/health-record/Response';
 import { Vaccine } from './pages/health-record/Vaccine';
 import { Vaccines } from './pages/health-record/Vaccines';
 import { Vitals } from './pages/health-record/Vitals';
 import { HomePage } from './pages/HomePage';
 import { Messages } from './pages/MessagesPage';
+import { QuestionnairePage } from './pages/QuestionnairePage';
 import { ObservationPage } from './pages/ObservationPage';
 import { SignOutPage } from './pages/SignOutPage';
 
@@ -26,12 +29,15 @@ export function Router(): JSX.Element {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="messages/*" element={<Messages />} />
+      <Route path="Questionnaire/:questionnaireId" element={<QuestionnairePage />} />
       <Route path="health-record/*" element={<HealthRecord />}>
         <Route index element={<Navigate replace to="/health-record/lab-results" />} />
         <Route path="lab-results/*" element={<LabResults />} />
         <Route path="lab-results/:resultId" element={<LabResult />} />
         <Route path="medications" element={<Medications />} />
         <Route path="medications/:medicationId" element={<Medication />} />
+        <Route path="questionnaire-responses" element={<Responses />} />
+        <Route path="questionnaire-responses/:responseId" element={<Response />} />
         <Route path="vaccines" element={<Vaccines />} />
         <Route path="vaccines/:vaccineId" element={<Vaccine />} />
         <Route path="vitals" element={<Vitals />} />
