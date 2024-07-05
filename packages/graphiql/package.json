@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "3.1.11",
+  "version": "3.2.0",
   "description": "Medplum GraphiQL",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -27,9 +27,9 @@
     "@graphiql/toolkit": "0.9.1",
     "@mantine/core": "7.11.0",
     "@mantine/hooks": "7.11.0",
-    "@medplum/core": "3.1.11",
-    "@medplum/fhirtypes": "3.1.11",
-    "@medplum/react": "3.1.11",
+    "@medplum/core": "3.2.0",
+    "@medplum/fhirtypes": "3.2.0",
+    "@medplum/react": "3.2.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "graphiql": "3.3.1",

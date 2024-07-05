@@ -1,6 +1,6 @@
 {
   "name": "medplum-client-external-idp-demo",
-  "version": "3.1.11",
+  "version": "3.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "singleQuote": true
   },
   "devDependencies": {
-    "@medplum/core": "3.1.11",
+    "@medplum/core": "3.2.0",
     "rimraf": "5.0.7",
     "typescript": "5.5.2",
     "vite": "5.3.2"
