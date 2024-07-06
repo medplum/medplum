@@ -220,7 +220,7 @@ function buildPatient(): Patient {
 function createFetchResponse(data: any, status = 200): Response {
   return {
     status,
-    json: () => new Promise((resolve) => resolve(data)),
+    json: () => new Promise((resolve) => {resolve(data)}),
     ok: status >= 200 && status < 300,
   } as Response;
 }

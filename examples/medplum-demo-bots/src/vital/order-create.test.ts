@@ -337,21 +337,21 @@ type Marker = {
   unit: string | null;
   price: string;
   aoe: {
-    questions: Array<{
+    questions: {
       id: number;
       required: boolean;
       code: string;
       value: string;
       type: 'numeric' | 'text' | 'choice' | 'multiple_choice';
       sequence: number;
-      answers?: Array<{
+      answers?: {
         id: number;
         code: string;
         value: string;
-      }>;
-    }>;
+      }[];
+    }[];
   };
-  expected_results: Array<{
+  expected_results: {
     id: number;
     name: string;
     slug: string;
@@ -365,7 +365,7 @@ type Marker = {
       code: string;
       unit?: string;
     };
-  }>;
+  }[];
 };
 
 function buildQuestionnaire(): Questionnaire {
@@ -428,7 +428,7 @@ function buildQuestionnaireResponse(questionnaire: Questionnaire): Questionnaire
 function createFetchResponse(data: any, status = 200): Response {
   return {
     status,
-    json: () => new Promise((resolve) => resolve(data)),
+    json: () => new Promise((resolve) => {resolve(data)}),
   } as Response;
 }
 

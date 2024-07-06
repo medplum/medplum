@@ -28,14 +28,14 @@ type Event = GetLabEvent | GetMarkersEvent | GetAoEQuestionnaireEvent;
  * @param medplum - An instance of the Medplum client for interacting with the FHIR server.
  * @param event - The BotEvent containing the incoming message.
  *
- * @returns A Promise that resolves to the response data (if successful) or an error message.
+ * @returns The response to the incoming message.
  */
 export async function handler(
   medplum: MedplumClient,
   event: BotEvent
 ): Promise<Lab[] | Marker[] | Questionnaire | undefined> {
   if (typeof event.input !== 'object' || !('endpoint' in event.input)) {
-    return;
+    return undefined;
   }
 
   const input = event.input as Event;
@@ -47,6 +47,8 @@ export async function handler(
       return getMarkers(event.secrets, input.payload.labTestID);
     case 'get_aoe_questionnaire':
       return getAoEQuestionnaire(event.secrets, input.payload.labTestID);
+    default:
+      return undefined;
   }
 }
 
@@ -105,7 +107,7 @@ async function fetchLabTests(secrets: Record<string, ProjectSetting>): Promise<L
     },
   });
 
-  return resp.json();
+  return resp.json() as Promise<LabTest[]>;
 }
 
 type Lab = {
@@ -115,11 +117,11 @@ type Lab = {
   first_line_address: string;
   city: string;
   zipcode: string;
-  collection_methods: Array<string>;
-  sample_types: Array<string>;
+  collection_methods: string[];
+  sample_types: string[];
 };
 
-type Marker = {
+export type Marker = {
   id: number;
   name: string;
   slug: string;
@@ -130,15 +132,19 @@ type Marker = {
   unit: any;
   price: string;
   aoe: {
-    questions: Array<{
+    questions: {
       id: number;
       required: boolean;
       code: string;
       value: string;
       type: string;
       sequence: number;
-      answers: Array<any>;
-    }>;
+      answers: {
+        id: number;
+        code: string;
+        value: string;
+      }[];
+    }[];
   };
 };
 
@@ -153,6 +159,6 @@ export type LabTest = {
   status: string;
   fasting: boolean;
   lab: Lab;
-  markers?: Array<Marker>;
+  markers?: Marker[];
   is_delegated: boolean;
 };

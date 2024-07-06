@@ -8,7 +8,6 @@ import {
   Observation,
   Patient,
   ProjectSetting,
-  Reference,
 } from '@medplum/fhirtypes';
 
 type OrderEvent = {
@@ -59,7 +58,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 /**
  * Fetches the results from the Vital API
  *
- * @param event - The BotEvent
+ * @param secrets - The project secrets
  * @param orderID - The order ID
  *
  * @returns A promise that resolves to the FHIR Bundle
@@ -86,7 +85,7 @@ export async function fetchFhirResults(secrets: Record<string, ProjectSetting>, 
     throw new Error(`Failed to fetch results: ${resp.status} ${await resp.json()}`);
   }
 
-  return resp.json();
+  return resp.json() as Promise<Bundle>;
 }
 
 /**
@@ -94,6 +93,7 @@ export async function fetchFhirResults(secrets: Record<string, ProjectSetting>, 
  *
  * @param medplum - The MedplumClient
  * @param bundle - The FHIR Bundle
+ * @param media - The Media resource
  * @param orderID - The order ID
  *
  * @returns A promise that resolves to true if the results were saved successfully
@@ -108,7 +108,7 @@ export async function createDiagnoticReport(
     | Patient
     | undefined;
 
-  if (!patient || !patient.id) {
+  if (!patient?.id) {
     throw new Error('No patient found in bundle');
   }
 
@@ -136,7 +136,11 @@ export async function createDiagnoticReport(
   });
   const observations = respBundle.entry?.map((entry) => createReference(entry.resource as Observation)) || [];
 
-  const metadata = observationEntries[0].resource!;
+  const metadata = observationEntries[0].resource;
+  if (!metadata) {
+    throw new Error('No metadata found in bundle');
+  }
+
   const diagnosticReport: DiagnosticReport = {
     resourceType: 'DiagnosticReport',
     status: metadata.status,

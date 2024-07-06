@@ -124,7 +124,7 @@ export async function buildVitalOrder(medplum: MedplumClient, sr: ServiceRequest
  * @throws An error if the provided resource is undefined.
  */
 export function resourceWithoutMeta<T extends Resource>(resource: T): Omit<T, 'meta'> {
-  const { meta, ...r } = resource;
+  const { meta: _, ...r } = resource;
 
   return r;
 }
@@ -300,38 +300,4 @@ async function getPerformer(medplum: MedplumClient, sr: ServiceRequest): Promise
   }
 
   throw new Error('Performer is missing');
-}
-
-/**
- * Simulates the result of a Vital order by sending a POST request to the Vital API.
- * And then executes a bot to process the result.
- * WARN: This is used for testing purposes only.
- *
- * @param medplum - An instance of the Medplum client for interacting with the FHIR server.
- * @param secrets - An object containing project settings, including `VITAL_API_KEY` and `VITAL_BASE_URL`.
- * @param orderID - The ID of the order to simulate the result for.
- *
- * @returns A Promise that resolves to void.
- */
-async function simulateResult(
-  medplum: MedplumClient,
-  secrets: Record<string, ProjectSetting>,
-  orderID: string
-): Promise<void> {
-  const apiKey = secrets['VITAL_API_KEY'].valueString;
-  const baseURL = secrets['VITAL_BASE_URL']?.valueString || 'https://api.dev.tryvital.io';
-
-  if (!apiKey || !baseURL) {
-    throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');
-  }
-
-  await fetch(`${baseURL}/v3/order/${orderID}/test`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-vital-api-key': apiKey,
-    },
-  });
-
-  await medplum.executeBot('d686a5d6-8b55-414f-8d15-b230f0319cee', { id: orderID });
 }
