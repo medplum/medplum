@@ -428,7 +428,10 @@ function buildQuestionnaireResponse(questionnaire: Questionnaire): Questionnaire
 function createFetchResponse(data: any, status = 200): Response {
   return {
     status,
-    json: () => new Promise((resolve) => {resolve(data)}),
+    json: () =>
+      new Promise((resolve) => {
+        resolve(data);
+      }),
   } as Response;
 }
 

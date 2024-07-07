@@ -1,6 +1,12 @@
 import { MedplumClient, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bundle, QuestionnaireItem, SearchParameter, Questionnaire, QuestionnaireItemAnswerOption } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  QuestionnaireItem,
+  SearchParameter,
+  Questionnaire,
+  QuestionnaireItemAnswerOption,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, MockedFunction, beforeAll, describe, test, vi, expect } from 'vitest';
 import { Marker, handler } from './vital';
@@ -240,7 +246,10 @@ describe('Vital API', () => {
 function createFetchResponse(data: any, status = 200): Response {
   return {
     status,
-    json: () => new Promise((resolve) => {resolve(data)}),
+    json: () =>
+      new Promise((resolve) => {
+        resolve(data);
+      }),
     ok: status >= 200 && status < 300,
   } as Response;
 }

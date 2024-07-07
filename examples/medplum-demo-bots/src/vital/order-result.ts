@@ -33,12 +33,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const bundle = await fetchFhirResults(event.secrets, orderID);
   let media: Media | undefined = undefined;
 
-  // TODO: Check if we are in production
-  const isProd = false;
+  const binary = await fetchPDFResult(medplum, event.secrets, orderID);
 
-  if (isProd) {
-    const binary = await fetchPDFResult(medplum, event.secrets, orderID);
-
+  try {
     media = await medplum.createResource({
       resourceType: 'Media',
       status: 'completed',
@@ -48,6 +45,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
         title: 'report.pdf',
       },
     });
+  } catch (err) {
+    console.warn('Failed to create Media resource:', err);
   }
 
   const diagnosticReport = await createDiagnoticReport(medplum, bundle, media, orderID);
