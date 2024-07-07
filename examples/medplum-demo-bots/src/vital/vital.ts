@@ -2,25 +2,32 @@ import { BotEvent, MedplumClient } from '@medplum/core';
 import { ProjectSetting, Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption } from '@medplum/fhirtypes';
 import { QuestionnaireItemType } from '@medplum/react';
 
+type GetLabTestEvent = {
+  endpoint: 'get_lab_tests';
+  payload?: {
+    labID?: number;
+  };
+};
+
 type GetLabEvent = {
   endpoint: 'get_labs';
 };
 
 type GetMarkersEvent = {
   endpoint: 'get_markers';
-  payload: {
+  payload?: {
     labTestID: string;
   };
 };
 
 type GetAoEQuestionnaireEvent = {
   endpoint: 'get_aoe_questionnaire';
-  payload: {
+  payload?: {
     labTestID: string;
   };
 };
 
-type Event = GetLabEvent | GetMarkersEvent | GetAoEQuestionnaireEvent;
+type Event = GetLabTestEvent | GetLabEvent | GetMarkersEvent | GetAoEQuestionnaireEvent;
 
 /**
  * Wrapper around the vital API.
@@ -33,7 +40,7 @@ type Event = GetLabEvent | GetMarkersEvent | GetAoEQuestionnaireEvent;
 export async function handler(
   medplum: MedplumClient,
   event: BotEvent
-): Promise<Lab[] | Marker[] | Questionnaire | undefined> {
+): Promise<LabTest[] | Lab[] | Marker[] | Questionnaire | undefined> {
   if (typeof event.input !== 'object' || !('endpoint' in event.input)) {
     return undefined;
   }
@@ -41,11 +48,20 @@ export async function handler(
   const input = event.input as Event;
 
   switch (input.endpoint) {
+    case 'get_lab_tests':
+      return getLabTests(event.secrets, input.payload?.labID);
     case 'get_labs':
       return getLabs(event.secrets);
     case 'get_markers':
+      if (!input.payload?.labTestID) {
+        throw new Error('Missing labTestID');
+      }
       return getMarkers(event.secrets, input.payload.labTestID);
     case 'get_aoe_questionnaire':
+      if (!input.payload?.labTestID) {
+        throw new Error('Missing labTestID');
+      }
+
       return getAoEQuestionnaire(event.secrets, input.payload.labTestID);
     default:
       return undefined;
@@ -87,6 +103,16 @@ async function getAoEQuestionnaire(secrets: Record<string, ProjectSetting>, mark
       })),
     })),
   };
+}
+
+async function getLabTests(secrets: Record<string, ProjectSetting>, labID?: number): Promise<LabTest[]> {
+  const labTests = await fetchLabTests(secrets);
+
+  if (labID) {
+    return labTests.filter((lt) => lt.lab.id === labID);
+  }
+
+  return labTests;
 }
 
 async function fetchLabTests(secrets: Record<string, ProjectSetting>): Promise<LabTest[]> {

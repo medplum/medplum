@@ -41,6 +41,133 @@ describe('Vital API', () => {
     vi.resetAllMocks();
   });
 
+  test<Context>('Get Lab Tests', async (ctx) => {
+    const apiKey = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
+    const baseURL = 'https://api.dev.tryvital.io';
+
+    const labTests = [
+      {
+        lab: {
+          id: 24,
+          slug: 'ussl',
+          name: 'USSL',
+          collection_methods: ['testkit'],
+        },
+      },
+      {
+        lab: {
+          id: 2,
+          slug: 'spiriplex',
+          name: 'Spiriplex',
+          collection_methods: ['testkit'],
+        },
+      },
+      {
+        lab: {
+          id: 27,
+          slug: 'labcorp',
+          name: 'Labcorp',
+          collection_methods: ['at_home_phlebotomy', 'walk_in_test'],
+        },
+      },
+    ];
+
+    (fetch as any).mockResolvedValue(createFetchResponse(labTests));
+
+    const labTestsResponse = await handler(ctx.medplum, {
+      bot: { reference: 'Bot/123' },
+      input: {
+        endpoint: 'get_lab_tests',
+      },
+      contentType: 'application/fhir+json',
+      secrets: {
+        VITAL_BASE_URL: {
+          name: 'VITAL_BASE_URL',
+          valueString: baseURL,
+        },
+        VITAL_API_KEY: {
+          name: 'VITAL_API_KEY',
+          valueString: apiKey,
+        },
+      },
+    });
+
+    expect(fetch).toHaveBeenCalledWith(`${baseURL}/v3/lab_tests`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-vital-api-key': apiKey,
+      },
+    });
+
+    expect(labTestsResponse).toEqual(labTests);
+  });
+
+  test<Context>('Get Lab Tests with lab filter', async (ctx) => {
+    const apiKey = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
+    const baseURL = 'https://api.dev.tryvital.io';
+
+    const labTests = [
+      {
+        lab: {
+          id: 24,
+          slug: 'ussl',
+          name: 'USSL',
+          collection_methods: ['testkit'],
+        },
+      },
+      {
+        lab: {
+          id: 2,
+          slug: 'spiriplex',
+          name: 'Spiriplex',
+          collection_methods: ['testkit'],
+        },
+      },
+      {
+        lab: {
+          id: 27,
+          slug: 'labcorp',
+          name: 'Labcorp',
+          collection_methods: ['at_home_phlebotomy', 'walk_in_test'],
+        },
+      },
+    ];
+
+    (fetch as any).mockResolvedValue(createFetchResponse(labTests));
+
+    const labTestsResponse = await handler(ctx.medplum, {
+      bot: { reference: 'Bot/123' },
+      input: {
+        endpoint: 'get_lab_tests',
+        payload: {
+          labID: 24,
+        },
+      },
+      contentType: 'application/fhir+json',
+      secrets: {
+        VITAL_BASE_URL: {
+          name: 'VITAL_BASE_URL',
+          valueString: baseURL,
+        },
+        VITAL_API_KEY: {
+          name: 'VITAL_API_KEY',
+          valueString: apiKey,
+        },
+      },
+    });
+
+    expect(fetch).toHaveBeenCalledWith(`${baseURL}/v3/lab_tests`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-vital-api-key': apiKey,
+      },
+    });
+
+    expect(labTestsResponse).toEqual(labTests.filter((lt) => lt.lab.id === 24));
+  });
+
   test<Context>('Get Labs', async (ctx) => {
     const apiKey = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
     const baseURL = 'https://api.dev.tryvital.io';
