@@ -20,8 +20,10 @@ export function PatientDetails(): JSX.Element {
     <Document>
       <Tabs value={currentTab} onChange={handleTabChange}>
         <Tabs.List>
-          {tabs.map((tab) => (
-            <Tabs.Tab value={tab.toLowerCase()}>{tab}</Tabs.Tab>
+          {tabs.map((tab, i) => (
+            <Tabs.Tab key={i} value={tab.toLowerCase()}>
+              {tab}
+            </Tabs.Tab>
           ))}
         </Tabs.List>
         <Tabs.Panel value="overview">
