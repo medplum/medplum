@@ -61,7 +61,6 @@ export function buildAwsCommand(): Command {
       '--dryrun',
       'Displays the operations that would be performed using the specified command without actually running them.'
     )
-    .option('--tar-path [tarPath]', 'Specifies the path to the extracted tarball of the @medplum/app package.') 
     .action(updateAppCommand);
 
   aws
