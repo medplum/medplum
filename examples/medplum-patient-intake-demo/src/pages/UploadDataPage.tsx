@@ -1,21 +1,18 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Bundle, Practitioner } from '@medplum/fhirtypes';
-import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
+import { capitalize, isOk, MedplumClient } from '@medplum/core';
+import { Bundle } from '@medplum/fhirtypes';
+import { Document, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import coreData from '../../data/core/patient-intake-questionnaire.json';
 import exampleData from '../../data/example/example-patient-data.json';
 
-type UploadFunction =
-  | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
-  | ((medplum: MedplumClient) => Promise<void>);
+type UploadFunction = (medplum: MedplumClient, data: Bundle) => Promise<void>;
 
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
-  const profile = useMedplumProfile();
-  const navigate = useNavigate();
   const [pageDisabled, setPageDisabled] = useState<boolean>(false);
 
   const { dataType } = useParams();
@@ -25,26 +22,45 @@ export function UploadDataPage(): JSX.Element {
   const handleUpload = useCallback(() => {
     setPageDisabled(true);
     let uploadFunction: UploadFunction;
+    let data: Bundle;
     switch (dataType) {
+      case 'core':
+        data = coreData as Bundle;
+        uploadFunction = uploadData;
+        break;
       case 'example':
-        uploadFunction = uploadExampleData;
+        data = exampleData as Bundle;
+        uploadFunction = uploadData;
         break;
       default:
-        throw new Error(`Invalid upload type: ${dataType}`);
-    }
-
-    uploadFunction(medplum, profile as Practitioner)
-      .then(() => navigate(-1))
-      .catch((error) => {
         showNotification({
           color: 'red',
           icon: <IconCircleOff />,
           title: 'Error',
-          message: normalizeErrorString(error),
+          message: `Invalid upload type: ${dataType}`,
+        });
+        setPageDisabled(false);
+        return;
+    }
+
+    uploadFunction(medplum, data)
+      .then(() => {
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: `Uploaded ${dataTypeDisplay} data`,
+        });
+      })
+      .catch(() => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: `Error uploading ${dataTypeDisplay} data`,
         });
       })
       .finally(() => setPageDisabled(false));
-  }, [medplum, profile, dataType, navigate]);
+  }, [medplum, dataType, dataTypeDisplay]);
 
   return (
     <Document>
@@ -56,27 +72,10 @@ export function UploadDataPage(): JSX.Element {
   );
 }
 
-async function uploadExampleData(medplum: MedplumClient): Promise<void> {
-  const exampleDataBatch = exampleData as Bundle;
-  const result = await medplum.executeBatch(exampleDataBatch);
+async function uploadData(medplum: MedplumClient, data: Bundle): Promise<void> {
+  const result = await medplum.executeBatch(data);
 
-  showNotification({
-    icon: <IconCircleCheck />,
-    title: 'Success',
-    message: 'Uploaded Business Statuses',
-  });
-
-  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
-    await setTimeout(
-      () =>
-        showNotification({
-          icon: <IconCircleCheck />,
-          title: 'Success',
-          message: 'Uploaded Business Statuses',
-        }),
-      1000
-    );
-  } else {
-    throw new Error('Error uploading core data');
+  if (result.entry?.every((entry) => entry.response?.outcome && !isOk(entry.response?.outcome))) {
+    throw new Error('Error on upload.');
   }
 }
