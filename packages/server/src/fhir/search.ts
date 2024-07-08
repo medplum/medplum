@@ -643,7 +643,7 @@ function buildNormalSearchFilterExpression(
   } else if (param.type === 'token' || param.type === 'uri') {
     return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
   } else if (param.type === 'reference') {
-    return buildReferenceSearchFilter(table, details, splitSearchOnComma(filter.value));
+    return buildReferenceSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
   } else if (param.type === 'date') {
     return buildDateSearchFilter(table, details, filter);
   } else if (param.type === 'quantity') {
@@ -839,20 +839,29 @@ function buildTokenSearchFilter(
  * Adds a reference search filter as "WHERE" clause to the query builder.
  * @param table - The table in which to search.
  * @param details - The search parameter details.
+ * @param operator - The search operator.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
-function buildReferenceSearchFilter(table: string, details: SearchParameterDetails, values: string[]): Expression {
+function buildReferenceSearchFilter(
+  table: string,
+  details: SearchParameterDetails,
+  operator: Operator,
+  values: string[]
+): Expression {
   const column = new Column(table, details.columnName);
   values = values.map((v) =>
     !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
   );
+  let condition: Condition;
   if (details.array) {
-    return new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
+    condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
   } else if (values.length === 1) {
-    return new Condition(column, '=', values[0]);
+    condition = new Condition(column, '=', values[0]);
+  } else {
+    condition = new Condition(column, 'IN', values);
   }
-  return new Condition(column, 'IN', values);
+  return operator === Operator.NOT || operator === Operator.NOT_EQUALS ? new Negation(condition) : condition;
 }
 
 /**
