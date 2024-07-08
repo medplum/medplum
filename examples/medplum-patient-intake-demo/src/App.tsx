@@ -7,7 +7,7 @@ import {
   useMedplumProfile,
   useSearchResources,
 } from '@medplum/react';
-import { IconFilePencil, IconHealthRecognition, IconUser } from '@tabler/icons-react';
+import { IconDatabaseImport, IconFilePencil, IconHealthRecognition, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
@@ -54,7 +54,10 @@ export function App(): JSX.Element | null {
           : {},
         {
           title: 'Upload Data',
-          links: [{ icon: <IconHealthRecognition />, label: 'Upload Example Patient Data', href: '/upload/example' }],
+          links: [
+            { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
+            { icon: <IconHealthRecognition />, label: 'Upload Example Patient Data', href: '/upload/example' },
+          ],
         },
       ]}
     >
