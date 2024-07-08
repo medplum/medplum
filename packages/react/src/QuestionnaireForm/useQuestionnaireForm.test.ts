@@ -249,7 +249,7 @@ describe('useQuestionnaireForm', () => {
         ],
       };
 
-      const { result } = renderHook(() => useQuestionnaireForm({ questionnaire }));
+      const { result } = renderHook(useQuestionnaireForm, { initialProps: { questionnaire } });
 
       act(() => {
         result.current.setItemValue('name', 'John Doe');
@@ -257,7 +257,7 @@ describe('useQuestionnaireForm', () => {
       });
 
       const response = {};
-      await result.current.onSubmit((r) => Object.assign(response, r));
+      await result.current.onSubmit((r) => Object.assign(response, r))();
 
       expect(response).toMatchObject<QuestionnaireResponse>({
         resourceType: 'QuestionnaireResponse',
@@ -308,7 +308,7 @@ describe('useQuestionnaireForm', () => {
       });
 
       const response = {};
-      await result.current.onSubmit((r) => Object.assign(response, r));
+      result.current.onSubmit((r) => Object.assign(response, r))();
 
       expect(response).toMatchObject<QuestionnaireResponse>({
         resourceType: 'QuestionnaireResponse',
@@ -345,14 +345,14 @@ describe('useQuestionnaireForm', () => {
         ],
       };
 
-      const { result } = renderHook(() => useQuestionnaireForm({ questionnaire }));
+      const { result } = renderHook(useQuestionnaireForm, { initialProps: { questionnaire } });
 
       act(() => {
         result.current.setItemValue('medications', ['Aspirin', 'Ibuprofen']);
       });
 
       const response = {};
-      await result.current.onSubmit((r) => Object.assign(response, r));
+      result.current.onSubmit((r) => Object.assign(response, r))();
 
       expect(response).toMatchObject<QuestionnaireResponse>({
         resourceType: 'QuestionnaireResponse',
@@ -399,7 +399,7 @@ describe('useQuestionnaireForm', () => {
         ],
       };
 
-      const { result } = renderHook(() => useQuestionnaireForm({ questionnaire }));
+      const { result } = renderHook(useQuestionnaireForm, { initialProps: { questionnaire } });
 
       act(() => {
         result.current.setItemValue('patientInfo.name', 'Jane Doe');
@@ -407,12 +407,12 @@ describe('useQuestionnaireForm', () => {
           { code: 'diabetes', system: 'http://example.com/conditions' },
           { code: 'hypertension', system: 'http://example.com/conditions' },
         ]);
-        result.current.setItemValue('patientInfo.conditions.0.conditions.details', 'Type 2, diagnosed 2 years ago');
-        result.current.setItemValue('patientInfo.conditions.1.conditions.details', 'Controlled with medication');
+        result.current.setItemValue('patientInfo.conditions.0.conditions\\.details', 'Type 2, diagnosed 2 years ago');
+        result.current.setItemValue('patientInfo.conditions.1.conditions\\.details', 'Controlled with medication');
       });
 
       const response = {};
-      await result.current.onSubmit((r) => Object.assign(response, r));
+      act(() => result.current.onSubmit((r) => Object.assign(response, r))());
 
       expect(response).toMatchObject<QuestionnaireResponse>({
         resourceType: 'QuestionnaireResponse',

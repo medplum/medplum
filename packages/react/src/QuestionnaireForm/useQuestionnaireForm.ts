@@ -158,10 +158,11 @@ export function useQuestionnaireForm({
       value: QuestionnaireResponseItemAnswerValue | QuestionnaireResponseItemAnswerValue[] | undefined
     ): void => {
       const internalPath = linkIdToInternalPath(path);
+      console.debug(path, internalPath);
       const questionnaireItem = questionnaire && findQuestionnaireItem(questionnaire, path);
 
       if (!questionnaireItem) {
-        console.warn(`No questionnaire item found for path: ${path}`);
+        console.error(`No questionnaire item found for path: ${path}`);
         return;
       }
 
@@ -173,14 +174,14 @@ export function useQuestionnaireForm({
           // Set multiple values for a repeating item
           form.setFieldValue(
             internalPath,
-            value.map((v) => ({ answer: v, subItemAnswers: {} }))
+            value.map((v) => ({ answer: v, subItemAnswers: undefined }))
           );
         } else if (value === undefined) {
           // Clear all values for a repeating item
           form.setFieldValue(internalPath, []);
         } else {
           // Set a single value for a repeating item (replacing existing values)
-          form.setFieldValue(internalPath, [{ answer: value, subItemAnswers: {} }]);
+          form.setFieldValue(internalPath, [{ answer: value, subItemAnswers: undefined }]);
         }
       }
       // Handle non-repeating items
@@ -196,10 +197,7 @@ export function useQuestionnaireForm({
 
   const getItemValue = useCallback(
     (path: string): QuestionnaireResponseItemAnswerValue | QuestionnaireResponseItemAnswerValue[] | undefined => {
-      console.debug(JSON.stringify(form.values, null, 2));
-      console.debug('Path', path, linkIdToInternalPath(path));
       const formItem = getFormItemByPath(form.values, linkIdToInternalPath(path));
-      console.debug('Form Item', formItem);
 
       if (Array.isArray(formItem)) {
         return formItem.map((e) => e.answer) as QuestionnaireResponseItemAnswerValue[];
@@ -273,6 +271,7 @@ function createQuestionnaireResponse(
   questionnaire: Readonly<Questionnaire>,
   partial: Readonly<Partial<QuestionnaireResponse>> = {}
 ): QuestionnaireResponse {
+  console.debug('createQuestionnaireResponse');
   const response: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
     status: 'completed',
@@ -300,6 +299,8 @@ function createResponseItems(
       } else if (answer) {
         answers.push(answer);
       }
+
+      console.debug('createResponseItems', answer);
 
       // how many results with there be? only 1, unless it's a repeated group.
       const result: QuestionnaireResponseItem[] = [];
@@ -418,11 +419,14 @@ function getInitialValuesForItem(root: QuestionnaireItem): QuestionnaireFormValu
       curItem,
       childResults: Record<string, QuestionnaireFormItem | QuestionnaireFormItem[]> | undefined
     ): QuestionnaireFormItem | QuestionnaireFormItem[] => {
-      const initialValues = evalFhirPathTyped('initial.value', [{ type: 'QuestionnaireItem', value: curItem }]).map(
-        (v) => v.value as QuestionnaireItemInitialValue
+      let initialValues = evalFhirPathTyped('initial.value', [{ type: 'QuestionnaireItem', value: curItem }]).map(
+        (v) => v.value as QuestionnaireItemInitialValue | undefined
       );
 
       if (curItem.repeats) {
+        if (initialValues.length === 0 && childResults) {
+          initialValues = [undefined];
+        }
         return initialValues.map((value) => ({
           answer: value,
           subItemAnswers: { ...childResults },
@@ -488,13 +492,11 @@ function getValuesFromResponse(
  * @returns The converted internal path
  */
 function linkIdToInternalPath(linkIdPath: string): string {
-  const regex = /(?<!\\)\./g;
-  const parts = linkIdPath.split(regex);
+  const parts = splitLinkIdPath(linkIdPath);
   const result: string[] = [];
 
   for (let i = 0; i < parts.length; i++) {
-    const part = encodeLink(parts[i].replace(/\\\./g, '.')); // Replace escaped dots with actual dots before encoding
-    result.push(part);
+    result.push(parts[i]);
 
     if (i < parts.length - 1 && isNaN(Number(parts[i + 1]))) {
       // If the next part is not a number (i.e., not an index for a repeated item),
@@ -504,6 +506,12 @@ function linkIdToInternalPath(linkIdPath: string): string {
   }
 
   return result.join('.');
+}
+
+function splitLinkIdPath(linkIdPath: string): string[] {
+  const regex = /(?<!\\)\./g;
+  const parts = linkIdPath.split(regex);
+  return parts.map((part) => encodeLink(part.replace(/\\\./g, '.')));
 }
 
 function encodeLink(part: string): string {
@@ -632,15 +640,17 @@ function forEachAnswerImpl<T>(
 // }
 
 function findQuestionnaireItem(questionnaire: Questionnaire, path: string): QuestionnaireItem | undefined {
-  const parts = path.split('.');
+  const parts = splitLinkIdPath(path);
   let currentItems: QuestionnaireItem[] | undefined = questionnaire.item;
 
   for (const part of parts) {
+    const decodedPart = decodeLink(part);
+    console.log(decodedPart);
     if (!currentItems) {
       return undefined;
     }
 
-    const item = currentItems.find((i) => i.linkId === part);
+    const item = currentItems.find((i) => i.linkId === decodedPart);
     if (!item) {
       return undefined;
     }
@@ -661,11 +671,10 @@ function getFormItemByPath(
 ): QuestionnaireFormItem | QuestionnaireFormItem[] | undefined {
   const parts = path.split('.');
   let current: any = formValues;
-  console.debug('Parts', parts);
 
   for (const part of parts) {
     const decodedPart = decodeLink(part);
-    console.debug('Part', part, decodedPart, current);
+    console.debug('decoded part', part, decodedPart, current);
     if (current === undefined) {
       return undefined;
     }
