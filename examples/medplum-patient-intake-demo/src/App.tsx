@@ -1,4 +1,12 @@
-import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import {
+  AppShell,
+  ErrorBoundary,
+  Loading,
+  Logo,
+  useMedplum,
+  useMedplumProfile,
+  useSearchResources,
+} from '@medplum/react';
 import { IconFilePencil, IconHealthRecognition, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
@@ -10,14 +18,19 @@ import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
 import { IntakeFormPage } from './pages/IntakeFormPage';
 import { QuestionnaireCustomizationPage } from './pages/QuestionnaireCustomizationPage';
+import { IntakeQuestionnaireContext } from './Questionnaire.context';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
+  const [questionnaires] = useSearchResources('Questionnaire', { name: 'patient-intake' });
+
   if (medplum.isLoading()) {
     return null;
   }
+
+  const intakeQuestionnaire = questionnaires?.[0];
 
   return (
     <AppShell
@@ -27,30 +40,40 @@ export function App(): JSX.Element | null {
           title: 'Charts',
           links: [{ icon: <IconUser />, label: 'Patients', href: '/Patient' }],
         },
-        {
-          title: 'Management',
-          links: [{ icon: <IconFilePencil />, label: 'Customize intake form', href: '/customize-form' }],
-        },
+        intakeQuestionnaire
+          ? {
+              title: 'Management',
+              links: [
+                {
+                  icon: <IconFilePencil />,
+                  label: 'Customize intake form',
+                  href: `/Questionnaire/${intakeQuestionnaire.id}/edit`,
+                },
+              ],
+            }
+          : {},
         {
           title: 'Upload Data',
           links: [{ icon: <IconHealthRecognition />, label: 'Upload Example Patient Data', href: '/upload/example' }],
         },
       ]}
     >
-      <ErrorBoundary>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/Patient/:id/*" element={<PatientPage />} />
-            <Route path="/Patient/:patientId/intake" element={<IntakeFormPage />} />
-            <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
-            <Route path="/:resourceType" element={<SearchPage />} />
-            <Route path="/upload/:dataType" element={<UploadDataPage />} />
-            <Route path="/customize-form" element={<QuestionnaireCustomizationPage />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
+      <IntakeQuestionnaireContext.Provider value={{ questionnaire: intakeQuestionnaire }}>
+        <ErrorBoundary>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
+              <Route path="/signin" element={<SignInPage />} />
+              <Route path="/Patient/:id/*" element={<PatientPage />} />
+              <Route path="/Patient/:patientId/intake" element={<IntakeFormPage />} />
+              <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
+              <Route path="/:resourceType" element={<SearchPage />} />
+              <Route path="/upload/:dataType" element={<UploadDataPage />} />
+              <Route path="/Questionnaire/:questionnaireId/edit" element={<QuestionnaireCustomizationPage />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+      </IntakeQuestionnaireContext.Provider>
     </AppShell>
   );
 }

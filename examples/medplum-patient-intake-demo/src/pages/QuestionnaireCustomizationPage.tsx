@@ -4,15 +4,15 @@ import { Document, QuestionnaireBuilder, useMedplum, useMedplumProfile, useResou
 import { useCallback } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { Loading } from '../components/Loading';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 export function QuestionnaireCustomizationPage(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const { questionnaireId } = useParams();
 
-  const questionnaireId = 'd613c8ed-222e-4f74-a220-e170a37d34d8';
   const questionnaire = useResource<Questionnaire>({ reference: `Questionnaire/${questionnaireId}` });
 
   const handleOnSubmit = useCallback(
