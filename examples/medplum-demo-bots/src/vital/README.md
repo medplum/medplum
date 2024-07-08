@@ -20,3 +20,5 @@ The bots require the following environment variables to be set:
 
 - `VITAL_API_KEY`: The API key for the Vital REST API.
 - `VITAL_API_URL`: The base URL for the Vital REST API. Defaults to `https://api.dev.tryvital.io`.
+
+You can see a demo implementation [here](https://github.com/tryVital/medplum-demo)
