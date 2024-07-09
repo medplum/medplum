@@ -5,6 +5,7 @@ import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
+import { PatientObservations } from './PatientObservations';
 
 interface PatientDetailsProps {
   patient: Patient;
@@ -20,6 +21,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['details', 'Details'],
     ['edit', 'Edit'],
     ['history', 'History'],
+    ['observations', 'SDOH Observations'],
   ];
   // Get the current tab
   const tab = window.location.pathname.split('/').pop();
@@ -71,6 +73,9 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         </Tabs.Panel>
         <Tabs.Panel value="history">
           <ResourceHistoryTable resourceType="Patient" id={id} />
+        </Tabs.Panel>
+        <Tabs.Panel value="observations">
+          <PatientObservations patient={props.patient} />
         </Tabs.Panel>
       </Tabs>
     </Document>
