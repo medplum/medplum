@@ -19,7 +19,7 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
-import request, { Response } from 'supertest';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
