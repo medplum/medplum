@@ -32,6 +32,8 @@ export interface UnbindFromTokenMsg extends BaseSubscriptionClientMsg {
 export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg;
 
 const hostname = os.hostname();
+const METRIC_OPTIONS = { attributes: { hostname }, options: { unit: 's' } };
+
 const wsToSubLookup = new Map<ws.WebSocket, Set<string>>();
 const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
 let redisSubscriber: Redis | undefined;
@@ -58,8 +60,8 @@ function ensureHeartbeatHandler(): void {
       for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
         ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
       }
-      setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, { hostname });
-      setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, { hostname });
+      setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
+      setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
     };
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
   }
