@@ -1227,3 +1227,14 @@ export function removeProfileFromResource<T extends Resource = Resource>(resourc
   }
   return resource;
 }
+
+export function mapFilter<T, U>(arr: T[], fn: (value: T, idx: number) => U | undefined): U[] {
+  const result = [];
+  for (let i = 0; i < arr.length; i++) {
+    const resultValue = fn(arr[i], i);
+    if (resultValue !== undefined) {
+      result.push(resultValue);
+    }
+  }
+  return result;
+}

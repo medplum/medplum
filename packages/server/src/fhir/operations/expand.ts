@@ -3,11 +3,11 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery, Union } from '../sql';
+import { Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
-import { abstractProperty, addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
+import { abstractProperty, addDescendants, addPropertyFilter, findTerminologyResource } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
 
@@ -17,6 +17,7 @@ type ValueSetExpandParameters = {
   offset?: number;
   count?: number;
   excludeNotForUI?: boolean;
+  valueSet?: ValueSet;
 };
 
 // Implements FHIR "Value Set Expansion"
@@ -31,22 +32,24 @@ type ValueSetExpandParameters = {
 export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
 
-  let url = params.url;
-  if (!url) {
-    return [badRequest('Missing url')];
-  }
-
   const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
     return [badRequest('Invalid filter')];
   }
+  let valueSet = params.valueSet;
+  if (!valueSet) {
+    let url = params.url;
+    if (!url) {
+      return [badRequest('Missing url')];
+    }
 
-  const pipeIndex = url.indexOf('|');
-  if (pipeIndex >= 0) {
-    url = url.substring(0, pipeIndex);
+    const pipeIndex = url.indexOf('|');
+    if (pipeIndex >= 0) {
+      url = url.substring(0, pipeIndex);
+    }
+
+    valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
   }
-
-  const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
 
   let offset = 0;
   if (params.offset) {
@@ -63,7 +66,7 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
     const elements = await queryValueSetElements(valueSet, offset, count, filter);
     result = {
       resourceType: 'ValueSet',
-      url,
+      url: valueSet.url,
       expansion: {
         offset,
         contains: elements,
@@ -197,9 +200,9 @@ function processExpansion(systemExpressions: Expression[], expansionContains: Va
   }
 }
 
-const MAX_EXPANSION_SIZE = 1001;
+const MAX_EXPANSION_SIZE = 1000;
 
-function filterCodings(codings: Coding[], filter: string | undefined): Coding[] {
+export function filterCodings(codings: Coding[], filter: string | undefined): Coding[] {
   filter = filter?.trim().toLowerCase();
   if (!filter) {
     return codings;
@@ -219,16 +222,20 @@ export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandP
   }
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
-      total: 1001,
+      total: MAX_EXPANSION_SIZE + 1,
       timestamp: new Date().toISOString(),
-      contains: expandedSet.slice(0, 1000),
+      contains: expandedSet.slice(0, MAX_EXPANSION_SIZE),
     };
+
+    // Fire off ValueSet expansion storage
   } else {
     valueSet.expansion = {
       total: expandedSet.length,
       timestamp: new Date().toISOString(),
       contains: expandedSet.slice(0, params.count),
     };
+
+    // Store small expansion in resource JSON
   }
   return valueSet;
 }
@@ -324,55 +331,6 @@ async function includeInExpansion(
   for (const { code, display } of results) {
     expansion.push({ system, code, display });
   }
-}
-
-function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
-  const base = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where('system', '=', codeSystem.id)
-    .where('code', '=', parentCode);
-
-  const propertyTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'Coding_Property',
-    propertyTable,
-    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))
-  );
-
-  const csPropertyTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'CodeSystem_Property',
-    csPropertyTable,
-    new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-    ])
-  );
-
-  const recursiveCTE = 'cte_descendants';
-  const recursiveTable = query.getNextJoinAlias();
-  query.innerJoin(
-    recursiveCTE,
-    recursiveTable,
-    new Condition(new Column(propertyTable, 'target'), '=', new Column(recursiveTable, 'id'))
-  );
-
-  // Move limit and offset to outer query
-  const limit = query.limit_;
-  query.limit(0);
-  const offset = query.offset_;
-  query.offset(0);
-
-  return new SelectQuery('cte_descendants')
-    .column('code')
-    .column('display')
-    .withRecursive('cte_descendants', new Union(base, query))
-    .limit(limit)
-    .offset(offset);
 }
 
 function addAbstractFilter(query: SelectQuery, codeSystem: CodeSystem): SelectQuery {
