@@ -32,6 +32,7 @@
     "@aws-sdk/client-textract": "3.606.0",
     "@aws-sdk/cloudfront-signer": "3.598.0",
     "@aws-sdk/lib-storage": "3.606.0",
+    "@aws-sdk/s3-request-presigner": "3.598.0",
     "@aws-sdk/types": "3.598.0",
     "@medplum/core": "3.2.0",
     "@medplum/definitions": "3.2.0",

@@ -103,7 +103,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
 
   await sendResponse(req, res, outcome, {
     ...binary,
-    url: getBinaryStorage().getPresignedUrl(binary),
+    url: await getBinaryStorage().getPresignedUrl(binary),
   });
 }
 
