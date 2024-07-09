@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
+    "build:bots": "npm run clean && npm run lint && tsc --project tsconfig-bots.json && node --loader ts-node/esm src/scripts/deploy-bots.ts",
+    "clean": "rimraf dist",
     "dev": "vite",
     "preview": "vite preview",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "test": "vitest run"
   },
   "prettier": {
     "printWidth": 120,
@@ -38,6 +41,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.24.0",
     "typescript": "5.5.2",
-    "vite": "5.3.2"
+    "vite": "5.3.2",
+    "vitest": "2.0.1"
   }
 }

@@ -1,35 +1,51 @@
-import { BotEvent, formatDate, getReferenceString, MedplumClient, PatchOperation } from '@medplum/core';
-import { AllergyIntolerance, Identifier, Medication, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { allOk, BotEvent, getReferenceString, MedplumClient, PatchOperation } from '@medplum/core';
+import {
+  AllergyIntolerance,
+  ContactPoint,
+  Identifier,
+  OperationOutcome,
+  Patient,
+  Practitioner,
+} from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<void> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<OperationOutcome> {
   const patient = event.input;
 
-  const PHOTON_KEY = event.secrets['PHOTON_API_KEY']?.valueString as string;
+  const PHOTON_KEY = process.env.PHOTON_AUTH_TOKEN as string;
+  console.log(PHOTON_KEY);
 
   const allergies = await medplum.searchResources('AllergyIntolerance', {
     patient: getReferenceString(patient),
   });
 
-  const query = `
+  const photonQuery = `
       mutation createPatient(
         $externalId: ID
         $name: NameInput!
         $dateOfBirth: AWSDate!
         $sex: SexType!
+        $gender: String
+        $email: AWSEmail
         $phone: AWSPhone!
         $allergies: [AllergenInput]
-        $medicationHistory: [MedicationInput]
+        $medicationHistory: [MedHistoryInput]
+        $address: AddressInput
       ) {
         createPatient(
           externalId: $externalId
           name: $name
           dateOfBirth: $dateOfBirth
           sex: $sex
+          gender: $gender
+          email: $email
           phone: $phone
           allergies: $allergies
           medicationHistory: $medicationHistory
-        )
+          address: $address
+        ) {
+          id
+        }
       }
     `;
 
@@ -39,25 +55,27 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
       first: patient.name?.[0].given?.[0],
       last: patient.name?.[0].family,
     },
-    dateOfBirth: formatDate(patient.birthDate),
+    dateOfBirth: formatAWSDate(patient.birthDate),
     sex: getSexType(patient.gender),
     gender: patient.gender,
-    email: getPatientEmail(patient),
-    phone: getPatientPhone(patient),
+    email: getTelecom('email', patient),
+    phone: getTelecom('phone', patient),
     allergies: formatPatientAllergies(allergies),
-    // medicationHistory: getPatientMedicationHistory(),
+    medicationHistory: await formatPatientMedicationHistory(patient, medplum),
   };
 
   const data = JSON.stringify({
-    query: `mutation${query}`,
+    query: photonQuery,
     variables,
   });
 
-  const result = await fetch('https://api.neutron.health/graphql', {
+  console.log(data);
+
+  const result: any = await fetch('https://api.neutron.health/graphql', {
     method: 'POST',
     body: data,
     headers: {
-      authorization: 'Basic ' + Buffer.from(`${PHOTON_KEY}:`).toString('base64'),
+      authorization: `Bearer ${PHOTON_KEY}`,
       'content-type': 'application/json',
     },
   })
@@ -66,6 +84,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
 
   console.log(result);
   await updatePatient(patient, result, medplum);
+  return allOk;
 }
 
 async function updatePatient(patient: Patient, response: any, medplum: MedplumClient): Promise<void> {
@@ -105,61 +124,61 @@ function getSexType(sex: Patient['gender']): 'MALE' | 'FEMALE' | 'UNKNOWN' {
   return 'MALE';
 }
 
-function getPatientEmail(patient: Patient): string | undefined {
-  const email = patient.telecom?.find((comm) => comm.system === 'email');
-  return email?.value;
-}
-
-function getPatientPhone(patient: Patient): string | undefined {
-  const phone = patient.telecom?.find((comm) => comm.system === 'phone');
-  return phone?.value;
-}
-
 function formatPatientAllergies(
   allergies: AllergyIntolerance[]
-): { onset?: string; allergen: { id?: string; name?: string; rxcui?: string } }[] {
+): { allergenId?: string; onset?: string; comment?: string }[] {
   const patientAllergies = [];
   for (const allergy of allergies) {
-    const onset = formatDate(allergy.onsetDateTime);
-    const allergen = allergy.code?.coding?.find(
-      (code) => code.system === 'http://www.nlm.nih.gov/research/umls/rxnorm'
-    );
+    const onset = formatAWSDate(allergy.onsetDateTime);
     patientAllergies.push({
       onset,
-      allergen: {
-        id: allergy.code?.id,
-        name: allergen?.display,
-        rxcui: allergen?.code,
-      },
+      allergenId: allergy.id,
     });
   }
 
   return patientAllergies;
 }
 
-async function formatPatientMedicationHistory(patient: Patient, medplum: MedplumClient) {
+async function formatPatientMedicationHistory(patient: Patient, medplum: MedplumClient): Promise<any> {
   const medicationHistory = [];
-  const medicationList = await medplum.searchOne('List', {
+  const medicationRequests = await medplum.searchResources('MedicationRequest', {
     patient: getReferenceString(patient),
-    code: '10160-0',
   });
 
-  const medicationEntries = medicationList?.entry;
-  if (!medicationEntries) {
+  if (!medicationRequests) {
     return undefined;
   }
 
-  for (const entry of medicationEntries) {
-    const medication = (await medplum.readReference(entry.item)) as MedicationRequest;
-    const medicationCode = medication.medicationCodeableConcept?.coding?.find(
-      (code) => code.system === 'http://www.nlm.nih.gov/research/umls/rxnorm'
-    );
-    const photonMedication = {
-      id: medication.id,
-      name: medicationCode?.display,
-      codes: {
-        rxcui: medicationCode?.code,
-      },
-    };
+  for (const medication of medicationRequests) {
+    medicationHistory.push({
+      medicationId: medication.id as string,
+      active: medication.status === 'active',
+      comment: medication.note?.[0].text,
+    });
   }
+
+  return medicationHistory;
+}
+
+function getTelecom(system: ContactPoint['system'], person?: Practitioner | Patient): string | undefined {
+  if (!person) {
+    return undefined;
+  }
+
+  const telecom = person.telecom?.find((comm) => comm.system === system);
+
+  if (system === 'phone' && telecom?.value) {
+    return '+1' + telecom.value;
+  } else {
+    return telecom?.value;
+  }
+}
+
+function formatAWSDate(date?: string) {
+  if (!date) {
+    return '';
+  }
+
+  const dateString = new Date(date);
+  return dateString.toISOString().slice(0, 10);
 }
