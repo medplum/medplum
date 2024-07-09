@@ -23,7 +23,7 @@ import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
@@ -543,28 +543,8 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-
-    let res2: Response | undefined = undefined;
-
-    shouldThrow = false;
-    const asyncJobTimeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 5000);
-
-    while (!((res2?.body as AsyncJob)?.status === 'completed')) {
-      if (shouldThrow) {
-        throw new Error('Timed out while waiting for async job to complete');
-      }
-      await sleep(10);
-      res2 = await request(app)
-        .get(new URL(res.headers['content-location']).pathname)
-        .set('Authorization', 'Bearer ' + accessToken);
-    }
-    clearTimeout(asyncJobTimeout);
-
-    const responseBody = (res2 as Response).body as AsyncJob;
-
-    expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+    const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+    expect(asyncJob).toMatchObject<Partial<AsyncJob>>({
       resourceType: 'AsyncJob',
       status: 'completed',
       request: expect.stringContaining('$push'),
