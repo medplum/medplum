@@ -32,7 +32,7 @@
     "@types/pg": "8.11.6",
     "@types/unzipper": "0.10.9",
     "fast-xml-parser": "4.4.0",
-    "fhirpath": "3.13.3",
+    "fhirpath": "3.14.1",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.12.0",
