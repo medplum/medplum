@@ -1,4 +1,16 @@
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
+
+export const intakePatient: Patient = {
+  resourceType: 'Patient',
+  id: '1ea87e76-85e3-4126-8595-7a8b98e31e35',
+  name: [
+    {
+      given: ['Michael'],
+      family: 'Carvalho',
+    },
+  ],
+};
 
 export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
@@ -346,35 +358,5 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
   ],
-  subject: {
-    reference: 'Patient/1ea87e76-85e3-4126-8595-7a8b98e31e35',
-    display: 'Mr. Lucien408 Bosco882 PharmD',
-  },
-  source: {
-    reference: 'Practitioner/c24e23a1-4906-48fb-962f-a25b4f887802',
-    display: 'Filipe Ximenes',
-  },
-  authored: '2024-07-08T18:05:18.956Z',
-  author: {
-    reference: 'Practitioner/c24e23a1-4906-48fb-962f-a25b4f887802',
-    display: 'Filipe Ximenes',
-  },
-  // id: 'c1826394-3f84-46c4-9129-4bda3018fbc1',
-  // meta: {
-  //   versionId: 'cf71678c-4977-4cb4-be82-d3859b016a23',
-  //   lastUpdated: '2024-07-08T18:05:19.254Z',
-  //   author: {
-  //     reference: 'Practitioner/c24e23a1-4906-48fb-962f-a25b4f887802',
-  //     display: 'Filipe Ximenes',
-  //   },
-  //   project: '453f9151-ca22-4553-91f2-3a7563922642',
-  //   compartment: [
-  //     {
-  //       reference: 'Project/453f9151-ca22-4553-91f2-3a7563922642',
-  //     },
-  //     {
-  //       reference: 'Patient/1ea87e76-85e3-4126-8595-7a8b98e31e35',
-  //     },
-  //   ],
-  // },
+  subject: createReference(intakePatient),
 };

@@ -1,14 +1,13 @@
 import { MockClient } from '@medplum/mock';
 import { handler } from './intake-form';
-import { intakeResponse } from './test-data/intake-form-test-data';
-import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { intakePatient, intakeResponse } from './test-data/intake-form-test-data';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
   getExtensionValue,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  parseReference,
 } from '@medplum/core';
 
 describe('Intake form', async () => {
@@ -18,6 +17,7 @@ describe('Intake form', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
       indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
     }
@@ -27,11 +27,7 @@ describe('Intake form', async () => {
     const medplum = new MockClient();
 
     const response = await medplum.createResource(intakeResponse);
-    const [resourceType, resourceId] = parseReference(response.subject);
-    let patient = await medplum.createResource({
-      resourceType: resourceType,
-      id: resourceId,
-    } as Patient);
+    let patient = await medplum.createResource(intakePatient);
 
     await handler({ bot, input: response, contentType, secrets: {} }, medplum);
 
