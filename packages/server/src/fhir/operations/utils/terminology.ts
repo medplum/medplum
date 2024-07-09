@@ -198,7 +198,9 @@ export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, paren
   query.offset(0);
 
   return new SelectQuery('cte_descendants')
-    .column('*')
+    .column('id')
+    .column('code')
+    .column('display')
     .withRecursive('cte_descendants', new Union(base, query))
     .limit(limit)
     .offset(offset);

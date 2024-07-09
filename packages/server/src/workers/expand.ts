@@ -4,8 +4,10 @@ import { MedplumServerConfig } from '../config';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { globalLogger } from '../logger';
 import { validateCodings } from '../fhir/operations/codesystemvalidatecode';
-import { findTerminologyResource } from '../fhir/operations/utils/terminology';
 import { OperationOutcomeError, badRequest, mapFilter } from '@medplum/core';
+import { Column, InsertQuery, Literal, SelectQuery } from '../fhir/sql';
+import { DatabaseMode, getDatabasePool } from '../database';
+import { expansionQuery } from '../fhir/operations/expand';
 
 /*
  * The expand worker constructs and stores the full expansion of ValueSet resources,
@@ -14,6 +16,7 @@ import { OperationOutcomeError, badRequest, mapFilter } from '@medplum/core';
 
 export interface ExpandJobData {
   readonly valueSet: ValueSet;
+  readonly codeSystems: Record<string, CodeSystem>;
   readonly requestId?: string;
   readonly traceId?: string;
 }
@@ -86,10 +89,11 @@ export function getExpandQueue(): Queue<ExpandJobData> | undefined {
 /**
  * Adds an expand job for the given ValueSet.
  * @param valueSet - The ValueSet to expand.
+ * @param codeSystems - Referenced CodeSystem resources for the expansion.
  */
-export async function addExpandJob(valueSet: ValueSet): Promise<void> {
+export async function addExpandJob(valueSet: ValueSet, codeSystems: Record<string, CodeSystem>): Promise<void> {
   const { requestId, traceId } = getRequestContext();
-  await addExpandJobData({ valueSet, requestId, traceId });
+  await addExpandJobData({ valueSet, codeSystems, requestId, traceId });
 }
 
 /**
@@ -104,11 +108,11 @@ async function addExpandJobData(job: ExpandJobData): Promise<void> {
 
 /**
  * Executes a expand job.
- * @param job - The download job details.
+ * @param job - The expand job details.
  */
 export async function execExpandJob(job: Job<ExpandJobData>): Promise<void> {
   const ctx = getRequestContext();
-  const { valueSet } = job.data;
+  const { valueSet, codeSystems } = job.data;
 
   if (!valueSet.compose) {
     return;
@@ -117,7 +121,6 @@ export async function execExpandJob(job: Job<ExpandJobData>): Promise<void> {
   try {
     ctx.logger.info('Expanding ValueSet', { id: valueSet.id });
 
-    const codeSystemCache: Record<string, CodeSystem> = Object.create(null);
     for (const include of valueSet.compose.include) {
       if (!include.system) {
         throw new OperationOutcomeError(
@@ -125,14 +128,23 @@ export async function execExpandJob(job: Job<ExpandJobData>): Promise<void> {
         );
       }
 
-      const codeSystem =
-        codeSystemCache[include.system] ?? (await findTerminologyResource('CodeSystem', include.system));
-      codeSystemCache[include.system] = codeSystem;
+      const codeSystem = codeSystems[include.system];
       if (include.concept) {
         const validCodings = await validateCodings(codeSystem, include.concept);
-        const codingIds = mapFilter(validCodings, (c) => c?.id);
+        const mappings = mapFilter(validCodings, (c) => (c?.id ? { valueSet: valueSet.id, coding: c.id } : undefined));
+        await new InsertQuery('ValueSet_Membership', mappings)
+          .ignoreOnConflict()
+          .execute(getDatabasePool(DatabaseMode.WRITER));
       } else {
-        // await includeInExpansion(include, expansion, codeSystem, params);
+        const query = expansionQuery(include, codeSystem);
+        if (query) {
+          // Construct outer INSERT query
+          const rowQuery = new SelectQuery('expansion', query)
+            .column(new Literal(valueSet.id ?? ''))
+            .column(new Column('expansion', 'id'));
+          const writeQuery = new InsertQuery('ValueSet_Membership', rowQuery).ignoreOnConflict();
+          await writeQuery.execute(getDatabasePool(DatabaseMode.WRITER));
+        }
       }
     }
 
