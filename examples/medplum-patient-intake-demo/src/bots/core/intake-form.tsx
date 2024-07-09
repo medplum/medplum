@@ -23,6 +23,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     return;
   }
 
+  // Handle demographic information
+
   const newName = {
     given: [answers['first-name'].valueString, answers['middle-name'].valueString],
     family: answers['last-name'].valueString,
@@ -35,8 +37,6 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   setPatientExtension(patient, answers['race'].valueCoding);
   setPatientExtension(patient, answers['ethnicity'].valueCoding);
 
-  await medplum.updateResource(patient);
-
   const sexualOrientationValueCoding = answers['sexual-orientation'].valueCoding;
   if (sexualOrientationValueCoding) {
     await medplum.upsertResource(getSexualOrientationObservation(patient, sexualOrientationValueCoding), {
@@ -44,6 +44,42 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
       subject: getReferenceString(patient),
     });
   }
+
+  // Handle language preferences
+
+  const languagesSpoken = answers['languages-spoken'];
+  if (languagesSpoken?.valueCoding) {
+    addPatientLanguage(patient, languagesSpoken.valueCoding);
+  }
+  const preferredLanguage = answers['preferred-language'];
+  if (preferredLanguage?.valueCoding) {
+    addPatientLanguage(patient, preferredLanguage.valueCoding, true);
+  }
+
+  await medplum.updateResource(patient);
+}
+
+function addPatientLanguage(patient: Patient, valueCoding: Coding, preferred: boolean = false): void {
+  const patientCommunications = patient.communication || [];
+
+  let language = patientCommunications.find(
+    (communication) => communication.language.coding?.[0].code === valueCoding?.code
+  );
+
+  if (!language) {
+    language = {
+      language: {
+        coding: [valueCoding],
+      },
+    };
+    patientCommunications.push(language);
+  }
+
+  if (preferred) {
+    language.preferred = preferred;
+  }
+
+  patient.communication = patientCommunications;
 }
 
 function getSexualOrientationObservation(patient: Patient, valueCoding: Coding): Observation {

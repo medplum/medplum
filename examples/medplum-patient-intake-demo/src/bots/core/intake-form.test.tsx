@@ -1,7 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { handler } from './intake-form';
 import { intakePatient, intakeResponse } from './test-data/intake-form-test-data';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Patient, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
   getExtensionValue,
@@ -11,6 +11,7 @@ import {
 } from '@medplum/core';
 
 describe('Intake form', async () => {
+  let medplum: MockClient, response: QuestionnaireResponse, patient: Patient;
   const bot = { reference: 'Bot/123' };
   const contentType = 'application/fhir+json';
 
@@ -23,12 +24,13 @@ describe('Intake form', async () => {
     }
   });
 
+  beforeEach(async () => {
+    medplum = new MockClient();
+    response = await medplum.createResource(intakeResponse);
+    patient = await medplum.createResource(intakePatient);
+  });
+
   test('update patient demographic information', async () => {
-    const medplum = new MockClient();
-
-    const response = await medplum.createResource(intakeResponse);
-    let patient = await medplum.createResource(intakePatient);
-
     await handler({ bot, input: response, contentType, secrets: {} }, medplum);
 
     patient = await medplum.readResource('Patient', patient.id as string);
@@ -52,7 +54,67 @@ describe('Intake form', async () => {
       display: 'Hispanic or Latino',
       system: 'http://terminology.hl7.org/CodeSystem/v3-Ethnicity',
     });
-
     expect(sexualOrientation?.valueCodeableConcept?.coding?.[0].code).toEqual('42035005');
+  });
+
+  test('adds languages', async () => {
+    await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+    patient = await medplum.readResource('Patient', patient.id as string);
+
+    expect(patient.communication?.length).toEqual(2);
+    expect(patient.communication?.[0].language.coding?.[0].code).toEqual('pt-BR');
+    expect(patient.communication?.[1].language.coding?.[0].code).toEqual('en');
+    expect(patient.communication?.[1].preferred).toBeTruthy();
+  });
+
+  test('does not duplicate existing language and sets as preferred', async () => {
+    await medplum.updateResource({
+      ...patient,
+      communication: [
+        {
+          language: {
+            coding: [
+              {
+                system: 'urn:ietf:bcp:47',
+                code: 'en',
+                display: 'English',
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+    patient = await medplum.readResource('Patient', patient.id as string);
+
+    expect(patient.communication?.length).toEqual(2);
+  });
+
+  test('sets existing language as preferred', async () => {
+    await medplum.updateResource({
+      ...patient,
+      communication: [
+        {
+          language: {
+            coding: [
+              {
+                system: 'urn:ietf:bcp:47',
+                code: 'en',
+                display: 'English',
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+    patient = await medplum.readResource('Patient', patient.id as string);
+
+    expect(patient.communication?.[0].preferred).toBeTruthy();
   });
 });
