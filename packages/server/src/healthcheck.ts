@@ -17,21 +17,21 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
 
   setGauge('medplum.db.idleConnections', writerPool.idleCount, {
     ...BASE_METRIC_OPTIONS,
-    attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstance: 'writer' },
+    attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
   });
   setGauge('medplum.db.queriesAwaitingClient', writerPool.waitingCount, {
     ...BASE_METRIC_OPTIONS,
-    attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstance: 'writer' },
+    attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
   });
 
   if (writerPool !== readerPool) {
     setGauge('medplum.db.idleConnections', readerPool.idleCount, {
       ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstance: 'reader' },
+      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
     });
     setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
       ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstance: 'reader' },
+      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
     });
   }
 
