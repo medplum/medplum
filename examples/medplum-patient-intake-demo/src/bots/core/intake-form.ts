@@ -1,6 +1,7 @@
 import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Coding, HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
+  addLanguage,
   extensionURLMapping,
   observationCategoryMapping,
   observationCodeMapping,
@@ -41,11 +42,11 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   const languagesSpoken = answers['languages-spoken'];
   if (languagesSpoken?.valueCoding) {
-    addPatientLanguage(patient, languagesSpoken.valueCoding);
+    addLanguage(patient, languagesSpoken.valueCoding);
   }
   const preferredLanguage = answers['preferred-language'];
   if (preferredLanguage?.valueCoding) {
-    addPatientLanguage(patient, preferredLanguage.valueCoding, true);
+    addLanguage(patient, preferredLanguage.valueCoding, true);
   }
 
   // Handle observations
@@ -75,27 +76,4 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   );
 
   await medplum.updateResource(patient);
-}
-
-function addPatientLanguage(patient: Patient, valueCoding: Coding, preferred: boolean = false): void {
-  const patientCommunications = patient.communication || [];
-
-  let language = patientCommunications.find(
-    (communication) => communication.language.coding?.[0].code === valueCoding?.code
-  );
-
-  if (!language) {
-    language = {
-      language: {
-        coding: [valueCoding],
-      },
-    };
-    patientCommunications.push(language);
-  }
-
-  if (preferred) {
-    language.preferred = preferred;
-  }
-
-  patient.communication = patientCommunications;
 }

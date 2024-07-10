@@ -9,6 +9,39 @@ import {
 } from '@medplum/core';
 import { CodeableConcept, Coding, Observation, Patient, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 
+export const extensionURLMapping: Record<string, string> = {
+  race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
+  ethnicity: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-ethnicity',
+  veteran: HTTP_HL7_ORG + '/fhir/us/military-service/StructureDefinition/military-service-veteran-status',
+};
+
+export const observationCodeMapping: Record<string, CodeableConcept> = {
+  housingStatus: { coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }] },
+  educationLevel: { coding: [{ code: '82589-3', system: LOINC, display: 'Highest Level of Education' }] },
+  sexualOrientiation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
+};
+
+export const observationCategoryMapping: Record<string, CodeableConcept> = {
+  socialHistory: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/observation-category',
+        code: 'social-history',
+        display: 'Social History',
+      },
+    ],
+  },
+  sdoh: {
+    coding: [
+      {
+        system: HTTP_HL7_ORG + '/fhir/us/core/CodeSystem/us-core-tags',
+        code: 'sdoh',
+        display: 'SDOH',
+      },
+    ],
+  },
+};
+
 export async function upsertObservation(
   medplum: MedplumClient,
   patient: Patient,
@@ -79,35 +112,25 @@ export function setExtension(
   }
 }
 
-export const extensionURLMapping: Record<string, string> = {
-  race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
-  ethnicity: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-ethnicity',
-  veteran: HTTP_HL7_ORG + '/fhir/us/military-service/StructureDefinition/military-service-veteran-status',
-};
+export function addLanguage(patient: Patient, valueCoding: Coding, preferred: boolean = false): void {
+  const patientCommunications = patient.communication || [];
 
-export const observationCodeMapping: Record<string, CodeableConcept> = {
-  housingStatus: { coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }] },
-  educationLevel: { coding: [{ code: '82589-3', system: LOINC, display: 'Highest Level of Education' }] },
-  sexualOrientiation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
-};
+  let language = patientCommunications.find(
+    (communication) => communication.language.coding?.[0].code === valueCoding?.code
+  );
 
-export const observationCategoryMapping: Record<string, CodeableConcept> = {
-  socialHistory: {
-    coding: [
-      {
-        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/observation-category',
-        code: 'social-history',
-        display: 'Social History',
+  if (!language) {
+    language = {
+      language: {
+        coding: [valueCoding],
       },
-    ],
-  },
-  sdoh: {
-    coding: [
-      {
-        system: HTTP_HL7_ORG + '/fhir/us/core/CodeSystem/us-core-tags',
-        code: 'sdoh',
-        display: 'SDOH',
-      },
-    ],
-  },
-};
+    };
+    patientCommunications.push(language);
+  }
+
+  if (preferred) {
+    language.preferred = preferred;
+  }
+
+  patient.communication = patientCommunications;
+}
