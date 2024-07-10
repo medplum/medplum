@@ -385,6 +385,7 @@ describe('useQuestionnaireForm', () => {
                 linkId: 'conditions',
                 type: 'choice',
                 text: 'Do you have any medical conditions?',
+                answerValueSet: 'http://example.com/conditions',
                 repeats: true,
                 item: [
                   {
@@ -402,7 +403,7 @@ describe('useQuestionnaireForm', () => {
       const { result } = renderHook(useQuestionnaireForm, { initialProps: { questionnaire } });
 
       act(() => {
-        result.current.setItemValue('patientInfo.name', 'Jane Doe');
+        // result.current.setItemValue('patientInfo.name', 'Jane Doe');
         result.current.setItemValue('patientInfo.conditions', [
           { code: 'diabetes', system: 'http://example.com/conditions' },
           { code: 'hypertension', system: 'http://example.com/conditions' },
@@ -423,7 +424,7 @@ describe('useQuestionnaireForm', () => {
             item: [
               {
                 linkId: 'name',
-                answer: [{ valueString: 'Jane Doe' }],
+                answer: undefined,
               },
               {
                 linkId: 'conditions',

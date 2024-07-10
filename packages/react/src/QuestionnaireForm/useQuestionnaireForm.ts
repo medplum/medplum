@@ -65,6 +65,7 @@ export function useQuestionnaireForm({
   const medplum = useMedplum();
   const source = medplum.getProfile();
   const [schemaLoaded, setSchemaLoaded] = useState(false);
+  // TODO: Sanitize link ids
   const questionnaire = useResource(props.questionnaire);
 
   // const [activePage, setActivePage] = useState(0);
@@ -158,7 +159,6 @@ export function useQuestionnaireForm({
       value: QuestionnaireResponseItemAnswerValue | QuestionnaireResponseItemAnswerValue[] | undefined
     ): void => {
       const internalPath = linkIdToInternalPath(path);
-      console.debug(path, internalPath);
       const questionnaireItem = questionnaire && findQuestionnaireItem(questionnaire, path);
 
       if (!questionnaireItem) {
@@ -174,14 +174,14 @@ export function useQuestionnaireForm({
           // Set multiple values for a repeating item
           form.setFieldValue(
             internalPath,
-            value.map((v) => ({ answer: v, subItemAnswers: undefined }))
+            value.map((v) => ({ answer: v, subItemAnswers: {} }))
           );
         } else if (value === undefined) {
           // Clear all values for a repeating item
           form.setFieldValue(internalPath, []);
         } else {
           // Set a single value for a repeating item (replacing existing values)
-          form.setFieldValue(internalPath, [{ answer: value, subItemAnswers: undefined }]);
+          form.setFieldValue(internalPath, [{ answer: value, subItemAnswers: {} }]);
         }
       }
       // Handle non-repeating items
@@ -271,7 +271,7 @@ function createQuestionnaireResponse(
   questionnaire: Readonly<Questionnaire>,
   partial: Readonly<Partial<QuestionnaireResponse>> = {}
 ): QuestionnaireResponse {
-  console.debug('createQuestionnaireResponse');
+  console.debug('createQuestionnaireResponse', JSON.stringify(formValues, null, 2));
   const response: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
     status: 'completed',
@@ -293,14 +293,20 @@ function createResponseItems(
       questionnaireItem: QuestionnaireItem,
       answer: CallbackAnswers<QuestionnaireResponseItem[]> | undefined
     ): QuestionnaireResponseItem[] => {
-      const answers: ForEachAnswerCallbackValue<QuestionnaireResponseItem[]>[] = [];
+      let answers: ForEachAnswerCallbackValue<QuestionnaireResponseItem[]>[] = [];
       if (Array.isArray(answer)) {
         answers.push(...answer);
       } else if (answer) {
         answers.push(answer);
       }
 
-      console.debug('createResponseItems', answer);
+      // Filter out null answers
+      answers = answers.filter((a) => !!a.answer || (a.subItemResults && !!Object.values(a.subItemResults).length));
+
+      function createSubItems(answer: (typeof answers)[number]): QuestionnaireResponseItem[] | undefined {
+        const subItemAnswers = answer.subItemResults && Object.values(answer.subItemResults).flat();
+        return subItemAnswers?.length ? subItemAnswers : undefined;
+      }
 
       // how many results with there be? only 1, unless it's a repeated group.
       const result: QuestionnaireResponseItem[] = [];
@@ -309,19 +315,21 @@ function createResponseItems(
           result.push({
             linkId: questionnaireItem.linkId,
             answer: undefined,
-            item: answer.subItemResults && Object.values(answer.subItemResults).flat(),
+            item: createSubItems(answer),
           });
         });
       } else {
+        const answerItems = answers.map((answer) => ({
+          ...createAnswer(questionnaireItem, answer.answer),
+          item: createSubItems(answer),
+        }));
         result.push({
           linkId: questionnaireItem.linkId,
-          answer: answers.map((answer) => ({
-            ...createAnswer(questionnaireItem, answer.answer),
-            item: answer.subItemResults && Object.values(answer.subItemResults).flat(),
-          })),
+          answer: answerItems.length > 0 ? answerItems : undefined,
           item: undefined,
         });
       }
+      console.debug('createResponseItems', JSON.stringify(result, null, 2));
       return result;
     }
   ).flat();
@@ -331,6 +339,9 @@ function createAnswer(
   item: QuestionnaireItem,
   answer: QuestionnaireResponseItemAnswerValue | undefined
 ): QuestionnaireResponseItemAnswer | undefined {
+  if (!answer) {
+    return undefined;
+  }
   switch (item.type) {
     case 'string':
     case 'text':
@@ -498,7 +509,7 @@ function linkIdToInternalPath(linkIdPath: string): string {
   for (let i = 0; i < parts.length; i++) {
     result.push(parts[i]);
 
-    if (i < parts.length - 1 && isNaN(Number(parts[i + 1]))) {
+    if (i < parts.length - 1 && !isNumber(parts[i + 1])) {
       // If the next part is not a number (i.e., not an index for a repeated item),
       // add 'subItemAnswers'
       result.push('subItemAnswers');
@@ -506,6 +517,10 @@ function linkIdToInternalPath(linkIdPath: string): string {
   }
 
   return result.join('.');
+}
+
+function isNumber(val: string): boolean {
+  return !isNaN(Number(val));
 }
 
 function splitLinkIdPath(linkIdPath: string): string[] {
@@ -612,8 +627,9 @@ function forEachAnswerImpl<T>(
 
     if (item.item && formItem.subItemAnswers) {
       for (const subItem of item.item) {
-        const subPath = `${path}.subItemAnswers.${subItem.linkId}`;
-        const subFormItem = formItem.subItemAnswers[subItem.linkId];
+        const encodedLink = encodeLink(subItem.linkId);
+        const subPath = `${path}.subItemAnswers.${encodedLink}`;
+        const subFormItem = formItem.subItemAnswers[encodedLink];
 
         if (subFormItem) {
           subItemResults[subItem.linkId] = traverse(subItem, subFormItem, subPath);
@@ -645,7 +661,10 @@ function findQuestionnaireItem(questionnaire: Questionnaire, path: string): Ques
 
   for (const part of parts) {
     const decodedPart = decodeLink(part);
-    console.log(decodedPart);
+
+    if (isNumber(decodedPart)) {
+      continue;
+    }
     if (!currentItems) {
       return undefined;
     }
