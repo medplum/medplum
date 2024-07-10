@@ -1,6 +1,6 @@
 {
   "name": "medplum-provider",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,10 +22,10 @@
     "@mantine/core": "7.11.1",
     "@mantine/hooks": "7.11.1",
     "@mantine/notifications": "7.11.1",
-    "@medplum/core": "3.2.0",
-    "@medplum/eslint-config": "3.2.0",
-    "@medplum/fhirtypes": "3.2.0",
-    "@medplum/react": "3.2.0",
+    "@medplum/core": "3.2.1",
+    "@medplum/eslint-config": "3.2.1",
+    "@medplum/fhirtypes": "3.2.1",
+    "@medplum/react": "3.2.1",
     "@tabler/icons-react": "3.9.0",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
