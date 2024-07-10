@@ -74,7 +74,7 @@ export function setExtension(
   const extension = getExtension(patient, url);
 
   if (extension) {
-    extension[valueXAttribute] = value;
+    (extension as any)[valueXAttribute] = value;
   } else {
     if (!patient.extension) {
       patient.extension = [];
@@ -82,7 +82,7 @@ export function setExtension(
     patient.extension.push({
       url: url,
       [valueXAttribute]: value,
-    } as Extension);
+    });
   }
 }
 
