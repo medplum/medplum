@@ -94,7 +94,7 @@ function addPatientLanguage(patient: Patient, valueCoding: Coding, preferred: bo
 }
 
 function setCodingExtension(patient: Patient, answer: QuestionnaireResponseItemAnswer): void {
-  const value = answer.valueCoding
+  const value = answer.valueCoding;
   const url = value?.system;
 
   if (!url) {
