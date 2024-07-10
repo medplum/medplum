@@ -58,7 +58,7 @@ export async function upsertObservation(
   const observation = createObservation(patient, code, category, valueCoding);
 
   await medplum.upsertResource(observation, {
-    code: coding.system + `|${coding.code}`,
+    code: `${coding.system}|${coding.code}`,
     subject: getReferenceString(patient),
   });
 }
