@@ -1,5 +1,9 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+<<<<<<< HEAD
 import { IconRobot, IconUser } from '@tabler/icons-react';
+=======
+import { IconUser } from '@tabler/icons-react';
+>>>>>>> 2be37e4d7 (Create repo and update readme)
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
