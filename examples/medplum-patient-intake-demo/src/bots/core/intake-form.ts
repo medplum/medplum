@@ -1,5 +1,13 @@
 import { BotEvent, getExtension, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Coding, Extension, HumanName, Patient, QuestionnaireResponse, QuestionnaireResponseItemAnswer, Reference } from '@medplum/fhirtypes';
+import {
+  Coding,
+  Extension,
+  HumanName,
+  Patient,
+  QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
+  Reference,
+} from '@medplum/fhirtypes';
 import { observationCategoryMapping, observationCodeMapping, upsertObservation } from './intake-utils';
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<void> {
