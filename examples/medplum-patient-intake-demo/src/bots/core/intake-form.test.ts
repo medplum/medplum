@@ -124,6 +124,34 @@ describe('Intake form', async () => {
     });
   });
 
+  describe('Veteran status', async () => {
+    test('sets as veteran', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      expect(getExtensionValue(patient, extensionURLMapping.veteran)).toEqual(true);
+    });
+
+    test('overrides existing', async () => {
+      await medplum.updateResource({
+        ...patient,
+        extension: [
+          {
+            url: extensionURLMapping.veteran,
+            valueBoolean: false,
+          },
+        ],
+      });
+
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      expect(getExtensionValue(patient, extensionURLMapping.veteran)).toEqual(true);
+    });
+  });
+
   describe('Observations', async () => {
     test('Sexual orientation', async () => {
       await handler({ bot, input: response, contentType, secrets: {} }, medplum);

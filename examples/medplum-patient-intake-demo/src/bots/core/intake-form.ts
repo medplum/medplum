@@ -42,6 +42,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   setCodingExtension(patient, extensionURLMapping.race, answers['race']);
   setCodingExtension(patient, extensionURLMapping.ethnicity, answers['ethnicity']);
+  setBooleanExtension(patient, extensionURLMapping.veteran, answers['veteran-status']);
 
   // Handle language preferences
 
@@ -109,10 +110,6 @@ function addPatientLanguage(patient: Patient, valueCoding: Coding, preferred: bo
 function setCodingExtension(patient: Patient, url: string, answer: QuestionnaireResponseItemAnswer): void {
   const value = answer.valueCoding;
 
-  if (!url) {
-    return;
-  }
-
   const extension = getExtension(patient, url);
 
   if (extension) {
@@ -121,9 +118,27 @@ function setCodingExtension(patient: Patient, url: string, answer: Questionnaire
     if (!patient.extension) {
       patient.extension = [];
     }
-    patient.extension?.push({
+    patient.extension.push({
       url: url,
       valueCoding: value,
+    } as Extension);
+  }
+}
+
+function setBooleanExtension(patient: Patient, url: string, answer: QuestionnaireResponseItemAnswer | undefined): void {
+  const value = !!answer?.valueBoolean;
+
+  const extension = getExtension(patient, url);
+
+  if (extension) {
+    extension.valueBoolean = value;
+  } else {
+    if (!patient.extension) {
+      patient.extension = [];
+    }
+    patient.extension.push({
+      url: url,
+      valueBoolean: value,
     } as Extension);
   }
 }

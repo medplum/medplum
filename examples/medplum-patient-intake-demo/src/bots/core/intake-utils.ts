@@ -48,6 +48,7 @@ function createObservation(
 export const extensionURLMapping: Record<string, string> = {
   race: HTTP_TERMINOLOGY_HL7_ORG + '/ValueSet/v3-Race',
   ethnicity: HTTP_TERMINOLOGY_HL7_ORG + '/ValueSet/v3-Ethnicity',
+  veteran: HTTP_HL7_ORG + '/fhir/us/military-service/StructureDefinition/military-service-veteran-status',
 };
 
 export const observationCodeMapping: Record<string, CodeableConcept> = {
