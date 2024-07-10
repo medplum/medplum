@@ -1,5 +1,13 @@
 import { BotEvent, getExtension, getQuestionnaireAnswers, MedplumClient, resolveId } from '@medplum/core';
-import { Coding, Extension, HumanName, Patient, QuestionnaireResponse, QuestionnaireResponseItemAnswer, Reference } from '@medplum/fhirtypes';
+import {
+  Coding,
+  Extension,
+  HumanName,
+  Patient,
+  QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
+  Reference,
+} from '@medplum/fhirtypes';
 import { observationCategoryMapping, observationCodeMapping, upsertObservation } from './intake-utils';
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<void> {
@@ -94,7 +102,7 @@ function addPatientLanguage(patient: Patient, valueCoding: Coding, preferred: bo
 }
 
 function setCodingExtension(patient: Patient, answer: QuestionnaireResponseItemAnswer): void {
-  const value = answer.valueCoding
+  const value = answer.valueCoding;
   const url = value?.system;
 
   if (!url) {
