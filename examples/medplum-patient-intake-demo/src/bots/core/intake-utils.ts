@@ -87,8 +87,8 @@ export function setExtension(
 }
 
 export const extensionURLMapping: Record<string, string> = {
-  race: HTTP_HL7_ORG + '/fhir/us/core/STU5.0.1/StructureDefinition-us-core-race.html',
-  ethnicity: HTTP_HL7_ORG + 'fhir/us/core/STU5.0.1/StructureDefinition-us-core-ethnicity.html',
+  race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
+  ethnicity: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-ethnicity',
   veteran: HTTP_HL7_ORG + '/fhir/us/military-service/StructureDefinition/military-service-veteran-status',
 };
 
