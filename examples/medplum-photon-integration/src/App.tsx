@@ -11,6 +11,7 @@ import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
+import('@photonhealth/elements');
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -21,31 +22,34 @@ export function App(): JSX.Element | null {
   }
 
   return (
-    <AppShell
-      logo={<Logo size={24} />}
-      menus={[
-        {
-          title: 'My Links',
-          links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
-        },
-      ]}
-    >
-      <ErrorBoundary>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/Patient/:id" element={<PatientPage />}>
-              <Route index element={<PatientOverview />} />
-              <Route path="overview" element={<PatientOverview />} />
-              <Route path="timeline" element={<Timeline />} />
-              <Route path="history" element={<PatientHistory />} />
-            </Route>
-            <Route path="/:resourceType/:id" element={<ResourcePage />} />
-            <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
-    </AppShell>
+    <photon-client>
+      <AppShell
+        logo={<Logo size={24} />}
+        menus={[
+          {
+            title: 'My Links',
+            links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
+          },
+        ]}
+      >
+        <ErrorBoundary>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
+              <Route path="/signin" element={<SignInPage />} />
+              <Route path="/Patient/:id" element={<PatientPage />}>
+                <Route index element={<PatientOverview />} />
+                <Route path="overview" element={<PatientOverview />} />
+                <Route path="timeline" element={<Timeline />} />
+                <Route path="history" element={<PatientHistory />} />
+                <Route path="prescription" element={<PatientPrescription />} />
+              </Route>
+              <Route path="/:resourceType/:id" element={<ResourcePage />} />
+              <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+      </AppShell>
+    </photon-client>
   );
 }
