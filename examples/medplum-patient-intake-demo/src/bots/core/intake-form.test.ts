@@ -58,19 +58,6 @@ describe('Intake form', async () => {
         system: 'http://terminology.hl7.org/CodeSystem/v3-Ethnicity',
       });
     });
-
-    test('Sexual orientation', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
-
-      patient = await medplum.readResource('Patient', patient.id as string);
-
-      const sexualOrientation = await medplum.searchOne('Observation', {
-        code: '76690-7',
-        subject: getReferenceString(patient),
-      });
-
-      expect(sexualOrientation?.valueCodeableConcept?.coding?.[0].code).toEqual('42035005');
-    });
   });
 
   describe('Language information', async () => {
@@ -133,6 +120,47 @@ describe('Intake form', async () => {
       patient = await medplum.readResource('Patient', patient.id as string);
 
       expect(patient.communication?.[0].preferred).toBeTruthy();
+    });
+  });
+
+  describe('Observations', async () => {
+    test('Sexual orientation', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const observation = await medplum.searchOne('Observation', {
+        code: '76690-7',
+        subject: getReferenceString(patient),
+      });
+
+      expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('42035005');
+    });
+
+    test('Housing status', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const observation = await medplum.searchOne('Observation', {
+        code: '71802-3',
+        subject: getReferenceString(patient),
+      });
+
+      expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('M');
+    });
+
+    test('Education Level', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const observation = await medplum.searchOne('Observation', {
+        code: '82589-3',
+        subject: getReferenceString(patient),
+      });
+
+      expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('BD');
     });
   });
 });

@@ -1,13 +1,6 @@
-import {
-  BotEvent,
-  createReference,
-  getExtension,
-  getQuestionnaireAnswers,
-  getReferenceString,
-  MedplumClient,
-  resolveId,
-} from '@medplum/core';
-import { Coding, Extension, HumanName, Observation, Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { BotEvent, getExtension, getQuestionnaireAnswers, MedplumClient, resolveId } from '@medplum/core';
+import { Coding, Extension, HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { observationCategoryMapping, observationCodeMapping, upsertObservation } from './intake-utils';
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<void> {
   const response = event.input;
@@ -17,7 +10,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     return;
   }
 
-  const patient = await medplum.readResource('Patient', resolveId(response.subject) as string);
+  const patient = await medplum.readReference(response.subject as Reference<Patient>);
 
   if (!patient) {
     return;
@@ -37,14 +30,6 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   setPatientExtension(patient, answers['race'].valueCoding);
   setPatientExtension(patient, answers['ethnicity'].valueCoding);
 
-  const sexualOrientationValueCoding = answers['sexual-orientation'].valueCoding;
-  if (sexualOrientationValueCoding) {
-    await medplum.upsertResource(getSexualOrientationObservation(patient, sexualOrientationValueCoding), {
-      code: '76690-7',
-      subject: getReferenceString(patient),
-    });
-  }
-
   // Handle language preferences
 
   const languagesSpoken = answers['languages-spoken'];
@@ -55,6 +40,32 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   if (preferredLanguage?.valueCoding) {
     addPatientLanguage(patient, preferredLanguage.valueCoding, true);
   }
+
+  // Handle observations
+
+  await upsertObservation(
+    medplum,
+    patient,
+    observationCodeMapping.sexualOrientiation,
+    observationCategoryMapping.socialHistory,
+    answers['sexual-orientation'].valueCoding
+  );
+
+  await upsertObservation(
+    medplum,
+    patient,
+    observationCodeMapping.housingStatus,
+    observationCategoryMapping.sdoh,
+    answers['housing-status'].valueCoding
+  );
+
+  await upsertObservation(
+    medplum,
+    patient,
+    observationCodeMapping.educationLevel,
+    observationCategoryMapping.sdoh,
+    answers['education-level'].valueCoding
+  );
 
   await medplum.updateResource(patient);
 }
@@ -80,38 +91,6 @@ function addPatientLanguage(patient: Patient, valueCoding: Coding, preferred: bo
   }
 
   patient.communication = patientCommunications;
-}
-
-function getSexualOrientationObservation(patient: Patient, valueCoding: Coding): Observation {
-  return {
-    resourceType: 'Observation',
-    status: 'final',
-    subject: createReference(patient),
-    valueCodeableConcept: {
-      coding: [valueCoding],
-    },
-    code: {
-      coding: [
-        {
-          system: 'http://loinc.org',
-          code: '76690-7',
-          display: 'Sexual orientation',
-        },
-      ],
-      text: 'Sexual orientation',
-    },
-    category: [
-      {
-        coding: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-            code: 'social-history',
-            display: 'Social History',
-          },
-        ],
-      },
-    ],
-  };
 }
 
 function setPatientExtension(patient: Patient, coding: Coding | undefined): void {
