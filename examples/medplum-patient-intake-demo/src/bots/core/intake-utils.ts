@@ -1,12 +1,20 @@
 import {
   createReference,
+  getExtension,
   getReferenceString,
   HTTP_HL7_ORG,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
   MedplumClient,
 } from '@medplum/core';
-import { CodeableConcept, Coding, Observation, Patient, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
+import {
+  CodeableConcept,
+  Coding,
+  Extension,
+  Observation,
+  Patient,
+  QuestionnaireResponseItemAnswer,
+} from '@medplum/fhirtypes';
 
 export async function upsertObservation(
   medplum: MedplumClient,
@@ -43,6 +51,39 @@ function createObservation(
       coding: [valueCoding],
     },
   };
+}
+
+type ValueXAttribute = 'valueCoding' | 'valueBoolean';
+
+export function setExtension(
+  patient: Patient,
+  url: string,
+  valueXAttribute: ValueXAttribute,
+  answer: QuestionnaireResponseItemAnswer | undefined
+): void {
+  let value = answer?.[valueXAttribute];
+
+  if (valueXAttribute === 'valueBoolean') {
+    value = !!value;
+  }
+
+  if (value === undefined) {
+    return;
+  }
+
+  const extension = getExtension(patient, url);
+
+  if (extension) {
+    extension[valueXAttribute] = value;
+  } else {
+    if (!patient.extension) {
+      patient.extension = [];
+    }
+    patient.extension.push({
+      url: url,
+      [valueXAttribute]: value,
+    } as Extension);
+  }
 }
 
 export const extensionURLMapping: Record<string, string> = {

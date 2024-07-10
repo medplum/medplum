@@ -1,17 +1,10 @@
 import { BotEvent, getExtension, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import {
-  Coding,
-  Extension,
-  HumanName,
-  Patient,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-  Reference,
-} from '@medplum/fhirtypes';
+import { Coding, HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   extensionURLMapping,
   observationCategoryMapping,
   observationCodeMapping,
+  setExtension,
   upsertObservation,
 } from './intake-utils';
 
@@ -40,9 +33,9 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   patient.birthDate = answers['dob'].valueDate;
   patient.gender = answers['gender-identity'].valueCoding?.code as Patient['gender'];
 
-  setCodingExtension(patient, extensionURLMapping.race, answers['race']);
-  setCodingExtension(patient, extensionURLMapping.ethnicity, answers['ethnicity']);
-  setBooleanExtension(patient, extensionURLMapping.veteran, answers['veteran-status']);
+  setExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race']);
+  setExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity']);
+  setExtension(patient, extensionURLMapping.veteran, 'valueBoolean', answers['veteran-status']);
 
   // Handle language preferences
 
@@ -105,40 +98,4 @@ function addPatientLanguage(patient: Patient, valueCoding: Coding, preferred: bo
   }
 
   patient.communication = patientCommunications;
-}
-
-function setCodingExtension(patient: Patient, url: string, answer: QuestionnaireResponseItemAnswer): void {
-  const value = answer.valueCoding;
-
-  const extension = getExtension(patient, url);
-
-  if (extension) {
-    extension.valueCoding = value;
-  } else {
-    if (!patient.extension) {
-      patient.extension = [];
-    }
-    patient.extension.push({
-      url: url,
-      valueCoding: value,
-    } as Extension);
-  }
-}
-
-function setBooleanExtension(patient: Patient, url: string, answer: QuestionnaireResponseItemAnswer | undefined): void {
-  const value = !!answer?.valueBoolean;
-
-  const extension = getExtension(patient, url);
-
-  if (extension) {
-    extension.valueBoolean = value;
-  } else {
-    if (!patient.extension) {
-      patient.extension = [];
-    }
-    patient.extension.push({
-      url: url,
-      valueBoolean: value,
-    } as Extension);
-  }
 }
