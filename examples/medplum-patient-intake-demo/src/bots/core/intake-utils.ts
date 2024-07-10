@@ -7,14 +7,7 @@ import {
   LOINC,
   MedplumClient,
 } from '@medplum/core';
-import {
-  CodeableConcept,
-  Coding,
-  Extension,
-  Observation,
-  Patient,
-  QuestionnaireResponseItemAnswer,
-} from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, Observation, Patient, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 
 export async function upsertObservation(
   medplum: MedplumClient,
