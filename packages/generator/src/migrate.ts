@@ -40,6 +40,7 @@ type IndexType = 'btree' | 'gin';
 interface IndexDefinition {
   columns: string[];
   indexType: IndexType;
+  includeColumns?: string[];
   unique?: boolean;
 }
 
@@ -226,9 +227,7 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
     ],
     indexes: [
       { columns: ['resourceId'], indexType: 'btree' },
-      { columns: ['code'], indexType: 'btree' },
-      { columns: ['system'], indexType: 'btree' },
-      { columns: ['value'], indexType: 'btree' },
+      { columns: ['code', 'value', 'system'], indexType: 'btree', includeColumns: ['resourceId'] },
     ],
   });
 
@@ -527,15 +526,33 @@ function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, pr
 
 function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
   for (const targetIndex of targetTable.indexes) {
-    const startIndex = startTable.indexes.find((i) => i.columns.join(',') === targetIndex.columns.join(','));
-    if (!startIndex) {
+    if (!startTable.indexes.some((i) => i.columns.join(',') === targetIndex.columns.join(','))) {
       writeAddIndex(b, targetTable, targetIndex);
+    }
+  }
+  for (const startIndex of startTable.indexes) {
+    if (startIndex.unique) {
+      // Don't auto-remove unique indexes
+      continue;
+    }
+    if (!targetTable.indexes.some((i) => i.columns.join(',') === startIndex.columns.join(','))) {
+      writeDropIndex(b, targetTable, startIndex);
     }
   }
 }
 
 function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
   b.appendNoWrap(`await client.query('${buildIndexSql(tableDefinition.name, indexDefinition)}');`);
+}
+
+function writeDropIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
+  b.appendNoWrap(
+    `await client.query('DROP INDEX CONCURRENTLY IF EXISTS "${getIndexName(tableDefinition.name, indexDefinition)}"');`
+  );
+}
+
+function getIndexName(tableName: string, index: IndexDefinition): string {
+  return `${tableName}_${index.columns.join('_')}_idx`;
 }
 
 function buildIndexSql(tableName: string, index: IndexDefinition): string {
@@ -546,10 +563,8 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
   }
 
   result += 'INDEX CONCURRENTLY IF NOT EXISTS ';
-  result += tableName;
-  result += '_';
-  result += index.columns.join('_');
-  result += '_idx ON "';
+  result += getIndexName(tableName, index);
+  result += ' ON "';
   result += tableName;
   result += '" ';
 
@@ -560,6 +575,12 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
   result += '(';
   result += index.columns.map((c) => `"${c}"`).join(', ');
   result += ')';
+
+  if (index.includeColumns?.length) {
+    result += ' INCLUDE (';
+    result += index.includeColumns.map((c) => `"${c}"`).join(', ');
+    result += ')';
+  }
   return result;
 }
 
