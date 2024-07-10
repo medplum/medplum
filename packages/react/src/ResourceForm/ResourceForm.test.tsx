@@ -1,6 +1,6 @@
-import { HTTP_HL7_ORG, createReference, deepClone, loadDataType } from '@medplum/core';
+import { HTTP_HL7_ORG, createReference, deepClone, indexStructureDefinitionBundle, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Observation, OperationOutcome, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, Observation, OperationOutcome, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
@@ -12,6 +12,9 @@ const medplum = new MockClient();
 describe('ResourceForm', () => {
   let USCoreStructureDefinitions: StructureDefinition[];
   beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+
     USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
   });
 

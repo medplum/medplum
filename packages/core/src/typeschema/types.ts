@@ -4,7 +4,6 @@ import {
   ElementDefinition,
   ElementDefinitionBinding,
   Resource,
-  ResourceType,
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { DataTypesMap, inflateBaseSchema } from '../base-schema';
@@ -97,6 +96,15 @@ const PROFILE_SCHEMAS_BY_URL: { [profileUrl: string]: InternalTypeSchema } = Obj
 // is maintained per profile URL
 const PROFILE_DATA_TYPES: { [profileUrl: string]: DataTypesMap } = Object.create(null);
 
+// Special case names for StructureDefinitions that are technically "profiles", but are used as base types.
+// This is for backwards compatibility with R4 StructureDefinitions that are used as base types.
+const TYPE_SPECIAL_CASES: { [url: string]: string } = {
+  'http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition': 'ViewDefinition',
+  'http://hl7.org/fhir/StructureDefinition/Quantity': 'Quantity',
+  'http://hl7.org/fhir/StructureDefinition/MoneyQuantity': 'MoneyQuantity',
+  'http://hl7.org/fhir/StructureDefinition/SimpleQuantity': 'SimpleQuantity',
+};
+
 function getDataTypesMap(profileUrl?: string): DataTypesMap {
   let dataTypes: DataTypesMap;
 
@@ -138,7 +146,26 @@ export function loadDataType(sd: StructureDefinition, profileUrl?: string | unde
 
   const dataTypes = getDataTypesMap(profileUrl);
 
-  dataTypes[sd.name] = schema;
+  // By default, only index by "type" for "official" FHIR types
+  // Note that if profileUrl is provided, then dataTypes will be PROFILE_DATA_TYPES[profileUrl].
+  if (
+    sd.url === `http://hl7.org/fhir/StructureDefinition/${sd.type}` ||
+    sd.url === `https://medplum.com/fhir/StructureDefinition/${sd.type}` ||
+    sd.type?.startsWith('http://') ||
+    sd.type?.startsWith('https://') ||
+    profileUrl
+  ) {
+    dataTypes[sd.type] = schema;
+  }
+
+  // Special cases by "name"
+  // These are StructureDefinitions that are technically "profiles", but are used as base types
+  if (!profileUrl) {
+    const specialCase = TYPE_SPECIAL_CASES[sd.url];
+    if (specialCase) {
+      dataTypes[specialCase] = schema;
+    }
+  }
 
   if (profileUrl && sd.url === profileUrl) {
     PROFILE_SCHEMAS_BY_URL[profileUrl] = schema;
@@ -233,7 +260,7 @@ class StructureDefinitionParser {
     this.elementIndex = Object.create(null);
     this.index = 0;
     this.resourceSchema = {
-      name: sd.name as ResourceType,
+      name: sd.name as string,
       title: sd.title,
       type: sd.type,
       url: sd.url as string,

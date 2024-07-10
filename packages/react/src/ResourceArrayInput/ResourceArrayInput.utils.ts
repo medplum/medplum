@@ -9,18 +9,18 @@ import {
   tryGetProfile,
 } from '@medplum/core';
 
-export function assignValuesIntoSlices(
-  values: any[],
+export function assignValuesIntoSlices<T>(
+  values: T[],
   slices: SliceDefinitionWithTypes[],
   slicing: SlicingRules | undefined,
   profileUrl: string | undefined
-): any[][] {
+): T[][] {
   if (!isPopulated(slicing?.slices)) {
     return [values];
   }
 
   // store values in an array of arrays: one for each slice plus another for non-sliced values
-  const slicedValues: any[][] = new Array(slices.length + 1);
+  const slicedValues: T[][] = new Array(slices.length + 1);
   for (let i = 0; i < slicedValues.length; i++) {
     slicedValues[i] = [];
   }

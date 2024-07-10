@@ -99,7 +99,7 @@ describe('BackboneElementInput', () => {
     }
     await setup({
       path: fishPatientProfile.type,
-      typeName: fishPatientProfile.name,
+      typeName: fishPatientProfile.type,
       profileUrl: fishPatientProfile.url,
       defaultValue: fishPatient,
       onChange: () => {},
