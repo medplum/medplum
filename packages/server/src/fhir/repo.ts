@@ -971,7 +971,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         if (resource.id !== id) {
           throw new OperationOutcomeError(badRequest('Incorrect ID'));
         }
-        
+
         patchObject(resource, patch);
         return this.updateResourceImpl(resource, false);
       });
