@@ -26,7 +26,7 @@ export interface MedplumServerConfig {
   approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
   databaseProxyEndpoint?: string;
-  readonlyDatabase: MedplumDatabaseConfig;
+  readonlyDatabase?: MedplumDatabaseConfig;
   readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
