@@ -49,14 +49,16 @@ export async function upsertObservation(
   category: CodeableConcept,
   valueCoding: QuestionnaireResponseItemAnswer | undefined
 ): Promise<void> {
-  if (!valueCoding) {
+  const coding = code.coding?.[0];
+
+  if (!valueCoding || !coding) {
     return;
   }
 
   const observation = createObservation(patient, code, category, valueCoding);
 
   await medplum.upsertResource(observation, {
-    code: LOINC + `|${code.coding?.[0].code}`,
+    code: coding.system + `|${coding.code}`,
     subject: getReferenceString(patient),
   });
 }
