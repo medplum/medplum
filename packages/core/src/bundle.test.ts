@@ -1,7 +1,7 @@
 import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
 import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
-import { deepClone, isUUID } from './utils';
 import { getDataType } from './typeschema/types';
+import { deepClone, isUUID } from './utils';
 
 let jsonFile: any;
 
@@ -225,6 +225,10 @@ describe('Bundle tests', () => {
             display: 'Organization #3',
           },
           author: {
+            reference: 'Practitioner/22222222-2222-2222-2222-222222222222',
+            display: 'Doctor',
+          },
+          onBehalfOf: {
             reference: 'Practitioner/22222222-2222-2222-2222-222222222222',
             display: 'Doctor',
           },
