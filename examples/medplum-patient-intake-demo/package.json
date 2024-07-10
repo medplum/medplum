@@ -9,8 +9,9 @@
     "lint": "eslint src/",
     "dev": "vite",
     "preview": "vite preview",
-    "test": "vitest run --passWithNoTests",
-    "test:coverage": "vitest run --coverage --passWithNoTests"
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
   },
   "prettier": {
     "printWidth": 120,
