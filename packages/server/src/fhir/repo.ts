@@ -120,6 +120,12 @@ export interface RepositoryContext {
    */
   author: Reference;
 
+  /**
+   * Optional individual, device, or organization for whom the change was made.
+   * This value will be included in every resource as meta.onBehalfOf.
+   */
+  onBehalfOf?: Reference;
+
   remoteAddress?: string;
 
   /**
@@ -573,12 +579,17 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     });
     updated = await replaceConditionalReferences(this, updated);
 
-    const resultMeta = {
+    const resultMeta: Meta = {
       ...updated.meta,
       versionId: randomUUID(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
     };
+
+    if (this.context.onBehalfOf) {
+      resultMeta.onBehalfOf = this.context.onBehalfOf;
+    }
+
     const result: T = { ...updated, meta: resultMeta };
 
     const project = this.getProjectId(existing, updated);

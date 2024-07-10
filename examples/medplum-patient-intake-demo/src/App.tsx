@@ -10,14 +10,15 @@ import {
 import { IconDatabaseImport, IconFilePencil, IconHealthRecognition, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { IntakeFormPage } from './pages/IntakeFormPage';
+import { IntakeResponsePage } from './pages/IntakeResponsePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
+import { QuestionnaireCustomizationPage } from './pages/QuestionnaireCustomizationPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
-import { IntakeFormPage } from './pages/IntakeFormPage';
-import { QuestionnaireCustomizationPage } from './pages/QuestionnaireCustomizationPage';
 import { IntakeQuestionnaireContext } from './Questionnaire.context';
 
 export function App(): JSX.Element | null {
@@ -69,6 +70,7 @@ export function App(): JSX.Element | null {
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/Patient/:id/*" element={<PatientPage />} />
               <Route path="/Patient/:patientId/intake" element={<IntakeFormPage />} />
+              <Route path="/Patient/:patientId/intake/:responseId" element={<IntakeResponsePage />} />
               <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/upload/:dataType" element={<UploadDataPage />} />

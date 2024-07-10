@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
+import { AuthState } from '../oauth/middleware';
 import { withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo } from './repo';
@@ -29,7 +30,13 @@ describe('Reference checks', () => {
       });
       project.checkReferencesOnWrite = true;
 
-      const repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      const authState: AuthState = {
+        login: {} as Login,
+        membership,
+        project,
+      };
+
+      const repo = await getRepoForLogin(authState, true);
 
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -94,13 +101,13 @@ describe('Reference checks', () => {
       project.checkReferencesOnWrite = true;
       project.link = [{ project: createReference(project2) }];
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership2, project2, true);
+      const repo2 = await getRepoForLogin({ login: {} as Login, membership: membership2, project: project2 });
       const patient2 = await repo2.createResource({
         resourceType: 'Patient',
       });
 
       // Reference available into linked Project
-      let repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      let repo = await getRepoForLogin({ login: {} as Login, membership, project });
       const patient = await repo.createResource({
         resourceType: 'Patient',
         link: [{ type: 'seealso', other: createReference(patient2) }],
@@ -109,7 +116,11 @@ describe('Reference checks', () => {
 
       // Unlink Project and vaerify that access is revoked
       project.link = undefined;
-      repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      repo = await getRepoForLogin({
+        login: {} as Login,
+        membership,
+        project,
+      });
       await expect(
         repo.createResource({
           resourceType: 'Patient',
@@ -140,7 +151,7 @@ describe('Reference checks', () => {
       const systemRepo = getSystemRepo();
       await systemRepo.updateResource(project1);
 
-      const repo = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project1, true);
+      const repo = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project: project1 });
       let project = await repo.readResource<Project>('Project', project1.id as string);
 
       // Checking the name change is ancillary; mostly confirming that the update
