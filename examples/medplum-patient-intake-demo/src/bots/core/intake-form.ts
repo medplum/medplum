@@ -1,4 +1,4 @@
-import { BotEvent, getExtension, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import { Coding, HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   extensionURLMapping,
