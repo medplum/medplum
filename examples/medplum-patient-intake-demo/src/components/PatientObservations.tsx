@@ -16,7 +16,7 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
       { code: 'patient', operator: Operator.EQUALS, value: `Patient/${props.patient.id}` },
       { code: 'category', operator: Operator.EQUALS, value: 'sdoh' },
     ],
-    fields: ['status', 'code', 'category'],
+    fields: ['code', 'value[x]'],
   };
 
   return (

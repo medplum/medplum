@@ -22,7 +22,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['details', 'Details'],
     ['edit', 'Edit'],
     ['history', 'History'],
-    ['observations', 'SDOH Observations'],
+    ['observations', 'SDOH'],
     ['consents', 'Consents'],
   ];
   // Get the current tab
