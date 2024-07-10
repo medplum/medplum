@@ -1,4 +1,11 @@
-import { createReference, getReferenceString, LOINC, MedplumClient } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  HTTP_HL7_ORG,
+  HTTP_TERMINOLOGY_HL7_ORG,
+  LOINC,
+  MedplumClient,
+} from '@medplum/core';
 import { CodeableConcept, Coding, Observation, Patient, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 
 export async function upsertObservation(
@@ -38,6 +45,11 @@ function createObservation(
   };
 }
 
+export const extensionURLMapping: Record<string, string> = {
+  race: HTTP_TERMINOLOGY_HL7_ORG + '/ValueSet/v3-Race',
+  ethnicity: HTTP_TERMINOLOGY_HL7_ORG + '/ValueSet/v3-Ethnicity',
+};
+
 export const observationCodeMapping: Record<string, CodeableConcept> = {
   housingStatus: { coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }] },
   educationLevel: { coding: [{ code: '82589-3', system: LOINC, display: 'Highest Level of Education' }] },
@@ -48,7 +60,7 @@ export const observationCategoryMapping: Record<string, CodeableConcept> = {
   socialHistory: {
     coding: [
       {
-        system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/observation-category',
         code: 'social-history',
         display: 'Social History',
       },
@@ -57,7 +69,7 @@ export const observationCategoryMapping: Record<string, CodeableConcept> = {
   sdoh: {
     coding: [
       {
-        system: 'http://hl7.org/fhir/us/core/CodeSystem/us-core-tags',
+        system: HTTP_HL7_ORG + '/fhir/us/core/CodeSystem/us-core-tags',
         code: 'sdoh',
         display: 'SDOH',
       },

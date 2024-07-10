@@ -1,6 +1,19 @@
 import { BotEvent, getExtension, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Coding, Extension, HumanName, Patient, QuestionnaireResponse, QuestionnaireResponseItemAnswer, Reference } from '@medplum/fhirtypes';
-import { observationCategoryMapping, observationCodeMapping, upsertObservation } from './intake-utils';
+import {
+  Coding,
+  Extension,
+  HumanName,
+  Patient,
+  QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
+  Reference,
+} from '@medplum/fhirtypes';
+import {
+  extensionURLMapping,
+  observationCategoryMapping,
+  observationCodeMapping,
+  upsertObservation,
+} from './intake-utils';
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<void> {
   const response = event.input;
@@ -27,8 +40,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   patient.birthDate = answers['dob'].valueDate;
   patient.gender = answers['gender-identity'].valueCoding?.code as Patient['gender'];
 
-  setCodingExtension(patient, answers['race']);
-  setCodingExtension(patient, answers['ethnicity']);
+  setCodingExtension(patient, extensionURLMapping.race, answers['race']);
+  setCodingExtension(patient, extensionURLMapping.ethnicity, answers['ethnicity']);
 
   // Handle language preferences
 
@@ -93,9 +106,8 @@ function addPatientLanguage(patient: Patient, valueCoding: Coding, preferred: bo
   patient.communication = patientCommunications;
 }
 
-function setCodingExtension(patient: Patient, answer: QuestionnaireResponseItemAnswer): void {
+function setCodingExtension(patient: Patient, url: string, answer: QuestionnaireResponseItemAnswer): void {
   const value = answer.valueCoding;
-  const url = value?.system;
 
   if (!url) {
     return;
