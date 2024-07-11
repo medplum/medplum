@@ -78,9 +78,7 @@
         "status": "active",
         "title": "Patient Intake Questionnaire",
         "name": "patient-intake",
-        "subjectType": [
-          "Patient"
-        ],
+        "subjectType": ["Patient"],
         "item": [
           {
             "linkId": "patient-demographics",
