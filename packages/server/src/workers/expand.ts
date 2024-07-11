@@ -7,7 +7,7 @@ import { validateCodings } from '../fhir/operations/codesystemvalidatecode';
 import { OperationOutcomeError, badRequest, mapFilter } from '@medplum/core';
 import { Column, InsertQuery, Literal, SelectQuery } from '../fhir/sql';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { expansionQuery } from '../fhir/operations/expand';
+import { expansionQuery, isExpansionPrecomputed } from '../fhir/operations/expand';
 
 /*
  * The expand worker constructs and stores the full expansion of ValueSet resources,
@@ -120,6 +120,9 @@ export async function execExpandJob(job: Job<ExpandJobData>): Promise<void> {
 
   try {
     ctx.logger.info('Expanding ValueSet', { id: valueSet.id });
+    if (await isExpansionPrecomputed(valueSet)) {
+      return;
+    }
 
     for (const include of valueSet.compose.include) {
       if (!include.system) {

@@ -352,7 +352,7 @@ export class SqlBuilder {
     return this.values;
   }
 
-  async execute(conn: Client | Pool | PoolClient): Promise<any[]> {
+  async execute(conn: Client | Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
     const sql = this.toString();
     let startTime = 0;
     if (this.debug) {
@@ -365,9 +365,10 @@ export class SqlBuilder {
       if (this.debug) {
         const endTime = Date.now();
         const duration = endTime - startTime;
-        console.log(`result: ${result.rows.length} rows (${duration} ms)`);
+        console.log(`result: ${result.rowCount} rows (${duration} ms)`);
       }
-      return result.rows;
+
+      return { rowCount: result.rowCount ?? 0, rows: result.rows };
     } catch (err: any) {
       if (err && typeof err === 'object' && err.code === '23505') {
         // Catch duplicate key errors and throw a 409 Conflict
@@ -529,7 +530,7 @@ export class SelectQuery extends BaseQuery implements Expression {
   async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     this.buildSql(sql);
-    return sql.execute(conn);
+    return (await sql.execute(conn)).rows;
   }
 
   private buildDistinctOn(sql: SqlBuilder): void {
@@ -673,7 +674,7 @@ export class InsertQuery extends BaseQuery {
     return this;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
+  async execute(conn: Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
     const sql = new SqlBuilder();
     sql.append('INSERT INTO ');
     sql.appendIdentifier(this.tableName);
@@ -782,7 +783,7 @@ export class DeleteQuery extends BaseQuery {
     if (this.returnColumns) {
       sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
     }
-    return sql.execute(conn);
+    return (await sql.execute(conn)).rows;
   }
 }
 

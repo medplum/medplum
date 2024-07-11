@@ -283,7 +283,7 @@ async function computeExpansion(
   return expansion;
 }
 
-async function isExpansionPrecomputed(valueSet: ValueSet): Promise<boolean> {
+export async function isExpansionPrecomputed(valueSet: ValueSet): Promise<boolean> {
   const result = await new SelectQuery('ValueSet_Membership')
     .column('coding')
     .where('valueSet', '=', valueSet.id)
