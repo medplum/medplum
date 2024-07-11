@@ -112,7 +112,7 @@ export function setExtension(
   const extension = getExtension(patient, url);
 
   if (extension) {
-    (extension as any)[valueXAttribute] = value;
+    Object.assign(extension, { [valueXAttribute]: value });
   } else {
     if (!patient.extension) {
       patient.extension = [];

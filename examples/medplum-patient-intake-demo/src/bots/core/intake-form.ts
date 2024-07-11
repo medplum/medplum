@@ -1,11 +1,4 @@
-import {
-  BotEvent,
-  createReference,
-  getAllQuestionnaireAnswers,
-  getQuestionnaireAnswers,
-  MedplumClient,
-  resolveId,
-} from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import { HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addCoverage,
@@ -91,7 +84,6 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
   }
-  // console.log(insuranceProviders);
 
   await medplum.updateResource(patient);
 }
