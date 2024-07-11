@@ -170,7 +170,7 @@ function matchesStringValue(
   if (exactMatch) {
     return str === filterValue;
   }
-  
+
   return str.toLowerCase().includes(filterValue.toLowerCase());
 }
 
