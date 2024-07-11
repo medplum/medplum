@@ -7,21 +7,21 @@ import { useCallback, useEffect } from 'react';
  * The default value for Medplum's hosted API server is "https://api.medplum.com/".
  * If you are using your own Medplum server, then you can set this value to your server URL.
  */
-// const MEDPLUM_BASE_URL = 'https://api.medplum.com/';
-const MEDPLUM_BASE_URL = 'http://localhost:8103/';
+const MEDPLUM_BASE_URL = 'https://api.medplum.com/';
+// const MEDPLUM_BASE_URL = 'http://localhost:8103/';
 
 /**
  * Your Medplum project ID.
  * You can find this value on the "Project Admin" page in the Medplum web app.
  */
-const MEDPLUM_PROJECT_ID = '83f32126-eb3d-4fc1-9378-ffe079cf5143';
+const MEDPLUM_PROJECT_ID = '';
 
 /**
  * Your Medplum client ID.
  * You can find this value on the "Project Admin" page in the Medplum web app.
  * Note that the client must have the correct external auth provider configured.
  */
-const MEDPLUM_CLIENT_ID = 'af800baf-4029-421b-a0d9-76640bbaed04';
+const MEDPLUM_CLIENT_ID = '=';
 
 /**
  * Your web application redirect URL.
@@ -34,13 +34,13 @@ const WEB_APP_REDIRECT_URI = 'http://localhost:8000/signin';
  * For example, this would be an Auth0, AWS Cognito, or Okta URL.
  * This value is specific to your external auth provider.
  */
-const EXTERNAL_AUTHORIZE_URL = 'https://dev-71569655.okta.com/oauth2/v1/authorize';
+const EXTERNAL_AUTHORIZE_URL = '';
 
 /**
  * External OAuth2 client ID.
  * This value is specific to your external auth provider.
  */
-const EXTERNAL_CLIENT_ID = '0oa7vdxfddfQDlcP35d7';
+const EXTERNAL_CLIENT_ID = '';
 
 /**
  * External OAuth2 redirect URI.
