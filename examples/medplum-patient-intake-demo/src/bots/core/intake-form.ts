@@ -1,8 +1,16 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import {
+  BotEvent,
+  createReference,
+  getAllQuestionnaireAnswers,
+  getQuestionnaireAnswers,
+  MedplumClient,
+  resolveId,
+} from '@medplum/core';
 import { HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addLanguage,
   extensionURLMapping,
+  getGroupRepeatedAnswers,
   observationCategoryMapping,
   observationCodeMapping,
   setExtension,
@@ -11,6 +19,8 @@ import {
 
 export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<void> {
   const response = event.input;
+
+  const questionnaire = await medplum.readResource('Questionnaire', (response.questionnaire as string).split('/')[1]);
   const answers = getQuestionnaireAnswers(response);
 
   if (!response.subject) {
@@ -74,6 +84,9 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     observationCategoryMapping.sdoh,
     answers['education-level'].valueCoding
   );
+
+  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
+  console.log(insuranceProviders);
 
   await medplum.updateResource(patient);
 }

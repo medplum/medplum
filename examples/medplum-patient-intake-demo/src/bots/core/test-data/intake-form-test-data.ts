@@ -1,5 +1,5 @@
-import { createReference } from '@medplum/core';
-import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { createReference, getReferenceString } from '@medplum/core';
+import { Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export const intakePatient: Patient = {
   resourceType: 'Patient',
@@ -12,9 +12,243 @@ export const intakePatient: Patient = {
   ],
 };
 
+export const intakeQuestionnaire: Questionnaire = {
+  resourceType: 'Questionnaire',
+  id: '58b7094f-4b04-46d3-9753-0272b1681a0c',
+  status: 'active',
+  title: 'Patient Intake Questionnaire',
+  name: 'patient-intake',
+  subjectType: ['Patient'],
+  item: [
+    {
+      linkId: 'patient-demographics',
+      text: 'Patient Demographics',
+      type: 'group',
+      item: [
+        {
+          linkId: 'first-name',
+          text: 'First Name',
+          type: 'string',
+        },
+        {
+          linkId: 'middle-name',
+          text: 'Middle Name',
+          type: 'string',
+        },
+        {
+          linkId: 'last-name',
+          text: 'Last Name',
+          type: 'string',
+        },
+        {
+          linkId: 'dob',
+          text: 'Date of Birth',
+          type: 'date',
+        },
+        {
+          linkId: 'race',
+          text: 'Race',
+          type: 'choice',
+          answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-Race',
+        },
+        {
+          linkId: 'ethnicity',
+          text: 'Ethnicity',
+          type: 'choice',
+          answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-Ethnicity',
+        },
+        {
+          linkId: 'gender-identity',
+          text: 'Gender Identity',
+          type: 'choice',
+          answerValueSet: 'http://hl7.org/fhir/ValueSet/administrative-gender',
+        },
+        {
+          linkId: 'sexual-orientation',
+          text: 'Sexual Orientation',
+          type: 'choice',
+          answerValueSet: 'https://example.com/sexual-orientation',
+        },
+      ],
+    },
+    {
+      linkId: 'coverage-information',
+      text: 'Coverage Information',
+      type: 'group',
+      repeats: true,
+      item: [
+        {
+          linkId: 'insurance-provider',
+          text: 'Insurance Provider',
+          type: 'string',
+        },
+        {
+          linkId: 'subscriber-id',
+          text: 'Subscriber ID',
+          type: 'string',
+        },
+        {
+          linkId: 'relationship-to-subscriber',
+          text: 'Relationship to Subscriber',
+          type: 'choice',
+          answerValueSet: 'http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype',
+        },
+      ],
+    },
+    {
+      linkId: 'social-determinants-of-health',
+      text: 'Social Determinants of Health',
+      type: 'group',
+      item: [
+        {
+          linkId: 'housing-status',
+          text: 'Housing Status',
+          type: 'choice',
+          answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-LivingArrangement',
+        },
+        {
+          linkId: 'education-level',
+          text: 'Education Level',
+          type: 'choice',
+          answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-EducationLevel',
+        },
+        {
+          linkId: 'veteran-status',
+          text: 'Veteran Status',
+          type: 'boolean',
+        },
+      ],
+    },
+    {
+      linkId: 'languages-spoken',
+      text: 'Languages Spoken',
+      type: 'choice',
+      answerValueSet: 'http://hl7.org/fhir/ValueSet/languages',
+      repeats: true,
+    },
+    {
+      linkId: 'preferred-language',
+      text: 'Preferred Language',
+      type: 'choice',
+      answerValueSet: 'http://hl7.org/fhir/ValueSet/languages',
+    },
+    {
+      linkId: 'consent-for-treatment',
+      text: 'Consent for Treatment',
+      type: 'group',
+      item: [
+        {
+          linkId: 'consent-for-treatment-signature',
+          text: 'I the undersigned patient (or authorized representative, or parent/guardian), consent to and authorize the performance of any treatments, examinations, medical services, surgical or diagnostic procedures, including lab and radiographic studies, as ordered by this office and it’s healthcare providers.',
+          type: 'boolean',
+        },
+        {
+          linkId: 'consent-for-treatment-date',
+          text: 'Date',
+          type: 'date',
+        },
+      ],
+    },
+    {
+      linkId: 'agreement-to-pay-for-treatment',
+      text: 'Agreement to Pay for Treatment',
+      type: 'group',
+      item: [
+        {
+          linkId: 'agreement-to-pay-for-treatment-help',
+          text: 'I, the responsible party, hereby agree to pay all the charges submitted by this office during the course of treatment for the patient. If the patient has insurance coverage with a managed care organization, with which this office has a contractual agreement, I agree to pay all applicable co‐payments, co‐insurance and deductibles, which arise during the course of treatment for the patient. The responsible party also agrees to pay for treatment rendered to the patient, which is not considered to be a covered service by my insurer and/or a third party insurer or other payor. I understand that Bay Area Community Health (BACH) provides charges on a sliding fee; based on family size and household annual income, and that services will not be refused due to inability to pay at the time of the visit.',
+          type: 'boolean',
+        },
+        {
+          linkId: 'agreement-to-pay-for-treatment-date',
+          text: 'Date',
+          type: 'date',
+        },
+      ],
+    },
+    {
+      linkId: 'notice-of-privacy-practices',
+      text: 'Notice of Privacy Practices',
+      type: 'group',
+      item: [
+        {
+          linkId: 'notice-of-privacy-practices-help',
+          text: 'Bay Area Community Health (BACH) Notice of Privacy Practices gives information about how BACH may use and release protected health information (PHI) about you. I understand that:\n- I have the right to receive a copy of BACH’s Notice of Privacy Practices.\n- I may request a copy at any time.\n- BACH‘s Notice of Privacy Practices may be revised.',
+          type: 'display',
+        },
+        {
+          linkId: 'notice-of-privacy-practices-signature',
+          text: 'I acknowledge the above and that I have received a copy of BACH’s Notice of Privacy Practices.',
+          type: 'boolean',
+        },
+        {
+          linkId: 'notice-of-privacy-practices-date',
+          text: 'Date',
+          type: 'date',
+        },
+      ],
+    },
+    {
+      linkId: 'acknowledgement-for-advance-directives',
+      text: 'Acknowledgement for Advance Directives',
+      type: 'group',
+      item: [
+        {
+          linkId: 'acknowledgement-for-advance-directives-choice',
+          text: 'An Advance Medical Directive is a document by which a person makes provision for health care decisions in the event that, in the future, he/she becomes unable to make those decisions.\nPlease select one option below:',
+          type: 'choice',
+          answerOption: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0532',
+                code: 'Y',
+                display:
+                  'Yes, I do have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions.',
+              },
+            },
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0532',
+                code: 'N',
+                display:
+                  'No, I do NOT have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions.',
+              },
+            },
+          ],
+        },
+        {
+          linkId: 'acknowledgement-for-advance-directives-email',
+          text: 'If you do have an Advance Directive, please make sure to send a copy to us, in person or by mail.',
+          type: 'boolean',
+          enableWhen: [
+            {
+              question: 'acknowledgement-for-advance-directives-choice',
+              operator: '=',
+              answerCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0532',
+                code: 'Y',
+              },
+            },
+          ],
+        },
+        {
+          linkId: 'acknowledgement-for-advance-directives-signature',
+          text: 'I acknowledge I have received information about Advance Directives.',
+          type: 'boolean',
+        },
+        {
+          linkId: 'acknowledgement-for-advance-directives-date',
+          text: 'Date',
+          type: 'date',
+        },
+      ],
+    },
+  ],
+};
+
 export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
-  questionnaire: 'Questionnaire/28a16ce3-f894-4585-860a-344e591410b0',
+  questionnaire: getReferenceString(intakeQuestionnaire),
   status: 'completed',
   subject: createReference(intakePatient),
   item: [
@@ -150,6 +384,35 @@ export const intakeResponse: QuestionnaireResponse = {
           id: 'id-47',
           linkId: 'relationship-to-subscriber',
           text: 'Relationship to Subscriber',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+                code: 'BP',
+                display: 'Billing contact person',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-45',
+          linkId: 'insurance-provider',
+          text: 'Insurance Provider',
+          answer: [
+            {
+              valueString: 'Some Insurance Provider2',
+            },
+          ],
+        },
+        {
+          id: 'id-46',
+          linkId: 'subscriber-id',
+          text: 'Subscriber ID',
+        },
+        {
+          id: 'id-47',
+          linkId: 'relationship-to-subscriber',
+          text: 'Relationship to Subscriber2',
           answer: [
             {
               valueCoding: {

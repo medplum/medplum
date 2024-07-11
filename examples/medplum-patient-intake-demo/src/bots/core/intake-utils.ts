@@ -7,7 +7,17 @@ import {
   LOINC,
   MedplumClient,
 } from '@medplum/core';
-import { CodeableConcept, Coding, Observation, Patient, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
+import {
+  CodeableConcept,
+  Coding,
+  Observation,
+  Patient,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireResponse,
+  QuestionnaireResponseItem,
+  QuestionnaireResponseItemAnswer,
+} from '@medplum/fhirtypes';
 
 export const extensionURLMapping: Record<string, string> = {
   race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
@@ -135,4 +145,67 @@ export function addLanguage(patient: Patient, valueCoding: Coding, preferred: bo
   }
 
   patient.communication = patientCommunications;
+}
+
+function findQuestionnaireItem(
+  items: QuestionnaireItem[] | QuestionnaireResponseItem[] | undefined,
+  linkId: string
+): QuestionnaireItem | QuestionnaireResponseItem | undefined {
+  if (!items) {
+    return undefined;
+  }
+
+  return items.find((item) => {
+    if (item.linkId === linkId) {
+      return item;
+    } else if (item.item) {
+      return findQuestionnaireItem(item.item, linkId);
+    }
+
+    return undefined;
+  });
+}
+
+export function getGroupRepeatedAnswers(
+  questionnaire: Questionnaire,
+  response: QuestionnaireResponse,
+  groupLinkId: string
+): Record<string, QuestionnaireResponseItemAnswer>[] {
+  const questionnaireItem = findQuestionnaireItem(questionnaire.item, groupLinkId) as QuestionnaireItem;
+  const responseItem = findQuestionnaireItem(response.item, groupLinkId) as QuestionnaireResponseItem;
+
+  if (questionnaireItem.type !== 'group' || !questionnaireItem?.item) {
+    return [];
+  }
+
+  const responses = responseItem.item || [];
+  let responseCursor = 0;
+
+  const linkIds = questionnaireItem.item.map((item) => item.linkId);
+  let linkCursor = 0;
+
+  const groupAnswers = [];
+  let answerGroup = {};
+
+  while (responseCursor < responses.length) {
+    const item = responses[responseCursor];
+
+    if (item.linkId === linkIds[linkCursor]) {
+      (answerGroup as any)[item.linkId] = item.answer?.[0];
+      responseCursor += 1;
+    }
+
+    linkCursor += 1;
+    if (linkCursor >= linkIds?.length) {
+      linkCursor = 0;
+      groupAnswers.push(answerGroup);
+      answerGroup = {};
+    }
+  }
+
+  if (Object.keys(answerGroup).length > 0) {
+    groupAnswers.push(answerGroup);
+  }
+
+  return groupAnswers;
 }

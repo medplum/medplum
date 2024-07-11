@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { handler } from './intake-form';
-import { intakePatient, intakeResponse } from './test-data/intake-form-test-data';
+import { intakePatient, intakeQuestionnaire, intakeResponse } from './test-data/intake-form-test-data';
 import { Bundle, Patient, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
@@ -27,6 +27,7 @@ describe('Intake form', async () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
+    await medplum.createResource(intakeQuestionnaire);
     response = await medplum.createResource(intakeResponse);
     patient = await medplum.createResource(intakePatient);
   });
@@ -190,6 +191,18 @@ describe('Intake form', async () => {
       });
 
       expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('BD');
+    });
+  });
+
+  describe('Coverage', async () => {
+    test('adds single coverage resource', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const coverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
+
+      expect(coverages.length).toBe(1);
     });
   });
 });
