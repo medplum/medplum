@@ -16,6 +16,7 @@ export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   questionnaire: 'Questionnaire/28a16ce3-f894-4585-860a-344e591410b0',
   status: 'completed',
+  subject: createReference(intakePatient),
   item: [
     {
       id: 'id-35',
@@ -69,9 +70,9 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v3-Race',
-                code: '1068-6',
-                display: 'Canadian and Latin American Indian',
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+                code: '2131-1',
+                display: 'Other Race',
               },
             },
           ],
@@ -83,7 +84,7 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v3-Ethnicity',
+                system: 'urn:oid:2.16.840.1.113883.6.238',
                 code: '2135-2',
                 display: 'Hispanic or Latino',
               },
@@ -97,9 +98,9 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueCoding: {
-                system: 'http://hl7.org/fhir/administrative-gender',
-                code: 'other',
-                display: 'Other',
+                system: 'http://snomed.info/sct',
+                code: '33791000087105',
+                display: 'Identifies as nonbinary gender (finding)',
               },
             },
           ],
@@ -113,7 +114,7 @@ export const intakeResponse: QuestionnaireResponse = {
               valueCoding: {
                 system: 'http://snomed.info/sct',
                 code: '42035005',
-                display: 'Bisexual',
+                display: 'Bisexual (finding)',
               },
             },
           ],
@@ -198,6 +199,11 @@ export const intakeResponse: QuestionnaireResponse = {
           id: 'id-51',
           linkId: 'veteran-status',
           text: 'Veteran Status',
+          answer: [
+            {
+              valueBoolean: true,
+            },
+          ],
         },
       ],
     },
@@ -209,8 +215,8 @@ export const intakeResponse: QuestionnaireResponse = {
         {
           valueCoding: {
             system: 'urn:ietf:bcp:47',
-            code: 'pt-BR',
-            display: 'Portuguese (Brazil)',
+            code: 'pt',
+            display: 'Portuguese',
           },
         },
       ],
@@ -339,11 +345,21 @@ export const intakeResponse: QuestionnaireResponse = {
           id: 'id-66',
           linkId: 'acknowledgement-for-advance-directives-email',
           text: 'If you do have an Advance Directive, please make sure to send a copy to us, in person or by mail.',
+          answer: [
+            {
+              valueBoolean: true,
+            },
+          ],
         },
         {
           id: 'id-67',
           linkId: 'acknowledgement-for-advance-directives-signature',
           text: 'I acknowledge I have received information about Advance Directives.',
+          answer: [
+            {
+              valueBoolean: true,
+            },
+          ],
         },
         {
           id: 'id-68',
@@ -358,5 +374,4 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
   ],
-  subject: createReference(intakePatient),
 };
