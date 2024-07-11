@@ -142,18 +142,21 @@
               {
                 "linkId": "insurance-provider",
                 "text": "Insurance Provider",
-                "type": "string"
+                "type": "string",
+                "required": true
               },
               {
                 "linkId": "subscriber-id",
                 "text": "Subscriber ID",
-                "type": "string"
+                "type": "string",
+                "required": true
               },
               {
                 "linkId": "relationship-to-subscriber",
                 "text": "Relationship to Subscriber",
                 "type": "choice",
-                "answerValueSet": "http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype"
+                "answerValueSet": "http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype",
+                "required": true
               }
             ]
           },
@@ -256,40 +259,9 @@
             "type": "group",
             "item": [
               {
-                "linkId": "acknowledgement-for-advance-directives-choice",
-                "text": "An Advance Medical Directive is a document by which a person makes provision for health care decisions in the event that, in the future, he/she becomes unable to make those decisions.\nPlease select one option below:",
-                "type": "choice",
-                "answerOption": [
-                  {
-                    "valueCoding": {
-                      "system": "http://terminology.hl7.org/CodeSystem/v2-0532",
-                      "code": "Y",
-                      "display": "Yes, I do have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions."
-                    }
-                  },
-                  {
-                    "valueCoding": {
-                      "system": "http://terminology.hl7.org/CodeSystem/v2-0532",
-                      "code": "N",
-                      "display": "No, I do NOT have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions."
-                    }
-                  }
-                ]
-              },
-              {
-                "linkId": "acknowledgement-for-advance-directives-email",
-                "text": "If you do have an Advance Directive, please make sure to send a copy to us, in person or by mail.",
-                "type": "boolean",
-                "enableWhen": [
-                  {
-                    "question": "acknowledgement-for-advance-directives-choice",
-                    "operator": "=",
-                    "answerCoding": {
-                      "system": "http://terminology.hl7.org/CodeSystem/v2-0532",
-                      "code": "Y"
-                    }
-                  }
-                ]
+                "linkId": "acknowledgement-for-advance-directives-help",
+                "text": "An Advance Medical Directive is a document by which a person makes provision for health care decisions in the event that, in the future, he/she becomes unable to make those decisions.",
+                "type": "display"
               },
               {
                 "linkId": "acknowledgement-for-advance-directives-signature",

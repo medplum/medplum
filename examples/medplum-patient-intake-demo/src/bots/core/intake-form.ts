@@ -1,8 +1,12 @@
 import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import { HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
+  addConsent,
   addCoverage,
   addLanguage,
+  consentCategoryMapping,
+  consentPolicyRuleMapping,
+  consentScopeMapping,
   extensionURLMapping,
   getGroupRepeatedAnswers,
   observationCategoryMapping,
@@ -84,6 +88,47 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
   }
+
+  // Handle consents
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['consent-for-treatment-signature']?.valueBoolean,
+    consentScopeMapping.treatment,
+    consentCategoryMapping.nopp, // FIXME
+    consentPolicyRuleMapping.hipaaNpp, // FIXME
+    answers['consent-for-treatment-date'].valueDate
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['agreement-to-pay-for-treatment-help']?.valueBoolean,
+    consentScopeMapping.treatment,
+    consentCategoryMapping.nopp, // FIXME
+    consentPolicyRuleMapping.hipaaNpp, // FIXME
+    answers['agreement-to-pay-for-treatment-date'].valueDate
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['notice-of-privacy-practices-signature']?.valueBoolean,
+    consentScopeMapping.patientPrivacy,
+    consentCategoryMapping.nopp,
+    consentPolicyRuleMapping.hipaaNpp,
+    answers['notice-of-privacy-practices-date'].valueDate
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['acknowledgement-for-advance-directives-signature']?.valueBoolean,
+    consentScopeMapping.adr,
+    consentCategoryMapping.acd,
+    consentPolicyRuleMapping.hipaaNpp, // FIXME
+    answers['acknowledgement-for-advance-directives-date'].valueDate
+  );
 
   await medplum.updateResource(patient);
 }

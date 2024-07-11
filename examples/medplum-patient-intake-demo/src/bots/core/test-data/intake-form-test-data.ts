@@ -81,17 +81,20 @@ export const intakeQuestionnaire: Questionnaire = {
           linkId: 'insurance-provider',
           text: 'Insurance Provider',
           type: 'string',
+          required: true,
         },
         {
           linkId: 'subscriber-id',
           text: 'Subscriber ID',
           type: 'string',
+          required: true,
         },
         {
           linkId: 'relationship-to-subscriber',
           text: 'Relationship to Subscriber',
           type: 'choice',
           answerValueSet: 'http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype',
+          required: true,
         },
       ],
     },
@@ -376,7 +379,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Subscriber ID',
           answer: [
             {
-              valueString: 'first-insurance-provider-id',
+              valueString: 'first-provider-id',
             },
           ],
         },
@@ -408,11 +411,25 @@ export const intakeResponse: QuestionnaireResponse = {
           id: 'id-46',
           linkId: 'subscriber-id',
           text: 'Subscriber ID',
+          answer: [
+            {
+              valueString: 'second-provider-id',
+            },
+          ],
         },
         {
           id: 'id-47',
           linkId: 'relationship-to-subscriber',
           text: 'Relationship to Subscriber',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+                code: 'BP',
+                display: 'Billing contact person',
+              },
+            },
+          ],
         },
       ],
     },
@@ -582,31 +599,6 @@ export const intakeResponse: QuestionnaireResponse = {
       item: [
         {
           id: 'id-65',
-          linkId: 'acknowledgement-for-advance-directives-choice',
-          text: 'An Advance Medical Directive is a document by which a person makes provision for health care decisions in the event that, in the future, he/she becomes unable to make those decisions.\nPlease select one option below:',
-          answer: [
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0532',
-                code: 'Y',
-                display:
-                  'Yes, I do have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions.',
-              },
-            },
-          ],
-        },
-        {
-          id: 'id-66',
-          linkId: 'acknowledgement-for-advance-directives-email',
-          text: 'If you do have an Advance Directive, please make sure to send a copy to us, in person or by mail.',
-          answer: [
-            {
-              valueBoolean: true,
-            },
-          ],
-        },
-        {
-          id: 'id-67',
           linkId: 'acknowledgement-for-advance-directives-signature',
           text: 'I acknowledge I have received information about Advance Directives.',
           answer: [
@@ -616,7 +608,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-68',
+          id: 'id-66',
           linkId: 'acknowledgement-for-advance-directives-date',
           text: 'Date',
           answer: [

@@ -10,6 +10,7 @@ import {
 import {
   CodeableConcept,
   Coding,
+  Consent,
   Observation,
   Patient,
   Questionnaire,
@@ -47,6 +48,69 @@ export const observationCategoryMapping: Record<string, CodeableConcept> = {
         system: HTTP_HL7_ORG + '/fhir/us/core/CodeSystem/us-core-tags',
         code: 'sdoh',
         display: 'SDOH',
+      },
+    ],
+  },
+};
+
+export const consentScopeMapping: Record<string, CodeableConcept> = {
+  adr: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/consentscope',
+        code: 'adr',
+        display: 'Advanced Care Directive	',
+      },
+    ],
+  },
+  patientPrivacy: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/consentscope',
+        code: 'patient-privacy',
+        display: 'Patient Privacy',
+      },
+    ],
+  },
+  treatment: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/consentscope',
+        code: 'treatment',
+        display: 'Treatment',
+      },
+    ],
+  },
+};
+
+export const consentCategoryMapping: Record<string, CodeableConcept> = {
+  acd: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/consentcategorycodes',
+        code: 'acd',
+        display: 'Advanced Care Directive',
+      },
+    ],
+  },
+  nopp: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        code: 'nopp',
+        display: 'Notice of Privacy Practices	',
+      },
+    ],
+  },
+};
+
+export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
+  hipaaNpp: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/consentpolicycodes',
+        code: 'hipaa-npp',
+        display: 'HIPAA Notice of Privacy Practices',
       },
     ],
   },
@@ -172,13 +236,35 @@ export async function addCoverage(
     resourceType: 'Coverage',
     status: 'active',
     beneficiary: createReference(patient),
-    subscriberId: answers['subscriber-id']?.valueString,
-    relationship: answers['relationship-to-subscriber']?.valueCoding,
+    subscriberId: answers['subscriber-id'].valueString,
+    relationship: { coding: [answers['relationship-to-subscriber'].valueCoding as Coding] },
     payor: [createReference(payor)],
   });
 }
 
-function findQuestionnaireItem(
+export async function addConsent(
+  medplum: MedplumClient,
+  patient: Patient,
+  consetGiven: boolean,
+  scope: CodeableConcept,
+  category: CodeableConcept,
+  policyRule: CodeableConcept,
+  date: Consent['dateTime']
+): Promise<void> {
+  await medplum.createResource({
+    resourceType: 'Consent',
+    patient: createReference(patient),
+    status: consetGiven ? 'active' : 'rejected',
+    scope: scope,
+    category: [category],
+    policyRule: policyRule,
+    dateTime: date,
+  });
+}
+
+type FindQuestionnaireItemType = QuestionnaireItem | QuestionnaireResponseItem | undefined;
+
+export function findQuestionnaireItem(
   items: QuestionnaireItem[] | QuestionnaireResponseItem[] | undefined,
   linkId: string
 ): QuestionnaireItem | QuestionnaireResponseItem | undefined {
@@ -186,15 +272,19 @@ function findQuestionnaireItem(
     return undefined;
   }
 
-  return items.find((item) => {
-    if (item.linkId === linkId) {
-      return item;
-    } else if (item.item) {
-      return findQuestionnaireItem(item.item, linkId);
+  return items.reduce((foundItem: FindQuestionnaireItemType, currentItem: FindQuestionnaireItemType) => {
+    if (foundItem || !currentItem) {
+      return foundItem;
+    }
+
+    if (currentItem.linkId === linkId) {
+      return currentItem;
+    } else if (currentItem.item) {
+      return findQuestionnaireItem(currentItem.item, linkId);
     }
 
     return undefined;
-  });
+  }, undefined);
 }
 
 export function getGroupRepeatedAnswers(

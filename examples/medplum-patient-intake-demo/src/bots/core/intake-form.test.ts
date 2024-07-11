@@ -1,15 +1,21 @@
 import { MockClient } from '@medplum/mock';
 import { handler } from './intake-form';
 import { intakePatient, intakeQuestionnaire, intakeResponse } from './test-data/intake-form-test-data';
-import { Bundle, Patient, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Patient, QuestionnaireResponse, QuestionnaireResponseItem, SearchParameter } from '@medplum/fhirtypes';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
+  createReference,
   getExtensionValue,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
-import { extensionURLMapping } from './intake-utils';
+import {
+  consentCategoryMapping,
+  consentScopeMapping,
+  extensionURLMapping,
+  findQuestionnaireItem,
+} from './intake-utils';
 
 describe('Intake form', async () => {
   let medplum: MockClient, response: QuestionnaireResponse, patient: Patient;
@@ -202,7 +208,60 @@ describe('Intake form', async () => {
 
       const coverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
 
-      expect(coverages.length).toBe(2);
+      expect(coverages.length).toEqual(2);
+
+      expect(coverages[0].beneficiary).toEqual(createReference(patient));
+      expect(coverages[0].subscriberId).toEqual('first-provider-id');
+      expect(coverages[0].relationship?.coding?.[0]?.code).toEqual('BP');
+
+      expect(coverages[1].beneficiary).toEqual(createReference(patient));
+      expect(coverages[1].subscriberId).toEqual('second-provider-id');
+      expect(coverages[1].relationship?.coding?.[0]?.code).toEqual('BP');
+    });
+  });
+
+  describe('Consents', async () => {
+    test('adds all consent resources', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const consents = await medplum.searchResources('Consent', { patient: getReferenceString(patient) });
+
+      expect(consents.length).toEqual(4);
+
+      expect(consents[0].scope).toEqual(consentScopeMapping.treatment);
+      expect(consents[0].category[0]).toEqual(consentCategoryMapping.nopp);
+      expect(consents[0].status).toEqual('active');
+
+      expect(consents[1].scope).toEqual(consentScopeMapping.treatment);
+      expect(consents[1].category[0]).toEqual(consentCategoryMapping.nopp);
+      expect(consents[1].status).toEqual('active');
+
+      expect(consents[2].scope).toEqual(consentScopeMapping.patientPrivacy);
+      expect(consents[2].category[0]).toEqual(consentCategoryMapping.nopp);
+      expect(consents[2].status).toEqual('active');
+
+      expect(consents[3].scope).toEqual(consentScopeMapping.adr);
+      expect(consents[3].category[0]).toEqual(consentCategoryMapping.acd);
+      expect(consents[3].status).toEqual('active');
+    });
+
+    test('adds rejected consent', async () => {
+      const responseItem = findQuestionnaireItem(response.item, 'notice-of-privacy-practices-signature');
+      (responseItem as QuestionnaireResponseItem).answer = [];
+
+      await medplum.updateResource(response);
+
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const consents = await medplum.searchResources('Consent', { patient: getReferenceString(patient) });
+
+      expect(consents[2].scope).toEqual(consentScopeMapping.patientPrivacy);
+      expect(consents[2].category[0]).toEqual(consentCategoryMapping.nopp);
+      expect(consents[2].status).toEqual('rejected');
     });
   });
 });
