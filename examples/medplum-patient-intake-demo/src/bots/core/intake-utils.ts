@@ -147,6 +147,37 @@ export function addLanguage(patient: Patient, valueCoding: Coding, preferred: bo
   patient.communication = patientCommunications;
 }
 
+export async function addCoverage(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const payor = await medplum.createResource({
+    resourceType: 'Organization',
+    name: answers['insurance-provider']?.valueString,
+    type: [
+      {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/organization-type',
+            code: 'ins',
+            display: 'Insurance Company',
+          },
+        ],
+      },
+    ],
+  });
+
+  await medplum.createResource({
+    resourceType: 'Coverage',
+    status: 'active',
+    beneficiary: createReference(patient),
+    subscriberId: answers['subscriber-id']?.valueString,
+    relationship: answers['relationship-to-subscriber']?.valueCoding,
+    payor: [createReference(payor)],
+  });
+}
+
 function findQuestionnaireItem(
   items: QuestionnaireItem[] | QuestionnaireResponseItem[] | undefined,
   linkId: string
@@ -191,7 +222,7 @@ export function getGroupRepeatedAnswers(
     const item = responses[responseCursor];
 
     if (item.linkId === linkIds[linkCursor]) {
-      (answerGroup as any)[item.linkId] = item.answer?.[0];
+      Object.assign(answerGroup, { [item.linkId]: item.answer?.[0] });
       responseCursor += 1;
     }
 

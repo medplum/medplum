@@ -195,14 +195,14 @@ describe('Intake form', async () => {
   });
 
   describe('Coverage', async () => {
-    test('adds single coverage resource', async () => {
+    test('adds coverage resources', async () => {
       await handler({ bot, input: response, contentType, secrets: {} }, medplum);
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
       const coverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
 
-      expect(coverages.length).toBe(1);
+      expect(coverages.length).toBe(2);
     });
   });
 });

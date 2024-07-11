@@ -8,6 +8,7 @@ import {
 } from '@medplum/core';
 import { HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
+  addCoverage,
   addLanguage,
   extensionURLMapping,
   getGroupRepeatedAnswers,
@@ -86,7 +87,11 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   );
 
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
-  console.log(insuranceProviders);
+
+  for (const provider of insuranceProviders) {
+    await addCoverage(medplum, patient, provider);
+  }
+  // console.log(insuranceProviders);
 
   await medplum.updateResource(patient);
 }

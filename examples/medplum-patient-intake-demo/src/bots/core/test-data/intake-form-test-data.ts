@@ -366,7 +366,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Insurance Provider',
           answer: [
             {
-              valueString: 'Some Insurance Provider',
+              valueString: 'First Insurance Provider',
             },
           ],
         },
@@ -376,7 +376,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Subscriber ID',
           answer: [
             {
-              valueString: 'insurance-provider-id',
+              valueString: 'first-insurance-provider-id',
             },
           ],
         },
@@ -400,7 +400,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Insurance Provider',
           answer: [
             {
-              valueString: 'Some Insurance Provider2',
+              valueString: 'Second Insurance Provider',
             },
           ],
         },
@@ -412,16 +412,7 @@ export const intakeResponse: QuestionnaireResponse = {
         {
           id: 'id-47',
           linkId: 'relationship-to-subscriber',
-          text: 'Relationship to Subscriber2',
-          answer: [
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
-                code: 'BP',
-                display: 'Billing contact person',
-              },
-            },
-          ],
+          text: 'Relationship to Subscriber',
         },
       ],
     },
