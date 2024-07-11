@@ -8,6 +8,11 @@ import { OperationOutcomeError, serverError, validationError } from '../outcomes
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
 import { ProfileResource, deepEquals, getExtension, getReferenceString, resolveId } from '../utils';
+import {
+  IReconnectingWebSocket,
+  IReconnectingWebSocketCtor,
+  ReconnectingWebSocket,
+} from '../websockets/reconnecting-websocket';
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -18,83 +23,6 @@ export type SubscriptionEventMap = {
   close: { type: 'close' };
   heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
-
-export type RobustWebSocketEventMap = {
-  open: { type: 'open' };
-  message: MessageEvent;
-  error: Event;
-  close: CloseEvent;
-};
-
-export interface IRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> {
-  readyState: number;
-  close(): void;
-  send(message: string): void;
-}
-
-export interface IRobustWebSocketCtor {
-  new (url: string): IRobustWebSocket;
-}
-
-export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
-  private ws: WebSocket;
-  private messageBuffer: string[];
-  bufferedAmount = -Infinity;
-  extensions = 'NOT_IMPLEMENTED';
-
-  constructor(url: string) {
-    super();
-    this.messageBuffer = [];
-
-    const ws = new WebSocket(url);
-
-    ws.addEventListener('open', () => {
-      if (this.messageBuffer.length) {
-        const buffer = this.messageBuffer;
-        for (const msg of buffer) {
-          ws.send(msg);
-        }
-      }
-      this.dispatchEvent(new Event('open'));
-    });
-
-    ws.addEventListener('error', (event) => {
-      this.dispatchEvent(event);
-    });
-
-    ws.addEventListener('message', (event) => {
-      this.dispatchEvent(event);
-    });
-
-    ws.addEventListener('close', (event) => {
-      this.dispatchEvent(event);
-    });
-
-    this.ws = ws;
-  }
-
-  get readyState(): number {
-    return this.ws.readyState;
-  }
-
-  close(): void {
-    this.ws.close();
-  }
-
-  send(message: string): void {
-    if (this.ws.readyState !== WebSocket.OPEN) {
-      this.messageBuffer.push(message);
-      return;
-    }
-
-    try {
-      this.ws.send(message);
-    } catch (err: unknown) {
-      this.dispatchEvent(new ErrorEvent('error', { error: err as Error, message: (err as Error).message }));
-      this.messageBuffer.push(message);
-    }
-  }
-}
 
 /**
  * An `EventTarget` that emits events when new subscription notifications come in over WebSockets.
@@ -159,12 +87,12 @@ class CriteriaEntry {
 type CriteriaMapEntry = { bareCriteria?: CriteriaEntry; criteriaWithProps: CriteriaEntry[] };
 
 export interface SubManagerOptions {
-  RobustWebSocket: IRobustWebSocketCtor;
+  ReconnectingWebSocket: IReconnectingWebSocketCtor;
 }
 
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
-  private ws: IRobustWebSocket;
+  private ws: IReconnectingWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
   private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
@@ -180,7 +108,7 @@ export class SubscriptionManager {
     } catch (_err) {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
-    const ws = options?.RobustWebSocket ? new options.RobustWebSocket(url) : new RobustWebSocket(url);
+    const ws = options?.ReconnectingWebSocket ? new options.ReconnectingWebSocket(url) : new ReconnectingWebSocket(url);
 
     this.medplum = medplum;
     this.ws = ws;
