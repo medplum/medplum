@@ -245,7 +245,7 @@ export async function addCoverage(
 export async function addConsent(
   medplum: MedplumClient,
   patient: Patient,
-  consetGiven: boolean,
+  consentGiven: boolean,
   scope: CodeableConcept,
   category: CodeableConcept,
   policyRule: CodeableConcept,
@@ -254,7 +254,7 @@ export async function addConsent(
   await medplum.createResource({
     resourceType: 'Consent',
     patient: createReference(patient),
-    status: consetGiven ? 'active' : 'rejected',
+    status: consentGiven ? 'active' : 'rejected',
     scope: scope,
     category: [category],
     policyRule: policyRule,
