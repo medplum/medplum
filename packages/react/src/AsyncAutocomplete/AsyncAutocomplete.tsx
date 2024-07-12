@@ -155,21 +155,25 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const addSelected = useCallback(
     (newValue: string): void => {
-      const result: T[] = [];
       const newSelected: AsyncAutocompleteOption<T>[] = [...selected];
-
       let option = options?.find((option) => option.value === newValue);
-      let item = option?.resource;
-      if (!item && creatable !== false && onCreate) {
-        item = onCreate(newValue);
-        option = toOption(item);
-      }
-
-      if (item) {
-        result.push(item);
+      if (!option && creatable !== false && onCreate) {
+        const createdResource = onCreate(newValue);
+        option = toOption(createdResource);
       }
 
       if (option) {
+        // when maxValues is 0, still fire the onChange when an item is selected
+        if (maxValues === 0) {
+          onChange([option.resource]);
+
+          // and clear selected if necessary
+          if (selected.length > 0) {
+            setSelected([]);
+          }
+          return;
+        }
+
         newSelected.push(option);
       }
 
@@ -180,7 +184,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       }
 
-      onChange(result);
+      onChange(newSelected.map((v) => v.resource));
       setSelected(newSelected);
     },
     [creatable, options, selected, maxValues, onChange, onCreate, toOption]
@@ -219,13 +223,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const handleKeyDown = useCallback(
     (e: KeyboardEvent): void => {
       if (e.key === 'Enter') {
-        if (!timer && !abortController) {
-          killEvent(e);
-          if (options && options.length > 0) {
-            setOptions(options.slice(0, 1));
-            addSelected(options[0].value);
-          }
-        } else {
+        if (timer || abortController) {
           // The user pressed enter, but we don't have results yet.
           // We need to wait for the results to come in.
           setAutoSubmit(true);
@@ -235,7 +233,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         handleValueRemove(selected[selected.length - 1]);
       }
     },
-    [search, selected, options, timer, abortController, addSelected, handleValueRemove]
+    [abortController, handleValueRemove, search.length, selected, timer]
   );
 
   useEffect(() => {

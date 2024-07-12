@@ -63,7 +63,7 @@ describe('CodingInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(screen.getByText('Test Display 1')).toBeDefined();
   });
 
   test('Renders with empty binding property', async () => {

@@ -83,7 +83,7 @@ describe('PatientSummary - Allergies', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(screen.getByText('Test Display 1')).toBeDefined();
 
     // Click "Save" button
     await act(async () => {
@@ -127,7 +127,7 @@ describe('PatientSummary - Allergies', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(screen.getByText('Test Display 1')).toBeDefined();
 
     // Click "Save" button
     await act(async () => {

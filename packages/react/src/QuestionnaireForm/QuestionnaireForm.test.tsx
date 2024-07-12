@@ -1109,18 +1109,10 @@ describe('QuestionnaireForm', () => {
     });
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
-    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(input).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Test' } });
-    });
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
     });
 
     // Wait for the drop down
@@ -1128,9 +1120,14 @@ describe('QuestionnaireForm', () => {
       jest.advanceTimersByTime(1000);
     });
 
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
     // Press "Enter"
     await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     });
 
     await act(async () => {
@@ -1141,7 +1138,9 @@ describe('QuestionnaireForm', () => {
     const response = onSubmit.mock.calls[0][0];
 
     const answer = getQuestionnaireAnswers(response);
-    expect(answer['q1']).toMatchObject({ valueCoding: { code: 'test-code', display: 'Test Display', system: 'x' } });
+    expect(answer['q1']).toMatchObject({
+      valueCoding: { code: 'test-code-1', display: 'Test Display 1', system: 'x' },
+    });
   });
 
   test('Repeated Choice Dropdown', async () => {
