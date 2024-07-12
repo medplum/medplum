@@ -49,25 +49,25 @@ export const intakeQuestionnaire: Questionnaire = {
           linkId: 'race',
           text: 'Race',
           type: 'choice',
-          answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-Race',
+          answerValueSet: 'http://hl7.org/fhir/us/core/ValueSet/omb-race-category',
         },
         {
           linkId: 'ethnicity',
           text: 'Ethnicity',
           type: 'choice',
-          answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-Ethnicity',
+          answerValueSet: 'http://hl7.org/fhir/us/core/ValueSet/omb-ethnicity-category',
         },
         {
           linkId: 'gender-identity',
           text: 'Gender Identity',
           type: 'choice',
-          answerValueSet: 'http://hl7.org/fhir/ValueSet/administrative-gender',
+          answerValueSet: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32',
         },
         {
           linkId: 'sexual-orientation',
           text: 'Sexual Orientation',
           type: 'choice',
-          answerValueSet: 'https://example.com/sexual-orientation',
+          answerValueSet: 'http://hl7.org/fhir/us/core/ValueSet/us-core-sexual-orientation',
         },
       ],
     },
@@ -196,44 +196,6 @@ export const intakeQuestionnaire: Questionnaire = {
       text: 'Acknowledgement for Advance Directives',
       type: 'group',
       item: [
-        {
-          linkId: 'acknowledgement-for-advance-directives-choice',
-          text: 'An Advance Medical Directive is a document by which a person makes provision for health care decisions in the event that, in the future, he/she becomes unable to make those decisions.\nPlease select one option below:',
-          type: 'choice',
-          answerOption: [
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0532',
-                code: 'Y',
-                display:
-                  'Yes, I do have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions.',
-              },
-            },
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0532',
-                code: 'N',
-                display:
-                  'No, I do NOT have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions.',
-              },
-            },
-          ],
-        },
-        {
-          linkId: 'acknowledgement-for-advance-directives-email',
-          text: 'If you do have an Advance Directive, please make sure to send a copy to us, in person or by mail.',
-          type: 'boolean',
-          enableWhen: [
-            {
-              question: 'acknowledgement-for-advance-directives-choice',
-              operator: '=',
-              answerCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0532',
-                code: 'Y',
-              },
-            },
-          ],
-        },
         {
           linkId: 'acknowledgement-for-advance-directives-signature',
           text: 'I acknowledge I have received information about Advance Directives.',
