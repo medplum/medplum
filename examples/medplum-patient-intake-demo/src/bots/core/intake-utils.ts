@@ -59,7 +59,7 @@ export const consentScopeMapping: Record<string, CodeableConcept> = {
       {
         system: 'http://terminology.hl7.org/CodeSystem/consentscope',
         code: 'adr',
-        display: 'Advanced Care Directive	',
+        display: 'Advanced Care Directive',
       },
     ],
   },
@@ -98,7 +98,7 @@ export const consentCategoryMapping: Record<string, CodeableConcept> = {
       {
         system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
         code: 'nopp',
-        display: 'Notice of Privacy Practices	',
+        display: 'Notice of Privacy Practices',
       },
     ],
   },
