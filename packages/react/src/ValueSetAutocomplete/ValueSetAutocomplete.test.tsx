@@ -87,6 +87,8 @@ describe('AsyncAutocomplete', () => {
       'test-code-3',
     ]);
 
+    // It would be nice to search by name, aka aria-label, but that doesn't work as expected
+    // when hidden is true. See https://github.com/testing-library/dom-testing-library/issues/846
     const closeButtons = screen.getAllByRole('button', { hidden: true });
     // two items selected and the clear all button
     expect(closeButtons).toHaveLength(3);
