@@ -101,7 +101,7 @@ function matchesTokenFilter(resource: Resource, filter: Filter, searchParam: Sea
   if (details.type === SearchParameterType.BOOLEAN) {
     return matchesBooleanFilter(resource, filter, searchParam);
   } else {
-    return matchesStringFilter(resource, filter, searchParam, true, true);
+    return matchesStringFilter(resource, filter, searchParam, true);
   }
 }
 
@@ -116,8 +116,7 @@ function matchesStringFilter(
   resource: Resource,
   filter: Filter,
   searchParam: SearchParameter,
-  asToken?: boolean,
-  exactMatch?: boolean
+  asToken?: boolean
 ): boolean {
   const details = getSearchParameterDetails(resource.resourceType, searchParam);
   const searchParamElementType = details.elementDefinitions?.[0]?.type?.[0]?.code;
@@ -132,7 +131,7 @@ function matchesStringFilter(
       } else if (searchParamElementType === PropertyType.CodeableConcept) {
         match = matchesTokenCodeableConceptValue(resourceValue as Coding, filter.operator, filterValue);
       } else {
-        match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken, exactMatch);
+        match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
       }
       if (match) {
         return !negated;
@@ -148,8 +147,7 @@ function matchesStringValue(
   resourceValue: unknown,
   operator: Operator,
   filterValue: string,
-  asToken?: boolean,
-  exactMatch?: boolean
+  asToken?: boolean
 ): boolean {
   if (asToken && filterValue.includes('|')) {
     const [system, code] = filterValue.split('|');
@@ -166,11 +164,6 @@ function matchesStringValue(
       str = JSON.stringify(resourceValue);
     }
   }
-
-  if (exactMatch) {
-    return str === filterValue;
-  }
-
   return str.toLowerCase().includes(filterValue.toLowerCase());
 }
 
