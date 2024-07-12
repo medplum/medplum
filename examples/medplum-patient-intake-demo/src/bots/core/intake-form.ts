@@ -90,6 +90,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   }
 
   // Handle consents
+
   await addConsent(
     medplum,
     patient,

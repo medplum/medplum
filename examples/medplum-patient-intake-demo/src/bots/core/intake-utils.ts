@@ -57,7 +57,7 @@ export const consentScopeMapping: Record<string, CodeableConcept> = {
   adr: {
     coding: [
       {
-        system: 'http://terminology.hl7.org/CodeSystem/consentscope',
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentscope',
         code: 'adr',
         display: 'Advanced Care Directive',
       },
@@ -66,7 +66,7 @@ export const consentScopeMapping: Record<string, CodeableConcept> = {
   patientPrivacy: {
     coding: [
       {
-        system: 'http://terminology.hl7.org/CodeSystem/consentscope',
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentscope',
         code: 'patient-privacy',
         display: 'Patient Privacy',
       },
@@ -75,7 +75,7 @@ export const consentScopeMapping: Record<string, CodeableConcept> = {
   treatment: {
     coding: [
       {
-        system: 'http://terminology.hl7.org/CodeSystem/consentscope',
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentscope',
         code: 'treatment',
         display: 'Treatment',
       },
@@ -87,7 +87,7 @@ export const consentCategoryMapping: Record<string, CodeableConcept> = {
   acd: {
     coding: [
       {
-        system: 'http://terminology.hl7.org/CodeSystem/consentcategorycodes',
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentcategorycodes',
         code: 'acd',
         display: 'Advanced Care Directive',
       },
@@ -96,7 +96,7 @@ export const consentCategoryMapping: Record<string, CodeableConcept> = {
   nopp: {
     coding: [
       {
-        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
         code: 'nopp',
         display: 'Notice of Privacy Practices',
       },
@@ -108,7 +108,7 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
   hipaaNpp: {
     coding: [
       {
-        system: 'http://terminology.hl7.org/CodeSystem/consentpolicycodes',
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
         code: 'hipaa-npp',
         display: 'HIPAA Notice of Privacy Practices',
       },
@@ -116,6 +116,16 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
   },
 };
 
+/**
+ * This function takes data about an Observation and creates or updates an existing
+ * resource with the same patient and code.
+ *
+ * @param medplum - A Medplum client
+ * @param patient - A Patient resource that will be stored as the subject
+ * @param code - A code for the observation
+ * @param category - A category for the observation
+ * @param valueCoding - The value to be stored in the observation
+ */
 export async function upsertObservation(
   medplum: MedplumClient,
   patient: Patient,
@@ -129,7 +139,16 @@ export async function upsertObservation(
     return;
   }
 
-  const observation = createObservation(patient, code, category, valueCoding);
+  const observation: Observation = {
+    resourceType: 'Observation',
+    status: 'final',
+    subject: createReference(patient),
+    code: code,
+    category: [category],
+    valueCodeableConcept: {
+      coding: [valueCoding],
+    },
+  };
 
   await medplum.upsertResource(observation, {
     code: `${coding.system}|${coding.code}`,
@@ -137,26 +156,16 @@ export async function upsertObservation(
   });
 }
 
-function createObservation(
-  patient: Patient,
-  coding: CodeableConcept,
-  category: CodeableConcept,
-  valueCoding: Coding
-): Observation {
-  return {
-    resourceType: 'Observation',
-    status: 'final',
-    subject: createReference(patient),
-    code: coding,
-    category: [category],
-    valueCodeableConcept: {
-      coding: [valueCoding],
-    },
-  };
-}
-
 type ValueXAttribute = 'valueCoding' | 'valueBoolean';
 
+/**
+ * Sets an extension to a patient
+ *
+ * @param patient - A patient resource
+ * @param url - An URL that identifies the extension
+ * @param valueXAttribute - The value[x] field where the answer should be stored
+ * @param answer - The value to be stored in the extension
+ */
 export function setExtension(
   patient: Patient,
   url: string,
@@ -165,6 +174,8 @@ export function setExtension(
 ): void {
   let value = answer?.[valueXAttribute];
 
+  // Answer to boolean Questionnaire fields will be set as `undefined` if the checkmark is not ticked
+  // so in this case we should interpret it as `false`.
   if (valueXAttribute === 'valueBoolean') {
     value = !!value;
   }
@@ -176,11 +187,14 @@ export function setExtension(
   const extension = getExtension(patient, url);
 
   if (extension) {
+    // Update the value if there's already an extension for the URL
     Object.assign(extension, { [valueXAttribute]: value });
   } else {
     if (!patient.extension) {
       patient.extension = [];
     }
+
+    // Add a new extension if there isn't one
     patient.extension.push({
       url: url,
       [valueXAttribute]: value,
@@ -188,13 +202,22 @@ export function setExtension(
   }
 }
 
+/**
+ * Add a language to patient's communcation attribute or set an existing one as preferred
+ *
+ * @param patient - The patient
+ * @param valueCoding - A Coding with the language data
+ * @param preferred - Whether this language should be set as preferred
+ */
 export function addLanguage(patient: Patient, valueCoding: Coding, preferred: boolean = false): void {
   const patientCommunications = patient.communication || [];
 
+  // Checks if the patient already has the language in their list of communications
   let language = patientCommunications.find(
     (communication) => communication.language.coding?.[0].code === valueCoding?.code
   );
 
+  // Add the language in case it's not set yet
   if (!language) {
     language = {
       language: {
@@ -211,6 +234,14 @@ export function addLanguage(patient: Patient, valueCoding: Coding, preferred: bo
   patient.communication = patientCommunications;
 }
 
+/**
+ * Adds a Coverage resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the coverage
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                  coverage (see getGroupRepeatedAnswers)
+ */
 export async function addCoverage(
   medplum: MedplumClient,
   patient: Patient,
@@ -264,6 +295,13 @@ export async function addConsent(
 
 type FindQuestionnaireItemType = QuestionnaireItem | QuestionnaireResponseItem | undefined;
 
+/**
+ * Finds a QuestionnaireItem or QuestionnaireResponseItem with the given linkId
+ *
+ * @param items - The array of objects present in the `.item` attribute of a Questionnaire or QuestionnaireResponse
+ * @param linkId - The id to be found
+ * @returns - The found item or undefined in case it's not found
+ */
 export function findQuestionnaireItem(
   items: QuestionnaireItem[] | QuestionnaireResponseItem[] | undefined,
   linkId: string
@@ -273,6 +311,7 @@ export function findQuestionnaireItem(
   }
 
   return items.reduce((foundItem: FindQuestionnaireItemType, currentItem: FindQuestionnaireItemType) => {
+    // If currentItem is undefined or the item was already found just return it
     if (foundItem || !currentItem) {
       return foundItem;
     }
@@ -280,6 +319,7 @@ export function findQuestionnaireItem(
     if (currentItem.linkId === linkId) {
       return currentItem;
     } else if (currentItem.item) {
+      // This enables traversing nested structures
       return findQuestionnaireItem(currentItem.item, linkId);
     }
 
@@ -287,6 +327,14 @@ export function findQuestionnaireItem(
   }, undefined);
 }
 
+/**
+ * Finds the answers to a group of items that can be repeated.
+ *
+ * @param questionnaire - The Questionnaire resource, used to find the list of linkIds that will compose each group
+ * @param response - The QuestionnaireResponse resource where the answers will be extracted
+ * @param groupLinkId - The linkId of the group that can be repeated in the questionnaire
+ * @returns - An array of objects each containing a set of grouped answers
+ */
 export function getGroupRepeatedAnswers(
   questionnaire: Questionnaire,
   response: QuestionnaireResponse,
@@ -308,6 +356,17 @@ export function getGroupRepeatedAnswers(
   const groupAnswers = [];
   let answerGroup = {};
 
+  // It expects that responses will be organized in the same order the form is filled. Eg.:
+  // [
+  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3},
+  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}
+  // ]
+  // The linkCursor and responseCursor logic allows this function to work even when some fields are
+  // not filled. Eg.:
+  // [
+  //   {answer-with-linkId-1}, {answer-with-linkId-3},
+  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}
+  // ]
   while (responseCursor < responses.length) {
     const item = responses[responseCursor];
 
