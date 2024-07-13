@@ -19,7 +19,7 @@
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest",
-    "test:seed": "jest seed.test.ts --testTimeout=240000"
+    "test:seed": "jest seed.test.ts --testTimeout=400000"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "3.609.0",

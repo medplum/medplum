@@ -188,9 +188,13 @@ export interface CacheEntry<T extends Resource = Resource> {
   projectId: string;
 }
 
-export type ReadResourceOptions = {
+export interface InteractionOptions {
+  verbose?: boolean;
+}
+
+export interface ReadResourceOptions extends InteractionOptions {
   checkCacheOnly?: boolean;
-};
+}
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -895,15 +899,20 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * This should not result in any change to the resource or its history.
    * @param resourceType - The resource type.
    * @param id - The resource ID.
+   * @param options - Additional options.
    * @returns Promise to complete.
    */
-  async resendSubscriptions<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+  async resendSubscriptions<T extends Resource = Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: InteractionOptions
+  ): Promise<void> {
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
     const resource = await this.readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource, { interaction: 'update' });
+    return addSubscriptionJobs(resource, { interaction: 'update' }, options?.verbose);
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {

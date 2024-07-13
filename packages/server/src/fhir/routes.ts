@@ -254,7 +254,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
-    await ctx.repo.resendSubscriptions(resourceType, id);
+    const verbose = req.query.verbose === 'true';
+    await ctx.repo.resendSubscriptions(resourceType, id, { verbose });
     return [allOk];
   });
 
