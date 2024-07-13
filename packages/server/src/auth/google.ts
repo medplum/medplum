@@ -1,4 +1,4 @@
-import { badRequest, Operator } from '@medplum/core';
+import { badRequest, isString, isUUID, Operator } from '@medplum/core';
 import { Project, ResourceType, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -51,7 +51,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // 2) Implicit with clientId
   // 3) Implicit with googleClientId
   // The only rule is that they have to match
-  let projectId = req.body.projectId as string | undefined;
+  let projectId = isString(req.body.projectId) && isUUID(req.body.projectId) ? req.body.projectId : undefined;
   const clientId = req.body.clientId;
   projectId = await getProjectIdByClientId(clientId, projectId);
 
