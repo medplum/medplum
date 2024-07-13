@@ -168,7 +168,7 @@ function matchesStringValue(
   }
 
   if (exactMatch) {
-    return str === filterValue;
+    return str === filterValue || str.includes(`"${filterValue}"`);
   }
 
   return str.toLowerCase().includes(filterValue.toLowerCase());

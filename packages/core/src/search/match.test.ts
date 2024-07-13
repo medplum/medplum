@@ -9,6 +9,7 @@ import {
   QuestionnaireResponse,
   SearchParameter,
   ServiceRequest,
+  Task,
 } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
@@ -807,5 +808,17 @@ describe('Search matching', () => {
       filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'false' }],
     };
     expect(matchesSearchRequest(resource, search2)).toBe(false);
+  });
+
+  test('Tags', () => {
+    const task: Task = {
+      resourceType: 'Task',
+      meta: { tag: [{ system: 'http://example.com', code: 'foo' }] },
+      status: 'draft',
+      intent: 'proposal',
+    };
+
+    expect(matchesSearchRequest(task, parseSearchRequest('Task?_tag=foo'))).toBe(true);
+    expect(matchesSearchRequest(task, parseSearchRequest('Task?_tag=bar'))).toBe(false);
   });
 });
