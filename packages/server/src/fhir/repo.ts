@@ -188,11 +188,11 @@ export interface CacheEntry<T extends Resource = Resource> {
   projectId: string;
 }
 
-export interface InteractionObtions {
+export interface InteractionOptions {
   verbose?: boolean;
 }
 
-export interface ReadResourceOptions extends InteractionObtions {
+export interface ReadResourceOptions extends InteractionOptions {
   checkCacheOnly?: boolean;
 }
 
@@ -905,7 +905,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   async resendSubscriptions<T extends Resource = Resource>(
     resourceType: T['resourceType'],
     id: string,
-    options?: InteractionObtions
+    options?: InteractionOptions
   ): Promise<void> {
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
