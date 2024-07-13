@@ -39,6 +39,7 @@ import { structureDefinitionExpandProfileHandler } from './operations/structured
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
+import { ResendSubscriptionsOptions } from './repo';
 import { sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
@@ -254,8 +255,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
-    const verbose = req.query.verbose === 'true';
-    await ctx.repo.resendSubscriptions(resourceType, id, { verbose });
+    const options = req.body as ResendSubscriptionsOptions | undefined;
+    await ctx.repo.resendSubscriptions(resourceType, id, options);
     return [allOk];
   });
 

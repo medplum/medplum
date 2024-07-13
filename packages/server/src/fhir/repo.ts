@@ -1,5 +1,6 @@
 import {
   AccessPolicyInteraction,
+  BackgroundJobInteraction,
   OperationOutcomeError,
   Operator,
   PropertyType,
@@ -194,6 +195,10 @@ export interface InteractionOptions {
 
 export interface ReadResourceOptions extends InteractionOptions {
   checkCacheOnly?: boolean;
+}
+
+export interface ResendSubscriptionsOptions extends InteractionOptions {
+  interaction?: BackgroundJobInteraction;
 }
 
 /**
@@ -905,14 +910,14 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   async resendSubscriptions<T extends Resource = Resource>(
     resourceType: T['resourceType'],
     id: string,
-    options?: InteractionOptions
+    options?: ResendSubscriptionsOptions
   ): Promise<void> {
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
     const resource = await this.readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource, { interaction: 'update' }, options?.verbose);
+    return addSubscriptionJobs(resource, { interaction: options?.interaction ?? 'update' }, options?.verbose);
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
