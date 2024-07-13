@@ -38,7 +38,7 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
 
-    expect(setGaugeSpy).toHaveBeenCalledTimes(9);
+    expect(setGaugeSpy).toHaveBeenCalledTimes(10);
 
     await shutdownApp();
     process.env = originalProcessEnv;
@@ -56,7 +56,7 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
 
-    expect(setGaugeSpy).toHaveBeenCalledTimes(7);
+    expect(setGaugeSpy).toHaveBeenCalledTimes(8);
 
     await shutdownApp();
     process.env = originalProcessEnv;
