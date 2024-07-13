@@ -427,7 +427,22 @@ interface CTE {
   recursive?: boolean;
 }
 
-export class SelectQuery extends BaseQuery implements Expression {
+export abstract class AbstractSelectQuery extends BaseQuery {
+  abstract withRecursive(name: string, expr: Expression): this;
+  abstract distinctOn(column: Column | string): this;
+  abstract raw(column: string): this;
+  abstract column(column: Column | string): this;
+  abstract getNextJoinAlias(): string;
+  abstract innerJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this;
+  abstract leftJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this;
+  abstract groupBy(column: Column | string): this;
+  abstract orderBy(column: Column | string, descending?: boolean): this;
+  abstract limit(limit: number): this;
+  abstract offset(offset: number): this;
+  abstract execute(conn: Pool | PoolClient): Promise<any[]>;
+}
+
+export class SelectQuery extends AbstractSelectQuery {
   readonly innerQuery?: SelectQuery | Union;
   readonly distinctOns: Column[];
   readonly columns: (Column | Literal)[];
@@ -642,116 +657,6 @@ export class SelectQuery extends BaseQuery implements Expression {
   }
 }
 
-export class SelectPerReferenceQuery extends BaseQuery implements Expression {
-  readonly joins: Join[];
-  readonly orderBys: OrderBy[];
-  limit_: number;
-
-  readonly referenceColumn: Column;
-  references: string[];
-  readonly outerQuery: SelectQuery;
-  readonly referenceQuery: SelectQuery;
-  readonly resultsQuery: SelectQuery;
-  readonly resultsInnerQuery: SelectQuery;
-
-  constructor(tableName: string, referenceColumn: Column, references: string[]) {
-    super(tableName);
-    this.joins = [];
-    this.orderBys = [];
-    this.limit_ = 0;
-
-    this.referenceColumn = referenceColumn;
-    this.references = [...references];
-    this.referenceQuery = new SelectQuery(this.tableName);
-    this.resultsInnerQuery = new SelectQuery(this.tableName);
-    this.resultsQuery = new SelectQuery('ranked', this.resultsInnerQuery);
-    this.outerQuery = new SelectQuery('references', this.referenceQuery);
-
-    this.referenceQuery.column(
-      new Column(undefined, `DISTINCT "${this.referenceColumn.columnName}" AS "reference"`, true)
-    );
-
-    this.referenceQuery.where(this.referenceColumn, 'IN', references, 'string'); // 'string' doesn't matter here?
-
-    this.outerQuery.joins.push(new Join('JOIN LATERAL', this.resultsQuery, 'results', new Literal('true')));
-
-    this.resultsInnerQuery.where(referenceColumn, '=', new Column('references', 'reference'));
-  }
-
-  column(column: Column | string): this {
-    this.outerQuery.column(new Column('results', getColumnName(column)));
-    this.resultsQuery.column(getColumnName(column));
-    this.resultsInnerQuery.column(column);
-    return this;
-  }
-
-  where(column: Column | string, operator?: keyof typeof Operator, value?: any, type?: string): this {
-    this.referenceQuery.where(column, operator, value, type);
-    this.resultsInnerQuery.where(column, operator, value, type);
-    return this;
-  }
-
-  orderBy(column: Column | string, descending?: boolean): this {
-    this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending));
-    return this;
-  }
-
-  limit(limit: number): this {
-    this.limit_ = limit;
-    return this;
-  }
-
-  private _internalAdded = false;
-  private addInternalParts(): void {
-    if (this._internalAdded) {
-      return;
-    }
-
-    if (this.outerQuery.columns.length === 0) {
-      throw new Error('No columns selected');
-    }
-    this.outerQuery.column(new Column('references', 'reference'));
-
-    if (this.limit_ === 0) {
-      throw new Error('No limit set');
-    }
-    this.resultsQuery.where(new Column('ranked', 'rn'), '<=', this.limit_);
-    //TODO limit shouldn't be changeable after this
-
-    this.resultsInnerQuery.column(new Column(undefined, this.getRowNumberColumnRaw(), true));
-
-    this._internalAdded = true;
-  }
-
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
-    const sql = new SqlBuilder();
-    this.buildSql(sql);
-    return sql.execute(conn);
-  }
-
-  buildSql(sql: SqlBuilder): void {
-    this.addInternalParts();
-    this.outerQuery.buildSql(sql);
-  }
-
-  private getRowNumberColumnRaw(): string {
-    const parts = new SqlBuilder();
-    parts.append('ROW_NUMBER() OVER (');
-    let first = true;
-    for (const orderBy of this.orderBys) {
-      parts.append(first ? ' ORDER BY ' : ', ');
-      parts.appendColumn(orderBy.column);
-      if (orderBy.descending) {
-        parts.append(' DESC');
-      }
-      first = false;
-    }
-    parts.append(') AS rn');
-
-    return parts.toString();
-  }
-}
-
 export class ArraySubquery implements Expression {
   private filter: Expression;
   private column: Column;
@@ -917,15 +822,7 @@ export class DeleteQuery extends BaseQuery {
   }
 }
 
-function getColumnName(column: Column | string): string {
-  if (typeof column === 'string') {
-    return column;
-  } else {
-    return column.columnName;
-  }
-}
-
-function getColumn(column: Column | string, defaultTableName?: string): Column {
+export function getColumn(column: Column | string, defaultTableName?: string): Column {
   if (typeof column === 'string') {
     return new Column(defaultTableName, column);
   } else {

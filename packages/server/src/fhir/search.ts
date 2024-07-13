@@ -41,6 +41,7 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
+import { Pool, PoolClient } from 'pg';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
@@ -49,6 +50,7 @@ import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
 import { getFullUrl } from './response';
 import {
+  AbstractSelectQuery,
   ArraySubquery,
   Column,
   ColumnType,
@@ -56,9 +58,12 @@ import {
   Conjunction,
   Disjunction,
   Expression,
+  getColumn,
+  Join,
+  Literal,
   Negation,
+  OrderBy,
   periodToRangeString,
-  SelectPerReferenceQuery,
   SelectQuery,
   Operator as SQL,
   SqlBuilder,
@@ -87,14 +92,7 @@ export async function searchImpl<T extends Resource>(
   searchRequest: SearchRequest<T>
 ): Promise<Bundle<T>> {
   validateSearchResourceTypes(repo, searchRequest);
-
-  // Ensure that "count" is set.
-  // Count is an optional field.  From this point on, it is safe to assume it is a number.
-  if (searchRequest.count === undefined) {
-    searchRequest.count = DEFAULT_SEARCH_COUNT;
-  } else if (searchRequest.count > maxSearchResults) {
-    searchRequest.count = maxSearchResults;
-  }
+  applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
   let rowCount = undefined;
@@ -124,46 +122,63 @@ export async function searchByReferenceImpl<T extends Resource>(
   references: string[]
 ): Promise<Record<string, T[]>> {
   validateSearchResourceTypes(repo, searchRequest);
+  applyCountAndOffsetLimits(searchRequest);
 
-  if (searchRequest.count === undefined) {
-    searchRequest.count = DEFAULT_SEARCH_COUNT;
-  } else if (searchRequest.count > maxSearchResults) {
-    searchRequest.count = maxSearchResults;
+  let builder: SelectPerReferenceQuery;
+  try {
+    if (searchRequest.offset > 0) {
+      throw new NotSupportedError('searchByReference cannot be used for SearchRequest with non-zero offset');
+    }
+
+    if (searchRequest.types) {
+      throw new NotSupportedError('serachByReference cannot be used for SearchRequest with multiple types');
+    }
+
+    builder = new SelectPerReferenceQuery(
+      searchRequest.resourceType,
+      new Column(searchRequest.resourceType, referenceField),
+      references
+    );
+    repo.addDeletedFilter(builder);
+    repo.addSecurityFilters(builder, searchRequest.resourceType);
+    addSearchFilters(repo, builder, searchRequest.resourceType, searchRequest);
+    addSortRules(builder, searchRequest);
+    builder.limit(searchRequest.count);
+  } catch (err) {
+    if (err instanceof NotSupportedError) {
+      return searchByReferenceFallbackImpl(repo, searchRequest, referenceField, references);
+    } else {
+      throw err;
+    }
   }
 
-  const resourceType = searchRequest.resourceType;
-  const builder = new SelectPerReferenceQuery(
-    searchRequest.resourceType,
-    new Column(resourceType, referenceField),
-    references
-  );
-  builder
-    .column({ tableName: resourceType, columnName: 'id' })
-    .column({ tableName: resourceType, columnName: 'content' });
-  repo.addDeletedFilter(builder as unknown as SelectQuery);
-  repo.addSecurityFilters(builder as unknown as SelectQuery, resourceType);
-  addSearchFilters(builder as unknown as SelectQuery, resourceType, searchRequest);
-
-  addSortRules(builder as unknown as SelectQuery, searchRequest);
-
-  builder.limit(searchRequest.count);
-  if ((searchRequest.offset ?? 0) > 0) {
-    throw new Error('Cannot use offset with searchByReference');
+  interface Row {
+    content: string;
+    reference: string;
   }
-
-  type Row = { id: string; content: string; reference: string };
   const rows: Row[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
 
-  // fill in with empty arrays for references that have no results
   const results: Record<string, T[]> = {};
   for (const ref of references) {
     results[ref] ??= [];
   }
   for (const row of rows) {
-    results[row.reference].push(JSON.parse(row.content));
+    const resource = JSON.parse(row.content) as T;
+    removeResourceFields(resource, repo, searchRequest);
+    results[row.reference].push(resource);
   }
 
   return results;
+}
+
+async function searchByReferenceFallbackImpl<T extends Resource>(
+  _repo: Repository,
+  _searchRequest: SearchRequest<T>,
+  _referenceField: string,
+  _references: string[]
+): Promise<Record<string, T[]>> {
+  //TODO: uses searchImpl
+  return {};
 }
 
 /**
@@ -179,6 +194,26 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
   } else {
     validateSearchResourceType(repo, searchRequest.resourceType);
   }
+}
+
+/**
+ * Ensures that "count" and "offset" are set and within the allowed range.
+ * @param searchRequest - The incoming search request.
+ */
+function applyCountAndOffsetLimits(
+  searchRequest: SearchRequest
+): asserts searchRequest is SearchRequest & { count: number; offset: number } {
+  if (searchRequest.count === undefined) {
+    searchRequest.count = DEFAULT_SEARCH_COUNT;
+  } else if (searchRequest.count > maxSearchResults) {
+    searchRequest.count = maxSearchResults;
+  }
+
+  if (searchRequest.offset && searchRequest.offset < 0) {
+    throw new OperationOutcomeError(badRequest('Offset cannot be negative'));
+  }
+
+  searchRequest.offset ??= 0;
 }
 
 /**
@@ -620,7 +655,7 @@ export function clampEstimateCount(
  */
 function addSearchFilters(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
 ): void {
@@ -632,7 +667,7 @@ function addSearchFilters(
 
 export function buildSearchExpression(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
 ): Expression | undefined {
@@ -672,7 +707,7 @@ export function buildSearchExpression(
  */
 function buildSearchFilterExpression(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: ResourceType,
   table: string,
   filter: Filter
@@ -773,7 +808,7 @@ function buildNormalSearchFilterExpression(
  */
 function trySpecialSearchParameter(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: ResourceType,
   table: string,
   filter: Filter
@@ -805,7 +840,7 @@ function trySpecialSearchParameter(
 
 function buildFilterParameterExpression(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: ResourceType,
   table: string,
   filterExpression: FhirFilterExpression
@@ -823,7 +858,7 @@ function buildFilterParameterExpression(
 
 function buildFilterParameterConnective(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: ResourceType,
   table: string,
   filterConnective: FhirFilterConnective
@@ -837,7 +872,7 @@ function buildFilterParameterConnective(
 
 function buildFilterParameterComparison(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: ResourceType,
   table: string,
   filterComparison: FhirFilterComparison
@@ -1027,7 +1062,7 @@ function buildDateSearchFilter(table: string, details: SearchParameterDetails, f
  * @param builder - The client query builder.
  * @param searchRequest - The search request.
  */
-function addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
+function addSortRules(builder: AbstractSelectQuery, searchRequest: SearchRequest): void {
   searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(builder, searchRequest, sortRule));
 }
 
@@ -1037,7 +1072,7 @@ function addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void 
  * @param searchRequest - The search request.
  * @param sortRule - The sort rule.
  */
-function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+function addOrderByClause(builder: AbstractSelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
   if (sortRule.code === '_id') {
     builder.orderBy('id', !!sortRule.descending);
     return;
@@ -1110,7 +1145,7 @@ function buildEqualityCondition(
 
 function buildChainedSearch(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
 ): Expression {
@@ -1144,7 +1179,7 @@ function usesReferenceLookupTable(repo: Repository): boolean {
  */
 function buildChainedSearchUsingReferenceTable(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
 ): Expression {
@@ -1212,7 +1247,7 @@ function buildChainedSearchUsingReferenceTable(
  */
 function buildChainedSearchUsingReferenceStrings(
   repo: Repository,
-  selectQuery: SelectQuery,
+  selectQuery: AbstractSelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
 ): Expression {
@@ -1345,4 +1380,151 @@ function splitChainedSearch(chain: string): string[] {
     }
   }
   return params;
+}
+
+class NotSupportedError extends Error {}
+
+export class SelectPerReferenceQuery extends AbstractSelectQuery {
+  readonly joins: Join[];
+  readonly orderBys: OrderBy[];
+  limit_: number;
+
+  readonly referenceColumn: Column;
+  references: string[];
+  readonly outerQuery: SelectQuery;
+  readonly referenceQuery: SelectQuery;
+  readonly resultsQuery: SelectQuery;
+  readonly resultsInnerQuery: SelectQuery;
+
+  constructor(tableName: string, referenceColumn: Column, references: string[]) {
+    super(tableName);
+    this.joins = [];
+    this.orderBys = [];
+    this.limit_ = 0;
+
+    this.referenceColumn = referenceColumn;
+    this.references = [...references];
+    this.referenceQuery = new SelectQuery(tableName);
+    this.resultsInnerQuery = new SelectQuery(tableName);
+    this.resultsQuery = new SelectQuery('ranked', this.resultsInnerQuery);
+    this.outerQuery = new SelectQuery('references', this.referenceQuery);
+
+    this.referenceQuery.column(
+      new Column(undefined, `DISTINCT "${this.referenceColumn.columnName}" AS "reference"`, true)
+    );
+
+    this.referenceQuery.where(this.referenceColumn, 'IN', references, 'string'); // 'string' doesn't matter here?
+
+    this.outerQuery.joins.push(new Join('JOIN LATERAL', this.resultsQuery, 'results', new Literal('true')));
+
+    this.resultsInnerQuery.where(referenceColumn, '=', new Column('references', 'reference'));
+  }
+
+  whereExpr(_expression: Expression): this {
+    throw new NotSupportedError('Method not supported.');
+    // this.referenceQuery.whereExpr(expression);
+    // this.resultsInnerQuery.whereExpr(expression);
+    // return this;
+  }
+
+  where(column: Column | string, operator?: keyof typeof SQL, value?: any, type?: string): this {
+    this.referenceQuery.where(column, operator, value, type);
+    this.resultsInnerQuery.where(column, operator, value, type);
+    return this;
+  }
+
+  orderBy(column: Column | string, descending?: boolean): this {
+    this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending));
+    return this;
+  }
+
+  limit(limit: number): this {
+    this.limit_ = limit;
+    return this;
+  }
+
+  column(_column: Column | string): this {
+    throw new NotSupportedError('Method not supported.');
+  }
+
+  withRecursive(_name: string, _expr: Expression): this {
+    throw new NotSupportedError('Method not supported.');
+  }
+  distinctOn(_column: string | Column): this {
+    throw new NotSupportedError('Method not supported.');
+  }
+  raw(_column: string): this {
+    throw new NotSupportedError('Method not supported.');
+  }
+  getNextJoinAlias(): string {
+    throw new NotSupportedError('Method not supported.');
+  }
+  innerJoin(_joinItem: string | SelectQuery, _joinAlias: string, _onExpression: Expression): this {
+    throw new NotSupportedError('Method not supported.');
+  }
+  leftJoin(_joinItem: string | SelectQuery, _joinAlias: string, _onExpression: Expression): this {
+    throw new NotSupportedError('Method not supported.');
+  }
+  groupBy(_column: string | Column): this {
+    throw new NotSupportedError('Method not supported.');
+  }
+  offset(_offset: number): this {
+    throw new NotSupportedError('Method not supported.');
+  }
+
+  protected buildConditions(_sql: SqlBuilder): void {
+    throw new NotSupportedError('Method not supported.');
+  }
+
+  private _internalAdded = false;
+  private addInternalParts(): void {
+    if (this._internalAdded) {
+      return;
+    }
+
+    for (const columnName of ['id', 'content']) {
+      this.outerQuery.column(new Column('results', columnName));
+      this.resultsQuery.column(columnName);
+      this.resultsInnerQuery.column(new Column(this.tableName, columnName));
+    }
+    this.outerQuery.column(new Column('references', 'reference'));
+
+    if (this.limit_ === 0) {
+      throw new Error('No limit set');
+    }
+    this.resultsQuery.where(new Column('ranked', 'rn'), '<=', this.limit_);
+    //TODO{mattlong} limit shouldn't be changeable after this
+
+    this.resultsInnerQuery.column(new Column(undefined, this.getRowNumberColumnRaw(), true));
+
+    this._internalAdded = true;
+  }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    const sql = new SqlBuilder();
+    this.buildSql(sql);
+    return (await sql.execute(conn)).rows;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    this.addInternalParts();
+    this.outerQuery.buildSql(sql);
+  }
+
+  private getRowNumberColumnRaw(): string {
+    const parts = new SqlBuilder();
+    parts.append('ROW_NUMBER() OVER (');
+    let first = true;
+    for (const orderBy of this.orderBys) {
+      parts.append(first ? ' ORDER BY ' : ', ');
+      parts.appendColumn(orderBy.column);
+      if (orderBy.descending) {
+        parts.append(' DESC');
+      }
+      first = false;
+    }
+    parts.append(') AS rn');
+
+    return parts.toString();
+  }
 }
