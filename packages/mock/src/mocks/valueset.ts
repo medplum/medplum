@@ -8,8 +8,8 @@ export const exampleValueSet: ValueSet = {
     contains: [
       {
         system: 'x',
-        code: 'test-code-1',
-        display: 'Test Display 1',
+        code: 'test-code',
+        display: 'Test Display',
       },
       {
         system: 'x',

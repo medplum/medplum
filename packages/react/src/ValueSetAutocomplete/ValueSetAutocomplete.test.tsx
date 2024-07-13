@@ -50,12 +50,12 @@ describe('AsyncAutocomplete', () => {
     const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
 
     await selectOption(input, 'Display', 1);
-    expect(screen.queryByText('Test Display 1')).toBeInTheDocument();
+    expect(screen.queryByText('Test Display')).toBeInTheDocument();
     expect(screen.queryByText('Test Display 2')).not.toBeInTheDocument();
     expect(screen.queryByText('Test Display 3')).not.toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code-1']);
+    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
   });
 
   test('select multiple values', async () => {
@@ -69,21 +69,21 @@ describe('AsyncAutocomplete', () => {
     const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
 
     await selectOption(input, 'Display', 1);
-    expect(screen.queryByText('Test Display 1')).toBeInTheDocument();
+    expect(screen.queryByText('Test Display')).toBeInTheDocument();
     expect(screen.queryByText('Test Display 2')).not.toBeInTheDocument();
     expect(screen.queryByText('Test Display 3')).not.toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code-1']);
+    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
 
     await selectOption(input, 'Display', 3);
-    expect(screen.queryByText('Test Display 1')).toBeInTheDocument();
+    expect(screen.queryByText('Test Display')).toBeInTheDocument();
     expect(screen.queryByText('Test Display 2')).not.toBeInTheDocument();
     expect(screen.queryByText('Test Display 3')).toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(2);
     expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([
-      'test-code-1',
+      'test-code',
       'test-code-3',
     ]);
 
@@ -99,9 +99,9 @@ describe('AsyncAutocomplete', () => {
     });
 
     expect(onChange).toHaveBeenCalledTimes(3);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code-1']);
+    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
 
-    // Remove Test Display 1
+    // Remove Test Display
     await act(async () => {
       fireEvent.click(closeButtons[0]);
     });

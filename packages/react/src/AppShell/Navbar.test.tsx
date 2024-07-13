@@ -204,7 +204,7 @@ describe('Navbar', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(navigateMock).toHaveBeenCalledWith('/test-code-1');
+    expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 
   test('Add Bookmark render and submit', async () => {

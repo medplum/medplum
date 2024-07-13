@@ -85,7 +85,7 @@ describe('PatientSummary - Medications', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display 1')).toBeDefined();
+    expect(screen.getByText('Test Display')).toBeDefined();
 
     // Click "Save" button
     await act(async () => {
@@ -131,7 +131,7 @@ describe('PatientSummary - Medications', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display 1')).toBeDefined();
+    expect(screen.getByText('Test Display')).toBeDefined();
 
     // Click "Save" button
     await act(async () => {

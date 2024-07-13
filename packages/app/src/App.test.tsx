@@ -108,7 +108,7 @@ describe('App', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(navigateMock).toHaveBeenCalledWith('/test-code-1');
+    expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 });
 

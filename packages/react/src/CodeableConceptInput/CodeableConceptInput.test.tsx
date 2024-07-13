@@ -75,7 +75,7 @@ describe('CodeableConceptInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display 1')).toBeDefined();
+    expect(screen.getByText('Test Display')).toBeDefined();
   });
 
   test('Create unstructured value', async () => {

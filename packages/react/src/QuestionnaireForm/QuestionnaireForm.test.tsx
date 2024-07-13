@@ -1139,7 +1139,7 @@ describe('QuestionnaireForm', () => {
 
     const answer = getQuestionnaireAnswers(response);
     expect(answer['q1']).toMatchObject({
-      valueCoding: { code: 'test-code-1', display: 'Test Display 1', system: 'x' },
+      valueCoding: { code: 'test-code', display: 'Test Display', system: 'x' },
     });
   });
 
