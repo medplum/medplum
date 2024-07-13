@@ -64,6 +64,7 @@ export interface SubscriptionJobData {
   readonly requestTime: string;
   readonly requestId?: string;
   readonly traceId?: string;
+  readonly verbose?: boolean;
 }
 
 const queueName = 'SubscriptionQueue';
@@ -205,8 +206,13 @@ async function satisfiesAccessPolicy(
  * not to re-evaluate the subscription.
  * @param resource - The resource that was created or updated.
  * @param context - The background job context.
+ * @param verbose - If true, log verbose output.
  */
-export async function addSubscriptionJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
+export async function addSubscriptionJobs(
+  resource: Resource,
+  context: BackgroundJobContext,
+  verbose = false
+): Promise<void> {
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;
@@ -214,6 +220,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
 
   const ctx = tryGetRequestContext();
   const logger = getLogger();
+  const logFn = verbose ? logger.info : logger.debug;
   const systemRepo = getSystemRepo();
   let project: Project | undefined;
   try {
@@ -235,14 +242,16 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
 
   const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource, project);
-  logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
+  logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
 
   for (const subscription of subscriptions) {
     const criteria = await matchesCriteria(resource, subscription, context);
+    logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${criteria}`);
     if (criteria) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
+        logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
         continue;
       }
       if (subscription.channel.type === 'websocket') {
@@ -259,6 +268,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         requestTime,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
+        verbose,
       });
     }
   }
@@ -349,16 +359,20 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const systemRepo = getSystemRepo();
-  const { subscriptionId, channelType, resourceType, id, versionId, interaction, requestTime } = job.data;
+  const { subscriptionId, channelType, resourceType, id, versionId, interaction, requestTime, verbose } = job.data;
+  const logger = getLogger();
+  const logFn = verbose ? logger.info : logger.debug;
 
   const subscription = await tryGetSubscription(systemRepo, subscriptionId, channelType);
   if (!subscription) {
     // If the subscription was deleted, then stop processing it.
+    logFn(`Subscription ${subscriptionId} not found`);
     return;
   }
 
   if (subscription.status !== 'active') {
     // If the subscription has been disabled, then stop processing it.
+    logFn(`Subscription ${subscriptionId} is not active`);
     return;
   }
 
@@ -366,11 +380,13 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
     if (!currentVersion) {
       // If the resource was deleted, then stop processing it.
+      logFn(`Resource ${resourceType}/${id} not found`);
       return;
     }
 
     if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
       // If this is a retry and the resource is not the current version, then stop processing it.
+      logFn(`Resource ${resourceType}/${id} is not the current version`);
       return;
     }
   }
