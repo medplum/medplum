@@ -51,7 +51,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // 2) Implicit with clientId
   // 3) Implicit with googleClientId
   // The only rule is that they have to match
-  let projectId = isString(req.body.projectId) && isUUID(req.body.projectId) ? req.body.projectId : undefined;
+  let projectId = validateProjectId(req.body.projectId);
   const clientId = req.body.clientId;
   projectId = await getProjectIdByClientId(clientId, projectId);
 
@@ -128,6 +128,10 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     allowNoMembership: req.body.createUser,
   });
   await sendLoginResult(res, login);
+}
+
+function validateProjectId(inputProjectId: unknown): string | undefined {
+  return isString(inputProjectId) && isUUID(inputProjectId) ? inputProjectId : undefined;
 }
 
 function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<Project[]> {
