@@ -47,10 +47,12 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { clampEstimateCount, SelectPerReferenceQuery } from './search';
+import { clampEstimateCount, NotSupportedError, searchByReferenceImpl, SelectPerReferenceQuery } from './search';
 import { Column, SqlBuilder } from './sql';
 
 jest.mock('hibp');
+
+const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
 describe('FHIR Search', () => {
   describe('project-scoped Repository', () => {
@@ -164,7 +166,6 @@ describe('FHIR Search', () => {
 
     test('Search _summary', () =>
       withTestContext(async () => {
-        const subsetTag: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
         const patient: Patient = {
           resourceType: 'Patient',
           meta: {
@@ -266,7 +267,7 @@ describe('FHIR Search', () => {
           id: resource.id,
           meta: expect.objectContaining({
             profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
-            tag: [{ system: 'http://example.com/', code: 'test' }, subsetTag],
+            tag: [{ system: 'http://example.com/', code: 'test' }, SUBSET_TAG],
           }),
           text: {
             status: 'generated',
@@ -283,7 +284,7 @@ describe('FHIR Search', () => {
         expect(dataResults.entry).toHaveLength(1);
         const dataResult = dataResults.entry?.[0]?.resource as Resource;
         const { text: _1, ...dataExpected } = resource;
-        dataExpected.meta?.tag?.push(subsetTag);
+        dataExpected.meta?.tag?.push(SUBSET_TAG);
         expect(dataResult).toEqual<Partial<Patient>>({ ...dataExpected });
 
         // _summary=true
@@ -300,7 +301,6 @@ describe('FHIR Search', () => {
 
     test('Search _elements', () =>
       withTestContext(async () => {
-        const subsetTag: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
         const patient: Patient = {
           resourceType: 'Patient',
           birthDate: '2000-01-01',
@@ -328,7 +328,7 @@ describe('FHIR Search', () => {
           resourceType: 'Patient',
           id: resource.id,
           meta: expect.objectContaining({
-            tag: [subsetTag],
+            tag: [SUBSET_TAG],
           }),
           birthDate: resource.birthDate,
           _birthDate: (resource as any)._birthDate,
@@ -3784,6 +3784,196 @@ describe('FHIR Search', () => {
         expect(filterNotEqualsResult.entry).toHaveLength(1);
         expect(filterNotEqualsResult.entry?.[0]?.resource?.id).toEqual(patient1.id);
       }));
+    describe('searchByReference', () => {
+      async function createPatients(repo: Repository, count: number): Promise<Patient[]> {
+        const patients = [];
+        for (let i = 0; i < count; i++) {
+          patients.push(await repo.createResource<Patient>({ resourceType: 'Patient' }));
+        }
+        return patients;
+      }
+
+      async function createObservations(repo: Repository, count: number, patient: Patient): Promise<Observation[]> {
+        const resources = [];
+        for (let i = 0; i < count; i++) {
+          resources.push(
+            await repo.createResource<Observation>({
+              resourceType: 'Observation',
+              subject: createReference(patient),
+              status: 'final',
+              code: { text: 'code CodeableConcept.text' },
+              method: { text: 'method CodeableConcept.text' },
+              valueString: i.toString(),
+            })
+          );
+        }
+        return resources;
+      }
+
+      function expectResultsContents<Parent extends Resource, Child extends Resource>(
+        parents: Parent[],
+        childrenByParent: Child[][],
+        count: number,
+        results: Record<string, Child[]>
+      ): void {
+        expect(Object.keys(results)).toHaveLength(parents.length);
+        for (const [parent, children] of zip(parents, childrenByParent)) {
+          const result = results[getReferenceString(parent)];
+          expect(result).toHaveLength(Math.min(children.length, count));
+          for (const child of result) {
+            expect(children.map((c) => c.id)).toContain(child.id);
+          }
+        }
+      }
+
+      function zip<A, B>(a: A[], b: B[]): [A, B][] {
+        return a.map((k, i) => [k, b[i]]);
+      }
+      test('Basic reference', async () =>
+        withTestContext(async () => {
+          const patients = await createPatients(repo, 3);
+          const patientObservations = [
+            await createObservations(repo, 2, patients[0]),
+            await createObservations(repo, 0, patients[1]),
+            await createObservations(repo, 4, patients[2]),
+          ];
+          const observation = patientObservations[0][0];
+
+          const count = 3;
+          // via repo
+          const resultRepo = await repo.searchByReference<Observation>(
+            { resourceType: 'Observation', count },
+            'subject',
+            patients.map((p) => getReferenceString(p))
+          );
+
+          expectResultsContents(patients, patientObservations, count, resultRepo);
+          const resultRepoObservation = resultRepo[getReferenceString(patients[0])][0];
+          expect(resultRepoObservation).toEqual(observation);
+          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+
+          // invoked directly with fallback disabled
+          const result = await searchByReferenceImpl<Observation>(
+            repo,
+            { resourceType: 'Observation', count },
+            'subject',
+            patients.map((p) => getReferenceString(p)),
+            { disableFallback: true }
+          );
+
+          expectResultsContents(patients, patientObservations, count, result);
+          const resultObservation = result[getReferenceString(patients[0])][0];
+          expect(resultObservation).toEqual(observation);
+          expect(resultObservation.meta?.tag).toBeUndefined();
+        }));
+
+      test('Reference with sort', async () =>
+        withTestContext(async () => {
+          const patients = await createPatients(repo, 2);
+          const patientObservations = [
+            await createObservations(repo, 3, patients[0]),
+            await createObservations(repo, 2, patients[1]),
+          ];
+          const count = 3;
+
+          // descending
+          const resultDesc = await searchByReferenceImpl<Observation>(
+            repo,
+            { resourceType: 'Observation', count, sortRules: [{ code: 'value-string', descending: true }] },
+            'subject',
+            patients.map((p) => getReferenceString(p)),
+            { disableFallback: true }
+          );
+
+          expectResultsContents(patients, patientObservations, count, resultDesc);
+          expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['2', '1', '0']);
+          expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['1', '0']);
+
+          // ascending
+          const resultAsc = await searchByReferenceImpl<Observation>(
+            repo,
+            { resourceType: 'Observation', count, sortRules: [{ code: 'value-string', descending: false }] },
+            'subject',
+            patients.map((p) => getReferenceString(p)),
+            { disableFallback: true }
+          );
+          expectResultsContents(patients, patientObservations, count, resultAsc);
+          expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['0', '1', '2']);
+          expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['0', '1']);
+        }));
+
+      test('narrowed fields', async () =>
+        withTestContext(async () => {
+          const patients = await createPatients(repo, 1);
+          const patientObservations = [await createObservations(repo, 1, patients[0])];
+
+          const count = 1;
+          const result = await searchByReferenceImpl<Observation>(
+            repo,
+            { resourceType: 'Observation', count, fields: ['status'] },
+            'subject',
+            patients.map((p) => getReferenceString(p)),
+            { disableFallback: true }
+          );
+
+          expectResultsContents(patients, patientObservations, count, result);
+          const observation = patientObservations[0][0];
+          const resultObservation = result[getReferenceString(patients[0])][0];
+          expect({ ...observation, meta: undefined }).toEqual({
+            resourceType: 'Observation',
+            id: observation.id,
+            status: observation.status,
+            code: observation.code,
+            method: observation.method,
+            subject: expect.objectContaining({ reference: getReferenceString(patients[0]) }),
+            valueString: observation.valueString,
+          });
+
+          expect(resultObservation).toEqual({
+            resourceType: 'Observation',
+            id: observation.id,
+            meta: expect.objectContaining({
+              tag: [SUBSET_TAG],
+            }),
+            status: observation.status,
+            code: observation.code, // code is a mandatory field so is included even though not specified in fields
+          });
+        }));
+
+      test('Unsupported search succeeds via fallback', async () =>
+        withTestContext(async () => {
+          const patients = await createPatients(repo, 2);
+          const patientObservations = [
+            await createObservations(repo, 6, patients[0]),
+            await createObservations(repo, 8, patients[1]),
+          ];
+
+          const count = 3;
+          const offset = 2;
+          const search: SearchRequest<Observation> = { resourceType: 'Observation', count, offset };
+
+          // make sure it's falling back
+          await expect(
+            searchByReferenceImpl(
+              repo,
+              search,
+              'subject',
+              patients.map((p) => getReferenceString(p)),
+              { disableFallback: true }
+            )
+          ).rejects.toThrow(NotSupportedError);
+
+          // do it again without disabling the fallback
+          const result = await searchByReferenceImpl(
+            repo,
+            search,
+            'subject',
+            patients.map((p) => getReferenceString(p)),
+            { disableFallback: false }
+          );
+          expectResultsContents(patients, patientObservations, count, result);
+        }));
+    });
   });
 
   describe('systemRepo', () => {
@@ -4022,36 +4212,45 @@ describe('FHIR Search', () => {
       }));
   });
 
-  describe.only('Select per reference', () => {
-    test('Basic', () => {
-      const sql = new SqlBuilder();
-      new SelectPerReferenceQuery('Observation', new Column('Observation', 'subject'), [
-        'Patient/4c93dfd3-878f-4dbc-8c30-46d146105bc3',
-        'Patient/afc5f9a2-529a-4ae4-a3f4-263de813a3a0',
-        'Patient/fc6ac399-4e16-4454-897c-7dba5a04120b',
-      ])
-        .where('deleted', '=', false)
-        .limit(3)
-        .buildSql(sql);
-      expect(sql.toString()).toBe(
-        'SELECT "results"."id", "results"."content", "references"."reference" FROM (SELECT DISTINCT "subject" AS "reference" FROM "Observation" WHERE ("Observation"."subject" IN ($1,$2,$3) AND "Observation"."deleted" = $4)) AS "references" JOIN LATERAL (SELECT "ranked"."id", "ranked"."content" FROM (SELECT "Observation"."id", "Observation"."content", ROW_NUMBER() OVER () AS rn FROM "Observation" WHERE ("Observation"."subject" = "references"."reference" AND "Observation"."deleted" = $5)) AS "ranked" WHERE "ranked"."rn" <= $6) AS "results" ON true'
-      );
-    });
+  describe('SelectPerReferenceQuery', () => {
+    test('Basic', () =>
+      withTestContext(async () => {
+        const sql = new SqlBuilder();
+        new SelectPerReferenceQuery('Observation', new Column('Observation', 'subject'), [
+          'Patient/111',
+          'Patient/222',
+          'Patient/333',
+        ])
+          .where('deleted', '=', false)
+          .limit(3)
+          .buildSql(sql);
+        expect(sql.toString()).toBe(
+          'SELECT "results"."id", "results"."content", "references"."reference" FROM (SELECT DISTINCT "subject" AS "reference" FROM "Observation" WHERE ("Observation"."subject" IN ($1,$2,$3) AND "Observation"."deleted" = $4)) AS "references" JOIN LATERAL (SELECT "ranked"."id", "ranked"."content" FROM (SELECT "Observation"."id", "Observation"."content", ROW_NUMBER() OVER () AS rn FROM "Observation" WHERE ("Observation"."subject" = "references"."reference" AND "Observation"."deleted" = $5)) AS "ranked" WHERE "ranked"."rn" <= $6) AS "results" ON true'
+        );
+      }));
 
-    test('with sort', () => {
-      const sql = new SqlBuilder();
-      new SelectPerReferenceQuery('Observation', new Column('Observation', 'subject'), [
-        'Patient/4c93dfd3-878f-4dbc-8c30-46d146105bc3',
-        'Patient/afc5f9a2-529a-4ae4-a3f4-263de813a3a0',
-        'Patient/fc6ac399-4e16-4454-897c-7dba5a04120b',
-      ])
-        .where('deleted', '=', false)
-        .orderBy('lastUpdated', true)
-        .limit(3)
-        .buildSql(sql);
-      expect(sql.toString()).toBe(
-        'SELECT "results"."id", "results"."content", "references"."reference" FROM (SELECT DISTINCT "subject" AS "reference" FROM "Observation" WHERE ("Observation"."subject" IN ($1,$2,$3) AND "Observation"."deleted" = $4)) AS "references" JOIN LATERAL (SELECT "ranked"."id", "ranked"."content" FROM (SELECT "Observation"."id", "Observation"."content", ROW_NUMBER() OVER ( ORDER BY "Observation"."lastUpdated" DESC) AS rn FROM "Observation" WHERE ("Observation"."subject" = "references"."reference" AND "Observation"."deleted" = $5)) AS "ranked" WHERE "ranked"."rn" <= $6) AS "results" ON true'
-      );
-    });
+    test('with sort', () =>
+      withTestContext(async () => {
+        const sql = new SqlBuilder();
+        new SelectPerReferenceQuery('Observation', new Column('Observation', 'subject'), [
+          'Patient/111',
+          'Patient/222',
+          'Patient/333',
+        ])
+          .where('deleted', '=', false)
+          .orderBy('lastUpdated', true)
+          .limit(3)
+          .buildSql(sql);
+        expect(sql.toString()).toBe(
+          'SELECT "results"."id", "results"."content", "references"."reference" FROM (SELECT DISTINCT "subject" AS "reference" FROM "Observation" WHERE ("Observation"."subject" IN ($1,$2,$3) AND "Observation"."deleted" = $4)) AS "references" JOIN LATERAL (SELECT "ranked"."id", "ranked"."content" FROM (SELECT "Observation"."id", "Observation"."content", ROW_NUMBER() OVER ( ORDER BY "Observation"."lastUpdated" DESC) AS rn FROM "Observation" WHERE ("Observation"."subject" = "references"."reference" AND "Observation"."deleted" = $5)) AS "ranked" WHERE "ranked"."rn" <= $6) AS "results" ON true'
+        );
+      }));
+
+    test('throws on unsupported methods', () =>
+      withTestContext(async () => {
+        const query = new SelectPerReferenceQuery('Observation', new Column('Observation', 'subject'), ['Patient/111']);
+        expect(() => query.offset(50)).toThrow(NotSupportedError);
+        //TODO{mattlong} add more methods here
+      }));
   });
 });
