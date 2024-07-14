@@ -126,6 +126,10 @@ export async function searchByReferenceImpl<T extends Resource>(
 
   let builder: SelectPerReferenceQuery;
   try {
+    if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
+      throw new NotSupportedError('searchByReference cannot be used with total=accurate or total=estimate');
+    }
+
     if (searchRequest.offset > 0) {
       throw new NotSupportedError('searchByReference cannot be used for SearchRequest with non-zero offset');
     }
@@ -160,7 +164,7 @@ export async function searchByReferenceImpl<T extends Resource>(
 
   const results: Record<string, T[]> = {};
   for (const ref of references) {
-    results[ref] ??= [];
+    results[ref] = [];
   }
   for (const row of rows) {
     const resource = JSON.parse(row.content) as T;
@@ -171,14 +175,44 @@ export async function searchByReferenceImpl<T extends Resource>(
   return results;
 }
 
+// TODO{mattlong} centralize this filter and use it in packages/fhir-router/src/graphql/utils.ts
+type ReferenceFilter = Filter & { code: string; operator: Operator.EQUALS; value: string };
 async function searchByReferenceFallbackImpl<T extends Resource>(
-  _repo: Repository,
-  _searchRequest: SearchRequest<T>,
-  _referenceField: string,
-  _references: string[]
+  repo: Repository,
+  searchRequestTemplate: SearchRequest<T>,
+  referenceField: string,
+  references: string[]
 ): Promise<Record<string, T[]>> {
-  //TODO: uses searchImpl
-  return {};
+  searchRequestTemplate.filters ??= [];
+  const serializedTemplate = JSON.stringify(searchRequestTemplate);
+
+  const searchResults = await Promise.all(
+    references.map((reference) => {
+      const searchRequest = JSON.parse(serializedTemplate) as SearchRequest<T>;
+      const referenceFilter: ReferenceFilter = {
+        code: referenceField,
+        operator: Operator.EQUALS,
+        value: reference,
+      };
+      searchRequest.filters?.push(referenceFilter);
+      return searchImpl(repo, searchRequest);
+    })
+  );
+
+  const results: Record<string, T[]> = {};
+  for (let i = 0; i < references.length; i++) {
+    const reference = references[i];
+    results[reference] = [];
+
+    const bundle = searchResults[i];
+    for (const entry of bundle.entry ?? []) {
+      if (entry.resource) {
+        results[reference].push(entry.resource);
+      }
+    }
+  }
+
+  return results;
 }
 
 /**
