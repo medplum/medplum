@@ -52,6 +52,7 @@ export function AllergyDialog(props: AllergyDialogProps): JSX.Element {
           path="AllergyIntolerance.code"
           data-autofocus={true}
           binding={HTTP + 'cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1186.8'}
+          maxValues={1}
           defaultValue={allergy?.code}
           onChange={(code) => setCode(code)}
           outcome={undefined}
@@ -62,6 +63,7 @@ export function AllergyDialog(props: AllergyDialogProps): JSX.Element {
           label="Clinical Status"
           path="AllergyIntolerance.clinicalStatus"
           binding={HTTP_HL7_ORG + '/fhir/ValueSet/allergyintolerance-clinical'}
+          maxValues={1}
           defaultValue={allergy?.clinicalStatus}
           onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
           outcome={undefined}

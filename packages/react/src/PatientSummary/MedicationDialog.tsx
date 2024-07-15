@@ -68,6 +68,7 @@ export function MedicationDialog(props: MedicationDialogProps): JSX.Element {
           path="MedicationRequest.medication[x]"
           data-autofocus={true}
           binding={HTTP + 'cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1010.4'}
+          maxValues={1}
           defaultValue={medication?.medicationCodeableConcept}
           onChange={(request) => setCode(request)}
           outcome={undefined}

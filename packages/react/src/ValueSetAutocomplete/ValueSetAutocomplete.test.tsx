@@ -1,8 +1,9 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, within } from '../test-utils/render';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 import { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
 
 describe('AsyncAutocomplete', () => {
   beforeEach(() => {
@@ -50,9 +51,10 @@ describe('AsyncAutocomplete', () => {
     const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
 
     await selectOption(input, 'Display', 1);
-    expect(screen.queryByText('Test Display')).toBeInTheDocument();
-    expect(screen.queryByText('Test Display 2')).not.toBeInTheDocument();
-    expect(screen.queryByText('Test Display 3')).not.toBeInTheDocument();
+    const selected = within(screen.getByTestId('selected-items'));
+    expect(selected.queryByText('Test Display')).toBeInTheDocument();
+    expect(selected.queryByText('Test Display 2')).not.toBeInTheDocument();
+    expect(selected.queryByText('Test Display 3')).not.toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
@@ -69,17 +71,22 @@ describe('AsyncAutocomplete', () => {
     const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
 
     await selectOption(input, 'Display', 1);
-    expect(screen.queryByText('Test Display')).toBeInTheDocument();
-    expect(screen.queryByText('Test Display 2')).not.toBeInTheDocument();
-    expect(screen.queryByText('Test Display 3')).not.toBeInTheDocument();
+    const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
+    expect(selected.queryByText('Test Display')).toBeInTheDocument();
+    expect(selected.queryByText('Test Display 2')).not.toBeInTheDocument();
+    expect(selected.queryByText('Test Display 3')).not.toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
 
-    await selectOption(input, 'Display', 3);
-    expect(screen.queryByText('Test Display')).toBeInTheDocument();
-    expect(screen.queryByText('Test Display 2')).not.toBeInTheDocument();
-    expect(screen.queryByText('Test Display 3')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+    expect(selected.queryByText('Test Display')).toBeInTheDocument();
+    expect(selected.queryByText('Test Display 2')).not.toBeInTheDocument();
+    expect(selected.queryByText('Test Display 3')).toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(2);
     expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([

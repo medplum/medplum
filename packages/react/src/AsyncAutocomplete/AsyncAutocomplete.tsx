@@ -14,8 +14,10 @@ import { normalizeErrorString } from '@medplum/core';
 import { KeyboardEvent, ReactNode, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { IconCheck } from '@tabler/icons-react';
+import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
+  readonly active?: boolean;
   readonly resource: T;
 }
 
@@ -28,7 +30,7 @@ export interface AsyncAutocompleteProps<T>
   readonly defaultValue?: T | T[];
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
-  readonly itemComponent?: (props: AsyncAutocompleteOption<T> & { active: boolean }) => JSX.Element | ReactNode;
+  readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange: (item: T[]) => void;
   readonly onCreate?: (input: string) => T;
   readonly creatable?: boolean;
@@ -278,7 +280,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           required={required}
           disabled={disabled}
         >
-          <Pill.Group>
+          <Pill.Group data-testid={AsyncAutocompleteTestIds.selectedItems}>
             {selected.map((item) => (
               <Pill key={item.value} withRemoveButton={!disabled} onRemove={() => handleValueRemove(item)}>
                 {item.label}
