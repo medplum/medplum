@@ -410,3 +410,10 @@ export function getGroupRepeatedAnswers(
 
   return groupAnswers;
 }
+
+export function convertDateToDateTime(date: string | undefined): string | undefined {
+  if (!date) {
+    return undefined;
+  }
+  return new Date(date).toISOString();
+}

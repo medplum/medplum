@@ -7,6 +7,7 @@ import {
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
+  convertDateToDateTime,
   extensionURLMapping,
   getGroupRepeatedAnswers,
   observationCategoryMapping,
@@ -98,7 +99,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.treatment,
     consentCategoryMapping.med,
     undefined,
-    answers['consent-for-treatment-date'].valueDate
+    convertDateToDateTime(answers['consent-for-treatment-date'].valueDate)
   );
 
   await addConsent(
@@ -108,7 +109,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.treatment,
     consentCategoryMapping.pay,
     consentPolicyRuleMapping.hipaaSelfPay,
-    answers['agreement-to-pay-for-treatment-date'].valueDate
+    convertDateToDateTime(answers['agreement-to-pay-for-treatment-date'].valueDate)
   );
 
   await addConsent(
@@ -118,7 +119,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.patientPrivacy,
     consentCategoryMapping.nopp,
     consentPolicyRuleMapping.hipaaNpp,
-    answers['notice-of-privacy-practices-date'].valueDate
+    convertDateToDateTime(answers['notice-of-privacy-practices-date'].valueDate)
   );
 
   await addConsent(
@@ -128,7 +129,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.adr,
     consentCategoryMapping.acd,
     undefined,
-    answers['acknowledgement-for-advance-directives-date'].valueDate
+    convertDateToDateTime(answers['acknowledgement-for-advance-directives-date'].valueDate)
   );
 
   await medplum.updateResource(patient);
