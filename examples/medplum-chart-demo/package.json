@@ -38,6 +38,7 @@
     "@vitejs/plugin-react": "4.3.1",
     "chart.js": "4.4.3",
     "esbuild": "0.23.0",
+    "fast-glob": "3.3.2",
     "postcss": "8.4.39",
     "postcss-preset-mantine": "1.15.0",
     "react": "18.2.0",
