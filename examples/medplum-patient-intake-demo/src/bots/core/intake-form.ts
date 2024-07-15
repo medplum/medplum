@@ -7,6 +7,7 @@ import {
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
+  convertDateToDateTime,
   extensionURLMapping,
   getGroupRepeatedAnswers,
   observationCategoryMapping,
@@ -62,7 +63,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   await upsertObservation(
     medplum,
     patient,
-    observationCodeMapping.sexualOrientiation,
+    observationCodeMapping.sexualOrientation,
     observationCategoryMapping.socialHistory,
     'valueCodeableConcept',
     answers['sexual-orientation'].valueCoding
@@ -117,9 +118,9 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     !!answers['consent-for-treatment-signature']?.valueBoolean,
     consentScopeMapping.treatment,
-    consentCategoryMapping.nopp, // FIXME
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['consent-for-treatment-date'].valueDate
+    consentCategoryMapping.med,
+    undefined,
+    convertDateToDateTime(answers['consent-for-treatment-date'].valueDate)
   );
 
   await addConsent(
@@ -127,9 +128,9 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     !!answers['agreement-to-pay-for-treatment-help']?.valueBoolean,
     consentScopeMapping.treatment,
-    consentCategoryMapping.nopp, // FIXME
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['agreement-to-pay-for-treatment-date'].valueDate
+    consentCategoryMapping.pay,
+    consentPolicyRuleMapping.hipaaSelfPay,
+    convertDateToDateTime(answers['agreement-to-pay-for-treatment-date'].valueDate)
   );
 
   await addConsent(
@@ -139,7 +140,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.patientPrivacy,
     consentCategoryMapping.nopp,
     consentPolicyRuleMapping.hipaaNpp,
-    answers['notice-of-privacy-practices-date'].valueDate
+    convertDateToDateTime(answers['notice-of-privacy-practices-date'].valueDate)
   );
 
   await addConsent(
@@ -148,8 +149,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     !!answers['acknowledgement-for-advance-directives-signature']?.valueBoolean,
     consentScopeMapping.adr,
     consentCategoryMapping.acd,
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['acknowledgement-for-advance-directives-date'].valueDate
+    undefined,
+    convertDateToDateTime(answers['acknowledgement-for-advance-directives-date'].valueDate)
   );
 
   await medplum.updateResource(patient);
