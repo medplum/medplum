@@ -57,7 +57,7 @@ export function initExpandWorker(config: MedplumServerConfig): void {
     }
   );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
+  worker.on('failed', (job, err) => globalLogger.error(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
@@ -139,11 +139,14 @@ export async function execExpandJob(job: Job<ExpandJobData>): Promise<void> {
           .ignoreOnConflict()
           .execute(getDatabasePool(DatabaseMode.WRITER));
       } else {
+        if (!valueSet.id) {
+          throw new OperationOutcomeError(badRequest('ValueSet missing ID'));
+        }
         const query = expansionQuery(include, codeSystem);
         if (query) {
           // Construct outer INSERT query
           const rowQuery = new SelectQuery('expansion', query)
-            .column(new Literal(valueSet.id ?? ''))
+            .column(new Literal(valueSet.id))
             .column(new Column('expansion', 'id'));
           const writeQuery = new InsertQuery('ValueSet_Membership', rowQuery).ignoreOnConflict();
           await writeQuery.execute(getDatabasePool(DatabaseMode.WRITER));
@@ -153,7 +156,7 @@ export async function execExpandJob(job: Job<ExpandJobData>): Promise<void> {
 
     ctx.logger.info('ValueSet expanded successfully', { id: valueSet.id });
   } catch (ex: any) {
-    ctx.logger.info('ValueSet expand job exception', ex);
+    ctx.logger.error('ValueSet expand job exception', ex);
     throw ex;
   }
 }
