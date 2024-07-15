@@ -20,7 +20,7 @@
     "@mantine/core": "7.11.1",
     "@mantine/hooks": "7.11.1",
     "@mantine/notifications": "7.11.1",
-    "rimraf": "5.0.9",
+    "rimraf": "6.0.1",
     "@tabler/icons-react": "3.9.0",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
