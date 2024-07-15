@@ -217,6 +217,32 @@ describe('Intake form', async () => {
 
       expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('BD');
     });
+
+    test('Pregnancy Status', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const observation = await medplum.searchOne('Observation', {
+        code: '82810-3',
+        subject: getReferenceString(patient),
+      });
+
+      expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('77386006');
+    });
+
+    test('Estimated Delivery Date', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const observation = await medplum.searchOne('Observation', {
+        code: '11778-8',
+        subject: getReferenceString(patient),
+      });
+
+      expect(observation?.valueDateTime).toEqual('2025-04-01T00:00:00.000Z');
+    });
   });
 
   describe('Coverage', async () => {
