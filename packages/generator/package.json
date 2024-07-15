@@ -37,7 +37,7 @@
     "node-stream-zip": "1.15.0",
     "pg": "8.12.0",
     "tinybench": "2.8.0",
-    "unzipper": "0.12.1"
+    "unzipper": "0.12.2"
   },
   "engines": {
     "node": ">=18.0.0"

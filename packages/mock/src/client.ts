@@ -163,7 +163,7 @@ export class MockClient extends MedplumClient {
     this.repo = repo;
     this.client = client;
     // if null is specified, treat it as if no one is logged in
-    this.profile = clientOptions?.profile === null ? undefined : clientOptions?.profile ?? DrAliceSmith;
+    this.profile = clientOptions?.profile === null ? undefined : (clientOptions?.profile ?? DrAliceSmith);
     this.debug = !!clientOptions?.debug;
   }
 
