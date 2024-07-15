@@ -33,11 +33,11 @@
     "root": true
   },
   "devDependencies": {
-    "@babel/core": "7.24.8",
+    "@babel/core": "7.24.9",
     "@babel/preset-env": "7.24.8",
     "@babel/preset-react": "7.24.7",
     "@babel/preset-typescript": "7.24.7",
-    "@cyclonedx/cyclonedx-npm": "1.19.2",
+    "@cyclonedx/cyclonedx-npm": "1.19.3",
     "@microsoft/api-documenter": "7.25.4",
     "@microsoft/api-extractor": "7.47.0",
     "@types/jest": "29.5.12",
@@ -55,7 +55,7 @@
     "npm-check-updates": "16.14.20",
     "nyc": "17.0.0",
     "prettier": "3.3.3",
-    "rimraf": "6.0.1",
+    "rimraf": "5.0.9",
     "sort-package-json": "2.10.0",
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.2",
@@ -63,6 +63,7 @@
     "turbo": "2.0.6",
     "typescript": "5.5.3"
   },
+  "packageManager": "npm@10.8.1",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -75,6 +76,5 @@
     "react-dom": "18.2.0",
     "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@1.4.15",
     "trim": "0.0.3"
-  },
-  "packageManager": "npm@10.8.1"
+  }
 }
