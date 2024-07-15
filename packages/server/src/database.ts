@@ -63,12 +63,9 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
   });
 
   pool.on('connect', (client) => {
-    client.query(`SET log_min_duration_statement TO '30s'`).catch((err) => {
+    client.query(`SET statement_timeout TO ${config.queryTimeout ?? 60000}`).catch((err) => {
       globalLogger.warn('Failed to set query timeout', err);
     });
-    // client.query(`SET statement_timeout TO ${config.queryTimeout ?? 60000}`).catch((err) => {
-    //   globalLogger.warn('Failed to set query timeout', err);
-    // });
     client.query(`SET default_transaction_isolation TO 'REPEATABLE READ'`).catch((err) => {
       globalLogger.warn('Failed to set default transaction isolation', err);
     });
