@@ -62,7 +62,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
   await upsertObservation(
     medplum,
     patient,
-    observationCodeMapping.sexualOrientiation,
+    observationCodeMapping.sexualOrientation,
     observationCategoryMapping.socialHistory,
     answers['sexual-orientation'].valueCoding
   );

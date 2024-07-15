@@ -31,7 +31,7 @@ export const extensionURLMapping: Record<string, string> = {
 export const observationCodeMapping: Record<string, CodeableConcept> = {
   housingStatus: { coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }] },
   educationLevel: { coding: [{ code: '82589-3', system: LOINC, display: 'Highest Level of Education' }] },
-  sexualOrientiation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
+  sexualOrientation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
 };
 
 export const observationCategoryMapping: Record<string, CodeableConcept> = {
