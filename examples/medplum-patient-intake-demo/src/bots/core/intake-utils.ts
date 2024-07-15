@@ -293,8 +293,6 @@ export async function addConsent(
   });
 }
 
-type FindQuestionnaireItemType = QuestionnaireItem | QuestionnaireResponseItem | undefined;
-
 /**
  * Finds a QuestionnaireItem or QuestionnaireResponseItem with the given linkId
  *
@@ -302,15 +300,15 @@ type FindQuestionnaireItemType = QuestionnaireItem | QuestionnaireResponseItem |
  * @param linkId - The id to be found
  * @returns - The found item or undefined in case it's not found
  */
-export function findQuestionnaireItem(
-  items: QuestionnaireItem[] | QuestionnaireResponseItem[] | undefined,
+export function findQuestionnaireItem<T extends QuestionnaireItem | QuestionnaireResponseItem>(
+  items: T[] | undefined,
   linkId: string
-): QuestionnaireItem | QuestionnaireResponseItem | undefined {
+): T | undefined {
   if (!items) {
     return undefined;
   }
 
-  return items.reduce((foundItem: FindQuestionnaireItemType, currentItem: FindQuestionnaireItemType) => {
+  return items.reduce((foundItem: T | undefined, currentItem: T | undefined) => {
     // If currentItem is undefined or the item was already found just return it
     if (foundItem || !currentItem) {
       return foundItem;
@@ -320,7 +318,7 @@ export function findQuestionnaireItem(
       return currentItem;
     } else if (currentItem.item) {
       // This enables traversing nested structures
-      return findQuestionnaireItem(currentItem.item, linkId);
+      return findQuestionnaireItem(currentItem.item as T[], linkId);
     }
 
     return undefined;
