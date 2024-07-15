@@ -1,10 +1,10 @@
 import { createReference, getReferenceString } from '@medplum/core';
-import { Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Organization, Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import coreBundle from '../../../../data/core/patient-intake-questionnaire.json';
 
 export const intakePatient: Patient = {
   resourceType: 'Patient',
-  id: '1ea87e76-85e3-4126-8595-7a8b98e31e35',
+  id: 'patient-id',
   name: [
     {
       given: ['Michael'],
@@ -13,8 +13,20 @@ export const intakePatient: Patient = {
   ],
 };
 
+export const payorOrganization1: Organization = {
+  resourceType: 'Organization',
+  id: 'org-id-1',
+  name: 'First Insurance Provider',
+};
+
+export const payorOrganization2: Organization = {
+  resourceType: 'Organization',
+  id: 'org-id-2',
+  name: 'Second Insurance Provider',
+};
+
 export const intakeQuestionnaire: Questionnaire = coreBundle.entry[0].resource as Questionnaire;
-intakeQuestionnaire.id = '58b7094f-4b04-46d3-9753-0272b1681a0c';
+intakeQuestionnaire.id = 'intake-questionnaire-id';
 
 export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
@@ -136,7 +148,9 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Insurance Provider',
           answer: [
             {
-              valueString: 'First Insurance Provider',
+              valueReference: {
+                reference: getReferenceString(payorOrganization1),
+              },
             },
           ],
         },
@@ -170,7 +184,9 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Insurance Provider',
           answer: [
             {
-              valueString: 'Second Insurance Provider',
+              valueReference: {
+                reference: getReferenceString(payorOrganization2),
+              },
             },
           ],
         },

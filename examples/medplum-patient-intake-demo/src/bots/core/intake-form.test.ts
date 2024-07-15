@@ -1,7 +1,20 @@
 import { MockClient } from '@medplum/mock';
 import { handler } from './intake-form';
-import { intakePatient, intakeQuestionnaire, intakeResponse } from './test-data/intake-form-test-data';
-import { Bundle, Patient, QuestionnaireResponse, QuestionnaireResponseItem, SearchParameter } from '@medplum/fhirtypes';
+import {
+  intakePatient,
+  intakeQuestionnaire,
+  intakeResponse,
+  payorOrganization1,
+  payorOrganization2,
+} from './test-data/intake-form-test-data';
+import {
+  Bundle,
+  Organization,
+  Patient,
+  QuestionnaireResponse,
+  QuestionnaireResponseItem,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
   createReference,
@@ -18,7 +31,11 @@ import {
 } from './intake-utils';
 
 describe('Intake form', async () => {
-  let medplum: MockClient, response: QuestionnaireResponse, patient: Patient;
+  let medplum: MockClient,
+    response: QuestionnaireResponse,
+    patient: Patient,
+    payor1: Organization,
+    payor2: Organization;
   const bot = { reference: 'Bot/123' };
   const contentType = 'application/fhir+json';
 
@@ -33,9 +50,11 @@ describe('Intake form', async () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
+    patient = await medplum.createResource(intakePatient);
+    payor1 = await medplum.createResource(payorOrganization1);
+    payor2 = await medplum.createResource(payorOrganization2);
     await medplum.createResource(intakeQuestionnaire);
     response = await medplum.createResource(intakeResponse);
-    patient = await medplum.createResource(intakePatient);
   });
 
   describe('Update Patient demographic information', async () => {
@@ -208,15 +227,15 @@ describe('Intake form', async () => {
 
       const coverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
 
-      expect(coverages.length).toEqual(2);
-
       expect(coverages[0].beneficiary).toEqual(createReference(patient));
       expect(coverages[0].subscriberId).toEqual('first-provider-id');
       expect(coverages[0].relationship?.coding?.[0]?.code).toEqual('BP');
+      expect(coverages[0].payor?.[0].reference).toEqual(createReference(payor1).reference);
 
       expect(coverages[1].beneficiary).toEqual(createReference(patient));
       expect(coverages[1].subscriberId).toEqual('second-provider-id');
       expect(coverages[1].relationship?.coding?.[0]?.code).toEqual('BP');
+      expect(coverages[1].payor?.[0].reference).toEqual(createReference(payor2).reference);
     });
   });
 

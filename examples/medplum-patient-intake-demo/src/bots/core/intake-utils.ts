@@ -12,12 +12,14 @@ import {
   Coding,
   Consent,
   Observation,
+  Organization,
   Patient,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  Reference,
 } from '@medplum/fhirtypes';
 
 export const extensionURLMapping: Record<string, string> = {
@@ -247,29 +249,13 @@ export async function addCoverage(
   patient: Patient,
   answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
-  const payor = await medplum.createResource({
-    resourceType: 'Organization',
-    name: answers['insurance-provider']?.valueString,
-    type: [
-      {
-        coding: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/organization-type',
-            code: 'ins',
-            display: 'Insurance Company',
-          },
-        ],
-      },
-    ],
-  });
-
   await medplum.createResource({
     resourceType: 'Coverage',
     status: 'active',
     beneficiary: createReference(patient),
     subscriberId: answers['subscriber-id'].valueString,
     relationship: { coding: [answers['relationship-to-subscriber'].valueCoding as Coding] },
-    payor: [createReference(payor)],
+    payor: [answers['insurance-provider'].valueReference as Reference<Organization>],
   });
 }
 
