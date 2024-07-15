@@ -94,6 +94,9 @@ export async function importCodeSystem(
       code: c.code,
       display: c.display,
     }));
+    if (rows.length !== concepts.length) {
+      console.log('Trimmed', concepts.length - rows.length, 'codings from import of', codeSystem.url);
+    }
     const query = new InsertQuery('Coding', rows).mergeOnConflict(['system', 'code']);
     await query.execute(db);
   }
@@ -104,12 +107,12 @@ export async function importCodeSystem(
 }
 
 function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
-  const seen = new Map<string, T>();
+  const seen = Object.create(null);
   for (const el of arr) {
     const key = keyFn(el);
-    seen.set(key, el);
+    seen[key] = el;
   }
-  return Array.from(seen.values());
+  return Object.values(seen);
 }
 
 async function processProperties(
@@ -140,16 +143,14 @@ async function processProperties(
       throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${imported.code}`));
     }
 
+    const targetCodingId = codingIds.find((r) => r.code === imported.value)?.id;
     const property: Record<string, any> = {
       coding: sourceCodingId,
       property: propId,
       value: imported.value,
+      target: isRelationship && targetCodingId ? targetCodingId : null,
     };
 
-    const targetCodingId = codingIds.find((r) => r.code === imported.value)?.id;
-    if (isRelationship && targetCodingId) {
-      property.target = targetCodingId;
-    }
     rows.push(property);
   }
 
