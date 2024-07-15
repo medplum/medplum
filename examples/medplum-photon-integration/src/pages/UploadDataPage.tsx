@@ -3,8 +3,7 @@ import { capitalize, getReferenceString, MedplumClient } from '@medplum/core';
 import { Binary, Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import exampleBotData from '../../data/example-bots.json';
 
 type UploadFunction =
@@ -45,7 +44,7 @@ export function UploadDataPage(): JSX.Element {
   );
 }
 
-async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner) {
+async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
     (exampleBotData as Bundle).entry?.filter((e) => e.resource?.resourceType === 'Bot') || [];
