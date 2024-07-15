@@ -344,7 +344,7 @@ function toDefaultItems<T>(defaultValue: T | T[] | undefined): T[] {
   return [defaultValue];
 }
 
-function DefaultItemComponent(props: ComboboxItem & { active: boolean }): JSX.Element {
+function DefaultItemComponent<T>(props: AsyncAutocompleteOption<T>): JSX.Element {
   return (
     <Group gap="xs">
       {props.active && <IconCheck size={12} />}
