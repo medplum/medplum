@@ -1,0 +1,90 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Endpoint",
+        "id": "medplum",
+        "status": "active",
+        "connectionType": {
+          "system": "http://terminology.hl7.org/CodeSystem/endpoint-connection-type",
+          "code": "hl7-fhir-rest",
+          "display": "HL7 FHIR"
+        },
+        "name": "Medplum Endpoint",
+        "managingOrganization": {
+          "reference": "Organization/medplum",
+          "display": "Medplum"
+        },
+        "payloadType": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/endpoint-payload-type",
+                "code": "any",
+                "display": "Any"
+              }
+            ]
+          }
+        ],
+        "payloadMimeType": ["application/fhir+json"],
+        "address": "https://api.medplum.com/fhir/R4"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "medplum",
+        "name": "Medplum",
+        "telecom": [
+          {
+            "system": "phone",
+            "use": "work",
+            "value": "+1-415-900-9122"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "both",
+            "line": ["2477 Sutter St"],
+            "city": "San Francisco",
+            "state": "California",
+            "postalCode": "94115"
+          }
+        ],
+        "contact": [
+          {
+            "purpose": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/contactentity-type",
+                  "code": "ADMIN",
+                  "display": "Administrative"
+                }
+              ]
+            },
+            "name": {
+              "use": "official",
+              "given": ["Cody"],
+              "family": "Ebberson"
+            },
+            "address": {
+              "city": "San Francisco",
+              "state": "California",
+              "postalCode": "94115",
+              "line": ["2477 Sutter St"]
+            }
+          }
+        ],
+        "endpoint": [
+          {
+            "reference": "Endpoint/medplum",
+            "display": "Medplum Endpoint"
+          }
+        ]
+      }
+    }
+  ]
+}
