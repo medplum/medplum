@@ -145,7 +145,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       return targetTypes.map((tt) => {
         return {
           value: tt.value,
-          label: tt.type === 'profile' ? tt.title ?? tt.name ?? tt.resourceType ?? tt.value : tt.value,
+          label: tt.type === 'profile' ? (tt.title ?? tt.name ?? tt.resourceType ?? tt.value) : tt.value,
         };
       });
     }
