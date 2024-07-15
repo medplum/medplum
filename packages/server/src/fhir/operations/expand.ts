@@ -9,8 +9,16 @@ import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
 import { abstractProperty, addDescendants, addPropertyFilter, findTerminologyResource } from './utils/terminology';
 import { addExpandJob } from '../../workers/expand';
+import { requireSuperAdmin } from '../../admin/super';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
+operation.parameter?.push({
+  name: '_precompute',
+  use: 'in',
+  type: 'boolean',
+  min: 0,
+  max: '1',
+});
 
 type ValueSetExpandParameters = {
   url?: string;
@@ -19,6 +27,8 @@ type ValueSetExpandParameters = {
   count?: number;
   excludeNotForUI?: boolean;
   valueSet?: ValueSet;
+
+  _precompute: boolean;
 };
 
 // Implements FHIR "Value Set Expansion"
@@ -279,7 +289,9 @@ async function computeExpansion(
     }
   }
 
-  await addExpandJob(valueSet, codeSystemCache); // Precompute expansion in the background for faster future searches
+  if (params._precompute && requireSuperAdmin()) {
+    await addExpandJob(valueSet, codeSystemCache); // Precompute expansion in the background for faster future searches
+  }
   return expansion;
 }
 
