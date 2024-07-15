@@ -102,7 +102,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     observationCodeMapping.estimatedDeliveryDate,
     observationCategoryMapping.socialHistory,
     'valueDateTime',
-    { valueDateTime: new Date(answers['estimated-delivery-date'].valueDate as string).toISOString() }
+    { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date'].valueDate) }
   );
 
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
