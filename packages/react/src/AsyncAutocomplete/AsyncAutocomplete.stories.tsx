@@ -25,10 +25,11 @@ export function MultiSelectAsyncAutocomplete(): JSX.Element {
     <AsyncAutocomplete
       label="Multi Select Async Autocomplete"
       loadOptions={async (input: string, signal: AbortSignal) => {
-        return new Promise<(typeof options)[number][]>((resolve) => {
+        return new Promise<(typeof options)[number][]>((resolve, reject) => {
           setTimeout(() => {
             if (signal.aborted) {
-              throw new Error('aborted');
+              reject(new Error('aborted'));
+              return;
             }
 
             resolve(

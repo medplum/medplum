@@ -156,8 +156,8 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const addSelected = useCallback(
     (newValue: string): void => {
-      const newSelected: AsyncAutocompleteOption<T>[] = selected.filter((v) => v.value !== newValue);
       const alreadySelected = selected.some((v) => v.value === newValue);
+      const newSelected = alreadySelected ? selected.filter((v) => v.value !== newValue) : [...selected];
       let option = options?.find((option) => option.value === newValue);
       if (!option && creatable !== false && onCreate) {
         const createdResource = onCreate(newValue);
@@ -215,7 +215,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         addSelected(val);
       }
     };
-  }, [addSelected, combobox, disabled, search]);
+  }, [addSelected, combobox, disabled, maxValues, search]);
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
