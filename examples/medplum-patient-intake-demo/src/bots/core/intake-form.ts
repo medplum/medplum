@@ -96,8 +96,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     !!answers['consent-for-treatment-signature']?.valueBoolean,
     consentScopeMapping.treatment,
-    consentCategoryMapping.nopp, // FIXME
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
+    consentCategoryMapping.med,
+    undefined,
     answers['consent-for-treatment-date'].valueDate
   );
 
@@ -106,8 +106,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     !!answers['agreement-to-pay-for-treatment-help']?.valueBoolean,
     consentScopeMapping.treatment,
-    consentCategoryMapping.nopp, // FIXME
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
+    consentCategoryMapping.pay,
+    consentPolicyRuleMapping.hipaaSelfPay,
     answers['agreement-to-pay-for-treatment-date'].valueDate
   );
 
@@ -127,7 +127,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     !!answers['acknowledgement-for-advance-directives-signature']?.valueBoolean,
     consentScopeMapping.adr,
     consentCategoryMapping.acd,
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
+    undefined,
     answers['acknowledgement-for-advance-directives-date'].valueDate
   );
 

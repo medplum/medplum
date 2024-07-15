@@ -104,6 +104,24 @@ export const consentCategoryMapping: Record<string, CodeableConcept> = {
       },
     ],
   },
+  pay: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
+        code: 'pay',
+        display: 'Payment',
+      },
+    ],
+  },
+  med: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
+        code: 'med',
+        display: 'Medical',
+      },
+    ],
+  },
 };
 
 export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
@@ -113,6 +131,15 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
         system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
         code: 'hipaa-npp',
         display: 'HIPAA Notice of Privacy Practices',
+      },
+    ],
+  },
+  hipaaSelfPay: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
+        code: 'hipaa-self-pay',
+        display: 'HIPAA Self-Pay Restriction',
       },
     ],
   },
@@ -275,7 +302,7 @@ export async function addConsent(
   consentGiven: boolean,
   scope: CodeableConcept,
   category: CodeableConcept,
-  policyRule: CodeableConcept,
+  policyRule: CodeableConcept | undefined,
   date: Consent['dateTime']
 ): Promise<void> {
   await medplum.createResource({
