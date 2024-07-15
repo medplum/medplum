@@ -176,7 +176,7 @@ export function setExtension(
 ): void {
   let value = answer?.[valueXAttribute];
 
-  // Answer to boolean Questionnaire fields will be set as `undefined` if the checkmark is not ticked
+  // Answer to boolean Questionnaire fields will be set as `undefined` if the check mark is not ticked
   // so in this case we should interpret it as `false`.
   if (valueXAttribute === 'valueBoolean') {
     value = !!value;
@@ -205,7 +205,7 @@ export function setExtension(
 }
 
 /**
- * Add a language to patient's communcation attribute or set an existing one as preferred
+ * Add a language to patient's communication attribute or set an existing one as preferred
  *
  * @param patient - The patient
  * @param valueCoding - A Coding with the language data
@@ -249,14 +249,24 @@ export async function addCoverage(
   patient: Patient,
   answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
-  await medplum.createResource({
-    resourceType: 'Coverage',
-    status: 'active',
-    beneficiary: createReference(patient),
-    subscriberId: answers['subscriber-id'].valueString,
-    relationship: { coding: [answers['relationship-to-subscriber'].valueCoding as Coding] },
-    payor: [answers['insurance-provider'].valueReference as Reference<Organization>],
-  });
+  const payor = answers['insurance-provider'].valueReference as Reference<Organization>;
+  const subscriberId = answers['subscriber-id'].valueString;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'Coverage',
+      status: 'active',
+      beneficiary: createReference(patient),
+      subscriberId: subscriberId,
+      relationship: { coding: [answers['relationship-to-subscriber'].valueCoding as Coding] },
+      payor: [payor],
+    },
+    {
+      beneficiary: getReferenceString(patient),
+      payor: getReferenceString(payor),
+      // subscriberId: subscriberId,
+    }
+  );
 }
 
 export async function addConsent(

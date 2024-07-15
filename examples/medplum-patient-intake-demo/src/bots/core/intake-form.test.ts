@@ -237,6 +237,22 @@ describe('Intake form', async () => {
       expect(coverages[1].relationship?.coding?.[0]?.code).toEqual('BP');
       expect(coverages[1].payor?.[0].reference).toEqual(createReference(payor2).reference);
     });
+
+    test('upsert coverage resources to ensure there is only one coverage resource per payor', async () => {
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const coverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
+
+      expect(coverages.length).toEqual(2);
+
+      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+
+      const updatedCoverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
+
+      expect(updatedCoverages.length).toEqual(2);
+    });
   });
 
   describe('Consents', async () => {
