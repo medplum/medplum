@@ -8,7 +8,7 @@ export function PatientPrescription(): JSX.Element {
       const result = await medplum.executeBot(
         {
           system: 'https://neutron.health/bots',
-          value: 'test-auth-bot',
+          value: 'test-auth',
         },
         {},
         'application/json'
