@@ -25,22 +25,24 @@ Now, with the "On-Behalf-Of" feature, the Customer Server Side App can act on be
 
 ## How to Use
 
-First, the Customer Server Side App must authenticate with Medplum Server as a ClientApplication. This is the same as any other Medplum ClientApplication.
+First, the Customer Server Side App must authenticate with Medplum Server as a `ClientApplication`. This is the same as any other Medplum `ClientApplication`.
 
-The only requirement for the ClientApplication is that it has "Project Admin" rights. This is because the ClientApplication will be acting on behalf of a Medplum ProjectMembership.
+The only requirement for the `ClientApplication` is that it has [Project Admin](/docs/access/admin#project-admin) rights. This is because the `ClientApplication` will be acting on behalf of a Medplum ProjectMembership.
 
 Then, when making API requests, the Customer Server Side App must include an `X-Medplum-On-Behalf-Of` HTTP header. The value of this header can be either:
 
 1. A `ProjectMembership` ID - This is the most direct and explicit way to specify the Medplum user. The Customer Server Side App would presumably store this id in its own database.
 2. A profile ID such as `Patient` or `Practitioner` - This is a more natural value for the Customer Server Side App to use, but requires a lookup to find the corresponding `ProjectMembership`.
 
-It is recommended that the ClientApplication use Basic Authentication to authenticate with Medplum Server. This bypasses the need for managing expiring access tokens and refresh tokens.
+For more information on `ProjectMemberships` and profile resources, see the [User Management Guide](https://www.medplum.com/docs/auth/user-management-guide).
+
+At this time, the `ClientApplication` must use Basic Authentication to authenticate with Medplum Server. This bypasses the need for managing expiring access tokens and refresh tokens.
 
 ## How it Works
 
 When the Medplum Server receives a request with the `X-Medplum-On-Behalf-Of` header, it will:
 
-1. Authenticate the ClientApplication as normal
+1. Authenticate the `ClientApplication` as normal
 2. Check for the `X-Medplum-On-Behalf-Of` header
 3. If present, set up the Repository instance accordingly
    - Set `onBehalfOf` to the specified `ProjectMembership` ID
