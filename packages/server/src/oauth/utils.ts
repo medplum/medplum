@@ -27,6 +27,7 @@ import {
 import bcrypt from 'bcryptjs';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
+import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getRequestContext } from '../context';
@@ -506,6 +507,8 @@ export async function getAuthTokens(
   profile: Reference<ProfileResource>,
   refreshLifetime?: string
 ): Promise<TokenResult> {
+  assert.equal(getReferenceString(user), login.user?.reference);
+
   const clientId = login.client && resolveId(login.client);
 
   if (!login.membership) {
