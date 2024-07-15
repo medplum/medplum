@@ -411,21 +411,15 @@ describe('OAuth utils', () => {
     }
   });
 
-  test('getAuthTokens missing user', async () => {
-    try {
-      await getAuthTokens({ resourceType: 'Login', user: {} } as Login, { reference: 'Patient/123' });
-      fail('Expected error');
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing user');
-    }
-  });
-
   test('getAuthTokens Login missing profile', async () => {
     try {
-      await getAuthTokens({ resourceType: 'Login', user: { reference: 'User/123' } } as Login, {
-        reference: 'Patient/123',
-      });
+      await getAuthTokens(
+        { resourceType: 'User', id: '123', firstName: 'John', lastName: 'Doe' },
+        { resourceType: 'Login', user: { reference: 'User/123' } } as Login,
+        {
+          reference: 'Patient/123',
+        }
+      );
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
