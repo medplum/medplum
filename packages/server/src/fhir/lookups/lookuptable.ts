@@ -2,7 +2,6 @@ import { Operator as FhirOperator, Filter, SortRule, splitSearchOnComma } from '
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import {
-  AbstractSelectQuery,
   Column,
   Condition,
   Conjunction,
@@ -61,7 +60,7 @@ export abstract class LookupTable {
    * @param filter - The search filter details.
    * @returns The select query where expression.
    */
-  buildWhere(_selectQuery: AbstractSelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
+  buildWhere(_selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
     const lookupTableName = this.getTableName(resourceType);
     const columnName = this.getColumnName(filter.code);
 
@@ -111,7 +110,7 @@ export abstract class LookupTable {
    * @param resourceType - The FHIR resource type.
    * @param sortRule - The sort rule details.
    */
-  addOrderBy(selectQuery: AbstractSelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
+  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);

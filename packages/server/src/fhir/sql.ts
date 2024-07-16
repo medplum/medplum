@@ -268,7 +268,7 @@ export class Union implements Expression {
 
 export class Join {
   constructor(
-    readonly joinType: 'LEFT JOIN' | 'INNER JOIN' | 'JOIN LATERAL',
+    readonly joinType: 'LEFT JOIN' | 'INNER JOIN' | 'INNER JOIN LATERAL',
     readonly joinItem: SelectQuery | string,
     readonly joinAlias: string,
     readonly onExpression: Expression
@@ -427,23 +427,8 @@ interface CTE {
   recursive?: boolean;
 }
 
-export abstract class AbstractSelectQuery extends BaseQuery {
-  abstract withRecursive(name: string, expr: Expression): this;
-  abstract distinctOn(column: Column | string): this;
-  abstract raw(column: string): this;
-  abstract column(column: Column | string): this;
-  abstract getNextJoinAlias(): string;
-  abstract innerJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this;
-  abstract leftJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this;
-  abstract groupBy(column: Column | string): this;
-  abstract orderBy(column: Column | string, descending?: boolean): this;
-  abstract limit(limit: number): this;
-  abstract offset(offset: number): this;
-  abstract execute(conn: Pool | PoolClient): Promise<any[]>;
-}
-
-export class SelectQuery extends AbstractSelectQuery {
-  readonly innerQuery?: SelectQuery | Union;
+export class SelectQuery extends BaseQuery implements Expression {
+  readonly innerQuery?: SelectQuery | Union | ValuesQuery;
   readonly distinctOns: Column[];
   readonly columns: (Column | Literal)[];
   readonly joins: Join[];
@@ -454,7 +439,7 @@ export class SelectQuery extends AbstractSelectQuery {
   offset_: number;
   joinCount = 0;
 
-  constructor(tableName: string, innerQuery?: SelectQuery | Union, alias?: string) {
+  constructor(tableName: string, innerQuery?: SelectQuery | Union | ValuesQuery, alias?: string) {
     super(tableName, alias);
     this.innerQuery = innerQuery;
     this.distinctOns = [];
@@ -491,8 +476,13 @@ export class SelectQuery extends AbstractSelectQuery {
     return `T${this.joinCount}`;
   }
 
-  innerJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
-    this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
+  innerJoin(
+    joinItem: SelectQuery | string,
+    joinAlias: string,
+    onExpression: Expression,
+    lateral: boolean = false
+  ): this {
+    this.joins.push(new Join(lateral ? 'INNER JOIN LATERAL' : 'INNER JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
 
@@ -822,7 +812,42 @@ export class DeleteQuery extends BaseQuery {
   }
 }
 
-export function getColumn(column: Column | string, defaultTableName?: string): Column {
+export class ValuesQuery implements Expression {
+  readonly tableName: string;
+  readonly columnName: string;
+  readonly values: any[];
+  constructor(tableName: string, columnName: string, values: any[]) {
+    this.tableName = tableName;
+    this.columnName = columnName;
+    this.values = values;
+  }
+
+  buildSql(builder: SqlBuilder): void {
+    /*
+    SELECT * FROM (VALUES
+      ('Patient/123'),
+		  ('Patient/456'),
+		  ('Patient/789'),
+    ) AS "references" ("ref")
+    */
+
+    builder.append('SELECT * FROM (VALUES');
+    let first = true;
+    for (const value of this.values) {
+      builder.append(first ? '(' : ',(');
+      builder.param(value);
+      builder.append(')');
+      first = false;
+    }
+    builder.append(') AS ');
+    builder.appendIdentifier(this.tableName);
+    builder.append('(');
+    builder.appendIdentifier(this.columnName);
+    builder.append(')');
+  }
+}
+
+function getColumn(column: Column | string, defaultTableName?: string): Column {
   if (typeof column === 'string') {
     return new Column(defaultTableName, column);
   } else {

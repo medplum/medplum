@@ -41,7 +41,6 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
@@ -50,7 +49,6 @@ import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
 import { getFullUrl } from './response';
 import {
-  AbstractSelectQuery,
   ArraySubquery,
   Column,
   ColumnType,
@@ -58,16 +56,14 @@ import {
   Conjunction,
   Disjunction,
   Expression,
-  getColumn,
-  Join,
   Literal,
   Negation,
-  OrderBy,
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
   SqlBuilder,
   Union,
+  ValuesQuery,
 } from './sql';
 
 /**
@@ -91,14 +87,14 @@ export async function searchImpl<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>
 ): Promise<Bundle<T>> {
-  validateSearchResourceTypes(repo, searchRequest);
-  applyCountAndOffsetLimits(searchRequest);
+  prepareSearchRequest(repo, searchRequest);
 
   let entry = undefined;
   let rowCount = undefined;
   let hasMore = false;
   if (searchRequest.count > 0) {
-    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest));
+    const builder = getSelectQueryForSearch(repo, searchRequest);
+    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
 
   let total = undefined;
@@ -120,46 +116,23 @@ export async function searchByReferenceImpl<T extends Resource>(
   searchRequest: SearchRequest<T>,
   referenceField: string,
   references: string[],
-  options?: { disableFallback?: boolean }
+  _options?: { disableFallback?: boolean }
 ): Promise<Record<string, T[]>> {
-  validateSearchResourceTypes(repo, searchRequest);
-  applyCountAndOffsetLimits(searchRequest);
+  prepareSearchRequest(repo, searchRequest);
+  const referenceColumn = new Column('references', 'ref');
 
-  let builder: SelectPerReferenceQuery;
-  try {
-    if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
-      throw new NotSupportedError('searchByReference cannot be used with total=accurate or total=estimate');
-    }
+  const innerQuery = getSelectQueryForSearch(repo, searchRequest);
+  innerQuery.where(new Column(searchRequest.resourceType, referenceField), '=', referenceColumn);
+  innerQuery.limit(searchRequest.count);
 
-    if (searchRequest.offset > 0) {
-      throw new NotSupportedError('searchByReference cannot be used for SearchRequest with non-zero offset');
-    }
-
-    if (searchRequest.types) {
-      throw new NotSupportedError('serachByReference cannot be used for SearchRequest with multiple types');
-    }
-
-    builder = new SelectPerReferenceQuery(
-      searchRequest.resourceType,
-      new Column(searchRequest.resourceType, referenceField),
-      references
-    );
-    repo.addDeletedFilter(builder);
-    repo.addSecurityFilters(builder, searchRequest.resourceType);
-    addSearchFilters(repo, builder, searchRequest.resourceType, searchRequest);
-    addSortRules(builder, searchRequest);
-    builder.limit(searchRequest.count);
-  } catch (err) {
-    if (!options?.disableFallback && err instanceof NotSupportedError) {
-      return searchByReferenceFallbackImpl(repo, searchRequest, referenceField, references);
-    } else {
-      throw err;
-    }
-  }
+  const referenceValuesQuery = new ValuesQuery('references', 'ref', references);
+  const builder = new SelectQuery('references', referenceValuesQuery);
+  builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
+  builder.innerJoin(innerQuery, 'results', new Literal('true'), true);
 
   interface Row {
     content: string;
-    reference: string;
+    ref: string;
   }
   const rows: Row[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
 
@@ -170,47 +143,7 @@ export async function searchByReferenceImpl<T extends Resource>(
   for (const row of rows) {
     const resource = JSON.parse(row.content) as T;
     removeResourceFields(resource, repo, searchRequest);
-    results[row.reference].push(resource);
-  }
-
-  return results;
-}
-
-// TODO{mattlong} centralize this filter and use it in packages/fhir-router/src/graphql/utils.ts
-type ReferenceFilter = Filter & { code: string; operator: Operator.EQUALS; value: string };
-async function searchByReferenceFallbackImpl<T extends Resource>(
-  repo: Repository,
-  searchRequestTemplate: SearchRequest<T>,
-  referenceField: string,
-  references: string[]
-): Promise<Record<string, T[]>> {
-  searchRequestTemplate.filters ??= [];
-  const serializedTemplate = JSON.stringify(searchRequestTemplate);
-
-  const searchResults = await Promise.all(
-    references.map((reference) => {
-      const searchRequest = JSON.parse(serializedTemplate) as SearchRequest<T>;
-      const referenceFilter: ReferenceFilter = {
-        code: referenceField,
-        operator: Operator.EQUALS,
-        value: reference,
-      };
-      searchRequest.filters?.push(referenceFilter);
-      return searchImpl(repo, searchRequest);
-    })
-  );
-
-  const results: Record<string, T[]> = {};
-  for (let i = 0; i < references.length; i++) {
-    const reference = references[i];
-    results[reference] = [];
-
-    const bundle = searchResults[i];
-    for (const entry of bundle.entry ?? []) {
-      if (entry.resource) {
-        results[reference].push(entry.resource);
-      }
-    }
+    results[row.ref].push(resource);
   }
 
   return results;
@@ -231,13 +164,13 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
   }
 }
 
-/**
- * Ensures that "count" and "offset" are set and within the allowed range.
- * @param searchRequest - The incoming search request.
- */
-function applyCountAndOffsetLimits(
+type PreparedSearchRequest<T extends Resource> = SearchRequest<T> & { count: number; offset: number };
+
+function prepareSearchRequest<T extends Resource>(
+  repo: Repository,
   searchRequest: SearchRequest
-): asserts searchRequest is SearchRequest & { count: number; offset: number } {
+): asserts searchRequest is PreparedSearchRequest<T> {
+  validateSearchResourceTypes(repo, searchRequest);
   if (searchRequest.count === undefined) {
     searchRequest.count = DEFAULT_SEARCH_COUNT;
   } else if (searchRequest.count > maxSearchResults) {
@@ -268,29 +201,34 @@ function validateSearchResourceType(repo: Repository, resourceType: ResourceType
   }
 }
 
+function getSelectQueryForSearch<T extends Resource>(
+  repo: Repository,
+  searchRequest: PreparedSearchRequest<T>
+): SelectQuery {
+  const builder = getBaseSelectQuery(repo, searchRequest);
+  addSortRules(builder, searchRequest);
+  builder.limit(searchRequest.count + 1); // Request one extra to test if there are more results
+  builder.offset(searchRequest.offset);
+  return builder;
+}
+
 /**
  * Returns the bundle entries for a search request.
  * @param repo - The repository.
  * @param searchRequest - The search request.
+ * @param builder - The `SelectQuery` builder that is ready to execute.
  * @returns The bundle entries for the search result.
  */
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequest
+  searchRequest: PreparedSearchRequest<T>,
+  builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
-  const builder = getBaseSelectQuery(repo, searchRequest);
-
-  addSortRules(builder, searchRequest);
-
   const startTime = Date.now();
-  const count = searchRequest.count as number;
-  builder.limit(count + 1); // Request one extra to test if there are more results
-  builder.offset(searchRequest.offset || 0);
-
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const endTime = Date.now();
   const rowCount = rows.length;
-  const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
+  const resources = rows.slice(0, searchRequest.count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
     (resource) =>
       ({
@@ -327,7 +265,7 @@ async function getSearchEntries<T extends Resource>(
   return {
     entry: entries as BundleEntry<T>[],
     rowCount,
-    hasMore: rows.length > count,
+    hasMore: rows.length > searchRequest.count,
   };
 }
 
@@ -472,8 +410,8 @@ async function getSearchIncludeEntries(
     .filter((typedValue) => ([PropertyType.canonical, PropertyType.uri] as string[]).includes(typedValue.type))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
-    const canonicalSearches = (searchParam.target || []).map((resourceType) =>
-      getSearchEntries(repo, {
+    const canonicalSearches = (searchParam.target || []).map((resourceType) => {
+      const searchRequest = {
         resourceType: resourceType,
         filters: [
           {
@@ -482,8 +420,12 @@ async function getSearchIncludeEntries(
             value: canonicalReferences.join(','),
           },
         ],
-      })
-    );
+      };
+      // TODO{mattlong} are the limits/offsets messing up this query?
+      prepareSearchRequest(repo, searchRequest);
+      const builder = getSelectQueryForSearch(repo, searchRequest);
+      return getSearchEntries(repo, searchRequest, builder);
+    });
     (await Promise.all(canonicalSearches)).forEach((result) => {
       includedResources.push(...result.entry.map((e) => e.resource as Resource));
     });
@@ -527,18 +469,21 @@ async function getSearchRevIncludeEntries(
     value = resources.map(getReferenceString).join(',');
   }
 
-  return (
-    await getSearchEntries(repo, {
-      resourceType: revInclude.resourceType as ResourceType,
-      filters: [
-        {
-          code: revInclude.searchParam,
-          operator: Operator.EQUALS,
-          value: value,
-        },
-      ],
-    })
-  ).entry;
+  const searchRequest = {
+    resourceType: revInclude.resourceType as ResourceType,
+    filters: [
+      {
+        code: revInclude.searchParam,
+        operator: Operator.EQUALS,
+        value: value,
+      },
+    ],
+  };
+  // TODO{mattlong} are the limits/offsets messing up this query?
+  prepareSearchRequest(repo, searchRequest);
+  const builder = getSelectQueryForSearch(repo, searchRequest);
+
+  return (await getSearchEntries(repo, searchRequest, builder)).entry;
 }
 
 /**
@@ -692,7 +637,7 @@ export function clampEstimateCount(
  */
 function addSearchFilters(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
 ): void {
@@ -704,7 +649,7 @@ function addSearchFilters(
 
 export function buildSearchExpression(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
 ): Expression | undefined {
@@ -744,7 +689,7 @@ export function buildSearchExpression(
  */
 function buildSearchFilterExpression(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filter: Filter
@@ -845,7 +790,7 @@ function buildNormalSearchFilterExpression(
  */
 function trySpecialSearchParameter(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filter: Filter
@@ -877,7 +822,7 @@ function trySpecialSearchParameter(
 
 function buildFilterParameterExpression(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterExpression: FhirFilterExpression
@@ -895,7 +840,7 @@ function buildFilterParameterExpression(
 
 function buildFilterParameterConnective(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterConnective: FhirFilterConnective
@@ -909,7 +854,7 @@ function buildFilterParameterConnective(
 
 function buildFilterParameterComparison(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterComparison: FhirFilterComparison
@@ -1099,7 +1044,7 @@ function buildDateSearchFilter(table: string, details: SearchParameterDetails, f
  * @param builder - The client query builder.
  * @param searchRequest - The search request.
  */
-function addSortRules(builder: AbstractSelectQuery, searchRequest: SearchRequest): void {
+function addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
   searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(builder, searchRequest, sortRule));
 }
 
@@ -1109,7 +1054,7 @@ function addSortRules(builder: AbstractSelectQuery, searchRequest: SearchRequest
  * @param searchRequest - The search request.
  * @param sortRule - The sort rule.
  */
-function addOrderByClause(builder: AbstractSelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
   if (sortRule.code === '_id') {
     builder.orderBy('id', !!sortRule.descending);
     return;
@@ -1182,7 +1127,7 @@ function buildEqualityCondition(
 
 function buildChainedSearch(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
 ): Expression {
@@ -1216,7 +1161,7 @@ function usesReferenceLookupTable(repo: Repository): boolean {
  */
 function buildChainedSearchUsingReferenceTable(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
 ): Expression {
@@ -1284,7 +1229,7 @@ function buildChainedSearchUsingReferenceTable(
  */
 function buildChainedSearchUsingReferenceStrings(
   repo: Repository,
-  selectQuery: AbstractSelectQuery,
+  selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
 ): Expression {
@@ -1417,151 +1362,4 @@ function splitChainedSearch(chain: string): string[] {
     }
   }
   return params;
-}
-
-export class NotSupportedError extends Error {}
-
-export class SelectPerReferenceQuery extends AbstractSelectQuery {
-  readonly joins: Join[];
-  readonly orderBys: OrderBy[];
-  limit_: number;
-
-  readonly referenceColumn: Column;
-  references: string[];
-  readonly outerQuery: SelectQuery;
-  readonly referenceQuery: SelectQuery;
-  readonly resultsQuery: SelectQuery;
-  readonly resultsInnerQuery: SelectQuery;
-
-  constructor(tableName: string, referenceColumn: Column, references: string[]) {
-    super(tableName);
-    this.joins = [];
-    this.orderBys = [];
-    this.limit_ = 0;
-
-    this.referenceColumn = referenceColumn;
-    this.references = [...references];
-    this.referenceQuery = new SelectQuery(tableName);
-    this.resultsInnerQuery = new SelectQuery(tableName);
-    this.resultsQuery = new SelectQuery('ranked', this.resultsInnerQuery);
-    this.outerQuery = new SelectQuery('references', this.referenceQuery);
-
-    this.referenceQuery.column(
-      new Column(undefined, `DISTINCT "${this.referenceColumn.columnName}" AS "reference"`, true)
-    );
-
-    this.referenceQuery.where(this.referenceColumn, 'IN', references, 'string'); // 'string' doesn't matter here?
-
-    this.outerQuery.joins.push(new Join('JOIN LATERAL', this.resultsQuery, 'results', new Literal('true')));
-
-    this.resultsInnerQuery.where(referenceColumn, '=', new Column('references', 'reference'));
-  }
-
-  whereExpr(_expression: Expression): this {
-    throw new NotSupportedError('Method not supported.');
-    // this.referenceQuery.whereExpr(expression);
-    // this.resultsInnerQuery.whereExpr(expression);
-    // return this;
-  }
-
-  where(column: Column | string, operator?: keyof typeof SQL, value?: any, type?: string): this {
-    this.referenceQuery.where(column, operator, value, type);
-    this.resultsInnerQuery.where(column, operator, value, type);
-    return this;
-  }
-
-  orderBy(column: Column | string, descending?: boolean): this {
-    this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending));
-    return this;
-  }
-
-  limit(limit: number): this {
-    this.limit_ = limit;
-    return this;
-  }
-
-  column(_column: Column | string): this {
-    throw new NotSupportedError('Method not supported.');
-  }
-
-  withRecursive(_name: string, _expr: Expression): this {
-    throw new NotSupportedError('Method not supported.');
-  }
-  distinctOn(_column: string | Column): this {
-    throw new NotSupportedError('Method not supported.');
-  }
-  raw(_column: string): this {
-    throw new NotSupportedError('Method not supported.');
-  }
-  getNextJoinAlias(): string {
-    throw new NotSupportedError('Method not supported.');
-  }
-  innerJoin(_joinItem: string | SelectQuery, _joinAlias: string, _onExpression: Expression): this {
-    throw new NotSupportedError('Method not supported.');
-  }
-  leftJoin(_joinItem: string | SelectQuery, _joinAlias: string, _onExpression: Expression): this {
-    throw new NotSupportedError('Method not supported.');
-  }
-  groupBy(_column: string | Column): this {
-    throw new NotSupportedError('Method not supported.');
-  }
-  offset(_offset: number): this {
-    throw new NotSupportedError('Method not supported.');
-  }
-
-  protected buildConditions(_sql: SqlBuilder): void {
-    throw new NotSupportedError('Method not supported.');
-  }
-
-  private _internalAdded = false;
-  private addInternalParts(): void {
-    if (this._internalAdded) {
-      return;
-    }
-
-    for (const columnName of ['id', 'content']) {
-      this.outerQuery.column(new Column('results', columnName));
-      this.resultsQuery.column(columnName);
-      this.resultsInnerQuery.column(new Column(this.tableName, columnName));
-    }
-    this.outerQuery.column(new Column('references', 'reference'));
-
-    if (this.limit_ === 0) {
-      throw new Error('No limit set');
-    }
-    this.resultsQuery.where(new Column('ranked', 'rn'), '<=', this.limit_);
-    //TODO{mattlong} limit shouldn't be changeable after this
-
-    this.resultsInnerQuery.column(new Column(undefined, this.getRowNumberColumnRaw(), true));
-
-    this._internalAdded = true;
-  }
-
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
-    const sql = new SqlBuilder();
-    this.buildSql(sql);
-    return (await sql.execute(conn)).rows;
-  }
-
-  buildSql(sql: SqlBuilder): void {
-    this.addInternalParts();
-    this.outerQuery.buildSql(sql);
-  }
-
-  private getRowNumberColumnRaw(): string {
-    const parts = new SqlBuilder();
-    parts.append('ROW_NUMBER() OVER (');
-    let first = true;
-    for (const orderBy of this.orderBys) {
-      parts.append(first ? ' ORDER BY ' : ', ');
-      parts.appendColumn(orderBy.column);
-      if (orderBy.descending) {
-        parts.append(' DESC');
-      }
-      first = false;
-    }
-    parts.append(') AS rn');
-
-    return parts.toString();
-  }
 }
