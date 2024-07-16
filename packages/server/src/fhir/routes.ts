@@ -140,7 +140,9 @@ function getInternalFhirRouter(): FhirRouter {
  * @returns A new FHIR router with all the internal operations.
  */
 function initInternalFhirRouter(): FhirRouter {
-  const router = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+  const router = new FhirRouter({
+    introspectionEnabled: getConfig().introspectionEnabled,
+  });
 
   // Project $export
   router.add('GET', '/$export', bulkExportHandler);
@@ -298,6 +300,9 @@ protectedRoutes.use(
       query: req.query as Record<string, string>,
       body: req.body,
       headers: req.headers,
+      config: {
+        graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
+      },
     };
 
     if (request.pathname.includes('$graphql')) {
