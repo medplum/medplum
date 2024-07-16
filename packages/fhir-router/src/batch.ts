@@ -157,7 +157,6 @@ class BatchProcessor {
         params: Object.create(null),
         query: Object.fromEntries(url.searchParams),
         body,
-        config: {},
       },
       this.repo
     );

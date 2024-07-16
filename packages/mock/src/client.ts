@@ -689,7 +689,6 @@ export class MockFetchClient {
       body,
       params: Object.create(null),
       query: Object.fromEntries(parsedUrl.searchParams),
-      config: {},
     };
 
     const result = await this.router.handleRequest(request, this.repo);
