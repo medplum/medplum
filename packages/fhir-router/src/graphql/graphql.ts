@@ -100,7 +100,7 @@ export async function graphqlHandler(
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule(req.config.graphqlMaxDepth)];
+  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
@@ -408,7 +408,7 @@ async function resolveByDelete(
   await ctx.repo.deleteResource(resourceType, args.id);
 }
 
-const DEFAULT_MAX_DEPTH = 15;
+const DEFAULT_MAX_DEPTH = 12;
 
 /**
  * Custom GraphQL rule that enforces max depth constraint.
