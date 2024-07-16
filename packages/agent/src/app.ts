@@ -531,7 +531,7 @@ export class App {
         throw new Error(errMsg);
       }
 
-      const pingCountAsStr = message.body.startsWith('PING') ? message.body.split(' ')?.[1] ?? '' : '';
+      const pingCountAsStr = message.body.startsWith('PING') ? (message.body.split(' ')?.[1] ?? '') : '';
       let pingCount: number | undefined = undefined;
 
       if (pingCountAsStr !== '') {

@@ -26,6 +26,8 @@ export interface MedplumServerConfig {
   approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
   databaseProxyEndpoint?: string;
+  readonlyDatabase?: MedplumDatabaseConfig;
+  readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
@@ -187,12 +189,18 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.port = process.env['POSTGRES_PORT'] ? Number.parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
   config.database.runMigrations = false;
+  config.readonlyDatabase = {
+    ...config.database,
+    username: 'medplum_test_readonly',
+    password: 'medplum_test_readonly',
+  };
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+
   return config;
 }
 

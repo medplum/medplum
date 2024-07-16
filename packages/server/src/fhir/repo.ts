@@ -1,5 +1,6 @@
 import {
   AccessPolicyInteraction,
+  BackgroundJobInteraction,
   OperationOutcomeError,
   Operator,
   PropertyType,
@@ -41,7 +42,7 @@ import {
   validateResource,
   validateResourceType,
 } from '@medplum/core';
-import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
+import { BaseRepository, FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import {
   AccessPolicy,
   Binary,
@@ -62,7 +63,7 @@ import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger, getRequestContext } from '../context';
-import { getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -119,6 +120,12 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.author.
    */
   author: Reference;
+
+  /**
+   * Optional individual, device, or organization for whom the change was made.
+   * This value will be included in every resource as meta.onBehalfOf.
+   */
+  onBehalfOf?: Reference;
 
   remoteAddress?: string;
 
@@ -182,9 +189,17 @@ export interface CacheEntry<T extends Resource = Resource> {
   projectId: string;
 }
 
-export type ReadResourceOptions = {
+export interface InteractionOptions {
+  verbose?: boolean;
+}
+
+export interface ReadResourceOptions extends InteractionOptions {
   checkCacheOnly?: boolean;
-};
+}
+
+export interface ResendSubscriptionsOptions extends InteractionOptions {
+  interaction?: BackgroundJobInteraction;
+}
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -208,6 +223,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private conn?: PoolClient;
   private transactionDepth = 0;
   private closed = false;
+  mode: RepositoryMode;
 
   constructor(context: RepositoryContext) {
     super();
@@ -216,10 +232,19 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
+
+    // Default to writer mode
+    // In the future, as we do more testing and validation, we will explore defaulting to reader mode
+    // However, for now, we default to writer and only use reader mode for requests guaranteed not to have consistency risks
+    this.mode = RepositoryMode.WRITER;
   }
 
   clone(): Repository {
     return new Repository(this.context);
+  }
+
+  setMode(mode: RepositoryMode): void {
+    this.mode = mode;
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -293,7 +318,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     this.addSecurityFilters(builder, resourceType);
 
-    const rows = await builder.execute(this.getDatabaseClient());
+    const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
@@ -406,7 +431,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
         .limit(100)
-        .execute(this.getDatabaseClient());
+        .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       const entries: BundleEntry<T>[] = [];
 
@@ -471,7 +496,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .column('content')
         .where('id', '=', id)
         .where('versionId', '=', vid)
-        .execute(this.getDatabaseClient());
+        .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       if (rows.length === 0) {
         throw new OperationOutcomeError(notFound);
@@ -563,12 +588,17 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     });
     updated = await replaceConditionalReferences(this, updated);
 
-    const resultMeta = {
+    const resultMeta: Meta = {
       ...updated.meta,
       versionId: randomUUID(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
     };
+
+    if (this.context.onBehalfOf) {
+      resultMeta.onBehalfOf = this.context.onBehalfOf;
+    }
+
     const result: T = { ...updated, meta: resultMeta };
 
     const project = this.getProjectId(existing, updated);
@@ -874,15 +904,20 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * This should not result in any change to the resource or its history.
    * @param resourceType - The resource type.
    * @param id - The resource ID.
+   * @param options - Additional options.
    * @returns Promise to complete.
    */
-  async resendSubscriptions<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+  async resendSubscriptions<T extends Resource = Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: ResendSubscriptionsOptions
+  ): Promise<void> {
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
     const resource = await this.readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource, { interaction: 'update' });
+    return addSubscriptionJobs(resource, { interaction: options?.interaction ?? 'update' }, options?.verbose);
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
@@ -954,6 +989,14 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     try {
       const result = await this.withTransaction(async () => {
         const resource = await this.readResourceFromDatabase<T>(resourceType, id);
+
+        if (resource.resourceType !== resourceType) {
+          throw new OperationOutcomeError(badRequest('Incorrect resource type'));
+        }
+        if (resource.id !== id) {
+          throw new OperationOutcomeError(badRequest('Incorrect ID'));
+        }
+
         patchObject(resource, patch);
         return this.updateResourceImpl(resource, false);
       });
@@ -989,8 +1032,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       for (const id of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
       }
-      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient());
-      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(this.getDatabaseClient());
+      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient(DatabaseMode.WRITER));
+      await new DeleteQuery(resourceType + '_History')
+        .where('id', 'IN', ids)
+        .execute(this.getDatabaseClient(DatabaseMode.WRITER));
       await deleteCacheEntries(resourceType, ids);
     });
   }
@@ -1868,24 +1913,32 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * The return value can either be a pool client or a pool.
    * If in a transaction, then returns the transaction client (PoolClient).
    * Otherwise, returns the pool (Pool).
+   * @param mode - The database mode.
    * @returns The database client.
    */
-  getDatabaseClient(): Pool | PoolClient {
+  getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
     this.assertNotClosed();
-    // If in a transaction, then use the transaction client.
-    // Otherwise, use the pool client.
-    return this.conn ?? getDatabasePool();
+    if (this.conn) {
+      // If in a transaction, then use the transaction client.
+      return this.conn;
+    }
+    if (mode === DatabaseMode.WRITER) {
+      // If we ever use a writer, then all subsequent operations must use a writer.
+      this.mode = RepositoryMode.WRITER;
+    }
+    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode);
   }
 
   /**
    * Returns a proper database connection.
    * Unlike getDatabaseClient(), this method always returns a PoolClient.
+   * @param mode - The database mode.
    * @returns Database connection.
    */
-  private async getConnection(): Promise<PoolClient> {
+  private async getConnection(mode: DatabaseMode): Promise<PoolClient> {
     this.assertNotClosed();
     if (!this.conn) {
-      this.conn = await getDatabasePool().connect();
+      this.conn = await getDatabasePool(mode).connect();
     }
     return this.conn;
   }
@@ -1947,7 +2000,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
-    const conn = await this.getConnection();
+    const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
     } else {
@@ -1958,7 +2011,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   private async commitTransaction(): Promise<void> {
     this.assertInTransaction();
-    const conn = await this.getConnection();
+    const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('COMMIT');
       this.releaseConnection();
@@ -1969,7 +2022,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   private async rollbackTransaction(error: Error): Promise<void> {
     this.assertInTransaction();
-    const conn = await this.getConnection();
+    const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
       this.releaseConnection(error);

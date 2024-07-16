@@ -39,7 +39,7 @@ import {
   visit,
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
-import { FhirRepository } from '../repo';
+import { FhirRepository, RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import {
@@ -104,7 +104,7 @@ export async function graphqlHandler(
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule];
+  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
@@ -119,6 +119,9 @@ export async function graphqlHandler(
   console.log('QUERY COMPLEXITY:', queryCost);
   if (queryCost > 100) {
     return [badRequest('Query too complex')];
+  }
+  if (includesMutations(query)) {
+    repo.setMode(RepositoryMode.WRITER);
   }
 
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
@@ -194,6 +197,15 @@ function isSearchField(node: FieldNode, typeInfo: TypeInfo): boolean {
 function isLinkedResource(node: FieldNode, typeInfo: TypeInfo): boolean {
   const fieldType = typeInfo.getType();
   return fieldType instanceof GraphQLUnionType && fieldType.name === 'ResourceList';
+}
+
+/**
+ * Returns true if the query includes mutations.
+ * @param query - The GraphQL query.
+ * @returns True if the query includes mutations.
+ */
+function includesMutations(query: string): boolean {
+  return query.includes('mutation');
 }
 
 export function getRootSchema(): GraphQLSchema {
@@ -464,31 +476,34 @@ async function resolveByDelete(
   await ctx.repo.deleteResource(resourceType, args.id);
 }
 
+const DEFAULT_MAX_DEPTH = 12;
+
 /**
  * Custom GraphQL rule that enforces max depth constraint.
- * @param context - The validation context.
- * @returns An ASTVisitor that validates the maximum depth rule.
+ * @param maxDepth - The maximum allowed depth.
+ * @returns A function that is an ASTVisitor that validates the maximum depth rule.
  */
-const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({
-  Field(
-    /** The current node being visiting. */
-    node: any,
-    /** The index or key to this node from the parent node or Array. */
-    _key: string | number | undefined,
-    /** The parent immediately above this node, which may be an Array. */
-    _parent: ASTNode | readonly ASTNode[] | undefined,
-    /** The key path to get to this node from the root node. */
-    path: readonly (string | number)[]
-  ): any {
-    const depth = getDepth(path);
-    const maxDepth = 12;
-    if (depth > maxDepth) {
-      const fieldName = node.name.value;
-      context.reportError(
-        new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
-          nodes: node,
-        })
-      );
-    }
-  },
-});
+const MaxDepthRule =
+  (maxDepth: number = DEFAULT_MAX_DEPTH) =>
+  (context: ValidationContext): ASTVisitor => ({
+    Field(
+      /** The current node being visiting. */
+      node: any,
+      /** The index or key to this node from the parent node or Array. */
+      _key: string | number | undefined,
+      /** The parent immediately above this node, which may be an Array. */
+      _parent: ASTNode | readonly ASTNode[] | undefined,
+      /** The key path to get to this node from the root node. */
+      path: readonly (string | number)[]
+    ): any {
+      const depth = getDepth(path);
+      if (depth > maxDepth) {
+        const fieldName = node.name.value;
+        context.reportError(
+          new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
+            nodes: node,
+          })
+        );
+      }
+    },
+  });

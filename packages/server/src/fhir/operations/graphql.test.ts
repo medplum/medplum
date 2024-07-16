@@ -639,6 +639,20 @@ describe('GraphQL', () => {
                                 resource {
                                   ...on ServiceRequest {
                                     id
+                                    basedOn {
+                                      resource {
+                                        ...on ServiceRequest {
+                                          id
+                                          basedOn {
+                                            resource {
+                                              ...on ServiceRequest {
+                                                id
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
                                   }
                                 }
                               }

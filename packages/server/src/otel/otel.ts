@@ -1,5 +1,4 @@
-import opentelemetry, { Attributes, Counter, Histogram, Meter } from '@opentelemetry/api';
-import { Gauge } from '@opentelemetry/sdk-metrics/build/src/types';
+import opentelemetry, { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
 
 // This file includes OpenTelemetry helpers.
 // Note that this file is related but separate from the OpenTelemetry initialization code in instrumentation.ts.
@@ -11,6 +10,11 @@ const counters = new Map<string, Counter>();
 const histograms = new Map<string, Histogram>();
 const gauges = new Map<string, Gauge>();
 
+export type RecordMetricOptions = {
+  attributes?: Attributes;
+  options?: MetricOptions;
+};
+
 function getMeter(): Meter {
   if (!meter) {
     meter = opentelemetry.metrics.getMeter('medplum');
@@ -18,54 +22,54 @@ function getMeter(): Meter {
   return meter;
 }
 
-function getCounter(name: string): Counter {
+export function getCounter(name: string, options?: MetricOptions): Counter {
   let result = counters.get(name);
   if (!result) {
-    result = getMeter().createCounter(name);
+    result = getMeter().createCounter(name, options);
     counters.set(name, result);
   }
   return result;
 }
 
-function getGauge(name: string): Gauge {
-  let result = gauges.get(name);
-  if (!result) {
-    result = getMeter().createGauge(name);
-    gauges.set(name, result);
-  }
-  return result;
-}
-
-export function incrementCounter(name: string, attributes: Attributes): boolean {
+export function incrementCounter(name: string, options?: RecordMetricOptions): boolean {
   if (!isOtelMetricsEnabled()) {
     return false;
   }
-  getCounter(name).add(1, attributes);
+  getCounter(name, options?.options).add(1, options?.attributes);
   return true;
 }
 
-function getHistogram(name: string): Histogram {
+export function getHistogram(name: string, options?: MetricOptions): Histogram {
   let result = histograms.get(name);
   if (!result) {
-    result = getMeter().createHistogram(name);
+    result = getMeter().createHistogram(name, options);
     histograms.set(name, result);
   }
   return result;
 }
 
-export function recordHistogramValue(name: string, value: number, attributes: Attributes): boolean {
+export function recordHistogramValue(name: string, value: number, options?: RecordMetricOptions): boolean {
   if (!isOtelMetricsEnabled()) {
     return false;
   }
-  getHistogram(name).record(value, attributes);
+  getHistogram(name, options?.options).record(value, options?.attributes);
   return true;
 }
 
-export function setGauge(name: string, value: number, attributes?: Attributes): boolean {
+export function getGauge(name: string, options?: MetricOptions): Gauge {
+  let result = gauges.get(name);
+  if (!result) {
+    result = getMeter().createGauge(name, options);
+    gauges.set(name, result);
+  }
+  return result;
+}
+
+export function setGauge(name: string, value: number, options?: RecordMetricOptions): boolean {
   if (!isOtelMetricsEnabled()) {
     return false;
   }
-  getGauge(name).record(value, attributes);
+  getGauge(name, options?.options).record(value, options?.attributes);
   return true;
 }
 

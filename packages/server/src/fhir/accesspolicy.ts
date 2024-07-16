@@ -1,35 +1,29 @@
-import { ProfileResource, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import { ProfileResource, createReference, projectAdminResourceTypes, resolveId } from '@medplum/core';
 import {
   AccessPolicy,
   AccessPolicyIpAccessRule,
   AccessPolicyResource,
-  Login,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
+import { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
 
 /**
- * Creates a repository object for the user login object.
+ * Creates a repository object for the user auth state.
  * Individual instances of the Repository class manage access rights to resources.
  * Login instances contain details about user compartments.
  * This method ensures that the repository is setup correctly.
- * @param login - The user login.
- * @param membership - The active project membership.
- * @param project - The Project the current user is a member of.
+ * @param authState - The authentication state.
  * @param extendedMode - Optional flag to enable extended mode for custom Medplum properties.
  * @returns A repository configured for the login details.
  */
-export async function getRepoForLogin(
-  login: Login,
-  membership: ProjectMembership,
-  project: Project,
-  extendedMode?: boolean
-): Promise<Repository> {
-  const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
+export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
+  const { project, login, membership } = authState;
+  const accessPolicy = await getAccessPolicyForLogin(authState);
 
   let allowedProjects: string[] | undefined;
   if (project.id) {
@@ -51,21 +45,19 @@ export async function getRepoForLogin(
     strictMode: project.strictMode,
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
+    onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
   });
 }
 
 /**
- * Returns the access policy for the login.
- * @param project - The project.
- * @param login - The user login.
- * @param membership - The user membership.
+ * Returns the access policy for the user auth state.
+ * @param authState - The authentication state.
  * @returns The finalized access policy.
  */
-export async function getAccessPolicyForLogin(
-  project: Project,
-  login: Login,
-  membership: ProjectMembership
-): Promise<AccessPolicy | undefined> {
+export async function getAccessPolicyForLogin(authState: AuthState): Promise<AccessPolicy | undefined> {
+  const { project, login } = authState;
+  const membership = authState.onBehalfOfMembership ?? authState.membership;
+
   let accessPolicy = await buildAccessPolicy(membership);
 
   if (login.scope) {
@@ -77,7 +69,7 @@ export async function getAccessPolicyForLogin(
   // Apply project admin access policies
   // This includes ensuring no admin rights for non-admins
   // and restricted access for admins
-  accessPolicy = applyProjectAdminAccessPolicy(project, login, membership, accessPolicy);
+  accessPolicy = applyProjectAdminAccessPolicy(project, membership, accessPolicy);
 
   return accessPolicy;
 }
@@ -184,14 +176,12 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
  * Updates the access policy to include project admin rules.
  * This includes ensuring no admin rights for non-admins and restricted access for admins.
  * @param project - The project.
- * @param login - The user login.
  * @param membership - The active project membership.
  * @param accessPolicy - The existing access policy.
  * @returns Updated access policy with all project admin rules applied.
  */
 function applyProjectAdminAccessPolicy(
   project: Project,
-  login: Login,
   membership: ProjectMembership,
   accessPolicy: AccessPolicy
 ): AccessPolicy {

@@ -555,6 +555,13 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res.status).toBe(200);
+
+    // Resend with verbose=true
+    const res2 = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend?verbose=true`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res2.status).toBe(200);
   });
 
   test('ProjectMembership with null access policy', async () =>

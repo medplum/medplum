@@ -3,6 +3,7 @@ import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import ws from 'ws';
 import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import { CacheEntry } from '../fhir/repo';
@@ -10,6 +11,7 @@ import { getFullUrl } from '../fhir/response';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { verifyJwt } from '../oauth/keys';
+import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
@@ -28,6 +30,9 @@ export interface UnbindFromTokenMsg extends BaseSubscriptionClientMsg {
 }
 
 export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg;
+
+const hostname = os.hostname();
+const METRIC_OPTIONS = { attributes: { hostname } };
 
 const wsToSubLookup = new Map<ws.WebSocket, Set<string>>();
 const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
@@ -55,6 +60,8 @@ function ensureHeartbeatHandler(): void {
       for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
         ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
       }
+      setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
+      setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
     };
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
   }
