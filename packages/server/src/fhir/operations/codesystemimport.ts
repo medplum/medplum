@@ -189,6 +189,6 @@ async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolCli
     ])
       .returnColumn('id')
       .execute(db)
-  )[0];
+  ).rows[0];
   return [newProp.id, isRelationship];
 }
