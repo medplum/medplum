@@ -101,7 +101,6 @@ describe('GraphQL', () => {
         method: 'POST',
         pathname: '/fhir/R4/$graphql',
         query: {},
-        config: {},
         params: {},
         body: {},
       },
@@ -118,7 +117,6 @@ describe('GraphQL', () => {
         method: 'POST',
         pathname: '/fhir/R4/$graphql',
         query: {},
-        config: {},
         params: {},
         body: {
           query: 'This is not valid GraphQL.',
@@ -138,7 +136,6 @@ describe('GraphQL', () => {
         method: 'POST',
         pathname: '/fhir/R4/$graphql',
         query: {},
-        config: {},
         params: {},
         body: {
           query: `{
@@ -162,7 +159,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `{
@@ -185,7 +181,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -216,7 +211,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -246,7 +240,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -273,7 +266,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -300,7 +292,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -327,7 +318,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -354,7 +344,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -386,7 +375,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -418,7 +406,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -464,7 +451,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -506,7 +492,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -540,7 +525,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -575,7 +559,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -662,7 +645,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `{
@@ -714,7 +696,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `{
@@ -769,7 +750,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -811,7 +791,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -852,7 +831,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -894,7 +872,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -936,7 +913,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -982,7 +958,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1026,7 +1001,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1062,7 +1036,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1097,7 +1070,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1141,7 +1113,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1190,7 +1161,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1240,7 +1210,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1271,7 +1240,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1324,7 +1292,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1381,7 +1348,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `
@@ -1417,7 +1383,6 @@ describe('GraphQL', () => {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
       query: {},
-      config: {},
       params: {},
       body: {
         query: `

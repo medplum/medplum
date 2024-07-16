@@ -22,7 +22,7 @@ export type FhirRequest = {
   params: Record<string, string>;
   query: Record<string, string>;
   headers?: IncomingHttpHeaders;
-  config: {
+  config?: {
     graphqlMaxDepth?: number;
   };
 };

@@ -44,7 +44,6 @@ describe('FHIR Router', () => {
       },
       params: {},
       query: {},
-      config: {},
     };
     const [outcome, bundle] = (await router.handleRequest(request, repo)) as [OperationOutcome, Bundle];
     expect(outcome).toMatchObject(allOk);
@@ -63,7 +62,6 @@ describe('FHIR Router', () => {
       body: { resourceType: 'Patient' },
       params: {},
       query: {},
-      config: {},
     };
     const [outcome] = await router.handleRequest(request, repo);
     expect(outcome).toMatchObject(badRequest('Not a bundle'));
@@ -80,7 +78,6 @@ describe('FHIR Router', () => {
         },
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -94,7 +91,6 @@ describe('FHIR Router', () => {
         body: {},
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -108,7 +104,6 @@ describe('FHIR Router', () => {
         body: {},
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -124,7 +119,6 @@ describe('FHIR Router', () => {
         body: {},
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -138,7 +132,6 @@ describe('FHIR Router', () => {
         body: {},
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -157,7 +150,6 @@ describe('FHIR Router', () => {
         },
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -175,7 +167,6 @@ describe('FHIR Router', () => {
         },
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -193,7 +184,6 @@ describe('FHIR Router', () => {
         },
         params: {},
         query: {},
-        config: {},
         headers: { 'if-match': 'W/"test"' },
       },
       repo
@@ -211,7 +201,6 @@ describe('FHIR Router', () => {
         },
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -229,7 +218,6 @@ describe('FHIR Router', () => {
         query: {
           _type: 'Patient,Observation',
         },
-        config: {},
       },
       repo
     );
@@ -252,7 +240,6 @@ describe('FHIR Router', () => {
         query: {
           identifier: 'http://example.com/mrn|' + mrn,
         },
-        config: {},
       },
       repo
     );
@@ -271,7 +258,6 @@ describe('FHIR Router', () => {
         },
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -285,7 +271,6 @@ describe('FHIR Router', () => {
         body: [{ op: 'add', path: '/active', value: true }],
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -300,7 +285,6 @@ describe('FHIR Router', () => {
         body: null,
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
@@ -314,7 +298,6 @@ describe('FHIR Router', () => {
         body: { foo: 'bar' },
         params: {},
         query: {},
-        config: {},
       },
       repo
     );
