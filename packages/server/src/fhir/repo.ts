@@ -97,7 +97,6 @@ import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import {
-  AbstractSelectQuery,
   Condition,
   DeleteQuery,
   Disjunction,
@@ -1116,7 +1115,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * Adds filters to ignore soft-deleted resources.
    * @param builder - The select query builder.
    */
-  addDeletedFilter(builder: AbstractSelectQuery): void {
+  addDeletedFilter(builder: SelectQuery): void {
     builder.where('deleted', '=', false);
   }
 
@@ -1125,7 +1124,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param builder - The select query builder.
    * @param resourceType - The resource type for compartments.
    */
-  addSecurityFilters(builder: AbstractSelectQuery, resourceType: string): void {
+  addSecurityFilters(builder: SelectQuery, resourceType: string): void {
     if (this.isSuperAdmin()) {
       // No compartment restrictions for admins.
       return;
@@ -1139,7 +1138,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * Adds the "project" filter to the select query.
    * @param builder - The select query builder.
    */
-  private addProjectFilters(builder: AbstractSelectQuery): void {
+  private addProjectFilters(builder: SelectQuery): void {
     if (this.context.projects?.length) {
       builder.where('compartments', 'ARRAY_CONTAINS', this.context.projects, 'UUID[]');
     }
@@ -1150,7 +1149,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param builder - The select query builder.
    * @param resourceType - The resource type being searched.
    */
-  private addAccessPolicyFilters(builder: AbstractSelectQuery, resourceType: string): void {
+  private addAccessPolicyFilters(builder: SelectQuery, resourceType: string): void {
     if (!this.context.accessPolicy?.resource) {
       return;
     }
