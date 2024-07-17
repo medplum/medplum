@@ -153,10 +153,46 @@ function isIntrospectionQuery(query: string): boolean {
   return query.includes('query IntrospectionQuery') || query.includes('__schema');
 }
 
+class QueryCostCalculator {
+  private fragments: Record<string, (number | number[] | string)[]>;
+  private currentCost: (number | number[] | string)[];
+  private nestedChain: number[] | undefined;
+  private branchingFactor = 1;
+
+  constructor() {
+    this.fragments = Object.create(null);
+  }
+
+  enterFragment(name: string): void {
+    this.currentCost = [];
+  }
+
+  recordReference(): void {
+    if (this.nestedChain) {
+      this.nestedChain.push(this.branchingFactor);
+      this.branchingFactor = 2;
+    } else {
+      this.currentCost.push(1);
+    }
+  }
+
+  recordSearch(count: number = 20) {
+    if (this.nestedChain) {
+      this.nestedChain.push(this.branchingFactor, 8);
+      this.branchingFactor = count;
+    } else {
+      this.currentCost.push(8);
+    }
+  }
+}
+
 function estimateQueryCost(document: DocumentNode, schema: GraphQLSchema): number {
-  let cost = 0;
+  let queryCost = 0;
 
   const typeInfo = new TypeInfo(schema);
+  const fragmentCosts: Record<string, number> = Object.create(null);
+  let currentFragment: string | undefined;
+  let currentFragmentCost = 0;
   let depth = -1;
 
   visit(document, {
@@ -166,16 +202,43 @@ function estimateQueryCost(document: DocumentNode, schema: GraphQLSchema): numbe
     leave(node) {
       typeInfo.leave(node);
     },
+    FragmentDefinition: {
+      enter(node) {
+        typeInfo.enter(node);
+        currentFragment = node.name.value;
+        currentFragmentCost = 0;
+      },
+      leave(node) {
+        typeInfo.leave(node);
+        if (currentFragment) {
+          fragmentCosts[currentFragment] = currentFragmentCost;
+        }
+        console.log('Fragment', currentFragment, 'costs', currentFragmentCost);
+        currentFragment = undefined;
+        currentFragmentCost = 0;
+      },
+    },
+    // FragmentSpread: {
+    //   enter(node) {},
+    //   leave(node) {},
+    // },
     Field: {
       enter(node, _key, _parent, _path, _ancestors): any {
         depth++;
         typeInfo.enter(node);
+        let cost = 0;
         if (isSearchField(node, typeInfo)) {
           console.log('Found search field', node.name.value, 'at depth', depth);
           console.log(typeInfo.getType());
-          cost += Math.ceil(Math.pow(8, 1.5 * depth));
+          cost = Math.ceil(Math.pow(8, 1.5 * depth));
         } else if (isLinkedResource(node, typeInfo)) {
-          cost += depth;
+          cost = depth;
+        }
+
+        if (currentFragment) {
+          currentFragmentCost += cost;
+        } else {
+          queryCost += cost;
         }
         return undefined;
       },
@@ -186,7 +249,7 @@ function estimateQueryCost(document: DocumentNode, schema: GraphQLSchema): numbe
     },
   });
 
-  return cost;
+  return queryCost;
 }
 
 function isSearchField(node: FieldNode, typeInfo: TypeInfo): boolean {
