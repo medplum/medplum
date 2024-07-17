@@ -1864,6 +1864,34 @@ describe('FHIR Search', () => {
       );
     });
 
+    test('Chained search with modifier', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+        // Create linked resources
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+        const encounter = await repo.createResource<Encounter>({
+          resourceType: 'Encounter',
+          status: 'finished',
+          class: { system: 'http://example.com/appt-type', code },
+        });
+        await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'Throat culture' },
+          subject: createReference(patient),
+          encounter: createReference(encounter),
+        });
+
+        const result = await repo.search(
+          parseSearchRequest(
+            `Patient?_has:Observation:subject:encounter:Encounter.class=${code}&_has:Observation:subject:encounter:Encounter.status:not=cancelled`
+          )
+        );
+        expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+      }));
+
     test('Include references success', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
