@@ -9,8 +9,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import coreData from '../../data/core/patient-intake-questionnaire.json';
 import exampleData from '../../data/example/example-patient-data.json';
 
-// eslint-disable-next-line
-import exampleBotData from '../../data/core/example-bots.json'; // TS2307 error is expected as this file will be generated
+// @ts-expect-error TS2307 error is expected as this file will be generated
+import exampleBotData from '../../data/core/example-bots.json';
 
 type UploadFunction =
   | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
@@ -157,7 +157,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
   for (const entry of botEntries) {
     const botName = (entry?.resource as Bot)?.name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
-    const distBinaryEntry = exampleBotData.entry.find((e) => e.fullUrl === distUrl);
+    const distBinaryEntry = exampleBotData.entry.find((e) => (e as any).fullUrl === distUrl);
     // Decode the base64 encoded code and deploy
     const code = atob(distBinaryEntry?.resource.data as string);
     await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
