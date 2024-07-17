@@ -199,6 +199,7 @@ export interface ReadResourceOptions extends InteractionOptions {
 
 export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
+  subscription?: string;
 }
 
 /**
@@ -917,7 +918,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     const resource = await this.readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource, { interaction: options?.interaction ?? 'update' }, options?.verbose);
+    return addSubscriptionJobs(resource, { interaction: options?.interaction ?? 'update' }, options);
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {

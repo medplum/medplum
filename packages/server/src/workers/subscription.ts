@@ -26,7 +26,7 @@ import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
@@ -206,12 +206,12 @@ async function satisfiesAccessPolicy(
  * not to re-evaluate the subscription.
  * @param resource - The resource that was created or updated.
  * @param context - The background job context.
- * @param verbose - If true, log verbose output.
+ * @param options - The resend subscriptions options.
  */
 export async function addSubscriptionJobs(
   resource: Resource,
   context: BackgroundJobContext,
-  verbose = false
+  options?: ResendSubscriptionsOptions
 ): Promise<void> {
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
@@ -220,7 +220,7 @@ export async function addSubscriptionJobs(
 
   const ctx = tryGetRequestContext();
   const logger = getLogger();
-  const logFn = verbose ? logger.info : logger.debug;
+  const logFn = options?.verbose ? logger.info : logger.debug;
   const systemRepo = getSystemRepo();
   let project: Project | undefined;
   try {
@@ -247,6 +247,10 @@ export async function addSubscriptionJobs(
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
 
   for (const subscription of subscriptions) {
+    if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
+      logFn('Subscription does not match options.subscription');
+      continue;
+    }
     const criteria = await matchesCriteria(resource, subscription, context);
     logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${criteria}`);
     if (criteria) {
@@ -268,7 +272,7 @@ export async function addSubscriptionJobs(
         requestTime,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
-        verbose,
+        verbose: options?.verbose,
       });
     }
   }
