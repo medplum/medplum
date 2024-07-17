@@ -32,7 +32,7 @@ export const extensionURLMapping: Record<string, string> = {
 export const observationCodeMapping: Record<string, CodeableConcept> = {
   housingStatus: { coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }] },
   educationLevel: { coding: [{ code: '82589-3', system: LOINC, display: 'Highest Level of Education' }] },
-  sexualOrientiation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
+  sexualOrientation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
 };
 
 export const observationCategoryMapping: Record<string, CodeableConcept> = {
@@ -105,6 +105,24 @@ export const consentCategoryMapping: Record<string, CodeableConcept> = {
       },
     ],
   },
+  pay: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
+        code: 'pay',
+        display: 'Payment',
+      },
+    ],
+  },
+  med: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
+        code: 'med',
+        display: 'Medical',
+      },
+    ],
+  },
 };
 
 export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
@@ -114,6 +132,15 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
         system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
         code: 'hipaa-npp',
         display: 'HIPAA Notice of Privacy Practices',
+      },
+    ],
+  },
+  hipaaSelfPay: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
+        code: 'hipaa-self-pay',
+        display: 'HIPAA Self-Pay Restriction',
       },
     ],
   },
@@ -279,7 +306,7 @@ export async function addConsent(
   consentGiven: boolean,
   scope: CodeableConcept,
   category: CodeableConcept,
-  policyRule: CodeableConcept,
+  policyRule: CodeableConcept | undefined,
   date: Consent['dateTime'] | undefined
 ): Promise<void> {
   await medplum.createResource({
@@ -386,4 +413,11 @@ export function getGroupRepeatedAnswers(
   }
 
   return groupAnswers;
+}
+
+export function convertDateToDateTime(date: string | undefined): string | undefined {
+  if (!date) {
+    return undefined;
+  }
+  return new Date(date).toISOString();
 }

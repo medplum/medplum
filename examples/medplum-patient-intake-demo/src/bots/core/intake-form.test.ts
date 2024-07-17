@@ -25,6 +25,7 @@ import {
 } from '@medplum/core';
 import {
   consentCategoryMapping,
+  consentPolicyRuleMapping,
   consentScopeMapping,
   extensionURLMapping,
   findQuestionnaireItem,
@@ -266,15 +267,17 @@ describe('Intake form', async () => {
       expect(consents.length).toEqual(4);
 
       expect(consents[0].scope).toEqual(consentScopeMapping.treatment);
-      expect(consents[0].category[0]).toEqual(consentCategoryMapping.nopp);
+      expect(consents[0].category[0]).toEqual(consentCategoryMapping.med);
       expect(consents[0].status).toEqual('active');
 
       expect(consents[1].scope).toEqual(consentScopeMapping.treatment);
-      expect(consents[1].category[0]).toEqual(consentCategoryMapping.nopp);
+      expect(consents[1].category[0]).toEqual(consentCategoryMapping.pay);
+      expect(consents[1].policyRule).toEqual(consentPolicyRuleMapping.hipaaSelfPay);
       expect(consents[1].status).toEqual('active');
 
       expect(consents[2].scope).toEqual(consentScopeMapping.patientPrivacy);
       expect(consents[2].category[0]).toEqual(consentCategoryMapping.nopp);
+      expect(consents[2].policyRule).toEqual(consentPolicyRuleMapping.hipaaNpp);
       expect(consents[2].status).toEqual('active');
 
       expect(consents[3].scope).toEqual(consentScopeMapping.adr);

@@ -7,6 +7,7 @@ import {
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
+  convertDateToDateTime,
   extensionURLMapping,
   getGroupRepeatedAnswers,
   observationCategoryMapping,
@@ -55,7 +56,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   await upsertObservation(
     medplum,
     patient,
-    observationCodeMapping.sexualOrientiation,
+    observationCodeMapping.sexualOrientation,
     observationCategoryMapping.socialHistory,
     answers['sexual-orientation']?.valueCoding
   );
@@ -92,9 +93,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     patient,
     !!answers['consent-for-treatment-signature']?.valueBoolean,
     consentScopeMapping.treatment,
-    consentCategoryMapping.nopp, // FIXME
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['consent-for-treatment-date']?.valueDate
+    consentCategoryMapping.med,
+    undefined,
+    convertDateToDateTime(answers['consent-for-treatment-date']?.valueDate)
   );
 
   await addConsent(
@@ -102,9 +103,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     patient,
     !!answers['agreement-to-pay-for-treatment-help']?.valueBoolean,
     consentScopeMapping.treatment,
-    consentCategoryMapping.nopp, // FIXME
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['agreement-to-pay-for-treatment-date']?.valueDate
+    consentCategoryMapping.pay,
+    consentPolicyRuleMapping.hipaaSelfPay,
+    convertDateToDateTime(answers['agreement-to-pay-for-treatment-date']?.valueDate)
   );
 
   await addConsent(
@@ -114,7 +115,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     consentScopeMapping.patientPrivacy,
     consentCategoryMapping.nopp,
     consentPolicyRuleMapping.hipaaNpp,
-    answers['notice-of-privacy-practices-date']?.valueDate
+    convertDateToDateTime(answers['notice-of-privacy-practices-date']?.valueDate)
   );
 
   await addConsent(
@@ -123,8 +124,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     !!answers['acknowledgement-for-advance-directives-signature']?.valueBoolean,
     consentScopeMapping.adr,
     consentCategoryMapping.acd,
-    consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['acknowledgement-for-advance-directives-date']?.valueDate
+    undefined,
+    convertDateToDateTime(answers['acknowledgement-for-advance-directives-date']?.valueDate)
   );
 
   await medplum.updateResource(patient);
