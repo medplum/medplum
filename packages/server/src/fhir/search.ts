@@ -1152,7 +1152,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       currentResourceType = link.resourceType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = splitN(part, ':', 2);
-      const searchParam = getSearchParameter(currentResourceType, part);
+      const searchParam = getSearchParameter(currentResourceType, code);
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }
