@@ -93,6 +93,10 @@ export function parseSearchArgs(resourceType: ResourceType, source: any, args: R
   return searchRequest;
 }
 
+export function applyMaxCount(searchRequest: SearchRequest, maxCount: number | undefined): void {
+  searchRequest.count = Math.min(searchRequest.count ?? DEFAULT_SEARCH_COUNT, maxCount ?? DEFAULT_MAX_SEARCH_COUNT);
+}
+
 export function graphQLFieldToFhirParam(code: string): string {
   return code.startsWith('_') ? code : code.replaceAll('_', '-');
 }
@@ -125,12 +129,7 @@ export async function resolveBySearch(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'List'.length) as ResourceType;
   const searchRequest = parseSearchArgs(resourceType, source, args);
-
-  searchRequest.count = Math.min(
-    searchRequest.count ?? DEFAULT_SEARCH_COUNT,
-    ctx.config?.graphqlMaxPageSize ?? DEFAULT_MAX_SEARCH_COUNT
-  );
-
+  applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
   const bundle = await ctx.repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
