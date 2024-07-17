@@ -1,14 +1,16 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
+import { Bot, Bundle, BundleEntry, Practitioner, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import coreData from '../../data/core/patient-intake-questionnaire.json';
 import exampleData from '../../data/example/example-patient-data.json';
-import exampleBotData from '../../data/core/example-bots.json';
+
+// eslint-disable-next-line
+import exampleBotData from '../../data/core/example-bots.json'; // TS2307 error is expected as this file will be generated
 
 type UploadFunction =
   | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
@@ -120,7 +122,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
-    (exampleBotData as Bundle).entry?.filter((e) => e.resource?.resourceType === 'Bot') || [];
+    (exampleBotData as Bundle).entry?.filter((e) => ((e as any).resource as Resource)?.resourceType === 'Bot') || [];
   const botNames = botEntries.map((e) => (e.resource as Bot).name ?? '');
   const botIds: Record<string, string> = {};
 
