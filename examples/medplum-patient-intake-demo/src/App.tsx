@@ -33,7 +33,7 @@ export function App(): JSX.Element | null {
     }
     const intakeQuestionnaire = medplum.searchOne('Questionnaire', { name: 'patient-intake' }).read();
     setIntakeQuestionnaire(intakeQuestionnaire);
-  }, [medplum]);
+  }, [medplum, profile]);
 
   if (medplum.isLoading()) {
     return null;
