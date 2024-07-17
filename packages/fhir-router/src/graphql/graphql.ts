@@ -119,10 +119,17 @@ export async function graphqlHandler(
 
   let result: any = introspection && introspectionResults.get(query);
   if (!result) {
+    const contextValue: GraphQLContext = {
+      repo,
+      config: req.config,
+      dataLoader,
+      searchCount: 0,
+    };
+
     result = await execute({
       schema,
       document,
-      contextValue: { repo, dataLoader },
+      contextValue,
       operationName,
       variableValues: variables,
     });

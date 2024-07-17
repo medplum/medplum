@@ -1,5 +1,6 @@
 import {
   badRequest,
+  DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
   FhirFilterComparison,
@@ -64,7 +65,7 @@ import {
 /**
  * Defines the maximum number of resources returned in a single search result.
  */
-const maxSearchResults = 1000;
+const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
 export interface ChainedSearchLink {
   resourceType: string;
