@@ -148,7 +148,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
 }
 
 const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
-  ({ label, resource, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
+  ({ label, resource, active: _active, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
     return (
       <div ref={ref} {...others}>
         <Group wrap="nowrap">
