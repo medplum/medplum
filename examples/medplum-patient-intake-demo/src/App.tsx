@@ -1,12 +1,4 @@
-import {
-  AppShell,
-  ErrorBoundary,
-  Loading,
-  Logo,
-  useMedplum,
-  useMedplumProfile,
-  useSearchResources,
-} from '@medplum/react';
+import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDatabaseImport, IconFilePencil, IconHealthRecognition, IconUser } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
