@@ -157,7 +157,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
   for (const entry of botEntries) {
     const botName = (entry?.resource as Bot)?.name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
-    const distBinaryEntry = exampleBotData.entry.find((e) => (e as any).fullUrl === distUrl);
+    const distBinaryEntry = exampleBotData.entry.find((e) => ((e as any).fullUrl as string) === distUrl);
     // Decode the base64 encoded code and deploy
     const code = atob(distBinaryEntry?.resource.data as string);
     await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
