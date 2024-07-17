@@ -14,7 +14,7 @@ import {
 import { createBundle, createClinicalImpression, createConditions, createObservations } from './charting-utils';
 import { calculateBMI } from './observation-utils';
 
-export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<Bundle> {
+export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<Bundle> {
   // Parse the answers from the QuestionnaireResponse
   const response = event.input;
   const answers = getQuestionnaireAnswers(response);
