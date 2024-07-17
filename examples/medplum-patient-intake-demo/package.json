@@ -1,50 +1,51 @@
 {
-  "name": "medplum-patient-intake-demo",
-  "version": "3.2.1",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "tsc && vite build",
-    "clean": "rimraf dist",
-    "lint": "eslint src/",
-    "dev": "vite",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest watch",
-    "test:coverage": "vitest run --coverage"
-  },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
-  "devDependencies": {
-    "@mantine/core": "7.11.1",
-    "@mantine/hooks": "7.11.1",
-    "@mantine/notifications": "7.11.1",
-    "@medplum/core": "3.2.1",
-    "@medplum/eslint-config": "3.2.1",
-    "@medplum/fhirtypes": "3.2.1",
-    "@medplum/react": "3.2.1",
-    "@tabler/icons-react": "3.9.0",
-    "@types/node": "20.14.10",
-    "@types/react": "18.3.3",
-    "@types/react-dom": "18.3.0",
-    "@vitejs/plugin-react": "4.3.1",
-    "chart.js": "4.4.3",
-    "esbuild": "0.23.0",
-    "postcss": "8.4.39",
-    "postcss-preset-mantine": "1.15.0",
-    "react": "18.2.0",
-    "react-chartjs-2": "5.2.0",
-    "react-dom": "18.2.0",
-    "react-router-dom": "6.24.1",
-    "typescript": "5.5.3",
-    "vite": "5.3.3"
-  }
+    "name": "medplum-patient-intake-demo",
+    "version": "3.2.1",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "tsc && vite build",
+        "build:bots": "npm run clean && tsc --project tsconfig-bots.json && node --no-warnings esbuild-script.mjs && node --loader ts-node/esm src/scripts/deploy-bots.ts",
+        "clean": "rimraf dist",
+        "lint": "eslint src/",
+        "dev": "vite",
+        "preview": "vite preview",
+        "test": "vitest run",
+        "test:watch": "vitest watch",
+        "test:coverage": "vitest run --coverage"
+    },
+    "prettier": {
+        "printWidth": 120,
+        "singleQuote": true,
+        "trailingComma": "es5"
+    },
+    "eslintConfig": {
+        "extends": [
+            "@medplum/eslint-config"
+        ]
+    },
+    "devDependencies": {
+        "@mantine/core": "7.11.1",
+        "@mantine/hooks": "7.11.1",
+        "@mantine/notifications": "7.11.1",
+        "@medplum/core": "3.2.1",
+        "@medplum/eslint-config": "3.2.1",
+        "@medplum/fhirtypes": "3.2.1",
+        "@medplum/react": "3.2.1",
+        "@tabler/icons-react": "3.9.0",
+        "@types/node": "20.14.10",
+        "@types/react": "18.3.3",
+        "@types/react-dom": "18.3.0",
+        "@vitejs/plugin-react": "4.3.1",
+        "chart.js": "4.4.3",
+        "esbuild": "0.23.0",
+        "postcss": "8.4.39",
+        "postcss-preset-mantine": "1.15.0",
+        "react": "18.2.0",
+        "react-chartjs-2": "5.2.0",
+        "react-dom": "18.2.0",
+        "react-router-dom": "6.24.1",
+        "typescript": "5.5.3",
+        "vite": "5.3.3"
+    }
 }

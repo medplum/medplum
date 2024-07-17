@@ -59,7 +59,7 @@ describe('Intake form', async () => {
 
   describe('Update Patient demographic information', async () => {
     test('Patient attributes', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -70,7 +70,7 @@ describe('Intake form', async () => {
     });
 
     test('Race and etinicity', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -89,7 +89,7 @@ describe('Intake form', async () => {
 
   describe('Language information', async () => {
     test('add languages', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -117,7 +117,7 @@ describe('Intake form', async () => {
         ],
       });
 
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -142,7 +142,7 @@ describe('Intake form', async () => {
         ],
       });
 
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -152,7 +152,7 @@ describe('Intake form', async () => {
 
   describe('Veteran status', async () => {
     test('sets as veteran', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -170,7 +170,7 @@ describe('Intake form', async () => {
         ],
       });
 
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -180,7 +180,7 @@ describe('Intake form', async () => {
 
   describe('Observations', async () => {
     test('Sexual orientation', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -193,7 +193,7 @@ describe('Intake form', async () => {
     });
 
     test('Housing status', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -206,7 +206,7 @@ describe('Intake form', async () => {
     });
 
     test('Education Level', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -221,7 +221,7 @@ describe('Intake form', async () => {
 
   describe('Coverage', async () => {
     test('adds coverage resources', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -239,7 +239,7 @@ describe('Intake form', async () => {
     });
 
     test('upsert coverage resources to ensure there is only one coverage resource per payor', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -247,7 +247,7 @@ describe('Intake form', async () => {
 
       expect(coverages.length).toEqual(2);
 
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       const updatedCoverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
 
@@ -257,7 +257,7 @@ describe('Intake form', async () => {
 
   describe('Consents', async () => {
     test('adds all consent resources', async () => {
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 
@@ -288,7 +288,7 @@ describe('Intake form', async () => {
 
       await medplum.updateResource(response);
 
-      await handler({ bot, input: response, contentType, secrets: {} }, medplum);
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
 

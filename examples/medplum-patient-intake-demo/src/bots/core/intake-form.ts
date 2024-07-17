@@ -15,32 +15,31 @@ import {
   upsertObservation,
 } from './intake-utils';
 
-export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: MedplumClient): Promise<void> {
+export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   const response = event.input;
 
-  const questionnaire = await medplum.readResource('Questionnaire', (response.questionnaire as string).split('/')[1]);
   const answers = getQuestionnaireAnswers(response);
 
   if (!response.subject) {
-    return;
+    throw new Error('Missing subject');
   }
 
   const patient = await medplum.readReference(response.subject as Reference<Patient>);
 
   if (!patient) {
-    return;
+    throw new Error('Patient not found');
   }
 
   // Handle demographic information
 
-  const newName = {
-    given: [answers['first-name'].valueString, answers['middle-name'].valueString],
-    family: answers['last-name'].valueString,
-  } as HumanName;
-
-  patient.name = [newName];
-  patient.birthDate = answers['dob'].valueDate;
-  patient.gender = answers['gender-identity'].valueCoding?.code as Patient['gender'];
+  patient.name = [
+    {
+      given: [answers['first-name']?.valueString, answers['middle-name']?.valueString],
+      family: answers['last-name']?.valueString,
+    } as HumanName,
+  ];
+  patient.birthDate = answers['dob']?.valueDate || patient.birthDate;
+  patient.gender = (answers['gender-identity']?.valueCoding?.code as Patient['gender']) || patient.gender;
 
   setExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race']);
   setExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity']);
@@ -48,14 +47,8 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
 
   // Handle language preferences
 
-  const languagesSpoken = answers['languages-spoken'];
-  if (languagesSpoken?.valueCoding) {
-    addLanguage(patient, languagesSpoken.valueCoding);
-  }
-  const preferredLanguage = answers['preferred-language'];
-  if (preferredLanguage?.valueCoding) {
-    addLanguage(patient, preferredLanguage.valueCoding, true);
-  }
+  addLanguage(patient, answers['languages-spoken']?.valueCoding);
+  addLanguage(patient, answers['preferred-language']?.valueCoding, true);
 
   // Handle observations
 
@@ -64,7 +57,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     observationCodeMapping.sexualOrientiation,
     observationCategoryMapping.socialHistory,
-    answers['sexual-orientation'].valueCoding
+    answers['sexual-orientation']?.valueCoding
   );
 
   await upsertObservation(
@@ -72,7 +65,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     observationCodeMapping.housingStatus,
     observationCategoryMapping.sdoh,
-    answers['housing-status'].valueCoding
+    answers['housing-status']?.valueCoding
   );
 
   await upsertObservation(
@@ -80,9 +73,12 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     observationCodeMapping.educationLevel,
     observationCategoryMapping.sdoh,
-    answers['education-level'].valueCoding
+    answers['education-level']?.valueCoding
   );
 
+  // Handle coverage
+
+  const questionnaire = await medplum.readResource('Questionnaire', (response.questionnaire as string).split('/')[1]);
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
   for (const provider of insuranceProviders) {
@@ -98,7 +94,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.treatment,
     consentCategoryMapping.nopp, // FIXME
     consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['consent-for-treatment-date'].valueDate
+    answers['consent-for-treatment-date']?.valueDate
   );
 
   await addConsent(
@@ -108,7 +104,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.treatment,
     consentCategoryMapping.nopp, // FIXME
     consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['agreement-to-pay-for-treatment-date'].valueDate
+    answers['agreement-to-pay-for-treatment-date']?.valueDate
   );
 
   await addConsent(
@@ -118,7 +114,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.patientPrivacy,
     consentCategoryMapping.nopp,
     consentPolicyRuleMapping.hipaaNpp,
-    answers['notice-of-privacy-practices-date'].valueDate
+    answers['notice-of-privacy-practices-date']?.valueDate
   );
 
   await addConsent(
@@ -128,7 +124,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     consentScopeMapping.adr,
     consentCategoryMapping.acd,
     consentPolicyRuleMapping.hipaaNpp, // FIXME
-    answers['acknowledgement-for-advance-directives-date'].valueDate
+    answers['acknowledgement-for-advance-directives-date']?.valueDate
   );
 
   await medplum.updateResource(patient);
