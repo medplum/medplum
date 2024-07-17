@@ -628,7 +628,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     await this.handleBinaryUpdate(existing, result);
     await this.handleStorage(result, create);
-    await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
+    await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
   }
@@ -918,7 +918,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     const resource = await this.readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource, { interaction: options?.interaction ?? 'update' }, options);
+    // return addSubscriptionJobs(resource, { interaction: options?.interaction ?? 'update' }, options);
+    const previousVersion = undefined;
+    return addSubscriptionJobs(resource, previousVersion, { interaction: options?.interaction ?? 'update' }, options);
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
@@ -975,7 +977,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
       });
 
-      await addSubscriptionJobs(resource, { interaction: 'delete' });
+      await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
     } catch (err) {
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
