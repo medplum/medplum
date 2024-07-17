@@ -122,7 +122,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
-    (exampleBotData as Bundle).entry?.filter((e) => ((e as any).resource as Resource)?.resourceType === 'Bot') || [];
+    (exampleBotData as Bundle).entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
   const botNames = botEntries.map((e) => (e.resource as Bot).name ?? '');
   const botIds: Record<string, string> = {};
 
@@ -157,7 +157,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
   for (const entry of botEntries) {
     const botName = (entry?.resource as Bot)?.name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
-    const distBinaryEntry = exampleBotData.entry.find((e) => ((e as any).fullUrl as string) === distUrl);
+    const distBinaryEntry = exampleBotData.entry.find((e: any) => e.fullUrl === distUrl);
     // Decode the base64 encoded code and deploy
     const code = atob(distBinaryEntry?.resource.data as string);
     await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
