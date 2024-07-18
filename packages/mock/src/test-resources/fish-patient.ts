@@ -8,7 +8,7 @@ export type ProfileStructureDefinition = StructureDefinition & {
 
 export const BlinkyTheFish: Patient = {
   resourceType: 'Patient',
-  id: 'Blinky',
+  id: 'blinky',
   meta: {
     profile: ['http://example.org/fhir/fish/StructureDefinition/fish-patient'],
   },

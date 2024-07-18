@@ -1,6 +1,6 @@
 import {
-  Bundle,
   Attachment,
+  Bundle,
   CodeableConcept,
   DeviceDeviceName,
   Observation,
@@ -182,6 +182,15 @@ describe('Core Utils', () => {
     expect(
       getDisplayString({
         resourceType: 'MedicationRequest',
+        id: '123',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/123' },
+      })
+    ).toEqual('MedicationRequest/123');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationRequest',
         status: 'active',
         intent: 'order',
         subject: { reference: 'Patient/123' },
@@ -189,6 +198,25 @@ describe('Core Utils', () => {
       })
     ).toEqual('foo');
     expect(getDisplayString({ resourceType: 'PractitionerRole', code: [{ text: 'foo' }] })).toEqual('foo');
+    expect(
+      getDisplayString({
+        resourceType: 'Subscription',
+        id: '123',
+        status: 'active',
+        reason: 'Test',
+        criteria: '',
+        channel: { type: 'rest-hook' },
+      })
+    ).toEqual('Subscription/123');
+    expect(
+      getDisplayString({
+        resourceType: 'Subscription',
+        status: 'active',
+        reason: 'Test',
+        criteria: 'Observation?code=123',
+        channel: { type: 'rest-hook' },
+      })
+    ).toEqual('Observation?code=123');
   });
 
   const EMPTY = [true, false];
