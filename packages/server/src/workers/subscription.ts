@@ -32,7 +32,7 @@ import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership, getPreviousResource, isJobSuccessful } from './utils';
+import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -205,11 +205,13 @@ async function satisfiesAccessPolicy(
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the subscription.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource.
  * @param context - The background job context.
  * @param options - The resend subscriptions options.
  */
 export async function addSubscriptionJobs(
   resource: Resource,
+  previousVersion: Resource | undefined,
   context: BackgroundJobContext,
   options?: ResendSubscriptionsOptions
 ): Promise<void> {
@@ -251,7 +253,7 @@ export async function addSubscriptionJobs(
       logFn('Subscription does not match options.subscription');
       continue;
     }
-    const criteria = await matchesCriteria(resource, subscription, context);
+    const criteria = await matchesCriteria(resource, previousVersion, subscription, context);
     logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${criteria}`);
     if (criteria) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
@@ -285,16 +287,19 @@ export async function addSubscriptionJobs(
 /**
  * Determines if the resource matches the subscription criteria.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource.
  * @param subscription - The subscription.
  * @param context - Background job context.
  * @returns True if the resource matches the subscription criteria.
  */
 async function matchesCriteria(
   resource: Resource,
+  previousVersion: Resource | undefined,
   subscription: Subscription,
   context: BackgroundJobContext
 ): Promise<boolean> {
   const ctx = getRequestContext();
+  const getPreviousResource = async (): Promise<Resource | undefined> => previousVersion;
   return resourceMatchesSubscriptionCriteria({
     resource,
     subscription,
