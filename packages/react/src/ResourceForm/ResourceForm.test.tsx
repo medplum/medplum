@@ -169,6 +169,29 @@ describe('ResourceForm', () => {
     expect(result.valueString).toBe('hello');
   });
 
+  test('Patch', async () => {
+    const onSubmit = jest.fn();
+    const onPatch = jest.fn();
+
+    await setup({
+      defaultValue: {
+        resourceType: 'Practitioner',
+        id: 'xyz',
+      },
+      onSubmit,
+      onPatch,
+    });
+
+    expect(screen.getByText('Patch')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Patch'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onPatch).toHaveBeenCalled();
+  });
+
   test('Delete', async () => {
     const onSubmit = jest.fn();
     const onDelete = jest.fn();

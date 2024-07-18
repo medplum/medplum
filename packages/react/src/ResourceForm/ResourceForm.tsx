@@ -9,15 +9,16 @@ import {
 } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
+import { IconAlertCircle } from '@tabler/icons-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
-import { IconAlertCircle } from '@tabler/icons-react';
 
 export interface ResourceFormProps {
   readonly defaultValue: Partial<Resource> | Reference;
   readonly outcome?: OperationOutcome;
   readonly onSubmit: (resource: Resource) => void;
+  readonly onPatch?: (resource: Resource) => void;
   readonly onDelete?: (resource: Resource) => void;
   readonly schemaName?: string;
   /** (optional) URL of the resource profile used to display the form. Takes priority over schemaName. */
@@ -127,6 +128,17 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       />
       <Group justify="flex-end" mt="xl">
         <Button type="submit">OK</Button>
+        {props.onPatch && (
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => {
+              (props.onPatch as (resource: Resource) => void)(value);
+            }}
+          >
+            Patch
+          </Button>
+        )}
         {props.onDelete && (
           <Button
             variant="outline"

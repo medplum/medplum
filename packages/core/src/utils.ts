@@ -139,16 +139,14 @@ export function getDisplayString(resource: Resource): string {
       return deviceName;
     }
   }
-  if (resource.resourceType === 'MedicationRequest') {
-    const code = resource.medicationCodeableConcept;
-    if (code) {
-      return formatCodeableConcept(code);
-    }
+  if (resource.resourceType === 'MedicationRequest' && resource.medicationCodeableConcept) {
+    return formatCodeableConcept(resource.medicationCodeableConcept);
   }
-  if (resource.resourceType === 'User') {
-    if (resource.email) {
-      return resource.email;
-    }
+  if (resource.resourceType === 'Subscription' && resource.criteria) {
+    return resource.criteria;
+  }
+  if (resource.resourceType === 'User' && resource.email) {
+    return resource.email;
   }
   if ('name' in resource && resource.name && typeof resource.name === 'string') {
     return resource.name;
