@@ -39,6 +39,7 @@ import { FhirRepository, RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import {
+  applyMaxCount,
   buildSearchArgs,
   getDepth,
   GraphQLContext,
@@ -317,11 +318,15 @@ async function resolveByConnectionApi(
   if (isFieldRequested(info, 'count')) {
     searchRequest.total = 'accurate';
   }
+  if (!isFieldRequested(info, 'edges')) {
+    searchRequest.count = 0;
+  }
+  applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
   const bundle = await ctx.repo.search(searchRequest);
   return {
     count: bundle.total,
-    offset: searchRequest.offset || 0,
-    pageSize: searchRequest.count || DEFAULT_SEARCH_COUNT,
+    offset: searchRequest.offset ?? 0,
+    pageSize: searchRequest.count ?? DEFAULT_SEARCH_COUNT,
     edges: bundle.entry?.map((e) => ({
       mode: e.search?.mode,
       score: e.search?.score,

@@ -1133,6 +1133,33 @@ describe('GraphQL', () => {
     });
   });
 
+  test('Connection API without edges field', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        PatientConnection(name: "Smith") {
+          count
+        }
+      }
+    `,
+      },
+    };
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.PatientConnection).toBeDefined();
+    expect(data.PatientConnection.count).toBe(1);
+    expect(data.PatientConnection.edges).toBeUndefined();
+  });
+
   test('Create Patient Record', async () => {
     const request: FhirRequest = {
       method: 'POST',
