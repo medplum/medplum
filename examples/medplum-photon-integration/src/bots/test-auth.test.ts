@@ -1,5 +1,4 @@
 import { handler } from './test-auth';
-import { test } from 'vitest';
 import { allOk } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 
