@@ -4,6 +4,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
+  Logger,
   LRUCache,
   normalizeOperationOutcome,
   OperationOutcomeError,
@@ -11,6 +12,7 @@ import {
 import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
 import {
+  ArgumentNode,
   ASTNode,
   ASTVisitor,
   DocumentNode,
@@ -30,13 +32,12 @@ import {
   GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString,
-  GraphQLUnionType,
+  Kind,
+  OperationDefinitionNode,
   parse,
   specifiedRules,
-  TypeInfo,
   validate,
   ValidationContext,
-  visit,
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
 import { FhirRepository, RepositoryMode } from '../repo';
@@ -104,7 +105,7 @@ export async function graphqlHandler(
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth)];
+  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth), QueryCostRule(router)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
@@ -115,11 +116,6 @@ export async function graphqlHandler(
     return [forbidden];
   }
 
-  const queryCost = estimateQueryCost(document, schema);
-  console.log('QUERY COMPLEXITY:', queryCost);
-  if (queryCost > 100) {
-    return [badRequest('Query too complex')];
-  }
   if (includesMutations(query)) {
     repo.setMode(RepositoryMode.WRITER);
   }
@@ -151,115 +147,6 @@ export async function graphqlHandler(
  */
 function isIntrospectionQuery(query: string): boolean {
   return query.includes('query IntrospectionQuery') || query.includes('__schema');
-}
-
-class QueryCostCalculator {
-  private fragments: Record<string, (number | number[] | string)[]>;
-  private currentCost: (number | number[] | string)[];
-  private nestedChain: number[] | undefined;
-  private branchingFactor = 1;
-
-  constructor() {
-    this.fragments = Object.create(null);
-  }
-
-  enterFragment(name: string): void {
-    this.currentCost = [];
-  }
-
-  recordReference(): void {
-    if (this.nestedChain) {
-      this.nestedChain.push(this.branchingFactor);
-      this.branchingFactor = 2;
-    } else {
-      this.currentCost.push(1);
-    }
-  }
-
-  recordSearch(count: number = 20) {
-    if (this.nestedChain) {
-      this.nestedChain.push(this.branchingFactor, 8);
-      this.branchingFactor = count;
-    } else {
-      this.currentCost.push(8);
-    }
-  }
-}
-
-function estimateQueryCost(document: DocumentNode, schema: GraphQLSchema): number {
-  let queryCost = 0;
-
-  const typeInfo = new TypeInfo(schema);
-  const fragmentCosts: Record<string, number> = Object.create(null);
-  let currentFragment: string | undefined;
-  let currentFragmentCost = 0;
-  let depth = -1;
-
-  visit(document, {
-    enter(node) {
-      typeInfo.enter(node);
-    },
-    leave(node) {
-      typeInfo.leave(node);
-    },
-    FragmentDefinition: {
-      enter(node) {
-        typeInfo.enter(node);
-        currentFragment = node.name.value;
-        currentFragmentCost = 0;
-      },
-      leave(node) {
-        typeInfo.leave(node);
-        if (currentFragment) {
-          fragmentCosts[currentFragment] = currentFragmentCost;
-        }
-        console.log('Fragment', currentFragment, 'costs', currentFragmentCost);
-        currentFragment = undefined;
-        currentFragmentCost = 0;
-      },
-    },
-    // FragmentSpread: {
-    //   enter(node) {},
-    //   leave(node) {},
-    // },
-    Field: {
-      enter(node, _key, _parent, _path, _ancestors): any {
-        depth++;
-        typeInfo.enter(node);
-        let cost = 0;
-        if (isSearchField(node, typeInfo)) {
-          console.log('Found search field', node.name.value, 'at depth', depth);
-          console.log(typeInfo.getType());
-          cost = Math.ceil(Math.pow(8, 1.5 * depth));
-        } else if (isLinkedResource(node, typeInfo)) {
-          cost = depth;
-        }
-
-        if (currentFragment) {
-          currentFragmentCost += cost;
-        } else {
-          queryCost += cost;
-        }
-        return undefined;
-      },
-      leave(node) {
-        typeInfo.leave(node);
-        depth--;
-      },
-    },
-  });
-
-  return queryCost;
-}
-
-function isSearchField(node: FieldNode, typeInfo: TypeInfo): boolean {
-  const fieldType = typeInfo.getType();
-  return Boolean(node.arguments?.length && fieldType instanceof GraphQLList);
-}
-
-function isLinkedResource(node: FieldNode, typeInfo: TypeInfo): boolean {
-  const fieldType = typeInfo.getType();
-  return fieldType instanceof GraphQLUnionType && fieldType.name === 'ResourceList';
 }
 
 /**
@@ -570,3 +457,117 @@ const MaxDepthRule =
       }
     },
   });
+
+const DEFAULT_MAX_COST = 10_000;
+
+type QueryCostRuleOptions = {
+  logger?: Logger;
+  maxCost?: number;
+  debug?: boolean;
+};
+
+const QueryCostRule =
+  (router: FhirRouter, options?: QueryCostRuleOptions) =>
+  (context: ValidationContext): ASTVisitor =>
+    new QueryCostVisitor(context, router, options) as ASTVisitor;
+
+class QueryCostVisitor {
+  private context: ValidationContext;
+  private maxCost: number;
+  private debug: boolean;
+  private router: FhirRouter;
+
+  constructor(context: ValidationContext, router: FhirRouter, options?: QueryCostRuleOptions) {
+    this.context = context;
+    this.maxCost = options?.maxCost ?? DEFAULT_MAX_COST;
+    this.debug = options?.debug ?? false;
+    this.router = router;
+  }
+
+  OperationDefinition(node: OperationDefinitionNode): void {
+    let cost = 0;
+    for (const child of node.selectionSet.selections) {
+      const startTime = process.hrtime.bigint();
+      const childCost = this.calculateCost(child);
+      cost += childCost;
+      this.log(child.kind, 'node has final cost', childCost, '(', process.hrtime.bigint() - startTime, 'ns)');
+
+      if (cost > this.maxCost) {
+        // this.context.reportError(
+        //   new GraphQLError('Query too complex', {
+        //     extensions: { cost, limit: this.maxCost },
+        //   })
+        // );
+        this.router.log('warn', 'GraphQL query too complex', {
+          cost,
+          limit: this.maxCost,
+          query: node.loc?.source?.body,
+        });
+      }
+    }
+  }
+
+  private calculateCost(...nodes: ASTNode[]): number {
+    let cost = 0;
+    for (const node of nodes) {
+      if (node.kind === Kind.FIELD && node.selectionSet) {
+        let baseCost = 0;
+        let branchingFactor = 1;
+        if (isSearchField(node)) {
+          this.log('Found search field', node.name.value);
+          baseCost = 8;
+          branchingFactor = this.getCount(node.arguments) ?? 20;
+        } else if (isLinkedResource(node)) {
+          this.log('Found linked resource');
+          baseCost = 1;
+          branchingFactor = 2;
+        }
+
+        const fieldCost = baseCost + branchingFactor * this.calculateCost(...node.selectionSet.selections);
+        if (fieldCost) {
+          this.log('Field', node.name.value, 'costs', fieldCost);
+        }
+        cost += fieldCost;
+      } else if (node.kind === Kind.FRAGMENT_SPREAD) {
+        const fragment = this.context.getFragment(node.name.value);
+        if (fragment) {
+          const fragmentCost = this.calculateCost(...fragment.selectionSet.selections);
+          this.log('Fragment', node.name.value, 'costs', fragmentCost);
+          cost += fragmentCost;
+        }
+      } else if (node.kind === Kind.INLINE_FRAGMENT) {
+        const fragmentCost = this.calculateCost(...node.selectionSet.selections);
+        this.log('Inline fragment on', node.typeCondition?.name.value, 'costs', fragmentCost);
+        cost += fragmentCost;
+      }
+
+      if (cost > this.maxCost) {
+        return cost; // Short circuit return, no need to keep processing
+      }
+    }
+
+    return cost;
+  }
+
+  getCount(args?: readonly ArgumentNode[]): number | undefined {
+    const countArg = args?.find((arg) => arg.name.value === '_count');
+    if (countArg?.value.kind === Kind.INT) {
+      return parseInt(countArg.value.value, 10);
+    }
+    return undefined;
+  }
+
+  log(...args: any[]): void {
+    if (this.debug) {
+      console.log(...args);
+    }
+  }
+}
+
+function isSearchField(node: FieldNode): boolean {
+  return node.name.value.endsWith('List');
+}
+
+function isLinkedResource(node: FieldNode): boolean {
+  return node.name.value === 'resource';
+}
