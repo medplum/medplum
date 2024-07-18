@@ -12,9 +12,7 @@
         "resourceType": "Patient",
         "name": [
           {
-            "given": [
-              "Homer"
-            ],
+            "given": ["Homer"],
             "family": "Simpson"
           }
         ],
