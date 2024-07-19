@@ -92,7 +92,7 @@ export async function handler(_medplum: MedplumClient, event: BotEvent<Patient>)
     variables.address = address;
   }
 
-  const body = JSON.stringify(variables);
+  const body = JSON.stringify({ query, variables });
 
   try {
     const response = await fetch('https://api.neutron.health/graphql', {
