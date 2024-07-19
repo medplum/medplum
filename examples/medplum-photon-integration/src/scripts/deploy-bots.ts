@@ -15,6 +15,10 @@ const Bots: BotDescription[] = [
     src: 'src/bots/test-auth.ts',
     dist: 'dist/test-auth.js',
   },
+  {
+    src: 'src/bots/sync-patient.ts',
+    dist: 'dist/sync-patient.js',
+  },
 ];
 
 async function main(): Promise<void> {
