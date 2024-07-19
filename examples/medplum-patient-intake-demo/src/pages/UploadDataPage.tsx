@@ -8,8 +8,6 @@ import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import coreData from '../../data/core/patient-intake-questionnaire.json';
 import exampleData from '../../data/example/example-patient-data.json';
-
-// @ts-expect-error TS2307 error is expected as this file will be generated
 import exampleBotData from '../../data/core/example-bots.json';
 
 type UploadFunction =
