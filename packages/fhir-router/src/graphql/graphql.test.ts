@@ -606,19 +606,15 @@ describe('GraphQL', () => {
         query: `
         {
           CareTeamList {
-            participant { member { ... on CareTeam {
-              participant { member { ... on CareTeam {
-                participant { member { ... on CareTeam {
-                  participant { member { ... on CareTeam {
-                    participant { member { ... on CareTeam {
-                      participant { member { ... on CareTeam {
-                        identifier {system value}
-                      }}}
-                    }}}
-                  }}}
-                }}}
-              }}}
-            }}}
+            participant { member { resource { ... on CareTeam {
+              participant { member { resource { ... on CareTeam {
+                participant { member { resource { ... on CareTeam {
+                  participant { member { resource { ... on CareTeam {
+                    identifier {system value}
+                  }}}}
+                }}}}
+              }}}}
+            }}}}
           }
         }
     `,
@@ -677,6 +673,38 @@ describe('GraphQL', () => {
 
     const res3 = await graphqlHandler(request3, repo, fhirRouter);
     expect(res3[0]).toMatchObject(allOk);
+
+    // Fragment depth is included
+    const request4: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+        {
+          CareTeamList {
+            ...CareTeamFields
+          }
+
+          fragment CareTeamFields {
+            participant { member { resource { ... on CareTeam {
+              participant { member { resource { ... on CareTeam {
+                participant { member { resource { ... on CareTeam {
+                  participant { member { resource { ... on CareTeam {
+                    identifier {system value}
+                  }}}}
+                }}}}
+              }}}}
+            }}}}
+          }
+        }
+    `,
+      },
+    };
+
+    const res4 = await graphqlHandler(request4, repo, fhirRouter);
+    expect(res4[0].issue?.[0]?.details?.text).toEqual('Field "system" exceeds max depth (depth=14, max=12)');
   });
 
   test('Max depth override', async () => {

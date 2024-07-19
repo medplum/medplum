@@ -474,6 +474,12 @@ class MaxDepthVisitor {
     }
   }
 
+  /**
+   * Returns the depth of the GraphQL node in a query.
+   * We use field depth as the representation of depth: the number of concrete fields (not counting fragment expansions)
+   * @param nodes - The AST nodes.
+   * @returns The maximum "depth" of the nodes.
+   */
   private getDepth(...nodes: ASTNode[]): DepthRecord {
     let deepest: DepthRecord = { depth: -1 };
     for (const node of nodes) {
