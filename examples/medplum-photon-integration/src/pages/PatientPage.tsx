@@ -1,7 +1,7 @@
 import { Loader, Tabs } from '@mantine/core';
 import { capitalize, getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { Document, useMedplum, useResource } from '@medplum/react';
+import { Document, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PatientHistory } from '../components/PatientHistory';
@@ -14,7 +14,6 @@ export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams();
   const medplum = useMedplum();
-  // const patient = useResource<Patient>({ reference: `Patient/${id}` });
   const [patient, setPatient] = useState<Patient>();
 
   useEffect(() => {

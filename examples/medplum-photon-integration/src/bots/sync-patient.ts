@@ -30,7 +30,7 @@ interface PhotonAddress {
   postalCode: string;
 }
 
-export async function handler(_medplum: MedplumClient, event: BotEvent<Patient>) {
+export async function handler(_medplum: MedplumClient, event: BotEvent<Patient>): Promise<string> {
   const patient = event.input;
   const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
   const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
@@ -116,7 +116,7 @@ export async function handler(_medplum: MedplumClient, event: BotEvent<Patient>)
   }
 }
 
-async function handlePhotonAuth(clientId?: string, clientSecret?: string) {
+async function handlePhotonAuth(clientId?: string, clientSecret?: string): Promise<string> {
   if (!clientId || !clientSecret) {
     throw new Error('Unable to authenticate. Invalid client ID or secret.');
   }
@@ -173,7 +173,7 @@ function getTelecom(system: ContactPoint['system'], person?: Patient): string | 
   }
 
   const telecom = person.telecom?.find((comm) => comm.system === system);
-  let telecomValue = telecom?.value;
+  const telecomValue = telecom?.value;
 
   if (!telecomValue && system === 'phone') {
     throw new Error('Patient phone number is required to sync to Photon Health');
@@ -184,7 +184,7 @@ function getTelecom(system: ContactPoint['system'], person?: Patient): string | 
   }
 
   if (system === 'phone') {
-    return '+1' + telecomValue;
+    return telecomValue.slice(0, 1) === '+1' ? telecomValue : '+1' + telecomValue;
   } else {
     return telecomValue;
   }

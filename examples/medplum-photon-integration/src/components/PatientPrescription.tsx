@@ -1,10 +1,10 @@
 import { Button, Group, Title } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Identifier, Patient } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
-import { useParams } from 'react-router-dom';
-import { notifications } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useState } from 'react';
 
 interface PatientPrescriptionProps {
   patient: Patient;
@@ -13,6 +13,9 @@ interface PatientPrescriptionProps {
 
 export function PatientPrescription({ patient, onPatientChange }: PatientPrescriptionProps): JSX.Element {
   const medplum = useMedplum();
+
+  const patientSynced = patient.identifier?.find((id) => id.system === 'https://neutron.health/patients');
+  const [syncDisabled, setSyncDisabled] = useState<boolean>(!!patientSynced);
 
   async function testConnection(): Promise<void> {
     try {
@@ -43,12 +46,13 @@ export function PatientPrescription({ patient, onPatientChange }: PatientPrescri
         },
         'application/fhir+json'
       );
-      updatePatient(patient, photonPatientId);
+      await updatePatient(patient, photonPatientId);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Patient synced',
       });
+      setSyncDisabled(true);
     } catch (err) {
       notifications.show({
         color: 'red',
@@ -88,7 +92,7 @@ export function PatientPrescription({ patient, onPatientChange }: PatientPrescri
       <Group justify="space-between" mb="md">
         <Title order={3}>Prescription Management</Title>
         <Button onClick={testConnection}>Test Connection</Button>
-        <Button onClick={syncPatient}>Sync Patient to Photon Health</Button>
+        {syncDisabled ? null : <Button onClick={syncPatient}>Sync Patient to Photon Health</Button>}
       </Group>
       <photon-prescribe-workflow />
     </Document>
