@@ -25,7 +25,7 @@ export const payorOrganization2: Organization = {
   name: 'Second Insurance Provider',
 };
 
-export const intakeQuestionnaire: Questionnaire = coreBundle.entry[0].resource as Questionnaire;
+export const intakeQuestionnaire: Questionnaire = coreBundle.entry[1].resource as Questionnaire;
 intakeQuestionnaire.id = 'intake-questionnaire-id';
 
 export const intakeResponse: QuestionnaireResponse = {
@@ -256,6 +256,28 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueBoolean: true,
+            },
+          ],
+        },
+        {
+          linkId: 'pregnancy-status',
+          text: 'Pregnancy Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '77386006',
+                display: 'Pregnancy (finding)',
+              },
+            },
+          ],
+        },
+        {
+          linkId: 'estimated-delivery-date',
+          text: 'Estimated Delivery Date',
+          answer: [
+            {
+              valueDate: '2025-04-01',
             },
           ],
         },

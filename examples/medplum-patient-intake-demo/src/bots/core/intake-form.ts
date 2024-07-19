@@ -58,6 +58,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     patient,
     observationCodeMapping.sexualOrientation,
     observationCategoryMapping.socialHistory,
+    'valueCodeableConcept',
     answers['sexual-orientation']?.valueCoding
   );
 
@@ -66,6 +67,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     patient,
     observationCodeMapping.housingStatus,
     observationCategoryMapping.sdoh,
+    'valueCodeableConcept',
     answers['housing-status']?.valueCoding
   );
 
@@ -74,7 +76,26 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     patient,
     observationCodeMapping.educationLevel,
     observationCategoryMapping.sdoh,
+    'valueCodeableConcept',
     answers['education-level']?.valueCoding
+  );
+
+  await upsertObservation(
+    medplum,
+    patient,
+    observationCodeMapping.pregnancyStatus,
+    observationCategoryMapping.socialHistory,
+    'valueCodeableConcept',
+    answers['pregnancy-status']?.valueCoding
+  );
+
+  await upsertObservation(
+    medplum,
+    patient,
+    observationCodeMapping.estimatedDeliveryDate,
+    observationCategoryMapping.socialHistory,
+    'valueDateTime',
+    { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date'].valueDate) }
   );
 
   // Handle coverage
