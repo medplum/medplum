@@ -1,14 +1,6 @@
-import {
-  AppShell,
-  ErrorBoundary,
-  Loading,
-  Logo,
-  useMedplum,
-  useMedplumProfile,
-  useSearchResources,
-} from '@medplum/react';
+import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDatabaseImport, IconFilePencil, IconHealthRecognition, IconUser } from '@tabler/icons-react';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { IntakeFormPage } from './pages/IntakeFormPage';
 import { IntakeResponsePage } from './pages/IntakeResponsePage';
@@ -20,18 +12,24 @@ import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
 import { IntakeQuestionnaireContext } from './Questionnaire.context';
+import { Questionnaire } from '@medplum/fhirtypes';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const [intakeQuestionnaire, setIntakeQuestionnaire] = useState<Questionnaire | undefined>(undefined);
 
-  const [questionnaires] = useSearchResources('Questionnaire', { name: 'patient-intake' });
+  useEffect(() => {
+    if (medplum.isLoading() || !profile) {
+      return;
+    }
+    const intakeQuestionnaire = medplum.searchOne('Questionnaire', { name: 'patient-intake' }).read();
+    setIntakeQuestionnaire(intakeQuestionnaire);
+  }, [medplum, profile]);
 
   if (medplum.isLoading()) {
     return null;
   }
-
-  const intakeQuestionnaire = questionnaires?.[0];
 
   return (
     <AppShell

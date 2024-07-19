@@ -5,8 +5,8 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
+import { createTestProject, withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { withTestContext } from '../test.setup';
 
 const app = express();
 
@@ -112,5 +112,23 @@ describe('Me', () => {
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
     expect(res.status).toBe(200);
     expect(res.body.error).toBeUndefined();
+  });
+
+  test('AccessPolicy.basedOn', async () => {
+    const { accessToken, accessPolicy } = await withTestContext(() =>
+      createTestProject({
+        withAccessToken: true,
+        accessPolicy: {
+          resource: [{ resourceType: 'Patient' }],
+        },
+      })
+    );
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toBeDefined();
+    expect(res.body.accessPolicy).toBeDefined();
+    expect(res.body.accessPolicy.basedOn).toBeDefined();
+    expect(res.body.accessPolicy.basedOn).toMatchObject([createReference(accessPolicy)]);
   });
 });

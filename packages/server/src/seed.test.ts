@@ -13,7 +13,7 @@ describe('Seed', () => {
     const config = await loadTestConfig();
     config.database.runMigrations = true;
     return withTestContext(() => initAppServices(config));
-  }, 240000);
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -39,5 +39,5 @@ describe('Seed', () => {
 
     // Second time, seeder should silently ignore
     await seedDatabase();
-  }, 240000);
+  });
 });

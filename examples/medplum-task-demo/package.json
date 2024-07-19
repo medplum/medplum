@@ -1,6 +1,6 @@
 {
   "name": "medplum-task-demo",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -26,16 +26,16 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.11.1",
-    "@mantine/hooks": "7.11.1",
-    "@mantine/notifications": "7.11.1",
-    "@medplum/core": "3.2.1",
-    "@medplum/definitions": "3.2.1",
-    "@medplum/eslint-config": "3.2.1",
-    "@medplum/fhirtypes": "3.2.1",
-    "@medplum/mock": "3.2.1",
-    "@medplum/react": "3.2.1",
-    "@tabler/icons-react": "3.9.0",
+    "@mantine/core": "7.11.2",
+    "@mantine/hooks": "7.11.2",
+    "@mantine/notifications": "7.11.2",
+    "@medplum/core": "3.2.2",
+    "@medplum/definitions": "3.2.2",
+    "@medplum/eslint-config": "3.2.2",
+    "@medplum/fhirtypes": "3.2.2",
+    "@medplum/mock": "3.2.2",
+    "@medplum/react": "3.2.2",
+    "@tabler/icons-react": "3.10.0",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
@@ -45,10 +45,10 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.24.1",
-    "rimraf": "5.0.8",
+    "rimraf": "5.0.9",
     "ts-node": "10.9.2",
     "typescript": "5.5.3",
     "vite": "5.3.3",
-    "vitest": "1.6.0"
+    "vitest": "2.0.3"
   }
 }

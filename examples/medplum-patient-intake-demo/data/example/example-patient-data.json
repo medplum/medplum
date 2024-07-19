@@ -748,6 +748,64 @@
         },
         "effectiveDateTime": "2000-02-05"
       }
+    },
+    {
+      "fullUrl": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+      "request": {
+        "method": "PUT",
+        "url": "Organization?identifier=blue-cross"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Independence Blue Cross Blue Shield",
+        "active": true,
+        "identifier": [
+          {
+            "system": "http://example.com/insurance-orgs",
+            "value": "blue-cross"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+      "request": {
+        "method": "PUT",
+        "url": "Organization?identifier=medplum-insurance"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Medplum Insurance",
+        "active": true,
+        "identifier": [
+          {
+            "system": "http://example.com/insurance-orgs",
+            "value": "medplum-insurance"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

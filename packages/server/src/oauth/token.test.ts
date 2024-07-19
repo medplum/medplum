@@ -4,6 +4,7 @@ import {
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
+  parseJWTPayload,
   parseSearchRequest,
 } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
@@ -428,6 +429,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
+      scope: 'openid profile email',
     });
     expect(res.status).toBe(200);
 
@@ -438,11 +440,14 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid profile email');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
     expect(res2.body.refresh_token).toBeUndefined();
+
+    const idToken = parseJWTPayload(res2.body.id_token);
+    expect(idToken.email).toBe(email);
   });
 
   test('Authorization code token with code challenge and PKCE optional', async () => {

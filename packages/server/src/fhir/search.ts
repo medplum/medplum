@@ -1,5 +1,6 @@
 import {
   badRequest,
+  DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
   FhirFilterComparison,
@@ -64,7 +65,7 @@ import {
 /**
  * Defines the maximum number of resources returned in a single search result.
  */
-const maxSearchResults = 1000;
+const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
 export interface ChainedSearchLink {
   resourceType: string;
@@ -1152,7 +1153,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       currentResourceType = link.resourceType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = splitN(part, ':', 2);
-      const searchParam = getSearchParameter(currentResourceType, part);
+      const searchParam = getSearchParameter(currentResourceType, code);
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }

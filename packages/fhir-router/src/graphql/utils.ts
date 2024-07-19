@@ -1,4 +1,6 @@
 import {
+  DEFAULT_MAX_SEARCH_COUNT,
+  DEFAULT_SEARCH_COUNT,
   Filter,
   getReferenceString,
   getSearchParameters,
@@ -20,11 +22,14 @@ import {
   GraphQLString,
   Kind,
 } from 'graphql';
+import { FhirRequestConfig } from '../fhirrouter';
 import { FhirRepository } from '../repo';
 
 export interface GraphQLContext {
   repo: FhirRepository;
+  config?: FhirRequestConfig;
   dataLoader: DataLoader<Reference, Resource>;
+  searchCount: number;
 }
 
 export const typeCache: Record<string, GraphQLScalarType | undefined> = {
@@ -88,6 +93,10 @@ export function parseSearchArgs(resourceType: ResourceType, source: any, args: R
   return searchRequest;
 }
 
+export function applyMaxCount(searchRequest: SearchRequest, maxCount: number | undefined): void {
+  searchRequest.count = Math.min(searchRequest.count ?? DEFAULT_SEARCH_COUNT, maxCount ?? DEFAULT_MAX_SEARCH_COUNT);
+}
+
 export function graphQLFieldToFhirParam(code: string): string {
   return code.startsWith('_') ? code : code.replaceAll('_', '-');
 }
@@ -112,9 +121,15 @@ export async function resolveBySearch(
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
+  ctx.searchCount++;
+  if (ctx.config?.graphqlMaxSearches && ctx.searchCount > ctx.config.graphqlMaxSearches) {
+    throw new Error('Maximum number of searches exceeded');
+  }
+
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'List'.length) as ResourceType;
   const searchRequest = parseSearchArgs(resourceType, source, args);
+  applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
   const bundle = await ctx.repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
 }

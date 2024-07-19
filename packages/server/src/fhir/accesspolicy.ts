@@ -117,6 +117,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
 
   return {
     resourceType: 'AccessPolicy',
+    basedOn: access.map((a) => a.policy),
     compartment,
     resource: resourcePolicies,
     ipAccessRule: ipAccessRules,

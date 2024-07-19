@@ -1,17 +1,17 @@
 {
   "name": "medplum-patient-intake-demo",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "tsc && vite build",
     "clean": "rimraf dist",
-    "lint": "eslint src/",
     "dev": "vite",
+    "lint": "eslint src/",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest watch",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest watch"
   },
   "prettier": {
     "printWidth": 120,
@@ -24,14 +24,14 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.11.1",
-    "@mantine/hooks": "7.11.1",
-    "@mantine/notifications": "7.11.1",
-    "@medplum/core": "3.2.1",
-    "@medplum/eslint-config": "3.2.1",
-    "@medplum/fhirtypes": "3.2.1",
-    "@medplum/react": "3.2.1",
-    "@tabler/icons-react": "3.9.0",
+    "@mantine/core": "7.11.2",
+    "@mantine/hooks": "7.11.2",
+    "@mantine/notifications": "7.11.2",
+    "@medplum/core": "3.2.2",
+    "@medplum/eslint-config": "3.2.2",
+    "@medplum/fhirtypes": "3.2.2",
+    "@medplum/react": "3.2.2",
+    "@tabler/icons-react": "3.10.0",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",

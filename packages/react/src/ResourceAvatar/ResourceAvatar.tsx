@@ -12,7 +12,7 @@ export interface ResourceAvatarProps extends AvatarProps {
 
 export function ResourceAvatar(props: ResourceAvatarProps): JSX.Element {
   const resource = useResource(props.value);
-  const text = resource ? getDisplayString(resource) : props.alt ?? '';
+  const text = resource ? getDisplayString(resource) : (props.alt ?? '');
   const initials = getInitials(text);
   const uncachedImageUrl = (resource && getImageSrc(resource)) ?? props.src;
   const imageUrl = useCachedBinaryUrl(uncachedImageUrl ?? undefined);

@@ -32,7 +32,7 @@ export interface UnbindFromTokenMsg extends BaseSubscriptionClientMsg {
 export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg;
 
 const hostname = os.hostname();
-const METRIC_OPTIONS = { attributes: { hostname }, options: { unit: 's' } };
+const METRIC_OPTIONS = { attributes: { hostname } };
 
 const wsToSubLookup = new Map<ws.WebSocket, Set<string>>();
 const subToWsLookup = new Map<string, Set<ws.WebSocket>>();

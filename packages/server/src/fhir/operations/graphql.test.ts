@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
-import { addTestUser, withTestContext } from '../../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 
 const app = express();
@@ -639,6 +639,20 @@ describe('GraphQL', () => {
                                 resource {
                                   ...on ServiceRequest {
                                     id
+                                    basedOn {
+                                      resource {
+                                        ...on ServiceRequest {
+                                          id
+                                          basedOn {
+                                            resource {
+                                              ...on ServiceRequest {
+                                                id
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -796,5 +810,67 @@ describe('GraphQL', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.Encounter).toBeDefined();
     expect(res.body.data.Encounter.basedOn[0].resource).toBeNull();
+  });
+
+  test('Max searches exceeded', async () => {
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: {
+        systemSetting: [{ name: 'graphqlMaxSearches', valueInteger: 1 }],
+      },
+    });
+
+    // Create a patient
+    const res1 = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+    expect(res1.status).toBe(201);
+
+    // GraphQL request with one search is ok
+    const res2 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
+        {
+          PatientList {
+            id
+          }
+        }
+    `,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.data.PatientList).toHaveLength(1);
+
+    // GraphQL request with nested search is not ok
+    // This should exceed the max searches limit
+    const res3 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
+        {
+          PatientList {
+            id
+            encounters: EncounterList(_reference: patient) {
+              resourceType
+              id
+            }
+          }
+        }
+    `,
+      });
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.PatientList).toHaveLength(1);
+    expect(res3.body.data.PatientList[0].encounters).toBeNull();
+    expect(res3.body.errors).toHaveLength(1);
+    expect(res3.body.errors[0].message).toEqual('Maximum number of searches exceeded');
   });
 });
