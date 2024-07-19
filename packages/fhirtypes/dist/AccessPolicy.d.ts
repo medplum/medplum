@@ -98,6 +98,11 @@ export interface AccessPolicy {
   name?: string;
 
   /**
+   * Other access policies used to derive this access policy.
+   */
+  basedOn?: Reference<AccessPolicy>[];
+
+  /**
    * Optional compartment for newly created resources.  If this field is
    * set, any resources created by a user with this access policy will
    * automatically be included in the specified compartment.
