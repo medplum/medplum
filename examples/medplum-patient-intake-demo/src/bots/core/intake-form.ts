@@ -65,6 +65,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     observationCodeMapping.sexualOrientation,
     observationCategoryMapping.socialHistory,
+    'valueCodeableConcept',
     answers['sexual-orientation'].valueCoding
   );
 
@@ -73,6 +74,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     observationCodeMapping.housingStatus,
     observationCategoryMapping.sdoh,
+    'valueCodeableConcept',
     answers['housing-status'].valueCoding
   );
 
@@ -81,7 +83,26 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     patient,
     observationCodeMapping.educationLevel,
     observationCategoryMapping.sdoh,
+    'valueCodeableConcept',
     answers['education-level'].valueCoding
+  );
+
+  await upsertObservation(
+    medplum,
+    patient,
+    observationCodeMapping.pregnancyStatus,
+    observationCategoryMapping.socialHistory,
+    'valueCodeableConcept',
+    answers['pregnancy-status'].valueCoding
+  );
+
+  await upsertObservation(
+    medplum,
+    patient,
+    observationCodeMapping.estimatedDeliveryDate,
+    observationCategoryMapping.socialHistory,
+    'valueDateTime',
+    { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date'].valueDate) }
   );
 
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');

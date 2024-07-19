@@ -32,6 +32,8 @@ export const observationCodeMapping: Record<string, CodeableConcept> = {
   housingStatus: { coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }] },
   educationLevel: { coding: [{ code: '82589-3', system: LOINC, display: 'Highest Level of Education' }] },
   sexualOrientation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
+  pregnancyStatus: { coding: [{ code: '82810-3', system: LOINC, display: 'Pregnancy status' }] },
+  estimatedDeliveryDate: { coding: [{ code: '11778-8', system: LOINC, display: 'Estimated date of delivery' }] },
 };
 
 export const observationCategoryMapping: Record<string, CodeableConcept> = {
@@ -153,18 +155,20 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
  * @param patient - A Patient resource that will be stored as the subject
  * @param code - A code for the observation
  * @param category - A category for the observation
- * @param valueCoding - The value to be stored in the observation
+ * @param valueXAttribute - The value[x] field where the answer should be stored
+ * @param value - The value to be stored in the observation
  */
 export async function upsertObservation(
   medplum: MedplumClient,
   patient: Patient,
   code: CodeableConcept,
   category: CodeableConcept,
-  valueCoding: QuestionnaireResponseItemAnswer | undefined
+  valueXAttribute: 'valueCodeableConcept' | 'valueDateTime',
+  value: QuestionnaireResponseItemAnswer | undefined
 ): Promise<void> {
   const coding = code.coding?.[0];
 
-  if (!valueCoding || !coding) {
+  if (!value || !coding) {
     return;
   }
 
@@ -174,9 +178,14 @@ export async function upsertObservation(
     subject: createReference(patient),
     code: code,
     category: [category],
-    valueCodeableConcept: {
-      coding: [valueCoding],
-    },
+    ...(valueXAttribute === 'valueCodeableConcept'
+      ? {
+          valueCodeableConcept: {
+            coding: [value],
+          },
+        }
+      : {}),
+    ...(valueXAttribute === 'valueDateTime' ? { valueDateTime: value.valueDateTime } : {}),
   };
 
   await medplum.upsertResource(observation, {
