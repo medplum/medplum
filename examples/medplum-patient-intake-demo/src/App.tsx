@@ -23,12 +23,13 @@ export function App(): JSX.Element | null {
     if (medplum.isLoading() || !profile) {
       return;
     }
-    try {
-      const intakeQuestionnaire = medplum.searchOne('Questionnaire', { name: 'patient-intake' }).read();
-      setIntakeQuestionnaire(intakeQuestionnaire);
-    } catch (err) {
-      console.error(err);
-    }
+
+    medplum
+      .searchOne('Questionnaire', { name: 'patient-intake' })
+      .then((intakeQuestionnaire) => {
+        setIntakeQuestionnaire(intakeQuestionnaire);
+      })
+      .catch(() => {});
   }, [medplum, profile]);
 
   if (medplum.isLoading()) {
