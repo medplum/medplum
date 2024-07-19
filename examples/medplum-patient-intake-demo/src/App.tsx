@@ -29,7 +29,9 @@ export function App(): JSX.Element | null {
       .then((intakeQuestionnaire) => {
         setIntakeQuestionnaire(intakeQuestionnaire);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.log(err);
+      });
   }, [medplum, profile]);
 
   if (medplum.isLoading()) {
