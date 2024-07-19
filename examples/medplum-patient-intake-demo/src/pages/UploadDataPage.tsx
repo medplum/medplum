@@ -71,19 +71,13 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
 
   const result = await medplum.executeBatch(batch);
 
-  showNotification({
-    icon: <IconCircleCheck />,
-    title: 'Success',
-    message: 'Uploaded Business Statuses',
-  });
-
   if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
     await setTimeout(
       () =>
         showNotification({
           icon: <IconCircleCheck />,
           title: 'Success',
-          message: 'Uploaded Business Statuses',
+          message: 'Uploaded Core Data',
         }),
       1000
     );
@@ -96,24 +90,18 @@ async function uploadExampleData(medplum: MedplumClient): Promise<void> {
   const exampleDataBatch = exampleData as Bundle;
   const result = await medplum.executeBatch(exampleDataBatch);
 
-  showNotification({
-    icon: <IconCircleCheck />,
-    title: 'Success',
-    message: 'Uploaded Business Statuses',
-  });
-
   if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
     await setTimeout(
       () =>
         showNotification({
           icon: <IconCircleCheck />,
           title: 'Success',
-          message: 'Uploaded Business Statuses',
+          message: 'Uploaded Example Data',
         }),
       1000
     );
   } else {
-    throw new Error('Error uploading core data');
+    throw new Error('Error uploading example data');
   }
 }
 
