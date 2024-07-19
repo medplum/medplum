@@ -16,6 +16,7 @@ import {
   DocumentNode,
   execute,
   ExecutionResult,
+  FieldNode,
   GraphQLError,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
@@ -29,6 +30,8 @@ import {
   GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString,
+  Kind,
+  OperationDefinitionNode,
   parse,
   specifiedRules,
   validate,
@@ -41,7 +44,6 @@ import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from '.
 import {
   applyMaxCount,
   buildSearchArgs,
-  getDepth,
   GraphQLContext,
   invalidRequest,
   isFieldRequested,
@@ -442,25 +444,70 @@ const DEFAULT_MAX_DEPTH = 12;
  */
 const MaxDepthRule =
   (maxDepth: number = DEFAULT_MAX_DEPTH) =>
-  (context: ValidationContext): ASTVisitor => ({
-    Field(
-      /** The current node being visiting. */
-      node: any,
-      /** The index or key to this node from the parent node or Array. */
-      _key: string | number | undefined,
-      /** The parent immediately above this node, which may be an Array. */
-      _parent: ASTNode | readonly ASTNode[] | undefined,
-      /** The key path to get to this node from the root node. */
-      path: readonly (string | number)[]
-    ): any {
-      const depth = getDepth(path);
-      if (depth > maxDepth) {
-        const fieldName = node.name.value;
-        context.reportError(
-          new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
-            nodes: node,
-          })
-        );
+  (context: ValidationContext): ASTVisitor =>
+    new MaxDepthVisitor(context, maxDepth);
+
+type DepthRecord = { depth: number; node?: FieldNode };
+
+class MaxDepthVisitor {
+  private context: ValidationContext;
+  private maxDepth: number;
+  private fragmentDepths: Record<string, DepthRecord>;
+
+  constructor(context: ValidationContext, maxDepth: number) {
+    this.context = context;
+    this.fragmentDepths = Object.create(null);
+    this.maxDepth = maxDepth;
+  }
+
+  OperationDefinition(node: OperationDefinitionNode): void {
+    const result = this.getDepth(...node.selectionSet.selections);
+    if (result.depth > this.maxDepth) {
+      this.context.reportError(
+        new GraphQLError(
+          `Field "${result.node?.name.value}" exceeds max depth (depth=${result.depth}, max=${this.maxDepth})`,
+          {
+            nodes: result.node,
+          }
+        )
+      );
+    }
+  }
+
+  private getDepth(...nodes: ASTNode[]): DepthRecord {
+    let deepest: DepthRecord = { depth: -1 };
+    for (const node of nodes) {
+      let current: DepthRecord = { depth: 0 };
+      if (node.kind === Kind.FIELD) {
+        if (node.selectionSet?.selections) {
+          current = this.getDepth(...node.selectionSet.selections);
+          current.depth += 1;
+        } else {
+          current = { depth: 0, node }; // Leaf field node
+        }
+      } else if (node.kind === Kind.FRAGMENT_SPREAD) {
+        const fragmentName = node.name.value;
+        const fragment = this.context.getFragment(fragmentName);
+        const cachedDepth = this.fragmentDepths[fragmentName];
+
+        if (cachedDepth) {
+          current = cachedDepth;
+        } else if (fragment) {
+          current = this.getDepth(...fragment.selectionSet.selections);
+          this.fragmentDepths[fragmentName] = current;
+        }
+      } else if (node.kind === Kind.INLINE_FRAGMENT) {
+        current = this.getDepth(...node.selectionSet.selections);
       }
-    },
-  });
+
+      if (current.depth > this.maxDepth) {
+        return current; // Short circuit, no need to keep computing
+      }
+      if (current.depth > deepest.depth) {
+        deepest = current;
+      }
+    }
+
+    return deepest;
+  }
+}
