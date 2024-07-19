@@ -476,12 +476,14 @@ class QueryCostVisitor {
   private maxCost: number;
   private debug: boolean;
   private router: FhirRouter;
+  private fragmentCosts: Record<string, number>;
 
   constructor(context: ValidationContext, router: FhirRouter, options?: QueryCostRuleOptions) {
     this.context = context;
     this.maxCost = options?.maxCost ?? DEFAULT_MAX_COST;
     this.debug = options?.debug ?? false;
     this.router = router;
+    this.fragmentCosts = Object.create(null);
   }
 
   OperationDefinition(node: OperationDefinitionNode): void {
@@ -529,10 +531,17 @@ class QueryCostVisitor {
         }
         cost += fieldCost;
       } else if (node.kind === Kind.FRAGMENT_SPREAD) {
-        const fragment = this.context.getFragment(node.name.value);
-        if (fragment) {
+        const fragmentName = node.name.value;
+        const fragment = this.context.getFragment(fragmentName);
+        const cachedCost = this.fragmentCosts[fragmentName];
+
+        if (cachedCost !== undefined) {
+          this.log('Fragment', fragmentName, 'costs', cachedCost, '(cached)');
+          cost += cachedCost;
+        } else if (fragment) {
           const fragmentCost = this.calculateCost(...fragment.selectionSet.selections);
-          this.log('Fragment', node.name.value, 'costs', fragmentCost);
+          this.fragmentCosts[fragmentName] = fragmentCost;
+          this.log('Fragment', fragmentName, 'costs', fragmentCost);
           cost += fragmentCost;
         }
       } else if (node.kind === Kind.INLINE_FRAGMENT) {
