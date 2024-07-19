@@ -309,17 +309,28 @@ async function getPrecomputedExpansion(
   params: ValueSetExpandParameters
 ): Promise<ValueSetExpansionContains[]> {
   const query = new SelectQuery('Coding').column('code').column('display');
-  const joinAlias = query.getNextJoinAlias();
+  const expansionTable = query.getNextJoinAlias();
+  const codeSystemTable = query.getNextJoinAlias();
   query
     .innerJoin(
       'ValueSet_Membership',
-      joinAlias,
-      new Condition(new Column('Coding', 'id'), '=', new Column(joinAlias, 'coding'))
+      expansionTable,
+      new Condition(new Column('Coding', 'id'), '=', new Column(expansionTable, 'coding'))
     )
-    .where(new Column(joinAlias, 'valueSet'), '=', valueSet.id);
+    .innerJoin(
+      'CodeSystem',
+      codeSystemTable,
+      new Condition(new Column('Coding', 'system'), '=', new Column(codeSystemTable, 'id'))
+    )
+    .where(new Column(expansionTable, 'valueSet'), '=', valueSet.id)
+    .column(new Column(codeSystemTable, 'url'));
 
   const results = await addExpansionFilters(query, params).execute(getDatabasePool(DatabaseMode.READER));
-  return results;
+  return results.map((row) => ({
+    system: row.url,
+    code: row.code,
+    display: row.display,
+  }));
 }
 
 async function includeInExpansion(
