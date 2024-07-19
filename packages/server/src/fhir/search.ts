@@ -83,11 +83,16 @@ export interface ChainedSearchParameter {
   chain: ChainedSearchLink[];
 }
 
+type PreparedSearchRequest<T extends Resource = Resource> = SearchRequest<T> & {
+  count: NonNullable<SearchRequest<T>['count']>;
+};
+
 export async function searchImpl<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>
 ): Promise<Bundle<T>> {
-  prepareSearchRequest(repo, searchRequest);
+  validateSearchResourceTypes(repo, searchRequest);
+  applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
   let rowCount = undefined;
@@ -118,7 +123,9 @@ export async function searchByReferenceImpl<T extends Resource>(
   references: string[],
   _options?: { disableFallback?: boolean }
 ): Promise<Record<string, T[]>> {
-  prepareSearchRequest(repo, searchRequest);
+  validateSearchResourceTypes(repo, searchRequest);
+  applyCountAndOffsetLimits(searchRequest);
+
   const referenceColumn = new Column('references', 'ref');
 
   const innerQuery = getSelectQueryForSearch(repo, searchRequest);
@@ -149,6 +156,18 @@ export async function searchByReferenceImpl<T extends Resource>(
   return results;
 }
 
+function applyCountAndOffsetLimits<T extends Resource>(
+  searchRequest: SearchRequest
+): asserts searchRequest is PreparedSearchRequest<T> {
+  if (searchRequest.count === undefined) {
+    searchRequest.count = DEFAULT_SEARCH_COUNT;
+  } else if (searchRequest.count > maxSearchResults) {
+    searchRequest.count = maxSearchResults;
+  }
+
+  searchRequest.offset ??= 0;
+}
+
 /**
  * Validates that the resource type(s) are valid and that the user has permission to read them.
  * @param repo - The user's repository.
@@ -162,26 +181,6 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
   } else {
     validateSearchResourceType(repo, searchRequest.resourceType);
   }
-}
-
-type PreparedSearchRequest<T extends Resource> = SearchRequest<T> & { count: number; offset: number };
-
-function prepareSearchRequest<T extends Resource>(
-  repo: Repository,
-  searchRequest: SearchRequest
-): asserts searchRequest is PreparedSearchRequest<T> {
-  validateSearchResourceTypes(repo, searchRequest);
-  if (searchRequest.count === undefined) {
-    searchRequest.count = DEFAULT_SEARCH_COUNT;
-  } else if (searchRequest.count > maxSearchResults) {
-    searchRequest.count = maxSearchResults;
-  }
-
-  if (searchRequest.offset && searchRequest.offset < 0) {
-    throw new OperationOutcomeError(badRequest('Offset cannot be negative'));
-  }
-
-  searchRequest.offset ??= 0;
 }
 
 /**
@@ -207,8 +206,9 @@ function getSelectQueryForSearch<T extends Resource>(
 ): SelectQuery {
   const builder = getBaseSelectQuery(repo, searchRequest);
   addSortRules(builder, searchRequest);
-  builder.limit(searchRequest.count + 1); // Request one extra to test if there are more results
-  builder.offset(searchRequest.offset);
+  const count = searchRequest.count as number;
+  builder.limit(count + 1); // Request one extra to test if there are more results
+  builder.offset(searchRequest.offset || 0);
   return builder;
 }
 
@@ -409,7 +409,7 @@ async function getSearchIncludeEntries(
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
     const canonicalSearches = (searchParam.target || []).map((resourceType) => {
-      const searchRequest = {
+      const searchRequest: PreparedSearchRequest = {
         resourceType: resourceType,
         filters: [
           {
@@ -418,9 +418,8 @@ async function getSearchIncludeEntries(
             value: canonicalReferences.join(','),
           },
         ],
+        count: DEFAULT_MAX_SEARCH_COUNT,
       };
-      // TODO{mattlong} are the limits/offsets messing up this query?
-      prepareSearchRequest(repo, searchRequest);
       const builder = getSelectQueryForSearch(repo, searchRequest);
       return getSearchEntries(repo, searchRequest, builder);
     });
@@ -476,9 +475,8 @@ async function getSearchRevIncludeEntries(
         value: value,
       },
     ],
+    count: DEFAULT_MAX_SEARCH_COUNT,
   };
-  // TODO{mattlong} are the limits/offsets messing up this query?
-  prepareSearchRequest(repo, searchRequest);
   const builder = getSelectQueryForSearch(repo, searchRequest);
 
   return (await getSearchEntries(repo, searchRequest, builder)).entry;
