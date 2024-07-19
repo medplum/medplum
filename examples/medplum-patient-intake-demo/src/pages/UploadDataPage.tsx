@@ -160,9 +160,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 
 function checkQuestionnairesUploaded(medplum: MedplumClient): boolean {
   let check = false;
-  const intakeQuestionnaire = medplum.searchResources('Questionnaire').read();
-
-  const questionnairesToCheck = intakeQuestionnaire.filter((questionnaire) => questionnaire.name === 'patient-intake');
+  const questionnairesToCheck = medplum.searchResources('Questionnaire', { name: 'patient-intake' }).read();
 
   if (questionnairesToCheck.length === 1) {
     check = true;
@@ -172,9 +170,7 @@ function checkQuestionnairesUploaded(medplum: MedplumClient): boolean {
 }
 
 function checkBotsUploaded(medplum: MedplumClient): boolean {
-  const bots = medplum.searchResources('Bot').read();
-
-  const exampleBots = bots.filter((bot) => bot.name === 'intake-form');
+  const exampleBots = medplum.searchResources('Bot', { name: 'intake-form' }).read();
 
   if (exampleBots.length === 1) {
     return true;
