@@ -61,6 +61,7 @@ import {
   Operator as SQL,
   Union,
 } from './sql';
+import { getAuthenticatedContext } from '../context';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -1010,11 +1011,18 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
 
-  if (getConfig().chainedSearchWithReferenceTables) {
+  if (usesReferenceLookupTable()) {
     return buildChainedSearchUsingReferenceTable(selectQuery, resourceType, param);
   } else {
     return buildChainedSearchUsingReferenceStrings(selectQuery, resourceType, param);
   }
+}
+
+function usesReferenceLookupTable(): boolean {
+  return !!(
+    getConfig().chainedSearchWithReferenceTables ||
+    getAuthenticatedContext().project.features?.includes('reference-lookups')
+  );
 }
 
 /**
