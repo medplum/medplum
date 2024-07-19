@@ -90,7 +90,7 @@ describe('ResourceForm', () => {
     expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -182,10 +182,16 @@ describe('ResourceForm', () => {
       onPatch,
     });
 
-    expect(screen.getByText('Patch')).toBeInTheDocument();
-
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
     await act(async () => {
-      fireEvent.click(screen.getByText('Patch'));
+      fireEvent.click(moreActions);
+    });
+
+    const patchButton = await screen.findByText('Patch');
+    expect(patchButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(patchButton);
     });
 
     expect(onSubmit).not.toHaveBeenCalled();
@@ -205,10 +211,16 @@ describe('ResourceForm', () => {
       onDelete,
     });
 
-    expect(screen.getByText('Delete')).toBeInTheDocument();
-
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(moreActions);
+    });
+
+    const deleteButton = await screen.findByText('Delete');
+    expect(deleteButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(deleteButton);
     });
 
     expect(onSubmit).not.toHaveBeenCalled();
@@ -231,7 +243,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -254,7 +266,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -396,7 +408,7 @@ describe('ResourceForm', () => {
       });
 
       await act(async () => {
-        fireEvent.click(screen.getByText('OK'));
+        fireEvent.click(screen.getByText('Create'));
       });
 
       expect(onSubmit).toHaveBeenCalledWith(expectedValue);
