@@ -109,19 +109,6 @@ export function getAuditEventEntityRole(resource: Resource): Coding {
   }
 }
 
-export async function getPreviousResource(currentResource: Resource): Promise<Resource | undefined> {
-  const systemRepo = getSystemRepo();
-  const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
-
-  return history.entry?.find((_, idx) => {
-    if (idx === 0) {
-      return false;
-    }
-
-    return history.entry?.[idx - 1]?.resource?.meta?.versionId === currentResource.meta?.versionId;
-  })?.resource;
-}
-
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(
     subscription,

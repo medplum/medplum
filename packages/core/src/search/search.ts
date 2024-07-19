@@ -5,6 +5,7 @@ import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
 import { append, sortStringArray } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
+export const DEFAULT_MAX_SEARCH_COUNT = 1000;
 
 export interface SearchRequest<T extends Resource = Resource> {
   readonly resourceType: T['resourceType'];

@@ -6,6 +6,7 @@ import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
 import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
 import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
 import { closeReindexWorker, initReindexWorker } from './reindex';
+import { closeExpandWorker, initExpandWorker } from './expand';
 
 /**
  * Initializes all background workers.
@@ -17,6 +18,7 @@ export function initWorkers(config: MedplumServerConfig): void {
   initDownloadWorker(config);
   initCronWorker(config);
   initReindexWorker(config);
+  initExpandWorker(config);
   globalLogger.debug('Workers initialized');
 }
 
@@ -28,15 +30,21 @@ export async function closeWorkers(): Promise<void> {
   await closeDownloadWorker();
   await closeCronWorker();
   await closeReindexWorker();
+  await closeExpandWorker();
 }
 
 /**
  * Adds all background jobs for a given resource.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource, if available.
  * @param context - The background job context.
  */
-export async function addBackgroundJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
-  await addSubscriptionJobs(resource, context);
+export async function addBackgroundJobs(
+  resource: Resource,
+  previousVersion: Resource | undefined,
+  context: BackgroundJobContext
+): Promise<void> {
+  await addSubscriptionJobs(resource, previousVersion, context);
   await addDownloadJobs(resource);
   await addCronJobs(resource);
 }

@@ -54,6 +54,34 @@ describe('Atoms', () => {
   });
 
   test.each([
+    ['true = true', [true]],
+    ['true = false', [false]],
+    ['true = {}', []],
+    ['false = true', [false]],
+    ['false = false', [true]],
+    ['false = {}', []],
+    ['{} = true', []],
+    ['{} = false', []],
+    ['{} = {}', []],
+  ])('EqualsAtom: %s to equal %s', (input: any, expected: any) => {
+    expect(evalFhirPath(input, [])).toEqual(expected);
+  });
+
+  test.each([
+    ['true != true', [false]],
+    ['true != false', [true]],
+    ['true != {}', []],
+    ['false != true', [true]],
+    ['false != false', [false]],
+    ['false != {}', []],
+    ['{} != true', []],
+    ['{} != false', []],
+    ['{} != {}', []],
+  ])('NotEqualsAtom: %s to equal %s', (input: any, expected: any) => {
+    expect(evalFhirPath(input, [])).toEqual(expected);
+  });
+
+  test.each([
     ['true or true', [true]],
     ['true or false', [true]],
     ['true or {}', [true]],

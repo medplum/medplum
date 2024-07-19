@@ -38,7 +38,7 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     fullResponse.encounter = { reference: encounterRef };
 
-    const responseBundle = await handler({ bot, contentType, input: fullResponse, secrets: {} }, medplum);
+    const responseBundle = await handler(medplum, { bot, contentType, input: fullResponse, secrets: {} });
     const observations = await medplum.searchResources('Observation', {
       encounter: encounterRef,
     });
@@ -59,7 +59,7 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     fullResponseNoProblemList.encounter = { reference: encounterRef };
 
-    const responseBundle = await handler({ bot, contentType, input: fullResponseNoProblemList, secrets: {} }, medplum);
+    const responseBundle = await handler(medplum, { bot, contentType, input: fullResponseNoProblemList, secrets: {} });
     const observations = await medplum.searchResources('Observation', {
       encounter: encounterRef,
     });
@@ -80,7 +80,7 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     noReasonForVisit.encounter = { reference: encounterRef };
 
-    await expect(handler({ bot, contentType, input: noReasonForVisit, secrets: {} }, medplum)).rejects.toThrow(
+    await expect(handler(medplum, { bot, contentType, input: noReasonForVisit, secrets: {} })).rejects.toThrow(
       /^Must provide a reason for the visit$/
     );
   });
@@ -91,7 +91,7 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     onlyCondition.encounter = { reference: encounterRef };
 
-    const responseBundle = await handler({ bot, contentType, input: onlyCondition, secrets: {} }, medplum);
+    const responseBundle = await handler(medplum, { bot, contentType, input: onlyCondition, secrets: {} });
     const observations = await medplum.searchResources('Observation', {
       encounter: getReferenceString(testEncounter),
     });
@@ -112,10 +112,12 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     oneBloodPressureMeasurement.encounter = { reference: encounterRef };
 
-    const responseBundle = await handler(
-      { bot, contentType, input: oneBloodPressureMeasurement, secrets: {} },
-      medplum
-    );
+    const responseBundle = await handler(medplum, {
+      bot,
+      contentType,
+      input: oneBloodPressureMeasurement,
+      secrets: {},
+    });
     const observations = await medplum.searchResources('Observation', {
       encounter: getReferenceString(testEncounter),
     });
@@ -141,7 +143,7 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     selfReportedHistoryBmi.encounter = { reference: encounterRef };
 
-    await handler({ bot, contentType, input: selfReportedHistoryBmi, secrets: {} }, medplum);
+    await handler(medplum, { bot, contentType, input: selfReportedHistoryBmi, secrets: {} });
 
     const highBmiObservation = await medplum.searchOne('Observation', {
       code: 'E66.9',
@@ -156,7 +158,7 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     selfReportedHistoryBreastCancer.encounter = { reference: encounterRef };
 
-    await handler({ bot, contentType, input: selfReportedHistoryBreastCancer, secrets: {} }, medplum);
+    await handler(medplum, { bot, contentType, input: selfReportedHistoryBreastCancer, secrets: {} });
 
     const breastCancerObservatoin = await medplum.searchOne('Observation', {
       code: 'D05.10',
@@ -171,7 +173,7 @@ describe('General Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     selfReportedHistoryEndometrialCancer.encounter = { reference: encounterRef };
 
-    await handler({ bot, contentType, input: selfReportedHistoryEndometrialCancer, secrets: {} }, medplum);
+    await handler(medplum, { bot, contentType, input: selfReportedHistoryEndometrialCancer, secrets: {} });
 
     const endometrialCancerObservatoin = await medplum.searchOne('Observation', {
       code: 'C54.1',

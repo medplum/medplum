@@ -84,7 +84,8 @@ export interface Meta {
   author?: Reference;
 
   /**
-   * The individual, device, or organization for whom the change was made.
+   * Optional individual, device, or organization for whom the change was
+   * made.
    */
   onBehalfOf?: Reference;
 

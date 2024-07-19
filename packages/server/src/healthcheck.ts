@@ -36,9 +36,22 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   }
 
   let startTime = Date.now();
-  const postgresOk = await testPostgres(writerPool);
-  const dbRoundtripMs = Date.now() - startTime;
-  setGauge('medplum.db.healthcheckRTT', dbRoundtripMs / 1000, METRIC_IN_SECS_OPTIONS);
+  const postgresWriterOk = await testPostgres(writerPool);
+  const writerRoundtripMs = Date.now() - startTime;
+  setGauge('medplum.db.healthcheckRTT', writerRoundtripMs / 1000, {
+    ...METRIC_IN_SECS_OPTIONS,
+    attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'writer' },
+  });
+
+  if (writerPool !== readerPool) {
+    startTime = Date.now();
+    await testPostgres(readerPool);
+    const readerRoundtripMs = Date.now() - startTime;
+    setGauge('medplum.db.healthcheckRTT', readerRoundtripMs / 1000, {
+      ...METRIC_IN_SECS_OPTIONS,
+      attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'reader' },
+    });
+  }
 
   startTime = Date.now();
   const redisOk = await testRedis();
@@ -65,7 +78,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     version: MEDPLUM_VERSION,
     platform: process.platform,
     runtime: process.version,
-    postgres: postgresOk,
+    postgres: postgresWriterOk,
     redis: redisOk,
   });
 }

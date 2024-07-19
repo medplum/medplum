@@ -73,7 +73,7 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
 }
 
 const ItemComponent = forwardRef<HTMLDivElement, any>(
-  ({ resource, ...others }: AsyncAutocompleteOption<HeaderSearchTypes>, ref) => {
+  ({ resource, active: _active, ...others }: AsyncAutocompleteOption<HeaderSearchTypes>, ref) => {
     let helpText: string | undefined = undefined;
 
     if (resource.resourceType === 'Patient') {

@@ -688,6 +688,77 @@ describe('GraphQL', () => {
     expect(res3[0]).toMatchObject(allOk);
   });
 
+  test('Max depth override', async () => {
+    // Project level settings can override the default depth
+    const config = {
+      graphqlMaxDepth: 6,
+    };
+
+    // 4 levels of depth is ok
+    const request1: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      config,
+      body: {
+        query: `
+        {
+          ServiceRequestList {
+            id
+            basedOn {
+              resource {
+                ...on ServiceRequest {
+                  id
+                }
+              }
+            }
+          }
+        }
+    `,
+      },
+    };
+
+    const fhirRouter = new FhirRouter();
+    const res1 = await graphqlHandler(request1, repo, fhirRouter);
+    expect(res1[0]).toMatchObject(allOk);
+
+    // 8 levels of nesting is too much
+    const request2: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      config,
+      body: {
+        query: `
+        {
+          ServiceRequestList {
+            id
+            basedOn {
+              resource {
+                ...on ServiceRequest {
+                  id
+                  basedOn {
+                    resource {
+                      ...on ServiceRequest {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    `,
+      },
+    };
+
+    const res2 = await graphqlHandler(request2, repo, fhirRouter);
+    expect(res2[0].issue?.[0]?.details?.text).toEqual('Field "id" exceeds max depth (depth=8, max=6)');
+  });
+
   test('StructureDefinition query', async () => {
     const request: FhirRequest = {
       method: 'POST',
@@ -1060,6 +1131,33 @@ describe('GraphQL', () => {
       pageSize: 20,
       edges: [{ resource: { name: [{ given: ['Alice'] }] } }],
     });
+  });
+
+  test('Connection API without edges field', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        PatientConnection(name: "Smith") {
+          count
+        }
+      }
+    `,
+      },
+    };
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.PatientConnection).toBeDefined();
+    expect(data.PatientConnection.count).toBe(1);
+    expect(data.PatientConnection.edges).toBeUndefined();
   });
 
   test('Create Patient Record', async () => {

@@ -1,5 +1,7 @@
 import {
   AccessPolicyInteraction,
+  BackgroundJobInteraction,
+  DEFAULT_MAX_SEARCH_COUNT,
   OperationOutcomeError,
   Operator,
   PropertyType,
@@ -188,9 +190,18 @@ export interface CacheEntry<T extends Resource = Resource> {
   projectId: string;
 }
 
-export type ReadResourceOptions = {
+export interface InteractionOptions {
+  verbose?: boolean;
+}
+
+export interface ReadResourceOptions extends InteractionOptions {
   checkCacheOnly?: boolean;
-};
+}
+
+export interface ResendSubscriptionsOptions extends InteractionOptions {
+  interaction?: BackgroundJobInteraction;
+  subscription?: string;
+}
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -401,9 +412,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * See: https://www.hl7.org/fhir/http.html#history
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
+   * @param limit - The maximum number of results to return.
    * @returns Operation outcome and a history bundle.
    */
-  async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string): Promise<Bundle<T>> {
+  async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
     try {
       let resource: T | undefined = undefined;
       try {
@@ -421,7 +433,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .column('lastUpdated')
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
-        .limit(100)
+        .limit(Math.min(limit, DEFAULT_MAX_SEARCH_COUNT))
         .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       const entries: BundleEntry<T>[] = [];
@@ -618,7 +630,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     await this.handleBinaryUpdate(existing, result);
     await this.handleStorage(result, create);
-    await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
+    await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
   }
@@ -895,15 +907,31 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * This should not result in any change to the resource or its history.
    * @param resourceType - The resource type.
    * @param id - The resource ID.
+   * @param options - Additional options.
    * @returns Promise to complete.
    */
-  async resendSubscriptions<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+  async resendSubscriptions<T extends Resource = Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: ResendSubscriptionsOptions
+  ): Promise<void> {
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
     const resource = await this.readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource, { interaction: 'update' });
+    const interaction = options?.interaction ?? 'update';
+    let previousVersion: T | undefined;
+
+    if (interaction === 'update') {
+      const history = await this.readHistory(resourceType, id, 2);
+      if (history.entry?.[0]?.resource?.meta?.versionId !== resource.meta?.versionId) {
+        throw new OperationOutcomeError(preconditionFailed);
+      }
+      previousVersion = history.entry?.[1]?.resource;
+    }
+
+    return addSubscriptionJobs(resource, previousVersion, { interaction }, options);
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
@@ -960,7 +988,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
       });
 
-      await addSubscriptionJobs(resource, { interaction: 'delete' });
+      await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
     } catch (err) {
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;

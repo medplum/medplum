@@ -39,6 +39,7 @@ import { structureDefinitionExpandProfileHandler } from './operations/structured
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
+import { ResendSubscriptionsOptions } from './repo';
 import { sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
@@ -139,7 +140,9 @@ function getInternalFhirRouter(): FhirRouter {
  * @returns A new FHIR router with all the internal operations.
  */
 function initInternalFhirRouter(): FhirRouter {
-  const router = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+  const router = new FhirRouter({
+    introspectionEnabled: getConfig().introspectionEnabled,
+  });
 
   // Project $export
   router.add('GET', '/$export', bulkExportHandler);
@@ -254,7 +257,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
-    await ctx.repo.resendSubscriptions(resourceType, id);
+    const options = req.body as ResendSubscriptionsOptions | undefined;
+    await ctx.repo.resendSubscriptions(resourceType, id, options);
     return [allOk];
   });
 
@@ -296,6 +300,11 @@ protectedRoutes.use(
       query: req.query as Record<string, string>,
       body: req.body,
       headers: req.headers,
+      config: {
+        graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
+        graphqlMaxPageSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxPageSize')?.valueInteger,
+        graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+      },
     };
 
     if (request.pathname.includes('$graphql')) {

@@ -27,6 +27,7 @@ import {
 import bcrypt from 'bcryptjs';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
+import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getRequestContext } from '../context';
@@ -501,15 +502,14 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
 }
 
 export async function getAuthTokens(
+  user: User | ClientApplication,
   login: Login,
   profile: Reference<ProfileResource>,
   refreshLifetime?: string
 ): Promise<TokenResult> {
+  assert.equal(getReferenceString(user), login.user?.reference);
+
   const clientId = login.client && resolveId(login.client);
-  const userId = resolveId(login.user);
-  if (!userId) {
-    throw new OperationOutcomeError(badRequest('Login missing user'));
-  }
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
@@ -527,8 +527,9 @@ export async function getAuthTokens(
     client_id: clientId,
     login_id: login.id as string,
     fhirUser: profile.reference,
+    email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     aud: clientId,
-    sub: userId,
+    sub: user.id,
     nonce: login.nonce as string,
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
   });
@@ -536,8 +537,8 @@ export async function getAuthTokens(
   const accessToken = await generateAccessToken({
     client_id: clientId,
     login_id: login.id as string,
-    sub: userId,
-    username: userId,
+    sub: user.id,
+    username: user.id as string,
     scope: login.scope as string,
     profile: profile.reference as string,
   });

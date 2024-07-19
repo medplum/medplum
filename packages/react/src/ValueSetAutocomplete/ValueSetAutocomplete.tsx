@@ -8,6 +8,7 @@ import {
   AsyncAutocompleteOption,
   AsyncAutocompleteProps,
 } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { IconCheck } from '@tabler/icons-react';
 
 export interface ValueSetAutocompleteProps
   extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {
@@ -97,10 +98,11 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
 }
 
 const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<ValueSetExpansionContains>>(
-  ({ label, resource, ...others }: AsyncAutocompleteOption<ValueSetExpansionContains>, ref) => {
+  ({ label, resource, active, ...others }: AsyncAutocompleteOption<ValueSetExpansionContains>, ref) => {
     return (
       <div ref={ref} {...others}>
-        <Group wrap="nowrap">
+        <Group wrap="nowrap" gap="xs">
+          {active && <IconCheck size={12} />}
           <div>
             <Text>{label}</Text>
             <Text size="xs" c="dimmed">
