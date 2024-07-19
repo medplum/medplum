@@ -1,5 +1,5 @@
-import { BotEvent, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Address, ContactPoint, Patient } from '@medplum/fhirtypes';
+import { BotEvent, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { Address, ContactPoint, Identifier, Patient } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 
 interface CreatePatientVariables {
@@ -30,7 +30,7 @@ interface PhotonAddress {
   postalCode: string;
 }
 
-export async function handler(_medplum: MedplumClient, event: BotEvent<Patient>): Promise<string> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<string> {
   const patient = event.input;
   const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
   const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
@@ -109,8 +109,11 @@ export async function handler(_medplum: MedplumClient, event: BotEvent<Patient>)
     }
 
     const result = await response.json();
-    const patient = result.data.createPatient;
-    return patient.id;
+    if (result.errors?.[0]) {
+      throw new Error(result.errors[0].message);
+    }
+    await updatePatient(medplum, patient, result);
+    return result.data.createPatient;
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }
@@ -149,6 +152,34 @@ async function handlePhotonAuth(clientId?: string, clientSecret?: string): Promi
   }
 }
 
+async function updatePatient(medplum: MedplumClient, patient: Patient, result: any): Promise<void> {
+  const patientData = result.data.createPatient;
+  const photonId = patientData.id;
+
+  const photonIdentifier: Identifier = {
+    system: 'https://neutron.health/patients',
+    value: photonId,
+  };
+
+  const identifiers: Identifier[] = patient.identifier ?? [];
+  identifiers.push(photonIdentifier);
+
+  const patientId = patient.id as string;
+  const op = patient.identifier ? 'replace' : 'add';
+
+  const ops: PatchOperation[] = [
+    { op: 'test', path: '/meta/versionId', value: patient.meta?.versionId },
+    { op, path: '/identifier', value: identifiers },
+  ];
+
+  try {
+    await medplum.patchResource('Patient', patientId, ops);
+    console.log('Success');
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 function formatAWSDate(date?: string): string {
   if (!date) {
     return '1970-01-01';
@@ -167,7 +198,7 @@ function getSexType(sex?: Patient['gender']): 'MALE' | 'FEMALE' | 'UNKNOWN' {
   }
 }
 
-function getTelecom(system: ContactPoint['system'], person?: Patient): string | undefined {
+export function getTelecom(system: ContactPoint['system'], person?: Patient): string | undefined {
   if (!person) {
     throw new Error('No patient provided');
   }

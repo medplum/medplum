@@ -22,10 +22,6 @@ export function PatientPage(): JSX.Element {
     }
   }, [medplum, id]);
 
-  function onPatientChange(patient: Patient): void {
-    setPatient(patient);
-  }
-
   const tabs = ['overview', 'timeline', 'history', 'prescription'];
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.includes(tab) ? tab : tabs[0];
@@ -59,7 +55,7 @@ export function PatientPage(): JSX.Element {
           <PatientHistory />
         </Tabs.Panel>
         <Tabs.Panel value="prescription">
-          <PatientPrescription patient={patient} onPatientChange={onPatientChange} />
+          <PatientPrescription patient={patient} />
         </Tabs.Panel>
       </Tabs>
     </Document>
