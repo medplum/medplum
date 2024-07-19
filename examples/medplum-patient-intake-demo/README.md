@@ -6,31 +6,56 @@
   </a>
 </p>
 
-> [!WARNING]
-> This is a work in progress and is not yet ready for use.
-
 This example app demonstrates the following:
 
-- TODO
+- How to build a patient intake form on Medplum collecting demographics, coverage, Social Determinants of Health, languages and consent information.
+- Converting the form data into structured data ([`Patient`](/docs/api/fhir/resources/patient), [`Coverage`](/docs/api/fhir/resources/coverage), [`Observation`](/docs/api/fhir/resources/observation)) for easy retrieval and longitudinal tracking.
+- Implementing conditional flows in questionnaires.
+- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to build a patient intake form.
 
 ### Code Organization
 
-TODO
+This repo is organized into two main directories: `src` and `data`.
 
-### Components of the Patient Intake Form
+The `src` directory contains the React app that implements the intake form UX. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) to implement the parsing of the questionnaire response into structured data.
 
-TODO
+The `data` directory contains data that can be uploaded for use in the demo. The `example` directory contains data that is meant to be used for testing and learning, while the `core` directory contains resources, terminologies, and more that are necessary to use the demo.
+
+### UI and components
+
+- Patients page listing all the patients in the system
+- Patients chart page page with 3 panels:
+  - Clinical Chart
+  - Details (including SDOH and Consents)
+  - Actions (with a button to fill in the intake form)
+- Patient intake form page to fill in the intake questionnaire
+- Intake form customization page where it's possible to edit fields of the intake form.
 
 ### Getting Started
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/app/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-hello-world/fork) and clone the repo.
+[Fork](https://github.com/medplum/medplum/) and clone the repo to your local machine.
 
-Next, install the dependencies.
+Navigate to the patient intake demo example directory.
+
+```bash
+cd examples/medplum-patient-intake-demo
+```
+
+Install the dependencies for the demo app.
 
 ```bash
 npm install
+```
+
+Build the bots:
+
+> [!WARNING]
+> Bots are not on by default for Medplum projects, make sure they are enabled before proceeding.
+
+```bash
+npm run build:bots
 ```
 
 Then, run the app
@@ -40,6 +65,12 @@ npm run dev
 ```
 
 This app should run on `http://localhost:3000/`
+
+### Uploading sample data
+
+Click `Upload Core data` in the app navigation menu and then click the upload button.
+Click `Upload Example Bots` in the app navigation menu and then click the upload button.
+[Optional] Click `Upload Example data` in the app navigation menu and then click the upload button.
 
 ### About Medplum
 
