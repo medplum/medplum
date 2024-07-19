@@ -7,6 +7,8 @@ const SUBSCRIPTION_DEBOUNCE_MS = 3000;
 
 export type UseSubscriptionOptions = {
   subscriptionProps?: Partial<Subscription>;
+  onReconnect?: () => void;
+  onDisconnect?: () => void;
 };
 
 /**
@@ -35,6 +37,12 @@ export function useSubscription(
 
   const callbackRef = useRef<typeof callback>();
   callbackRef.current = callback;
+
+  const onReconnectRef = useRef<UseSubscriptionOptions['onReconnect']>();
+  onReconnectRef.current = options?.onReconnect;
+
+  const onDisconnectRef = useRef<UseSubscriptionOptions['onDisconnect']>();
+  onDisconnectRef.current = options?.onDisconnect;
 
   useEffect(() => {
     if (memoizedOptions !== options && !deepEquals(memoizedOptions, options)) {
@@ -68,17 +76,31 @@ export function useSubscription(
     callbackRef.current?.(event.payload);
   }, []);
 
+  const onReconnect = useCallback(() => {
+    if (onReconnectRef.current && medplum.getSubscriptionManager().isInitialOpenComplete()) {
+      onReconnectRef.current();
+    }
+  }, [medplum]);
+
+  const onDisconnect = useCallback(() => {
+    onDisconnectRef.current?.();
+  }, []);
+
   useEffect(() => {
     if (!emitter) {
       return () => undefined;
     }
     if (!listeningRef.current) {
       emitter.addEventListener('message', emitterCallback);
+      emitter.addEventListener('open', onReconnect);
+      emitter.addEventListener('close', onDisconnect);
       listeningRef.current = true;
     }
     return () => {
       listeningRef.current = false;
       emitter.removeEventListener('message', emitterCallback);
+      emitter.removeEventListener('open', onReconnect);
+      emitter.removeEventListener('close', onDisconnect);
     };
-  }, [emitter, emitterCallback]);
+  }, [emitter, emitterCallback, onReconnect, onDisconnect]);
 }

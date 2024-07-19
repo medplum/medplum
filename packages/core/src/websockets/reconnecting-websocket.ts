@@ -34,6 +34,7 @@ export class CloseEvent extends Event {
   public code: number;
   public reason: string;
   public wasClean = true;
+  // eslint-disable-next-line default-param-last
   constructor(code = 1000, reason = '', target: any) {
     super('close', target);
     this.code = code;
@@ -59,11 +60,11 @@ function assert(condition: unknown, msg?: string): asserts condition {
   }
 }
 
-function cloneEventBrowser(e: Event) {
+function cloneEventBrowser(e: Event): Event {
   return new (e as any).constructor(e.type, e) as Event;
 }
 
-function cloneEventNode(e: Event) {
+function cloneEventNode(e: Event): Event {
   if ('data' in e) {
     const evt = new MessageEvent(e.type, e);
     return evt;
@@ -92,7 +93,7 @@ function cloneEventNode(e: Event) {
 const isNode =
   typeof process !== 'undefined' && typeof process.versions?.node !== 'undefined' && typeof document === 'undefined';
 
-const cloneEvent = isNode ? cloneEventNode : cloneEventBrowser;
+export const cloneEvent = isNode ? cloneEventNode : cloneEventBrowser;
 
 export type Options = {
   WebSocket?: any;
@@ -157,33 +158,33 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._connect();
   }
 
-  static get CONNECTING() {
+  static get CONNECTING(): number {
     return 0;
   }
-  static get OPEN() {
+  static get OPEN(): number {
     return 1;
   }
-  static get CLOSING() {
+  static get CLOSING(): number {
     return 2;
   }
-  static get CLOSED() {
+  static get CLOSED(): number {
     return 3;
   }
 
-  get CONNECTING() {
+  get CONNECTING(): number {
     return ReconnectingWebSocket.CONNECTING;
   }
-  get OPEN() {
+  get OPEN(): number {
     return ReconnectingWebSocket.OPEN;
   }
-  get CLOSING() {
+  get CLOSING(): number {
     return ReconnectingWebSocket.CLOSING;
   }
-  get CLOSED() {
+  get CLOSED(): number {
     return ReconnectingWebSocket.CLOSED;
   }
 
-  get binaryType() {
+  get binaryType(): 'arraybuffer' | 'blob' {
     return this._ws ? this._ws.binaryType : this._binaryType;
   }
 
@@ -195,17 +196,18 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
   }
 
   /**
-   * Returns the number or connection retries
+   * @returns The number or connection retries.
    */
   get retryCount(): number {
     return Math.max(this._retryCount, 0);
   }
 
   /**
-   * The number of bytes of data that have been queued using calls to send() but not yet
+   * @returns The number of bytes of data that have been queued using calls to send() but not yet
    * transmitted to the network. This value resets to zero once all queued data has been sent.
    * This value does not reset to zero when the connection is closed; if you keep calling send(),
    * this will continue to climb. Read only
+   *
    */
   get bufferedAmount(): number {
     const bytes = this._messageQueue.reduce((acc, message) => {
@@ -222,7 +224,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
   }
 
   /**
-   * The extensions selected by the server. This is currently only the empty string or a list of
+   * @returns The extensions selected by the server. This is currently only the empty string or a list of
    * extensions as negotiated by the connection
    */
   get extensions(): string {
@@ -230,16 +232,16 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
   }
 
   /**
-   * A string indicating the name of the sub-protocol the server selected;
+   * @returns A string indicating the name of the sub-protocol the server selected;
    * this will be one of the strings specified in the protocols parameter when creating the
-   * WebSocket object
+   * WebSocket object.
    */
   get protocol(): string {
     return this._ws ? this._ws.protocol : '';
   }
 
   /**
-   * The current state of the connection; this is one of the Ready state constants
+   * @returns The current state of the connection; this is one of the Ready state constants.
    */
   get readyState(): number {
     if (this._ws) {
@@ -249,14 +251,14 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
   }
 
   /**
-   * The URL as resolved by the constructor
+   * @returns The URL as resolved by the constructor.
    */
   get url(): string {
     return this._ws ? this._ws.url : '';
   }
 
   /**
-   * Whether the websocket object is now in reconnectable state
+   * @returns Whether the websocket object is now in reconnectable state.
    */
   get shouldReconnect(): boolean {
     return this._shouldReconnect;
@@ -286,8 +288,11 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
   /**
    * Closes the WebSocket connection or connection attempt, if any. If the connection is already
    * CLOSED, this method does nothing
+   * @param code - The code to close with. Default is 1000.
+   * @param reason - An optional reason for closing the connection.
    */
-  public close(code = 1000, reason?: string) {
+  // eslint-disable-next-line default-param-last
+  public close(code = 1000, reason?: string): void {
     this._closeCalled = true;
     this._shouldReconnect = false;
     this._clearTimeouts();
@@ -305,8 +310,10 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
   /**
    * Closes the WebSocket connection or connection attempt and connects again.
    * Resets retry counter;
+   * @param code - The code to disconnect with. Default is 1000.
+   * @param reason - An optional reason for disconnecting the connection.
    */
-  public reconnect(code?: number, reason?: string) {
+  public reconnect(code?: number, reason?: string): void {
     this._shouldReconnect = true;
     this._closeCalled = false;
     this._retryCount = -1;
@@ -320,8 +327,9 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
 
   /**
    * Enqueue specified data to be transmitted to the server over the WebSocket connection
+   * @param data - The data to enqueue.
    */
-  public send(data: Message) {
+  public send(data: Message): void {
     if (this._ws && this._ws.readyState === this.OPEN) {
       this._debug('send', data);
       this._ws.send(data);
@@ -334,13 +342,13 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     }
   }
 
-  private _debug(...args: unknown[]) {
+  private _debug(...args: unknown[]): void {
     if (this._options.debug) {
       this._debugLogger('RWS>', ...args);
     }
   }
 
-  private _getNextDelay() {
+  private _getNextDelay(): number {
     const {
       reconnectionDelayGrowFactor = DEFAULT.reconnectionDelayGrowFactor,
       minReconnectionDelay = DEFAULT.minReconnectionDelay,
@@ -363,7 +371,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     });
   }
 
-  private _connect() {
+  private _connect(): void {
     if (this._connectLock || !this._shouldReconnect) {
       return;
     }
@@ -409,12 +417,13 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
       });
   }
 
-  private _handleTimeout() {
+  private _handleTimeout(): void {
     this._debug('timeout event');
     this._handleError(new Events.ErrorEvent(Error('TIMEOUT'), this));
   }
 
-  private _disconnect(code = 1000, reason?: string) {
+  // eslint-disable-next-line default-param-last
+  private _disconnect(code = 1000, reason?: string): void {
     this._clearTimeouts();
     if (!this._ws) {
       return;
@@ -428,12 +437,12 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     }
   }
 
-  private _acceptOpen() {
+  private _acceptOpen(): void {
     this._debug('accept open');
     this._retryCount = 0;
   }
 
-  private _handleOpen = (event: Event) => {
+  private _handleOpen = (event: Event): void => {
     this._debug('open event');
     const { minUptime = DEFAULT.minUptime } = this._options;
 
@@ -454,7 +463,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this.dispatchEvent(cloneEvent(event));
   };
 
-  private _handleMessage = (event: MessageEvent) => {
+  private _handleMessage = (event: MessageEvent): void => {
     this._debug('message event');
 
     if (this.onmessage) {
@@ -463,7 +472,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this.dispatchEvent(cloneEvent(event));
   };
 
-  private _handleError = (event: ErrorEvent) => {
+  private _handleError = (event: ErrorEvent): void => {
     this._debug('error event', event.message);
     this._disconnect(undefined, event.message === 'TIMEOUT' ? 'timeout' : undefined);
 
@@ -476,7 +485,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._connect();
   };
 
-  private _handleClose = (event: CloseEvent) => {
+  private _handleClose = (event: CloseEvent): void => {
     this._debug('close event');
     this._clearTimeouts();
 
@@ -490,7 +499,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this.dispatchEvent(cloneEvent(event));
   };
 
-  private _removeListeners() {
+  private _removeListeners(): void {
     if (!this._ws) {
       return;
     }
@@ -502,7 +511,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._ws.removeEventListener('error', this._handleError);
   }
 
-  private _addListeners() {
+  private _addListeners(): void {
     if (!this._ws) {
       return;
     }
@@ -514,7 +523,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._ws.addEventListener('error', this._handleError);
   }
 
-  private _clearTimeouts() {
+  private _clearTimeouts(): void {
     clearTimeout(this._connectTimeout);
     clearTimeout(this._uptimeTimeout);
   }

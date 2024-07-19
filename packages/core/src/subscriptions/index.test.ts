@@ -1,16 +1,11 @@
 import { Bundle, Communication, Parameters, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
-import {
-  RobustWebSocket,
-  SubscriptionEmitter,
-  SubscriptionEventMap,
-  SubscriptionManager,
-  resourceMatchesSubscriptionCriteria,
-} from '.';
+import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager, resourceMatchesSubscriptionCriteria } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, sleep } from '../utils';
+import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
@@ -19,7 +14,7 @@ const SECOND_SUBSCRIPTION_ID = '0474fa07-b98a-4172-b430-5ae234c95222';
 const medplum = new MockMedplumClient();
 medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
 
-describe('RobustWebSocket', () => {
+describe('ReconnectingWebSocket', () => {
   let wsServer: WS;
 
   beforeEach(() => {
@@ -31,36 +26,36 @@ describe('RobustWebSocket', () => {
   });
 
   test('.close()', async () => {
-    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     await wsServer.connected;
-    expect(robustWebSocket.readyState).toEqual(WebSocket.OPEN);
+    expect(reconnectingWebSocket.readyState).toEqual(WebSocket.OPEN);
 
-    robustWebSocket.close();
-    expect(robustWebSocket.readyState).not.toEqual(WebSocket.OPEN);
+    reconnectingWebSocket.close();
+    expect(reconnectingWebSocket.readyState).not.toEqual(WebSocket.OPEN);
   });
 
   test('Getting readyState of underlying WebSocket', async () => {
-    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
-    expect(robustWebSocket.readyState).toEqual(WebSocket.CONNECTING);
+    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
+    expect(reconnectingWebSocket.readyState).toEqual(WebSocket.CONNECTING);
 
     await wsServer.connected;
-    expect(robustWebSocket.readyState).toEqual(WebSocket.OPEN);
+    expect(reconnectingWebSocket.readyState).toEqual(WebSocket.OPEN);
 
-    robustWebSocket.close();
-    expect(robustWebSocket.readyState).toEqual(WebSocket.CLOSING);
+    reconnectingWebSocket.close();
+    expect(reconnectingWebSocket.readyState).toEqual(WebSocket.CLOSING);
 
     await wsServer.closed;
-    expect(robustWebSocket.readyState).toEqual(WebSocket.CLOSED);
+    expect(reconnectingWebSocket.readyState).toEqual(WebSocket.CLOSED);
   });
 
   test('Sending before WebSocket is connected', async () => {
-    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
-    expect(() => robustWebSocket.send(JSON.stringify({ hello: 'medplum' }))).not.toThrow();
-    expect(() => robustWebSocket.send(JSON.stringify({ med: 'plum' }))).not.toThrow();
+    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
+    expect(() => reconnectingWebSocket.send(JSON.stringify({ hello: 'medplum' }))).not.toThrow();
+    expect(() => reconnectingWebSocket.send(JSON.stringify({ med: 'plum' }))).not.toThrow();
 
     // Test that open is fired
     await new Promise<void>((resolve) => {
-      robustWebSocket.addEventListener('open', () => {
+      reconnectingWebSocket.addEventListener('open', () => {
         resolve();
       });
     });
@@ -70,25 +65,25 @@ describe('RobustWebSocket', () => {
   });
 
   test('Wait for `open` before sending', async () => {
-    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     // Test that open is fired
     await new Promise<void>((resolve) => {
-      robustWebSocket.addEventListener('open', () => {
+      reconnectingWebSocket.addEventListener('open', () => {
         resolve();
       });
     });
 
-    expect(() => robustWebSocket.send(JSON.stringify({ hello: 'medplum' }))).not.toThrow();
+    expect(() => reconnectingWebSocket.send(JSON.stringify({ hello: 'medplum' }))).not.toThrow();
     await expect(wsServer).toReceiveMessage({ hello: 'medplum' });
-    expect(() => robustWebSocket.send(JSON.stringify({ med: 'plum' }))).not.toThrow();
+    expect(() => reconnectingWebSocket.send(JSON.stringify({ med: 'plum' }))).not.toThrow();
     await expect(wsServer).toReceiveMessage({ med: 'plum' });
   });
 
   test('Should emit `message` when message received from WebSocket', async () => {
-    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     await wsServer.connected;
     const receivedEvent = await new Promise<MessageEvent>((resolve) => {
-      robustWebSocket.addEventListener('message', (event) => {
+      reconnectingWebSocket.addEventListener('message', (event) => {
         resolve(event as MessageEvent);
       });
       wsServer.send({ med: 'plum' });
@@ -99,11 +94,11 @@ describe('RobustWebSocket', () => {
   });
 
   test('Should emit `error` when error received from WebSocket', async () => {
-    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     await wsServer.connected;
-    const receivedEvent = await new Promise<MessageEvent>((resolve) => {
-      robustWebSocket.addEventListener('error', (event) => {
-        resolve(event as MessageEvent);
+    const receivedEvent = await new Promise<ErrorEvent>((resolve) => {
+      reconnectingWebSocket.addEventListener('error', (event) => {
+        resolve(event as ErrorEvent);
       });
       wsServer.error();
     });
@@ -111,10 +106,10 @@ describe('RobustWebSocket', () => {
   });
 
   test('Should emit `close` when server closes connection', async () => {
-    const robustWebSocket = new RobustWebSocket('wss://example.com/ws/subscriptions-r4');
+    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     await wsServer.connected;
     const receivedEvent = await new Promise<CloseEvent>((resolve) => {
-      robustWebSocket.addEventListener('close', (event) => {
+      reconnectingWebSocket.addEventListener('close', (event) => {
         resolve(event as CloseEvent);
       });
       wsServer.close();

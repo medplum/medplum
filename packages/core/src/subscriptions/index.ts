@@ -4,10 +4,10 @@ import { TypedEventTarget } from '../eventtarget';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toTypedValue } from '../fhirpath/utils';
 import { Logger } from '../logger';
-import { OperationOutcomeError, serverError, validationError } from '../outcomes';
+import { normalizeErrorString, OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
-import { ProfileResource, deepEquals, getExtension, getReferenceString, resolveId } from '../utils';
+import { deepEquals, getExtension, getReferenceString, ProfileResource, resolveId } from '../utils';
 import {
   IReconnectingWebSocket,
   IReconnectingWebSocketCtor,
@@ -97,6 +97,7 @@ export class SubscriptionManager {
   private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
+  private initialOpenComplete: boolean;
 
   constructor(medplum: MedplumClient, wsUrl: URL | string, options?: SubManagerOptions) {
     if (!(medplum instanceof MedplumClient)) {
@@ -116,6 +117,7 @@ export class SubscriptionManager {
     this.criteriaEntries = new Map<string, CriteriaMapEntry>();
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
     this.wsClosed = false;
+    this.initialOpenComplete = false;
 
     this.setupWebSocketListeners();
   }
@@ -146,7 +148,7 @@ export class SubscriptionManager {
         const errorEvent = { type: 'error', payload: err as Error } as SubscriptionEventMap['error'];
         this.masterSubEmitter?.dispatchEvent(errorEvent);
         for (const emitter of this.getAllCriteriaEmitters()) {
-          emitter.dispatchEvent(errorEvent);
+          emitter.dispatchEvent({ ...errorEvent });
         }
       }
     });
@@ -158,17 +160,31 @@ export class SubscriptionManager {
       } as SubscriptionEventMap['error'];
       this.masterSubEmitter?.dispatchEvent(errorEvent);
       for (const emitter of this.getAllCriteriaEmitters()) {
-        emitter.dispatchEvent(errorEvent);
+        emitter.dispatchEvent({ ...errorEvent });
       }
     });
 
     ws.addEventListener('close', () => {
       const closeEvent = { type: 'close' } as SubscriptionEventMap['close'];
-      if (this.wsClosed) {
-        this.masterSubEmitter?.dispatchEvent(closeEvent);
-      }
+      this.masterSubEmitter?.dispatchEvent(closeEvent);
       for (const emitter of this.getAllCriteriaEmitters()) {
-        emitter.dispatchEvent(closeEvent);
+        emitter.dispatchEvent({ ...closeEvent });
+      }
+    });
+
+    ws.addEventListener('open', () => {
+      const openEvent = { type: 'open' } as SubscriptionEventMap['open'];
+      this.masterSubEmitter?.dispatchEvent(openEvent);
+      for (const emitter of this.getAllCriteriaEmitters()) {
+        emitter.dispatchEvent({ ...openEvent });
+      }
+      // We do this after dispatching the events so listeners can check if this is the initial open or not
+      if (!this.initialOpenComplete) {
+        this.initialOpenComplete = true;
+      } else {
+        // We are reconnecting
+        // So we refresh all current subscriptions
+        this.refreshAllSubscriptions().catch(console.error);
       }
     });
   }
@@ -180,14 +196,14 @@ export class SubscriptionManager {
     } as SubscriptionEventMap['connect'];
     this.masterSubEmitter?.dispatchEvent(connectEvent);
     for (const emitter of this.getAllCriteriaEmitters()) {
-      emitter.dispatchEvent(connectEvent);
+      emitter.dispatchEvent({ ...connectEvent });
     }
   }
 
   private emitError(criteriaEntry: CriteriaEntry, error: Error): void {
     const errorEvent = { type: 'error', payload: error } as SubscriptionEventMap['error'];
     this.masterSubEmitter?.dispatchEvent(errorEvent);
-    criteriaEntry.emitter.dispatchEvent(errorEvent);
+    criteriaEntry.emitter.dispatchEvent({ ...errorEvent });
   }
 
   private maybeEmitDisconnect(criteriaEntry: CriteriaEntry): void {
@@ -200,7 +216,7 @@ export class SubscriptionManager {
       // Emit disconnect on master
       this.masterSubEmitter?.dispatchEvent(disconnectEvent);
       // Emit disconnect on criteria emitter
-      criteriaEntry.emitter.dispatchEvent(disconnectEvent);
+      criteriaEntry.emitter.dispatchEvent({ ...disconnectEvent });
     } else {
       console.warn('Called disconnect for `CriteriaEntry` before `subscriptionId` was present.');
     }
@@ -315,6 +331,35 @@ export class SubscriptionManager {
     }
   }
 
+  private async subscribeToCriteria(criteriaEntry: CriteriaEntry): Promise<void> {
+    try {
+      const [subscriptionId, token] = await this.getTokenForCriteria(criteriaEntry);
+      criteriaEntry.subscriptionId = subscriptionId;
+      criteriaEntry.token = token;
+      this.criteriaEntriesBySubscriptionId.set(subscriptionId, criteriaEntry);
+      // Emit connect event
+      this.emitConnect(criteriaEntry);
+      // Send binding message
+      this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
+    } catch (err: unknown) {
+      console.error(normalizeErrorString(err));
+      this.emitError(criteriaEntry, err as Error);
+      this.removeCriteriaEntry(criteriaEntry);
+    }
+  }
+
+  private async refreshAllSubscriptions(): Promise<void> {
+    this.criteriaEntriesBySubscriptionId.clear();
+    for (const mapEntry of this.criteriaEntries.values()) {
+      for (const criteriaEntry of [
+        ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
+        ...mapEntry.criteriaWithProps,
+      ]) {
+        await this.subscribeToCriteria(criteriaEntry);
+      }
+    }
+  }
+
   addCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
     if (this.masterSubEmitter) {
       this.masterSubEmitter._addCriteria(criteria);
@@ -329,21 +374,7 @@ export class SubscriptionManager {
     const newCriteriaEntry = new CriteriaEntry(criteria, subscriptionProps);
     this.addCriteriaEntry(newCriteriaEntry);
 
-    this.getTokenForCriteria(newCriteriaEntry)
-      .then(([subscriptionId, token]) => {
-        newCriteriaEntry.subscriptionId = subscriptionId;
-        newCriteriaEntry.token = token;
-        this.criteriaEntriesBySubscriptionId.set(subscriptionId, newCriteriaEntry);
-        // Emit connect event
-        this.emitConnect(newCriteriaEntry);
-        // Send binding message
-        this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
-      })
-      .catch((err) => {
-        console.error(err.message);
-        this.emitError(newCriteriaEntry, err);
-        this.removeCriteriaEntry(newCriteriaEntry);
-      });
+    this.subscribeToCriteria(newCriteriaEntry).catch(console.error);
 
     return newCriteriaEntry.emitter;
   }
@@ -382,6 +413,10 @@ export class SubscriptionManager {
       this.masterSubEmitter = new SubscriptionEmitter(...Array.from(this.criteriaEntries.keys()));
     }
     return this.masterSubEmitter;
+  }
+
+  isInitialOpenComplete(): boolean {
+    return this.initialOpenComplete;
   }
 }
 

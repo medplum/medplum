@@ -1,19 +1,20 @@
 import {
-  IRobustWebSocket,
+  CloseEvent,
+  deepEquals,
+  IReconnectingWebSocket,
   MedplumClient,
-  RobustWebSocketEventMap,
   SubscriptionEmitter,
   SubscriptionEventMap,
   SubscriptionManager,
   TypedEventTarget,
-  deepEquals,
+  WebSocketEventMap,
 } from '@medplum/core';
 import { Subscription } from '@medplum/fhirtypes';
 
-class MockRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
+class MockReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> implements IReconnectingWebSocket {
   readyState = WebSocket.OPEN;
   close(): void {
-    // Not implemented -- this is a mock
+    this.dispatchEvent(new CloseEvent(1000, 'unknown reason', undefined));
   }
   send(): void {
     // Not implemented -- this is a mock
@@ -28,7 +29,7 @@ export type MockCriteriaEntry = {
 };
 
 export interface MockSubManagerOptions {
-  mockRobustWebSocket?: boolean;
+  mockReconnectingWebSocket?: boolean;
 }
 
 export class MockSubscriptionManager extends SubscriptionManager {
@@ -39,7 +40,7 @@ export class MockSubscriptionManager extends SubscriptionManager {
     super(
       medplum,
       'wss://example.com/ws/subscriptions-r4',
-      options?.mockRobustWebSocket ? { RobustWebSocket: MockRobustWebSocket } : undefined
+      options?.mockReconnectingWebSocket ? { ReconnectingWebSocket: MockReconnectingWebSocket } : undefined
     );
     this.entries = new Map<string, MockCriteriaEntry[]>();
     this.masterEmitter = new SubscriptionEmitter();
