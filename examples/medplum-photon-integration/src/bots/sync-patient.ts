@@ -42,15 +42,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     throw new Error('Patient name is required to sync to Photon Health');
   }
 
-  const firstName = patient.name?.[0].given?.[0] ?? '';
-  const lastName = patient.name?.[0].family ?? '';
-
   const variables: CreatePatientVariables = {
     externalId: patient.id as string,
     name: {
-      first: firstName,
-      last: lastName,
-      full: firstName + ' ' + lastName,
+      first: patient.name?.[0].given?.[0] ?? '',
+      last: patient.name?.[0].family ?? '',
     },
     dateOfBirth: formatAWSDate(patient.birthDate),
     sex: getSexType(patient.gender),
