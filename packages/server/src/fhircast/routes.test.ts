@@ -140,6 +140,35 @@ describe('FHIRCast routes', () => {
     }
   });
 
+  test('Subscribing twice to the same topic yields the same url', async () => {
+    const res1 = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': 'topic',
+        'hub.events': 'Patient-open',
+      });
+    expect(res1.status).toBe(202);
+    expect(res1.body['hub.channel.endpoint']).toMatch(/ws:\/\/localhost:8103\/ws\/fhircast\/*/);
+    expect(res1.body['hub.channel.endpoint']).not.toContain('topic');
+
+    const res2 = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': 'topic',
+        'hub.events': 'Patient-open',
+      });
+    expect(res2.status).toBe(202);
+    expect(res2.body['hub.channel.endpoint']).toEqual(res1.body['hub.channel.endpoint']);
+  });
+
   test('Unsubscribe', async () => {
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
       const subRes = await request(server)
