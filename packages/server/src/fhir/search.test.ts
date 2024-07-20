@@ -3943,24 +3943,21 @@ describe('FHIR Search', () => {
           const patientObservations = [
             await createObservations(repo, 0, patients[0]),
             await createObservations(repo, 1, patients[1]),
-            await createObservations(repo, 4, patients[2]),
+            await createObservations(repo, 3, patients[2]),
           ];
 
           const patientServiceRequests = [
-            await createServiceRequests(repo, 4, patients[0]),
+            await createServiceRequests(repo, 3, patients[0]),
             await createServiceRequests(repo, 1, patients[1]),
             await createServiceRequests(repo, 0, patients[2]),
           ];
 
-          // const observation = patientObservations[0][0];
-          const count = 3;
+          const count = 2;
           const result = await repo.searchByReference(
             { resourceType: 'Observation', count, types: ['Observation', 'ServiceRequest'], fields: ['subject'] },
             'subject',
             patients.map((p) => getReferenceString(p))
           );
-
-          console.log(JSON.stringify(result, null, 2));
 
           const childrenByParent = [];
           for (let i = 0; i < patients.length; i++) {
@@ -3970,7 +3967,6 @@ describe('FHIR Search', () => {
 
           // First patient has only ServiceRequests
           expect(result[getReferenceString(patients[0])].map((r) => r.resourceType)).toEqual([
-            'ServiceRequest',
             'ServiceRequest',
             'ServiceRequest',
           ]);
@@ -3984,11 +3980,7 @@ describe('FHIR Search', () => {
           expect(result[getReferenceString(patients[2])].map((r) => r.resourceType)).toEqual([
             'Observation',
             'Observation',
-            'Observation',
           ]);
-          // const resultRepoObservation = result[getReferenceString(patients[0])][0];
-          // expect(resultRepoObservation).toEqual(observation);
-          // expect(resultRepoObservation.meta?.tag).toBeUndefined();
         }));
     });
   });
