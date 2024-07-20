@@ -64,11 +64,11 @@ export const typeCache: Record<string, GraphQLScalarType | undefined> = {
   'http://hl7.org/fhirpath/System.Time': GraphQLString,
 };
 
-export function parseSearchArgsWithReference(
+function parseSearchArgsWithReference(
   resourceType: ResourceType,
   source: any,
   args: Record<string, string>
-): [SearchRequest, Filter | undefined] {
+): { searchRequest: SearchRequest; referenceFilter: Filter | undefined } {
   let referenceFilter: Filter | undefined = undefined;
   if (source) {
     // _reference is a required field for reverse lookup searches
@@ -87,7 +87,7 @@ export function parseSearchArgsWithReference(
 
   // Parse the search request
   const searchRequest = parseSearchRequest(resourceType, args);
-  return [searchRequest, referenceFilter];
+  return { searchRequest, referenceFilter };
 }
 
 function addFilter(searchRequest: SearchRequest, filter: Filter): void {
@@ -96,10 +96,8 @@ function addFilter(searchRequest: SearchRequest, filter: Filter): void {
 }
 
 export function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
-  const [searchRequest, referenceFilter] = parseSearchArgsWithReference(resourceType, source, args);
+  const { searchRequest, referenceFilter } = parseSearchArgsWithReference(resourceType, source, args);
 
-  // If a reverse lookup filter was specified,
-  // add it to the search request.
   if (referenceFilter) {
     addFilter(searchRequest, referenceFilter);
   }
@@ -159,7 +157,7 @@ export async function resolveBySearch(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'List'.length) as ResourceType;
 
-  const [searchRequest, referenceFilter] = parseSearchArgsWithReference(resourceType, source, args);
+  const { searchRequest, referenceFilter } = parseSearchArgsWithReference(resourceType, source, args);
   applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
 
   if (!referenceFilter) {

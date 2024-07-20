@@ -836,23 +836,20 @@ export class ValuesQuery implements Expression {
     */
 
     builder.append('SELECT * FROM (VALUES');
-    let firstRow = true;
-    for (const values of this.rows) {
-      builder.append(firstRow ? '(' : ',(');
-      let firstValue = true;
-      for (const value of values) {
-        builder.append(firstValue ? '' : ',');
-        builder.param(value);
-        firstValue = false;
+    for (let r = 0; r < this.rows.length; r++) {
+      builder.append(r === 0 ? '(' : ',(');
+      for (let v = 0; v < this.rows[r].length; v++) {
+        builder.append(v === 0 ? '' : ',');
+        builder.param(this.rows[r][v]);
       }
       builder.append(')');
-      firstRow = false;
     }
     builder.append(') AS ');
     builder.appendIdentifier(this.tableName);
     builder.append('(');
-    for (const columnName of this.columnNames) {
-      builder.appendIdentifier(columnName);
+    for (let c = 0; c < this.columnNames.length; c++) {
+      builder.append(c === 0 ? '' : ',');
+      builder.appendIdentifier(this.columnNames[c]);
     }
     builder.append(')');
   }
