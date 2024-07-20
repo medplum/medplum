@@ -151,9 +151,13 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   let subscriptionEndpoint: string;
   try {
     const results = await getRedis()
+      // Multi allows for multiple commands to be executed in a transaction
       .multi()
+      // Sets the endpoint key for this topic if it doesn't exist
       .setnx(`medplum:fhircast:topic:${topic}:endpoint`, generateId())
+      // Gets the endpoint, either previously generated endpoint secret or the newly generated key if a previous one did not exist
       .get(`medplum:fhircast:topic:${topic}:endpoint`)
+      // Executes the transaction
       .exec();
 
     if (!results) {
