@@ -120,22 +120,32 @@ export async function searchByReferenceImpl<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>,
   referenceField: string,
-  references: string[],
-  _options?: { disableFallback?: boolean }
+  references: string[]
 ): Promise<Record<string, T[]>> {
   validateSearchResourceTypes(repo, searchRequest);
   applyCountAndOffsetLimits(searchRequest);
 
-  const referenceColumn = new Column('references', 'ref');
+  const referencesTableName = 'references';
+  const referencesColumnName = 'ref';
+  const referenceColumn = new Column(referencesTableName, referencesColumnName);
+  const builder = new SelectQuery(
+    referencesTableName,
+    new ValuesQuery(
+      referencesTableName,
+      [referencesColumnName],
+      references.map((r) => [r])
+    )
+  );
 
-  const innerQuery = getSelectQueryForSearch(repo, searchRequest);
-  innerQuery.where(new Column(searchRequest.resourceType, referenceField), '=', referenceColumn);
-  innerQuery.limit(searchRequest.count);
+  const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
+    limitModifier: 0,
+    resourceTypeQueryCallback: (resourceType, builder) => {
+      builder.whereExpr(new Condition(new Column(resourceType, referenceField), '=', referenceColumn));
+    },
+  });
+  builder.innerJoin(searchQuery, 'results', new Literal('true'), true);
 
-  const referenceValuesQuery = new ValuesQuery('references', 'ref', references);
-  const builder = new SelectQuery('references', referenceValuesQuery);
   builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
-  builder.innerJoin(innerQuery, 'results', new Literal('true'), true);
 
   interface Row {
     content: string;
@@ -200,14 +210,19 @@ function validateSearchResourceType(repo: Repository, resourceType: ResourceType
   }
 }
 
+interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
+  /** Number added to `searchRequest.count` when specifying the query LIMIT. Default is 1 */
+  limitModifier?: number;
+}
 function getSelectQueryForSearch<T extends Resource>(
   repo: Repository,
-  searchRequest: PreparedSearchRequest<T>
+  searchRequest: PreparedSearchRequest<T>,
+  options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
-  const builder = getBaseSelectQuery(repo, searchRequest);
+  const builder = getBaseSelectQuery(repo, searchRequest, options);
   addSortRules(builder, searchRequest);
   const count = searchRequest.count as number;
-  builder.limit(count + 1); // Request one extra to test if there are more results
+  builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
   builder.offset(searchRequest.offset || 0);
   return builder;
 }
@@ -267,19 +282,31 @@ async function getSearchEntries<T extends Resource>(
   };
 }
 
-function getBaseSelectQuery(repo: Repository, searchRequest: SearchRequest, addColumns = true): SelectQuery {
+interface GetBaseSelectQueryOptions {
+  /** If `true`, the "id" and "content" columns are selected */
+  addColumns?: boolean;
+  /** Callback invoked for each resource type its corresponding `SelectQuery`. */
+  resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
+}
+function getBaseSelectQuery(
+  repo: Repository,
+  searchRequest: SearchRequest,
+  options?: GetBaseSelectQueryOptions
+): SelectQuery {
+  const { addColumns = true } = options ?? {};
   let builder: SelectQuery;
   if (searchRequest.types) {
     const queries: SelectQuery[] = [];
     for (const resourceType of searchRequest.types) {
-      queries.push(getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, addColumns));
+      const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, options);
+      queries.push(query);
     }
     builder = new SelectQuery('combined', new Union(...queries));
     if (addColumns) {
       builder.column('id').column('content');
     }
   } else {
-    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, addColumns);
+    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, options);
   }
   return builder;
 }
@@ -288,8 +315,10 @@ function getBaseSelectQueryForResourceType(
   repo: Repository,
   resourceType: ResourceType,
   searchRequest: SearchRequest,
-  addColumns = true
+  options?: GetBaseSelectQueryOptions
 ): SelectQuery {
+  const { addColumns = true, resourceTypeQueryCallback } = options ?? {};
+
   const builder = new SelectQuery(resourceType);
   if (addColumns) {
     builder
@@ -299,6 +328,9 @@ function getBaseSelectQueryForResourceType(
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
+  if (resourceTypeQueryCallback) {
+    resourceTypeQueryCallback(resourceType, builder);
+  }
   return builder;
 }
 
@@ -555,7 +587,7 @@ async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest, false);
+  const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false });
 
   if (builder.joins.length > 0) {
     builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);

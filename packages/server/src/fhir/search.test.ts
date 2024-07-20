@@ -3809,6 +3809,26 @@ describe('FHIR Search', () => {
         return resources;
       }
 
+      async function createServiceRequests(
+        repo: Repository,
+        count: number,
+        patient: Patient
+      ): Promise<ServiceRequest[]> {
+        const resources = [];
+        for (let i = 0; i < count; i++) {
+          resources.push(
+            await repo.createResource<ServiceRequest>({
+              resourceType: 'ServiceRequest',
+              status: 'active',
+              intent: 'plan',
+              subject: createReference(patient),
+              code: { text: 'code CodeableConcept.text' },
+            })
+          );
+        }
+        return resources;
+      }
+
       function expectResultsContents<Parent extends Resource, Child extends Resource>(
         parents: Parent[],
         childrenByParent: Child[][],
@@ -3917,25 +3937,58 @@ describe('FHIR Search', () => {
           });
         }));
 
-      test('Unsupported search succeeds via fallback', async () =>
+      test('Multiple types', async () =>
         withTestContext(async () => {
-          const patients = await createPatients(repo, 2);
+          const patients = await createPatients(repo, 3);
           const patientObservations = [
-            await createObservations(repo, 6, patients[0]),
-            await createObservations(repo, 8, patients[1]),
+            await createObservations(repo, 0, patients[0]),
+            await createObservations(repo, 1, patients[1]),
+            await createObservations(repo, 4, patients[2]),
           ];
 
-          const count = 3;
-          const offset = 2;
-          const search: SearchRequest<Observation> = { resourceType: 'Observation', count, offset };
+          const patientServiceRequests = [
+            await createServiceRequests(repo, 4, patients[0]),
+            await createServiceRequests(repo, 1, patients[1]),
+            await createServiceRequests(repo, 0, patients[2]),
+          ];
 
-          // do it again without disabling the fallback
+          // const observation = patientObservations[0][0];
+          const count = 3;
           const result = await repo.searchByReference(
-            search,
+            { resourceType: 'Observation', count, types: ['Observation', 'ServiceRequest'], fields: ['subject'] },
             'subject',
             patients.map((p) => getReferenceString(p))
           );
-          expectResultsContents(patients, patientObservations, count, result);
+
+          console.log(JSON.stringify(result, null, 2));
+
+          const childrenByParent = [];
+          for (let i = 0; i < patients.length; i++) {
+            childrenByParent.push([...patientObservations[i], ...patientServiceRequests[i]]);
+          }
+          expectResultsContents(patients, childrenByParent, count, result);
+
+          // First patient has only ServiceRequests
+          expect(result[getReferenceString(patients[0])].map((r) => r.resourceType)).toEqual([
+            'ServiceRequest',
+            'ServiceRequest',
+            'ServiceRequest',
+          ]);
+
+          // Second patient has one ServiceRequest and one Observation
+          expect(
+            result[getReferenceString(patients[1])].map((r) => r.resourceType).sort((a, b) => a.localeCompare(b))
+          ).toEqual(['Observation', 'ServiceRequest']);
+
+          // Third patient has only Observations
+          expect(result[getReferenceString(patients[2])].map((r) => r.resourceType)).toEqual([
+            'Observation',
+            'Observation',
+            'Observation',
+          ]);
+          // const resultRepoObservation = result[getReferenceString(patients[0])][0];
+          // expect(resultRepoObservation).toEqual(observation);
+          // expect(resultRepoObservation.meta?.tag).toBeUndefined();
         }));
     });
   });

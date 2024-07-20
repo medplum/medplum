@@ -161,13 +161,15 @@ export async function resolveBySearch(
 
   const [searchRequest, referenceFilter] = parseSearchArgsWithReference(resourceType, source, args);
   applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
+
   if (!referenceFilter) {
     const bundle = await ctx.repo.search(searchRequest);
     return bundle.entry?.map((e) => e.resource as Resource);
   }
+
   const hash = sortedStringify(searchRequest);
   const dl = (ctx.searchDataLoaders[hash] ??= buildResolveBySearchDataLoader(ctx.repo, searchRequest));
-  return (await dl.load(referenceFilter)) as any;
+  return dl.load(referenceFilter);
 }
 
 function buildResolveBySearchDataLoader(
