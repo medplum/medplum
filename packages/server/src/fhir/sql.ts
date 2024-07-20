@@ -814,35 +814,46 @@ export class DeleteQuery extends BaseQuery {
 
 export class ValuesQuery implements Expression {
   readonly tableName: string;
-  readonly columnName: string;
-  readonly values: any[];
-  constructor(tableName: string, columnName: string, values: any[]) {
+  readonly columnNames: string[];
+  readonly rows: any[][];
+  constructor(tableName: string, columnNames: string[], rows: any[][]) {
     this.tableName = tableName;
-    this.columnName = columnName;
-    this.values = values;
+    this.columnNames = columnNames;
+    this.rows = rows;
   }
 
   buildSql(builder: SqlBuilder): void {
     /*
+    Since a VALUES expression has a special alias format of "tableName"("columnName"),
+    wrap its sql with SELECT * FROM (VALUES ...) AS "tableName"("columnName") for compatibility
+    other query builders that may include a ValuesQuery:
+
     SELECT * FROM (VALUES
-      ('Patient/123'),
-		  ('Patient/456'),
-		  ('Patient/789'),
-    ) AS "references" ("ref")
+      ('val1'),
+		  ('val2'),
+		  ('val3'),
+    ) AS "values"("val")
     */
 
     builder.append('SELECT * FROM (VALUES');
-    let first = true;
-    for (const value of this.values) {
-      builder.append(first ? '(' : ',(');
-      builder.param(value);
+    let firstRow = true;
+    for (const values of this.rows) {
+      builder.append(firstRow ? '(' : ',(');
+      let firstValue = true;
+      for (const value of values) {
+        builder.append(firstValue ? '' : ',');
+        builder.param(value);
+        firstValue = false;
+      }
       builder.append(')');
-      first = false;
+      firstRow = false;
     }
     builder.append(') AS ');
     builder.appendIdentifier(this.tableName);
     builder.append('(');
-    builder.appendIdentifier(this.columnName);
+    for (const columnName of this.columnNames) {
+      builder.appendIdentifier(columnName);
+    }
     builder.append(')');
   }
 }
