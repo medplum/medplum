@@ -63,6 +63,7 @@ describe('FHIR Search', () => {
       await initAppServices(config);
       const { project } = await createTestProject();
       repo = new Repository({
+        strictMode: true,
         projects: [project.id as string],
         author: { reference: 'User/' + randomUUID() },
       });
@@ -3801,7 +3802,6 @@ describe('FHIR Search', () => {
               subject: createReference(patient),
               status: 'final',
               code: { text: 'code CodeableConcept.text' },
-              method: { text: 'method CodeableConcept.text' },
               valueString: i.toString(),
             })
           );
@@ -3819,10 +3819,9 @@ describe('FHIR Search', () => {
           resources.push(
             await repo.createResource<ServiceRequest>({
               resourceType: 'ServiceRequest',
+              subject: createReference(patient),
               status: 'active',
               intent: 'plan',
-              subject: createReference(patient),
-              code: { text: 'code CodeableConcept.text' },
             })
           );
         }
@@ -3868,6 +3867,14 @@ describe('FHIR Search', () => {
           const resultRepoObservation = result[getReferenceString(patients[0])][0];
           expect(resultRepoObservation).toEqual(observation);
           expect(resultRepoObservation.meta?.tag).toBeUndefined();
+        }));
+
+      test('Invalid reference field', async () =>
+        withTestContext(async () => {
+          // 'code' is not a reference search parameter
+          await expect(() =>
+            repo.searchByReference<Observation>({ resourceType: 'Observation', count: 1 }, 'code', [])
+          ).rejects.toThrow('Invalid reference search parameter');
         }));
 
       test('Reference with sort', async () =>
