@@ -140,6 +140,12 @@ export async function searchByReferenceImpl<T extends Resource>(
   const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
     limitModifier: 0,
     resourceTypeQueryCallback: (resourceType, builder) => {
+      const param = getSearchParameter(resourceType, referenceField);
+      if (param?.type !== 'reference') {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
+        );
+      }
       builder.whereExpr(new Condition(new Column(resourceType, referenceField), '=', referenceColumn));
     },
   });
