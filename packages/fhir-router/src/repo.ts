@@ -1,5 +1,4 @@
 import {
-  Filter,
   OperationOutcomeError,
   Operator,
   SearchRequest,
@@ -422,10 +421,20 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     referenceField: string,
     references: string[]
   ): Promise<Record<string, T[]>> {
-    const combinedFilter: Filter = { code: referenceField, operator: Operator.IN, value: references.join(',') };
     searchRequest.filters ??= [];
-    searchRequest.filters.push(combinedFilter);
-    return {};
+    const results: Record<string, T[]> = {};
+    for (const reference of references) {
+      searchRequest.filters.push({ code: referenceField, operator: Operator.EQUALS, value: reference });
+      const bundle = await this.search(searchRequest);
+      results[reference] = [];
+      for (const entry of bundle.entry ?? []) {
+        if (entry.resource) {
+          results[reference].push(entry.resource);
+        }
+      }
+      searchRequest.filters.pop();
+    }
+    return results;
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
