@@ -121,7 +121,7 @@ function sortedStringify(obj: any): string {
   const customReplacer = (key: any, value: any): any => {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       return Object.keys(value)
-        .sort()
+        .sort((a, b) => a.localeCompare(b))
         .reduce((sorted: any, key: string) => {
           sorted[key] = value[key];
           return sorted;

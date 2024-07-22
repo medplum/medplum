@@ -83,10 +83,6 @@ export interface ChainedSearchParameter {
   chain: ChainedSearchLink[];
 }
 
-type PreparedSearchRequest<T extends Resource = Resource> = SearchRequest<T> & {
-  count: NonNullable<SearchRequest<T>['count']>;
-};
-
 export async function searchImpl<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>
@@ -128,16 +124,9 @@ export async function searchByReferenceImpl<T extends Resource>(
   const referencesTableName = 'references';
   const referencesColumnName = 'ref';
   const referenceColumn = new Column(referencesTableName, referencesColumnName);
-  const builder = new SelectQuery(
-    referencesTableName,
-    new ValuesQuery(
-      referencesTableName,
-      [referencesColumnName],
-      referenceValues.map((r) => [r])
-    )
-  );
 
   const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
+    addColumns: true,
     limitModifier: 0,
     resourceTypeQueryCallback: (resourceType, builder) => {
       const param = getSearchParameter(resourceType, referenceField);
@@ -151,15 +140,21 @@ export async function searchByReferenceImpl<T extends Resource>(
       builder.whereExpr(new Condition(column, '=', referenceColumn));
     },
   });
+  const builder = new SelectQuery(
+    referencesTableName,
+    new ValuesQuery(
+      referencesTableName,
+      [referencesColumnName],
+      referenceValues.map((r) => [r])
+    )
+  );
   builder.innerJoin(searchQuery, 'results', new Literal('true'), true);
-
   builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
 
-  interface Row {
+  const rows: {
     content: string;
     ref: string;
-  }
-  const rows: Row[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  }[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
 
   const results: Record<string, T[]> = {};
   for (const ref of referenceValues) {
@@ -176,7 +171,7 @@ export async function searchByReferenceImpl<T extends Resource>(
 
 function applyCountAndOffsetLimits<T extends Resource>(
   searchRequest: SearchRequest
-): asserts searchRequest is PreparedSearchRequest<T> {
+): asserts searchRequest is SearchRequest<T> & { count: number; offset: number } {
   if (searchRequest.count === undefined) {
     searchRequest.count = DEFAULT_SEARCH_COUNT;
   } else if (searchRequest.count > maxSearchResults) {
@@ -224,14 +219,14 @@ interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
 }
 function getSelectQueryForSearch<T extends Resource>(
   repo: Repository,
-  searchRequest: PreparedSearchRequest<T>,
+  searchRequest: SearchRequest<T>,
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
   const builder = getBaseSelectQuery(repo, searchRequest, options);
   addSortRules(builder, searchRequest);
   const count = searchRequest.count as number;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
-  builder.offset(searchRequest.offset || 0);
+  builder.offset(searchRequest.offset ?? 0);
   return builder;
 }
 
@@ -244,7 +239,7 @@ function getSelectQueryForSearch<T extends Resource>(
  */
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
-  searchRequest: PreparedSearchRequest<T>,
+  searchRequest: SearchRequest<T> & { count: number },
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
   const startTime = Date.now();
@@ -291,30 +286,29 @@ async function getSearchEntries<T extends Resource>(
 }
 
 interface GetBaseSelectQueryOptions {
-  /** If `true`, the "id" and "content" columns are selected */
+  /** If `true`, the "id" and "content" columns are selected. Defaults to `true`. */
   addColumns?: boolean;
-  /** Callback invoked for each resource type its corresponding `SelectQuery`. */
+  /** Callback invoked for each resource type and  its `SelectQuery` after all filters are applied. */
   resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
 }
 function getBaseSelectQuery(
   repo: Repository,
   searchRequest: SearchRequest,
-  options?: GetBaseSelectQueryOptions
+  opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
-  const { addColumns = true } = options ?? {};
   let builder: SelectQuery;
   if (searchRequest.types) {
     const queries: SelectQuery[] = [];
     for (const resourceType of searchRequest.types) {
-      const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, options);
+      const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, opts);
       queries.push(query);
     }
     builder = new SelectQuery('combined', new Union(...queries));
-    if (addColumns) {
+    if (opts?.addColumns ?? true) {
       builder.column('id').column('content');
     }
   } else {
-    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, options);
+    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
   }
   return builder;
 }
@@ -323,12 +317,10 @@ function getBaseSelectQueryForResourceType(
   repo: Repository,
   resourceType: ResourceType,
   searchRequest: SearchRequest,
-  options?: GetBaseSelectQueryOptions
+  opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
-  const { addColumns = true, resourceTypeQueryCallback } = options ?? {};
-
   const builder = new SelectQuery(resourceType);
-  if (addColumns) {
+  if (opts?.addColumns ?? true) {
     builder
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
@@ -336,8 +328,8 @@ function getBaseSelectQueryForResourceType(
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
-  if (resourceTypeQueryCallback) {
-    resourceTypeQueryCallback(resourceType, builder);
+  if (opts?.resourceTypeQueryCallback) {
+    opts.resourceTypeQueryCallback(resourceType, builder);
   }
   return builder;
 }
@@ -449,7 +441,7 @@ async function getSearchIncludeEntries(
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
     const canonicalSearches = (searchParam.target || []).map((resourceType) => {
-      const searchRequest: PreparedSearchRequest = {
+      const searchRequest = {
         resourceType: resourceType,
         filters: [
           {
