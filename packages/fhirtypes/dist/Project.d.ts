@@ -135,7 +135,7 @@ export interface Project {
   /**
    * A list of optional features that are enabled for the project.
    */
-  features?: ('aws-comprehend' | 'aws-textract' | 'bots' | 'cron' | 'email' | 'google-auth-required' |
+  features?: ('aws-comprehend' | 'aws-textract' | 'batched-reference-searches' |'bots' | 'cron' | 'email' | 'google-auth-required' |
       'graphql-introspection' | 'terminology' | 'websocket-subscriptions' | 'reference-lookups')[];
 
   /**
