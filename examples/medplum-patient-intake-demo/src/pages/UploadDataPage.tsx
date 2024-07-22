@@ -1,18 +1,17 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Practitioner, Resource } from '@medplum/fhirtypes';
+import { Bot, Bundle, BundleEntry, Practitioner, Questionnaire, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import coreData from '../../data/core/patient-intake-questionnaire.json';
 import exampleData from '../../data/example/example-patient-data.json';
 import exampleBotData from '../../data/core/example-bots.json';
+import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
-type UploadFunction =
-  | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
-  | ((medplum: MedplumClient) => Promise<void>);
+type UploadFunction = (medplum: MedplumClient, profile: Practitioner, questionnaire: Questionnaire) => Promise<void>;
 
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
@@ -20,11 +19,17 @@ export function UploadDataPage(): JSX.Element {
   const navigate = useNavigate();
   const [pageDisabled, setPageDisabled] = useState<boolean>(false);
 
+  const { questionnaire } = useContext(IntakeQuestionnaireContext);
+
   const { dataType } = useParams();
   const dataTypeDisplay = dataType ? capitalize(dataType) : '';
   const buttonDisabled = dataType === 'bots' && (!checkQuestionnairesUploaded(medplum) || checkBotsUploaded(medplum));
 
   const handleUpload = useCallback(() => {
+    if (!profile || !questionnaire) {
+      return;
+    }
+
     setPageDisabled(true);
     let uploadFunction: UploadFunction;
     switch (dataType) {
@@ -41,7 +46,7 @@ export function UploadDataPage(): JSX.Element {
         throw new Error(`Invalid upload type: ${dataType}`);
     }
 
-    uploadFunction(medplum, profile as Practitioner)
+    uploadFunction(medplum, profile as Practitioner, questionnaire as Questionnaire)
       .then(() => navigate(-1))
       .catch((error) => {
         showNotification({
@@ -103,9 +108,11 @@ async function uploadExampleData(medplum: MedplumClient): Promise<void> {
   }
 }
 
-async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
-  const questionnaires = await medplum.searchResources('Questionnaire');
-
+async function uploadExampleBots(
+  medplum: MedplumClient,
+  profile: Practitioner,
+  questionnaire: Questionnaire
+): Promise<void> {
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
     (exampleBotData as Bundle).entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
@@ -131,9 +138,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
       .replaceAll(`$bot-${botName}-id`, existingBot.id as string);
   }
 
-  for (const questionnaire of questionnaires) {
-    transactionString = transactionString.replaceAll(`$${questionnaire.name}`, getReferenceString(questionnaire));
-  }
+  transactionString = transactionString.replaceAll(`$${questionnaire.name}`, getReferenceString(questionnaire));
 
   // Execute the transaction to upload / update the bot
   const transaction = JSON.parse(transactionString);
