@@ -1,6 +1,6 @@
 {
   "name": "medplum-fhircast-demo",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,10 +18,10 @@
     "@mantine/core": "7.11.2",
     "@mantine/hooks": "7.11.2",
     "@mantine/notifications": "7.11.2",
-    "@medplum/core": "3.2.2",
-    "@medplum/eslint-config": "3.2.2",
-    "@medplum/fhirtypes": "3.2.2",
-    "@medplum/react": "3.2.2",
+    "@medplum/core": "3.2.3",
+    "@medplum/eslint-config": "3.2.3",
+    "@medplum/fhirtypes": "3.2.3",
+    "@medplum/react": "3.2.3",
     "@tabler/icons-react": "3.10.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
