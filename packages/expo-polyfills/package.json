@@ -59,7 +59,7 @@
     "jest": "29.7.0",
     "jest-expo": "51.0.3",
     "rimraf": "5.0.9",
-    "ts-jest": "29.2.2"
+    "ts-jest": "29.2.3"
   },
   "peerDependencies": {
     "@medplum/core": "3.2.3",
