@@ -120,7 +120,7 @@ export async function searchByReferenceImpl<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>,
   referenceField: string,
-  references: string[]
+  referenceValues: string[]
 ): Promise<Record<string, T[]>> {
   validateSearchResourceTypes(repo, searchRequest);
   applyCountAndOffsetLimits(searchRequest);
@@ -133,7 +133,7 @@ export async function searchByReferenceImpl<T extends Resource>(
     new ValuesQuery(
       referencesTableName,
       [referencesColumnName],
-      references.map((r) => [r])
+      referenceValues.map((r) => [r])
     )
   );
 
@@ -146,7 +146,9 @@ export async function searchByReferenceImpl<T extends Resource>(
           badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
         );
       }
-      builder.whereExpr(new Condition(new Column(resourceType, referenceField), '=', referenceColumn));
+      const details = getSearchParameterDetails(resourceType, param);
+      const column = new Column(builder.tableName, details.columnName);
+      builder.whereExpr(new Condition(column, '=', referenceColumn));
     },
   });
   builder.innerJoin(searchQuery, 'results', new Literal('true'), true);
@@ -160,7 +162,7 @@ export async function searchByReferenceImpl<T extends Resource>(
   const rows: Row[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
 
   const results: Record<string, T[]> = {};
-  for (const ref of references) {
+  for (const ref of referenceValues) {
     results[ref] = [];
   }
   for (const row of rows) {
