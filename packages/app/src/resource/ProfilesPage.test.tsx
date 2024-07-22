@@ -72,7 +72,7 @@ describe('ProfilesPage', () => {
     expect(screen.queryByText('Species')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Update' }));
     });
 
     expect(screen.getByText('Success')).toBeInTheDocument();

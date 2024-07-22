@@ -33,6 +33,7 @@ export default defineConfig({
     alias: {
       '@medplum/core': path.resolve(__dirname, '../core/src'),
       '@medplum/react': path.resolve(__dirname, '../react/src'),
+      '@medplum/react-hooks': path.resolve(__dirname, '../react-hooks/src'),
     },
   },
 });

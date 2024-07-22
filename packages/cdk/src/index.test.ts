@@ -685,4 +685,43 @@ describe('Infra', () => {
     expect(() => main({ config: filename })).not.toThrow();
     unlinkSync(filename);
   });
+
+  test('IP Set rules', () => {
+    // Create a temp config file
+    const filename = resolve('./medplum.ipset.config.json');
+    writeFileSync(
+      filename,
+      JSON.stringify({
+        name: 'ipset',
+        stackName: 'MedplumIpSetStack',
+        accountNumber: '647991932601',
+        region: 'us-east-1',
+        domainName: 'medplum.com',
+        apiPort: 8103,
+        apiDomainName: 'api.medplum.com',
+        apiSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/08bf1daf-3a2b-4cbe-91a0-739b4364a1ec',
+        apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumIpSet',
+        appDomainName: 'app.medplum.com',
+        appSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/fd21b628-b2c0-4a5d-b4f5-b5c9a6d63b1a',
+        appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumIpSet',
+        storageBucketName: 'medplum-storage',
+        storageDomainName: 'storage.medplum.com',
+        storageSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
+        storagePublicKey: '-----BEGIN PUBLIC KEY-----\n-----END PUBLIC KEY-----',
+        storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumIpSet',
+        maxAzs: 2,
+        rdsInstances: 1,
+        desiredServerCount: 1,
+        serverImage: 'medplum/medplum-server:staging',
+        serverMemory: 512,
+        serverCpu: 256,
+        cacheSecurityGroupId: 'sg-0fc3',
+        loadBalancerSecurityGroupId: 'sg-0fc4',
+      }),
+      { encoding: 'utf-8' }
+    );
+
+    expect(() => main({ config: filename })).not.toThrow();
+    unlinkSync(filename);
+  });
 });
