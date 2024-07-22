@@ -27,8 +27,8 @@
     "@medplum/core": "3.2.3",
     "aws-cdk-lib": "2.149.0",
     "cdk": "2.149.0",
-    "cdk-nag": "2.28.159",
-    "cdk-serverless-clamscan": "2.6.227",
+    "cdk-nag": "2.28.163",
+    "cdk-serverless-clamscan": "2.7.3",
     "constructs": "10.3.0"
   },
   "engines": {
