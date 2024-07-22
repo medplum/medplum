@@ -51,6 +51,7 @@ import {
   BundleEntry,
   Meta,
   OperationOutcome,
+  Project,
   Reference,
   Resource,
   ResourceType,
@@ -94,7 +95,7 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { buildSearchExpression, searchImpl } from './search';
+import { RepositorySearch } from './search';
 import {
   Condition,
   DeleteQuery,
@@ -139,6 +140,9 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.project.
    */
   projects?: string[];
+
+  /** Current Project of the authenticated user, or none for the system repository. */
+  currentProject?: Project;
 
   /**
    * Optional compartment restriction.
@@ -223,6 +227,7 @@ const lookupTables: LookupTable[] = [
 export class Repository extends BaseRepository implements FhirRepository<PoolClient>, Disposable {
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
+  private searchImpl: RepositorySearch;
   private transactionDepth = 0;
   private closed = false;
   mode: RepositoryMode;
@@ -234,6 +239,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
+    this.searchImpl = new RepositorySearch(this);
 
     // Default to writer mode
     // In the future, as we do more testing and validation, we will explore defaulting to reader mode
@@ -247,6 +253,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   setMode(mode: RepositoryMode): void {
     this.mode = mode;
+  }
+
+  currentProject(): Project | undefined {
+    return this.context.currentProject;
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -1079,7 +1089,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     try {
       // Resource type validation is performed in the searchImpl function
-      const result = await searchImpl(this, searchRequest);
+      const result = await this.searchImpl.search(searchRequest);
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
       return result;
     } catch (err) {
@@ -1143,7 +1153,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
-          const accessPolicyExpression = buildSearchExpression(builder, searchRequest.resourceType, searchRequest);
+          const accessPolicyExpression = new RepositorySearch(this).buildSearchExpression(
+            builder,
+            searchRequest.resourceType,
+            searchRequest
+          );
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);
           }

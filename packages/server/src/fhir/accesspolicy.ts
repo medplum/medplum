@@ -37,6 +37,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
 
   return new Repository({
     projects: allowedProjects,
+    currentProject: project,
     author: membership.profile as Reference,
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
