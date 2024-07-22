@@ -2,7 +2,7 @@
 
 import { aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 
-export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
+const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
   // Common Rule Set aligns with major portions of OWASP Core Rule Set
   // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-baseline.html
   {
@@ -120,3 +120,60 @@ export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
     },
   },
 ];
+
+/**
+ * Builds a set of WAF rules to apply to a web ACL.
+ * @param ipSetArn - The ARN of the IP set to use for IP allow listing.
+ * @returns The WAF rules to apply to the web ACL.
+ */
+function buildWafRules(ipSetArn: string | undefined): wafv2.CfnWebACL.RuleProperty[] {
+  const rules = [...awsManagedRules];
+
+  if (ipSetArn) {
+    const ipAllowRule: wafv2.CfnWebACL.RuleProperty = {
+      name: 'IPAllowListRule',
+      priority: 50,
+      action: {
+        allow: {},
+      },
+      statement: {
+        ipSetReferenceStatement: {
+          arn: ipSetArn,
+        },
+      },
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: 'IPAllowListRule',
+        sampledRequestsEnabled: true,
+      },
+    };
+    rules.push(ipAllowRule);
+  }
+
+  return rules;
+}
+
+/**
+ * Builds a WAF configuration.
+ * @param name - The name of the WAF configuration.
+ * @param scope - The scope of the WAF configuration. Use "CLOUDFRONT" for CloudFront distributions. Use "REGIONAL" for Application Load Balancers.
+ * @param ipSetArn - The ARN of the IP set to use for IP allow listing. IP Set scope must match the WAF scope.
+ * @returns The WAF configuration.
+ */
+export function buildWafConfig(
+  name: string,
+  scope: 'REGIONAL' | 'CLOUDFRONT',
+  ipSetArn: string | undefined
+): wafv2.CfnWebACLProps {
+  return {
+    name,
+    scope,
+    defaultAction: ipSetArn ? { block: {} } : { allow: {} },
+    rules: buildWafRules(ipSetArn),
+    visibilityConfig: {
+      metricName: `${name}-Metric`,
+      cloudWatchMetricsEnabled: true,
+      sampledRequestsEnabled: false,
+    },
+  };
+}

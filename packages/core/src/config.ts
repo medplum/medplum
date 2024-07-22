@@ -26,9 +26,11 @@ export interface MedplumSourceInfraConfig {
   apiDomainName: ValueOrExternalSecret<string>;
   apiSslCertArn: ValueOrExternalSecret<string>;
   apiInternetFacing?: ValueOrExternalSecret<boolean>;
+  apiWafIpSetArn: ValueOrExternalSecret<string>;
   appDomainName: ValueOrExternalSecret<string>;
   appSslCertArn: ValueOrExternalSecret<string>;
   appApiProxy?: ValueOrExternalSecret<boolean>;
+  appWafIpSetArn: ValueOrExternalSecret<string>;
   appLoggingBucket?: ValueOrExternalSecret<string>;
   appLoggingPrefix?: ValueOrExternalSecret<string>;
   storageBucketName: ValueOrExternalSecret<string>;
@@ -36,6 +38,7 @@ export interface MedplumSourceInfraConfig {
   storageSslCertArn: ValueOrExternalSecret<string>;
   signingKeyId: ValueOrExternalSecret<string>;
   storagePublicKey: ValueOrExternalSecret<string>;
+  storageWafIpSetArn: ValueOrExternalSecret<string>;
   storageLoggingBucket?: ValueOrExternalSecret<string>;
   storageLoggingPrefix?: ValueOrExternalSecret<string>;
   baseUrl: ValueOrExternalSecret<string>;
@@ -99,9 +102,11 @@ export interface MedplumInfraConfig {
   apiDomainName: string;
   apiSslCertArn: string;
   apiInternetFacing?: boolean;
+  apiWafIpSetArn?: string;
   appDomainName: string;
   appSslCertArn: string;
   appApiProxy?: boolean;
+  appWafIpSetArn?: string;
   appLoggingBucket?: string;
   appLoggingPrefix?: string;
   storageBucketName: string;
@@ -109,6 +114,7 @@ export interface MedplumInfraConfig {
   storageSslCertArn: string;
   signingKeyId: string;
   storagePublicKey: string;
+  storageWafIpSetArn?: string;
   storageLoggingBucket?: string;
   storageLoggingPrefix?: string;
   baseUrl: string;
