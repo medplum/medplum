@@ -147,6 +147,8 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
   },
 };
 
+type ObservationQuestionnaireItemType = 'valueCodeableConcept' | 'valueDateTime';
+
 /**
  * This function takes data about an Observation and creates or updates an existing
  * resource with the same patient and code.
@@ -155,7 +157,7 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
  * @param patient - A Patient resource that will be stored as the subject
  * @param code - A code for the observation
  * @param category - A category for the observation
- * @param valueXAttribute - The value[x] field where the answer should be stored
+ * @param answerType - The value[x] field where the answer should be stored
  * @param value - The value to be stored in the observation
  */
 export async function upsertObservation(
@@ -163,7 +165,7 @@ export async function upsertObservation(
   patient: Patient,
   code: CodeableConcept,
   category: CodeableConcept,
-  valueXAttribute: 'valueCodeableConcept' | 'valueDateTime',
+  answerType: ObservationQuestionnaireItemType,
   value: QuestionnaireResponseItemAnswer | undefined
 ): Promise<void> {
   const coding = code.coding?.[0];
@@ -178,14 +180,14 @@ export async function upsertObservation(
     subject: createReference(patient),
     code: code,
     category: [category],
-    ...(valueXAttribute === 'valueCodeableConcept'
+    ...(answerType === 'valueCodeableConcept'
       ? {
           valueCodeableConcept: {
             coding: [value],
           },
         }
       : {}),
-    ...(valueXAttribute === 'valueDateTime' ? { valueDateTime: value.valueDateTime } : {}),
+    ...(answerType === 'valueDateTime' ? { valueDateTime: value.valueDateTime } : {}),
   };
 
   await medplum.upsertResource(observation, {
@@ -194,27 +196,27 @@ export async function upsertObservation(
   });
 }
 
-type ValueXAttribute = 'valueCoding' | 'valueBoolean';
+type ExtensionQuestionnaireItemType = 'valueCoding' | 'valueBoolean';
 
 /**
  * Sets an extension to a patient
  *
  * @param patient - A patient resource
  * @param url - An URL that identifies the extension
- * @param valueXAttribute - The value[x] field where the answer should be stored
+ * @param answerType - The value[x] field where the answer should be stored
  * @param answer - The value to be stored in the extension
  */
 export function setExtension(
   patient: Patient,
   url: string,
-  valueXAttribute: ValueXAttribute,
+  answerType: ExtensionQuestionnaireItemType,
   answer: QuestionnaireResponseItemAnswer | undefined
 ): void {
-  let value = answer?.[valueXAttribute];
+  let value = answer?.[answerType];
 
   // Answer to boolean Questionnaire fields will be set as `undefined` if the check mark is not ticked
   // so in this case we should interpret it as `false`.
-  if (valueXAttribute === 'valueBoolean') {
+  if (answerType === 'valueBoolean') {
     value = !!value;
   }
 
@@ -226,7 +228,7 @@ export function setExtension(
 
   if (extension) {
     // Update the value if there's already an extension for the URL
-    Object.assign(extension, { [valueXAttribute]: value });
+    Object.assign(extension, { [answerType]: value });
   } else {
     if (!patient.extension) {
       patient.extension = [];
@@ -235,7 +237,7 @@ export function setExtension(
     // Add a new extension if there isn't one
     patient.extension.push({
       url: url,
-      [valueXAttribute]: value,
+      [answerType]: value,
     });
   }
 }
@@ -248,7 +250,7 @@ export function setExtension(
  * @param preferred - Whether this language should be set as preferred
  */
 export function addLanguage(patient: Patient, valueCoding: Coding, preferred: boolean = false): void {
-  const patientCommunications = patient.communication || [];
+  const patientCommunications = patient.communication ?? [];
 
   // Checks if the patient already has the language in their list of communications
   let language = patientCommunications.find(
@@ -377,7 +379,7 @@ export function getGroupRepeatedAnswers(
     return [];
   }
 
-  const responses = responseItem.item || [];
+  const responses = responseItem.item ?? [];
   let responseCursor = 0;
 
   const linkIds = questionnaireItem.item.map((item) => item.linkId);
