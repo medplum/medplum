@@ -80,7 +80,7 @@ export function checkConfigConflicts(
   );
 
   checkConflict(
-    infraConfig.storageDomainName && `https://${infraConfig.storageDomainName}/`,
+    infraConfig.storageDomainName && `https://${infraConfig.storageDomainName}/binary/`,
     serverConfig.storageBaseUrl,
     `Infra "storageDomainName" (${infraConfig.storageDomainName}) does not match server "storageBaseUrl" (${serverConfig.storageBaseUrl})`
   );
