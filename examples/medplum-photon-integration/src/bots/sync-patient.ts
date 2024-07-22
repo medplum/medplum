@@ -1,36 +1,9 @@
 import { BotEvent, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Address, ContactPoint, Identifier, Patient } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
+import { CreatePatientVariables, PhotonAddress, PhotonPatient } from '../photon-types';
 
-interface CreatePatientVariables {
-  externalId: string;
-  name: PhotonName;
-  dateOfBirth: string;
-  sex: 'MALE' | 'FEMALE' | 'UNKNOWN';
-  gender?: string;
-  email?: string;
-  phone?: string;
-  address?: PhotonAddress;
-}
-
-interface PhotonName {
-  first: string;
-  last: string;
-  title?: string;
-  middle?: string;
-}
-
-interface PhotonAddress {
-  name?: PhotonName;
-  street1: string;
-  street2?: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-}
-
-export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<string> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
   const patient = event.input;
   const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
   const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
@@ -69,11 +42,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     throw new Error('Patient name is required to sync to Photon Health');
   }
 
+  const firstName = patient.name?.[0].given?.[0] ?? '';
+  const lastName = patient.name?.[0].family ?? '';
+
   const variables: CreatePatientVariables = {
     externalId: patient.id as string,
     name: {
-      first: patient.name?.[0].given?.[0] ?? '',
-      last: patient.name?.[0].family ?? '',
+      first: firstName,
+      last: lastName,
+      full: firstName + ' ' + lastName,
     },
     dateOfBirth: formatAWSDate(patient.birthDate),
     sex: getSexType(patient.gender),
