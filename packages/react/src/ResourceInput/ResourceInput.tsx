@@ -15,6 +15,7 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 const SEARCH_CODES: Record<string, string> = {
   Device: 'device-name',
   Observation: 'code',
+  Subscription: 'criteria',
   User: 'email:contains',
 };
 
@@ -148,7 +149,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
 }
 
 const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
-  ({ label, resource, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
+  ({ label, resource, active: _active, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
     return (
       <div ref={ref} {...others}>
         <Group wrap="nowrap">
@@ -156,7 +157,7 @@ const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resourc
           <div>
             <Text>{label}</Text>
             <Text size="xs" c="dimmed">
-              {(resource as Patient).birthDate}
+              {(resource as Patient).birthDate || resource.id}
             </Text>
           </div>
         </Group>

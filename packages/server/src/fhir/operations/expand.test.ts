@@ -805,11 +805,18 @@ describe('Updated implementation', () => {
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    const expandedCodes = expansion.contains?.map((coding) => coding.code);
+    const system = 'http://terminology.hl7.org/CodeSystem/v3-RoleCode';
+    const expectedResults = [
+      { system, code: 'ADOPTP', display: 'adoptive parent' },
+      { system, code: 'ADOPTF', display: 'adoptive father' },
+      { system, code: 'ADOPTM', display: 'adoptive mother' },
+      { system, code: 'CHLDADOPT', display: 'adopted child' },
+      { system, code: 'DAUADOPT', display: 'adopted daughter' },
+      { system, code: 'SONADOPT', display: 'adopted son' },
+    ];
+    const expandedCodes = expansion.contains;
     expect(expandedCodes).toHaveLength(6);
-    expect(expandedCodes).toEqual(
-      expect.arrayContaining(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT'])
-    );
+    expect(expandedCodes).toEqual(expect.arrayContaining(expectedResults));
 
     expect(queue.add).toHaveBeenCalledWith(
       'ExpandJobData',
@@ -836,12 +843,10 @@ describe('Updated implementation', () => {
       .set('Authorization', 'Bearer ' + superAdminAccessToken);
 
     expect(res2.status).toEqual(200);
-    const precomputedExpansion = (res2.body.expansion as ValueSetExpansion).contains?.map((coding) => coding.code);
+    const precomputedExpansion = (res2.body.expansion as ValueSetExpansion).contains;
 
     expect(precomputedExpansion).toHaveLength(6);
-    expect(precomputedExpansion).toEqual(
-      expect.arrayContaining(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT'])
-    );
+    expect(precomputedExpansion).toEqual(expect.arrayContaining(expectedResults));
     expect(queue.add).not.toHaveBeenCalled();
   });
 

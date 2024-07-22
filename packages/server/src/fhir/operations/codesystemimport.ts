@@ -94,9 +94,6 @@ export async function importCodeSystem(
       code: c.code,
       display: c.display,
     }));
-    if (rows.length !== concepts.length) {
-      console.log('Trimmed', concepts.length - rows.length, 'codings from import of', codeSystem.url);
-    }
     const query = new InsertQuery('Coding', rows).mergeOnConflict(['system', 'code']);
     await query.execute(db);
   }

@@ -558,10 +558,17 @@ describe('FHIR Routes', () => {
 
     // Resend with verbose=true
     const res2 = await request(app)
-      .post(`/fhir/R4/${getReferenceString(profile)}/$resend?verbose=true`)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
+      .send({ verbose: true });
     expect(res2.status).toBe(200);
+
+    // Resend with subscription option
+    const res3 = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ subscription: 'Subscription/123' });
+    expect(res3.status).toBe(200);
   });
 
   test('ProjectMembership with null access policy', async () =>

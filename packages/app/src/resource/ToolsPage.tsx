@@ -10,7 +10,7 @@ import { useParams } from 'react-router-dom';
 export function ToolsPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
-  const reference = useMemo(() => ({ reference: 'Agent/' + id }) as Reference<Agent>, [id]);
+  const reference = useMemo<Reference<Agent>>(() => ({ reference: 'Agent/' + id }), [id]);
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [reloadingConfig, setReloadingConfig] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
