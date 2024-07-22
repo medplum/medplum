@@ -23,8 +23,15 @@ export function App(): JSX.Element | null {
     if (medplum.isLoading() || !profile) {
       return;
     }
-    const intakeQuestionnaire = medplum.searchOne('Questionnaire', { name: 'patient-intake' }).read();
-    setIntakeQuestionnaire(intakeQuestionnaire);
+
+    medplum
+      .searchOne('Questionnaire', { name: 'patient-intake' })
+      .then((intakeQuestionnaire) => {
+        setIntakeQuestionnaire(intakeQuestionnaire);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }, [medplum, profile]);
 
   if (medplum.isLoading()) {
