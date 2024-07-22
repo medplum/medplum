@@ -141,7 +141,7 @@ function sortedStringify(obj: any): string {
  * @param args - The GraphQL search arguments.
  * @param ctx - The GraphQL context.
  * @param info - The GraphQL resolve info.  This includes the schema, and additional field details.
- * @returns Promise to read the resoures for the query.
+ * @returns Promise to read the resources for the query.
  */
 export async function resolveBySearch(
   source: any,
