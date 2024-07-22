@@ -97,7 +97,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     observationCodeMapping.estimatedDeliveryDate,
     observationCategoryMapping.socialHistory,
     'valueDateTime',
-    { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date'].valueDate) }
+    { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date']?.valueDate) }
   );
 
   // Handle coverage
@@ -177,10 +177,8 @@ function getPatientName(answers: Record<string, QuestionnaireResponseItemAnswer>
     patientName.given = givenName;
   }
 
-  const familyName = answers['last-name']?.valueString;
-
-  if (familyName) {
-    patientName.family = familyName;
+  if (answers['last-name']?.valueString) {
+    patientName.family = answers['last-name'].valueString;
   }
 
   return Object.keys(patientName).length > 0 ? patientName : null;

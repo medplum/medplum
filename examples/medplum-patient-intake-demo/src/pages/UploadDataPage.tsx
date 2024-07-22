@@ -26,7 +26,7 @@ export function UploadDataPage(): JSX.Element {
   const buttonDisabled = dataType === 'bots' && (!checkQuestionnairesUploaded(medplum) || checkBotsUploaded(medplum));
 
   const handleUpload = useCallback(() => {
-    if (!profile || !questionnaire) {
+    if (!profile) {
       return;
     }
 
@@ -47,7 +47,7 @@ export function UploadDataPage(): JSX.Element {
     }
 
     uploadFunction(medplum, profile as Practitioner, questionnaire as Questionnaire)
-      .then(() => navigate(-1))
+      .then(() => navigate('/'))
       .catch((error) => {
         showNotification({
           color: 'red',
