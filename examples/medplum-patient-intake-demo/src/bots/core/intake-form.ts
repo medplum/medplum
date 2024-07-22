@@ -1,4 +1,4 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, MedplumClient, resolveId } from '@medplum/core';
 import {
   HumanName,
   Patient,
@@ -102,7 +102,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // Handle coverage
 
-  const questionnaire = await medplum.readResource('Questionnaire', (response.questionnaire as string).split('/')[1]);
+  if (!response.questionnaire) {
+    throw new Error('Missing questionnaire');
+  }
+
+  // const questionnaire = await medplum.readResource('Questionnaire', response.questionnaire.split('/')[1]);
+  const questionnaire = await medplum.readResource(
+    'Questionnaire',
+    resolveId({ reference: response.questionnaire } as Reference) as string
+  );
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
   for (const provider of insuranceProviders) {
