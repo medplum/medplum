@@ -1,5 +1,11 @@
 import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { HumanName, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import {
+  HumanName,
+  Patient,
+  QuestionnaireResponse,
+  QuestionnaireResponseItemAnswer,
+  Reference,
+} from '@medplum/fhirtypes';
 import {
   addConsent,
   addCoverage,
@@ -33,12 +39,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // Handle demographic information
 
-  patient.name = [
-    {
-      given: [answers['first-name']?.valueString, answers['middle-name']?.valueString],
-      family: answers['last-name']?.valueString,
-    } as HumanName,
-  ];
+  const patientName = getPatientName(answers);
+  patient.name = patientName ? [patientName] : patient.name;
   patient.birthDate = answers['dob']?.valueDate || patient.birthDate;
   patient.gender = (answers['gender-identity']?.valueCoding?.code as Patient['gender']) || patient.gender;
 
@@ -150,4 +152,28 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   );
 
   await medplum.updateResource(patient);
+}
+
+function getPatientName(answers: Record<string, QuestionnaireResponseItemAnswer>): HumanName | null {
+  const patientName: HumanName = {};
+
+  const givenName = [];
+  if (answers['first-name']?.valueString) {
+    givenName.push(answers['first-name'].valueString);
+  }
+  if (answers['middle-name']?.valueString) {
+    givenName.push(answers['middle-name'].valueString);
+  }
+
+  if (givenName.length > 0) {
+    patientName.given = givenName;
+  }
+
+  const familyName = answers['last-name']?.valueString;
+
+  if (familyName) {
+    patientName.family = familyName;
+  }
+
+  return Object.keys(patientName).length > 0 ? patientName : null;
 }
