@@ -859,4 +859,132 @@ describe('Updated implementation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toEqual(403);
   });
+
+  test('Reference to other ValueSet', async () => {
+    const valueSetResource: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/reference-' + randomUUID(),
+      compose: {
+        include: [
+          { valueSet: ['http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype'] },
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            filter: [
+              {
+                property: 'concept',
+                op: 'is-a',
+                value: 'RESPRSN',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const valueSetRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSetResource);
+    expect(valueSetRes.status).toEqual(201);
+    const valueSet = valueSetRes.body as ValueSet;
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&count=200`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(
+      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v2-0131')
+    ).toHaveLength(12);
+    expect(
+      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode')
+    ).toHaveLength(118);
+
+    const abstractCode = expansion.contains?.find((c) => c.code === '_PersonalRelationshipRoleType');
+    expect(abstractCode).toBeDefined();
+    const concreteCode = expansion.contains?.find((c) => c.code === 'HPOWATT');
+    expect(concreteCode?.display).toEqual('healthcare power of attorney');
+  });
+
+  test('Precomputed ValueSet with nested reference', async () => {
+    const queue = getExpandQueue() as any;
+    queue.add.mockClear();
+
+    const superAdminAccessToken = await initTestAuth({ project: { superAdmin: true, features: ['terminology'] } });
+
+    await new DeleteQuery('ValueSet_Membership').execute(getDatabasePool(DatabaseMode.WRITER));
+    const valueSetResource: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/reference-' + randomUUID(),
+      compose: {
+        include: [
+          { valueSet: ['http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype'] },
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            filter: [
+              {
+                property: 'concept',
+                op: 'is-a',
+                value: 'RESPRSN',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const valueSetRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .send(valueSetResource);
+    expect(valueSetRes.status).toEqual(201);
+    const valueSet = valueSetRes.body as ValueSet;
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}&filter=power&count=200&_precompute=true`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    const system = 'http://terminology.hl7.org/CodeSystem/v3-RoleCode';
+    const expectedResults = [
+      { system, code: 'POWATT', display: 'power of attorney' },
+      { system, code: 'DPOWATT', display: 'durable power of attorney' },
+      { system, code: 'HPOWATT', display: 'healthcare power of attorney' },
+      { system, code: 'SPOWATT', display: 'special power of attorney' },
+    ];
+    const expandedCodes = expansion.contains;
+    expect(expandedCodes).toHaveLength(4);
+    expect(expandedCodes).toEqual(expect.arrayContaining(expectedResults));
+
+    expect(queue.add).toHaveBeenCalledWith(
+      'ExpandJobData',
+      expect.objectContaining({ valueSet: expect.objectContaining({ id: valueSet.id }) })
+    );
+
+    await withTestContext(() => execExpandJob({ data: queue.add.mock.calls[0][1] } as Job));
+    queue.add.mockClear();
+
+    const precomputeResults = await new SelectQuery('ValueSet_Membership')
+      .column('coding')
+      .where('valueSet', '=', valueSet.id)
+      .execute(getDatabasePool(DatabaseMode.READER));
+    expect(precomputeResults).toHaveLength(130);
+    const nestedPrecomputeResult = await new SelectQuery('ValueSet_Membership')
+      .column('coding')
+      .where('valueSet', '!=', valueSet.id)
+      .execute(getDatabasePool(DatabaseMode.READER));
+    expect(nestedPrecomputeResult).toHaveLength(122);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}&filter=power&count=200&_precompute=true`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken);
+    expect(res2.status).toEqual(200);
+    const precomputedExpansion = (res2.body.expansion as ValueSetExpansion).contains;
+
+    expect(precomputedExpansion).toHaveLength(4);
+    expect(precomputedExpansion).toEqual(expect.arrayContaining(expectedResults));
+    expect(queue.add).not.toHaveBeenCalled();
+  });
 });
