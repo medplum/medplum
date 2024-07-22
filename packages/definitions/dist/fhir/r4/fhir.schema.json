@@ -59342,6 +59342,7 @@
             "enum": [
               "aws-comprehend",
               "aws-textract",
+              "batched-reference-searches",
               "bots",
               "cron",
               "email",

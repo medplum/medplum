@@ -160,7 +160,10 @@ export async function resolveBySearch(
   const { searchRequest, referenceFilter } = parseSearchArgsWithReference(resourceType, source, args);
   applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
 
-  if (!referenceFilter) {
+  if (!ctx.config?.enableBatchedReferenceSearches || !referenceFilter) {
+    if (referenceFilter) {
+      addFilter(searchRequest, referenceFilter);
+    }
     const bundle = await ctx.repo.search(searchRequest);
     return bundle.entry?.map((e) => e.resource as Resource);
   }
@@ -175,8 +178,6 @@ function buildResolveBySearchDataLoader(
   searchRequest: SearchRequest
 ): DataLoader<Filter, Resource[]> {
   return new DataLoader<Filter, Resource[]>(async (filters) => {
-    console.log(`DataLoader w/ ${filters.length} values`);
-
     const results = await repo.searchByReference(
       searchRequest,
       filters[0].code,

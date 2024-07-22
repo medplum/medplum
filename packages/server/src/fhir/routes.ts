@@ -308,6 +308,7 @@ protectedRoutes.use(
       body: req.body,
       headers: req.headers,
       config: {
+        enableBatchedReferenceSearches: ctx.project.features?.includes('batched-reference-searches'),
         graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
         graphqlMaxPageSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxPageSize')?.valueInteger,
         graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
