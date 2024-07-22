@@ -1,6 +1,5 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { ProjectSetting, Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption } from '@medplum/fhirtypes';
-import { QuestionnaireItemType } from '@medplum/react';
 
 type GetLabTestEvent = {
   endpoint: 'get_lab_tests';
@@ -94,7 +93,7 @@ async function getAoEQuestionnaire(secrets: Record<string, ProjectSetting>, mark
       item: marker.aoe.questions.map<QuestionnaireItem>((question) => ({
         linkId: question.id.toString(),
         text: question.value,
-        type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItemType,
+        type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItem['type'],
         required: question.required,
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: question.type !== 'numeric' ? answer.value : undefined,

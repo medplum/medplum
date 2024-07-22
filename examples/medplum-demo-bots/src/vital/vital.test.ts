@@ -10,7 +10,6 @@ import {
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, MockedFunction, beforeAll, describe, test, vi, expect } from 'vitest';
 import { Marker, handler } from './vital';
-import { QuestionnaireItemType } from '@medplum/react';
 
 global.fetch = vi.fn();
 
@@ -384,7 +383,7 @@ function createFetchResponse(data: any, status = 200): Response {
 function buildQuestionnaire(markers: Partial<Marker>[]): Questionnaire {
   return {
     resourceType: 'Questionnaire',
-    title: 'Medicare Aoe',
+    title: 'Ask on Order Entry (AOE)',
     status: 'active',
     item: markers.map((marker) => ({
       linkId: marker.id?.toString() || '',
@@ -393,7 +392,7 @@ function buildQuestionnaire(markers: Partial<Marker>[]): Questionnaire {
       item: marker.aoe?.questions.map<QuestionnaireItem>((question) => ({
         linkId: question.id.toString(),
         text: question.value,
-        type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItemType,
+        type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItem['type'],
         required: question.required,
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: question.type !== 'numeric' ? answer.value : undefined,

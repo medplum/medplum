@@ -4,7 +4,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import {
   Bundle,
   BundleEntry,
@@ -19,7 +19,6 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { QuestionnaireItemType } from '@medplum/react';
 import { MockedFunction, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { buildVitalOrder, createVitalOrder, createVitalUser, handler, resourceWithoutMeta } from './order-create';
 
@@ -380,7 +379,7 @@ function buildQuestionnaire(): Questionnaire {
       item: marker.aoe.questions.map<QuestionnaireItem>((question) => ({
         linkId: question.id.toString(),
         text: question.value,
-        type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItemType,
+        type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItem['type'],
         required: question.required,
       })),
     })),
