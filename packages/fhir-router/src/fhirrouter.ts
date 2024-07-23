@@ -26,7 +26,7 @@ export type FhirRequest = {
 };
 
 export type FhirRequestConfig = {
-  enableBatchedReferenceSearches?: boolean;
+  graphqlBatchedSearchSize?: number;
   graphqlMaxDepth?: number;
   graphqlMaxPageSize?: number;
   graphqlMaxSearches?: number;

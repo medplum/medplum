@@ -140,11 +140,6 @@
             "definition": "AWS Textract"
           },
           {
-            "code": "batched-reference-searches",
-            "display": "Batched Reference Searches",
-            "definition": "Use DataLoader and lateral join to batch reference searches"
-          },
-          {
             "code": "bots",
             "display": "Bots",
             "definition": "Bots"
