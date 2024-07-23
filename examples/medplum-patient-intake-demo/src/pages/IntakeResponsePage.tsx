@@ -79,7 +79,11 @@ export function IntakeResponsePage(): JSX.Element {
 
   const questionnaireResponse = medplum.readResource('QuestionnaireResponse', responseId).read();
 
-  const omittedItems = ['agreement-to-pay-for-treatment-help', 'notice-of-privacy-practices-help'];
+  const omittedItems = [
+    'agreement-to-pay-for-treatment-help',
+    'notice-of-privacy-practices-help',
+    'acknowledgement-for-advance-directives-help',
+  ];
   const items = questionnaireResponse?.item || [];
 
   return (
