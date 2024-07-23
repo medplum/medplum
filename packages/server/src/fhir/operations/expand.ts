@@ -413,31 +413,43 @@ export function expansionQuery(
   }
 
   if (params) {
-    query = addExpansionFilters(query, params, codeSystem);
+    query = addExpansionFilters(query, params);
   }
   return query;
 }
 
-function addExpansionFilters(
-  query: SelectQuery,
-  params: ValueSetExpandParameters,
-  codeSystem?: CodeSystem
-): SelectQuery {
+function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameters): SelectQuery {
   if (params.filter) {
     query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(params.filter));
   }
-  if (params.excludeNotForUI && codeSystem) {
-    query = addAbstractFilter(query, codeSystem);
+  if (params.excludeNotForUI) {
+    query = addAbstractFilter(query);
   }
 
   query.limit((params.count ?? MAX_EXPANSION_SIZE) + 1).offset(params.offset ?? 0);
   return query;
 }
 
-function addAbstractFilter(query: SelectQuery, codeSystem: CodeSystem): SelectQuery {
-  const property = codeSystem.property?.find((p) => p.uri === abstractProperty);
-  if (!property) {
-    return query;
-  }
-  return addPropertyFilter(query, property.code, 'true', false);
+function addAbstractFilter(query: SelectQuery): SelectQuery {
+  const codeSystemProperty = query.getNextJoinAlias();
+  query
+    .leftJoin(
+      'CodeSystem_Property',
+      codeSystemProperty,
+      new Condition(new Column(codeSystemProperty, 'system'), '=', new Column('Coding', 'system'))
+    )
+    .where(new Column(codeSystemProperty, 'uri'), '=', abstractProperty);
+
+  const propertyTable = query.getNextJoinAlias();
+  query.leftJoin(
+    'Coding_Property',
+    propertyTable,
+    new Conjunction([
+      new Condition(new Column(codeSystemProperty, 'id'), '=', new Column(propertyTable, 'property')),
+      new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding')),
+      new Condition(new Column(propertyTable, 'value'), '=', 'true'),
+    ])
+  );
+  query.where(new Column(propertyTable, 'value'), '=', null);
+  return query;
 }

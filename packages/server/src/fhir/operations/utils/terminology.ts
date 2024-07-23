@@ -86,11 +86,15 @@ export function addPropertyFilter(query: SelectQuery, property: string, value: s
     'CodeSystem_Property',
     csPropertyTable,
     new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+      new Condition(new Column('Coding', 'system'), '=', new Column(csPropertyTable, 'system')),
+      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyTable, 'property')),
       new Condition(new Column(csPropertyTable, 'code'), '=', property),
     ])
   );
-  query.where(new Column(csPropertyTable, 'id'), isEqual ? '!=' : '=', null);
+
+  query
+    .where(new Column(propertyTable, 'value'), isEqual ? '!=' : '=', null)
+    .where(new Column(csPropertyTable, 'system'), isEqual ? '!=' : '=', null);
   return query;
 }
 

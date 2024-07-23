@@ -485,7 +485,7 @@ describe('Updated implementation', () => {
   test('Subsumption', async () => {
     const res = await request(app)
       .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=100`
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=200`
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toEqual(200);
@@ -878,6 +878,10 @@ describe('Updated implementation', () => {
               },
             ],
           },
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            concept: [{ code: 'SEE' }],
+          },
         ],
       },
     };
@@ -899,12 +903,14 @@ describe('Updated implementation', () => {
     ).toHaveLength(12);
     expect(
       expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode')
-    ).toHaveLength(118);
+    ).toHaveLength(119);
 
     const abstractCode = expansion.contains?.find((c) => c.code === '_PersonalRelationshipRoleType');
     expect(abstractCode).toBeDefined();
-    const concreteCode = expansion.contains?.find((c) => c.code === 'HPOWATT');
-    expect(concreteCode?.display).toEqual('healthcare power of attorney');
+    const filterCode = expansion.contains?.find((c) => c.code === 'HPOWATT');
+    expect(filterCode?.display).toEqual('healthcare power of attorney');
+    const explicitCode = expansion.contains?.find((c) => c.code === 'SEE');
+    expect(explicitCode?.display).toEqual('Seeing');
   });
 
   test('Precomputed ValueSet with nested reference', async () => {
