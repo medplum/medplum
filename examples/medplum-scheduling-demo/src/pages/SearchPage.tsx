@@ -106,8 +106,6 @@ function getDefaultFields(resourceType: string): string[] {
   switch (resourceType) {
     case 'Patient':
       return ['name', 'gender', 'birthDate', '_lastUpdated'];
-    case 'Practitioner':
-      return ['name', '_lastUpdated'];
     default:
       return ['_id', '_lastUpdated'];
   }
