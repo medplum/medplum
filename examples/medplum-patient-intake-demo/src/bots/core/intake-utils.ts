@@ -196,15 +196,15 @@ export async function upsertObservation(
     subject: createReference(patient),
     code: code,
     category: [category],
-    ...(answerType === 'valueCodeableConcept'
-      ? {
-          valueCodeableConcept: {
-            coding: [value],
-          },
-        }
-      : {}),
-    ...(answerType === 'valueDateTime' ? { valueDateTime: value.valueDateTime } : {}),
   };
+
+  if (answerType === 'valueCodeableConcept') {
+    observation.valueCodeableConcept = {
+      coding: [value],
+    };
+  } else if (answerType === 'valueDateTime') {
+    observation.valueDateTime = value.valueDateTime;
+  }
 
   const coding = code.coding?.[0] as Coding;
   await medplum.upsertResource(observation, {
