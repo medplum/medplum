@@ -482,18 +482,7 @@ async function sendRestHook(
     return;
   }
 
-  const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
-  if (interaction === 'delete') {
-    headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
-  }
-  const traceId = job.data.traceId;
-  if (traceId) {
-    headers['x-trace-id'] = traceId;
-    if (parseTraceparent(traceId)) {
-      headers['traceparent'] = traceId;
-    }
-  }
-
+  const headers = buildRestHookHeaders(job, subscription, resource, interaction);
   const body = interaction === 'delete' ? '{}' : stringify(resource);
   let error: Error | undefined = undefined;
 
@@ -533,14 +522,27 @@ async function sendRestHook(
 
 /**
  * Builds a collection of HTTP request headers for the rest-hook subscription.
+ * @param job - The subscription job.
  * @param subscription - The subscription resource.
  * @param resource - The trigger resource.
+ * @param interaction - The interaction type.
  * @returns The HTTP request headers.
  */
-function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
+function buildRestHookHeaders(
+  job: Job<SubscriptionJobData>,
+  subscription: Subscription,
+  resource: Resource,
+  interaction: BackgroundJobInteraction
+): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': ContentType.FHIR_JSON,
+    'X-Medplum-Subscription': subscription.id as string,
+    'X-Medplum-Interaction': interaction,
   };
+
+  if (interaction === 'delete') {
+    headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
+  }
 
   if (subscription.channel?.header) {
     for (const header of subscription.channel.header) {
@@ -558,6 +560,14 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
   if (secret && isString(secret)) {
     const body = stringify(resource);
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
+  }
+
+  const traceId = job.data.traceId;
+  if (traceId) {
+    headers['x-trace-id'] = traceId;
+    if (parseTraceparent(traceId)) {
+      headers['traceparent'] = traceId;
+    }
   }
 
   return headers;
