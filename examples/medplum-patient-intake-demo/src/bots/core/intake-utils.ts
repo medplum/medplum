@@ -145,6 +145,24 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
       },
     ],
   },
+  cric: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
+        code: 'cric',
+        display: 'Common Rule Informed Consent',
+      },
+    ],
+  },
+  adr: {
+    coding: [
+      {
+        system: 'http://medplum.com',
+        code: 'BasicADR',
+        display: 'Advanced Care Directive',
+      },
+    ],
+  },
 };
 
 type ObservationQuestionnaireItemType = 'valueCodeableConcept' | 'valueDateTime';

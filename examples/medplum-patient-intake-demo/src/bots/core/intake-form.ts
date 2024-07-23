@@ -119,7 +119,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     !!answers['consent-for-treatment-signature']?.valueBoolean,
     consentScopeMapping.treatment,
     consentCategoryMapping.med,
-    undefined,
+    consentPolicyRuleMapping.cric,
     convertDateToDateTime(answers['consent-for-treatment-date'].valueDate)
   );
 
@@ -149,7 +149,7 @@ export async function handler(event: BotEvent<QuestionnaireResponse>, medplum: M
     !!answers['acknowledgement-for-advance-directives-signature']?.valueBoolean,
     consentScopeMapping.adr,
     consentCategoryMapping.acd,
-    undefined,
+    consentPolicyRuleMapping.adr,
     convertDateToDateTime(answers['acknowledgement-for-advance-directives-date'].valueDate)
   );
 
