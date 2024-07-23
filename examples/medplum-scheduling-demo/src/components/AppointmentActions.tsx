@@ -47,15 +47,15 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
     <Stack p="xs" m="xs">
       <Title>Appointment Actions</Title>
       <RescheduleAppointment appointment={appointment} opened={opened} handlers={handlers} />
+      {!['fulfilled', 'cancelled'].includes(appointment.status) ? (
+        <Button leftSection={<IconCircleCheck size={16} />} onClick={() => handleChangeStatus('fulfilled')}>
+          Mark completed
+        </Button>
+      ) : null}
       {appointment.status !== 'fulfilled' ? (
-        <>
-          <Button leftSection={<IconCircleCheck size={16} />} onClick={() => handleChangeStatus('fulfilled')}>
-            Mark completed
-          </Button>
-          <Button leftSection={<IconCircleCheck size={16} />} onClick={() => handlers.open()}>
-            Reschedule
-          </Button>
-        </>
+        <Button leftSection={<IconCircleCheck size={16} />} onClick={() => handlers.open()}>
+          Reschedule
+        </Button>
       ) : null}
       {appointment.status !== 'cancelled' ? (
         <Button leftSection={<IconCancel size={16} />} onClick={() => handleChangeStatus('cancelled')}>
