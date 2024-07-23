@@ -168,9 +168,7 @@ export async function upsertObservation(
   answerType: ObservationQuestionnaireItemType,
   value: QuestionnaireResponseItemAnswer | undefined
 ): Promise<void> {
-  const coding = code.coding?.[0];
-
-  if (!value || !coding) {
+  if (!value || !code) {
     return;
   }
 
@@ -190,6 +188,7 @@ export async function upsertObservation(
     ...(answerType === 'valueDateTime' ? { valueDateTime: value.valueDateTime } : {}),
   };
 
+  const coding = code.coding?.[0] as Coding;
   await medplum.upsertResource(observation, {
     code: `${coding.system}|${coding.code}`,
     subject: getReferenceString(patient),
