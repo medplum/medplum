@@ -3,6 +3,7 @@ import { Appointment, Patient } from '@medplum/fhirtypes';
 import { Document, PatientSummary, useResource } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 import { AppointmentDetails } from '../components/AppointmentDetails';
+import { AppointmentActions } from '../components/AppointmentActions';
 
 export function AppointmentDetailPage(): JSX.Element {
   const { id } = useParams();
@@ -26,7 +27,9 @@ export function AppointmentDetailPage(): JSX.Element {
         <AppointmentDetails appointment={appointment} patient={patient} />
       </Grid.Col>
       <Grid.Col span={3}>
-        <Document p="xs"></Document>
+        <Document p="xs">
+          <AppointmentActions appointment={appointment} />
+        </Document>
       </Grid.Col>
     </Grid>
   );
