@@ -2,7 +2,7 @@ import { Paper, Tabs } from '@mantine/core';
 import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { MemoizedSearchControl } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 function useTab(): [string, (tab: string) => void, SearchRequest, (definition: SearchRequest) => void] {
   const upcomingFilter: Filter = {
@@ -16,7 +16,9 @@ function useTab(): [string, (tab: string) => void, SearchRequest, (definition: S
     value: new Date().toISOString(),
   };
 
-  const { tab } = useParams();
+  const location = useLocation();
+  const tab = location.pathname.split('/').pop();
+
   const [search, updateSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
     fields: ['patient', 'start', 'end', 'serviceType', '_lastUpdated'],
@@ -85,8 +87,8 @@ export function AppointmentsPage(): JSX.Element {
       </Tabs>
       <MemoizedSearchControl
         search={search}
-        onClick={() => {}}
-        onAuxClick={() => {}}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
           setSearch(e.definition);
         }}
