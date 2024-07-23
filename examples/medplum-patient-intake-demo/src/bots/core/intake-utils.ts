@@ -319,7 +319,6 @@ export async function addCoverage(
     {
       beneficiary: getReferenceString(patient),
       payor: getReferenceString(payor),
-      // subscriberId: subscriberId,
     }
   );
 }
