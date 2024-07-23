@@ -160,7 +160,8 @@ export async function resolveBySearch(
   const { searchRequest, referenceFilter } = parseSearchArgsWithReference(resourceType, source, args);
   applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
 
-  if (!ctx.config?.enableBatchedReferenceSearches || !referenceFilter) {
+  const maxBatchSize = ctx.config?.graphqlBatchedSearchSize ?? 0;
+  if (maxBatchSize === 0 || !referenceFilter) {
     if (referenceFilter) {
       addFilter(searchRequest, referenceFilter);
     }
@@ -169,27 +170,26 @@ export async function resolveBySearch(
   }
 
   const hash = sortedStringify(searchRequest);
-  const dl = (ctx.searchDataLoaders[hash] ??= buildResolveBySearchDataLoader(ctx.repo, searchRequest));
+  const dl = (ctx.searchDataLoaders[hash] ??= buildResolveBySearchDataLoader(ctx.repo, searchRequest, maxBatchSize));
   return dl.load(referenceFilter);
 }
 
 function buildResolveBySearchDataLoader(
   repo: FhirRepository,
-  searchRequest: SearchRequest
+  searchRequest: SearchRequest,
+  maxBatchSize: number
 ): DataLoader<Filter, Resource[]> {
-  return new DataLoader<Filter, Resource[]>(async (filters) => {
-    const results = await repo.searchByReference(
-      searchRequest,
-      filters[0].code,
-      filters.map((f) => f.value)
-    );
-    const sortedResults = [];
-    for (const filter of filters) {
-      sortedResults.push(results[filter.value] ?? []);
-    }
-
-    return sortedResults;
-  });
+  return new DataLoader<Filter, Resource[]>(
+    async (filters) => {
+      const results = await repo.searchByReference(
+        searchRequest,
+        filters[0].code,
+        filters.map((f) => f.value)
+      );
+      return filters.map((filter) => results[filter.value]);
+    },
+    { maxBatchSize }
+  );
 }
 
 export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
