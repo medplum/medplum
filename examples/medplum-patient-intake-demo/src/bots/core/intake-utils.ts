@@ -11,7 +11,6 @@ import {
   CodeableConcept,
   Coding,
   Consent,
-  Coverage,
   Observation,
   Organization,
   Patient,
