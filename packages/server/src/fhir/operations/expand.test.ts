@@ -938,6 +938,10 @@ describe('Updated implementation', () => {
               },
             ],
           },
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            concept: [{ code: 'SEE' }],
+          },
         ],
       },
     };
@@ -977,7 +981,7 @@ describe('Updated implementation', () => {
       .column('coding')
       .where('valueSet', '=', valueSet.id)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(precomputeResults).toHaveLength(130);
+    expect(precomputeResults).toHaveLength(131);
     const nestedPrecomputeResult = await new SelectQuery('ValueSet_Membership')
       .column('coding')
       .where('valueSet', '!=', valueSet.id)
