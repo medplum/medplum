@@ -32,7 +32,7 @@ import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
@@ -62,11 +62,11 @@ describe('FHIR Repo', () => {
 
   test('getRepoForLogin', async () => {
     await expect(() =>
-      getRepoForLogin(
-        { resourceType: 'Login' } as Login,
-        { resourceType: 'ProjectMembership' } as ProjectMembership,
-        testProject
-      )
+      getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership: { resourceType: 'ProjectMembership' } as ProjectMembership,
+        project: testProject,
+      })
     ).rejects.toThrow('Invalid author reference');
   });
 
@@ -490,7 +490,7 @@ describe('FHIR Repo', () => {
       const result1 = await registerNew(registration1);
       expect(result1.profile).toBeDefined();
 
-      const repo1 = await getRepoForLogin({ resourceType: 'Login' } as Login, result1.membership, result1.project);
+      const repo1 = await getRepoForLogin(result1);
       const patient1 = await repo1.createResource<Patient>({
         resourceType: 'Patient',
       });
@@ -513,7 +513,7 @@ describe('FHIR Repo', () => {
       const result2 = await registerNew(registration2);
       expect(result2.profile).toBeDefined();
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, result2.membership, result2.project);
+      const repo2 = await getRepoForLogin(result2);
       try {
         await repo2.readResource('Patient', patient1.id as string);
         fail('Should have thrown');
@@ -802,7 +802,7 @@ describe('FHIR Repo', () => {
         subject: createReference(patient),
       });
 
-      const result = await getDatabasePool().query(
+      const result = await getDatabasePool(DatabaseMode.READER).query(
         'SELECT "code", "system", "value" FROM "Observation_Token" WHERE "resourceId"=$1',
         [obs1.id]
       );

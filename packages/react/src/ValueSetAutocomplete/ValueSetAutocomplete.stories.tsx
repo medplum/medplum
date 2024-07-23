@@ -7,8 +7,14 @@ export default {
   component: ValueSetAutocomplete,
 } as Meta;
 
-export const Basic = (): JSX.Element => (
+export const Single = (): JSX.Element => (
   <Document>
-    <ValueSetAutocomplete binding="x" onChange={console.log} />
+    <ValueSetAutocomplete binding="x" onChange={console.log} maxValues={1} />
+  </Document>
+);
+
+export const Multiple = (): JSX.Element => (
+  <Document>
+    <ValueSetAutocomplete binding="x" onChange={console.log} maxValues={3} />
   </Document>
 );

@@ -1,15 +1,24 @@
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { getAuthenticatedContext } from '../../context';
-import { getDatabasePool } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery, Union } from '../sql';
+import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { DatabaseMode, getDatabasePool } from '../../database';
+import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
-import { abstractProperty, addPropertyFilter, findTerminologyResource, getParentProperty } from './utils/terminology';
+import { abstractProperty, addDescendants, addPropertyFilter, findTerminologyResource } from './utils/terminology';
+import { addExpandJob } from '../../workers/expand';
+import { requireSuperAdmin } from '../../admin/super';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
+operation.parameter?.push({
+  name: '_precompute',
+  use: 'in',
+  type: 'boolean',
+  min: 0,
+  max: '1',
+});
 
 type ValueSetExpandParameters = {
   url?: string;
@@ -17,6 +26,9 @@ type ValueSetExpandParameters = {
   offset?: number;
   count?: number;
   excludeNotForUI?: boolean;
+  valueSet?: ValueSet;
+
+  _precompute: boolean;
 };
 
 // Implements FHIR "Value Set Expansion"
@@ -31,22 +43,24 @@ type ValueSetExpandParameters = {
 export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
 
-  let url = params.url;
-  if (!url) {
-    return [badRequest('Missing url')];
-  }
-
   const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
     return [badRequest('Invalid filter')];
   }
+  let valueSet = params.valueSet;
+  if (!valueSet) {
+    let url = params.url;
+    if (!url) {
+      return [badRequest('Missing url')];
+    }
 
-  const pipeIndex = url.indexOf('|');
-  if (pipeIndex >= 0) {
-    url = url.substring(0, pipeIndex);
+    const pipeIndex = url.indexOf('|');
+    if (pipeIndex >= 0) {
+      url = url.substring(0, pipeIndex);
+    }
+
+    valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
   }
-
-  const valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
 
   let offset = 0;
   if (params.offset) {
@@ -63,7 +77,7 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
     const elements = await queryValueSetElements(valueSet, offset, count, filter);
     result = {
       resourceType: 'ValueSet',
-      url,
+      url: valueSet.url,
       expansion: {
         offset,
         contains: elements,
@@ -96,7 +110,7 @@ async function queryValueSetElements(
     throw new OperationOutcomeError(badRequest('No systems found'));
   }
 
-  const client = getDatabasePool();
+  const client = getDatabasePool(DatabaseMode.READER);
   const query = new SelectQuery('ValueSetElement')
     .distinctOn('system')
     .distinctOn('code')
@@ -197,10 +211,10 @@ function processExpansion(systemExpressions: Expression[], expansionContains: Va
   }
 }
 
-const MAX_EXPANSION_SIZE = 1001;
+const MAX_EXPANSION_SIZE = 1000;
 
-function filterCodings(codings: Coding[], filter: string | undefined): Coding[] {
-  filter = filter?.trim().toLowerCase();
+export function filterCodings(codings: Coding[], params: ValueSetExpandParameters): Coding[] {
+  const filter = params.filter?.trim().toLowerCase();
   if (!filter) {
     return codings;
   }
@@ -213,15 +227,17 @@ export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandP
   const expansion = valueSet.expansion;
   if (expansion?.contains?.length && !expansion.parameter && expansion.total === expansion.contains.length) {
     // Full expansion is already available, use that
-    expandedSet = filterCodings(expansion.contains, params.filter);
+    expandedSet = filterCodings(expansion.contains, params);
+  } else if (await isExpansionPrecomputed(valueSet)) {
+    expandedSet = await getPrecomputedExpansion(valueSet, params);
   } else {
     expandedSet = await computeExpansion(valueSet, params);
   }
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
-      total: 1001,
+      total: MAX_EXPANSION_SIZE + 1,
       timestamp: new Date().toISOString(),
-      contains: expandedSet.slice(0, 1000),
+      contains: expandedSet.slice(0, MAX_EXPANSION_SIZE),
     };
   } else {
     valueSet.expansion = {
@@ -240,10 +256,8 @@ async function computeExpansion(
   if (!valueSet.compose?.include.length) {
     throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
   }
+
   const expansion: ValueSetExpansionContains[] = [];
-
-  const { count, filter } = params;
-
   const codeSystemCache: Record<string, CodeSystem> = Object.create(null);
   for (const include of valueSet.compose.include) {
     if (!include.system) {
@@ -252,10 +266,17 @@ async function computeExpansion(
       );
     }
 
+    // Always resolve CodeSystem resources, so they can be passed to background job
     const codeSystem = codeSystemCache[include.system] ?? (await findTerminologyResource('CodeSystem', include.system));
     codeSystemCache[include.system] = codeSystem;
+
+    if (expansion.length >= (params.count ?? MAX_EXPANSION_SIZE)) {
+      // Skip further expansion
+      continue;
+    }
+
     if (include.concept) {
-      const filteredCodings = filterCodings(include.concept, filter);
+      const filteredCodings = filterCodings(include.concept, params);
       const validCodings = await validateCodings(codeSystem, filteredCodings);
       for (const c of validCodings) {
         if (c) {
@@ -266,14 +287,50 @@ async function computeExpansion(
     } else {
       await includeInExpansion(include, expansion, codeSystem, params);
     }
-
-    if (expansion.length > (count ?? MAX_EXPANSION_SIZE)) {
-      // Return partial expansion
-      break;
-    }
   }
 
+  if (params._precompute && requireSuperAdmin()) {
+    await addExpandJob(valueSet, codeSystemCache); // Precompute expansion in the background for faster future searches
+  }
   return expansion;
+}
+
+export async function isExpansionPrecomputed(valueSet: ValueSet): Promise<boolean> {
+  const result = await new SelectQuery('ValueSet_Membership')
+    .column('coding')
+    .where('valueSet', '=', valueSet.id)
+    .limit(1)
+    .execute(getDatabasePool(DatabaseMode.READER));
+  return result.length >= 1;
+}
+
+async function getPrecomputedExpansion(
+  valueSet: ValueSet,
+  params: ValueSetExpandParameters
+): Promise<ValueSetExpansionContains[]> {
+  const query = new SelectQuery('Coding').column('code').column('display');
+  const expansionTable = query.getNextJoinAlias();
+  const codeSystemTable = query.getNextJoinAlias();
+  query
+    .innerJoin(
+      'ValueSet_Membership',
+      expansionTable,
+      new Condition(new Column('Coding', 'id'), '=', new Column(expansionTable, 'coding'))
+    )
+    .innerJoin(
+      'CodeSystem',
+      codeSystemTable,
+      new Condition(new Column('Coding', 'system'), '=', new Column(codeSystemTable, 'id'))
+    )
+    .where(new Column(expansionTable, 'valueSet'), '=', valueSet.id)
+    .column(new Column(codeSystemTable, 'url'));
+
+  const results = await addExpansionFilters(query, params).execute(getDatabasePool(DatabaseMode.READER));
+  return results.map((row) => ({
+    system: row.url,
+    code: row.code,
+    display: row.display,
+  }));
 }
 
 async function includeInExpansion(
@@ -283,15 +340,30 @@ async function includeInExpansion(
   params: ValueSetExpandParameters
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const { count, offset, filter } = params;
 
+  const query = expansionQuery(include, codeSystem, params);
+  if (!query) {
+    return;
+  }
+
+  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
+  const system = codeSystem.url;
+  for (const { code, display } of results) {
+    expansion.push({ system, code, display });
+  }
+}
+
+export function expansionQuery(
+  include: ValueSetComposeInclude,
+  codeSystem: CodeSystem,
+  params?: ValueSetExpandParameters
+): SelectQuery | undefined {
+  const ctx = getRequestContext();
   let query = new SelectQuery('Coding')
     .column('id')
     .column('code')
     .column('display')
-    .where('system', '=', codeSystem.id)
-    .limit((count ?? MAX_EXPANSION_SIZE) + 1)
-    .offset(offset ?? 0);
+    .where('system', '=', codeSystem.id);
 
   if (include.filter?.length) {
     for (const condition of include.filter) {
@@ -307,72 +379,31 @@ async function includeInExpansion(
           break;
         default:
           ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
-          return; // Unknown filter type, don't make DB query with incorrect filters
+          return undefined; // Unknown filter type, don't make DB query with incorrect filters
       }
     }
   }
-  if (filter) {
-    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(filter));
-  }
 
-  if (params.excludeNotForUI) {
+  if (params) {
+    query = addExpansionFilters(query, params, codeSystem);
+  }
+  return query;
+}
+
+function addExpansionFilters(
+  query: SelectQuery,
+  params: ValueSetExpandParameters,
+  codeSystem?: CodeSystem
+): SelectQuery {
+  if (params.filter) {
+    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(params.filter));
+  }
+  if (params.excludeNotForUI && codeSystem) {
     query = addAbstractFilter(query, codeSystem);
   }
 
-  const results = await query.execute(ctx.repo.getDatabaseClient());
-  const system = codeSystem.url;
-  for (const { code, display } of results) {
-    expansion.push({ system, code, display });
-  }
-}
-
-function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
-  const property = getParentProperty(codeSystem);
-
-  const base = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where('system', '=', codeSystem.id)
-    .where('code', '=', parentCode);
-
-  const propertyTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'Coding_Property',
-    propertyTable,
-    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding'))
-  );
-
-  const csPropertyTable = query.getNextJoinAlias();
-  query.innerJoin(
-    'CodeSystem_Property',
-    csPropertyTable,
-    new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
-      new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
-    ])
-  );
-
-  const recursiveCTE = 'cte_descendants';
-  const recursiveTable = query.getNextJoinAlias();
-  query.innerJoin(
-    recursiveCTE,
-    recursiveTable,
-    new Condition(new Column(propertyTable, 'target'), '=', new Column(recursiveTable, 'id'))
-  );
-
-  // Move limit and offset to outer query
-  const limit = query.limit_;
-  query.limit(0);
-  const offset = query.offset_;
-  query.offset(0);
-
-  return new SelectQuery('cte_descendants')
-    .column('code')
-    .column('display')
-    .withRecursive('cte_descendants', new Union(base, query))
-    .limit(limit)
-    .offset(offset);
+  query.limit((params.count ?? MAX_EXPANSION_SIZE) + 1).offset(params.offset ?? 0);
+  return query;
 }
 
 function addAbstractFilter(query: SelectQuery, codeSystem: CodeSystem): SelectQuery {

@@ -22,6 +22,13 @@ export type FhirRequest = {
   params: Record<string, string>;
   query: Record<string, string>;
   headers?: IncomingHttpHeaders;
+  config?: FhirRequestConfig;
+};
+
+export type FhirRequestConfig = {
+  graphqlMaxDepth?: number;
+  graphqlMaxPageSize?: number;
+  graphqlMaxSearches?: number;
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];

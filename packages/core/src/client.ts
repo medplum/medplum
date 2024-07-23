@@ -2381,14 +2381,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The result of the patch operations.
    */
-  patchResource<K extends ResourceType>(
+  async patchResource<K extends ResourceType>(
     resourceType: K,
     id: string,
     operations: PatchOperation[],
     options?: MedplumRequestOptions
   ): Promise<ExtractResource<K>> {
+    const result = await this.patch(this.fhirUrl(resourceType, id), operations, options);
+    this.cacheResource(result);
+    this.invalidateUrl(this.fhirUrl(resourceType, id, '_history'));
     this.invalidateSearches(resourceType);
-    return this.patch(this.fhirUrl(resourceType, id), operations, options);
+    return result;
   }
 
   /**

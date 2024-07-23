@@ -2,7 +2,7 @@ import { allOk } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
-import { getDatabasePool } from '../../database';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { buildOutputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -21,7 +21,7 @@ const operation: OperationDefinition = {
 export async function dbStatsHandler(_req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const client = getDatabasePool();
+  const client = getDatabasePool(DatabaseMode.WRITER);
   const sql = `
       SELECT * FROM (
         SELECT table_schema, table_name, pg_relation_size('"'||table_schema||'"."'||table_name||'"') AS table_size

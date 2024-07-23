@@ -121,7 +121,7 @@ export function indexStructureDefinitionBundle(
   bundle: StructureDefinition[] | Bundle,
   profileUrl?: string | undefined
 ): void {
-  const sds = Array.isArray(bundle) ? bundle : bundle.entry?.map((e) => e.resource as StructureDefinition) ?? [];
+  const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
   for (const sd of sds) {
     loadDataType(sd, profileUrl);
   }

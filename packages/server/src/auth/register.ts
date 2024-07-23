@@ -69,6 +69,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const { membership, client, project, profile } = await createProject(projectName, user);
 
   const token = await getAuthTokens(
+    user,
     {
       ...login,
       membership: createReference(membership as ProjectMembership),

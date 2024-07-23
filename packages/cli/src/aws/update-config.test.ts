@@ -153,6 +153,7 @@ describe('update-config command', () => {
       serverFileName,
       JSON.stringify({
         foo: 'bar',
+        storageBaseUrl: 'https://storage.test.example.com/binary/',
       }),
       'utf8'
     );

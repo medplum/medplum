@@ -1,5 +1,6 @@
 import {
   badRequest,
+  DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
   FhirFilterComparison,
@@ -42,6 +43,7 @@ import {
 } from '@medplum/fhirtypes';
 import validator from 'validator';
 import { getConfig } from '../config';
+import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
 import { getFullUrl } from './response';
@@ -63,7 +65,7 @@ import {
 /**
  * Defines the maximum number of resources returned in a single search result.
  */
-const maxSearchResults = 1000;
+const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
 export interface ChainedSearchLink {
   resourceType: string;
@@ -162,7 +164,7 @@ async function getSearchEntries<T extends Resource>(
   builder.limit(count + 1); // Request one extra to test if there are more results
   builder.offset(searchRequest.offset || 0);
 
-  const rows = await builder.execute(repo.getDatabaseClient());
+  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
   const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
@@ -482,7 +484,7 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
     builder.raw('COUNT("id")::int AS "count"');
   }
 
-  const rows = await builder.execute(repo.getDatabaseClient());
+  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   return rows[0].count as number;
 }
 
@@ -505,7 +507,7 @@ async function getEstimateCount(
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
-  const rows = await builder.execute(repo.getDatabaseClient());
+  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   let result = 0;
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
@@ -642,7 +644,7 @@ function buildNormalSearchFilterExpression(
   } else if (param.type === 'token' || param.type === 'uri') {
     return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
   } else if (param.type === 'reference') {
-    return buildReferenceSearchFilter(table, details, splitSearchOnComma(filter.value));
+    return buildReferenceSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
   } else if (param.type === 'date') {
     return buildDateSearchFilter(table, details, filter);
   } else if (param.type === 'quantity') {
@@ -838,20 +840,29 @@ function buildTokenSearchFilter(
  * Adds a reference search filter as "WHERE" clause to the query builder.
  * @param table - The table in which to search.
  * @param details - The search parameter details.
+ * @param operator - The search operator.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
-function buildReferenceSearchFilter(table: string, details: SearchParameterDetails, values: string[]): Expression {
+function buildReferenceSearchFilter(
+  table: string,
+  details: SearchParameterDetails,
+  operator: Operator,
+  values: string[]
+): Expression {
   const column = new Column(table, details.columnName);
   values = values.map((v) =>
     !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
   );
+  let condition: Condition;
   if (details.array) {
-    return new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
+    condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
   } else if (values.length === 1) {
-    return new Condition(column, '=', values[0]);
+    condition = new Condition(column, '=', values[0]);
+  } else {
+    condition = new Condition(column, 'IN', values);
   }
-  return new Condition(column, 'IN', values);
+  return operator === Operator.NOT || operator === Operator.NOT_EQUALS ? new Negation(condition) : condition;
 }
 
 /**
@@ -1142,7 +1153,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       currentResourceType = link.resourceType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = splitN(part, ':', 2);
-      const searchParam = getSearchParameter(currentResourceType, part);
+      const searchParam = getSearchParameter(currentResourceType, code);
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }

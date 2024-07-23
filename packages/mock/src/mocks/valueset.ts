@@ -11,6 +11,16 @@ export const exampleValueSet: ValueSet = {
         code: 'test-code',
         display: 'Test Display',
       },
+      {
+        system: 'x',
+        code: 'test-code-2',
+        display: 'Test Display 2',
+      },
+      {
+        system: 'x',
+        code: 'test-code-3',
+        display: 'Test Display 3',
+      },
     ],
   },
 };

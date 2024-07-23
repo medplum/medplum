@@ -35,10 +35,11 @@ import {
   ValidationContext,
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
-import { FhirRepository } from '../repo';
+import { FhirRepository, RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import {
+  applyMaxCount,
   buildSearchArgs,
   getDepth,
   GraphQLContext,
@@ -100,7 +101,7 @@ export async function graphqlHandler(
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule];
+  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
@@ -111,14 +112,25 @@ export async function graphqlHandler(
     return [forbidden];
   }
 
+  if (includesMutations(query)) {
+    repo.setMode(RepositoryMode.WRITER);
+  }
+
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
 
   let result: any = introspection && introspectionResults.get(query);
   if (!result) {
+    const contextValue: GraphQLContext = {
+      repo,
+      config: req.config,
+      dataLoader,
+      searchCount: 0,
+    };
+
     result = await execute({
       schema,
       document,
-      contextValue: { repo, dataLoader },
+      contextValue,
       operationName,
       variableValues: variables,
     });
@@ -138,6 +150,15 @@ export async function graphqlHandler(
  */
 function isIntrospectionQuery(query: string): boolean {
   return query.includes('query IntrospectionQuery') || query.includes('__schema');
+}
+
+/**
+ * Returns true if the query includes mutations.
+ * @param query - The GraphQL query.
+ * @returns True if the query includes mutations.
+ */
+function includesMutations(query: string): boolean {
+  return query.includes('mutation');
 }
 
 export function getRootSchema(): GraphQLSchema {
@@ -297,11 +318,15 @@ async function resolveByConnectionApi(
   if (isFieldRequested(info, 'count')) {
     searchRequest.total = 'accurate';
   }
+  if (!isFieldRequested(info, 'edges')) {
+    searchRequest.count = 0;
+  }
+  applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
   const bundle = await ctx.repo.search(searchRequest);
   return {
     count: bundle.total,
-    offset: searchRequest.offset || 0,
-    pageSize: searchRequest.count || DEFAULT_SEARCH_COUNT,
+    offset: searchRequest.offset ?? 0,
+    pageSize: searchRequest.count ?? DEFAULT_SEARCH_COUNT,
     edges: bundle.entry?.map((e) => ({
       mode: e.search?.mode,
       score: e.search?.score,
@@ -408,31 +433,34 @@ async function resolveByDelete(
   await ctx.repo.deleteResource(resourceType, args.id);
 }
 
+const DEFAULT_MAX_DEPTH = 12;
+
 /**
  * Custom GraphQL rule that enforces max depth constraint.
- * @param context - The validation context.
- * @returns An ASTVisitor that validates the maximum depth rule.
+ * @param maxDepth - The maximum allowed depth.
+ * @returns A function that is an ASTVisitor that validates the maximum depth rule.
  */
-const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({
-  Field(
-    /** The current node being visiting. */
-    node: any,
-    /** The index or key to this node from the parent node or Array. */
-    _key: string | number | undefined,
-    /** The parent immediately above this node, which may be an Array. */
-    _parent: ASTNode | readonly ASTNode[] | undefined,
-    /** The key path to get to this node from the root node. */
-    path: readonly (string | number)[]
-  ): any {
-    const depth = getDepth(path);
-    const maxDepth = 12;
-    if (depth > maxDepth) {
-      const fieldName = node.name.value;
-      context.reportError(
-        new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
-          nodes: node,
-        })
-      );
-    }
-  },
-});
+const MaxDepthRule =
+  (maxDepth: number = DEFAULT_MAX_DEPTH) =>
+  (context: ValidationContext): ASTVisitor => ({
+    Field(
+      /** The current node being visiting. */
+      node: any,
+      /** The index or key to this node from the parent node or Array. */
+      _key: string | number | undefined,
+      /** The parent immediately above this node, which may be an Array. */
+      _parent: ASTNode | readonly ASTNode[] | undefined,
+      /** The key path to get to this node from the root node. */
+      path: readonly (string | number)[]
+    ): any {
+      const depth = getDepth(path);
+      if (depth > maxDepth) {
+        const fieldName = node.name.value;
+        context.reportError(
+          new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
+            nodes: node,
+          })
+        );
+      }
+    },
+  });

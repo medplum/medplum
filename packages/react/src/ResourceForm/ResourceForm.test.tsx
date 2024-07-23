@@ -90,7 +90,7 @@ describe('ResourceForm', () => {
     expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -167,6 +167,35 @@ describe('ResourceForm', () => {
     expect(result.resourceType).toBe('Observation');
     expect(result.valueQuantity).toBeUndefined();
     expect(result.valueString).toBe('hello');
+  });
+
+  test('Patch', async () => {
+    const onSubmit = jest.fn();
+    const onPatch = jest.fn();
+
+    await setup({
+      defaultValue: {
+        resourceType: 'Practitioner',
+        id: 'xyz',
+      },
+      onSubmit,
+      onPatch,
+    });
+
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
+    await act(async () => {
+      fireEvent.click(moreActions);
+    });
+
+    const patchButton = await screen.findByText('Patch');
+    expect(patchButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(patchButton);
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onPatch).toHaveBeenCalled();
   });
 
   test('Delete', async () => {
@@ -182,10 +211,16 @@ describe('ResourceForm', () => {
       onDelete,
     });
 
-    expect(screen.getByText('Delete')).toBeInTheDocument();
-
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(moreActions);
+    });
+
+    const deleteButton = await screen.findByText('Delete');
+    expect(deleteButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(deleteButton);
     });
 
     expect(onSubmit).not.toHaveBeenCalled();
@@ -208,7 +243,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -231,7 +266,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -373,7 +408,7 @@ describe('ResourceForm', () => {
       });
 
       await act(async () => {
-        fireEvent.click(screen.getByText('OK'));
+        fireEvent.click(screen.getByText('Create'));
       });
 
       expect(onSubmit).toHaveBeenCalledWith(expectedValue);
