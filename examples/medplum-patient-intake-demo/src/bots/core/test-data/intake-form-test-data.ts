@@ -7,7 +7,7 @@ export const intakePatient: Patient = {
   id: 'patient-id',
   name: [
     {
-      given: ['Michael'],
+      given: ['John', 'Doe'],
       family: 'Carvalho',
     },
   ],

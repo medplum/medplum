@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconDatabaseImport, IconFilePencil, IconHealthRecognition, IconUser } from '@tabler/icons-react';
+import { IconDatabaseImport, IconFilePencil, IconHealthRecognition, IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { IntakeFormPage } from './pages/IntakeFormPage';
@@ -63,6 +63,7 @@ export function App(): JSX.Element | null {
           links: [
             { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
             { icon: <IconHealthRecognition />, label: 'Upload Example Patient Data', href: '/upload/example' },
+            { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
           ],
         },
       ]}

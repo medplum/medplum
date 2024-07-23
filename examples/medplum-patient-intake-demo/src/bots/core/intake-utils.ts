@@ -266,7 +266,11 @@ export function setExtension(
  * @param valueCoding - A Coding with the language data
  * @param preferred - Whether this language should be set as preferred
  */
-export function addLanguage(patient: Patient, valueCoding: Coding, preferred: boolean = false): void {
+export function addLanguage(patient: Patient, valueCoding: Coding | undefined, preferred: boolean = false): void {
+  if (!valueCoding) {
+    return;
+  }
+
   const patientCommunications = patient.communication ?? [];
 
   // Checks if the patient already has the language in their list of communications
@@ -330,7 +334,7 @@ export async function addConsent(
   scope: CodeableConcept,
   category: CodeableConcept,
   policyRule: CodeableConcept | undefined,
-  date: Consent['dateTime']
+  date: Consent['dateTime'] | undefined
 ): Promise<void> {
   await medplum.createResource({
     resourceType: 'Consent',
