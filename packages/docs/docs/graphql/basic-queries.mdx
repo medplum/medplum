@@ -300,22 +300,6 @@ This query searches for a list of `Patients` named `"Eve"`, living in `"Philadel
   </MedplumCodeBlock>
 </details>
 
-## Query Limits
-
-Because complex GraphQL queries may require many database operations, the cost of the query is estimated before execution,
-and may be rejected by the server if the query will be too expensive to perform all at once. The estimated cost of a
-GraphQL query is calculated based on the number of search operations performed and reference links traversed, using the
-following general formula:
-
-- Each reference link (i.e. `Reference.resource` field) in the query costs _D_ units, where D is the nesting depth of the
-  reference field in the overall query
-- Each search operation (e.g. `*List` fields that take a `_count` argument) costs `C^(1.5 * D)` units, where C is a small
-  number (between 1 and 10) that grows with the requested `_count`, and D is the nesting depth of the search field in the
-  overall query
-
-These costs are added together, and compared to a configurable server limit in order to determine if the query should be
-executed against the database.
-
 ## Conclusion
 
 With a deeper understanding of the FHIR GraphQL syntax, you can now leverage build efficient and flexible FHIR queries for your applications. Remember to experiment with the API at [graphiql.medplum.com](https://graphiql.medplum.com/) as you develop your application.
