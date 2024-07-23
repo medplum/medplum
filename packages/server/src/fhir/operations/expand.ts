@@ -431,25 +431,26 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
 }
 
 function addAbstractFilter(query: SelectQuery): SelectQuery {
-  const codeSystemProperty = query.getNextJoinAlias();
-  query
-    .leftJoin(
-      'CodeSystem_Property',
-      codeSystemProperty,
-      new Condition(new Column(codeSystemProperty, 'system'), '=', new Column('Coding', 'system'))
-    )
-    .where(new Column(codeSystemProperty, 'uri'), '=', abstractProperty);
-
   const propertyTable = query.getNextJoinAlias();
   query.leftJoin(
     'Coding_Property',
     propertyTable,
     new Conjunction([
-      new Condition(new Column(codeSystemProperty, 'id'), '=', new Column(propertyTable, 'property')),
-      new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding')),
+      new Condition(new Column(query.tableName, 'id'), '=', new Column(propertyTable, 'coding')),
       new Condition(new Column(propertyTable, 'value'), '=', 'true'),
     ])
   );
   query.where(new Column(propertyTable, 'value'), '=', null);
+
+  const codeSystemProperty = query.getNextJoinAlias();
+  query.leftJoin(
+    'CodeSystem_Property',
+    codeSystemProperty,
+    new Conjunction([
+      new Condition(new Column(codeSystemProperty, 'id'), '=', new Column(propertyTable, 'property')),
+      new Condition(new Column(codeSystemProperty, 'uri'), '=', abstractProperty),
+    ])
+  );
+
   return query;
 }

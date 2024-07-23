@@ -31,6 +31,10 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
     accessToken = info.accessToken;
   });
 
+  beforeEach(async () => {
+    return new DeleteQuery('ValueSet_Membership').execute(getDatabasePool(DatabaseMode.WRITER));
+  });
+
   afterAll(async () => {
     await shutdownApp();
   });
@@ -745,6 +749,7 @@ describe('Updated implementation', () => {
   });
 
   test('Filter out abstract codes', async () => {
+    await new DeleteQuery('ValueSet_Membership').execute(getDatabasePool(DatabaseMode.WRITER));
     const res = await request(app)
       .get(
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=200&excludeNotForUI=true`
@@ -793,8 +798,6 @@ describe('Updated implementation', () => {
   test('Precomputation', async () => {
     const queue = getExpandQueue() as any;
     queue.add.mockClear();
-
-    await new DeleteQuery('ValueSet_Membership').execute(getDatabasePool(DatabaseMode.WRITER));
 
     const superAdminAccessToken = await initTestAuth({ project: { superAdmin: true, features: ['terminology'] } });
     const res = await request(app)
@@ -851,10 +854,9 @@ describe('Updated implementation', () => {
   });
 
   test('Precomputation without Super Admin', async () => {
-    await new DeleteQuery('ValueSet_Membership').execute(getDatabasePool(DatabaseMode.WRITER));
     const res = await request(app)
       .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&_precompute=true`
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/message-reason-encounter')}&_precompute=true`
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toEqual(403);
@@ -919,7 +921,6 @@ describe('Updated implementation', () => {
 
     const superAdminAccessToken = await initTestAuth({ project: { superAdmin: true, features: ['terminology'] } });
 
-    await new DeleteQuery('ValueSet_Membership').execute(getDatabasePool(DatabaseMode.WRITER));
     const valueSetResource: ValueSet = {
       resourceType: 'ValueSet',
       status: 'draft',
