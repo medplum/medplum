@@ -146,6 +146,24 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
       },
     ],
   },
+  cric: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentpolicycodes',
+        code: 'cric',
+        display: 'Common Rule Informed Consent',
+      },
+    ],
+  },
+  adr: {
+    coding: [
+      {
+        system: 'http://medplum.com',
+        code: 'BasicADR',
+        display: 'Advanced Care Directive',
+      },
+    ],
+  },
 };
 
 type ObservationQuestionnaireItemType = 'valueCodeableConcept' | 'valueDateTime';
@@ -169,9 +187,7 @@ export async function upsertObservation(
   answerType: ObservationQuestionnaireItemType,
   value: QuestionnaireResponseItemAnswer | undefined
 ): Promise<void> {
-  const coding = code.coding?.[0];
-
-  if (!value || !coding) {
+  if (!value || !code) {
     return;
   }
 
@@ -181,16 +197,17 @@ export async function upsertObservation(
     subject: createReference(patient),
     code: code,
     category: [category],
-    ...(answerType === 'valueCodeableConcept'
-      ? {
-          valueCodeableConcept: {
-            coding: [value],
-          },
-        }
-      : {}),
-    ...(answerType === 'valueDateTime' ? { valueDateTime: value.valueDateTime } : {}),
   };
 
+  if (answerType === 'valueCodeableConcept') {
+    observation.valueCodeableConcept = {
+      coding: [value],
+    };
+  } else if (answerType === 'valueDateTime') {
+    observation.valueDateTime = value.valueDateTime;
+  }
+
+  const coding = code.coding?.[0] as Coding;
   await medplum.upsertResource(observation, {
     code: `${coding.system}|${coding.code}`,
     subject: getReferenceString(patient),
@@ -295,20 +312,20 @@ export async function addCoverage(
   const payor = answers['insurance-provider'].valueReference as Reference<Organization>;
   const subscriberId = answers['subscriber-id'].valueString;
 
-  const coverage: Coverage = {
-    resourceType: 'Coverage',
-    status: 'active',
-    beneficiary: createReference(patient),
-    subscriberId: subscriberId,
-    relationship: { coding: [answers['relationship-to-subscriber'].valueCoding as Coding] },
-    payor: [payor],
-  };
-
-  await medplum.upsertResource(coverage, {
-    beneficiary: getReferenceString(patient),
-    payor: getReferenceString(payor),
-    // subscriberId: subscriberId,
-  });
+  await medplum.upsertResource(
+    {
+      resourceType: 'Coverage',
+      status: 'active',
+      beneficiary: createReference(patient),
+      subscriberId: subscriberId,
+      relationship: { coding: [answers['relationship-to-subscriber'].valueCoding as Coding] },
+      payor: [payor],
+    },
+    {
+      beneficiary: getReferenceString(patient),
+      payor: getReferenceString(payor),
+    }
+  );
 }
 
 export async function addConsent(
