@@ -12,7 +12,6 @@ import {
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './system-strings';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
-  debugger;
   const patient = event.input;
   const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
   const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
