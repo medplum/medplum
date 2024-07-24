@@ -192,12 +192,12 @@ describe('Reindex Worker', () => {
         requestTime: new Date().toISOString(),
         request: '/admin/super/reindex',
       });
-      const patient = await repo.createResource<Patient>({
+      await repo.createResource<Patient>({
         resourceType: 'Patient',
         gender: 'unknown',
         name: [{ given: [name + 'antha'], family: 'Yates' }],
       });
-      const practitioner = await repo.createResource<Practitioner>({
+      await repo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         gender: 'unknown',
         name: [{ given: [name + 'url'], family: 'Urtz' }],
