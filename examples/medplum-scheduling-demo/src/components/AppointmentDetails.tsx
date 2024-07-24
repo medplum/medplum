@@ -2,7 +2,7 @@ import { Tabs } from '@mantine/core';
 import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { Appointment, Patient } from '@medplum/fhirtypes';
 import { Document, ResourceTable, SearchControl } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface AppointmentDetailsProps {
   appointment: Appointment;
@@ -11,6 +11,7 @@ interface AppointmentDetailsProps {
 
 export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element {
   const navigate = useNavigate();
+  const location = useLocation();
   const { patient, appointment } = props;
 
   const tabs = [
@@ -19,19 +20,15 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     ['past', 'Past Appointments'],
   ];
 
-  // Get the current tab
-  const tab = window.location.pathname.split('/').pop();
-  const currentTab = tab && tabs.map((t) => t[0]).includes(tab) ? tab : tabs[0][0];
-
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Appointment/${appointment.id}/${newTab ?? ''}`);
+    navigate(`/Appointment/${appointment.id}/${newTab}`);
   }
 
   const appointmentSearch: SearchRequest = {
     resourceType: 'Appointment',
-    filters: [{ code: 'patient', operator: Operator.EQUALS, value: `Patient/${patient.id}` }],
     fields: ['start', 'end', 'serviceType', 'status'],
   };
+  const patientFilter: Filter = { code: 'patient', operator: Operator.EQUALS, value: `Patient/${patient.id}` };
   const upcomingAppointmentFilter: Filter = {
     code: 'date',
     operator: Operator.STARTS_AFTER,
@@ -43,9 +40,12 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     value: new Date().toISOString(),
   };
 
+  // Get the current tab
+  const tab = location.pathname.split('/').pop() ?? '';
+
   return (
     <Document>
-      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
+      <Tabs value={tab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
             <Tabs.Tab value={tab[0]} key={tab[0]}>
@@ -60,7 +60,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={{
               ...appointmentSearch,
-              filters: (appointmentSearch.filters as Filter[]).concat(upcomingAppointmentFilter),
+              filters: [patientFilter, upcomingAppointmentFilter],
             }}
             onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
             hideFilters
@@ -71,7 +71,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={{
               ...appointmentSearch,
-              filters: (appointmentSearch.filters as Filter[]).concat(pastAppointmentFilter),
+              filters: [patientFilter, pastAppointmentFilter],
             }}
             onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
             hideFilters

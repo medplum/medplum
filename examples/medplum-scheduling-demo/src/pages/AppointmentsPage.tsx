@@ -17,7 +17,7 @@ function useTab(): [string, (tab: string) => void, SearchRequest, (definition: S
   };
 
   const location = useLocation();
-  const tab = location.pathname.split('/').pop();
+  const tab = location.pathname.split('/').pop() ?? '';
 
   const [search, updateSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
@@ -46,7 +46,7 @@ function useTab(): [string, (tab: string) => void, SearchRequest, (definition: S
     } as SearchRequest);
   }
 
-  return [tab ?? '', changeTab, search, setSearch];
+  return [tab, changeTab, search, setSearch];
 }
 
 export function AppointmentsPage(): JSX.Element {
@@ -59,7 +59,7 @@ export function AppointmentsPage(): JSX.Element {
   ];
 
   useEffect(() => {
-    if (!['upcoming', 'past'].includes(tab ?? '')) {
+    if (!['upcoming', 'past'].includes(tab)) {
       navigate('/Appointment/upcoming');
     }
   }, [tab, navigate]);
