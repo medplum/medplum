@@ -150,7 +150,7 @@ export class Column {
 }
 
 export class Literal {
-  constructor(readonly value: any) {}
+  constructor(readonly value: string) {}
 }
 
 export interface Expression {
