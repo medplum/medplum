@@ -10,7 +10,6 @@ import {
 } from '../photon-types';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
-  debugger;
   const patient = event.input;
   const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
   const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
@@ -185,7 +184,7 @@ export async function formatPhotonInput(
   medplum: MedplumClient,
   authToken: string,
   inputType: 'AllergyIntolerance' | 'MedicationRequest'
-) {
+): Promise<(PhotonAllergenInput | PhotonMedHistoryInput)[] | undefined> {
   const inputs: (PhotonAllergenInput | PhotonMedHistoryInput)[] = [];
   const resources = await medplum.searchResources(inputType, {
     patient: getReferenceString(patient),
@@ -236,8 +235,7 @@ async function getPhotonId(
   resource: AllergyIntolerance | MedicationRequest,
   authToken: string
 ): Promise<string | undefined> {
-  let photonId: string | undefined;
-  photonId = resource.identifier?.find((id) => id.system === 'https://neutron.health')?.value;
+  const photonId = resource.identifier?.find((id) => id.system === 'https://neutron.health')?.value;
   if (photonId) {
     return photonId;
   }
@@ -305,6 +303,8 @@ function formatRequestBody(resourceType: 'AllergyIntolerance' | 'MedicationReque
       `;
       variables = { drug: { code: rxcui } };
       return JSON.stringify({ query, variables });
+    default:
+      throw new Error('Invalid resource type');
   }
 }
 
