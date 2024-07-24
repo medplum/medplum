@@ -19,6 +19,7 @@ export type ReindexJobData = {
   readonly endTimestamp: string;
   readonly startTime: number;
   readonly count?: number;
+  readonly searchFilter?: SearchRequest;
   readonly results?: ParametersParameter[];
   readonly requestId?: string;
   readonly traceId?: string;
@@ -89,7 +90,7 @@ export async function closeReindexWorker(): Promise<void> {
 
 export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
   const ctx = getRequestContext();
-  const { resourceTypes, currentTimestamp, endTimestamp, count } = job.data;
+  const { resourceTypes, currentTimestamp, endTimestamp, count, searchFilter } = job.data;
   const resourceType = resourceTypes[0];
   const systemRepo = getSystemRepo();
 
@@ -110,6 +111,9 @@ export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
       { code: '_lastUpdated', operator: Operator.LESS_THAN, value: endTimestamp },
     ],
   };
+  if (searchFilter?.filters) {
+    searchRequest.filters?.push(...searchFilter.filters);
+  }
 
   try {
     const { hasMore, newCount, nextTimestamp } = await systemRepo.withTransaction(async (conn) => {
@@ -130,19 +134,23 @@ export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
         newCount += resources.length;
       }
 
-      const hasMore = !!bundle.link?.find((link) => link.relation === 'next');
+      const hasMore = bundle.link?.some((link) => link.relation === 'next') ?? false;
       return { hasMore, newCount, nextTimestamp };
     });
 
     if (hasMore) {
+      // Enqueue job to handle next page of the current resource type
       await addReindexJobData({
         ...job.data,
         currentTimestamp: nextTimestamp,
         count: newCount,
       });
     } else if (resourceTypes.length > 1) {
+      // Completed reindex for this resource type
       const elapsedTime = Date.now() - job.data.startTime;
       ctx.logger.info('Reindex completed', { resourceType, count: newCount, duration: `${elapsedTime} ms` });
+
+      // Enqueue job to start reindexing the next resource type
       await addReindexJobData({
         ...job.data,
         resourceTypes: resourceTypes.slice(1),
@@ -159,29 +167,37 @@ export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
         }),
       });
     } else {
-      const elapsedTime = Date.now() - job.data.startTime;
-      ctx.logger.info('Reindex completed', { resourceType, count: newCount, duration: `${elapsedTime} ms` });
-
-      const results = job.data.results ?? [];
-      results.push({
-        name: 'result',
-        part: [
-          { name: 'resourceType', valueCode: resourceType },
-          { name: 'count', valueInteger: newCount },
-          { name: 'elapsedTime', valueQuantity: { value: elapsedTime, code: 'ms' } },
-        ],
-      });
-
-      const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-      await exec.completeJob(systemRepo, {
-        resourceType: 'Parameters',
-        parameter: results,
-      });
+      await finishReindex(job, newCount);
     }
   } catch (err) {
     const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
     await exec.failJob(systemRepo, err as Error);
   }
+}
+
+async function finishReindex(job: Job<ReindexJobData>, count: number): Promise<void> {
+  const ctx = getRequestContext();
+  const resourceType = job.data.resourceTypes[0];
+  const elapsedTime = Date.now() - job.data.startTime;
+  const systemRepo = getSystemRepo();
+
+  ctx.logger.info('Reindex completed', { resourceType, count, duration: `${elapsedTime} ms` });
+
+  const results = job.data.results ?? [];
+  results.push({
+    name: 'result',
+    part: [
+      { name: 'resourceType', valueCode: resourceType },
+      { name: 'count', valueInteger: count },
+      { name: 'elapsedTime', valueQuantity: { value: elapsedTime, code: 'ms' } },
+    ],
+  });
+
+  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+  await exec.completeJob(systemRepo, {
+    resourceType: 'Parameters',
+    parameter: results,
+  });
 }
 
 /**
@@ -200,10 +216,18 @@ async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobDat
   return queue.add(jobName, job);
 }
 
-export async function addReindexJob(resourceTypes: ResourceType[], job: AsyncJob): Promise<Job<ReindexJobData>> {
+export async function addReindexJob(
+  resourceTypes: ResourceType[],
+  job: AsyncJob,
+  searchFilter?: SearchRequest
+): Promise<Job<ReindexJobData>> {
   const { requestId, traceId } = getRequestContext();
   const currentTimestamp = new Date(0).toISOString(); // Beginning of epoch time
   const endTimestamp = new Date(Date.now() + 1000 * 60 * 5).toISOString(); // Five minutes in the future
+
+  if (searchFilter) {
+    searchFilter.filters = searchFilter.filters?.filter((f) => f.code !== '_lastUpdated');
+  }
 
   return addReindexJobData({
     resourceTypes,
@@ -211,6 +235,7 @@ export async function addReindexJob(resourceTypes: ResourceType[], job: AsyncJob
     endTimestamp,
     asyncJob: job,
     startTime: Date.now(),
+    searchFilter,
     requestId,
     traceId,
   });

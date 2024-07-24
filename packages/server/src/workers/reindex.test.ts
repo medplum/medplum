@@ -1,10 +1,12 @@
-import { AsyncJob, Parameters, ResourceType } from '@medplum/fhirtypes';
+import { AsyncJob, Parameters, Patient, Practitioner, ResourceType } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { ReindexJobData, addReindexJob, closeReindexWorker, execReindexJob, getReindexQueue } from './reindex';
+import { randomUUID } from 'crypto';
+import { parseSearchRequest } from '@medplum/core';
 
 let repo: Repository;
 
@@ -175,5 +177,86 @@ describe('Reindex Worker', () => {
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('error');
+    }));
+
+  test('Reindex with search filter', () =>
+    withTestContext(async () => {
+      const queue = getReindexQueue() as any;
+      queue.add.mockClear();
+
+      const name = 'Sam' + randomUUID();
+
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        gender: 'unknown',
+        name: [{ given: [name + 'antha'], family: 'Yates' }],
+      });
+      const practitioner = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        gender: 'unknown',
+        name: [{ given: [name + 'url'], family: 'Urtz' }],
+      });
+
+      const resourceTypes = ['Patient', 'Practitioner'] as ResourceType[];
+      const searchFilter = parseSearchRequest(`Person?name=${name}&gender=unknown`);
+
+      await addReindexJob(resourceTypes, asyncJob, searchFilter);
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({
+          resourceTypes: ['Patient', 'Practitioner'],
+          asyncJob,
+          searchFilter,
+        })
+      );
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      queue.add.mockClear();
+      await execReindexJob(job);
+
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({
+          resourceTypes: ['Practitioner'],
+          asyncJob,
+          count: 0,
+          searchFilter,
+        })
+      );
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
+      expect(asyncJob.status).toEqual('accepted');
+
+      const job2 = { id: 2, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      queue.add.mockClear();
+      await execReindexJob(job2);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
+      expect(asyncJob.status).toEqual('completed');
+      expect(asyncJob.output).toMatchObject<Parameters>({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'result',
+            part: expect.arrayContaining([
+              expect.objectContaining({ name: 'resourceType', valueCode: 'Patient' }),
+              expect.objectContaining({ name: 'count', valueInteger: 1 }),
+            ]),
+          },
+          {
+            name: 'result',
+            part: expect.arrayContaining([
+              expect.objectContaining({ name: 'resourceType', valueCode: 'Practitioner' }),
+              expect.objectContaining({ name: 'count', valueInteger: 1 }),
+            ]),
+          },
+        ],
+      });
     }));
 });

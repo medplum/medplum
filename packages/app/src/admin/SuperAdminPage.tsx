@@ -113,8 +113,11 @@ export function SuperAdminPage(): JSX.Element {
       </p>
       <Form onSubmit={reindexResourceType}>
         <Stack>
-          <FormSection title="Resource Type">
-            <TextInput name="resourceType" placeholder="Reindex Resource Type" />
+          <FormSection title="Resource Type" htmlFor="resourceType">
+            <TextInput id="resourceType" name="resourceType" placeholder="Reindex Resource Type" />
+          </FormSection>
+          <FormSection title="Search Filter" htmlFor="filter">
+            <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
           </FormSection>
           <Button type="submit">Reindex</Button>
         </Stack>
