@@ -1,9 +1,16 @@
-import { BotEvent, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Address, ContactPoint, Identifier, Patient } from '@medplum/fhirtypes';
+import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { Address, AllergyIntolerance, ContactPoint, Identifier, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
-import { CreatePatientVariables, PhotonAddress, PhotonPatient } from '../photon-types';
+import {
+  CreatePatientVariables,
+  PhotonAddress,
+  PhotonAllergenInput,
+  PhotonMedHistoryInput,
+  PhotonPatient,
+} from '../photon-types';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
+  debugger;
   const patient = event.input;
   const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
   const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
@@ -42,15 +49,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     throw new Error('Patient name is required to sync to Photon Health');
   }
 
-  const firstName = patient.name?.[0].given?.[0] ?? '';
-  const lastName = patient.name?.[0].family ?? '';
-
   const variables: CreatePatientVariables = {
     externalId: patient.id as string,
     name: {
-      first: firstName,
-      last: lastName,
-      full: firstName + ' ' + lastName,
+      first: patient.name?.[0].given?.[0] ?? '',
+      last: patient.name?.[0].family ?? '',
     },
     dateOfBirth: formatAWSDate(patient.birthDate),
     sex: getSexType(patient.gender),
@@ -60,6 +63,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
 
   const email = getTelecom('email', patient);
   const address = formatPhotonAddress(patient.address?.[0]);
+  const allergies = (await formatPhotonInput(
+    patient,
+    medplum,
+    PHOTON_AUTH_TOKEN,
+    'AllergyIntolerance'
+  )) as PhotonAllergenInput[];
+  const medicationHistory = (await formatPhotonInput(
+    patient,
+    medplum,
+    PHOTON_AUTH_TOKEN,
+    'MedicationRequest'
+  )) as PhotonMedHistoryInput[];
 
   if (email) {
     variables.email = email;
@@ -67,6 +82,14 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
 
   if (address) {
     variables.address = address;
+  }
+
+  if (allergies) {
+    variables.allergies = allergies;
+  }
+
+  if (medicationHistory) {
+    variables.medicationHistory = medicationHistory;
   }
 
   const body = JSON.stringify({ query, variables });
@@ -154,6 +177,134 @@ async function updatePatient(medplum: MedplumClient, patient: Patient, result: a
     console.log('Success');
   } catch (err) {
     console.error(err);
+  }
+}
+
+export async function formatPhotonInput(
+  patient: Patient,
+  medplum: MedplumClient,
+  authToken: string,
+  inputType: 'AllergyIntolerance' | 'MedicationRequest'
+) {
+  const inputs: (PhotonAllergenInput | PhotonMedHistoryInput)[] = [];
+  const resources = await medplum.searchResources(inputType, {
+    patient: getReferenceString(patient),
+  });
+
+  if (resources.length === 0) {
+    return undefined;
+  }
+
+  for (const resource of resources) {
+    const photonId = await getPhotonId(resource, authToken);
+    if (!photonId) {
+      continue;
+    }
+
+    const input = createInput(resource, photonId);
+    inputs.push(input);
+  }
+
+  return inputs;
+}
+
+function createInput(
+  resource: AllergyIntolerance | MedicationRequest,
+  photonId: string
+): PhotonAllergenInput | PhotonMedHistoryInput {
+  if (resource.resourceType === 'AllergyIntolerance') {
+    const input: PhotonAllergenInput = {
+      allergenId: photonId,
+      comment: resource.note?.[0].text,
+    };
+    if (resource.onsetDateTime) {
+      input.onset = formatAWSDate(resource.onsetDateTime);
+    }
+
+    return input;
+  } else {
+    const input: PhotonMedHistoryInput = {
+      medicationId: photonId,
+      active: resource.status === 'active',
+      comment: resource.note?.[0].text,
+    };
+    return input;
+  }
+}
+
+async function getPhotonId(
+  resource: AllergyIntolerance | MedicationRequest,
+  authToken: string
+): Promise<string | undefined> {
+  let photonId: string | undefined;
+  photonId = resource.identifier?.find((id) => id.system === 'https://neutron.health')?.value;
+  if (photonId) {
+    return photonId;
+  }
+
+  const code = resource.resourceType === 'AllergyIntolerance' ? resource.code : resource.medicationCodeableConcept;
+  const rxcui = code?.coding?.find((code) => code.system === 'http://www.nlm.nih.gov/research/umls/rxnorm')?.code;
+  if (!rxcui) {
+    return undefined;
+  }
+  const body = formatRequestBody(resource.resourceType, rxcui);
+
+  try {
+    const response = await fetch('https://api.neutron.health/graphql', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + authToken,
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP Error! Status: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const id =
+      resource.resourceType === 'AllergyIntolerance'
+        ? result.data.allergens?.[0]?.id
+        : result.data.medications?.[0]?.id;
+
+    return id;
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
+}
+
+function formatRequestBody(resourceType: 'AllergyIntolerance' | 'MedicationRequest', rxcui: string): string {
+  let query: string;
+  let variables: any;
+  switch (resourceType) {
+    case 'AllergyIntolerance':
+      query = `
+        query allergens($filter: AllergenFilter) {
+          allergens(filter: $filter) { id }
+        }
+      `;
+      variables = { name: rxcui };
+      return JSON.stringify({ query, variables });
+    case 'MedicationRequest':
+      query = `
+        query medications(
+          $filter: MedicationFilter,
+          $after: ID,
+          $first: Int
+        ) {
+          medications(
+            filter: $filter,
+            after: $after,
+            first: $first
+          ) {
+            id
+          }
+        }
+      `;
+      variables = { drug: { code: rxcui } };
+      return JSON.stringify({ query, variables });
   }
 }
 

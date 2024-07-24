@@ -23,6 +23,13 @@ export type PhotonName = {
   last: string;
 };
 
+export type PhotonNameInput = {
+  first: string;
+  last: string;
+  middle?: string;
+  title?: string;
+};
+
 export type PhotonSexType = 'MALE' | 'FEMALE' | 'UNKNOWN';
 
 export type PhotonPatientAllergy = {
@@ -178,11 +185,25 @@ export type PhotonOrderFulfillment = {
 
 export type CreatePatientVariables = {
   externalId: string;
-  name: PhotonName;
+  name: PhotonNameInput;
   dateOfBirth: string;
   sex: 'MALE' | 'FEMALE' | 'UNKNOWN';
   gender?: string;
   email?: string;
   phone?: string;
+  allergies?: PhotonAllergenInput[];
+  medicationHistory?: PhotonMedHistoryInput[];
   address?: PhotonAddress;
+};
+
+export type PhotonAllergenInput = {
+  allergenId: string;
+  comment?: string;
+  onset?: string;
+};
+
+export type PhotonMedHistoryInput = {
+  medicationId: string;
+  active: boolean;
+  comment?: string;
 };
