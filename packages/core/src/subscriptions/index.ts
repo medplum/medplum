@@ -170,6 +170,10 @@ export class SubscriptionManager {
       for (const emitter of this.getAllCriteriaEmitters()) {
         emitter.dispatchEvent({ ...closeEvent });
       }
+
+      this.criteriaEntries.clear();
+      this.criteriaEntriesBySubscriptionId.clear();
+      this.masterSubEmitter?.removeAllListeners();
     });
 
     ws.addEventListener('open', () => {
@@ -394,6 +398,10 @@ export class SubscriptionManager {
     // If actually removing (refcount === 0)
     this.maybeEmitDisconnect(criteriaEntry);
     this.removeCriteriaEntry(criteriaEntry);
+  }
+
+  getWebSocket(): IReconnectingWebSocket {
+    return this.ws;
   }
 
   closeWebSocket(): void {

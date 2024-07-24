@@ -101,19 +101,23 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       }
     },
     {
-      onDisconnect: useCallback(() => {
+      onWebSocketClose: useCallback(() => {
         if (!reconnecting) {
           setReconnecting(true);
         }
         showNotification({ color: 'red', message: 'Live chat disconnected. Attempting to reconnect...' });
       }, [setReconnecting, reconnecting]),
-      onReconnect: useCallback(() => {
-        showNotification({ color: 'green', message: 'Live chat reconnected.' });
-        searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      onWebSocketOpen: useCallback(() => {
         if (reconnecting) {
+          showNotification({ color: 'green', message: 'Live chat reconnected.' });
+        }
+      }, [reconnecting]),
+      onSubscriptionConnect: useCallback(() => {
+        if (reconnecting) {
+          searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
           setReconnecting(false);
         }
-      }, [searchMessages, setReconnecting, reconnecting]),
+      }, [reconnecting, setReconnecting, searchMessages]),
     }
   );
 

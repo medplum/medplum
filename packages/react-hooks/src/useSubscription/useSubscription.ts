@@ -7,8 +7,10 @@ const SUBSCRIPTION_DEBOUNCE_MS = 3000;
 
 export type UseSubscriptionOptions = {
   subscriptionProps?: Partial<Subscription>;
-  onReconnect?: () => void;
-  onDisconnect?: () => void;
+  onWebSocketOpen?: () => void;
+  onWebSocketClose?: () => void;
+  onSubscriptionConnect?: (subscriptionId: string) => void;
+  onSubscriptionDisconnect?: (subscriptionId: string) => void;
 };
 
 /**
@@ -18,7 +20,18 @@ export type UseSubscriptionOptions = {
  *
  * @param criteria - The FHIR search criteria to subscribe to.
  * @param callback - The callback to call when a notification event `Bundle` for this `Subscription` is received.
- * @param options - Optional options used to configure the created `Subscription`.
+ * @param options - Optional options used to configure the created `Subscription`. See {@link UseSubscriptionOptions}
+ *
+ * --------------------------------------------------------------------------------------------------------------------------------
+ *
+ * `options` contains the following properties, all of which are optional:
+ * - `subscriptionProps` - Allows the caller to pass a `Partial<Subscription>` to use as part of the creation
+ * of the `Subscription` resource for this subscription. It enables the user namely to pass things like the `extension` property and to create
+ * the `Subscription` with extensions such the {@link https://www.medplum.com/docs/subscriptions/subscription-extensions#interactions "Supported Interaction"} extension which would enable to listen for `create` or `update` only events.
+ * - `onWebsocketOpen` - Called when the WebSocket connection is established with Medplum server.
+ * - `onWebsocketClose` - Called when the WebSocket connection disconnects.
+ * - `onSubscriptionConnect` - Called when the corresponding subscription starts to receive updates after the subscription has been initialized and connected to.
+ * - `onSubscriptionDisconnect` - Called when the corresponding subscription is destroyed and stops receiving updates from the server.
  */
 export function useSubscription(
   criteria: string,
@@ -38,11 +51,17 @@ export function useSubscription(
   const callbackRef = useRef<typeof callback>();
   callbackRef.current = callback;
 
-  const onReconnectRef = useRef<UseSubscriptionOptions['onReconnect']>();
-  onReconnectRef.current = options?.onReconnect;
+  const onWebSocketOpenRef = useRef<UseSubscriptionOptions['onWebSocketOpen']>();
+  onWebSocketOpenRef.current = options?.onWebSocketOpen;
 
-  const onDisconnectRef = useRef<UseSubscriptionOptions['onDisconnect']>();
-  onDisconnectRef.current = options?.onDisconnect;
+  const onWebSocketCloseRef = useRef<UseSubscriptionOptions['onWebSocketClose']>();
+  onWebSocketCloseRef.current = options?.onWebSocketClose;
+
+  const onSubscriptionConnectRef = useRef<UseSubscriptionOptions['onSubscriptionConnect']>();
+  onSubscriptionConnectRef.current = options?.onSubscriptionConnect;
+
+  const onSubscriptionDisconnectRef = useRef<UseSubscriptionOptions['onSubscriptionDisconnect']>();
+  onSubscriptionDisconnectRef.current = options?.onSubscriptionDisconnect;
 
   useEffect(() => {
     if (memoizedOptions !== options && !deepEquals(memoizedOptions, options)) {
@@ -76,14 +95,20 @@ export function useSubscription(
     callbackRef.current?.(event.payload);
   }, []);
 
-  const onReconnect = useCallback(() => {
-    if (onReconnectRef.current && medplum.getSubscriptionManager().isInitialOpenComplete()) {
-      onReconnectRef.current();
-    }
-  }, [medplum]);
+  const onWebSocketOpen = useCallback(() => {
+    onWebSocketOpenRef.current?.();
+  }, []);
 
-  const onDisconnect = useCallback(() => {
-    onDisconnectRef.current?.();
+  const onWebSocketClose = useCallback(() => {
+    onWebSocketCloseRef.current?.();
+  }, []);
+
+  const onSubscriptionConnect = useCallback((event: SubscriptionEventMap['connect']) => {
+    onSubscriptionConnectRef.current?.(event.payload.subscriptionId);
+  }, []);
+
+  const onSubscriptionDisconnect = useCallback((event: SubscriptionEventMap['disconnect']) => {
+    onSubscriptionDisconnectRef.current?.(event.payload.subscriptionId);
   }, []);
 
   useEffect(() => {
@@ -92,15 +117,19 @@ export function useSubscription(
     }
     if (!listeningRef.current) {
       emitter.addEventListener('message', emitterCallback);
-      emitter.addEventListener('open', onReconnect);
-      emitter.addEventListener('close', onDisconnect);
+      emitter.addEventListener('open', onWebSocketOpen);
+      emitter.addEventListener('close', onWebSocketClose);
+      emitter.addEventListener('connect', onSubscriptionConnect);
+      emitter.addEventListener('disconnect', onSubscriptionDisconnect);
       listeningRef.current = true;
     }
     return () => {
       listeningRef.current = false;
       emitter.removeEventListener('message', emitterCallback);
-      emitter.removeEventListener('open', onReconnect);
-      emitter.removeEventListener('close', onDisconnect);
+      emitter.removeEventListener('open', onWebSocketOpen);
+      emitter.removeEventListener('close', onWebSocketClose);
+      emitter.removeEventListener('connect', onSubscriptionConnect);
+      emitter.removeEventListener('disconnect', onSubscriptionDisconnect);
     };
-  }, [emitter, emitterCallback, onReconnect, onDisconnect]);
+  }, [emitter, emitterCallback, onWebSocketOpen, onWebSocketClose, onSubscriptionConnect, onSubscriptionDisconnect]);
 }

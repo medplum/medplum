@@ -11,13 +11,18 @@ import {
 } from '@medplum/core';
 import { Subscription } from '@medplum/fhirtypes';
 
-class MockReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> implements IReconnectingWebSocket {
-  readyState = WebSocket.OPEN;
-  close(): void {
-    this.dispatchEvent(new CloseEvent(1000, 'unknown reason', undefined));
+export class MockReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> implements IReconnectingWebSocket {
+  readyState: WebSocket['OPEN'] | WebSocket['CLOSED'] = WebSocket.OPEN;
+  close(code?: number, reason?: string): void {
+    this.readyState = WebSocket.CLOSED;
+    this.dispatchEvent(new CloseEvent(code ?? 1000, reason ?? 'unknown reason', undefined));
   }
   send(): void {
     // Not implemented -- this is a mock
+  }
+  reconnect(_code?: number, _reason?: string): void {
+    this.readyState = WebSocket.OPEN;
+    this.dispatchEvent(new Event('open'));
   }
 }
 
@@ -115,9 +120,18 @@ export class MockSubscriptionManager extends SubscriptionManager {
   }
 
   closeWebSocket(): void {
+    this.getWebSocket().close();
     this.masterEmitter.dispatchEvent({ type: 'close' });
     for (const emitter of this.getAllMockCriteriaEmitters()) {
       emitter.dispatchEvent({ type: 'close' });
+    }
+  }
+
+  openWebSocket(): void {
+    this.getWebSocket().reconnect();
+    this.masterEmitter.dispatchEvent({ type: 'open' });
+    for (const emitter of this.getAllMockCriteriaEmitters()) {
+      emitter.dispatchEvent({ type: 'open' });
     }
   }
 

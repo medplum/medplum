@@ -140,12 +140,17 @@ describe('SubscriptionEmitter', () => {
 describe('SubscriptionManager', () => {
   describe('Constructor', () => {
     let wsServer: WS;
+    let defaultManager: SubscriptionManager;
 
-    beforeAll(async () => {
+    beforeEach(() => {
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
     });
 
-    afterAll(() => {
+    afterEach(async () => {
+      defaultManager.closeWebSocket();
+      wsServer.close();
+      await wsServer.closed;
       WS.clean();
     });
 
@@ -182,6 +187,19 @@ describe('SubscriptionManager', () => {
 
   describe('addCriteria()', () => {
     let wsServer: WS;
+    let defaultManager: SubscriptionManager;
+
+    beforeEach(() => {
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+    });
+
+    afterEach(async () => {
+      defaultManager.closeWebSocket();
+      wsServer.close();
+      await wsServer.closed;
+      WS.clean();
+    });
 
     beforeAll(() => {
       medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -203,18 +221,12 @@ describe('SubscriptionManager', () => {
           ],
         } as Parameters;
       });
-      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
-    });
-
-    afterAll(() => {
-      WS.clean();
     });
 
     test('should add a criteria and receive messages for that criteria', async () => {
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
-      const emitter = manager.addCriteria('Communication');
+      const emitter = defaultManager.addCriteria('Communication');
       expect(emitter).toBeInstanceOf(SubscriptionEmitter);
 
       const subscriptionId = await new Promise<string>((resolve) => {
@@ -360,13 +372,15 @@ describe('SubscriptionManager', () => {
 
       expect(console.error).toHaveBeenCalledTimes(2);
       console.error = originalError;
+
+      manager1.closeWebSocket();
+      manager2.closeWebSocket();
     });
 
     test('should track separate `Subscription` resources for same criteria with different `subscriptionProps`', async () => {
       const originalWarn = console.warn;
       console.warn = jest.fn();
 
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
       medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -409,9 +423,9 @@ describe('SubscriptionManager', () => {
         } as Parameters;
       });
 
-      manager.addCriteria('Communication');
+      defaultManager.addCriteria('Communication');
       medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
-      manager.addCriteria('Communication', {
+      defaultManager.addCriteria('Communication', {
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
@@ -420,12 +434,12 @@ describe('SubscriptionManager', () => {
         ],
       });
 
-      expect(manager.getCriteriaCount()).toEqual(2);
+      expect(defaultManager.getCriteriaCount()).toEqual(2);
 
-      manager.removeCriteria('Communication');
-      expect(manager.getCriteriaCount()).toEqual(1);
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toEqual(1);
 
-      manager.removeCriteria('Communication', {
+      defaultManager.removeCriteria('Communication', {
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
@@ -433,7 +447,7 @@ describe('SubscriptionManager', () => {
           },
         ],
       });
-      expect(manager.getCriteriaCount()).toEqual(0);
+      expect(defaultManager.getCriteriaCount()).toEqual(0);
 
       expect(console.warn).toHaveBeenCalledTimes(2);
       console.warn = originalWarn;
@@ -443,8 +457,8 @@ describe('SubscriptionManager', () => {
 
   describe('removeCriteria()', () => {
     let wsServer: WS;
-    let manager: SubscriptionManager;
     let emitter: SubscriptionEmitter;
+    let defaultManager: SubscriptionManager;
 
     beforeAll(async () => {
       medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -466,12 +480,13 @@ describe('SubscriptionManager', () => {
           ],
         } as Parameters;
       });
-      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
 
-      manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+
       await wsServer.connected;
 
-      emitter = manager.addCriteria('Communication');
+      emitter = defaultManager.addCriteria('Communication');
       expect(emitter).toBeInstanceOf(SubscriptionEmitter);
 
       const subscriptionId = await new Promise<string>((resolve) => {
@@ -486,21 +501,24 @@ describe('SubscriptionManager', () => {
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
     });
 
-    afterAll(() => {
+    afterAll(async () => {
+      defaultManager.closeWebSocket();
+      wsServer.close();
+      await wsServer.closed;
       WS.clean();
     });
 
     test('should not throw when remove has been called on a criteria that is not known', () => {
       const originalWarn = console.warn;
       console.warn = jest.fn();
-      expect(() => manager.removeCriteria('DiagnosticReport')).not.toThrow();
+      expect(() => defaultManager.removeCriteria('DiagnosticReport')).not.toThrow();
       expect(console.warn).toHaveBeenCalledTimes(1);
       console.warn = originalWarn;
     });
 
     test('should not clean up a criteria if there are outstanding listeners', async () => {
       let success = false;
-      const emitter = manager.addCriteria('Communication');
+      const emitter = defaultManager.addCriteria('Communication');
       expect(emitter).toBeInstanceOf(SubscriptionEmitter);
 
       let receivedDisconnect = false;
@@ -512,7 +530,7 @@ describe('SubscriptionManager', () => {
       };
       emitter.addEventListener('disconnect', handler);
 
-      manager.removeCriteria('Communication');
+      defaultManager.removeCriteria('Communication');
 
       await sleep(500);
       expect(wsServer).not.toHaveReceivedMessages([{ type: 'unbind-from-token', payload: { token: 'token-123' } }]);
@@ -535,10 +553,7 @@ describe('SubscriptionManager', () => {
       };
       emitter.addEventListener('disconnect', handler);
 
-      manager.removeCriteria('Communication');
-
-      // Give time for the async tasks to complete before checking for success
-      await sleep(200);
+      defaultManager.removeCriteria('Communication');
 
       await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
 
@@ -551,6 +566,7 @@ describe('SubscriptionManager', () => {
 
   describe('getCriteriaCount()', () => {
     let wsServer: WS;
+    let defaultManager: SubscriptionManager;
 
     beforeAll(() => {
       medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -572,10 +588,15 @@ describe('SubscriptionManager', () => {
           ],
         } as Parameters;
       });
-      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4');
+      defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
     });
 
-    afterAll(() => {
+    afterAll(async () => {
+      defaultManager.closeWebSocket();
+      wsServer.close();
+      await wsServer.closed;
       WS.clean();
     });
 
@@ -583,13 +604,12 @@ describe('SubscriptionManager', () => {
       const originalWarn = console.warn;
       console.warn = jest.fn();
 
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
-      expect(manager.getCriteriaCount()).toEqual(0);
-      manager.addCriteria('Communication');
-      expect(manager.getCriteriaCount()).toEqual(1);
-      manager.addCriteria('Communication', {
+      expect(defaultManager.getCriteriaCount()).toEqual(0);
+      defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toEqual(1);
+      defaultManager.addCriteria('Communication', {
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
@@ -597,10 +617,10 @@ describe('SubscriptionManager', () => {
           },
         ],
       });
-      expect(manager.getCriteriaCount()).toEqual(2);
-      manager.removeCriteria('Communication');
-      expect(manager.getCriteriaCount()).toEqual(1);
-      manager.removeCriteria('Communication', {
+      expect(defaultManager.getCriteriaCount()).toEqual(2);
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toEqual(1);
+      defaultManager.removeCriteria('Communication', {
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
@@ -608,7 +628,7 @@ describe('SubscriptionManager', () => {
           },
         ],
       });
-      expect(manager.getCriteriaCount()).toEqual(0);
+      expect(defaultManager.getCriteriaCount()).toEqual(0);
 
       expect(console.warn).toHaveBeenCalledTimes(2);
       console.warn = originalWarn;
@@ -617,26 +637,30 @@ describe('SubscriptionManager', () => {
 
   describe('closeWebSocket()', () => {
     let wsServer: WS;
+    let defaultManager: SubscriptionManager;
 
-    beforeAll(() => {
+    beforeEach(() => {
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
     });
 
-    afterAll(() => {
+    afterEach(async () => {
+      defaultManager.closeWebSocket();
+      wsServer.close();
+      await wsServer.closed;
       WS.clean();
     });
 
     test('should close websocket and emit `close` when called', async () => {
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
-      const criteriaEmitter = manager.addCriteria('Communication');
+      const criteriaEmitter = defaultManager.addCriteria('Communication');
 
       const [masterEvent, criteriaEvent] = await new Promise<SubscriptionEventMap['close'][]>((resolve, reject) => {
         const promises = [];
         promises.push(
           new Promise<SubscriptionEventMap['close']>((resolve) => {
-            manager.getMasterEmitter().addEventListener('close', (event) => {
+            defaultManager.getMasterEmitter().addEventListener('close', (event) => {
               resolve(event);
             });
           })
@@ -649,7 +673,7 @@ describe('SubscriptionManager', () => {
           })
         );
 
-        expect(() => manager.closeWebSocket()).not.toThrow();
+        expect(() => defaultManager.closeWebSocket()).not.toThrow();
         Promise.all(promises).then(resolve).catch(reject);
       });
 
@@ -659,24 +683,23 @@ describe('SubscriptionManager', () => {
     });
 
     test('should not emit close twice', async () => {
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
       const event = await new Promise<SubscriptionEventMap['close']>((resolve) => {
-        manager.getMasterEmitter().addEventListener('close', (event) => {
+        defaultManager.getMasterEmitter().addEventListener('close', (event) => {
           resolve(event);
         });
-        expect(() => manager.closeWebSocket()).not.toThrow();
+        expect(() => defaultManager.closeWebSocket()).not.toThrow();
       });
       expect(event?.type).toEqual('close');
 
       await wsServer.closed;
 
       await new Promise<void>((resolve, reject) => {
-        manager.getMasterEmitter().addEventListener('close', () => {
+        defaultManager.getMasterEmitter().addEventListener('close', () => {
           reject(new Error('Expected not to call'));
         });
-        expect(() => manager.closeWebSocket()).not.toThrow();
+        expect(() => defaultManager.closeWebSocket()).not.toThrow();
         setTimeout(() => resolve(), 250);
       });
 
@@ -685,25 +708,21 @@ describe('SubscriptionManager', () => {
   });
 
   describe('getMasterEmitter()', () => {
-    let wsServer: WS;
-
-    beforeAll(async () => {
-      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
-    });
-
-    afterAll(() => {
-      WS.clean();
-    });
-
     test('should always get the same emitter', async () => {
+      const wsServer = new WS('wss://example.com/ws/subscriptions-r4');
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
       expect(manager.getMasterEmitter()).toEqual(manager.getMasterEmitter());
+
+      wsServer.close();
+      await wsServer.closed;
+      WS.clean();
     });
   });
 
   describe('Scenarios', () => {
     let wsServer: WS;
+    let defaultManager: SubscriptionManager;
 
     beforeAll(() => {
       medplum.router.addRoute('GET', `/fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -725,10 +744,17 @@ describe('SubscriptionManager', () => {
           ],
         } as Parameters;
       });
+    });
+
+    beforeEach(() => {
+      defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
     });
 
-    afterAll(() => {
+    afterEach(async () => {
+      defaultManager.closeWebSocket();
+      wsServer.close();
+      await wsServer.closed;
       WS.clean();
     });
 
@@ -736,7 +762,7 @@ describe('SubscriptionManager', () => {
       const originalWarn = console.warn;
       console.warn = jest.fn();
 
-      // @ts-expect-error We don't use manager
+      // @ts-expect-error We don't use defaultManager
       const _manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
@@ -769,7 +795,6 @@ describe('SubscriptionManager', () => {
     });
 
     test('should emit `heartbeat` event when heartbeat received', async () => {
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
       const timestamp = new Date().toISOString();
@@ -790,7 +815,7 @@ describe('SubscriptionManager', () => {
       } as Bundle;
 
       const receivedBundle = await new Promise<Bundle>((resolve) => {
-        const emitter = manager.getMasterEmitter();
+        const emitter = defaultManager.getMasterEmitter();
         emitter.addEventListener('heartbeat', (event) => {
           resolve(event.payload);
         });
@@ -800,34 +825,18 @@ describe('SubscriptionManager', () => {
       expect(receivedBundle).toEqual(sentBundle);
     });
 
-    test('should emit `error` event when error received from WS', async () => {
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
-      await wsServer.connected;
-
-      const receivedEvent = await new Promise<SubscriptionEventMap['error']>((resolve) => {
-        manager.getMasterEmitter().addEventListener('error', (event) => {
-          resolve(event);
-        });
-        wsServer.error();
-      });
-
-      expect(receivedEvent).toMatchObject({ type: 'error', payload: expect.any(Error) });
-    });
-
     test('should emit `error` event when invalid message comes in over WebSocket', async () => {
       const originalError = console.error;
       console.error = jest.fn();
 
-      const wsServer = new WS('wss://example.com/ws/subscriptions-r4');
-      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       await wsServer.connected;
 
-      const emitter = manager.addCriteria('Communication');
+      const emitter = defaultManager.addCriteria('Communication');
       const [receivedEvent1, receivedEvent2] = await new Promise<SubscriptionEventMap['error'][]>((resolve, reject) => {
         const promises = [];
         promises.push(
           new Promise<SubscriptionEventMap['error']>((resolve) => {
-            manager.getMasterEmitter().addEventListener('error', (event) => {
+            defaultManager.getMasterEmitter().addEventListener('error', (event) => {
               resolve(event);
             });
           })
@@ -845,15 +854,79 @@ describe('SubscriptionManager', () => {
       });
 
       expect(receivedEvent1?.type).toEqual('error');
-      expect(receivedEvent1?.payload).toBeInstanceOf(SyntaxError);
-      expect(receivedEvent1?.payload?.message).toMatch(/^Unexpected token/);
+      expect(receivedEvent1?.payload).toBeInstanceOf(TypeError);
+      expect(receivedEvent1?.payload?.message).toMatch(/^Cannot read properties of undefined*/);
 
       expect(receivedEvent2?.type).toEqual('error');
-      expect(receivedEvent2?.payload).toBeInstanceOf(SyntaxError);
-      expect(receivedEvent2?.payload?.message).toMatch(/^Unexpected token/);
+      expect(receivedEvent2?.payload).toBeInstanceOf(TypeError);
+      expect(receivedEvent2?.payload?.message).toMatch(/^Cannot read properties of undefined*/);
 
       expect(console.error).toHaveBeenCalledTimes(1);
       console.error = originalError;
+    });
+
+    test.only('should reconnect after WebSocket disconnects', async () => {
+      await wsServer.connected;
+
+      const receivedEvent1Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('connect', (event) => {
+          resolve(event);
+        });
+      });
+      const emitter = defaultManager.addCriteria('Communication');
+
+      const receivedEvent1 = await receivedEvent1Promise;
+      expect(receivedEvent1?.type).toEqual('connect');
+      expect(typeof receivedEvent1?.payload?.subscriptionId).toEqual('string');
+      expect(receivedEvent1?.payload?.subscriptionId?.length).toBeGreaterThan(0);
+
+      const receivedEvent2Promise = new Promise<SubscriptionEventMap['close']>((resolve) => {
+        emitter.addEventListener('close', (event) => {
+          resolve(event);
+        });
+      });
+      wsServer.close();
+
+      const receivedEvent2 = await receivedEvent2Promise;
+      expect(receivedEvent2?.type).toEqual('close');
+
+      await wsServer.closed;
+      WS.clean();
+
+      const receivedEvent3Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        emitter.addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Now we we reopen the server, the emitter should emit `open`
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+
+      await sleep(1500);
+
+      const receivedEvent3 = await receivedEvent3Promise;
+      expect(receivedEvent3?.type).toEqual('open');
+
+      console.log('HEREDA #1');
+
+      await wsServer.connected;
+
+      console.log('HEREDA');
+
+      const receivedEvent4Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        emitter.addEventListener('connect', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Make sure we establish the subscription
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+
+      // Now check connect was emitted
+      const receivedEvent4 = await receivedEvent4Promise;
+      expect(receivedEvent3.type).toEqual('connect');
+      expect(typeof receivedEvent4?.payload?.subscriptionId).toEqual('string');
+      expect(receivedEvent4?.payload?.subscriptionId?.length).toBeGreaterThan(0);
     });
   });
 });

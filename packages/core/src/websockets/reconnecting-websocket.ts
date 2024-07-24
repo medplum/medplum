@@ -12,8 +12,9 @@ import { TypedEventTarget } from '../eventtarget';
 
 export interface IReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> {
   readyState: number;
-  close(): void;
+  close(code?: number, reason?: string): void;
   send(message: string): void;
+  reconnect(code?: number, reason?: string): void;
 }
 
 export interface IReconnectingWebSocketCtor {
