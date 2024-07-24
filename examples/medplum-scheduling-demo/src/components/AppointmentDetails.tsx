@@ -41,7 +41,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   };
 
   // Get the current tab
-  const tab = location.pathname.split('/').pop() ?? '';
+  const tab = location.pathname.split('/')[3] ?? 'details';
 
   return (
     <Document>
