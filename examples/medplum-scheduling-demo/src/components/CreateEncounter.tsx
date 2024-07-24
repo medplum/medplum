@@ -9,9 +9,8 @@ import {
   Practitioner,
   Questionnaire,
   QuestionnaireResponse,
-  Reference,
 } from '@medplum/fhirtypes';
-import { QuestionnaireForm, useMedplum } from '@medplum/react';
+import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,17 +28,14 @@ interface CreateEncounterProps {
 export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
   const { appointment, patient, opened, handlers } = props;
   const medplum = useMedplum();
+  const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
 
-  async function handleSubmit(formData: QuestionnaireResponse): Promise<void> {
+  async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
     const answers = getQuestionnaireAnswers(formData);
     const startDateTime = answers['start-date'].valueDateTime as string;
     const endDateTime = answers['end-date'].valueDateTime as string;
     const encounterClass = answers['class'].valueCoding as Coding;
-
-    const practitionerParticipant = appointment?.participant?.find((p) =>
-      p.actor?.reference?.startsWith('Practitioner/')
-    );
 
     const encounterData: Encounter = {
       resourceType: 'Encounter',
@@ -52,14 +48,13 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
         end: endDateTime,
       },
       subject: createReference(patient),
-      participant: practitionerParticipant
-        ? [
-            {
-              type: practitionerParticipant.type,
-              individual: practitionerParticipant.actor as Reference<Practitioner>,
-            },
-          ]
-        : undefined,
+      participant: [
+        {
+          // Uses the logged user as the attender
+          individual: createReference(profile),
+          type: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType', code: 'ATND' }] }],
+        },
+      ],
     };
 
     try {
@@ -86,7 +81,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
   return (
     <Modal opened={opened} onClose={handlers.close}>
       <p>Create encounter</p>
-      <QuestionnaireForm questionnaire={encounterQuestionnaire} onSubmit={handleSubmit} />
+      <QuestionnaireForm questionnaire={encounterQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );
 }

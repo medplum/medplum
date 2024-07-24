@@ -25,6 +25,8 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     navigate(`/Appointment/${appointment.id}/${newTab}`);
   }
 
+  // Filter definitions to be used in the SearchControl components
+
   const patientFilter: Filter = {
     code: 'patient',
     operator: Operator.EQUALS,
@@ -46,7 +48,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     value: new Date().toISOString(),
   };
 
-  // Get the current tab
+  // Get the current tab, default to 'details' if not found
   const tab = location.pathname.split('/')[3] ?? 'details';
 
   return (

@@ -21,16 +21,18 @@ export function RescheduleAppointment(props: RescheduleAppointmentProps): JSX.El
   const medplum = useMedplum();
   const navigate = useNavigate();
 
-  async function handleSubmit(formData: QuestionnaireResponse): Promise<void> {
+  async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
     const answers = getQuestionnaireAnswers(formData);
 
     try {
+      // Update the appointment with the new start and end dates, and change the status to "booked"
       await medplum.updateResource({
         ...appointment,
         start: answers['start-date'].valueDateTime,
         end: answers['end-date'].valueDateTime,
         status: 'booked',
       });
+
       navigate(`/Appointment/${appointment.id}/details`);
       showNotification({
         icon: <IconCircleCheck />,
@@ -50,7 +52,7 @@ export function RescheduleAppointment(props: RescheduleAppointmentProps): JSX.El
   return (
     <Modal opened={opened} onClose={handlers.close}>
       <p>Reschedule Appointment</p>
-      <QuestionnaireForm questionnaire={rescheduleQuestionnaire} onSubmit={handleSubmit} />
+      <QuestionnaireForm questionnaire={rescheduleQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );
 }

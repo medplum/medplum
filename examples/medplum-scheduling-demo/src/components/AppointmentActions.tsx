@@ -25,12 +25,14 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
     return <Loading />;
   }
 
+  // Handler for completing or cancelling the appointment
   async function handleChangeStatus(newStatus: Appointment['status']): Promise<void> {
     try {
       await medplum.updateResource({
         ...appointment,
         status: newStatus,
       });
+
       navigate(`/Appointment/${appointment.id}/details`);
       showNotification({
         icon: <IconCircleCheck />,
@@ -56,22 +58,22 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
         opened={encounterOpened}
         handlers={encounterHandlers}
       />
-      {!['fulfilled', 'cancelled'].includes(appointment.status) ? (
+      {!['fulfilled', 'cancelled'].includes(appointment.status) ? ( // Only show "Mark completed" if not already completed or cancelled
         <Button leftSection={<IconCircleCheck size={16} />} onClick={() => handleChangeStatus('fulfilled')}>
           Mark completed
         </Button>
       ) : null}
-      {appointment.status !== 'fulfilled' ? (
+      {appointment.status !== 'fulfilled' ? ( // Only show "Reschedule" if not already completed
         <Button leftSection={<IconCircleCheck size={16} />} onClick={() => rescheduleHandlers.open()}>
           Reschedule
         </Button>
       ) : null}
-      {appointment.status === 'fulfilled' ? (
+      {appointment.status === 'fulfilled' ? ( // Only show "Create Encounter" if already completed
         <Button leftSection={<IconCircleCheck size={16} />} onClick={() => encounterHandlers.open()}>
           Create Encounter
         </Button>
       ) : null}
-      {appointment.status !== 'cancelled' ? (
+      {appointment.status !== 'cancelled' ? ( // Only show "Cancel" if not already cancelled
         <Button leftSection={<IconCancel size={16} />} onClick={() => handleChangeStatus('cancelled')}>
           Cancel
         </Button>
