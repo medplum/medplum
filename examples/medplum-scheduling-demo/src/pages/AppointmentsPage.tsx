@@ -4,7 +4,9 @@ import { MemoizedSearchControl } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-function useTab(): [string, (tab: string) => void, SearchRequest, (definition: SearchRequest) => void] {
+// Custom hook to manage the active tab and SearchRequest parameter for the
+// MemoizedSearchControl component
+function useTab(): [string, (tab: string | null) => void, SearchRequest, (definition: SearchRequest) => void] {
   const upcomingFilter: Filter = {
     code: 'date',
     operator: Operator.STARTS_AFTER,
@@ -16,6 +18,7 @@ function useTab(): [string, (tab: string) => void, SearchRequest, (definition: S
     value: new Date().toISOString(),
   };
 
+  const navigate = useNavigate();
   const { tab } = useParams();
   const [search, updateSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
@@ -27,14 +30,16 @@ function useTab(): [string, (tab: string) => void, SearchRequest, (definition: S
     updateSearch(definition);
   }
 
-  function changeTab(newTab: string): void {
+  function changeTab(newTab: string | null): void {
     // Remove date filters keeping others
     const filters = search.filters?.filter((f) => f.code !== 'date');
 
     // Add the appropriate date filter depending on the active tab
     if (newTab === 'upcoming') {
+      navigate('/Appointment/upcoming');
       filters?.push(upcomingFilter);
     } else if (newTab === 'past') {
+      navigate('/Appointment/past');
       filters?.push(pastFilter);
     }
 
@@ -56,25 +61,17 @@ export function AppointmentsPage(): JSX.Element {
     ['past', 'Past'],
   ];
 
+  // Ensure tab is either 'upcoming' or 'past'
+  // if it's neither, navigate to the 'upcoming' tab
   useEffect(() => {
     if (!['upcoming', 'past'].includes(tab ?? '')) {
       navigate('/Appointment/upcoming');
     }
   }, [tab, navigate]);
 
-  function handleTabChange(newTab: string | null): void {
-    if (newTab === 'upcoming') {
-      navigate('/Appointment/upcoming');
-      changeTab('upcoming');
-    } else {
-      navigate('/Appointment/past');
-      changeTab('past');
-    }
-  }
-
   return (
     <Paper shadow="xs" m="md" p="xs">
-      <Tabs value={tab.toLowerCase()} onChange={handleTabChange}>
+      <Tabs value={tab.toLowerCase()} onChange={changeTab}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
             <Tabs.Tab value={tab[0]} key={tab[0]}>
