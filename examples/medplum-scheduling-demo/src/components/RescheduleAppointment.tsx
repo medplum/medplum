@@ -17,9 +17,9 @@ interface RescheduleAppointmentProps {
 }
 
 export function RescheduleAppointment(props: RescheduleAppointmentProps): JSX.Element {
+  const { appointment, opened, handlers } = props;
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const { appointment, opened, handlers } = props;
 
   async function handleSubmit(formData: QuestionnaireResponse): Promise<void> {
     const answers = getQuestionnaireAnswers(formData);

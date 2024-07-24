@@ -1,22 +1,25 @@
 import { Button, Stack, Title } from '@mantine/core';
 import { IconCancel, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { Appointment } from '@medplum/fhirtypes';
+import { Appointment, Patient } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
 import { normalizeErrorString } from '@medplum/core';
 import { RescheduleAppointment } from './RescheduleAppointment';
 import { useDisclosure } from '@mantine/hooks';
+import { CreateEncounter } from './CreateEncounter';
 
 interface AppointmentActionsProps {
   appointment: Appointment;
+  patient: Patient;
 }
 
 export function AppointmentActions(props: AppointmentActionsProps): JSX.Element {
-  const { appointment } = props;
+  const { appointment, patient } = props;
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const [opened, handlers] = useDisclosure(false);
+  const [rescheduleOpened, rescheduleHandlers] = useDisclosure(false);
+  const [encounterOpened, encounterHandlers] = useDisclosure(false);
 
   if (!appointment) {
     return <Loading />;
@@ -46,15 +49,26 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
   return (
     <Stack p="xs" m="xs">
       <Title>Appointment Actions</Title>
-      <RescheduleAppointment appointment={appointment} opened={opened} handlers={handlers} />
+      <RescheduleAppointment appointment={appointment} opened={rescheduleOpened} handlers={rescheduleHandlers} />
+      <CreateEncounter
+        appointment={appointment}
+        patient={patient}
+        opened={encounterOpened}
+        handlers={encounterHandlers}
+      />
       {!['fulfilled', 'cancelled'].includes(appointment.status) ? (
         <Button leftSection={<IconCircleCheck size={16} />} onClick={() => handleChangeStatus('fulfilled')}>
           Mark completed
         </Button>
       ) : null}
       {appointment.status !== 'fulfilled' ? (
-        <Button leftSection={<IconCircleCheck size={16} />} onClick={() => handlers.open()}>
+        <Button leftSection={<IconCircleCheck size={16} />} onClick={() => rescheduleHandlers.open()}>
           Reschedule
+        </Button>
+      ) : null}
+      {appointment.status === 'fulfilled' ? (
+        <Button leftSection={<IconCircleCheck size={16} />} onClick={() => encounterHandlers.open()}>
+          Create Encounter
         </Button>
       ) : null}
       {appointment.status !== 'cancelled' ? (
