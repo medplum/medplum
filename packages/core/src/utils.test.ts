@@ -28,6 +28,7 @@ import {
   findObservationInterval,
   findObservationReferenceRange,
   findResourceByCode,
+  flatMapFilter,
   getAllQuestionnaireAnswers,
   getCodeBySystem,
   getDateProperty,
@@ -1518,5 +1519,17 @@ describe('mapByIdentifier', () => {
     const map = mapByIdentifier(bundle, 'http://example.com');
 
     expect(map.size).toBe(0);
+  });
+});
+
+describe('flatMapFilter', () => {
+  test('maps and filters scalar values', () => {
+    const input = [1, 2, 3];
+    expect(flatMapFilter(input, (x) => (x >= 2 ? x * x : undefined))).toEqual([4, 9]);
+  });
+
+  test('flattens nested arrays', () => {
+    const input = [1, 2, 3];
+    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, [x, x]] : undefined))).toEqual([2, 2, 2]);
   });
 });
