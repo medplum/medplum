@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser } from '@tabler/icons-react';
+import { IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
@@ -11,6 +11,7 @@ import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
+import { UploadDataPage } from './pages/UploadDataPage';
 import('@photonhealth/elements');
 
 export function App(): JSX.Element | null {
@@ -30,6 +31,10 @@ export function App(): JSX.Element | null {
             title: 'My Links',
             links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
           },
+          {
+            title: 'Upload Data',
+            links: [{ icon: <IconRobot />, label: 'Upload Bots', href: '/upload/bots' }],
+          },
         ]}
       >
         <ErrorBoundary>
@@ -46,6 +51,7 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/:resourceType/:id" element={<ResourcePage />} />
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+              <Route path="/upload/:dataType" element={<UploadDataPage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
