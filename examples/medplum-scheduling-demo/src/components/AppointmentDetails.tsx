@@ -32,11 +32,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     operator: Operator.EQUALS,
     value: `Patient/${patient.id}`,
   };
-  const appointmentFilter: Filter = {
-    code: 'appointment',
-    operator: Operator.EQUALS,
-    value: `Appointment/${appointment.id}`,
-  };
   const upcomingAppointmentsFilter: Filter = {
     code: 'date',
     operator: Operator.STARTS_AFTER,
@@ -68,8 +63,13 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={{
               resourceType: 'Encounter',
-              fields: ['period', 'class'],
-              filters: [appointmentFilter],
+              fields: ['period', 'serviceType'],
+              filters: [patientFilter],
+              sortRules: [
+                {
+                  code: '-date',
+                },
+              ],
             }}
             hideFilters
             hideToolbar
@@ -81,6 +81,11 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
               resourceType: 'Appointment',
               fields: ['start', 'end', 'serviceType', 'status'],
               filters: [patientFilter, upcomingAppointmentsFilter],
+              sortRules: [
+                {
+                  code: 'date',
+                },
+              ],
             }}
             onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
@@ -94,6 +99,11 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
               resourceType: 'Appointment',
               fields: ['start', 'end', 'serviceType', 'status'],
               filters: [patientFilter, pastAppointmentsFilter],
+              sortRules: [
+                {
+                  code: '-date',
+                },
+              ],
             }}
             onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
