@@ -61,7 +61,7 @@ describe('MockSubscriptionManager', () => {
     } as SubscriptionEventMap['message']);
   });
 
-  test('closeWebSockets()', async () => {
+  test('closeWebSocket()', async () => {
     const receivedEvent = await new Promise<SubscriptionEventMap['close']>((resolve) => {
       manager.getMasterEmitter().addEventListener('close', (event) => {
         resolve(event);
@@ -69,6 +69,16 @@ describe('MockSubscriptionManager', () => {
       manager.closeWebSocket();
     });
     expect(receivedEvent?.type).toEqual('close');
+  });
+
+  test('openWebSocket()', async () => {
+    const receivedEvent = await new Promise<SubscriptionEventMap['open']>((resolve) => {
+      manager.getMasterEmitter().addEventListener('open', (event) => {
+        resolve(event);
+      });
+      manager.openWebSocket();
+    });
+    expect(receivedEvent?.type).toEqual('open');
   });
 
   test('getEmitter()', async () => {
