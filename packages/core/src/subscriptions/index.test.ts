@@ -6,6 +6,7 @@ import { generateId } from '../crypto';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, sleep } from '../utils';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
+import { sendHandshakeBundle, sendSubscriptionMessage } from './test-utils';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
@@ -14,69 +15,22 @@ const SECOND_SUBSCRIPTION_ID = '0474fa07-b98a-4172-b430-5ae234c95222';
 const medplum = new MockMedplumClient();
 medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
 
-function sendHandshakeBundle(wsServer: WS): void {
-  const timestamp = new Date().toISOString();
-  wsServer.send({
-    resourceType: 'Bundle',
-    timestamp,
-    type: 'history',
-    entry: [
-      {
-        resource: {
-          resourceType: 'SubscriptionStatus',
-          type: 'handshake',
-          subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
-        } as SubscriptionStatus,
-      },
-    ],
-  } satisfies Bundle);
-}
-
-async function sendMessageFromServer(wsServer: WS, message: string): Promise<void> {
-  const resource = await medplum.createResource({
-    id: generateId(),
-    resourceType: 'Communication',
-    status: 'completed',
-    payload: [{ contentString: message }],
-  });
-  const timestamp = new Date().toISOString();
-  wsServer.send({
-    id: generateId(),
-    resourceType: 'Bundle',
-    type: 'history',
-    timestamp,
-    entry: [
-      {
-        resource: {
-          id: generateId(),
-          resourceType: 'SubscriptionStatus',
-          status: 'active',
-          type: 'event-notification',
-          subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
-          notificationEvent: [{ eventNumber: '0', timestamp, focus: createReference(resource) }],
-        },
-      },
-      {
-        resource,
-        fullUrl: `${medplum.getBaseUrl()}fhir/R4/Communication/${resource.id as string}`,
-      },
-    ],
-  });
-}
-
 describe('ReconnectingWebSocket', () => {
   let wsServer: WS;
+  let reconnectingWebSocket: ReconnectingWebSocket;
 
   beforeEach(() => {
     wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+    reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    reconnectingWebSocket.close();
+    await sleep(0);
     WS.clean();
   });
 
   test('.close()', async () => {
-    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     await wsServer.connected;
     expect(reconnectingWebSocket.readyState).toEqual(WebSocket.OPEN);
 
@@ -85,7 +39,6 @@ describe('ReconnectingWebSocket', () => {
   });
 
   test('Getting readyState of underlying WebSocket', async () => {
-    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     expect(reconnectingWebSocket.readyState).toEqual(WebSocket.CONNECTING);
 
     await wsServer.connected;
@@ -99,7 +52,6 @@ describe('ReconnectingWebSocket', () => {
   });
 
   test('Sending before WebSocket is connected', async () => {
-    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     expect(() => reconnectingWebSocket.send(JSON.stringify({ hello: 'medplum' }))).not.toThrow();
     expect(() => reconnectingWebSocket.send(JSON.stringify({ med: 'plum' }))).not.toThrow();
 
@@ -115,7 +67,6 @@ describe('ReconnectingWebSocket', () => {
   });
 
   test('Wait for `open` before sending', async () => {
-    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     // Test that open is fired
     await new Promise<void>((resolve) => {
       reconnectingWebSocket.addEventListener('open', () => {
@@ -130,7 +81,6 @@ describe('ReconnectingWebSocket', () => {
   });
 
   test('Should emit `message` when message received from WebSocket', async () => {
-    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     await wsServer.connected;
     const receivedEvent = await new Promise<MessageEvent>((resolve) => {
       reconnectingWebSocket.addEventListener('message', (event) => {
@@ -144,7 +94,6 @@ describe('ReconnectingWebSocket', () => {
   });
 
   test('Should emit `error` when error received from WebSocket', async () => {
-    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     await wsServer.connected;
     const receivedEvent = await new Promise<ErrorEvent>((resolve) => {
       reconnectingWebSocket.addEventListener('error', (event) => {
@@ -156,7 +105,6 @@ describe('ReconnectingWebSocket', () => {
   });
 
   test('Should emit `close` when server closes connection', async () => {
-    const reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws/subscriptions-r4');
     await wsServer.connected;
     const receivedEvent = await new Promise<CloseEvent>((resolve) => {
       reconnectingWebSocket.addEventListener('close', (event) => {
@@ -199,8 +147,7 @@ describe('SubscriptionManager', () => {
 
     afterEach(async () => {
       defaultManager.closeWebSocket();
-      wsServer.close();
-      await wsServer.closed;
+      await sleep(0);
       WS.clean();
     });
 
@@ -246,8 +193,7 @@ describe('SubscriptionManager', () => {
 
     afterEach(async () => {
       defaultManager.closeWebSocket();
-      wsServer.close();
-      await wsServer.closed;
+      await sleep(0);
       WS.clean();
     });
 
@@ -288,7 +234,7 @@ describe('SubscriptionManager', () => {
       });
 
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
-      sendHandshakeBundle(wsServer);
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
       const subscriptionId = await connectPromise;
 
@@ -552,7 +498,7 @@ describe('SubscriptionManager', () => {
       });
 
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
-      sendHandshakeBundle(wsServer);
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
       const subscriptionId = await connectPromise;
       expect(typeof subscriptionId).toEqual('string');
@@ -589,7 +535,6 @@ describe('SubscriptionManager', () => {
 
       defaultManager.removeCriteria('Communication');
 
-      await sleep(500);
       expect(wsServer).not.toHaveReceivedMessages([{ type: 'unbind-from-token', payload: { token: 'token-123' } }]);
 
       emitter.removeEventListener('disconnect', handler);
@@ -778,10 +723,14 @@ describe('SubscriptionManager', () => {
   });
 
   describe('Scenarios', () => {
+    let medplum: MockMedplumClient;
     let wsServer: WS;
     let defaultManager: SubscriptionManager;
 
-    beforeAll(() => {
+    beforeEach(() => {
+      medplum = new MockMedplumClient();
+      medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
+
       medplum.router.addRoute('GET', `fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
         return {
           resourceType: 'Parameters',
@@ -801,9 +750,7 @@ describe('SubscriptionManager', () => {
           ],
         } as Parameters;
       });
-    });
 
-    beforeEach(() => {
       defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
     });
@@ -923,6 +870,11 @@ describe('SubscriptionManager', () => {
     });
 
     test('should reconnect after WebSocket disconnects and receive messages', async () => {
+      // TODO: Figure out why we are getting so many warnings around receiving messages for unknown subscriptions
+      // This seems to happen only when running the whole test suite
+      // In isolation, this console.warn mock reports 0 calls :thinking-face:
+      console.warn = jest.fn();
+
       const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
         defaultManager.getMasterEmitter().addEventListener('open', (event) => {
           resolve(event);
@@ -944,7 +896,7 @@ describe('SubscriptionManager', () => {
       expect(defaultManager.getCriteriaCount()).toEqual(1);
 
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
-      sendHandshakeBundle(wsServer);
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
       const receivedEvent2 = await receivedEvent2Promise;
       expect(receivedEvent2.type).toEqual('connect');
@@ -955,7 +907,7 @@ describe('SubscriptionManager', () => {
         });
       });
 
-      await sendMessageFromServer(wsServer, 'Hello, Medplum!');
+      await sendSubscriptionMessage(wsServer, medplum, MOCK_SUBSCRIPTION_ID, 'Hello, Medplum!');
 
       const receivedEvent3 = await receivedEvent3Promise;
       expect(receivedEvent3.type).toEqual('message');
@@ -998,8 +950,10 @@ describe('SubscriptionManager', () => {
 
       // Make sure we establish the subscription
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      // Give some time to add subscription to list on client
+      await sleep(100);
       // Then send a handshake message
-      sendHandshakeBundle(wsServer);
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
       // Now check connect was emitted
       const receivedEvent6 = await receivedEvent6Promise;
@@ -1014,7 +968,7 @@ describe('SubscriptionManager', () => {
         });
       });
 
-      await sendMessageFromServer(wsServer, 'Hello, again!');
+      await sendSubscriptionMessage(wsServer, medplum, MOCK_SUBSCRIPTION_ID, 'Hello, again!');
       const receivedEvent7 = await receivedEvent7Promise;
       expect(receivedEvent7.type).toEqual('message');
     }, 30000);

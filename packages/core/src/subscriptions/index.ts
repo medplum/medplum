@@ -82,6 +82,11 @@ class CriteriaEntry {
         }
       : undefined;
   }
+
+  clearAttachedSubscription(): void {
+    this.subscriptionId = undefined;
+    this.token = undefined;
+  }
 }
 
 type CriteriaMapEntry = { bareCriteria?: CriteriaEntry; criteriaWithProps: CriteriaEntry[] };
@@ -97,7 +102,6 @@ export class SubscriptionManager {
   private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
-  private initialOpenComplete: boolean;
 
   constructor(medplum: MedplumClient, wsUrl: URL | string, options?: SubManagerOptions) {
     if (!(medplum instanceof MedplumClient)) {
@@ -117,7 +121,6 @@ export class SubscriptionManager {
     this.criteriaEntries = new Map<string, CriteriaMapEntry>();
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
     this.wsClosed = false;
-    this.initialOpenComplete = false;
 
     this.setupWebSocketListeners();
   }
@@ -199,13 +202,9 @@ export class SubscriptionManager {
         emitter.dispatchEvent({ ...openEvent });
       }
       // We do this after dispatching the events so listeners can check if this is the initial open or not
-      if (!this.initialOpenComplete) {
-        this.initialOpenComplete = true;
-      } else {
-        // We are reconnecting
-        // So we refresh all current subscriptions
-        this.refreshAllSubscriptions().catch(console.error);
-      }
+      // We are reconnecting
+      // So we refresh all current subscriptions
+      this.refreshAllSubscriptions().catch(console.error);
     });
   }
 
@@ -323,7 +322,7 @@ export class SubscriptionManager {
     }
   }
 
-  private removeCriteriaEntry(criteriaEntry: CriteriaEntry): void {
+  private removeCriteriaEntry(criteriaEntry: CriteriaEntry, clientOnly = false): void {
     const { criteria, subscriptionProps, subscriptionId, token } = criteriaEntry;
     if (!this.criteriaEntries.has(criteria)) {
       return;
@@ -344,7 +343,7 @@ export class SubscriptionManager {
     if (subscriptionId) {
       this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
     }
-    if (token) {
+    if (token && !clientOnly) {
       this.ws.send(JSON.stringify({ type: 'unbind-from-token', payload: { token } }));
     }
   }
@@ -371,6 +370,7 @@ export class SubscriptionManager {
         ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
         ...mapEntry.criteriaWithProps,
       ]) {
+        criteriaEntry.clearAttachedSubscription();
         await this.subscribeToCriteria(criteriaEntry);
       }
     }
@@ -433,10 +433,6 @@ export class SubscriptionManager {
       this.masterSubEmitter = new SubscriptionEmitter(...Array.from(this.criteriaEntries.keys()));
     }
     return this.masterSubEmitter;
-  }
-
-  isInitialOpenComplete(): boolean {
-    return this.initialOpenComplete;
   }
 }
 
