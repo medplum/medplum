@@ -14,6 +14,8 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Filters to be used in SearchControl search
+
   const patientFilter: Filter = {
     code: 'patient',
     operator: Operator.EQUALS,
@@ -24,6 +26,8 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     operator: Operator.STARTS_AFTER,
     value: new Date().toISOString(),
   };
+
+  // Search state to control the SearchControl components
 
   const [appointmentsSearch, setAppointmentsSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
@@ -53,7 +57,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['encounters', 'Encounters'],
   ];
 
-  // Get the current tab
+  // Get the current tab, default to 'details' if not found
   const tab = location.pathname.split('/')[3] ?? 'details';
 
   function handleTabChange(newTab: string | null): void {
