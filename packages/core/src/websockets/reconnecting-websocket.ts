@@ -221,7 +221,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
       }
       return acc;
     }, 0);
-    return bytes + (this._ws ? this._ws.bufferedAmount : 0);
+    return bytes + (this._ws?.bufferedAmount ?? 0);
   }
 
   /**
@@ -229,7 +229,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
    * extensions as negotiated by the connection
    */
   get extensions(): string {
-    return this._ws ? this._ws.extensions : '';
+    return this._ws?.extensions ?? '';
   }
 
   /**
@@ -238,7 +238,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
    * WebSocket object.
    */
   get protocol(): string {
-    return this._ws ? this._ws.protocol : '';
+    return this._ws?.protocol ?? '';
   }
 
   /**
