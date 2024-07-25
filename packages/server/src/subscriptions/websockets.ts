@@ -151,6 +151,8 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     }
     subscribeWsToSubscription(socket, subscriptionId);
     ensureHeartbeatHandler();
+    // Send a handshake to notify client that this subscription is active for this connection
+    socket.send(JSON.stringify(createHandshakeBundle(subscriptionId)));
 
     onDisconnect = async (): Promise<void> => {
       const subscriptionIds = wsToSubLookup.get(socket);
@@ -260,6 +262,27 @@ export function createSubHeartbeatEvent(subscriptionIds: Set<string>): Bundle {
         subscription: { reference: `Subscription/${subscriptionId}` },
       },
     })),
+  };
+}
+
+export function createHandshakeBundle(subscriptionId: string): Bundle {
+  const timestamp = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    resourceType: 'Bundle',
+    type: 'history',
+    timestamp,
+    entry: [
+      {
+        resource: {
+          resourceType: 'SubscriptionStatus',
+          id: crypto.randomUUID(),
+          status: 'active',
+          type: 'handshake',
+          subscription: { reference: `Subscription/${subscriptionId}` },
+        },
+      },
+    ],
   };
 }
 

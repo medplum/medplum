@@ -130,9 +130,23 @@ export class SubscriptionManager {
         const bundle = JSON.parse(event.data) as Bundle;
         // Get criteria for event
         const status = bundle?.entry?.[0]?.resource as SubscriptionStatus;
+
         // Handle heartbeat
         if (status.type === 'heartbeat') {
           this.masterSubEmitter?.dispatchEvent({ type: 'heartbeat', payload: bundle });
+          return;
+        } else if (status.type === 'handshake') {
+          const subscriptionId = resolveId(status.subscription) as string;
+          this.masterSubEmitter?.dispatchEvent({
+            type: 'connect',
+            payload: { subscriptionId },
+          });
+          const criteriaEntry = this.criteriaEntriesBySubscriptionId.get(subscriptionId);
+          if (!criteriaEntry) {
+            console.warn('Received handshake for criteria the SubscriptionManager is not listening for yet');
+            return;
+          }
+          this.emitConnect(criteriaEntry);
           return;
         }
         this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
@@ -171,9 +185,11 @@ export class SubscriptionManager {
         emitter.dispatchEvent({ ...closeEvent });
       }
 
-      this.criteriaEntries.clear();
-      this.criteriaEntriesBySubscriptionId.clear();
-      this.masterSubEmitter?.removeAllListeners();
+      if (this.wsClosed) {
+        this.criteriaEntries.clear();
+        this.criteriaEntriesBySubscriptionId.clear();
+        this.masterSubEmitter?.removeAllListeners();
+      }
     });
 
     ws.addEventListener('open', () => {
@@ -199,9 +215,7 @@ export class SubscriptionManager {
       payload: { subscriptionId: criteriaEntry.subscriptionId as string },
     } as SubscriptionEventMap['connect'];
     this.masterSubEmitter?.dispatchEvent(connectEvent);
-    for (const emitter of this.getAllCriteriaEmitters()) {
-      emitter.dispatchEvent({ ...connectEvent });
-    }
+    criteriaEntry.emitter.dispatchEvent({ ...connectEvent });
   }
 
   private emitError(criteriaEntry: CriteriaEntry, error: Error): void {
@@ -341,8 +355,6 @@ export class SubscriptionManager {
       criteriaEntry.subscriptionId = subscriptionId;
       criteriaEntry.token = token;
       this.criteriaEntriesBySubscriptionId.set(subscriptionId, criteriaEntry);
-      // Emit connect event
-      this.emitConnect(criteriaEntry);
       // Send binding message
       this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
     } catch (err: unknown) {
