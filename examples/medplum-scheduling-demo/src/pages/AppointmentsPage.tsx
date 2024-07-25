@@ -4,9 +4,7 @@ import { MemoizedSearchControl } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-// Custom hook to manage the active tab and SearchRequest parameter for the
-// MemoizedSearchControl component
-function useTab(): [string, (tab: string | null) => void, SearchRequest, (definition: SearchRequest) => void] {
+export function AppointmentsPage(): JSX.Element {
   const upcomingFilter: Filter = {
     code: 'date',
     operator: Operator.STARTS_AFTER,
@@ -20,15 +18,27 @@ function useTab(): [string, (tab: string | null) => void, SearchRequest, (defini
 
   const navigate = useNavigate();
   const { tab } = useParams();
-  const [search, updateSearch] = useState<SearchRequest>({
+
+  const currentTab = tab ?? '';
+  const tabs = [
+    ['upcoming', 'Upcoming'],
+    ['past', 'Past'],
+  ];
+
+  // Start the SearchRequest with the appropriate filter depending on the active tab
+  const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
     fields: ['patient', 'start', 'end', 'serviceType', '_lastUpdated'],
-    filters: [tab === 'upcoming' ? upcomingFilter : pastFilter],
-  } as SearchRequest);
+    filters: [currentTab === 'upcoming' ? upcomingFilter : pastFilter],
+  });
 
-  function setSearch(definition: SearchRequest): void {
-    updateSearch(definition);
-  }
+  // Ensure tab is either 'upcoming' or 'past'
+  // if it's neither, navigate to the 'upcoming' tab
+  useEffect(() => {
+    if (!['upcoming', 'past'].includes(currentTab)) {
+      navigate('/Appointment/upcoming');
+    }
+  }, [currentTab, navigate]);
 
   function changeTab(newTab: string | null): void {
     // Remove date filters keeping others
@@ -43,35 +53,15 @@ function useTab(): [string, (tab: string | null) => void, SearchRequest, (defini
       filters?.push(pastFilter);
     }
 
-    updateSearch({
+    setSearch({
       ...search,
       filters,
     } as SearchRequest);
   }
 
-  return [tab ?? '', changeTab, search, setSearch];
-}
-
-export function AppointmentsPage(): JSX.Element {
-  const navigate = useNavigate();
-  const [tab, changeTab, search, setSearch] = useTab();
-
-  const tabs = [
-    ['upcoming', 'Upcoming'],
-    ['past', 'Past'],
-  ];
-
-  // Ensure tab is either 'upcoming' or 'past'
-  // if it's neither, navigate to the 'upcoming' tab
-  useEffect(() => {
-    if (!['upcoming', 'past'].includes(tab ?? '')) {
-      navigate('/Appointment/upcoming');
-    }
-  }, [tab, navigate]);
-
   return (
     <Paper shadow="xs" m="md" p="xs">
-      <Tabs value={tab.toLowerCase()} onChange={changeTab}>
+      <Tabs value={currentTab.toLowerCase()} onChange={changeTab}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
             <Tabs.Tab value={tab[0]} key={tab[0]}>
