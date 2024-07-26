@@ -3,7 +3,7 @@ import { createReference, getQuestionnaireAnswers } from '@medplum/core';
 import { Coding, Patient, Practitioner, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 
-interface CreateEncounterProps {
+interface CreateAppointmentProps {
   patient: Patient | undefined;
   readonly opened: boolean;
   readonly handlers: {
@@ -13,8 +13,8 @@ interface CreateEncounterProps {
   };
 }
 
-export function CreateAppointment(props: CreateEncounterProps): JSX.Element {
-  const { opened, handlers, patient } = props;
+export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
+  const { patient, opened, handlers } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
 
