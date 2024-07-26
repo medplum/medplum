@@ -165,6 +165,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       if (scrollAreaRef.current?.scrollTo) {
         scrollAreaRef.current.scrollTo({
           top: scrollAreaRef.current.scrollHeight,
+          // We want to skip scrolling through the whole chat on initial load,
+          // Then every time after we will do the "smooth scroll"
           ...(firstScrollRef.current ? { duration: 0 } : { behavior: 'smooth' }),
         });
         firstScrollRef.current = false;
