@@ -1,6 +1,6 @@
 import WS from 'jest-websocket-mock';
 import { sleep } from '../utils';
-import { assert, ReconnectingWebSocket } from './reconnecting-websocket';
+import { assert, cloneEventNode, ErrorEvent, ReconnectingWebSocket } from './reconnecting-websocket';
 
 describe('ReconnectingWebSocket', () => {
   let wsServer: WS;
@@ -223,22 +223,11 @@ describe('ReconnectingWebSocket', () => {
     console.error = originalConsoleError;
   });
 
-  test('Node environment', async () => {
-    const originalDocument = globalThis.document;
-    // @ts-expect-error This is not allowed, we want to emulate node env
-    globalThis.document = undefined;
-
-    reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
-    const openPromise = new Promise<WebSocketEventMap['open']>((resolve) => {
-      reconnectingWebSocket.addEventListener('open', (event) => {
-        resolve(event);
-      });
-    });
-    await wsServer.connected;
-    const openEvent = await openPromise;
-    expect(openEvent.type).toEqual('open');
-
-    globalThis.document = originalDocument;
+  test('cloneEventNode', async () => {
+    const originalEvent = new ErrorEvent(new Error('Error event'), undefined);
+    const clonedEvent = cloneEventNode(originalEvent);
+    expect(clonedEvent).toEqual(originalEvent);
+    expect(clonedEvent).not.toBe(originalEvent);
   });
 
   test('assert', () => {

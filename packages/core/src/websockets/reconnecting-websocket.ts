@@ -65,7 +65,7 @@ function cloneEventBrowser(e: Event): Event {
   return new (e as any).constructor(e.type, e) as Event;
 }
 
-function cloneEventNode(e: Event): Event {
+export function cloneEventNode(e: Event): Event {
   if ('data' in e) {
     const evt = new MessageEvent(e.type, e);
     return evt;
