@@ -12,11 +12,10 @@ import { useEffect, useState } from 'react';
 interface AppointmentActionsProps {
   appointment: Appointment;
   patient: Patient;
-  refreshData: () => void;
 }
 
 export function AppointmentActions(props: AppointmentActionsProps): JSX.Element {
-  const { appointment, patient, refreshData } = props;
+  const { appointment, patient } = props;
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [rescheduleOpened, rescheduleHandlers] = useDisclosure(false);
@@ -96,7 +95,6 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
 
       setEncounter(createdEncounter);
       navigate(`/Appointment/${appointment.id}/encounters`);
-      refreshData();
 
       showNotification({
         icon: <IconCircleCheck />,
