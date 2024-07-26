@@ -3,8 +3,56 @@
   "type": "transaction",
   "entry": [
     {
+      "fullUrl": "urn:uuid:97139871-af48-46af-a8b4-ed16fa8b6b6f",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?name=pregnancy-status-codes"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "url": "http://example.com/pregnancy-status",
+        "name": "pregnancy-status-codes",
+        "title": "Pregnancy Status Codes",
+        "description": "These codes are used to indicate pregnancy status.",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "146799005",
+                  "display": "Possible pregnancy"
+                },
+                {
+                  "code": "60001007",
+                  "display": "Not pregnant (finding)"
+                },
+                {
+                  "code": "77386006",
+                  "display": "Pregnancy"
+                }
+              ]
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-NullFlavor",
+              "concept": [
+                {
+                  "code": "UNK",
+                  "display": "Unknown"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "urn:uuid:f508b2b8-b796-4931-ac92-de3817d71fc1",
-      "request": { "method": "PUT", "url": "Questionnaire?name=patient-intake" },
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?name=patient-intake"
+      },
       "resource": {
         "resourceType": "Questionnaire",
         "status": "active",
@@ -72,18 +120,36 @@
               {
                 "linkId": "insurance-provider",
                 "text": "Insurance Provider",
-                "type": "string"
+                "type": "reference",
+                "required": true,
+                "extension": [
+                  {
+                    "id": "reference-insurance",
+                    "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "http://hl7.org/fhir/fhir-types",
+                          "display": "Organizations",
+                          "code": "Organization"
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "linkId": "subscriber-id",
                 "text": "Subscriber ID",
-                "type": "string"
+                "type": "string",
+                "required": true
               },
               {
                 "linkId": "relationship-to-subscriber",
                 "text": "Relationship to Subscriber",
                 "type": "choice",
-                "answerValueSet": "http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype"
+                "answerValueSet": "http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype",
+                "required": true
               }
             ]
           },
@@ -108,6 +174,42 @@
                 "linkId": "veteran-status",
                 "text": "Veteran Status",
                 "type": "boolean"
+              },
+              {
+                "linkId": "pregnancy-status",
+                "text": "Pregnancy Status",
+                "type": "choice",
+                "code": [
+                  {
+                    "code": "82810-3",
+                    "display": "Pregnancy status",
+                    "system": "http://loinc.org"
+                  }
+                ],
+                "answerValueSet": "http://example.com/pregnancy-status"
+              },
+              {
+                "linkId": "estimated-delivery-date",
+                "text": "Estimated Delivery Date",
+                "type": "date",
+                "code": [
+                  {
+                    "code": "11778-8",
+                    "display": "Estimated date of delivery",
+                    "system": "http://loinc.org"
+                  }
+                ],
+                "enableWhen": [
+                  {
+                    "question": "pregnancy-status",
+                    "operator": "=",
+                    "answerCoding": {
+                      "system": "http://snomed.info/sct",
+                      "code": "77386006",
+                      "display": "Pregnancy"
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -186,40 +288,9 @@
             "type": "group",
             "item": [
               {
-                "linkId": "acknowledgement-for-advance-directives-choice",
-                "text": "An Advance Medical Directive is a document by which a person makes provision for health care decisions in the event that, in the future, he/she becomes unable to make those decisions.\nPlease select one option below:",
-                "type": "choice",
-                "answerOption": [
-                  {
-                    "valueCoding": {
-                      "system": "http://terminology.hl7.org/CodeSystem/v2-0532",
-                      "code": "Y",
-                      "display": "Yes, I do have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions."
-                    }
-                  },
-                  {
-                    "valueCoding": {
-                      "system": "http://terminology.hl7.org/CodeSystem/v2-0532",
-                      "code": "N",
-                      "display": "No, I do NOT have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions."
-                    }
-                  }
-                ]
-              },
-              {
-                "linkId": "acknowledgement-for-advance-directives-email",
-                "text": "If you do have an Advance Directive, please make sure to send a copy to us, in person or by mail.",
-                "type": "boolean",
-                "enableWhen": [
-                  {
-                    "question": "acknowledgement-for-advance-directives-choice",
-                    "operator": "=",
-                    "answerCoding": {
-                      "system": "http://terminology.hl7.org/CodeSystem/v2-0532",
-                      "code": "Y"
-                    }
-                  }
-                ]
+                "linkId": "acknowledgement-for-advance-directives-help",
+                "text": "An Advance Medical Directive is a document by which a person makes provision for health care decisions in the event that, in the future, he/she becomes unable to make those decisions.",
+                "type": "display"
               },
               {
                 "linkId": "acknowledgement-for-advance-directives-signature",

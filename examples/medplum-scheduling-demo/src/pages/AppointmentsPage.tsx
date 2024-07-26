@@ -2,11 +2,9 @@ import { Paper, Tabs } from '@mantine/core';
 import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { MemoizedSearchControl } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-// Custom hook to manage the active tab and SearchRequest parameter for the
-// MemoizedSearchControl component
-function useTab(): [string, (tab: string | null) => void, SearchRequest, (definition: SearchRequest) => void] {
+export function AppointmentsPage(): JSX.Element {
   const upcomingFilter: Filter = {
     code: 'date',
     operator: Operator.STARTS_AFTER,
@@ -19,16 +17,29 @@ function useTab(): [string, (tab: string | null) => void, SearchRequest, (defini
   };
 
   const navigate = useNavigate();
-  const { tab } = useParams();
-  const [search, updateSearch] = useState<SearchRequest>({
+  const location = useLocation();
+
+  const tab = location.pathname.split('/').pop() ?? '';
+
+  const tabs = [
+    ['upcoming', 'Upcoming'],
+    ['past', 'Past'],
+  ];
+
+  // Start the SearchRequest with the appropriate filter depending on the active tab
+  const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
     fields: ['patient', 'start', 'end', 'serviceType', '_lastUpdated'],
     filters: [tab === 'upcoming' ? upcomingFilter : pastFilter],
-  } as SearchRequest);
+  });
 
-  function setSearch(definition: SearchRequest): void {
-    updateSearch(definition);
-  }
+  // Ensure tab is either 'upcoming' or 'past'
+  // if it's neither, navigate to the 'upcoming' tab
+  useEffect(() => {
+    if (!['upcoming', 'past'].includes(tab)) {
+      navigate('/Appointment/upcoming');
+    }
+  }, [tab, navigate]);
 
   function changeTab(newTab: string | null): void {
     // Remove date filters keeping others
@@ -43,31 +54,11 @@ function useTab(): [string, (tab: string | null) => void, SearchRequest, (defini
       filters?.push(pastFilter);
     }
 
-    updateSearch({
+    setSearch({
       ...search,
       filters,
     } as SearchRequest);
   }
-
-  return [tab ?? '', changeTab, search, setSearch];
-}
-
-export function AppointmentsPage(): JSX.Element {
-  const navigate = useNavigate();
-  const [tab, changeTab, search, setSearch] = useTab();
-
-  const tabs = [
-    ['upcoming', 'Upcoming'],
-    ['past', 'Past'],
-  ];
-
-  // Ensure tab is either 'upcoming' or 'past'
-  // if it's neither, navigate to the 'upcoming' tab
-  useEffect(() => {
-    if (!['upcoming', 'past'].includes(tab ?? '')) {
-      navigate('/Appointment/upcoming');
-    }
-  }, [tab, navigate]);
 
   return (
     <Paper shadow="xs" m="md" p="xs">
@@ -82,8 +73,8 @@ export function AppointmentsPage(): JSX.Element {
       </Tabs>
       <MemoizedSearchControl
         search={search}
-        onClick={() => {}}
-        onAuxClick={() => {}}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
           setSearch(e.definition);
         }}

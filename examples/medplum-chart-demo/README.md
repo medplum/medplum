@@ -51,7 +51,7 @@ The Encounter Chart has 3 distinct panels
 
 ### Getting Started
 
-If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/app/register) to register a Medplum project to store your data.
+If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
 [Fork](https://github.com/medplum/medplum-hello-world/fork) and clone the repo.
 
@@ -62,6 +62,7 @@ npm install
 ```
 
 Then, build the bots
+
 ```bash
 npm run build:bots
 ```
