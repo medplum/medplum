@@ -3,6 +3,8 @@ import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { MemoizedSearchControl } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CreateAppointment } from '../components/CreateAppointment';
+import { useDisclosure } from '@mantine/hooks';
 
 export function AppointmentsPage(): JSX.Element {
   const upcomingFilter: Filter = {
@@ -18,6 +20,7 @@ export function AppointmentsPage(): JSX.Element {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
 
   const tab = location.pathname.split('/').pop() ?? '';
 
@@ -31,6 +34,11 @@ export function AppointmentsPage(): JSX.Element {
     resourceType: 'Appointment',
     fields: ['patient', 'start', 'end', 'serviceType', '_lastUpdated'],
     filters: [tab === 'upcoming' ? upcomingFilter : pastFilter],
+    sortRules: [
+      {
+        code: 'date',
+      },
+    ],
   });
 
   // Ensure tab is either 'upcoming' or 'past'
@@ -62,6 +70,7 @@ export function AppointmentsPage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs">
+      <CreateAppointment opened={createAppointmentOpened} handlers={createAppointmentHandlers} />
       <Tabs value={tab.toLowerCase()} onChange={changeTab}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
@@ -78,9 +87,9 @@ export function AppointmentsPage(): JSX.Element {
         onChange={(e) => {
           setSearch(e.definition);
         }}
+        onNew={() => createAppointmentHandlers.open()}
         checkboxesEnabled={false}
         hideFilters
-        hideToolbar
       />
     </Paper>
   );

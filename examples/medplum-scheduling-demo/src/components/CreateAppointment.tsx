@@ -4,7 +4,7 @@ import { Coding, Patient, Practitioner, Questionnaire, QuestionnaireResponse, Re
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 
 interface CreateAppointmentProps {
-  patient: Patient | undefined;
+  patient?: Patient;
   readonly opened: boolean;
   readonly handlers: {
     readonly open: () => void;
