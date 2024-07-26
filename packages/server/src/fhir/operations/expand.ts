@@ -3,11 +3,17 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Exists, Expression, SelectQuery } from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
-import { abstractProperty, addDescendants, addPropertyFilter, findTerminologyResource } from './utils/terminology';
+import {
+  abstractProperty,
+  addDescendants,
+  addPropertyFilter,
+  findAncestor,
+  findTerminologyResource,
+} from './utils/terminology';
 import { addExpandJob } from '../../workers/expand';
 import { requireSuperAdmin } from '../../admin/super';
 
@@ -397,10 +403,22 @@ export function expansionQuery(
     for (const condition of include.filter) {
       switch (condition.op) {
         case 'is-a':
-          query = addDescendants(query, codeSystem, condition.value);
-          break;
         case 'descendent-of':
-          query = addDescendants(query, codeSystem, condition.value).where('code', '!=', condition.value);
+          if (params?.filter) {
+            const base = new SelectQuery('Coding', undefined, 'origin')
+              .column('id')
+              .column('code')
+              .column('display')
+              .where('system', '=', codeSystem.id)
+              .where(new Column('origin', 'code'), '=', 'code');
+            const ancestorQuery = findAncestor(base, codeSystem, condition.value);
+            query.whereExpr(new Exists(ancestorQuery));
+          } else {
+            query = addDescendants(query, codeSystem, condition.value);
+          }
+          if (condition.op !== 'is-a') {
+            query.where('code', '!=', condition.value);
+          }
           break;
         case '=':
           query = addPropertyFilter(query, condition.property, condition.value, true);
