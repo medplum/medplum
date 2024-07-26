@@ -223,7 +223,7 @@ describe('ReconnectingWebSocket', () => {
     console.error = originalConsoleError;
   });
 
-  test('process.env', async () => {
+  test('Node environment', async () => {
     const originalDocument = globalThis.document;
     // @ts-expect-error This is not allowed, we want to emulate node env
     globalThis.document = undefined;
