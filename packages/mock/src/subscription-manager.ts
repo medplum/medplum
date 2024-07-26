@@ -1,16 +1,16 @@
 import {
+  EventTarget,
   IRobustWebSocket,
   MedplumClient,
   RobustWebSocketEventMap,
   SubscriptionEmitter,
   SubscriptionEventMap,
   SubscriptionManager,
-  TypedEventTarget,
   deepEquals,
 } from '@medplum/core';
 import { Subscription } from '@medplum/fhirtypes';
 
-class MockRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
+class MockRobustWebSocket extends EventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
   readyState = WebSocket.OPEN;
   close(): void {
     // Not implemented -- this is a mock
