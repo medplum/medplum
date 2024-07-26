@@ -8,6 +8,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { UseSubscriptionOptions, useSubscription } from './useSubscription';
 
+const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
+
 function TestComponent({
   criteria,
   callback,
@@ -358,5 +360,99 @@ describe('useSubscription()', () => {
     expect(lastFromCb2?.resourceType).toEqual('Bundle');
     expect(lastFromCb2?.type).toEqual('history');
     expect(lastFromCb2?.id).toEqual(id3);
+  });
+
+  test('WebSocket disconnects and reconnects', async () => {
+    let lastFromCb: Bundle | undefined;
+    const id = generateId();
+    let wsOpenedTimes = 0;
+    let wsClosedTimes = 0;
+
+    const connectMap = new Map<string, number>();
+    connectMap.set(MOCK_SUBSCRIPTION_ID, 0);
+
+    setup(
+      <TestComponent
+        criteria="Communication"
+        callback={(bundle: Bundle) => {
+          lastFromCb = bundle;
+        }}
+        options={{
+          onWebSocketOpen: () => {
+            wsOpenedTimes++;
+          },
+          onWebSocketClose: () => {
+            wsClosedTimes++;
+          },
+          onSubscriptionConnect: (subscriptionId: string) => {
+            connectMap.set(subscriptionId, (connectMap.get(MOCK_SUBSCRIPTION_ID) ?? 0) + 1);
+          },
+        }}
+      />
+    );
+
+    expect(connectMap.get(MOCK_SUBSCRIPTION_ID)).toEqual(0);
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id, type: 'history' },
+      });
+    });
+
+    expect(lastFromCb?.resourceType).toEqual('Bundle');
+    expect(lastFromCb?.type).toEqual('history');
+    expect(lastFromCb?.id).toEqual(id);
+
+    const closePromise = new Promise<{ type: 'close' }>((resolve) => {
+      medplum.getMasterSubscriptionEmitter().addEventListener('close', (event) => {
+        resolve(event);
+      });
+    });
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'close'>('Communication', {
+        type: 'close',
+      });
+    });
+
+    const closeEvent = await closePromise;
+    expect(closeEvent.type).toEqual('close');
+
+    expect(wsClosedTimes).toEqual(1);
+
+    const openPromise2 = new Promise<{ type: 'open' }>((resolve) => {
+      medplum.getMasterSubscriptionEmitter().addEventListener('open', (event) => {
+        resolve(event);
+      });
+    });
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'open'>('Communication', {
+        type: 'open',
+      });
+    });
+
+    const openEvent2 = await openPromise2;
+    expect(openEvent2.type).toEqual('open');
+
+    expect(wsOpenedTimes).toEqual(1);
+
+    const connectPromise = new Promise<{ type: 'connect' }>((resolve) => {
+      medplum.getMasterSubscriptionEmitter().addEventListener('connect', (event) => {
+        resolve(event);
+      });
+    });
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'connect'>('Communication', {
+        type: 'connect',
+        payload: { subscriptionId: MOCK_SUBSCRIPTION_ID },
+      });
+    });
+
+    const connectEvent = await connectPromise;
+    expect(connectEvent.type).toEqual('connect');
+    expect(connectMap.get(MOCK_SUBSCRIPTION_ID)).toEqual(1);
   });
 });
