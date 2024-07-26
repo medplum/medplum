@@ -53,7 +53,7 @@ export async function sendSubscriptionMessage(
       },
       {
         resource,
-        fullUrl: `${medplum.getBaseUrl()}fhir/R4/Communication/${resource.id as string}`,
+        fullUrl: `${medplum.getBaseUrl()}fhir/R4/Communication/${resource.id}`,
       },
     ],
   });

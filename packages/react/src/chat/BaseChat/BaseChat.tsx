@@ -312,8 +312,8 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
 }
 
 export interface ChatBubbleSkeletonProps {
-  alignment: 'left' | 'right';
-  parentWidth: number;
+  readonly alignment: 'left' | 'right';
+  readonly parentWidth: number;
 }
 
 function ChatBubbleSkeleton(props: ChatBubbleSkeletonProps): JSX.Element {
