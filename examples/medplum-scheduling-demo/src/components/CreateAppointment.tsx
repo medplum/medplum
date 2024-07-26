@@ -1,9 +1,10 @@
 import { Modal } from '@mantine/core';
-import { getQuestionnaireAnswers } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { QuestionnaireForm } from '@medplum/react';
+import { createReference, getQuestionnaireAnswers } from '@medplum/core';
+import { Coding, Patient, Practitioner, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 
 interface CreateEncounterProps {
+  patient: Patient | undefined;
   readonly opened: boolean;
   readonly handlers: {
     readonly open: () => void;
@@ -13,10 +14,41 @@ interface CreateEncounterProps {
 }
 
 export function CreateAppointment(props: CreateEncounterProps): JSX.Element {
-  const { opened, handlers } = props;
+  const { opened, handlers, patient } = props;
+  const medplum = useMedplum();
+  const profile = useMedplumProfile() as Practitioner;
 
-  function handleQuestionnaireSubmit(formData: QuestionnaireResponse): void {
+  // If a patient is provided, remove the patient question from the questionnaire
+  if (patient) {
+    appointmentQuestionnaire.item = appointmentQuestionnaire.item?.filter((i) => i.linkId !== 'patient');
+  }
+
+  async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
     const answers = getQuestionnaireAnswers(formData);
+
+    // If a patient is provided to the component, use that patient, otherwise use the patient from the form
+    const appointmentPatient = patient
+      ? createReference(patient)
+      : (answers['patient'].valueReference as Reference<Patient>);
+
+    await medplum.createResource({
+      resourceType: 'Appointment',
+      status: 'booked',
+      start: answers['start-date'].valueDateTime,
+      end: answers['end-date'].valueDateTime,
+      serviceType: [{ coding: [answers['service-type'].valueCoding as Coding] }],
+      participant: [
+        {
+          actor: appointmentPatient,
+          status: 'accepted',
+        },
+        {
+          actor: createReference(profile),
+          status: 'accepted',
+        },
+      ],
+    });
+
     handlers.close();
   }
 
