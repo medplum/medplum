@@ -2,7 +2,7 @@ import { Paper, Tabs } from '@mantine/core';
 import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { MemoizedSearchControl } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function AppointmentsPage(): JSX.Element {
   const upcomingFilter: Filter = {
@@ -17,9 +17,10 @@ export function AppointmentsPage(): JSX.Element {
   };
 
   const navigate = useNavigate();
-  const { tab } = useParams();
+  const location = useLocation();
 
-  const currentTab = tab ?? '';
+  const tab = location.pathname.split('/').pop() ?? '';
+
   const tabs = [
     ['upcoming', 'Upcoming'],
     ['past', 'Past'],
@@ -29,16 +30,16 @@ export function AppointmentsPage(): JSX.Element {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
     fields: ['patient', 'start', 'end', 'serviceType', '_lastUpdated'],
-    filters: [currentTab === 'upcoming' ? upcomingFilter : pastFilter],
+    filters: [tab === 'upcoming' ? upcomingFilter : pastFilter],
   });
 
   // Ensure tab is either 'upcoming' or 'past'
   // if it's neither, navigate to the 'upcoming' tab
   useEffect(() => {
-    if (!['upcoming', 'past'].includes(currentTab)) {
+    if (!['upcoming', 'past'].includes(tab)) {
       navigate('/Appointment/upcoming');
     }
-  }, [currentTab, navigate]);
+  }, [tab, navigate]);
 
   function changeTab(newTab: string | null): void {
     // Remove date filters keeping others
@@ -61,7 +62,7 @@ export function AppointmentsPage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs">
-      <Tabs value={currentTab.toLowerCase()} onChange={changeTab}>
+      <Tabs value={tab.toLowerCase()} onChange={changeTab}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
             <Tabs.Tab value={tab[0]} key={tab[0]}>
@@ -72,8 +73,8 @@ export function AppointmentsPage(): JSX.Element {
       </Tabs>
       <MemoizedSearchControl
         search={search}
-        onClick={() => {}}
-        onAuxClick={() => {}}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
           setSearch(e.definition);
         }}

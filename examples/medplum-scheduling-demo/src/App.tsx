@@ -8,6 +8,7 @@ import { AppointmentsPage } from './pages/AppointmentsPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { AppointmentDetailPage } from './pages/AppointmentDetailPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -43,7 +44,9 @@ export function App(): JSX.Element | null {
             <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/Patient/:id/*" element={<PatientPage />} />
-            <Route path="/Appointment/:tab" element={<AppointmentsPage />} />
+            <Route path="/Appointment/upcoming" element={<AppointmentsPage />} />
+            <Route path="/Appointment/past" element={<AppointmentsPage />} />
+            <Route path="/Appointment/:id/*" element={<AppointmentDetailPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
           </Routes>
