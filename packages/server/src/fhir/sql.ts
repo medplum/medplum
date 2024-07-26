@@ -385,9 +385,11 @@ export abstract class BaseQuery {
   readonly tableName: string;
   readonly predicate: Conjunction;
   explain = false;
+  readonly alias?: string;
 
-  constructor(tableName: string) {
+  constructor(tableName: string, alias?: string) {
     this.tableName = tableName;
+    this.alias = alias;
     this.predicate = new Conjunction([]);
   }
 
@@ -427,8 +429,8 @@ export class SelectQuery extends BaseQuery implements Expression {
   offset_: number;
   joinCount = 0;
 
-  constructor(tableName: string, innerQuery?: SelectQuery | Union) {
-    super(tableName);
+  constructor(tableName: string, innerQuery?: SelectQuery | Union, alias?: string) {
+    super(tableName, alias);
     this.innerQuery = innerQuery;
     this.distinctOns = [];
     this.columns = [];
@@ -576,6 +578,11 @@ export class SelectQuery extends BaseQuery implements Expression {
     }
 
     sql.appendIdentifier(this.tableName);
+    if (this.alias) {
+      sql.append(' ');
+      sql.appendIdentifier(this.alias);
+      sql.append(' ');
+    }
 
     for (const join of this.joins) {
       sql.append(` ${join.joinType} `);

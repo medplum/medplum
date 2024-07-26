@@ -10,7 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Exists, Expression, SelectQuery } from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
@@ -18,6 +18,7 @@ import {
   abstractProperty,
   addDescendants,
   addPropertyFilter,
+  findAncestor,
   findTerminologyResource,
   getParentProperty,
 } from './utils/terminology';
@@ -430,7 +431,18 @@ export function expansionQuery(
       switch (condition.op) {
         case 'is-a':
         case 'descendent-of':
-          query = addDescendants(query, codeSystem, condition.value);
+          if (params?.filter) {
+            const base = new SelectQuery('Coding', undefined, 'origin')
+              .column('id')
+              .column('code')
+              .column('display')
+              .where(new Column('origin', 'system'), '=', codeSystem.id)
+              .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
+            const ancestorQuery = findAncestor(base, codeSystem, condition.value);
+            query.whereExpr(new Exists(ancestorQuery));
+          } else {
+            query = addDescendants(query, codeSystem, condition.value);
+          }
           if (condition.op !== 'is-a') {
             query.where('code', '!=', condition.value);
           }
