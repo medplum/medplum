@@ -4,8 +4,8 @@ import { MedplumServerConfig } from '../config';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { globalLogger } from '../logger';
 import { validateCodings } from '../fhir/operations/codesystemvalidatecode';
-import { OperationOutcomeError, badRequest, mapFilter } from '@medplum/core';
-import { Column, InsertQuery, Literal, SelectQuery } from '../fhir/sql';
+import { OperationOutcomeError, badRequest, flatMapFilter } from '@medplum/core';
+import { Column, Condition, InsertQuery, SelectQuery } from '../fhir/sql';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { expansionQuery, isExpansionPrecomputed } from '../fhir/operations/expand';
 
@@ -16,7 +16,7 @@ import { expansionQuery, isExpansionPrecomputed } from '../fhir/operations/expan
 
 export interface ExpandJobData {
   readonly valueSet: ValueSet;
-  readonly codeSystems: Record<string, CodeSystem>;
+  readonly terminologyResources: Record<string, CodeSystem | ValueSet>;
   readonly requestId?: string;
   readonly traceId?: string;
 }
@@ -89,11 +89,14 @@ export function getExpandQueue(): Queue<ExpandJobData> | undefined {
 /**
  * Adds an expand job for the given ValueSet.
  * @param valueSet - The ValueSet to expand.
- * @param codeSystems - Referenced CodeSystem resources for the expansion.
+ * @param terminologyResources - Referenced CodeSystem resources for the expansion.
  */
-export async function addExpandJob(valueSet: ValueSet, codeSystems: Record<string, CodeSystem>): Promise<void> {
+export async function addExpandJob(
+  valueSet: ValueSet,
+  terminologyResources: Record<string, CodeSystem | ValueSet>
+): Promise<void> {
   const { requestId, traceId } = getRequestContext();
-  await addExpandJobData({ valueSet, codeSystems, requestId, traceId });
+  await addExpandJobData({ valueSet, terminologyResources, requestId, traceId });
 }
 
 /**
@@ -112,11 +115,7 @@ async function addExpandJobData(job: ExpandJobData): Promise<void> {
  */
 export async function execExpandJob(job: Job<ExpandJobData>): Promise<void> {
   const ctx = getRequestContext();
-  const { valueSet, codeSystems } = job.data;
-
-  if (!valueSet.compose) {
-    return;
-  }
+  const { valueSet, terminologyResources } = job.data;
 
   try {
     ctx.logger.info('Expanding ValueSet', { id: valueSet.id });
@@ -124,39 +123,66 @@ export async function execExpandJob(job: Job<ExpandJobData>): Promise<void> {
       return;
     }
 
-    for (const include of valueSet.compose.include) {
-      if (!include.system) {
-        throw new OperationOutcomeError(
-          badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
-        );
-      }
-
-      const codeSystem = codeSystems[include.system];
-      if (include.concept) {
-        const validCodings = await validateCodings(codeSystem, include.concept);
-        const mappings = mapFilter(validCodings, (c) => (c?.id ? { valueSet: valueSet.id, coding: c.id } : undefined));
-        await new InsertQuery('ValueSet_Membership', mappings)
-          .ignoreOnConflict()
-          .execute(getDatabasePool(DatabaseMode.WRITER));
-      } else {
-        if (!valueSet.id) {
-          throw new OperationOutcomeError(badRequest('ValueSet missing ID'));
-        }
-        const query = expansionQuery(include, codeSystem);
-        if (query) {
-          // Construct outer INSERT query
-          const rowQuery = new SelectQuery('expansion', query)
-            .column(new Literal(valueSet.id))
-            .column(new Column('expansion', 'id'));
-          const writeQuery = new InsertQuery('ValueSet_Membership', rowQuery).ignoreOnConflict();
-          await writeQuery.execute(getDatabasePool(DatabaseMode.WRITER));
-        }
-      }
-    }
+    await expand(valueSet, terminologyResources);
 
     ctx.logger.info('ValueSet expanded successfully', { id: valueSet.id });
   } catch (ex: any) {
     ctx.logger.error('ValueSet expand job exception', ex);
     throw ex;
+  }
+}
+
+async function expand(
+  valueSet: ValueSet,
+  terminologyResources: Record<string, CodeSystem | ValueSet>,
+  additionalValueSetIds?: string[]
+): Promise<void> {
+  if (!valueSet.id) {
+    throw new OperationOutcomeError(badRequest('ValueSet missing ID'));
+  }
+  if (!valueSet.compose?.include.length) {
+    return;
+  }
+
+  for (const include of valueSet.compose.include) {
+    const valueSetIds = additionalValueSetIds?.length ? [...additionalValueSetIds, valueSet.id] : [valueSet.id];
+    if (include.valueSet) {
+      for (const url of include.valueSet) {
+        const nestedValueSet = terminologyResources[url] as ValueSet;
+        await expand(nestedValueSet, terminologyResources, valueSetIds);
+      }
+      continue;
+    }
+
+    if (!include.system) {
+      throw new OperationOutcomeError(
+        badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
+      );
+    }
+
+    const codeSystem = terminologyResources[include.system as string] as CodeSystem;
+    if (include.concept) {
+      const validCodings = await validateCodings(codeSystem, include.concept);
+      const mappings = flatMapFilter(validCodings, (c) =>
+        c?.id ? valueSetIds.map((vsId) => ({ valueSet: vsId, coding: c.id })) : undefined
+      );
+      await new InsertQuery('ValueSet_Membership', mappings)
+        .ignoreOnConflict()
+        .execute(getDatabasePool(DatabaseMode.WRITER));
+    } else {
+      const query = expansionQuery(include, codeSystem);
+      if (query) {
+        const rowQuery = new SelectQuery('expansion', query);
+        const vsid = rowQuery.getNextJoinAlias();
+        rowQuery
+          // Insert a row for each ValueSet the includes this code
+          .innerJoin('ValueSet', vsid, new Condition(new Column(vsid, 'id'), 'IN', valueSetIds))
+          .column(new Column(vsid, 'id'))
+          .column(new Column('expansion', 'id'));
+
+        const writeQuery = new InsertQuery('ValueSet_Membership', rowQuery).ignoreOnConflict();
+        await writeQuery.execute(getDatabasePool(DatabaseMode.WRITER));
+      }
+    }
   }
 }

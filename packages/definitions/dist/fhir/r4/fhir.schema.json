@@ -59348,7 +59348,8 @@
               "google-auth-required",
               "graphql-introspection",
               "terminology",
-              "websocket-subscriptions"
+              "websocket-subscriptions",
+              "reference-lookups"
             ]
           },
           "type": "array"
