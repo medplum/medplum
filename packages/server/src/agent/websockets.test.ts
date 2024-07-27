@@ -5,6 +5,7 @@ import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
+import * as executeBotModule from '../fhir/operations/execute';
 import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 import { AgentConnectionState, AgentInfo } from './utils';
@@ -116,9 +117,16 @@ describe('Agent WebSockets', () => {
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
         })
       )
-      .expectText(
-        /{"type":"agent:transmit:response","channel":"test","remote":"0.0.0.0:57000","contentType":"x-application\/hl7-v2\+er7","body":"MSH[^"]+ACK[^"]+"}/
-      )
+      .expectJson((actual) => {
+        expect(actual).toMatchObject({
+          type: 'agent:transmit:response',
+          channel: 'test',
+          remote: '0.0.0.0:57000',
+          contentType: ContentType.HL7_V2,
+          statusCode: 200,
+          body: expect.stringMatching(/^MSH[^"]+ACK[^"]+/),
+        });
+      })
       .close()
       .expectClosed();
   });
@@ -521,5 +529,164 @@ describe('Agent WebSockets', () => {
       .expectClosed();
     expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('[Agent]: Error received from agent'));
     console.log = originalConsoleLog;
+  });
+
+  describe('Bot failures', () => {
+    let agent: Agent;
+    let bot: Bot;
+
+    beforeAll(async () => {
+      // Create a test bot
+      const res1 = await request(server)
+        .post('/admin/projects/projectId/bot')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          name: 'Test Bot 2',
+          runtimeVersion: 'vmcontext',
+        });
+      bot = res1.body as Bot;
+
+      // Deploy the bot
+      // This bot throws an error
+      await request(server)
+        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          code: `
+          exports.handler = async function (medplum, event) {
+            throw new Error('Something is broken');
+          };
+      `,
+        });
+
+      // Create an agent
+      const res2 = await request(server)
+        .post('/fhir/R4/Agent')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Agent',
+          name: 'Test Agent 2',
+          status: 'active',
+          channel: [
+            {
+              name: 'test',
+              endpoint: { reference: 'Endpoint/123' },
+              targetReference: { reference: 'Bot/' + bot.id },
+            },
+          ],
+        });
+      agent = res2.body as Agent;
+
+      const res3 = await request(server)
+        .post(`/fhir/R4/Device`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Device',
+          url: 'mllp://192.168.50.10:56001',
+        });
+      device = res3.body as Device;
+    });
+
+    test('Bot failure -- no returnValue', async () => {
+      await request(server)
+        .ws('/ws/agent')
+        .sendText(
+          JSON.stringify({
+            type: 'agent:connect:request',
+            accessToken,
+            agentId: agent.id,
+          })
+        )
+        .expectText('{"type":"agent:connect:response"}')
+        // Now transmit, should succeed
+        .sendText(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            accessToken,
+            channel: 'test',
+            remote: '0.0.0.0:57000',
+            contentType: ContentType.HL7_V2,
+            body:
+              'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+              'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+              'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
+          })
+        )
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            type: 'agent:transmit:response',
+            channel: 'test',
+            remote: '0.0.0.0:57000',
+            contentType: ContentType.JSON,
+            statusCode: 400,
+            body: expect.stringContaining('Something is broken'),
+          });
+        })
+        .close()
+        .expectClosed();
+    });
+
+    test('Bot failure -- Error during Lambda execution, error in returnValue', async () => {
+      jest.spyOn(executeBotModule, 'executeBot').mockImplementationOnce(
+        async () =>
+          ({
+            success: false,
+            logResult: '',
+            returnValue: {
+              errorType: 'Error',
+              errorMessage: 'Something is broken',
+              trace: [
+                'Error: Something is broken',
+                '    at Object.handler (/var/task/user.js:22:15)',
+                '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)',
+                '    at async exports.handler (/var/task/index.js:24:18)',
+              ],
+            },
+          }) satisfies executeBotModule.BotExecutionResult
+      );
+
+      await request(server)
+        .ws('/ws/agent')
+        .sendText(
+          JSON.stringify({
+            type: 'agent:connect:request',
+            accessToken,
+            agentId: agent.id,
+          })
+        )
+        .expectText('{"type":"agent:connect:response"}')
+        // Now transmit, should succeed
+        .sendText(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            accessToken,
+            channel: 'test',
+            remote: '0.0.0.0:57000',
+            contentType: ContentType.HL7_V2,
+            body:
+              'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+              'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+              'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
+          })
+        )
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            type: 'agent:transmit:response',
+            channel: 'test',
+            remote: '0.0.0.0:57000',
+            contentType: ContentType.JSON,
+            statusCode: 400,
+            body: expect.stringContaining('Something is broken'),
+          });
+        })
+        .close()
+        .expectClosed();
+    });
   });
 });

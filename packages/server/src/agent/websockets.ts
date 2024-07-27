@@ -209,12 +209,22 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       forwardedFor: command.remote,
     });
 
+    let body: string;
+    if (result.returnValue && !result.success) {
+      body = JSON.stringify(result.returnValue);
+    } else if (result.returnValue) {
+      body = result.returnValue;
+    } else {
+      body = `Bot execution logs:\n${result.logResult}`;
+    }
+
     sendMessage({
       type: 'agent:transmit:response',
       channel: command.channel,
       remote: command.remote,
-      contentType: command.contentType,
-      body: result.returnValue,
+      contentType: result.success ? command.contentType : ContentType.JSON,
+      statusCode: result.success ? 200 : 400,
+      body,
     });
   }
 
