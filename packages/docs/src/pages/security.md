@@ -122,7 +122,7 @@ Medplum continuously monitors all services to track security best practices.
 
 ### SonarCloud
 
-[SonarCloud](https://observatory.mozilla.org/) is a cloud-based code quality and security service.
+[SonarCloud](hhttps://sonarcloud.io/) is a cloud-based code quality and security service.
 
 <a href="https://sonarcloud.io/summary/new_code?id=medplum_medplum"><img src="/img/compliance/sonarcloud.png" alt="SonarCloud screenshot" width="500" /></a>
 
