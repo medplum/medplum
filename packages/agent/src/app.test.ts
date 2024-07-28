@@ -2,7 +2,7 @@ import {
   AgentError,
   AgentMessage,
   AgentReloadConfigRequest,
-  AgentTransmitResponse,
+  AgentTransmitRequest,
   AgentUpgradeRequest,
   AgentUpgradeResponse,
   ContentType,
@@ -666,6 +666,7 @@ describe('App', () => {
         } else if (command.type === 'agent:transmit:request') {
           const hl7Message = Hl7Message.parse(command.body);
           const ackMessage = hl7Message.buildAck();
+          console.log({ callback: command.callback });
           socket.send(
             Buffer.from(
               JSON.stringify({
@@ -673,6 +674,7 @@ describe('App', () => {
                 channel: command.channel,
                 remote: command.remote,
                 body: ackMessage.toString(),
+                callback: command.callback,
               })
             )
           );
@@ -776,6 +778,8 @@ describe('App', () => {
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
 
+    const callback = getReferenceString(agent) + '-' + randomUUID();
+
     // Reset last transmit response
     state.gotAgentError = false;
     // Send a push message
@@ -783,13 +787,14 @@ describe('App', () => {
       Buffer.from(
         JSON.stringify({
           type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
           body:
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
-        })
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -809,7 +814,7 @@ describe('App', () => {
     state.mySocket.send(
       Buffer.from(
         JSON.stringify({
-          type: 'agent:transmit:response',
+          type: 'agent:transmit:request',
           contentType: ContentType.HL7_V2,
           body:
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -817,7 +822,7 @@ describe('App', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
-        } satisfies AgentTransmitResponse)
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -916,6 +921,7 @@ describe('App', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
         })
       )
     );
@@ -975,6 +981,7 @@ describe('App', () => {
                 channel: command.channel,
                 remote: command.remote,
                 body: ackMessage.toString(),
+                callback: command.callback,
               })
             )
           );
