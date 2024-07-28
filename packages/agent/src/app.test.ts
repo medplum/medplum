@@ -778,8 +778,6 @@ describe('App', () => {
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
 
-    const callback = getReferenceString(agent) + '-' + randomUUID();
-
     // Reset last transmit response
     state.gotAgentError = false;
     // Send a push message
