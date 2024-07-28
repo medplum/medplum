@@ -666,7 +666,6 @@ describe('App', () => {
         } else if (command.type === 'agent:transmit:request') {
           const hl7Message = Hl7Message.parse(command.body);
           const ackMessage = hl7Message.buildAck();
-          console.log({ callback: command.callback });
           socket.send(
             Buffer.from(
               JSON.stringify({
