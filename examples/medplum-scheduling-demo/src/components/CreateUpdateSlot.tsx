@@ -1,4 +1,4 @@
-import { Modal } from '@mantine/core';
+import { Button, Modal } from '@mantine/core';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Schedule, Slot } from '@medplum/fhirtypes';
 import { Event } from 'react-big-calendar';
@@ -25,6 +25,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
 
   const editingSlot: Slot = event?.resource;
 
+  // If an editing slot was passed, update it otherwise create a new slot
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
     if (!schedule) {
       return;
@@ -34,6 +35,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
 
     try {
       if (!editingSlot) {
+        // Create new slot
         await medplum.createResource({
           resourceType: 'Slot',
           status: 'free',
@@ -42,6 +44,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
           schedule: createReference(schedule as Schedule),
         });
       } else {
+        // Edit the existing slot
         await medplum.updateResource({
           ...editingSlot,
           start: answers['start-date'].valueDateTime as string,
@@ -53,6 +56,31 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
         icon: <IconCircleCheck />,
         title: 'Success',
         message: editingSlot ? 'Slot updated' : 'Slot created',
+      });
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
+
+    handlers.close();
+  }
+
+  // Handles deleting the slot
+  async function handleDeleteSlot(): Promise<void> {
+    if (!editingSlot) {
+      return;
+    }
+
+    try {
+      await medplum.deleteResource('Slot', editingSlot.id as string);
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Slot deleted',
       });
     } catch (err) {
       showNotification({
@@ -93,6 +121,11 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
 
   return (
     <Modal opened={opened} onClose={handlers.close}>
+      {editingSlot ? (
+        <Button onClick={handleDeleteSlot} fullWidth color="red">
+          Delete Schedule
+        </Button>
+      ) : null}
       <p>{formTitle}</p>
       <QuestionnaireForm questionnaire={appointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>

@@ -24,7 +24,8 @@ export function App(): JSX.Element | null {
       return;
     }
 
-    // Search for a Schedule and create one if it doesn't exist
+    // Search for a Schedule associated with the logged user,
+    // create one if it doesn't exist
     medplum
       .searchOne('Schedule', { actor: getReferenceString(profile) })
       .then((foundSchedule) => {

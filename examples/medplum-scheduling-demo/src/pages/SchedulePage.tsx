@@ -15,6 +15,7 @@ export function SchedulePage(): JSX.Element {
   const { schedule } = useContext(ScheduleContext);
   const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule) });
 
+  // Converts Slot resources to big-calendar Event objects
   const events: Event[] = (slots ?? []).map((slot) => ({
     title: 'Available',
     start: new Date(slot.start),
@@ -22,6 +23,7 @@ export function SchedulePage(): JSX.Element {
     resource: slot,
   }));
 
+  // When a slot is selected set the event object and open the modal
   const handleSelectSlot = useCallback(
     (event: Event) => {
       setSelectedEvent(event);
@@ -30,10 +32,14 @@ export function SchedulePage(): JSX.Element {
     [createSlotHandlers]
   );
 
-  const handleSelectEvent = useCallback((event: Event) => {
-    setSelectedEvent(event);
-    createSlotHandlers.open();
-  }, []);
+  // When an exiting event is selected set the event object and open the modal
+  const handleSelectEvent = useCallback(
+    (event: Event) => {
+      setSelectedEvent(event);
+      createSlotHandlers.open();
+    },
+    [createSlotHandlers]
+  );
 
   return (
     <Document width={1000}>
