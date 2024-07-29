@@ -12,7 +12,8 @@ import { PatientPage } from './pages/PatientPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
-import('@photonhealth/elements');
+
+import '@photonhealth/elements';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
