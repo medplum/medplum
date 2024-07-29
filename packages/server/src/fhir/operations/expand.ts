@@ -22,17 +22,8 @@ import {
   findTerminologyResource,
   getParentProperty,
 } from './utils/terminology';
-import { addExpandJob } from '../../workers/expand';
-import { requireSuperAdmin } from '../../admin/super';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
-operation.parameter?.push({
-  name: '_precompute',
-  use: 'in',
-  type: 'boolean',
-  min: 0,
-  max: '1',
-});
 
 type ValueSetExpandParameters = {
   url?: string;
@@ -41,8 +32,6 @@ type ValueSetExpandParameters = {
   count?: number;
   excludeNotForUI?: boolean;
   valueSet?: ValueSet;
-
-  _precompute: boolean;
 };
 
 // Implements FHIR "Value Set Expansion"
@@ -242,8 +231,6 @@ export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandP
   if (expansion?.contains?.length && !expansion.parameter && expansion.total === expansion.contains.length) {
     // Full expansion is already available, use that
     expandedSet = filterCodings(expansion.contains, params);
-  } else if (await isExpansionPrecomputed(valueSet)) {
-    expandedSet = await getPrecomputedExpansion(valueSet, params);
   } else {
     expandedSet = await computeExpansion(valueSet, params);
   }
@@ -285,9 +272,6 @@ async function computeExpansion(
           {
             ...params,
             count: maxCount - expansion.length,
-            // Don't enqueue separate jobs for referenced ValueSets; they will be handled by the async job for the
-            // top-level ValueSet to avoid duplicate work
-            _precompute: false,
           },
           terminologyResources
         );
@@ -306,16 +290,15 @@ async function computeExpansion(
       );
     }
 
-    // Always resolve CodeSystem resources, so they can be passed to background job
+    if (expansion.length >= maxCount) {
+      // Skip further expansion
+      break;
+    }
+
     const codeSystem =
       (terminologyResources[include.system] as CodeSystem) ??
       (await findTerminologyResource('CodeSystem', include.system));
     terminologyResources[include.system] = codeSystem;
-
-    if (expansion.length >= maxCount) {
-      // Skip further expansion
-      continue;
-    }
 
     if (include.concept) {
       const filteredCodings = filterCodings(include.concept, params);
@@ -331,48 +314,7 @@ async function computeExpansion(
     }
   }
 
-  if (params._precompute && requireSuperAdmin()) {
-    await addExpandJob(valueSet, terminologyResources); // Precompute expansion in the background for faster future searches
-  }
   return expansion;
-}
-
-export async function isExpansionPrecomputed(valueSet: ValueSet): Promise<boolean> {
-  const result = await new SelectQuery('ValueSet_Membership')
-    .column('coding')
-    .where('valueSet', '=', valueSet.id)
-    .limit(1)
-    .execute(getDatabasePool(DatabaseMode.READER));
-  return result.length >= 1;
-}
-
-async function getPrecomputedExpansion(
-  valueSet: ValueSet,
-  params: ValueSetExpandParameters
-): Promise<ValueSetExpansionContains[]> {
-  const query = new SelectQuery('Coding').column('code').column('display');
-  const expansionTable = query.getNextJoinAlias();
-  const codeSystemTable = query.getNextJoinAlias();
-  query
-    .innerJoin(
-      'ValueSet_Membership',
-      expansionTable,
-      new Condition(new Column('Coding', 'id'), '=', new Column(expansionTable, 'coding'))
-    )
-    .innerJoin(
-      'CodeSystem',
-      codeSystemTable,
-      new Condition(new Column('Coding', 'system'), '=', new Column(codeSystemTable, 'id'))
-    )
-    .where(new Column(expansionTable, 'valueSet'), '=', valueSet.id)
-    .column(new Column(codeSystemTable, 'url'));
-
-  const results = await addExpansionFilters(query, params).execute(getDatabasePool(DatabaseMode.READER));
-  return results.map((row) => ({
-    system: row.url,
-    code: row.code,
-    display: row.display,
-  }));
 }
 
 const hierarchyOps: ValueSetComposeIncludeFilter['op'][] = ['is-a', 'is-not-a', 'descendent-of'];
