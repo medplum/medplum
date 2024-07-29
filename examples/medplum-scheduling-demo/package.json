@@ -34,6 +34,7 @@
     "@tabler/icons-react": "3.10.0",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
+    "@types/react-big-calendar": "^1.8.9",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "chart.js": "4.4.3",
@@ -46,5 +47,9 @@
     "react-router-dom": "6.24.1",
     "typescript": "5.5.3",
     "vite": "5.3.3"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.12",
+    "react-big-calendar": "^1.13.1"
   }
 }

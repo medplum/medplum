@@ -1,7 +1,9 @@
 import { Modal } from '@mantine/core';
-import { createReference, getQuestionnaireAnswers } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { Coding, Patient, Practitioner, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface CreateAppointmentProps {
   patient?: Patient;
@@ -31,23 +33,37 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
       ? createReference(patient)
       : (answers['patient'].valueReference as Reference<Patient>);
 
-    await medplum.createResource({
-      resourceType: 'Appointment',
-      status: 'booked',
-      start: answers['start-date'].valueDateTime,
-      end: answers['end-date'].valueDateTime,
-      serviceType: [{ coding: [answers['service-type'].valueCoding as Coding] }],
-      participant: [
-        {
-          actor: appointmentPatient,
-          status: 'accepted',
-        },
-        {
-          actor: createReference(profile),
-          status: 'accepted',
-        },
-      ],
-    });
+    try {
+      await medplum.createResource({
+        resourceType: 'Appointment',
+        status: 'booked',
+        start: answers['start-date'].valueDateTime,
+        end: answers['end-date'].valueDateTime,
+        serviceType: [{ coding: [answers['service-type'].valueCoding as Coding] }],
+        participant: [
+          {
+            actor: appointmentPatient,
+            status: 'accepted',
+          },
+          {
+            actor: createReference(profile),
+            status: 'accepted',
+          },
+        ],
+      });
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Slot created',
+      });
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
 
     handlers.close();
   }
