@@ -61,10 +61,22 @@ multiple values for a given property.
 FHIR specifies a suite of Operation endpoints to interact with terminology information, which Medplum implements on top
 of the tables described above.
 
-## `CodeSystem/$lookup`
+### `CodeSystem/$validate-code`
 
-Looking up a given code in a CodeSystem is as simple as checking whether a CodeSystem with the given `url` exists, and
-then looking up the code and any properties:
+Validating whether a CodeSystem contains any of a set of codes is a simple query:
+
+```sql
+-- Get CodeSystem by URL
+SELECT id, content FROM "CodeSystem" WHERE url = ?;
+
+-- Check whether codes exist
+SELECT id, code, display FROM "Coding" WHERE code IN (?, ?) AND system = ?;
+```
+
+### `CodeSystem/$lookup`
+
+Looking up a given code in a CodeSystem is similar to the `$validate-code` operation above, but also looks up any
+properties of the given code:
 
 ```sql
 -- Get CodeSystem by URL
@@ -73,12 +85,12 @@ SELECT id, content FROM "CodeSystem" WHERE url = ?;
 -- Look up code and attached properties
 SELECT
   "Coding".display,
-  csp.code,
-  csp.type,
-  csp.description,
-  csp.value
+  property.code,
+  property.type,
+  property.description,
+  property.value
 FROM "Coding"
-  LEFT JOIN "Coding_Property" AS prop ON "Coding".id = prop.coding
-  LEFT JOIN "CodeSystem_Property" AS csp ON prop.property = csp.id
+  LEFT JOIN "Coding_Property" AS cp ON "Coding".id = cp.coding
+  LEFT JOIN "CodeSystem_Property" AS property ON cp.property = property.id
 WHERE "Coding".code = ? AND "Coding".system = ?;
 ```
